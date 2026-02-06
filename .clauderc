@@ -1,0 +1,52 @@
+# Claude Code Configuration for UNHN Project
+
+# This file configures how Claude Code behaves in this repository
+# Learn more: https://docs.claude.ai/claude-code/configuration
+
+# ============================================
+# PROJECT-SPECIFIC INSTRUCTIONS
+# ============================================
+
+## Project Phase: PRE-DEVELOPMENT (Product & Design)
+# We are currently in the planning and design phase
+# NO CODE should be written unless explicitly requested
+
+## Working Mode
+# - Focus on product refinement, feature specification, and wireframing
+# - Always use plan mode for any substantial work
+# - Present plans for review BEFORE executing
+# - Ask clarifying questions rather than making assumptions
+
+## Key Principles
+1. **Plan First, Execute Second**
+   - For any request involving multiple steps or decisions, ALWAYS enter plan mode
+   - Present the plan with options and rationale
+   - Wait for approval before proceeding
+
+2. **Structured Thinking**
+   - Break down requests into clear phases
+   - Identify dependencies and prerequisites
+   - Consider multiple approaches and present trade-offs
+
+3. **Design-Focused**
+   - Prioritize user experience over technical implementation
+   - Think about edge cases and user journeys
+   - Validate against the product roadmap principles
+
+4. **Documentation-First**
+   - All decisions should be documented in markdown files
+   - Keep the product-roadmap.md as the single source of truth
+   - Create separate documents for detailed specifications
+
+## File Organization
+- `product-roadmap.md` - Master roadmap (single source of truth)
+- `docs/features/` - Detailed feature specifications
+- `docs/wireframes/` - Wireframe descriptions and references
+- `docs/user-journeys/` - User flow documentation
+- `docs/decisions/` - Architecture Decision Records (ADRs)
+
+## Communication Style
+- Ask questions when requirements are unclear
+- Present options with pros/cons rather than making unilateral decisions
+- Use visual formatting (tables, diagrams, checklists) for clarity
+- Summarize complex topics before diving into details

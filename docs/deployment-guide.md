@@ -1,0 +1,525 @@
+# Deployment Guide
+
+Complete guide for deploying UNHN mobile and web applications to production.
+
+## Overview
+
+UNHN deploys to three platforms:
+1. **Web App** → Vercel
+2. **iOS App** → Apple App Store
+3. **Android App** → Google Play Store
+
+## Prerequisites
+
+Before deploying, ensure:
+- ✅ All tests passing
+- ✅ No TypeScript errors
+- ✅ Firebase project created and configured
+- ✅ Production environment variables set
+- ✅ Domain name configured (for web)
+
+## Web App Deployment (Vercel)
+
+### 1. Create Vercel Account
+
+1. Go to [vercel.com](https://vercel.com/)
+2. Sign up with GitHub
+3. Authorize Vercel to access your repository
+
+### 2. Import Project
+
+1. Click "Add New Project"
+2. Select your GitHub repository
+3. Configure project:
+   - **Framework Preset:** Next.js
+   - **Root Directory:** `apps/web`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `.next`
+
+### 3. Configure Environment Variables
+
+In Vercel dashboard, go to **Settings** > **Environment Variables**:
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset
+```
+
+### 4. Configure Custom Domain
+
+1. Go to **Settings** > **Domains**
+2. Add your domain: `unhn.app`
+3. Update DNS records:
+   - Type: `A`
+   - Name: `@`
+   - Value: `76.76.21.21` (Vercel IP)
+4. Add `www` subdomain:
+   - Type: `CNAME`
+   - Name: `www`
+   - Value: `cname.vercel-dns.com`
+
+### 5. Deploy
+
+Vercel automatically deploys when you push to GitHub:
+
+```bash
+git push origin main
+```
+
+**Deployment process:**
+1. Vercel detects push
+2. Installs dependencies
+3. Builds Next.js app
+4. Deploys to edge network
+5. Updates production URL
+
+**Deployment time:** ~2-3 minutes
+
+### 6. Monitor Deployment
+
+View deployment logs in Vercel dashboard:
+- **Deployments** tab shows all deployments
+- Click deployment to see logs
+- Check for build errors
+
+### 7. Test Production Site
+
+1. Visit https://unhn.app
+2. Test key features:
+   - Sign up / Login
+   - View posts
+   - Create post
+   - Search
+   - SEO (check page source for meta tags)
+
+### Vercel CLI (Optional)
+
+For manual deployments:
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Login
+vercel login
+
+# Deploy
+cd apps/web
+vercel --prod
+```
+
+## Mobile App Deployment (Expo EAS)
+
+### 1. Install EAS CLI
+
+```bash
+npm install -g eas-cli
+```
+
+### 2. Login to Expo
+
+```bash
+eas login
+```
+
+### 3. Configure EAS
+
+Create `apps/mobile/eas.json`:
+
+```json
+{
+  "cli": {
+    "version": ">= 5.9.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+```
+
+### 4. Build iOS App
+
+#### Prerequisites for iOS:
+- **Apple Developer Account** ($99/year)
+- **App Store Connect** app registered
+- **Certificates and profiles** (EAS handles this automatically)
+
+#### Build Command:
+
+```bash
+cd apps/mobile
+eas build --platform ios --profile production
+```
+
+This:
+1. Uploads code to Expo servers
+2. Installs dependencies
+3. Compiles React Native to native iOS code
+4. Creates `.ipa` file
+5. Provides download link
+
+**Build time:** ~15-20 minutes
+
+#### Submit to App Store:
+
+```bash
+eas submit --platform ios
+```
+
+You'll need:
+- Apple ID
+- App-specific password (generate in Apple ID settings)
+- Bundle identifier (e.g., `com.unhn.app`)
+
+### 5. Build Android App
+
+#### Prerequisites for Android:
+- **Google Play Developer Account** ($25 one-time)
+- **Keystore** for signing (EAS generates automatically)
+
+#### Build Command:
+
+```bash
+cd apps/mobile
+eas build --platform android --profile production
+```
+
+This creates an `.aab` (Android App Bundle) file.
+
+**Build time:** ~15-20 minutes
+
+#### Submit to Google Play:
+
+```bash
+eas submit --platform android
+```
+
+You'll need:
+- Google Play service account key (JSON file)
+- App bundle identifier (e.g., `com.unhn.app`)
+
+### 6. App Store Listings
+
+#### iOS App Store
+
+1. Go to [App Store Connect](https://appstoreconnect.apple.com/)
+2. Create new app:
+   - **Name:** UNHN
+   - **Bundle ID:** `com.unhn.app`
+   - **SKU:** `unhn-app`
+   - **User Access:** Full Access
+3. Fill app information:
+   - **Category:** Social Networking
+   - **Screenshots:** (1242x2208 for iPhone, 2048x2732 for iPad)
+   - **Description:** (see template below)
+   - **Keywords:** nepal, nepalese, community, help, housing, jobs
+   - **Support URL:** https://unhn.app/support
+   - **Privacy Policy URL:** https://unhn.app/privacy
+4. Pricing: **Free**
+5. Submit for review
+
+**Review time:** 1-3 days
+
+#### Google Play Store
+
+1. Go to [Google Play Console](https://play.google.com/console/)
+2. Create new app:
+   - **App name:** UNHN
+   - **Default language:** English (US)
+   - **App or game:** App
+   - **Free or paid:** Free
+3. Fill app information:
+   - **Category:** Social
+   - **Screenshots:** (1080x1920, need 2-8 screenshots)
+   - **Description:** (see template below)
+   - **Privacy Policy URL:** https://unhn.app/privacy
+4. Content rating questionnaire
+5. Submit for review
+
+**Review time:** 1-3 days
+
+### App Description Template
+
+```
+UNHN - US-Nepal Help Network
+
+Your community platform for the Nepalese diaspora in the USA.
+
+🏠 HOUSING
+Find roommates, apartments, and housing opportunities in your area.
+
+💼 JOBS
+Discover job openings and career opportunities posted by the community.
+
+🚨 EMERGENCY
+Get urgent help from the community when you need it most.
+
+✈️ TRAVEL
+Find travel companions and coordinate trips back to Nepal or within the US.
+
+📍 LOCAL FIRST
+All content is organized by metro area, so you see what's relevant to you.
+
+🔒 TRUST & SAFETY
+Verified users, moderator-approved emergency alerts, and community reporting.
+
+Join the UNHN community today!
+```
+
+### 7. Over-the-Air (OTA) Updates
+
+For minor updates (no native code changes), use OTA:
+
+```bash
+cd apps/mobile
+eas update --branch production
+```
+
+This pushes JavaScript changes without app store review.
+
+**Update time:** ~1 minute
+
+**User receives update:** Next time they open the app
+
+## Firebase Deployment
+
+### 1. Deploy Firestore Rules
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+### 2. Deploy Storage Rules
+
+```bash
+firebase deploy --only storage
+```
+
+### 3. Deploy Cloud Functions
+
+```bash
+cd firebase/functions
+npm run build
+firebase deploy --only functions
+```
+
+### 4. Deploy Hosting (Optional)
+
+If hosting Next.js on Firebase instead of Vercel:
+
+```bash
+cd apps/web
+npm run build
+firebase deploy --only hosting
+```
+
+## CI/CD Pipeline (GitHub Actions)
+
+### 1. Create GitHub Secrets
+
+Go to **Settings** > **Secrets and variables** > **Actions**:
+
+```
+VERCEL_TOKEN
+VERCEL_ORG_ID
+VERCEL_PROJECT_ID
+EXPO_TOKEN
+FIREBASE_SERVICE_ACCOUNT_KEY
+```
+
+### 2. Create Workflow Files
+
+**`.github/workflows/deploy-web.yml`:**
+
+```yaml
+name: Deploy Web App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm install
+      - run: npm run build --workspace=packages/shared
+      - run: npm run build --workspace=apps/web
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+```
+
+**`.github/workflows/deploy-mobile.yml`:**
+
+```yaml
+name: Build Mobile Apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/shared/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm install
+      - run: npm run build --workspace=packages/shared
+      - run: npx eas-cli build --platform all --non-interactive
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+```
+
+### 3. Automatic Deployments
+
+Now every push to `main` automatically:
+1. Builds and deploys web app to Vercel
+2. Builds mobile apps on Expo EAS
+3. Runs tests and linting
+
+## Environment Management
+
+### Development
+- Local Firebase emulators
+- Test data
+- `.env.development`
+
+### Staging
+- Separate Firebase project
+- Test data
+- `.env.staging`
+
+### Production
+- Production Firebase project
+- Real data
+- `.env.production`
+
+## Rollback Strategy
+
+### Web App
+
+1. Go to Vercel dashboard
+2. **Deployments** tab
+3. Find previous working deployment
+4. Click **Promote to Production**
+
+### Mobile Apps
+
+1. For OTA updates:
+   ```bash
+   eas update --branch production --message "Rollback"
+   ```
+
+2. For full app updates:
+   - Increment version in `app.json`
+   - Build and submit new version
+
+### Firebase
+
+Use Firebase Emulator to test before deploying:
+
+```bash
+firebase emulators:start
+```
+
+## Monitoring
+
+### Web App (Vercel)
+
+- **Analytics:** Built-in Vercel Analytics
+- **Errors:** Integrate Sentry
+- **Performance:** Vercel Speed Insights
+
+### Mobile Apps
+
+- **Crashes:** Firebase Crashlytics
+- **Analytics:** Firebase Analytics
+- **Performance:** Firebase Performance Monitoring
+
+### Backend (Firebase)
+
+- **Usage:** Firebase Console > Usage and billing
+- **Logs:** `firebase functions:log`
+- **Alerts:** Set up budget alerts in Google Cloud Console
+
+## Checklist Before Production Launch
+
+- [ ] All tests passing
+- [ ] No console errors/warnings
+- [ ] Firebase rules deployed
+- [ ] Environment variables configured
+- [ ] Custom domain configured (web)
+- [ ] SSL certificate active
+- [ ] Privacy policy published
+- [ ] Terms of service published
+- [ ] Support email/page created
+- [ ] App Store assets ready (screenshots, descriptions)
+- [ ] Google Play assets ready
+- [ ] Analytics configured
+- [ ] Error tracking configured
+- [ ] Monitoring dashboards set up
+- [ ] Backup strategy implemented
+- [ ] Budget alerts configured
+
+## Post-Launch
+
+1. **Monitor for 24-48 hours:**
+   - Check error logs
+   - Watch user signups
+   - Monitor performance metrics
+
+2. **Gather feedback:**
+   - User reviews on app stores
+   - In-app feedback forms
+   - Support emails
+
+3. **Iterate quickly:**
+   - Fix critical bugs immediately
+   - Deploy OTA updates for minor issues
+   - Plan next release
+
+## Resources
+
+- [Vercel Documentation](https://vercel.com/docs)
+- [Expo EAS Documentation](https://docs.expo.dev/eas/)
+- [App Store Connect Guide](https://developer.apple.com/app-store-connect/)
+- [Google Play Console Guide](https://support.google.com/googleplay/android-developer/)
