@@ -48,10 +48,10 @@ UNHN shifts away from algorithm-based social media feeds to provide structured, 
 |-----------|-----------|-----|
 | **Mobile App** | React Native (Expo) | Native performance, fast development |
 | **Web App** | Next.js | Server-side rendering for excellent SEO |
-| **Backend** | Firebase | Real-time chat, fastest to build, generous free tier |
-| **Database** | Firestore | NoSQL, real-time, offline support |
-| **Auth** | Firebase Auth | Phone (SMS), email, social login |
-| **File Storage** | Cloudinary | Image optimization, CDN, free tier |
+| **Backend** | Supabase | Real-time subscriptions, PostgreSQL, generous free tier |
+| **Database** | PostgreSQL (Supabase) | Relational database, ACID compliance, real-time |
+| **Auth** | Supabase Auth | Phone (SMS), email, social login, Row Level Security |
+| **File Storage** | Supabase Storage | Built-in storage, CDN, free tier |
 | **Push Notifications** | FCM | Free unlimited, works everywhere |
 | **Language** | TypeScript | Type safety, shared code between mobile/web |
 
@@ -68,7 +68,7 @@ unhn/
 │   └── web/             # Next.js web app
 ├── packages/
 │   └── shared/          # Shared TypeScript code (types, utils, validation)
-├── firebase/            # Firebase configuration and Cloud Functions
+├── supabase/            # Supabase configuration, migrations, and Edge Functions
 ├── docs/                # Documentation
 ├── .github/             # GitHub Actions CI/CD
 └── package.json         # Root package.json (monorepo)
@@ -100,7 +100,7 @@ Every post is tagged with a US Census Metro Area ID. Users see content from thei
 
 **ZIP to Metro Mapping:**
 - Static dataset from HUD USPS ZIP to County Crosswalk
-- Loaded into Firestore `/metroAreas` collection
+- Loaded into PostgreSQL `metro_areas` table
 - No API costs, fast lookups
 
 ## 🔐 Trust & Safety
@@ -129,12 +129,12 @@ Emergency posts require moderator verification:
 ### Architecture
 - [Monorepo Structure](./docs/monorepo-structure.md) - How the codebase is organized
 - [Code Sharing Guide](./docs/code-sharing-guide.md) - What to share between mobile/web
-- [Database Schema](./docs/database-schema.md) - Firestore collections and fields
+- [Database Schema](./docs/database-schema.md) - PostgreSQL tables and schema
 
-### Firebase
-- [Firebase Setup](./docs/firebase-setup.md) - Configure Firebase project
-- [Security Rules](./firebase/firestore.rules) - Firestore security rules
-- [Cloud Functions](./firebase/functions/src/index.ts) - Serverless backend logic
+### Supabase
+- [Supabase Setup](./docs/supabase-setup.md) - Configure Supabase project
+- [Database Schema](./docs/database-schema.md) - PostgreSQL schema and migrations
+- [Edge Functions](./supabase/functions/) - Serverless backend logic
 
 ### Deployment
 - [Deployment Guide](./docs/deployment-guide.md) - Deploy to production
@@ -148,9 +148,9 @@ Emergency posts require moderator verification:
 
 ### Daily Development
 
-1. **Start Firebase emulators** (terminal 1):
+1. **Start Supabase locally** (terminal 1):
    ```bash
-   firebase emulators:start
+   npx supabase start
    ```
 
 2. **Build shared package in watch mode** (terminal 2):

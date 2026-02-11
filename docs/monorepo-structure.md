@@ -58,22 +58,21 @@ unhn/
 │   ├── ui-mobile/        # Mobile UI components (future)
 │   └── ui-web/           # Web UI components (future)
 │
-├── firebase/             # Firebase configuration
-│   ├── functions/        # Cloud Functions
-│   │   ├── src/
-│   │   │   └── index.ts
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   ├── firestore.rules   # Firestore security rules
-│   ├── firestore.indexes.json  # Firestore indexes
-│   ├── storage.rules     # Storage security rules
+├── supabase/             # Supabase configuration
+│   ├── functions/        # Edge Functions
+│   │   ├── expire-posts/
+│   │   ├── verify-emergency-post/
+│   │   └── get-metro-by-zip/
+│   ├── migrations/       # Database migrations
+│   ├── seed.sql          # Seed data
+│   ├── config.toml       # Supabase configuration
 │   └── README.md
 │
 ├── docs/                 # Documentation
 │   ├── README.md
 │   ├── tech-stack.md
 │   ├── setup-guide.md
-│   ├── firebase-setup.md
+│   ├── supabase-setup.md
 │   ├── monorepo-structure.md
 │   ├── code-sharing-guide.md
 │   ├── deployment-guide.md
@@ -88,7 +87,6 @@ unhn/
 ├── .eslintrc.json
 ├── tsconfig.json         # Base TypeScript config
 ├── package.json          # Root package.json (workspaces)
-├── firebase.json         # Firebase configuration
 ├── CLAUDE.md             # Instructions for Claude Code
 ├── QUICK-START.md        # Quick start guide
 ├── product-roadmap.md    # Product roadmap
@@ -249,9 +247,9 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 
 ### Daily Development
 
-1. **Start Firebase emulators** (terminal 1):
+1. **Start Supabase locally** (terminal 1):
    ```bash
-   firebase emulators:start
+   npx supabase start
    ```
 
 2. **Build shared package in watch mode** (terminal 2):
@@ -316,10 +314,9 @@ When building for production, follow this order:
    eas build --platform all
    ```
 
-4. **Firebase functions**:
+4. **Supabase Edge Functions**:
    ```bash
-   npm run build --workspace=firebase/functions
-   firebase deploy --only functions
+   npx supabase functions deploy
    ```
 
 ## CI/CD Pipeline

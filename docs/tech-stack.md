@@ -16,10 +16,10 @@ UNHN uses a modern, JavaScript/TypeScript-based stack optimized for:
 |-----------|-----------|-----------|
 | **Mobile App** | React Native (Expo) | Native performance, you know JS/TS, fastest development |
 | **Web App** | Next.js | Server-side rendering for SEO, same React as mobile |
-| **Backend** | Firebase | Free tier, real-time chat, fastest to build, no DevOps |
-| **Database** | Firestore | NoSQL, real-time, offline support, scales automatically |
-| **Auth** | Firebase Auth | Phone (SMS), email, social login built-in |
-| **File Storage** | Cloudinary | Image optimization, CDN, generous free tier |
+| **Backend** | Supabase | Generous free tier, PostgreSQL, real-time, minimal DevOps |
+| **Database** | PostgreSQL (Supabase) | Relational DB, ACID compliance, real-time subscriptions, scales well |
+| **Auth** | Supabase Auth | Phone (SMS), email, social login, Row Level Security built-in |
+| **File Storage** | Supabase Storage | Integrated auth, RLS policies, CDN, generous free tier |
 | **Location** | Static ZIP Dataset | One-time setup, $0 cost, fast lookups |
 | **Push Notifications** | FCM | Free unlimited, works everywhere |
 | **Web Hosting** | Vercel | Free for hobby, automatic deployments, perfect for Next.js |
@@ -52,61 +52,94 @@ UNHN uses a modern, JavaScript/TypeScript-based stack optimized for:
 
 ## Backend Architecture
 
-### Firebase Services
-1. **Authentication** - User login, phone verification
-2. **Firestore** - NoSQL database for users, posts, chats
-3. **Cloud Storage** - Photo uploads (fallback to Cloudinary)
-4. **Cloud Functions** - Serverless backend logic:
-   - Post expiry cron job
+### Supabase Services
+1. **Authentication** - User login, phone verification, social logins
+2. **PostgreSQL Database** - Relational database for users, posts, chats, metro areas
+3. **Storage** - Photo uploads with Row Level Security
+4. **Edge Functions** - Serverless backend logic:
+   - Post expiry scheduled function
+   - Emergency verification endpoint
+   - Metro area lookup endpoint
+5. **Database Triggers** - Automatic server-side logic:
    - User creation triggers
-   - Emergency verification
-   - Metro area lookup
-5. **Cloud Messaging (FCM)** - Push notifications
-6. **Hosting** - Optional web hosting (using Vercel instead)
+   - User deletion cleanup
+6. **Real-time Subscriptions** - Live updates for chat and emergency alerts
 
-### Database Structure (Firestore)
+### Database Structure (PostgreSQL)
 
-```
-/users/{userId}
-  - email, name, metroAreaId, trustLevel, phoneVerified, createdAt
+```sql
+-- users table
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT auth.uid(),
+  email TEXT NOT NULL,
+  name TEXT,
+  metro_area_id TEXT,
+  trust_level INTEGER DEFAULT 0,
+  phone_verified BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-/metroAreas/{metroAreaId}
-  - name, state, zipCodes[]
+-- metro_areas table
+CREATE TABLE metro_areas (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  state TEXT,
+  zip_codes TEXT[] -- Array of ZIP codes
+);
 
-/posts/{postId}
-  - authorId, category, metroAreaId, expiryDate, status
-  - fields: {} (category-specific data)
-  - photos: [url1, url2]
-  - createdAt, updatedAt
+-- posts table
+CREATE TABLE posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  author_id UUID REFERENCES users(id),
+  category TEXT NOT NULL,
+  metro_area_id TEXT REFERENCES metro_areas(id),
+  expiry_date TIMESTAMPTZ,
+  status TEXT DEFAULT 'active',
+  fields JSONB, -- Category-specific data
+  photos TEXT[], -- Array of photo URLs
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-/conversations/{conversationId}
-  - participants: [userId1, userId2]
-  - lastMessage, lastMessageTime
-  - /messages/{messageId}
-    - senderId, text, timestamp, read
+-- conversations table
+CREATE TABLE conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  participants UUID[] NOT NULL,
+  last_message TEXT,
+  last_message_time TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- messages table
+CREATE TABLE messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID REFERENCES conversations(id),
+  sender_id UUID REFERENCES users(id),
+  text TEXT NOT NULL,
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
 ## Location Services
 
 ### ZIP to Metro Area Mapping
 - **Source:** HUD USPS ZIP to County Crosswalk
-- **Implementation:** Static dataset loaded into Firestore
+- **Implementation:** Static dataset loaded into PostgreSQL metro_areas table
 - **Cost:** $0 (no API calls)
 - **Update Frequency:** Quarterly (manual)
 
 ## File Storage
 
-### Cloudinary (Primary)
-- **Usage:** All user-uploaded images
+### Supabase Storage
+- **Usage:** All user-uploaded images (profile photos, post images, chat images)
 - **Features:**
-  - Automatic image optimization
-  - On-the-fly transformations (resize, compress)
-  - CDN delivery
-- **Pricing:** Free tier (25GB storage + 25GB bandwidth/month)
-
-### Firebase Storage (Backup)
-- **Usage:** Fallback or admin files
-- **Pricing:** $0.026/GB/month storage
+  - Integrated with Supabase Auth
+  - Row Level Security policies for access control
+  - CDN delivery via Supabase CDN
+  - Image transformations available
+- **Pricing:** Free tier (1GB storage, expandable to 100GB on paid plans)
+- **Security:** Files protected by RLS policies, ensuring users can only access authorized content
 
 ## Push Notifications
 
@@ -159,29 +192,40 @@ UNHN uses a modern, JavaScript/TypeScript-based stack optimized for:
 ## Cost Breakdown
 
 ### Development (Months 1-3)
-- **Firebase:** $0 (free tier)
-- **Cloudinary:** $0 (free tier)
+- **Supabase:** $0 (free tier - up to 50K monthly active users)
 - **Vercel:** $0 (hobby plan)
 - **Expo EAS:** $0 (free tier)
+- **FCM:** $0 (free unlimited)
 - **Total:** **$0/month**
 
 ### Production (1,000 - 10,000 Users)
-- **Firebase:** $25-50/month
-- **Cloudinary:** $0-89/month
-- **Vercel:** $0-20/month
-- **Expo EAS:** $0-40/month
-- **Total:** **$25-200/month**
+- **Supabase:** $0-25/month (free tier covers up to 50K MAU, 500MB database, 1GB storage)
+- **Vercel:** $0-20/month (likely free on hobby plan)
+- **Expo EAS:** $0-40/month (free tier covers most needs)
+- **FCM:** $0 (always free)
+- **Total:** **$0-85/month** (significantly cheaper than Firebase at scale)
 
 ## Scalability
 
-### When to Migrate
-If Firebase costs exceed $500/month or you hit query limitations, consider:
-1. Keep Firebase Auth and FCM (always cheap)
-2. Migrate data to PostgreSQL (Supabase or custom)
-3. Build REST API (Next.js API routes or Node.js)
+### Supabase Advantages
+Supabase scales well for UNHN's needs:
+1. **PostgreSQL** handles millions of rows efficiently with proper indexing
+2. **Free tier** supports up to 50K monthly active users (vs Firebase's ~1K)
+3. **Pricing** is more predictable and cheaper at scale
+4. **Real-time** subscriptions work like Firebase Firestore listeners
+5. **Row Level Security** provides fine-grained access control
 
-### Migration Effort
-2-3 months with 2 developers
+### When to Scale Up
+If you exceed 50K MAU or need more storage/bandwidth:
+1. Upgrade to Supabase Pro ($25/month) - covers 100K MAU, 8GB database, 100GB storage
+2. For 100K+ MAU, consider Supabase Team ($599/month) or custom enterprise plan
+3. Keep FCM for push notifications (always free)
+
+### Migration Path (If Needed)
+If Supabase becomes too expensive (unlikely <500K users):
+1. Self-host PostgreSQL on AWS/GCP
+2. Keep Supabase Auth or migrate to Auth.js
+3. Estimated effort: 1-2 months with 1-2 developers
 
 ## Why NOT Flutter?
 
@@ -194,26 +238,28 @@ Despite CLAUDE.md mentioning Flutter, it was eliminated because:
 ## Security
 
 ### Authentication
-- Phone verification (SMS OTP via Firebase Auth)
+- Phone verification (SMS OTP via Supabase Auth)
 - Social login (Google, Facebook)
-- JWT tokens (Firebase Auth automatic)
+- JWT tokens (Supabase Auth automatic)
 
 ### Authorization
-- Firestore security rules enforce trust levels
-- Cloud Functions validate permissions server-side
+- Row Level Security (RLS) policies enforce trust levels
+- PostgreSQL policies validate permissions at database level
+- Edge Functions validate permissions server-side
 - Client-side validation with Zod schemas
 
 ### Data Protection
 - PII masking (emergency contact info hidden)
 - Encrypted connections (HTTPS, WSS)
-- Firestore rules prevent unauthorized access
+- RLS policies prevent unauthorized data access
+- Storage RLS policies protect uploaded files
 
 ## Performance
 
 ### Mobile
 - Native performance via React Native
-- Offline support with Firestore
-- Image optimization with Cloudinary
+- Offline support with Supabase local caching
+- Image optimization with Supabase Storage
 - Lazy loading of components
 
 ### Web
@@ -228,17 +274,17 @@ Despite CLAUDE.md mentioning Flutter, it was eliminated because:
 - Sentry (for crash reporting)
 
 ### Analytics
-- Firebase Analytics (free)
+- PostHog (open-source, Supabase-friendly)
 - Mixpanel (for product analytics)
 
 ### Performance
-- Firebase Performance Monitoring
-- Vercel Analytics (web)
+- Supabase Dashboard (database performance, API metrics)
+- Vercel Analytics (web performance)
 
 ## References
 
 - [React Native Documentation](https://reactnative.dev/)
 - [Expo Documentation](https://docs.expo.dev/)
 - [Next.js Documentation](https://nextjs.org/docs)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [Cloudinary Documentation](https://cloudinary.com/documentation)
+- [Supabase Documentation](https://supabase.com/docs)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)

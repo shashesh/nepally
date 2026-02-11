@@ -14,7 +14,7 @@ UNHN deploys to three platforms:
 Before deploying, ensure:
 - ✅ All tests passing
 - ✅ No TypeScript errors
-- ✅ Firebase project created and configured
+- ✅ Supabase project created and configured
 - ✅ Production environment variables set
 - ✅ Domain name configured (for web)
 
@@ -41,14 +41,8 @@ Before deploying, ensure:
 In Vercel dashboard, go to **Settings** > **Environment Variables**:
 
 ```
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
-NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ### 4. Configure Custom Domain
@@ -302,36 +296,43 @@ This pushes JavaScript changes without app store review.
 
 **User receives update:** Next time they open the app
 
-## Firebase Deployment
+## Supabase Deployment
 
-### 1. Deploy Firestore Rules
+### 1. Deploy Database Migrations
 
 ```bash
-firebase deploy --only firestore:rules
+npx supabase db push
 ```
 
-### 2. Deploy Storage Rules
+This applies all migrations from `supabase/migrations/` to your production database.
+
+### 2. Deploy Edge Functions
 
 ```bash
-firebase deploy --only storage
+npx supabase functions deploy
 ```
 
-### 3. Deploy Cloud Functions
+This deploys all Edge Functions:
+- `expire-posts`
+- `verify-emergency-post`
+- `get-metro-by-zip`
+
+### 3. Verify RLS Policies
+
+Check that Row Level Security policies are active:
 
 ```bash
-cd firebase/functions
-npm run build
-firebase deploy --only functions
+npx supabase db pull
 ```
 
-### 4. Deploy Hosting (Optional)
+Compare local policies with remote to ensure they match.
 
-If hosting Next.js on Firebase instead of Vercel:
+### 4. Deploy Individual Functions (Optional)
 
 ```bash
-cd apps/web
-npm run build
-firebase deploy --only hosting
+npx supabase functions deploy expire-posts
+npx supabase functions deploy verify-emergency-post
+npx supabase functions deploy get-metro-by-zip
 ```
 
 ## CI/CD Pipeline (GitHub Actions)
@@ -345,7 +346,8 @@ VERCEL_TOKEN
 VERCEL_ORG_ID
 VERCEL_PROJECT_ID
 EXPO_TOKEN
-FIREBASE_SERVICE_ACCOUNT_KEY
+SUPABASE_ACCESS_TOKEN
+SUPABASE_PROJECT_ID
 ```
 
 ### 2. Create Workflow Files
@@ -419,17 +421,17 @@ Now every push to `main` automatically:
 ## Environment Management
 
 ### Development
-- Local Firebase emulators
+- Local Supabase (via `npx supabase start`)
 - Test data
 - `.env.development`
 
 ### Staging
-- Separate Firebase project
+- Separate Supabase project
 - Test data
 - `.env.staging`
 
 ### Production
-- Production Firebase project
+- Production Supabase project
 - Real data
 - `.env.production`
 
@@ -453,12 +455,18 @@ Now every push to `main` automatically:
    - Increment version in `app.json`
    - Build and submit new version
 
-### Firebase
+### Supabase
 
-Use Firebase Emulator to test before deploying:
+Use local Supabase to test before deploying:
 
 ```bash
-firebase emulators:start
+npx supabase start
+```
+
+To rollback database migrations:
+
+```bash
+npx supabase db reset
 ```
 
 ## Monitoring
@@ -471,21 +479,24 @@ firebase emulators:start
 
 ### Mobile Apps
 
-- **Crashes:** Firebase Crashlytics
-- **Analytics:** Firebase Analytics
-- **Performance:** Firebase Performance Monitoring
+- **Crashes:** Sentry
+- **Analytics:** PostHog or Mixpanel
+- **Performance:** React Native Performance
 
-### Backend (Firebase)
+### Backend (Supabase)
 
-- **Usage:** Firebase Console > Usage and billing
-- **Logs:** `firebase functions:log`
-- **Alerts:** Set up budget alerts in Google Cloud Console
+- **Usage:** Supabase Dashboard > Settings > Usage
+- **Logs:** Supabase Dashboard > Edge Functions > Logs
+- **Database:** Supabase Dashboard > Database > Query Performance
+- **Alerts:** Set up monitoring via Supabase Dashboard > Settings > Alerts
 
 ## Checklist Before Production Launch
 
 - [ ] All tests passing
 - [ ] No console errors/warnings
-- [ ] Firebase rules deployed
+- [ ] Supabase migrations deployed
+- [ ] RLS policies verified
+- [ ] Edge Functions deployed
 - [ ] Environment variables configured
 - [ ] Custom domain configured (web)
 - [ ] SSL certificate active

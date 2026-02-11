@@ -40,7 +40,7 @@ Emergency broadcasts require moderator verification:
 ## Planned Tech Stack
 
 - **Frontend**: Flutter (cross-platform for iOS, Android, Web)
-- **Backend**: Firebase (real-time DB for chat and emergency alerts)
+- **Backend**: Supabase (PostgreSQL database with real-time subscriptions for chat and emergency alerts)
 - **Location Services**: Google Maps / ZIP Code API for metro area mapping
 - **Admin Dashboard**: Web-based interface for moderators to manage alerts and content
 

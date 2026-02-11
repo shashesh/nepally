@@ -9,7 +9,7 @@ Before you begin, ensure you have the following installed:
 - **Node.js** (v18 or higher)
 - **npm** (v9 or higher)
 - **Git**
-- **Firebase CLI** (`npm install -g firebase-tools`)
+- **Supabase CLI** (`npm install -g supabase`)
 - **Expo CLI** (`npm install -g expo-cli`) (optional, Expo handles this)
 
 ### Platform-Specific Requirements
@@ -43,7 +43,6 @@ This will install dependencies for:
 - Mobile app (`apps/mobile`)
 - Web app (`apps/web`)
 - Shared package (`packages/shared`)
-- Firebase functions (`firebase/functions`)
 
 ## Step 3: Set Up Environment Variables
 
@@ -52,14 +51,8 @@ This will install dependencies for:
 Create `apps/mobile/.env`:
 
 ```env
-EXPO_PUBLIC_FIREBASE_API_KEY=your-api-key
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
-EXPO_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
-EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
-EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ### Web App
@@ -67,103 +60,76 @@ EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset
 Create `apps/web/.env.local`:
 
 ```env
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
-NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-## Step 4: Set Up Firebase
+## Step 4: Set Up Supabase
 
-### Create Firebase Project
+### Create Supabase Project
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add project"
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Click "New project"
 3. Name it "UNHN" (or your preferred name)
-4. Disable Google Analytics (optional)
-5. Create project
+4. Set a strong database password (save this!)
+5. Choose a region (us-east-1 or closest to you)
+6. Create project (takes ~2 minutes)
 
-### Enable Firebase Services
+### Get Project Credentials
 
-1. **Authentication**
-   - Go to Authentication > Sign-in method
-   - Enable Email/Password
-   - Enable Phone (requires Blaze plan for SMS)
-   - Enable Google (optional)
+1. Go to Project Settings > API
+2. Copy your **Project URL** (e.g., `https://abcdefgh.supabase.co`)
+3. Copy your **anon/public key**
+4. Add these to your `.env` files (see Step 3)
 
-2. **Firestore Database**
-   - Go to Firestore Database
-   - Click "Create database"
-   - Start in **test mode** (we'll deploy rules later)
-   - Choose a location (us-central1)
-
-3. **Storage**
-   - Go to Storage
-   - Click "Get started"
-   - Start in **test mode**
-
-4. **Cloud Functions**
-   - Go to Functions
-   - Click "Get started"
-   - Follow setup instructions
-
-### Initialize Firebase Locally
+### Initialize Supabase Locally
 
 ```bash
-firebase login
-firebase use --add
+npx supabase login
+npx supabase init
 ```
 
-Select your Firebase project and give it an alias (e.g., "default").
+This creates a `supabase/` directory with local configuration.
 
-### Deploy Firebase Rules and Indexes
+### Link to Remote Project
 
 ```bash
-# Deploy Firestore rules
-firebase deploy --only firestore:rules
-
-# Deploy Firestore indexes
-firebase deploy --only firestore:indexes
-
-# Deploy Storage rules
-firebase deploy --only storage
+npx supabase link --project-ref your-project-ref
 ```
 
-## Step 5: Start Firebase Emulators (Optional but Recommended)
+Your project ref is in the Project URL: `https://[project-ref].supabase.co`
 
-Run local Firebase emulators for development:
+### Run Migrations
 
 ```bash
-firebase emulators:start
+npx supabase db push
+```
+
+This applies all database migrations from `supabase/migrations/` to your remote project.
+
+## Step 5: Start Supabase Locally (Recommended for Development)
+
+Run local Supabase stack:
+
+```bash
+npx supabase start
 ```
 
 This starts:
-- Firestore Emulator: http://localhost:8080
-- Auth Emulator: http://localhost:9099
-- Functions Emulator: http://localhost:5001
-- Emulator UI: http://localhost:4000
+- PostgreSQL Database: postgresql://postgres:postgres@localhost:54322/postgres
+- Studio (UI): http://localhost:54323
+- API Gateway: http://localhost:54321
+- Auth: included in API Gateway
+- Storage: included in API Gateway
 
-**To use emulators**, update your environment variables:
-- `EXPO_PUBLIC_FIREBASE_USE_EMULATOR=true`
-- `NEXT_PUBLIC_FIREBASE_USE_EMULATOR=true`
+**To use local Supabase**, update your environment variables:
+```env
+EXPO_PUBLIC_SUPABASE_URL=http://localhost:54321
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+# Keep the anon key from local start output
+```
 
-## Step 6: Set Up Cloudinary (Optional)
-
-1. Go to [Cloudinary](https://cloudinary.com/)
-2. Sign up for a free account
-3. Get your cloud name from the dashboard
-4. Create an upload preset:
-   - Go to Settings > Upload
-   - Scroll to "Upload presets"
-   - Click "Add upload preset"
-   - Set signing mode to "Unsigned"
-   - Copy the preset name
-
-## Step 7: Build Shared Package
+## Step 6: Build Shared Package
 
 The shared package must be built before mobile/web apps can use it:
 
@@ -179,7 +145,7 @@ cd packages/shared
 npm run dev
 ```
 
-## Step 8: Start Development Servers
+## Step 7: Start Development Servers
 
 ### Option A: Start All Apps
 
@@ -216,7 +182,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Step 9: Verify Setup
+## Step 8: Verify Setup
 
 ### Mobile App
 1. Open the app in Expo Go
@@ -228,10 +194,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 2. You should see the home page with 4 category cards
 3. Check browser console for any errors
 
-### Firebase Connection
+### Supabase Connection
 1. Try signing up for an account
-2. Check Firestore emulator UI (http://localhost:4000)
-3. You should see a new user document created
+2. Check Supabase Studio (http://localhost:54323)
+3. Go to Table Editor > users
+4. You should see a new user row created
 
 ## Common Issues
 
@@ -260,14 +227,14 @@ rm -rf .next
 npm run dev
 ```
 
-### Issue: Firebase emulator connection refused
+### Issue: Supabase connection refused
 
-**Solution:** Make sure emulators are running:
+**Solution:** Make sure Supabase is running locally:
 ```bash
-firebase emulators:start
+npx supabase start
 ```
 
-And check environment variables have `FIREBASE_USE_EMULATOR=true`.
+And check environment variables point to `http://localhost:54321`.
 
 ### Issue: TypeScript errors in shared package
 
@@ -281,9 +248,9 @@ npm run type-check
 
 ### Daily Workflow
 
-1. Start Firebase emulators (terminal 1):
+1. Start Supabase locally (terminal 1):
    ```bash
-   firebase emulators:start
+   npx supabase start
    ```
 
 2. Start shared package in watch mode (terminal 2):
@@ -334,7 +301,7 @@ npm run format
 
 - Read [Database Schema](./database-schema.md) to understand data structure
 - Read [Code Sharing Guide](./code-sharing-guide.md) to learn what goes in shared package
-- Read [Firebase Setup](./firebase-setup.md) for advanced Firebase configuration
+- Read [Supabase Setup](./supabase-setup.md) for advanced Supabase configuration
 - Start building features! See [Phase 1 Feature Breakdown](./phase1-feature-breakdown.md)
 
 ## Getting Help

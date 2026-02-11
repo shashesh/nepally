@@ -1,0 +1,768 @@
+# Supabase Setup Guide
+
+Comprehensive guide for setting up Supabase for the UNHN project.
+
+## Supabase Project Creation
+
+### 1. Create Project
+
+1. Go to [Supabase Dashboard](https://app.supabase.com/)
+2. Click "New project"
+3. Select your organization or create one
+4. Enter project details:
+   - **Name**: UNHN (or your preferred name)
+   - **Database Password**: Generate a strong password and save it securely
+   - **Region**: Choose closest to your users (e.g., `us-east-1`)
+   - **Pricing Plan**: Start with Free tier (upgrade later as needed)
+5. Click "Create new project"
+6. Wait 2-3 minutes for project provisioning
+
+### 2. Get Supabase Credentials
+
+Once your project is ready:
+
+1. Go to **Project Settings** (gear icon) > **API**
+2. Copy the following values:
+   - **Project URL** (e.g., `https://xxxxx.supabase.co`)
+   - **anon/public** API key (for client-side)
+   - **service_role** key (for server-side, keep secret!)
+
+3. Add these to your environment files:
+
+**apps/web/.env.local:**
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+**apps/mobile/.env:**
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## Authentication Setup
+
+### 1. Enable Email Authentication
+
+1. Go to **Authentication** > **Providers**
+2. **Email** is enabled by default
+3. Configure settings:
+   - Enable **Confirm email**: Recommended for production
+   - Enable **Secure email change**: Recommended
+   - **Mailer templates**: Customize email templates (optional)
+
+### 2. Enable Phone Authentication
+
+1. Go to **Authentication** > **Providers**
+2. Click **Phone**
+3. Enable **Phone** provider
+4. Choose SMS provider:
+   - **Twilio** (recommended)
+   - **MessageBird**
+   - **Textlocal**
+   - **Vonage**
+
+**Twilio Setup:**
+1. Create account at [Twilio](https://www.twilio.com/)
+2. Get Account SID and Auth Token
+3. Get a phone number
+4. Add credentials in Supabase:
+   ```
+   Twilio Account SID: ACxxxxxxxxxxxx
+   Twilio Auth Token: your-auth-token
+   Twilio Phone Number: +1234567890
+   ```
+
+**Rate Limits:**
+- Free tier: Reasonable limits for development
+- Production: Configure rate limiting in Authentication settings
+
+### 3. Enable Google OAuth (Optional)
+
+1. Go to **Authentication** > **Providers**
+2. Click **Google**
+3. Enable **Google** provider
+4. Get OAuth credentials:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create OAuth 2.0 Client ID
+   - Add authorized redirect URIs:
+     ```
+     https://xxxxx.supabase.co/auth/v1/callback
+     ```
+5. Add Client ID and Secret in Supabase
+
+### 4. Enable Facebook OAuth (Optional)
+
+1. Go to **Authentication** > **Providers**
+2. Click **Facebook**
+3. Enable **Facebook** provider
+4. Get OAuth credentials:
+   - Go to [Facebook Developers](https://developers.facebook.com/)
+   - Create app and get App ID and App Secret
+   - Add redirect URI:
+     ```
+     https://xxxxx.supabase.co/auth/v1/callback
+     ```
+5. Add App ID and Secret in Supabase
+
+### 5. Configure Site URL and Redirect URLs
+
+1. Go to **Authentication** > **URL Configuration**
+2. Set **Site URL**: Your production domain (e.g., `https://unhn.app`)
+3. Add **Redirect URLs**:
+   ```
+   http://localhost:3000/**
+   https://unhn.app/**
+   https://your-preview-url.vercel.app/**
+   myapp:///** (for mobile deep linking)
+   ```
+
+## Database Setup
+
+### 1. Run Initial Migration
+
+Using Supabase CLI (recommended):
+
+```bash
+# Link to your project
+supabase link --project-ref your-project-ref
+
+# Push migration to Supabase
+supabase db push
+```
+
+Or manually via SQL Editor:
+
+1. Go to **SQL Editor** in Supabase Dashboard
+2. Open `supabase/migrations/001_initial_schema.sql`
+3. Copy entire content
+4. Paste into SQL Editor
+5. Click **Run**
+
+### 2. Verify Tables
+
+1. Go to **Table Editor**
+2. Verify all tables are created:
+   - users
+   - metro_areas
+   - metro_area_zipcodes
+   - posts
+   - conversations
+   - conversation_participants
+   - messages
+   - reports
+   - notifications
+
+### 3. Set up Row Level Security (RLS)
+
+RLS policies are included in the migration. Verify:
+
+1. Go to **Authentication** > **Policies**
+2. Check each table has appropriate policies
+3. Test policies using Supabase's policy tester
+
+### 4. Seed Metro Areas Data
+
+Create a script to populate metro areas:
+
+```typescript
+// scripts/seedMetroAreas.ts
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+const metroAreas = [
+  {
+    id: 'dallas-fort-worth',
+    name: 'Dallas-Fort Worth-Arlington',
+    state: 'TX'
+  },
+  {
+    id: 'new-york',
+    name: 'New York-Newark-Jersey City',
+    state: 'NY'
+  },
+  // ... more metro areas
+];
+
+const zipCodes = [
+  { metro_area_id: 'dallas-fort-worth', zip_code: '75001' },
+  { metro_area_id: 'dallas-fort-worth', zip_code: '75201' },
+  // ... more ZIP codes
+];
+
+async function seed() {
+  // Insert metro areas
+  const { error: metroError } = await supabase
+    .from('metro_areas')
+    .upsert(metroAreas);
+
+  if (metroError) throw metroError;
+
+  // Insert ZIP codes
+  const { error: zipError } = await supabase
+    .from('metro_area_zipcodes')
+    .upsert(zipCodes);
+
+  if (zipError) throw zipError;
+
+  console.log('Seeding completed!');
+}
+
+seed();
+```
+
+Run the script:
+```bash
+npx tsx scripts/seedMetroAreas.ts
+```
+
+## Storage Setup
+
+### 1. Enable Storage
+
+Storage is enabled by default. Configure buckets:
+
+1. Go to **Storage**
+2. Create buckets:
+
+**Profile Photos Bucket:**
+```
+Name: user-profiles
+Public: true
+File size limit: 5MB
+Allowed MIME types: image/jpeg, image/png, image/webp
+```
+
+**Post Photos Bucket:**
+```
+Name: post-photos
+Public: true
+File size limit: 10MB
+Allowed MIME types: image/jpeg, image/png, image/webp
+```
+
+**Chat Images Bucket:**
+```
+Name: chat-images
+Public: false (only participants can access)
+File size limit: 10MB
+Allowed MIME types: image/jpeg, image/png, image/webp
+```
+
+### 2. Configure Storage Policies
+
+**User Profiles Bucket:**
+
+```sql
+-- Anyone can view profile photos
+CREATE POLICY "Public Access"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'user-profiles');
+
+-- Users can upload their own profile photo
+CREATE POLICY "Users can upload own profile photo"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'user-profiles'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Users can update their own profile photo
+CREATE POLICY "Users can update own profile photo"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'user-profiles'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Users can delete their own profile photo
+CREATE POLICY "Users can delete own profile photo"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'user-profiles'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+```
+
+**Post Photos Bucket:**
+
+```sql
+-- Anyone can view post photos
+CREATE POLICY "Public Access"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'post-photos');
+
+-- Authenticated users can upload post photos
+CREATE POLICY "Authenticated users can upload"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'post-photos'
+    AND auth.role() = 'authenticated'
+  );
+```
+
+**Chat Images Bucket:**
+
+```sql
+-- Only conversation participants can view
+CREATE POLICY "Participants can view"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'chat-images'
+    AND auth.uid() IN (
+      SELECT user_id FROM conversation_participants
+      WHERE conversation_id::text = (storage.foldername(name))[1]
+    )
+  );
+
+-- Participants can upload
+CREATE POLICY "Participants can upload"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'chat-images'
+    AND auth.uid() IN (
+      SELECT user_id FROM conversation_participants
+      WHERE conversation_id::text = (storage.foldername(name))[1]
+    )
+  );
+```
+
+### 3. Configure Image Transformations (Optional)
+
+Supabase supports image transformations on the fly:
+
+```typescript
+// Get optimized image
+const { data } = supabase.storage
+  .from('user-profiles')
+  .getPublicUrl('user-id/avatar.jpg', {
+    transform: {
+      width: 200,
+      height: 200,
+      resize: 'cover'
+    }
+  });
+```
+
+## Edge Functions Setup
+
+### 1. Install Supabase CLI
+
+```bash
+npm install -g supabase
+```
+
+### 2. Initialize Supabase Locally (Optional)
+
+```bash
+supabase init
+```
+
+### 3. Deploy Edge Functions
+
+```bash
+# Deploy all functions
+supabase functions deploy
+
+# Or deploy individual functions
+supabase functions deploy expire-posts
+supabase functions deploy verify-emergency-post
+supabase functions deploy get-metro-by-zip
+```
+
+### 4. Set Function Secrets
+
+Edge Functions need environment variables:
+
+```bash
+# Set database URL secret
+supabase secrets set DATABASE_URL=your-postgres-connection-string
+
+# Set other secrets as needed
+supabase secrets set TWILIO_ACCOUNT_SID=your-sid
+supabase secrets set TWILIO_AUTH_TOKEN=your-token
+```
+
+### 5. Configure Function Cron Jobs
+
+For scheduled functions like `expire-posts`:
+
+1. Go to **Database** > **Extensions**
+2. Enable **pg_cron** extension
+3. Create cron job:
+
+```sql
+-- Run expire-posts function daily at midnight
+SELECT cron.schedule(
+  'expire-posts-daily',
+  '0 0 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://xxxxx.supabase.co/functions/v1/expire-posts',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb
+  );
+  $$
+);
+```
+
+Or use external cron service (like GitHub Actions, Vercel Cron, etc.).
+
+## Local Development with Supabase CLI
+
+### 1. Start Local Supabase
+
+```bash
+# Start all services (database, auth, storage, edge functions)
+supabase start
+```
+
+This starts:
+- **Database**: `postgresql://postgres:postgres@localhost:54322/postgres`
+- **API**: `http://localhost:54321`
+- **Studio**: `http://localhost:54323`
+- **Inbucket** (email testing): `http://localhost:54324`
+
+### 2. Use Local Supabase in Development
+
+Update your environment files for local development:
+
+**apps/web/.env.local:**
+```env
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+```
+
+**apps/mobile/.env:**
+```env
+EXPO_PUBLIC_SUPABASE_URL=http://localhost:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+```
+
+Get local keys with:
+```bash
+supabase status
+```
+
+### 3. Create Migrations
+
+```bash
+# Generate migration from changes
+supabase db diff -f migration_name
+
+# Create empty migration
+supabase migration new migration_name
+```
+
+### 4. Reset Local Database
+
+```bash
+supabase db reset
+```
+
+### 5. Test Edge Functions Locally
+
+```bash
+# Serve functions locally
+supabase functions serve
+
+# Invoke function
+curl -i --location --request POST 'http://localhost:54321/functions/v1/get-metro-by-zip' \
+  --header 'Authorization: Bearer YOUR_ANON_KEY' \
+  --header 'Content-Type: application/json' \
+  --data '{"zip":"75201"}'
+```
+
+## Security Best Practices
+
+### 1. Row Level Security (RLS)
+
+- **Always** enable RLS on all tables
+- Test policies thoroughly
+- Use `auth.uid()` for user-specific policies
+- Use `auth.role()` for role-based policies
+
+### 2. API Keys
+
+- **Never** commit `service_role` key to Git
+- Use `anon` key for client-side
+- Use `service_role` key only on server-side
+- Rotate keys periodically
+
+### 3. Database Secrets
+
+```bash
+# Store secrets in Supabase Vault
+INSERT INTO vault.secrets (name, secret)
+VALUES ('stripe_secret_key', 'sk_live_...');
+
+-- Access in functions
+SELECT decrypted_secret FROM vault.decrypted_secrets
+WHERE name = 'stripe_secret_key';
+```
+
+### 4. Rate Limiting
+
+1. Go to **Authentication** > **Rate Limits**
+2. Configure:
+   - Login attempts: 5 per hour
+   - Signup attempts: 10 per hour
+   - Password reset: 3 per hour
+   - Email send: 10 per hour
+
+### 5. Enable Realtime RLS
+
+Realtime subscriptions respect RLS:
+
+```typescript
+const subscription = supabase
+  .from('posts')
+  .on('INSERT', payload => {
+    // Only receives posts user has access to
+    console.log(payload);
+  })
+  .subscribe();
+```
+
+## Monitoring and Logs
+
+### 1. View Logs
+
+**Database Logs:**
+1. Go to **Logs** > **Database**
+2. Filter by query, error, or slow queries
+
+**Edge Function Logs:**
+```bash
+# View logs for specific function
+supabase functions logs expire-posts
+
+# Stream logs
+supabase functions logs expire-posts --follow
+```
+
+**API Logs:**
+1. Go to **Logs** > **API**
+2. Monitor requests, errors, and performance
+
+### 2. Set Up Alerts (Pro Plan)
+
+1. Go to **Reports** > **Alerts**
+2. Create alerts:
+   - High CPU usage
+   - High memory usage
+   - Slow queries
+   - Error rate threshold
+
+### 3. Monitor Database Performance
+
+1. Go to **Database** > **Query Performance**
+2. Identify slow queries
+3. Use `EXPLAIN ANALYZE` to optimize
+
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM posts
+WHERE metro_area_id = 'dallas-fort-worth'
+  AND status = 'active'
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+### 4. Monitor API Usage
+
+1. Go to **Settings** > **Billing**
+2. View usage:
+   - Database size
+   - Bandwidth
+   - Storage
+   - Edge Function invocations
+
+## Backup and Recovery
+
+### 1. Automated Backups
+
+- **Free tier**: No automated backups
+- **Pro tier**: Daily backups, 7-day retention
+- **Enterprise**: Custom backup schedules
+
+### 2. Manual Backup
+
+```bash
+# Export database
+supabase db dump -f backup.sql
+
+# Export specific table
+supabase db dump --table users -f users_backup.sql
+```
+
+### 3. Point-in-Time Recovery (PITR)
+
+Available on Pro plan:
+
+1. Go to **Database** > **Backups**
+2. Click **Restore**
+3. Select timestamp
+4. Confirm restoration
+
+### 4. Export Data to JSON
+
+```typescript
+// Export all users
+const { data, error } = await supabase
+  .from('users')
+  .select('*');
+
+if (data) {
+  fs.writeFileSync('users_backup.json', JSON.stringify(data, null, 2));
+}
+```
+
+## Troubleshooting
+
+### Issue: Cannot connect to database
+
+**Solution:** Check connection string and firewall rules:
+
+```bash
+# Test connection
+psql "postgresql://postgres:[PASSWORD]@db.xxxxx.supabase.co:5432/postgres"
+```
+
+### Issue: RLS policies not working
+
+**Solution:**
+1. Verify RLS is enabled: `ALTER TABLE users ENABLE ROW LEVEL SECURITY;`
+2. Check policy with `auth.uid()` matches actual user ID
+3. Test in SQL Editor with `set request.jwt.claims` to simulate user
+
+```sql
+-- Simulate authenticated user
+set request.jwt.claims = '{"sub": "user-uuid-here"}';
+
+-- Test query
+SELECT * FROM posts WHERE author_id = 'user-uuid-here';
+```
+
+### Issue: Storage uploads failing
+
+**Solution:** Check storage policies and bucket configuration:
+
+1. Verify bucket exists
+2. Check file size limit
+3. Verify MIME type is allowed
+4. Check storage policies
+
+### Issue: Edge Functions timing out
+
+**Solution:**
+1. Increase function timeout in `supabase/functions/function-name/index.ts`
+2. Optimize database queries
+3. Use connection pooling
+4. Consider breaking into smaller functions
+
+### Issue: Realtime not working
+
+**Solution:**
+1. Enable Realtime on table:
+   ```sql
+   ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+   ```
+2. Check RLS policies allow user to read
+3. Verify subscription filter syntax
+
+## Performance Optimization
+
+### 1. Connection Pooling
+
+Supabase provides connection pooling by default:
+- Direct connection: `db.xxxxx.supabase.co:5432`
+- Pooled connection: `db.xxxxx.supabase.co:6543` (recommended for serverless)
+
+### 2. Indexes
+
+Ensure proper indexes exist (already in migration):
+```sql
+-- Check index usage
+SELECT schemaname, tablename, indexname, idx_scan
+FROM pg_stat_user_indexes
+ORDER BY idx_scan ASC;
+```
+
+### 3. Query Optimization
+
+```sql
+-- Use EXPLAIN to analyze queries
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM posts WHERE metro_area_id = 'dallas-fort-worth';
+```
+
+### 4. Caching
+
+Implement caching at application level:
+
+```typescript
+// Use SWR or React Query for client-side caching
+import useSWR from 'swr';
+
+const { data, error } = useSWR('posts', async () => {
+  const { data } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('metro_area_id', 'dallas-fort-worth')
+    .limit(20);
+  return data;
+}, {
+  revalidateOnFocus: false,
+  revalidateOnReconnect: false,
+  refreshInterval: 30000 // 30 seconds
+});
+```
+
+## Scaling Considerations
+
+### Free Tier Limits
+- 500 MB database space
+- 1 GB file storage
+- 2 GB bandwidth
+- Unlimited API requests
+- 2 million Edge Function invocations
+
+### Pro Tier ($25/month)
+- 8 GB database space
+- 100 GB file storage
+- 250 GB bandwidth
+- Daily backups
+- Email support
+
+### Enterprise Tier
+- Custom resources
+- SLA
+- Dedicated support
+- Advanced security features
+
+## Next Steps
+
+1. Set up CI/CD for database migrations
+2. Configure custom domain
+3. Set up monitoring and alerting
+4. Implement backup strategy
+5. Configure production environment variables
+6. Test authentication flows
+7. Optimize database queries
+8. Set up analytics (optional)
+
+## Resources
+
+- [Supabase Documentation](https://supabase.com/docs)
+- [Supabase CLI Reference](https://supabase.com/docs/reference/cli)
+- [Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
+- [Edge Functions](https://supabase.com/docs/guides/functions)
+- [Realtime](https://supabase.com/docs/guides/realtime)
+- [Storage](https://supabase.com/docs/guides/storage)
+- [Supabase Community](https://github.com/supabase/supabase/discussions)

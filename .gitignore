@@ -38,11 +38,10 @@ yarn-error.log*
 .expo/
 .expo-shared/
 
-# Firebase
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
+# Supabase
+.supabase/
+supabase/.branches/
+supabase/.temp/
 
 # OS
 Thumbs.db
