@@ -38,6 +38,13 @@
    - Keep the product-roadmap.md as the single source of truth
    - Create separate documents for detailed specifications
 
+5. **Git Workflow - User Controls Commits**
+   - NEVER commit changes unless user explicitly requests it
+   - NEVER push to remote unless user explicitly requests it
+   - User will decide when and how to commit/push
+   - Only create/modify files when requested
+   - User will say "commit" or "commit and push" when ready
+
 ## File Organization
 - `product-roadmap.md` - Master roadmap (single source of truth)
 - `docs/features/` - Detailed feature specifications
