@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "UNHN",
-    "slug": "unhn-mobile",
+    "name": "NUSA",
+    "slug": "nusa-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.unhn.app"
+      "bundleIdentifier": "com.nusa.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.unhn.app"
+      "package": "com.nusa.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"

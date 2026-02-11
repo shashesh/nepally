@@ -1,4 +1,4 @@
-# UNHN App: Product Roadmap
+# NUSA App: Product Roadmap
 
 **Version:** 1.1
 **Last Updated:** 2026-02-06 (Phase 1 Refinement)
@@ -242,7 +242,7 @@ Job posts support two application modes:
 
 **Emergency Post Disclaimer (Phase 1):**
 Before first emergency post submission, users must acknowledge:
-"I understand that this platform is for community coordination only. For life-threatening emergencies, I will call 911 or local emergency services first. UNHN is not a replacement for professional emergency, medical, or legal services."
+"I understand that this platform is for community coordination only. For life-threatening emergencies, I will call 911 or local emergency services first. NUSA is not a replacement for professional emergency, medical, or legal services."
 
 ### Legal Protection
 

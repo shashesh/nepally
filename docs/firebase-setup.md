@@ -1,6 +1,6 @@
 # Firebase Setup Guide
 
-Detailed guide for setting up Firebase for the UNHN project.
+Detailed guide for setting up Firebase for the NUSA project.
 
 ## Firebase Project Creation
 
@@ -8,7 +8,7 @@ Detailed guide for setting up Firebase for the UNHN project.
 
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Click "Add project"
-3. Enter project name: **UNHN** (or your preferred name)
+3. Enter project name: **NUSA** (or your preferred name)
 4. Google Analytics: **Disable** (optional, can enable later)
 5. Click "Create project"
 
@@ -17,15 +17,15 @@ Detailed guide for setting up Firebase for the UNHN project.
 1. In Firebase Console, click the gear icon ⚙️ > Project settings
 2. Scroll to "Your apps"
 3. Click "Add app" > Web (</>) icon
-4. Register app with nickname: "UNHN Web"
+4. Register app with nickname: "NUSA Web"
 5. Copy the Firebase config object:
 
 ```javascript
 const firebaseConfig = {
   apiKey: "AIza...",
-  authDomain: "unhn-xxxxx.firebaseapp.com",
-  projectId: "unhn-xxxxx",
-  storageBucket: "unhn-xxxxx.appspot.com",
+  authDomain: "nusa-xxxxx.firebaseapp.com",
+  projectId: "nusa-xxxxx",
+  storageBucket: "nusa-xxxxx.appspot.com",
   messagingSenderId: "123456789",
   appId: "1:123456789:web:abc..."
 };
@@ -68,7 +68,7 @@ const firebaseConfig = {
 1. Go to **Authentication** > **Settings** > **Authorized domains**
 2. Add your domains:
    - `localhost` (already there)
-   - `unhn.app` (your production domain)
+   - `nusa.app` (your production domain)
    - `your-vercel-domain.vercel.app`
 
 ## Firestore Database Setup

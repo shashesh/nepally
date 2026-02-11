@@ -263,7 +263,7 @@ Better to launch with 100 high-quality verified posts than 1,000 unstructured sc
 - Launch with tight beta (50-100 committed users per metro)
 - Recruit community leads who commit to creating 5+ posts each
 - Target 200+ posts in first 30 days (achievable with 50 users posting 4 times)
-- Use UNHN Facebook group for targeted outreach to active members
+- Use NUSA Facebook group for targeted outreach to active members
 - Offer early adopter recognition (badges, featured profiles)
 
 ### Risk 2: In-App Chat Complexity

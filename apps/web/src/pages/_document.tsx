@@ -8,7 +8,7 @@ export default function Document() {
         <meta name="theme-color" content="#000000" />
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="UNHN" />
+        <meta property="og:site_name" content="NUSA" />
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
       </Head>

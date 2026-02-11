@@ -1,8 +1,8 @@
 {
-  "name": "unhn-monorepo",
+  "name": "nusa-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "UNHN - US-Nepal Help Network monorepo",
+  "description": "NUSA - Nepalese United Support Alliance monorepo",
   "workspaces": [
     "apps/*",
     "packages/*"

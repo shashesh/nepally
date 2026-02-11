@@ -1,6 +1,6 @@
-# @unhn/shared
+# @nusa/shared
 
-Shared TypeScript code for UNHN mobile and web applications.
+Shared TypeScript code for NUSA mobile and web applications.
 
 ## Structure
 
@@ -19,13 +19,13 @@ src/
 ### In Mobile App (React Native)
 
 ```typescript
-import { PostCategory, housingPostSchema, formatDate } from '@unhn/shared';
+import { PostCategory, housingPostSchema, formatDate } from '@nusa/shared';
 ```
 
 ### In Web App (Next.js)
 
 ```typescript
-import { User, TrustLevel, getMetroAreaByZip } from '@unhn/shared';
+import { User, TrustLevel, getMetroAreaByZip } from '@nusa/shared';
 ```
 
 ## Development

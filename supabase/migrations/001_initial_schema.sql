@@ -1,4 +1,4 @@
--- UNHN Initial Database Schema Migration
+-- NUSA Initial Database Schema Migration
 -- This migration creates all tables, indexes, RLS policies, and functions
 
 -- Enable necessary extensions

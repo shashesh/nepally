@@ -1,6 +1,6 @@
 # Firebase Configuration
 
-This directory contains Firebase configuration files for UNHN.
+This directory contains Firebase configuration files for NUSA.
 
 ## Structure
 

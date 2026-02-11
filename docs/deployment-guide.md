@@ -1,10 +1,10 @@
 # Deployment Guide
 
-Complete guide for deploying UNHN mobile and web applications to production.
+Complete guide for deploying NUSA mobile and web applications to production.
 
 ## Overview
 
-UNHN deploys to three platforms:
+NUSA deploys to three platforms:
 1. **Web App** → Vercel
 2. **iOS App** → Apple App Store
 3. **Android App** → Google Play Store
@@ -48,7 +48,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ### 4. Configure Custom Domain
 
 1. Go to **Settings** > **Domains**
-2. Add your domain: `unhn.app`
+2. Add your domain: `nusa.app`
 3. Update DNS records:
    - Type: `A`
    - Name: `@`
@@ -84,7 +84,7 @@ View deployment logs in Vercel dashboard:
 
 ### 7. Test Production Site
 
-1. Visit https://unhn.app
+1. Visit https://nusa.app
 2. Test key features:
    - Sign up / Login
    - View posts
@@ -184,7 +184,7 @@ eas submit --platform ios
 You'll need:
 - Apple ID
 - App-specific password (generate in Apple ID settings)
-- Bundle identifier (e.g., `com.unhn.app`)
+- Bundle identifier (e.g., `com.nusa.app`)
 
 ### 5. Build Android App
 
@@ -211,7 +211,7 @@ eas submit --platform android
 
 You'll need:
 - Google Play service account key (JSON file)
-- App bundle identifier (e.g., `com.unhn.app`)
+- App bundle identifier (e.g., `com.nusa.app`)
 
 ### 6. App Store Listings
 
@@ -219,17 +219,17 @@ You'll need:
 
 1. Go to [App Store Connect](https://appstoreconnect.apple.com/)
 2. Create new app:
-   - **Name:** UNHN
-   - **Bundle ID:** `com.unhn.app`
-   - **SKU:** `unhn-app`
+   - **Name:** NUSA
+   - **Bundle ID:** `com.nusa.app`
+   - **SKU:** `nusa-app`
    - **User Access:** Full Access
 3. Fill app information:
    - **Category:** Social Networking
    - **Screenshots:** (1242x2208 for iPhone, 2048x2732 for iPad)
    - **Description:** (see template below)
    - **Keywords:** nepal, nepalese, community, help, housing, jobs
-   - **Support URL:** https://unhn.app/support
-   - **Privacy Policy URL:** https://unhn.app/privacy
+   - **Support URL:** https://nusa.app/support
+   - **Privacy Policy URL:** https://nusa.app/privacy
 4. Pricing: **Free**
 5. Submit for review
 
@@ -239,7 +239,7 @@ You'll need:
 
 1. Go to [Google Play Console](https://play.google.com/console/)
 2. Create new app:
-   - **App name:** UNHN
+   - **App name:** NUSA
    - **Default language:** English (US)
    - **App or game:** App
    - **Free or paid:** Free
@@ -247,7 +247,7 @@ You'll need:
    - **Category:** Social
    - **Screenshots:** (1080x1920, need 2-8 screenshots)
    - **Description:** (see template below)
-   - **Privacy Policy URL:** https://unhn.app/privacy
+   - **Privacy Policy URL:** https://nusa.app/privacy
 4. Content rating questionnaire
 5. Submit for review
 
@@ -256,7 +256,7 @@ You'll need:
 ### App Description Template
 
 ```
-UNHN - US-Nepal Help Network
+NUSA - US-Nepal Help Network
 
 Your community platform for the Nepalese diaspora in the USA.
 
@@ -278,7 +278,7 @@ All content is organized by metro area, so you see what's relevant to you.
 🔒 TRUST & SAFETY
 Verified users, moderator-approved emergency alerts, and community reporting.
 
-Join the UNHN community today!
+Join the NUSA community today!
 ```
 
 ### 7. Over-the-Air (OTA) Updates

@@ -1,4 +1,4 @@
-# UNHN - US-Nepal Help Network
+# NUSA - Nepalese United Support Alliance
 
 A utility-first community platform for the Nepalese diaspora in the USA, providing structured, location-based services for housing, jobs, emergencies, and travel coordination.
 
@@ -6,8 +6,8 @@ A utility-first community platform for the Nepalese diaspora in the USA, providi
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/unhn.git
-cd unhn
+git clone https://github.com/your-org/nusa.git
+cd nusa
 
 # Install dependencies
 npm install
@@ -26,7 +26,7 @@ For detailed setup instructions, see [Setup Guide](./docs/setup-guide.md).
 
 ## 📱 Project Overview
 
-UNHN shifts away from algorithm-based social media feeds to provide structured, metro area-based services:
+NUSA shifts away from algorithm-based social media feeds to provide structured, metro area-based services:
 
 ### Core Features
 
@@ -62,7 +62,7 @@ For detailed tech stack information, see [Tech Stack](./docs/tech-stack.md).
 ## 📁 Repository Structure
 
 ```
-unhn/
+nusa/
 ├── apps/
 │   ├── mobile/          # React Native mobile app (Expo)
 │   └── web/             # Next.js web app
@@ -80,7 +80,7 @@ This is a **monorepo** using **npm workspaces**. See [Monorepo Structure](./docs
 
 ### Mobile + Web Code Sharing
 
-**70-80% code sharing** via `@unhn/shared` package:
+**70-80% code sharing** via `@nusa/shared` package:
 - ✅ TypeScript types and interfaces
 - ✅ Validation schemas (Zod)
 - ✅ Utility functions (date, phone, ZIP formatting)
@@ -211,7 +211,7 @@ npm run build --workspace=apps/mobile
 ### Web App (Vercel)
 - Automatic deployment from GitHub
 - Free tier for hobby projects
-- URL: https://unhn.app
+- URL: https://nusa.app
 
 ### Mobile Apps (Expo EAS)
 ```bash
@@ -264,9 +264,9 @@ MIT License - see [LICENSE](./LICENSE) for details
 ## 📞 Support
 
 - **Documentation:** See [docs/](./docs/) folder
-- **Issues:** https://github.com/your-org/unhn/issues
-- **Email:** support@unhn.app
-- **Website:** https://unhn.app
+- **Issues:** https://github.com/your-org/nusa/issues
+- **Email:** support@nusa.app
+- **Website:** https://nusa.app
 
 ---
 

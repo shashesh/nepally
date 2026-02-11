@@ -44,7 +44,7 @@ I've already created `.clauderc` for this project with your requirements.
 - Structured processes you want to standardize
 - Complex multi-step operations
 
-**Example Use Cases for UNHN:**
+**Example Use Cases for NUSA:**
 - `/design-feature` - Structured feature specification process
 - `/create-user-journey` - Document a user flow
 - `/wireframe` - Create wireframe documentation
@@ -91,7 +91,7 @@ Plan mode is a special state where Claude:
 4. **Approval Phase:** You review and approve/modify
 5. **Execution Phase:** Claude implements the approved plan
 
-### Example Plan Mode Request for UNHN:
+### Example Plan Mode Request for NUSA:
 ```
 "Enter plan mode and design the emergency alert feature.
 I want to see different approaches for the two-step verification
@@ -277,7 +277,7 @@ Consider spam prevention, response time, and user trust."
 
 ---
 
-## Example Interactions for UNHN
+## Example Interactions for NUSA
 
 ### Example 1: Feature Refinement
 ```

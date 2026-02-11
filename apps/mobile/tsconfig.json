@@ -13,9 +13,16 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "paths": {
-      "@unhn/shared": ["../../packages/shared/src"]
+      "@nusa/shared": [
+        "../../packages/shared/src"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

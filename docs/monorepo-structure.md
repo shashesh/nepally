@@ -1,15 +1,15 @@
-# UNHN Monorepo Structure
+# NUSA Monorepo Structure
 
-This document explains the organization of the UNHN codebase.
+This document explains the organization of the NUSA codebase.
 
 ## Overview
 
-UNHN uses a **monorepo** structure powered by **npm workspaces**. This means all related projects (mobile app, web app, shared code) live in one repository.
+NUSA uses a **monorepo** structure powered by **npm workspaces**. This means all related projects (mobile app, web app, shared code) live in one repository.
 
 ## Directory Structure
 
 ```
-unhn/
+nusa/
 ├── .github/              # GitHub Actions workflows
 │   └── workflows/
 │       ├── ci.yml        # Continuous integration
@@ -176,10 +176,10 @@ npm run format
 
 ## Package Linking
 
-Workspaces are automatically linked. When you import `@unhn/shared`:
+Workspaces are automatically linked. When you import `@nusa/shared`:
 
 ```typescript
-import { PostCategory } from '@unhn/shared';
+import { PostCategory } from '@nusa/shared';
 ```
 
 npm resolves it to `packages/shared` (no need for `npm link`).
@@ -200,7 +200,7 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 3. Update `package.json`:
    ```json
    {
-     "name": "@unhn/admin",
+     "name": "@nusa/admin",
      "version": "1.0.0",
      "private": true,
      ...
@@ -229,7 +229,7 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 3. Update `package.json`:
    ```json
    {
-     "name": "@unhn/ui-mobile",
+     "name": "@nusa/ui-mobile",
      "version": "1.0.0",
      "main": "dist/index.js",
      "types": "dist/index.d.ts",
@@ -333,7 +333,7 @@ See `.github/workflows/ci.yml` for details.
 
 ## Troubleshooting
 
-### Issue: Module not found `@unhn/shared`
+### Issue: Module not found `@nusa/shared`
 
 **Solution:** Build the shared package:
 ```bash
@@ -368,7 +368,7 @@ npm install
    import { Post } from '../../../packages/shared/src/types/post';
 
    // ✅ Good
-   import { Post } from '@unhn/shared';
+   import { Post } from '@nusa/shared';
    ```
 
 2. **Keep shared package pure**
@@ -381,7 +381,7 @@ npm install
    - Use `*` for internal dependencies
 
 4. **Document breaking changes**
-   - If you change `@unhn/shared`, update CHANGELOG.md
+   - If you change `@nusa/shared`, update CHANGELOG.md
    - Test both mobile and web apps after changes
 
 ## Future Expansion

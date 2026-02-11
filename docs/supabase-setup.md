@@ -1,6 +1,6 @@
 # Supabase Setup Guide
 
-Comprehensive guide for setting up Supabase for the UNHN project.
+Comprehensive guide for setting up Supabase for the NUSA project.
 
 ## Supabase Project Creation
 
@@ -10,7 +10,7 @@ Comprehensive guide for setting up Supabase for the UNHN project.
 2. Click "New project"
 3. Select your organization or create one
 4. Enter project details:
-   - **Name**: UNHN (or your preferred name)
+   - **Name**: NUSA (or your preferred name)
    - **Database Password**: Generate a strong password and save it securely
    - **Region**: Choose closest to your users (e.g., `us-east-1`)
    - **Pricing Plan**: Start with Free tier (upgrade later as needed)
@@ -110,11 +110,11 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ### 5. Configure Site URL and Redirect URLs
 
 1. Go to **Authentication** > **URL Configuration**
-2. Set **Site URL**: Your production domain (e.g., `https://unhn.app`)
+2. Set **Site URL**: Your production domain (e.g., `https://nusa.app`)
 3. Add **Redirect URLs**:
    ```
    http://localhost:3000/**
-   https://unhn.app/**
+   https://nusa.app/**
    https://your-preview-url.vercel.app/**
    myapp:///** (for mobile deep linking)
    ```

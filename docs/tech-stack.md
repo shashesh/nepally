@@ -1,10 +1,10 @@
-# UNHN Technical Stack
+# NUSA Technical Stack
 
 **Last Updated:** 2026-02-06
 
 ## Overview
 
-UNHN uses a modern, JavaScript/TypeScript-based stack optimized for:
+NUSA uses a modern, JavaScript/TypeScript-based stack optimized for:
 - 80% mobile usage (iOS and Android)
 - 20% web usage with excellent SEO
 - Fast development timeline (2-3 months MVP)
@@ -42,7 +42,7 @@ UNHN uses a modern, JavaScript/TypeScript-based stack optimized for:
 - **SEO:** Built-in with Next.js Head component
 
 ### Code Sharing (70-80%)
-- **Package:** `@unhn/shared` (TypeScript)
+- **Package:** `@nusa/shared` (TypeScript)
 - **Contents:**
   - TypeScript types/interfaces
   - Validation schemas (Zod)
@@ -154,7 +154,7 @@ CREATE TABLE messages (
 ## Hosting & Deployment
 
 ### Web App (Vercel)
-- **URL:** https://unhn.app (custom domain)
+- **URL:** https://nusa.app (custom domain)
 - **Features:**
   - Automatic deployments from GitHub
   - Built-in CI/CD
@@ -208,7 +208,7 @@ CREATE TABLE messages (
 ## Scalability
 
 ### Supabase Advantages
-Supabase scales well for UNHN's needs:
+Supabase scales well for NUSA's needs:
 1. **PostgreSQL** handles millions of rows efficiently with proper indexing
 2. **Free tier** supports up to 50K monthly active users (vs Firebase's ~1K)
 3. **Pricing** is more predictable and cheaper at scale

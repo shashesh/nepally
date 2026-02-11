@@ -8,12 +8,12 @@
 
 ## What Was Implemented
 
-This implementation created the complete technical foundation for UNHN (US-Nepal Help Network) based on the architectural plan. The project is now ready for feature development.
+This implementation created the complete technical foundation for NUSA (Nepalese United Support Alliance) based on the architectural plan. The project is now ready for feature development.
 
 ### ✅ Project Structure Created
 
 ```
-unhn/
+nusa/
 ├── apps/
 │   ├── mobile/          ✅ React Native (Expo) mobile app
 │   └── web/             ✅ Next.js web app
@@ -44,7 +44,7 @@ unhn/
 - **Expo configuration** (app.json)
 - **TypeScript** configured with paths to shared package
 - **React Navigation** setup
-- **Demo HomeScreen** showing UNHN welcome page with categories
+- **Demo HomeScreen** showing NUSA welcome page with categories
 - **Package.json** with all dependencies
 
 **Key Files:**
@@ -68,7 +68,7 @@ unhn/
 - `apps/web/next.config.js` - Next.js configuration
 - `apps/web/README.md` - Web app documentation
 
-### 4. Shared Package (`@unhn/shared`)
+### 4. Shared Package (`@nusa/shared`)
 - **TypeScript types** for User, Post, Conversation, Message
 - **Validation schemas** (Zod) for housing and jobs posts
 - **Utility functions** for date, phone, ZIP code formatting
@@ -351,7 +351,7 @@ Before starting development, ensure:
 
 ## 🎉 Summary
 
-The UNHN project is now fully set up with:
+The NUSA project is now fully set up with:
 - ✅ Complete monorepo architecture
 - ✅ Mobile app (React Native + Expo)
 - ✅ Web app (Next.js with SSR)

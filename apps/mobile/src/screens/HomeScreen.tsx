@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { PostCategory } from '@unhn/shared';
+import { PostCategory } from '@nusa/shared';
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to UNHN</Text>
-      <Text style={styles.subtitle}>US-Nepal Help Network</Text>
+      <Text style={styles.title}>Welcome to NUSA</Text>
+      <Text style={styles.subtitle}>Nepalese United Support Alliance</Text>
       <Text style={styles.description}>
         Your community platform for housing, jobs, emergencies, and travel coordination.
       </Text>

@@ -1,6 +1,6 @@
-# UNHN Mobile App (React Native + Expo)
+# NUSA Mobile App (React Native + Expo)
 
-This is the mobile application for UNHN, built with React Native and Expo.
+This is the mobile application for NUSA, built with React Native and Expo.
 
 ## Setup
 
@@ -39,7 +39,7 @@ src/
 - **React Navigation** - Native navigation for iOS and Android
 - **Expo** - Managed workflow for faster development
 - **TypeScript** - Type-safe code
-- **Shared Package** - Imports business logic from @unhn/shared
+- **Shared Package** - Imports business logic from @nusa/shared
 
 ## Development
 

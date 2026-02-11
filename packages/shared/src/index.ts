@@ -1,5 +1,5 @@
 /**
- * Main entry point for @unhn/shared package
+ * Main entry point for @nusa/shared package
  * Export all types, constants, utilities, and validation schemas
  */
 

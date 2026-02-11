@@ -13,7 +13,7 @@ export default function App() {
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: 'UNHN' }}
+          options={{ title: 'NUSA' }}
         />
       </Stack.Navigator>
       <StatusBar style="auto" />

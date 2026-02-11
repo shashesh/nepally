@@ -1,7 +1,7 @@
 {
-  "name": "unhn-functions",
+  "name": "nusa-functions",
   "version": "1.0.0",
-  "description": "Cloud Functions for UNHN",
+  "description": "Cloud Functions for NUSA",
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",

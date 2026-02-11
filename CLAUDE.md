@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-UNHN (US-Nepal Help Network) is a utility-first community platform designed for the Nepalese diaspora in the USA. The app shifts away from algorithm-based social media feeds to provide structured, location-based services for housing, jobs, emergencies, and travel coordination.
+NUSA (Nepalese United Support Alliance) is a utility-first community platform designed for the Nepalese diaspora in the USA. The app shifts away from algorithm-based social media feeds to provide structured, location-based services for housing, jobs, emergencies, and travel coordination.
 
 ## Core Architecture Principles
 
@@ -48,7 +48,7 @@ Emergency broadcasts require moderator verification:
 
 - **PII Masking**: Sensitive emergency data hidden behind "Click to Reveal" for logged-in users only
 - **AI Moderation**: Automated scanning for scam-related keywords (crypto, "fast cash")
-- **FB-to-App Bridge**: Automated ingestion of UNHN Facebook posts for initial content population
+- **FB-to-App Bridge**: Automated ingestion of NUSA Facebook posts for initial content population
 - **Explicit Disclaimers**: Clear TOS stating the platform is a community notice board, not a professional emergency/legal/medical service
 
 ## Development Phases

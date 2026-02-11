@@ -62,7 +62,7 @@ export type HousingPostInput = z.infer<typeof housingPostSchema>;
 **Usage in apps:**
 ```typescript
 // Mobile or web
-import { housingPostSchema } from '@unhn/shared';
+import { housingPostSchema } from '@nusa/shared';
 
 const result = housingPostSchema.safeParse(formData);
 if (!result.success) {
@@ -281,7 +281,7 @@ export const housingPostSchema = z.object({
 **Mobile UI:**
 ```typescript
 // apps/mobile/src/screens/CreateHousingPost.tsx
-import { housingPostSchema } from '@unhn/shared';
+import { housingPostSchema } from '@nusa/shared';
 
 export function CreateHousingPost() {
   const [formData, setFormData] = useState({});
@@ -308,7 +308,7 @@ export function CreateHousingPost() {
 **Web UI:**
 ```typescript
 // apps/web/src/pages/posts/create/housing.tsx
-import { housingPostSchema } from '@unhn/shared';
+import { housingPostSchema } from '@nusa/shared';
 
 export default function CreateHousingPost() {
   const [formData, setFormData] = useState({});
@@ -345,7 +345,7 @@ export async function getPostsByMetro(metroId: string): Promise<Post[]> {
 **Mobile hook:**
 ```typescript
 // apps/mobile/src/hooks/usePosts.ts
-import { getPostsByMetro } from '@unhn/shared';
+import { getPostsByMetro } from '@nusa/shared';
 
 export function usePosts(metroId: string) {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -362,7 +362,7 @@ export function usePosts(metroId: string) {
 **Web hook:**
 ```typescript
 // apps/web/src/hooks/usePosts.ts
-import { getPostsByMetro } from '@unhn/shared';
+import { getPostsByMetro } from '@nusa/shared';
 
 // Same implementation as mobile!
 export function usePosts(metroId: string) {

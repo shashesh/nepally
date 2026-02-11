@@ -1,4 +1,4 @@
-# Quick Start: Working with Claude on UNHN
+# Quick Start: Working with Claude on NUSA
 
 This is your quick reference for working with Claude Code on this project.
 
@@ -156,7 +156,7 @@ questions you have. Let's get alignment first."
 Claude will organize files according to this structure:
 
 ```
-unhn/
+nusa/
 ├── product-roadmap.md          # Master roadmap (single source of truth)
 ├── CLAUDE.md                   # Instructions for Claude
 ├── LEARNING-CLAUDE.md          # Comprehensive guide (what you're reading)

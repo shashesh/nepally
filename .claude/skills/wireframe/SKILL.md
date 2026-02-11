@@ -44,7 +44,7 @@ Use this structure:
 Example:
 ```
 ┌─────────────────────────────────────┐
-│  ← Back        UNHN         Menu ≡  │
+│  ← Back        NUSA         Menu ≡  │
 ├─────────────────────────────────────┤
 │                                     │
 │  🏠 Post a Room                     │

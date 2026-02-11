@@ -1,6 +1,6 @@
-# UNHN Web App (Next.js)
+# NUSA Web App (Next.js)
 
-This is the web application for UNHN, built with Next.js and React.
+This is the web application for NUSA, built with Next.js and React.
 
 ## Setup
 
@@ -39,7 +39,7 @@ src/
 - **Static Site Generation (SSG)** - For faster page loads
 - **TypeScript** - Type-safe code
 - **CSS Modules** - Scoped styling
-- **Shared Package** - Imports business logic from @unhn/shared
+- **Shared Package** - Imports business logic from @nusa/shared
 - **Vercel Deployment** - Optimized for Vercel hosting
 
 ## SEO Optimization
@@ -49,8 +49,8 @@ src/
 Each post has a dedicated URL for SEO:
 
 ```
-https://unhn.app/posts/housing/abc123
-https://unhn.app/posts/jobs/def456
+https://nusa.app/posts/housing/abc123
+https://nusa.app/posts/jobs/def456
 ```
 
 Post pages use Server-Side Rendering to:

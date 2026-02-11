@@ -1,12 +1,12 @@
 import Head from 'next/head';
-import { PostCategory } from '@unhn/shared';
+import { PostCategory } from '@nusa/shared';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
   return (
     <>
       <Head>
-        <title>UNHN - US-Nepal Help Network</title>
+        <title>NUSA - Nepalese United Support Alliance</title>
         <meta
           name="description"
           content="Community platform for the Nepalese diaspora in the USA. Find housing, jobs, emergency help, and travel companions."
@@ -17,8 +17,8 @@ export default function Home() {
 
       <main className={styles.main}>
         <div className={styles.container}>
-          <h1 className={styles.title}>Welcome to UNHN</h1>
-          <p className={styles.subtitle}>US-Nepal Help Network</p>
+          <h1 className={styles.title}>Welcome to NUSA</h1>
+          <p className={styles.subtitle}>Nepalese United Support Alliance</p>
           <p className={styles.description}>
             Your community platform for housing, jobs, emergencies, and travel coordination.
           </p>

@@ -1,6 +1,6 @@
-# UNHN Development Setup Guide
+# NUSA Development Setup Guide
 
-This guide will help you set up the UNHN project for local development.
+This guide will help you set up the NUSA project for local development.
 
 ## Prerequisites
 
@@ -26,8 +26,8 @@ Before you begin, ensure you have the following installed:
 ## Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/your-org/unhn.git
-cd unhn
+git clone https://github.com/your-org/nusa.git
+cd nusa
 ```
 
 ## Step 2: Install Dependencies
@@ -70,7 +70,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Click "New project"
-3. Name it "UNHN" (or your preferred name)
+3. Name it "NUSA" (or your preferred name)
 4. Set a strong database password (save this!)
 5. Choose a region (us-east-1 or closest to you)
 6. Create project (takes ~2 minutes)
@@ -186,7 +186,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Mobile App
 1. Open the app in Expo Go
-2. You should see "Welcome to UNHN" screen
+2. You should see "Welcome to NUSA" screen
 3. Check console for any errors
 
 ### Web App
@@ -202,7 +202,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Common Issues
 
-### Issue: `Cannot find module '@unhn/shared'`
+### Issue: `Cannot find module '@nusa/shared'`
 
 **Solution:** Build the shared package first:
 ```bash

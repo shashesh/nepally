@@ -1,10 +1,10 @@
 # Database Schema
 
-Complete PostgreSQL database schema for UNHN using Supabase.
+Complete PostgreSQL database schema for NUSA using Supabase.
 
 ## Overview
 
-UNHN uses **PostgreSQL** via Supabase, a relational database with powerful querying capabilities, real-time subscriptions, and Row Level Security (RLS) for data protection.
+NUSA uses **PostgreSQL** via Supabase, a relational database with powerful querying capabilities, real-time subscriptions, and Row Level Security (RLS) for data protection.
 
 ### Tables
 
