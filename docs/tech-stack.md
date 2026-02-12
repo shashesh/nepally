@@ -1,6 +1,21 @@
 # NUSA Technical Stack
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-12
+
+## Current Version Summary
+
+| Technology | Version | Update Reason |
+|-----------|---------|---------------|
+| **React** | 19.1.0 | Unified across mobile and web for consistency |
+| **React Native** | 0.81.5 | Latest stable with Expo 54 |
+| **Expo** | 54.0 | Latest stable release |
+| **Next.js** | 15.5.12 | Downgraded from 16 for stable React 19 support |
+| **TypeScript** | 5.3.3+ | Type safety across monorepo |
+| **Supabase** | Latest | Backend, database, auth, storage |
+| **Node.js** | >=18.0.0 | Required minimum |
+| **npm** | >=9.0.0 | Package manager with workspaces |
+
+> **Important:** Both mobile and web apps use the exact same React version (19.1.0) to avoid dependency conflicts and ensure consistent behavior across platforms.
 
 ## Overview
 
@@ -29,17 +44,21 @@ NUSA uses a modern, JavaScript/TypeScript-based stack optimized for:
 ## Frontend Architecture
 
 ### Mobile (React Native + Expo)
-- **Framework:** React Native 0.74.1
-- **Build Tool:** Expo 51.0
-- **Navigation:** React Navigation
+- **React:** 19.1.0
+- **React Native:** 0.81.5
+- **Build Tool:** Expo 54.0
+- **Navigation:** React Navigation v6
 - **State Management:** React Context + Hooks
 - **Styling:** StyleSheet (React Native)
 
 ### Web (Next.js)
-- **Framework:** Next.js 14.2
+- **React:** 19.1.0
+- **Framework:** Next.js 15.5.12
 - **Rendering:** Server-Side Rendering (SSR) + Static Site Generation (SSG)
 - **Styling:** CSS Modules
 - **SEO:** Built-in with Next.js Head component
+
+> **Version Note:** Next.js 15 is used instead of 16 because Next.js 16 with Turbopack has React 19 compatibility issues. Next.js 15 provides stable, production-ready React 19 support.
 
 ### Code Sharing (70-80%)
 - **Package:** `@nusa/shared` (TypeScript)

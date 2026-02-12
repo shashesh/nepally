@@ -6,14 +6,15 @@ This is your quick reference for working with Claude Code on this project.
 
 ## Current Project Phase
 
-🎨 **PRE-DEVELOPMENT: Product & Design**
+🚧 **EARLY DEVELOPMENT: Foundation & Phase 1**
 
-We are NOT writing code yet. Focus is on:
-- Product refinement
-- Feature specifications
-- User journey mapping
-- Wireframing
-- Decision documentation
+Current focus:
+- Product refinement and feature specifications
+- User journey mapping and wireframing
+- Core architecture setup (React 19, Next.js 15, Expo 54)
+- Phase 1 onboarding flow implementation
+
+> **Tech Stack:** See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for current versions of all technologies.
 
 ---
 

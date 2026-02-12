@@ -57,6 +57,20 @@ NUSA shifts away from algorithm-based social media feeds to provide structured, 
 
 **Cost:** $0/month for development, $25-50/month for first 1-2K users
 
+### 📋 Current Versions
+
+| Technology | Version | Notes |
+|-----------|---------|-------|
+| **React** | 19.1.0 | Unified across mobile and web |
+| **React Native** | 0.81.5 | Mobile framework |
+| **Expo** | 54.0 | Mobile build platform |
+| **Next.js** | 15.5.12 | Web framework (v15 for stable React 19 support) |
+| **TypeScript** | 5.3.3+ | Type safety across monorepo |
+| **Node.js** | >=18.0.0 | Required minimum |
+| **npm** | >=9.0.0 | Package manager with workspace support |
+
+> **Note:** Both mobile and web apps use React 19.1.0 for consistency and easier maintenance. Next.js 15 is used instead of 16 for stable React 19 compatibility.
+
 For detailed tech stack information, see [Tech Stack](./docs/tech-stack.md).
 
 ## 📁 Repository Structure
@@ -125,6 +139,7 @@ Emergency posts require moderator verification:
 - [Setup Guide](./docs/setup-guide.md) - Set up local development environment
 - [Quick Start](./QUICK-START.md) - Quick reference guide
 - [Tech Stack](./docs/tech-stack.md) - Complete technical architecture
+- [Tech Versions](./TECH-VERSIONS.md) - Current versions of all technologies
 
 ### Architecture
 - [Monorepo Structure](./docs/monorepo-structure.md) - How the codebase is organized

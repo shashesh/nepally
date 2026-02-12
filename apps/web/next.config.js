@@ -2,13 +2,17 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@nusa/shared'],
+
+  // Use remotePatterns instead of deprecated domains
   images: {
-    domains: ['res.cloudinary.com'], // Cloudinary for image hosting
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+    ],
   },
-  // Enable experimental features for better performance
-  experimental: {
-    optimizeCss: true,
-  },
+
 };
 
 module.exports = nextConfig;

@@ -2,6 +2,8 @@
 
 This guide will help you set up the NUSA project for local development.
 
+> **Tech Stack Versions:** See [TECH-VERSIONS.md](../TECH-VERSIONS.md) for the complete list of current technology versions.
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
@@ -11,6 +13,14 @@ Before you begin, ensure you have the following installed:
 - **Git**
 - **Supabase CLI** (`npm install -g supabase`)
 - **Expo CLI** (`npm install -g expo-cli`) (optional, Expo handles this)
+
+### Current Tech Stack
+
+- **React:** 19.1.0 (unified across mobile and web)
+- **Next.js:** 15.5.12 (web)
+- **React Native:** 0.81.5 (mobile)
+- **Expo:** 54.0 (mobile)
+- **TypeScript:** 5.3.3+
 
 ### Platform-Specific Requirements
 
@@ -242,6 +252,27 @@ And check environment variables point to `http://localhost:54321`.
 ```bash
 cd packages/shared
 npm run type-check
+```
+
+### Issue: React version conflicts or "invalid peer dependency" warnings
+
+**Solution:** The monorepo uses React 19.1.0 across all workspaces. Clean and reinstall:
+```bash
+# From root directory
+rm -rf node_modules apps/*/node_modules packages/*/node_modules package-lock.json
+npm install --legacy-peer-deps
+```
+
+### Issue: Next.js build fails with React runtime errors
+
+**Solution:** Ensure you're using Next.js 15, not 16. Next.js 16 has React 19 compatibility issues:
+```bash
+cd apps/web
+npm list next
+# Should show next@15.5.12
+
+# If wrong version, reinstall:
+npm install next@15 eslint-config-next@15 --legacy-peer-deps
 ```
 
 ## Development Workflow

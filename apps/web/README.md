@@ -2,10 +2,18 @@
 
 This is the web application for NUSA, built with Next.js and React.
 
+## Tech Stack
+
+- **React:** 19.1.0
+- **Next.js:** 15.5.12
+- **TypeScript:** 5.3.3+
+- **Backend:** Supabase
+- **Styling:** CSS Modules
+
 ## Setup
 
 ```bash
-# Install dependencies
+# Install dependencies (from monorepo root)
 npm install
 
 # Start development server
@@ -17,6 +25,8 @@ npm run build
 # Start production server
 npm start
 ```
+
+> **Note:** This project uses Next.js 15.5.12 instead of Next.js 16 because Next.js 16 with Turbopack has React 19 compatibility issues. Next.js 15 provides stable, production-ready React 19 support.
 
 ## Project Structure
 
@@ -78,11 +88,12 @@ export async function getServerSideProps({ params }) {
 
 Create `.env.local` file:
 
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-```
+
+Get these values from your Supabase project dashboard (Settings > API).
 
 ## Deployment
 
