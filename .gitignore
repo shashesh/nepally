@@ -64,3 +64,6 @@ web-build/
 .cache/
 nul
 error.jpeg
+
+# Claude Code local settings
+.claude/settings.local.json
