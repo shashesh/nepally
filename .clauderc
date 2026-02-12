@@ -7,9 +7,9 @@
 # PROJECT-SPECIFIC INSTRUCTIONS
 # ============================================
 
-## Project Phase: PRE-DEVELOPMENT (Product & Design)
-# We are currently in the planning and design phase
-# NO CODE should be written unless explicitly requested
+## Project Phase: DEVELOPMENT (Product, Design & Implementation)
+# We are transitioning from planning to implementation
+# CODE should only be written after gathering full context from documentation
 
 ## Working Mode
 # - Focus on product refinement, feature specification, and wireframing
@@ -45,12 +45,45 @@
    - Only create/modify files when requested
    - User will say "commit" or "commit and push" when ready
 
+## Implementation Workflow (CRITICAL)
+
+When implementing features, ALWAYS follow this sequence:
+
+1. **Context Gathering** (MANDATORY before coding)
+   - Read feature specification: `docs/features/[feature-name].md` (if exists)
+   - Read user journey: `docs/user-journeys/[category]/[number]-[journey-name].md`
+   - Read wireframes: `docs/wireframes/[screen-name].md`
+   - Read design system: `docs/wireframes/00-design-system-foundation.md`
+
+2. **Planning** (Use EnterPlanMode)
+   - Map documentation to code structure
+   - Identify all components needed
+   - Define file structure and implementation order
+   - Create validation checklist
+
+3. **Implementation** (Only after approval)
+   - Build foundation first (design tokens from design system)
+   - Build shared components (buttons, inputs, cards)
+   - Build screens matching wireframes exactly
+   - Implement navigation matching user journey
+   - Handle all error cases from documentation
+
+4. **Validation** (Before marking complete)
+   - Verify implementation matches wireframes pixel-perfect
+   - Test all interactive states (default, pressed, disabled, error, loading)
+   - Verify all validation rules from wireframes
+   - Test all edge cases from user journey
+   - Demo to user and iterate
+
+**Use `/implement-feature [feature-name]` skill for guided implementation.**
+
 ## File Organization
 - `product-roadmap.md` - Master roadmap (single source of truth)
 - `docs/features/` - Detailed feature specifications
 - `docs/wireframes/` - Wireframe descriptions and references
 - `docs/user-journeys/` - User flow documentation
 - `docs/decisions/` - Architecture Decision Records (ADRs)
+- `docs/implementation/` - Implementation notes and deviations
 
 ## Communication Style
 - Ask questions when requirements are unclear

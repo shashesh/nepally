@@ -38,7 +38,7 @@ Journeys are organized into **6 categories** based on user intent:
 
 | # | Journey Name | User Persona | Status | File |
 |---|--------------|--------------|--------|------|
-| 01 | **Signup and Onboarding** | New User (Level 0) | 📝 Not Started | [onboarding/01-signup-and-onboarding.md](./onboarding/01-signup-and-onboarding.md) |
+| 01 | **Signup and Onboarding** | New User (Level 0) | 🚧 Draft | [onboarding/01-signup-and-onboarding.md](./onboarding/01-signup-and-onboarding.md) |
 | 02 | **Trust Level Verification** | New User (Level 0 → Level 1) | 📝 Not Started | [onboarding/02-trust-level-verification.md](./onboarding/02-trust-level-verification.md) |
 
 **Purpose:** These journeys cover how new users discover NUSA, create accounts, verify their identity, and become trusted members of the community.

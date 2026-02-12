@@ -8,7 +8,21 @@
       "Bash(git init:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(npm install:*)",
+      "Bash(npx expo install expo-auth-session expo-web-browser)",
+      "Bash(test:*)",
+      "Bash(node:*)",
+      "Bash(npx expo start --clear)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd.exe //c taskkill //PID 49808 //F)",
+      "Bash(npm uninstall:*)",
+      "Bash(ls:*)",
+      "Bash(npm run build:*)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(find:*)"
     ]
   }
 }

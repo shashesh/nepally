@@ -1,0 +1,496 @@
+# Complete Setup & Testing Guide for NUSA Apps
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+- **Node.js**: Version 18.0.0 or higher (you currently have 16.20.2, which may cause issues)
+- **npm**: Version 9.0.0 or higher
+- **Git**: For version control
+- **Code editor**: VS Code recommended
+- **Mobile testing**: Expo Go app on your phone OR iOS Simulator/Android Emulator
+
+## Step 1: Upgrade Node.js (Important!)
+
+Your current Node.js version (16.20.2) is below the required 18.0.0. Upgrade first:
+
+### Windows:
+```bash
+# Download and install from https://nodejs.org/
+# Or use nvm-windows:
+nvm install 18
+nvm use 18
+```
+
+### Verify installation:
+```bash
+node --version  # Should show v18.x.x or higher
+npm --version   # Should show 9.x.x or higher
+```
+
+## Step 2: Install Dependencies
+
+```bash
+# Navigate to project root
+cd C:\Users\shash\Documents\personal-github-repos\unhn
+
+# Install all dependencies
+npm install
+
+# This will install dependencies for:
+# - Root workspace
+# - apps/web
+# - apps/mobile
+# - packages/shared
+```
+
+## Step 3: Set Up Supabase (Backend)
+
+### Option A: Use Existing Supabase Project
+
+1. **Go to** https://supabase.com
+2. **Sign in** and select your project
+3. **Get credentials**:
+   - Go to Settings → API
+   - Copy the Project URL
+   - Copy the `anon` public key
+
+### Option B: Create New Supabase Project
+
+1. **Create project** at https://supabase.com
+2. **Run database migrations**:
+   ```bash
+   # The schema is in supabase/migrations/001_initial_schema.sql
+   # Copy and paste it into Supabase SQL Editor
+   ```
+3. **Get credentials** (same as Option A)
+
+### Important: Add Sample Data (For Testing)
+
+Run this in Supabase SQL Editor to add test metro areas:
+
+```sql
+-- Insert Dallas-Fort Worth metro area
+INSERT INTO metro_areas (id, name, state, population)
+VALUES ('dfw-metro', 'Dallas-Fort Worth', 'TX', 7500000);
+
+-- Insert some ZIP codes for testing
+INSERT INTO metro_area_zipcodes (zip_code, metro_area_id) VALUES
+  ('75001', 'dfw-metro'),
+  ('75002', 'dfw-metro'),
+  ('75201', 'dfw-metro'),
+  ('75202', 'dfw-metro');
+
+-- Add more metro areas if needed
+INSERT INTO metro_areas (id, name, state, population) VALUES
+  ('nyc-metro', 'New York City', 'NY', 19500000),
+  ('la-metro', 'Los Angeles', 'CA', 13200000);
+
+-- Add ZIP codes for other metros
+INSERT INTO metro_area_zipcodes (zip_code, metro_area_id) VALUES
+  ('10001', 'nyc-metro'),
+  ('10002', 'nyc-metro'),
+  ('90001', 'la-metro'),
+  ('90002', 'la-metro');
+```
+
+## Step 4: Configure Environment Variables
+
+### Mobile App (.env)
+
+```bash
+cd apps/mobile
+
+# Create .env file
+cp .env.example .env
+
+# Edit .env with your credentials:
+# (Use notepad or VS Code)
+```
+
+**apps/mobile/.env:**
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id (optional for Phase 1)
+```
+
+### Web App (.env.local)
+
+```bash
+cd ../web
+
+# Create .env.local file
+# (Web uses .env.local for Next.js)
+```
+
+**apps/web/.env.local:**
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+## Step 5: Start the Mobile App
+
+### Terminal 1 - Mobile App
+
+```bash
+cd apps/mobile
+
+# Start Metro bundler
+npm start
+```
+
+**You should see:**
+```
+› Metro waiting on exp://192.168.x.x:8081
+› Scan the QR code above with Expo Go (Android) or Camera app (iOS)
+
+› Press a │ open Android
+› Press i │ open iOS simulator
+› Press w │ open web
+```
+
+### Test on Physical Device (Easiest):
+
+1. **Install Expo Go**:
+   - iOS: App Store → Search "Expo Go"
+   - Android: Play Store → Search "Expo Go"
+
+2. **Scan QR code**:
+   - iOS: Use Camera app to scan QR
+   - Android: Use Expo Go app to scan QR
+
+3. **App loads on your device** with hot reload!
+
+### Test on iOS Simulator (macOS only):
+
+```bash
+# Press 'i' in the terminal
+# OR
+npm run ios
+```
+
+### Test on Android Emulator:
+
+```bash
+# First, ensure Android Studio is installed with an emulator
+# Then press 'a' in the terminal
+# OR
+npm run android
+```
+
+## Step 6: Start the Web App
+
+### Terminal 2 - Web App
+
+```bash
+cd apps/web
+
+# Start Next.js development server
+npm run dev
+```
+
+**You should see:**
+```
+   ▲ Next.js 16.1.6
+   - Local:        http://localhost:3000
+   - Ready in 2.3s
+```
+
+**Open browser**: http://localhost:3000
+
+## Step 7: Test the Mobile App Flow
+
+### Complete Onboarding Journey (Mobile)
+
+1. **Welcome Screen** ✓
+   - Should see NUSA logo, tagline, Sign Up button
+   - Tap "Sign Up"
+
+2. **Signup Method Screen** ✓
+   - See 3 options: Google, Phone, Email
+   - Tap "Continue with Google" (will show stub message)
+   - App navigates to ZIP entry
+
+3. **ZIP Code Entry** ✓
+   - Enter a valid ZIP: `75001` or `10001`
+   - Should see green checkmark when valid
+   - Tap "Continue"
+
+4. **Metro Confirmation** ✓
+   - Should see animated green checkmark
+   - Shows metro area name (e.g., "Dallas-Fort Worth, TX")
+   - Auto-navigates after 2 seconds OR tap "Continue"
+
+5. **Tutorial Screen** ✓
+   - Swipe through 3 cards:
+     - Metro-First Community (blue)
+     - Trust Levels (green)
+     - Structured Categories (red)
+   - Progress dots animate
+   - Tap "Get Started" on last card
+
+6. **Home Screen (Level 0)** ✓
+   - Yellow Level 0 banner appears at top
+   - Category tabs: All, Housing, Jobs, Emergency, Travel
+   - Empty state (no posts yet)
+   - Floating + button (50% opacity, disabled)
+   - Tap + button → Shows "Verify to Post" alert
+   - Tap "X" on banner → Banner dismisses and stays dismissed
+
+### Test Banner Persistence
+
+1. Dismiss the Level 0 banner
+2. Force quit the app (swipe up)
+3. Reopen the app
+4. Banner should NOT reappear ✓
+
+### Test ZIP Validation
+
+1. Go back to ZIP entry (restart onboarding)
+2. Try invalid ZIPs:
+   - `123` (too short) - Continue button stays disabled
+   - `abcde` (letters) - Input shows only numbers
+   - `12345` (valid format but not in database) - Shows error
+   - `75001` (valid) - Green checkmark appears ✓
+
+## Step 8: Test the Web App
+
+### Web App Testing (Currently Limited)
+
+The web app doesn't have the full onboarding implemented yet in this phase, but you can test:
+
+1. **Homepage loads** ✓
+2. **Check console** for errors (F12 → Console tab)
+3. **Verify Supabase connection** (check Network tab)
+
+## Step 9: Common Issues & Troubleshooting
+
+### Issue: "Module not found" errors
+
+```bash
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Or on Windows:
+rmdir /s /q node_modules
+del package-lock.json
+npm install
+```
+
+### Issue: Expo app won't load
+
+```bash
+# Clear Expo cache
+cd apps/mobile
+npx expo start -c
+
+# Or completely reset:
+rm -rf .expo
+rm -rf node_modules
+npm install
+npm start
+```
+
+### Issue: "Supabase client error"
+
+- Verify `.env` file exists and has correct credentials
+- Check Supabase project is running (not paused)
+- Verify anon key is correct (not service_role key)
+
+### Issue: "ZIP code not found"
+
+- Make sure you inserted sample ZIP codes in Supabase (Step 3)
+- Check `metro_area_zipcodes` table has data:
+  ```sql
+  SELECT * FROM metro_area_zipcodes LIMIT 10;
+  ```
+
+### Issue: TypeScript errors
+
+```bash
+# Check types in mobile app
+cd apps/mobile
+npm run type-check
+
+# Check types in web app
+cd apps/web
+npm run type-check
+```
+
+### Issue: Port 3000 already in use (Web)
+
+```bash
+# Kill process on port 3000
+# Windows:
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# Then restart:
+npm run dev
+```
+
+### Issue: Metro bundler errors
+
+```bash
+# Reset Metro bundler cache
+cd apps/mobile
+npx react-native start --reset-cache
+```
+
+## Step 10: Quick Test Checklist
+
+### Mobile App Checklist
+
+- [ ] App launches without errors
+- [ ] Welcome screen displays correctly
+- [ ] Signup method screen shows 3 options
+- [ ] ZIP code input validates in real-time
+- [ ] Valid ZIP shows green checkmark
+- [ ] Metro confirmation screen shows metro name
+- [ ] Tutorial cards swipe smoothly
+- [ ] Progress dots animate correctly
+- [ ] Home screen loads
+- [ ] Level 0 banner appears
+- [ ] Category tabs work
+- [ ] Banner dismisses and stays dismissed
+- [ ] Tapping + button shows "Verify to Post" alert
+
+### Web App Checklist
+
+- [ ] App loads at http://localhost:3000
+- [ ] No console errors (some warnings OK)
+- [ ] Supabase connection works (check Network tab)
+
+## Step 11: View Running Apps Side-by-Side
+
+**Recommended Setup:**
+
+1. **Left Monitor/Half**: Mobile app on your phone with Expo Go
+2. **Right Monitor/Half**:
+   - Terminal 1: Mobile Metro bundler
+   - Terminal 2: Web dev server
+   - Browser: http://localhost:3000
+   - VS Code: For editing files
+
+**Hot Reload Works!** Edit any file and see changes instantly:
+- Mobile: Shake device → "Reload"
+- Web: Browser auto-refreshes
+
+## Step 12: Add Test User (Optional)
+
+If you want to test with a real user account:
+
+```sql
+-- Run in Supabase SQL Editor
+INSERT INTO users (id, email, full_name, trust_level, metro_area_id, zip_code)
+VALUES (
+  'test-user-id',
+  'test@nusa.com',
+  'Test User',
+  0,
+  'dfw-metro',
+  '75001'
+);
+```
+
+## Need Help?
+
+### Check Logs
+
+**Mobile app logs:**
+```bash
+# In the terminal running npm start
+# All console.log() and errors appear here
+```
+
+**Web app logs:**
+```bash
+# Terminal running npm run dev shows server logs
+# Browser console (F12) shows client logs
+```
+
+### Verify Environment
+
+```bash
+# Check Node version
+node --version  # Should be >= 18
+
+# Check npm version
+npm --version  # Should be >= 9
+
+# Check Expo CLI
+npx expo --version
+
+# List all running processes
+npm run  # Shows available scripts
+```
+
+---
+
+## Summary of Commands
+
+```bash
+# Setup (one time)
+npm install
+cd apps/mobile && cp .env.example .env
+cd ../web && cp .env.example .env.local
+
+# Run Mobile App (Terminal 1)
+cd apps/mobile
+npm start
+# Then scan QR code or press 'i' for iOS / 'a' for Android
+
+# Run Web App (Terminal 2)
+cd apps/web
+npm run dev
+# Then open http://localhost:3000
+
+# Test on physical device
+# Install Expo Go → Scan QR code → App loads!
+
+# Common troubleshooting
+npm start -- --reset-cache  # Clear cache
+npx expo start -c           # Clear Expo cache
+rm -rf node_modules && npm install  # Fresh install
+```
+
+---
+
+## Quick Start (TL;DR)
+
+```bash
+# 1. Upgrade Node to 18+
+nvm install 18 && nvm use 18
+
+# 2. Install dependencies
+cd C:\Users\shash\Documents\personal-github-repos\unhn
+npm install
+
+# 3. Set up environment variables
+cd apps/mobile
+cp .env.example .env
+# Edit .env with Supabase credentials
+
+# 4. Add test data to Supabase
+# Run the SQL from Step 3 in Supabase SQL Editor
+
+# 5. Start mobile app
+npm start
+# Scan QR code with Expo Go app
+
+# 6. Test with ZIP codes: 75001, 10001, or 90001
+```
+
+---
+
+**That's it!** You should now have both apps running. Start with the mobile app using the test ZIP codes and walk through the complete onboarding flow.
+
+**Test ZIP Codes:**
+- `75001` - Dallas-Fort Worth, TX
+- `10001` - New York City, NY
+- `90001` - Los Angeles, CA
+
+**Questions?** Check the troubleshooting section above or review the terminal logs for specific error messages.

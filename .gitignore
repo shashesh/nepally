@@ -62,3 +62,5 @@ web-build/
 # Temporary files
 *.log
 .cache/
+nul
+error.jpeg

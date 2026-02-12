@@ -37,12 +37,57 @@ Emergency broadcasts require moderator verification:
 - **Peer Posts**: Free individual listings (roommates, travel buddies)
 - **Business Profiles**: Dedicated profiles with review/rating system for restaurants, consultancies, etc.
 
-## Planned Tech Stack
+## Tech Stack
 
-- **Frontend**: Flutter (cross-platform for iOS, Android, Web)
+- **Mobile**: React Native + Expo (iOS & Android)
+- **Web**: Next.js (TypeScript)
 - **Backend**: Supabase (PostgreSQL database with real-time subscriptions for chat and emergency alerts)
 - **Location Services**: Google Maps / ZIP Code API for metro area mapping
 - **Admin Dashboard**: Web-based interface for moderators to manage alerts and content
+
+## Implementation Workflow
+
+**CRITICAL: Always gather context before coding**
+
+When implementing any feature, follow this mandatory sequence:
+
+### 1. Context Gathering (Read ALL relevant documentation)
+- **Feature Specification**: `docs/features/[feature-name].md` (if exists)
+- **User Journey**: `docs/user-journeys/[category]/[number]-[journey-name].md`
+  - Provides step-by-step user flow, pain points, edge cases, API requirements
+- **Wireframes**: `docs/wireframes/[screen-name].md`
+  - Provides exact layout, component specs, interactive states, validation rules
+- **Design System**: `docs/wireframes/00-design-system-foundation.md`
+  - Provides colors, typography, spacing, component library
+
+### 2. Planning (Always use EnterPlanMode for non-trivial work)
+- Map documentation to code structure
+- Identify all components, screens, services needed
+- Define file structure and implementation order
+- Create validation checklist against documentation
+
+### 3. Implementation (Only after plan approval)
+- **Foundation First**: Create design tokens (colors, typography, spacing) from design system
+- **Shared Components**: Build reusable UI components (buttons, inputs, cards)
+- **Screens**: Implement screens matching wireframes exactly (pixel-perfect)
+- **Services**: Implement API clients and business logic
+- **Navigation**: Connect screens following user journey flow
+- **Error Handling**: Implement all edge cases from documentation
+
+### 4. Validation (Before marking complete)
+- Verify implementation matches wireframes pixel-perfect
+- Test all interactive states (default, pressed, disabled, error, loading)
+- Verify all validation rules from wireframes applied
+- Test all edge cases from user journey
+- Demo to user and iterate based on feedback
+
+### Available Skills
+- `/design-feature [feature-name]` - Create feature specification
+- `/user-journey [journey-name]` - Document user flow
+- `/wireframe [screen-name]` - Create screen wireframe
+- `/implement-feature [feature-name]` - Guided feature implementation with full context
+
+**Never start coding without first reading the relevant documentation. Context-first development prevents misalignment and rework.**
 
 ## Key Safety Features to Implement
 
