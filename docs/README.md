@@ -2,76 +2,47 @@
 
 This directory contains detailed documentation for the NUSA project.
 
-## Directory Structure
+## Guides
+
+| File | Purpose |
+|------|---------|
+| [database-schema.md](./database-schema.md) | PostgreSQL tables, RLS policies, query patterns |
+| [code-sharing-guide.md](./code-sharing-guide.md) | What to share between mobile/web apps |
+| [monorepo-structure.md](./monorepo-structure.md) | Codebase organization and workspace setup |
+| [supabase-setup.md](./supabase-setup.md) | Supabase project configuration |
+| [deployment-guide.md](./deployment-guide.md) | Deploy to Vercel, App Store, Google Play |
+
+## Subdirectories
 
 ### `/features`
 Detailed feature specifications created using `/design-feature` skill.
 
-Each feature document includes:
-- Problem statement and user story
-- Functional and non-functional requirements
-- User flow and edge cases
-- Trust & safety considerations
-- Success metrics
-
 ### `/wireframes`
-Screen wireframe documentation created using `/wireframe` skill.
-
-Each wireframe includes:
-- ASCII visual layout
-- Component behavior specifications
-- Interaction details and validation rules
-- Mobile and accessibility considerations
+Screen wireframe documentation created using `/wireframe` skill. Includes design system foundation.
 
 ### `/user-journeys`
 End-to-end user experience documentation created using `/user-journey` skill.
 
-Each journey includes:
-- Step-by-step flow
-- User emotions and pain points
-- Decision trees and touchpoints
-- Edge cases and alternative paths
-
 ### `/decisions`
 Architecture Decision Records (ADRs) documenting important choices.
 
-Each decision record includes:
-- Context and problem statement
-- Decision made and rationale
-- Alternatives considered
-- Consequences and trade-offs
+## Historical
 
-## How to Use
+| File | Purpose |
+|------|---------|
+| [refinement-analysis-phase1-2026-02-06.md](./refinement-analysis-phase1-2026-02-06.md) | Phase 1 roadmap refinement analysis (historical) |
 
-1. **Creating New Documentation:**
-   - Use the custom Claude skills (`/design-feature`, `/wireframe`, `/user-journey`)
-   - Follow the templates provided by each skill
-   - Link related documents together
+## Creating New Documentation
 
-2. **Updating Existing Documentation:**
-   - Keep documents in sync with `product-roadmap.md`
-   - Update "Last Updated" dates
-   - Create decision records for significant changes
-
-3. **Finding Information:**
-   - Check `product-roadmap.md` first for high-level overview
-   - Dive into specific docs for detailed specifications
-   - Review decision records to understand "why" behind choices
+- Use custom Claude skills (`/design-feature`, `/wireframe`, `/user-journey`)
+- Follow templates provided by each skill
+- Link related documents together
+- Keep documents in sync with `product-roadmap.md`
 
 ## Document Status Labels
 
-Use these status labels in documents:
-
-- **Draft** - Work in progress, not yet reviewed
+- **Draft** - Work in progress
 - **In Review** - Ready for feedback
-- **Approved** - Finalized and ready for implementation
-- **Implemented** - Feature has been built (future phase)
-- **Deprecated** - No longer relevant or superseded
-
-## Best Practices
-
-- Keep documents focused and scannable
-- Use tables, checklists, and visual formatting
-- Link related documents
-- Update status labels as work progresses
-- Archive old versions in decision records rather than deleting
+- **Approved** - Finalized, ready for implementation
+- **Implemented** - Feature has been built
+- **Deprecated** - No longer relevant

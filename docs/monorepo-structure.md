@@ -70,8 +70,6 @@ nusa/
 │
 ├── docs/                 # Documentation
 │   ├── README.md
-│   ├── tech-stack.md
-│   ├── setup-guide.md
 │   ├── supabase-setup.md
 │   ├── monorepo-structure.md
 │   ├── code-sharing-guide.md
@@ -88,7 +86,9 @@ nusa/
 ├── tsconfig.json         # Base TypeScript config
 ├── package.json          # Root package.json (workspaces)
 ├── CLAUDE.md             # Instructions for Claude Code
-├── QUICK-START.md        # Quick start guide
+├── QUICK-START.md        # Claude Code workflow guide
+├── TECH-VERSIONS.md      # Technology version source of truth
+├── SETUP-AND-TESTING-GUIDE.md  # Development setup guide
 ├── product-roadmap.md    # Product roadmap
 └── README.md             # Main README
 ```

@@ -5,6 +5,8 @@
 **Analyst:** Claude Code + Product Team
 **Status:** Completed & Implemented
 
+> **Note:** This document was written when Firebase was the planned backend. The project has since migrated to **Supabase**. References to Firebase/Firestore below should be read as Supabase equivalents.
+
 ---
 
 ## Executive Summary

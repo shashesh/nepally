@@ -42,7 +42,7 @@ To prevent spam, accounts have "Trust Levels":
 | **2** | Contributor | High engagement/vouched for by others; higher visibility |
 
 **Trust Level Progression Rules:**
-- **Level 0 → Level 1:** Complete phone verification (SMS OTP via Firebase Auth) OR link social media account (email confirmation required)
+- **Level 0 → Level 1:** Complete phone verification (SMS OTP via Supabase Auth) OR link social media account (email confirmation required)
 - **Level 1 → Level 2:** Achieve 10+ approved posts with average 5+ upvotes each OR receive moderator endorsement
 - **Demotion Policy:** Users flagged 5+ times with confirmed violations may be demoted or banned
 
@@ -63,7 +63,7 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 - Max 3 photos per post (Housing and Jobs categories)
 - Auto-compressed to 2MB max per photo
 - Resized to 1200px width for optimal mobile viewing
-- Stored in Firebase Storage
+- Stored in Supabase Storage
 
 **Post Expiry Behavior:**
 - Expired posts hidden from default feed but accessible via "Show Expired" filter
@@ -78,7 +78,7 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 
 ### C. In-App Communication System
 
-**Real-Time Chat:** Built on Firebase Firestore/Realtime Database for instant messaging between users.
+**Real-Time Chat:** Built on Supabase Realtime for instant messaging between users.
 
 **Features:**
 - **One-on-one messaging:** Users can directly message post authors
@@ -100,7 +100,7 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 
 ### D. Photo Upload & Storage
 
-**Firebase Storage Integration:** Secure cloud storage for user-uploaded images.
+**Supabase Storage Integration:** Secure cloud storage for user-uploaded images.
 
 **Upload Specifications:**
 - Max 3 photos per post (Housing and Jobs primarily)
@@ -133,7 +133,7 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 
 ### F. Admin Dashboard
 
-**Web-Based Interface:** Firebase Admin SDK for moderator tools.
+**Web-Based Interface:** Supabase Admin SDK for moderator tools.
 
 **Core Features:**
 - Review flagged posts and chat conversations
@@ -260,10 +260,15 @@ Before first emergency post submission, users must acknowledge:
 
 | Component | Technology | Rationale |
 |-----------|-----------|-----------|
-| **Frontend** | Flutter | Single codebase for iOS, Android, and Web |
-| **Backend** | Firebase | Real-time DB for Chat and Emergency Alerts |
-| **Location** | Google Maps / ZIP Code API | Automated Metro mapping |
-| **Admin Dashboard** | Web-based "Commander" View | For Facebook admins to approve alerts and ban bad actors |
+| **Mobile** | React Native + Expo | Native performance, fast development, shared code |
+| **Web** | Next.js (TypeScript) | SSR for SEO, React 19 support |
+| **Backend** | Supabase (PostgreSQL) | Real-time subscriptions, RLS, generous free tier |
+| **Auth** | Supabase Auth | Phone (SMS), email, social login |
+| **Storage** | Supabase Storage | Built-in CDN, RLS for files |
+| **Location** | Static ZIP-to-Metro dataset | HUD USPS Crosswalk, zero API costs |
+| **Admin Dashboard** | Web-based interface | For moderators to approve alerts and manage content |
+
+See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 
 ---
 
@@ -301,8 +306,6 @@ Before first emergency post submission, users must acknowledge:
 
 ### Research Needed
 - Legal review of liability disclaimers
-- Firebase real-time capabilities for push notifications
+- Supabase Realtime capabilities for push notifications
 - ZIP Code to Metro Area mapping data sources
-- Cost analysis for Google Maps API usage
-- Firebase Storage cost modeling for photo uploads at scale
-- Firebase Realtime Database vs. Firestore for chat (performance comparison)
+- Supabase Storage cost modeling for photo uploads at scale

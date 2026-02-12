@@ -39,11 +39,16 @@ Emergency broadcasts require moderator verification:
 
 ## Tech Stack
 
-- **Mobile**: React Native + Expo (iOS & Android)
-- **Web**: Next.js (TypeScript)
-- **Backend**: Supabase (PostgreSQL database with real-time subscriptions for chat and emergency alerts)
-- **Location Services**: Google Maps / ZIP Code API for metro area mapping
-- **Admin Dashboard**: Web-based interface for moderators to manage alerts and content
+- **Mobile**: React Native + Expo 54 (iOS & Android)
+- **Web**: Next.js 15 (TypeScript)
+- **Backend**: Supabase (PostgreSQL with real-time subscriptions, RLS, Edge Functions)
+- **Auth**: Supabase Auth (phone SMS, email, Google OAuth)
+- **Storage**: Supabase Storage (photos, CDN)
+- **Location**: Static ZIP-to-Metro dataset (HUD USPS Crosswalk, zero API costs)
+- **Language**: TypeScript across all packages
+- **React**: 19.1.0 (unified across mobile and web)
+
+See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 
 ## Implementation Workflow
 
@@ -93,13 +98,12 @@ When implementing any feature, follow this mandatory sequence:
 
 - **PII Masking**: Sensitive emergency data hidden behind "Click to Reveal" for logged-in users only
 - **AI Moderation**: Automated scanning for scam-related keywords (crypto, "fast cash")
-- **FB-to-App Bridge**: Automated ingestion of NUSA Facebook posts for initial content population
 - **Explicit Disclaimers**: Clear TOS stating the platform is a community notice board, not a professional emergency/legal/medical service
 
 ## Development Phases
 
 ### Phase 1: Utility Core & Trust Foundation
-Focus on identity verification, structured posting forms, and Facebook content bridge.
+Focus on identity verification, structured posting forms, metro-based feeds, and in-app chat.
 
 ### Phase 2: Community Safety & Growth
 Implement the Red Alert system, peer vs. business distinction, and hyper-local filtering.

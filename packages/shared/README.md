@@ -6,7 +6,7 @@ Shared TypeScript code for NUSA mobile and web applications.
 
 ```
 src/
-├── api/          # API client functions (Firebase, etc.)
+├── api/          # API client functions (Supabase, etc.)
 ├── types/        # TypeScript interfaces and types
 ├── utils/        # Utility functions
 ├── validation/   # Zod validation schemas
@@ -52,6 +52,6 @@ This package contains ALL business logic and data structures that are shared bet
 - ✅ Validation schemas (Zod)
 - ✅ Utility functions (date formatting, phone formatting, etc.)
 - ✅ Constants (post categories, trust levels, metro areas)
-- ✅ API client functions (Firebase calls, etc.)
+- ✅ API client functions (Supabase calls, etc.)
 
 UI components are NOT shared (they're platform-specific).

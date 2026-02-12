@@ -140,24 +140,27 @@ export const POST_CATEGORIES = {
 **Examples:**
 ```typescript
 // api/posts.ts
+import { supabase } from './client';
+
 export async function createPost(data: CreatePostInput): Promise<Post> {
-  // Firebase API call
-  const docRef = await firestore.collection('posts').add({
-    ...data,
-    createdAt: serverTimestamp(),
-  });
-  return { id: docRef.id, ...data };
+  const { data: post, error } = await supabase
+    .from('posts')
+    .insert(data)
+    .select()
+    .single();
+  if (error) throw error;
+  return post;
 }
 
 export async function getPostsByMetro(metroId: string): Promise<Post[]> {
-  const snapshot = await firestore
-    .collection('posts')
-    .where('metroAreaId', '==', metroId)
-    .where('status', '==', 'active')
-    .orderBy('createdAt', 'desc')
-    .get();
-
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('metro_area_id', metroId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
 }
 ```
 
@@ -338,7 +341,7 @@ export default function CreateHousingPost() {
 ```typescript
 // packages/shared/src/api/posts.ts
 export async function getPostsByMetro(metroId: string): Promise<Post[]> {
-  // Firestore query
+  // Supabase query
 }
 ```
 
@@ -433,13 +436,13 @@ Does this code contain UI/styling?
 
 2. **Mobile-specific:**
    - React Native form UI
-   - Firebase Auth integration (mobile SDK)
-   - AsyncStorage for token
+   - Supabase Auth integration (mobile SDK)
+   - AsyncStorage for session
 
 3. **Web-specific:**
    - HTML form UI
-   - Firebase Auth integration (web SDK)
-   - localStorage for token
+   - Supabase Auth integration (web SDK)
+   - Cookie/localStorage for session
 
 ## Testing Shared Code
 

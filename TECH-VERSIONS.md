@@ -91,7 +91,7 @@ This document serves as the single source of truth for all technology versions u
 2. **Update package.json** - Use exact versions for critical dependencies
 3. **Test locally** - Build and run both mobile and web apps
 4. **Update this document** - Keep TECH-VERSIONS.md current
-5. **Update docs** - Update README.md, tech-stack.md, setup-guide.md
+5. **Update docs** - Update README.md, TECH-VERSIONS.md, SETUP-AND-TESTING-GUIDE.md
 6. **Commit with clear message** - Example: "chore: upgrade Next.js 15.5.12 → 15.6.0"
 
 ## Package.json Configuration
