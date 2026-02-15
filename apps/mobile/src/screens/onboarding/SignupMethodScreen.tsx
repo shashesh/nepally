@@ -30,8 +30,7 @@ export function SignupMethodScreen() {
   };
 
   const handleEmailSignup = () => {
-    // TODO: Implement email signup
-    console.log('Email signup pressed');
+    navigation.navigate('EmailSignup', { mode: 'signup' });
   };
 
   return (
@@ -103,7 +102,7 @@ export function SignupMethodScreen() {
           <Text style={styles.footerText}>Already have an account? </Text>
           <TextButton
             title="Log In"
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.navigate('EmailSignup', { mode: 'login' })}
           />
         </View>
       </View>

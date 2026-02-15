@@ -4,6 +4,7 @@ import { OnboardingStackParamList } from '../types/navigation';
 import {
   WelcomeScreen,
   SignupMethodScreen,
+  EmailSignupScreen,
   ZipCodeEntryScreen,
   MetroConfirmationScreen,
   TutorialScreen,
@@ -21,6 +22,7 @@ export function OnboardingNavigator() {
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="SignupMethod" component={SignupMethodScreen} />
+      <Stack.Screen name="EmailSignup" component={EmailSignupScreen} />
       <Stack.Screen name="ZipCodeEntry" component={ZipCodeEntryScreen} />
       <Stack.Screen name="MetroConfirmation" component={MetroConfirmationScreen} />
       <Stack.Screen name="Tutorial" component={TutorialScreen} />

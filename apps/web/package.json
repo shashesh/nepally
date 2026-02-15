@@ -12,8 +12,8 @@
   "dependencies": {
     "@nusa/shared": "*",
     "next": "^15.5.12",
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react": "19.1.4",
+    "react-dom": "19.1.4"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",

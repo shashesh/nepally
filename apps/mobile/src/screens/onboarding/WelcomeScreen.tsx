@@ -22,8 +22,7 @@ export function WelcomeScreen() {
   };
 
   const handleLogIn = () => {
-    // TODO: Navigate to login screen (out of scope for Phase 1)
-    console.log('Login pressed');
+    navigation.navigate('EmailSignup', { mode: 'login' });
   };
 
   return (

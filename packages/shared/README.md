@@ -25,7 +25,7 @@ import { PostCategory, housingPostSchema, formatDate } from '@nusa/shared';
 ### In Web App (Next.js)
 
 ```typescript
-import { User, TrustLevel, getMetroAreaByZip } from '@nusa/shared';
+import { User, TrustLevel, isValidZipCode } from '@nusa/shared';
 ```
 
 ## Development

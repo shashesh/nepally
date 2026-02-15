@@ -65,33 +65,43 @@ npm install
    ```
 3. **Get credentials** (same as Option A)
 
-### Important: Add Sample Data (For Testing)
+### Important: Seed Metro Area Data
 
-Run this in Supabase SQL Editor to add test metro areas:
+Metro areas and ZIP codes are seeded from the Census Bureau and HUD APIs (~390 metros, ~33,000 ZIPs).
+
+**Option A: Run the automated seed script (recommended)**
+
+1. Copy the env template and fill in your API keys:
+   ```bash
+   cp scripts/.env.example scripts/.env
+   # Edit scripts/.env with your keys (see file for registration URLs)
+   ```
+
+2. Run the seed script:
+   ```bash
+   npm run seed:metro
+   ```
+
+   This fetches all Metropolitan Statistical Areas from Census and their ZIP codes from HUD, then writes them to Supabase. Takes ~30 seconds.
+
+**Option B: Insert minimal test data manually**
+
+If you just want a few test entries without API keys, run this in Supabase SQL Editor:
 
 ```sql
--- Insert Dallas-Fort Worth metro area
-INSERT INTO metro_areas (id, name, state, population)
-VALUES ('dfw-metro', 'Dallas-Fort Worth', 'TX', 7500000);
+-- CBSA codes are official Census IDs (not slugs)
+INSERT INTO metro_areas (id, name, state, population, cbsa_type) VALUES
+  ('19100', 'Dallas-Fort Worth-Arlington', 'TX', 7637387, 'metropolitan'),
+  ('35620', 'New York-Newark-Jersey City', 'NY', 19979477, 'metropolitan'),
+  ('31080', 'Los Angeles-Long Beach-Anaheim', 'CA', 13200998, 'metropolitan');
 
--- Insert some ZIP codes for testing
 INSERT INTO metro_area_zipcodes (zip_code, metro_area_id) VALUES
-  ('75001', 'dfw-metro'),
-  ('75002', 'dfw-metro'),
-  ('75201', 'dfw-metro'),
-  ('75202', 'dfw-metro');
-
--- Add more metro areas if needed
-INSERT INTO metro_areas (id, name, state, population) VALUES
-  ('nyc-metro', 'New York City', 'NY', 19500000),
-  ('la-metro', 'Los Angeles', 'CA', 13200000);
-
--- Add ZIP codes for other metros
-INSERT INTO metro_area_zipcodes (zip_code, metro_area_id) VALUES
-  ('10001', 'nyc-metro'),
-  ('10002', 'nyc-metro'),
-  ('90001', 'la-metro'),
-  ('90002', 'la-metro');
+  ('75001', '19100'),
+  ('75201', '19100'),
+  ('10001', '35620'),
+  ('10002', '35620'),
+  ('90001', '31080'),
+  ('90002', '31080');
 ```
 
 ## Step 4: Configure Environment Variables
@@ -391,7 +401,7 @@ VALUES (
   'test@nusa.com',
   'Test User',
   0,
-  'dfw-metro',
+  '19100',
   '75001'
 );
 ```
@@ -489,8 +499,8 @@ npm start
 **That's it!** You should now have both apps running. Start with the mobile app using the test ZIP codes and walk through the complete onboarding flow.
 
 **Test ZIP Codes:**
-- `75001` - Dallas-Fort Worth, TX
-- `10001` - New York City, NY
-- `90001` - Los Angeles, CA
+- `75001` - Dallas-Fort Worth-Arlington, TX (CBSA 19100)
+- `10001` - New York-Newark-Jersey City, NY (CBSA 35620)
+- `90001` - Los Angeles-Long Beach-Anaheim, CA (CBSA 31080)
 
 **Questions?** Check the troubleshooting section above or review the terminal logs for specific error messages.

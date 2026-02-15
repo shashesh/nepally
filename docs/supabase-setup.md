@@ -176,50 +176,26 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const metroAreas = [
-  {
-    id: 'dallas-fort-worth',
-    name: 'Dallas-Fort Worth-Arlington',
-    state: 'TX'
-  },
-  {
-    id: 'new-york',
-    name: 'New York-Newark-Jersey City',
-    state: 'NY'
-  },
-  // ... more metro areas
-];
-
-const zipCodes = [
-  { metro_area_id: 'dallas-fort-worth', zip_code: '75001' },
-  { metro_area_id: 'dallas-fort-worth', zip_code: '75201' },
-  // ... more ZIP codes
-];
+// Metro areas are now seeded automatically from Census + HUD APIs.
+// See scripts/seed-metro-data.ts for the full implementation.
+// IDs are CBSA codes (e.g., '19100' for Dallas-Fort Worth-Arlington).
 
 async function seed() {
-  // Insert metro areas
-  const { error: metroError } = await supabase
-    .from('metro_areas')
-    .upsert(metroAreas);
-
-  if (metroError) throw metroError;
-
-  // Insert ZIP codes
-  const { error: zipError } = await supabase
-    .from('metro_area_zipcodes')
-    .upsert(zipCodes);
-
-  if (zipError) throw zipError;
-
-  console.log('Seeding completed!');
+  // Use the automated seed script instead:
+  // npm run seed:metro
+  console.log('Run: npm run seed:metro');
 }
 
 seed();
 ```
 
-Run the script:
+Run the seed script:
 ```bash
-npx tsx scripts/seedMetroAreas.ts
+# First, copy and fill in your API keys:
+cp scripts/.env.example scripts/.env
+
+# Then run:
+npm run seed:metro
 ```
 
 ## Storage Setup
@@ -568,7 +544,7 @@ supabase functions logs expire-posts --follow
 ```sql
 EXPLAIN ANALYZE
 SELECT * FROM posts
-WHERE metro_area_id = 'dallas-fort-worth'
+WHERE metro_area_id = '19100'
   AND status = 'active'
 ORDER BY created_at DESC
 LIMIT 20;
@@ -699,7 +675,7 @@ ORDER BY idx_scan ASC;
 ```sql
 -- Use EXPLAIN to analyze queries
 EXPLAIN (ANALYZE, BUFFERS)
-SELECT * FROM posts WHERE metro_area_id = 'dallas-fort-worth';
+SELECT * FROM posts WHERE metro_area_id = '19100';
 ```
 
 ### 4. Caching
@@ -714,7 +690,7 @@ const { data, error } = useSWR('posts', async () => {
   const { data } = await supabase
     .from('posts')
     .select('*')
-    .eq('metro_area_id', 'dallas-fort-worth')
+    .eq('metro_area_id', '19100')
     .limit(20);
   return data;
 }, {

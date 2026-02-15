@@ -102,7 +102,7 @@ CREATE POLICY "Moderators can delete users"
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "email": "user@example.com",
   "name": "John Doe",
-  "metro_area_id": "dallas-fort-worth",
+  "metro_area_id": "19100",
   "zip_code": "75201",
   "trust_level": 1,
   "phone_verified": true,
@@ -123,14 +123,16 @@ CREATE POLICY "Moderators can delete users"
 
 **Table:** `metro_areas`
 
-**Primary Key:** `id` (TEXT, URL-safe metro area name)
+**Primary Key:** `id` (TEXT, CBSA code — e.g., `'19100'` for Dallas-Fort Worth)
 
 **Schema:**
 ```sql
 CREATE TABLE metro_areas (
-  id TEXT PRIMARY KEY,
+  id TEXT PRIMARY KEY,           -- CBSA code (e.g., '19100')
   name TEXT NOT NULL,
   state TEXT NOT NULL,
+  population INTEGER,            -- Census ACS population estimate
+  cbsa_type TEXT DEFAULT 'metropolitan',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -167,6 +169,7 @@ CREATE TABLE metro_area_zipcodes (
 -- Indexes
 CREATE INDEX idx_metro_zipcodes_zip ON metro_area_zipcodes(zip_code);
 CREATE INDEX idx_metro_zipcodes_metro ON metro_area_zipcodes(metro_area_id);
+CREATE UNIQUE INDEX idx_metro_zipcodes_zip_unique ON metro_area_zipcodes(zip_code);
 
 -- Row Level Security
 ALTER TABLE metro_area_zipcodes ENABLE ROW LEVEL SECURITY;
@@ -186,20 +189,22 @@ CREATE POLICY "Only service role can modify metro ZIP codes"
 ```json
 // metro_areas
 {
-  "id": "dallas-fort-worth",
+  "id": "19100",
   "name": "Dallas-Fort Worth-Arlington",
-  "state": "TX"
+  "state": "TX",
+  "population": 7637387,
+  "cbsa_type": "metropolitan"
 }
 
 // metro_area_zipcodes
 {
   "id": 1,
-  "metro_area_id": "dallas-fort-worth",
+  "metro_area_id": "19100",
   "zip_code": "75201"
 }
 ```
 
-**Data Source:** HUD USPS ZIP to County Crosswalk
+**Data Source:** Census Bureau ACS API (metro names + population) + HUD USPS Crosswalk API (ZIP-to-CBSA mappings). Seeded via `npm run seed:metro`.
 
 ---
 
@@ -382,7 +387,7 @@ CREATE POLICY "Authors and moderators can delete posts"
   "id": "550e8400-e29b-41d4-a716-446655440001",
   "author_id": "550e8400-e29b-41d4-a716-446655440000",
   "category": "housing",
-  "metro_area_id": "dallas-fort-worth",
+  "metro_area_id": "19100",
   "location_zip_code": "75201",
   "location_city": "Dallas",
   "location_state": "TX",
@@ -773,7 +778,7 @@ All relationships are enforced via foreign keys:
 
 ```sql
 SELECT * FROM posts
-WHERE metro_area_id = 'dallas-fort-worth'
+WHERE metro_area_id = '19100'
   AND category = 'housing'
   AND status = 'active'
 ORDER BY created_at DESC
@@ -860,11 +865,12 @@ CREATE OR REPLACE FUNCTION get_metro_by_zip(zip TEXT)
 RETURNS TABLE (
   id TEXT,
   name TEXT,
-  state TEXT
+  state TEXT,
+  population INTEGER
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT m.id, m.name, m.state
+  SELECT m.id, m.name, m.state, m.population
   FROM metro_areas m
   JOIN metro_area_zipcodes z ON m.id = z.metro_area_id
   WHERE z.zip_code = zip
@@ -966,7 +972,7 @@ supabase
   .on('*', payload => {
     console.log('Post changed:', payload);
   })
-  .filter('metro_area_id', 'eq', 'dallas-fort-worth')
+  .filter('metro_area_id', 'eq', '19100')
   .subscribe();
 ```
 

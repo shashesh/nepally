@@ -1,16 +1,23 @@
 import { supabase } from '../../config/supabase';
 
-interface Post {
+export interface Post {
   id: string;
   category: 'housing' | 'jobs' | 'emergency' | 'travel';
   title: string;
   description: string;
   metro_area_id: string;
   author_id: string;
-  status: 'active' | 'expired' | 'deleted';
+  location_zip_code: string;
+  location_city: string;
+  location_state: string;
+  photos: string[];
+  fields: Record<string, any>;
+  status: 'active' | 'expired' | 'removed' | 'pending';
+  expiry_date: string;
   created_at: string;
-  expires_at: string;
-  metadata: Record<string, any>;
+  updated_at: string;
+  views_count: number;
+  responses_count: number;
   author?: {
     id: string;
     full_name: string;
@@ -98,39 +105,56 @@ export async function getPostById(postId: string): Promise<{
 /**
  * Create a new post
  */
-export async function createPost(
-  authorId: string,
-  metroAreaId: string,
-  category: Post['category'],
-  title: string,
-  description: string,
-  metadata: Record<string, any>,
-  expiresAt: string
-): Promise<{
+export async function createPost(params: {
+  metroAreaId: string;
+  category: Post['category'];
+  title: string;
+  description: string;
+  fields: Record<string, any>;
+  expiryDate: string;
+  locationZipCode: string;
+  locationCity: string;
+  locationState: string;
+}): Promise<{
   data?: Post;
   error?: Error;
 }> {
   try {
+    // Use the authenticated user's ID from the current session
+    // so author_id matches auth.uid() for the RLS policy
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
+      return { error: new Error('You must be logged in to create a post') };
+    }
+
     const { data, error } = await supabase
       .from('posts')
       .insert({
-        author_id: authorId,
-        metro_area_id: metroAreaId,
-        category,
-        title,
-        description,
-        metadata,
-        expires_at: expiresAt,
+        author_id: authUser.id,
+        metro_area_id: params.metroAreaId,
+        category: params.category,
+        title: params.title,
+        description: params.description,
+        fields: params.fields,
+        expiry_date: params.expiryDate,
+        location_zip_code: params.locationZipCode,
+        location_city: params.locationCity,
+        location_state: params.locationState,
+        photos: '{}',
         status: 'active',
       })
       .select()
       .single();
 
-    if (error) throw error;
-    if (!data) throw new Error('Failed to create post');
+    if (error) {
+      console.error('Supabase createPost error:', error.message, error.details, error.hint);
+      return { error: new Error(error.message) };
+    }
+    if (!data) return { error: new Error('No data returned after insert') };
 
     return { data: data as Post };
   } catch (error) {
+    console.error('createPost exception:', error);
     return {
       error: error instanceof Error ? error : new Error('Failed to create post'),
     };

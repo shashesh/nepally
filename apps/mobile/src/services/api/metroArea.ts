@@ -4,6 +4,7 @@ interface MetroArea {
   id: string;
   name: string;
   state: string;
+  population: number | null;
 }
 
 interface MetroAreaResult {
@@ -24,7 +25,8 @@ export async function getMetroByZip(zipCode: string): Promise<MetroAreaResult> {
         metro_areas (
           id,
           name,
-          state
+          state,
+          population
         )
       `)
       .eq('zip_code', zipCode)
@@ -41,6 +43,7 @@ export async function getMetroByZip(zipCode: string): Promise<MetroAreaResult> {
         id: metroAreaData.id,
         name: metroAreaData.name,
         state: metroAreaData.state,
+        population: metroAreaData.population,
       },
     };
   } catch (error) {

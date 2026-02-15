@@ -1,28 +1,59 @@
 import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { MainTabParamList } from '../types/navigation';
 import HomeScreen from '../screens/HomeScreen';
+import { PostNavigator } from './PostNavigator';
+import { useAuth } from '../hooks/useAuth';
 import { colors } from '../styles/colors';
-import { spacing } from '../styles/spacing';
+import { typography } from '../styles/typography';
+import { spacing, borderRadius } from '../styles/spacing';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Placeholder screens for Phase 1
-function SearchScreen() {
-  return null; // TODO: Implement in later phase
+function ComingSoonScreen({ label }: { label: string }) {
+  return (
+    <View style={styles.comingSoon}>
+      <Ionicons name="construct-outline" size={48} color={colors.text.disabled} />
+      <Text style={styles.comingSoonTitle}>{label}</Text>
+      <Text style={styles.comingSoonSubtitle}>Coming soon</Text>
+    </View>
+  );
 }
 
-function PostScreen() {
-  return null; // TODO: Implement in later phase
+function SearchScreen() {
+  return <ComingSoonScreen label="Search" />;
 }
 
 function MessagesScreen() {
-  return null; // TODO: Implement in later phase
+  return <ComingSoonScreen label="Messages" />;
 }
 
 function ProfileScreen() {
-  return null; // TODO: Implement in later phase
+  const { user, signOut } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log Out', style: 'destructive', onPress: signOut },
+    ]);
+  };
+
+  return (
+    <View style={styles.comingSoon}>
+      <Ionicons name="person-circle-outline" size={64} color={colors.text.disabled} />
+      <Text style={styles.comingSoonTitle}>{user?.full_name || 'Profile'}</Text>
+      <Text style={styles.comingSoonSubtitle}>{user?.email}</Text>
+      <Text style={styles.comingSoonSubtitle}>
+        Trust Level {user?.trust_level} · {user?.zip_code || 'No ZIP'}
+      </Text>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
+        <Ionicons name="log-out-outline" size={20} color={colors.error} />
+        <Text style={styles.logoutText}>Log Out</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 export function MainTabNavigator() {
@@ -58,7 +89,7 @@ export function MainTabNavigator() {
       />
       <Tab.Screen
         name="Post"
-        component={PostScreen}
+        component={PostNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="add-circle" size={size} color={color} />
@@ -86,3 +117,37 @@ export function MainTabNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  comingSoon: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  comingSoonTitle: {
+    ...typography.h3,
+    color: colors.text.primary,
+    marginTop: spacing.s,
+  },
+  comingSoonSubtitle: {
+    ...typography.body,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.m,
+    paddingVertical: spacing.s,
+    paddingHorizontal: spacing.m,
+    borderRadius: borderRadius.button,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  logoutText: {
+    ...typography.button,
+    color: colors.error,
+  },
+});

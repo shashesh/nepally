@@ -11,15 +11,19 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../hooks/useAuth';
 import { Level0Banner } from '../components/banners/Level0Banner';
 import { PostCard } from '../components/cards/PostCard';
-import { getPostsByMetroArea } from '../services/api/posts';
-import { isBannerDismissed, saveBannerDismissed } from '../utils/storage';
+import { getPostsByMetroArea, Post } from '../services/api/posts';
+import { isBannerDismissed, saveBannerDismissed, getMetroArea, saveMetroArea } from '../utils/storage';
+import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
 import { spacing } from '../styles/spacing';
-import { TRUST_LEVELS, POST_CATEGORIES } from '../config/constants';
+import { TRUST_LEVELS } from '../config/constants';
+import { MainTabParamList } from '../types/navigation';
 
 type Category = 'all' | 'housing' | 'jobs' | 'emergency' | 'travel';
 
@@ -31,18 +35,38 @@ const CATEGORIES = [
   { id: 'travel', label: 'Travel', icon: 'airplane' },
 ] as const;
 
+function getPostMetadata(item: Post): string {
+  if (item.category === 'housing' && item.fields?.rentAmount) {
+    return `$${item.fields.rentAmount}/month`;
+  }
+  if (item.category === 'jobs' && item.fields?.payRate) {
+    const pay = item.fields.payRate;
+    return `$${pay.min}–$${pay.max} ${pay.type}`;
+  }
+  if (item.category === 'travel' && item.fields?.route) {
+    return `${item.fields.route.from} → ${item.fields.route.to}`;
+  }
+  if (item.category === 'emergency' && item.fields?.emergencyType) {
+    return `${item.fields.urgency} – ${item.fields.emergencyType}`;
+  }
+  return item.description;
+}
+
 export default function HomeScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const [selectedCategory, setSelectedCategory] = useState<Category>('housing');
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [metroName, setMetroName] = useState<string | null>(null);
 
   const isLevel0 = user?.trust_level === TRUST_LEVELS.NEW;
 
   useEffect(() => {
     loadBannerState();
+    loadMetroName();
   }, []);
 
   useEffect(() => {
@@ -54,6 +78,29 @@ export default function HomeScreen() {
   const loadBannerState = async () => {
     const dismissed = await isBannerDismissed('level0-banner');
     setBannerVisible(!dismissed);
+  };
+
+  const loadMetroName = async () => {
+    // Try cache first
+    const cached = await getMetroArea();
+    if (cached) {
+      setMetroName(`${cached.name}, ${cached.state}`);
+      return;
+    }
+
+    // Cache empty (e.g. after logout/re-login) — fetch from DB and re-cache
+    if (user?.metro_area_id) {
+      const { data } = await supabase
+        .from('metro_areas')
+        .select('id, name, state')
+        .eq('id', user.metro_area_id)
+        .single();
+
+      if (data) {
+        setMetroName(`${data.name}, ${data.state}`);
+        saveMetroArea({ id: data.id, name: data.name, state: data.state });
+      }
+    }
   };
 
   const loadPosts = async () => {
@@ -86,7 +133,6 @@ export default function HomeScreen() {
   };
 
   const handleVerifyPress = () => {
-    // TODO: Navigate to verification screen (Journey #02)
     Alert.alert(
       'Phone Verification',
       'Phone verification will be implemented in Journey #02',
@@ -94,7 +140,7 @@ export default function HomeScreen() {
     );
   };
 
-  const handlePostPress = (post: any) => {
+  const handlePostPress = (post: Post) => {
     if (isLevel0) {
       Alert.alert(
         'Verify to Message',
@@ -121,8 +167,7 @@ export default function HomeScreen() {
         ]
       );
     } else {
-      // TODO: Navigate to create post screen
-      console.log('Create post');
+      navigation.navigate('Post');
     }
   };
 
@@ -172,7 +217,7 @@ export default function HomeScreen() {
         <View style={styles.headerLeft}>
           <Ionicons name="location" size={20} color={colors.primary.main} />
           <Text style={styles.metroName} numberOfLines={1}>
-            {user?.metro_area_id ? 'Your Metro Area' : 'No Location Set'}
+            {metroName || (user?.metro_area_id ? 'Loading...' : 'No Location Set')}
           </Text>
         </View>
         <View style={styles.headerRight}>
@@ -212,9 +257,9 @@ export default function HomeScreen() {
           <PostCard
             category={item.category}
             title={item.title}
-            metadata={item.metadata?.rent ? `$${item.metadata.rent}/month` : item.description}
+            metadata={getPostMetadata(item)}
             timestamp={`Posted ${new Date(item.created_at).toLocaleDateString()}`}
-            metroArea="Metro Area"
+            metroArea={item.location_city ? `${item.location_city}, ${item.location_state}` : 'Metro Area'}
             isVerified={item.author?.trust_level >= TRUST_LEVELS.VERIFIED}
             onPress={() => handlePostPress(item)}
           />

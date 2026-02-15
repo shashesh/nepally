@@ -30,8 +30,10 @@ export function RootNavigator() {
     );
   }
 
-  // Show onboarding if user doesn't exist or onboarding is not complete
-  const showOnboarding = !user || !onboardingComplete;
+  // Show onboarding if user doesn't exist or onboarding is not complete.
+  // For returning users who log in again, metro_area_id being set means
+  // they already completed onboarding even if the AsyncStorage flag was cleared.
+  const showOnboarding = !user || (!onboardingComplete && !user.metro_area_id);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

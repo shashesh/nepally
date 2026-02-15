@@ -10,8 +10,8 @@ This document serves as the single source of truth for all technology versions u
 
 | Package | Version | Location | Notes |
 |---------|---------|----------|-------|
-| **react** | 19.1.0 | Both mobile & web | Unified version across platforms |
-| **react-dom** | 19.1.0 | Web only | Matches React version |
+| **react** | 19.1.4 | Both mobile & web | Unified version across platforms |
+| **react-dom** | 19.1.4 | Web only | Matches React version |
 
 ### Mobile App (`apps/mobile`)
 
@@ -55,9 +55,9 @@ This document serves as the single source of truth for all technology versions u
 
 ## Why These Versions?
 
-### React 19.1.0 (Both Mobile & Web)
+### React 19.1.4 (Both Mobile & Web)
 - **Decision Date:** 2026-02-12
-- **Reason:** Expo 54 requires React 19. To maintain consistency and avoid dependency conflicts, both mobile and web use the exact same React version (19.1.0).
+- **Reason:** Expo 54 requires React 19. To maintain consistency and avoid dependency conflicts, both mobile and web use the exact same React version (19.1.4).
 - **Alternative Considered:** Using React 18 for web and React 19 for mobile
 - **Why Not:** Causes npm workspace dependency conflicts and makes maintenance harder
 
@@ -101,20 +101,20 @@ This document serves as the single source of truth for all technology versions u
 ```json
 {
   "overrides": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react": "19.1.4",
+    "react-dom": "19.1.4"
   }
 }
 ```
 
-This ensures React 19.1.0 is used throughout the entire monorepo, overriding any peer dependency requirements.
+This ensures React 19.1.4 is used throughout the entire monorepo, overriding any peer dependency requirements.
 
 ### Mobile package.json
 
 ```json
 {
   "dependencies": {
-    "react": "19.1.0",
+    "react": "19.1.4",
     "react-native": "0.81.5",
     "expo": "~54.0.0"
   }
@@ -126,8 +126,8 @@ This ensures React 19.1.0 is used throughout the entire monorepo, overriding any
 ```json
 {
   "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.1.4",
+    "react-dom": "19.1.4",
     "next": "15.5.12"
   },
   "devDependencies": {

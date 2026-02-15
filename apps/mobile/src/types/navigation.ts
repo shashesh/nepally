@@ -6,6 +6,9 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 export type OnboardingStackParamList = {
   Welcome: undefined;
   SignupMethod: undefined;
+  EmailSignup: {
+    mode?: 'signup' | 'login';
+  };
   ZipCodeEntry: {
     userId: string;
   };
@@ -19,12 +22,22 @@ export type OnboardingStackParamList = {
 };
 
 /**
+ * Post creation stack parameter list
+ */
+export type PostStackParamList = {
+  CategorySelect: undefined;
+  CreatePost: {
+    category: 'housing' | 'jobs' | 'emergency' | 'travel';
+  };
+};
+
+/**
  * Main tab navigator parameter list
  */
 export type MainTabParamList = {
   Home: undefined;
   Search: undefined;
-  Post: undefined;
+  Post: NavigatorScreenParams<PostStackParamList>;
   Messages: undefined;
   Profile: undefined;
 };

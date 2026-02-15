@@ -1,5 +1,35 @@
 -- NUSA Initial Database Schema Migration
 -- This migration creates all tables, indexes, RLS policies, and functions
+-- Safe to re-run: drops all objects first (dev only — no production data)
+
+-- =====================================================
+-- TEARDOWN (drop in reverse dependency order)
+-- =====================================================
+
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS reports CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS conversation_participants CASCADE;
+DROP TABLE IF EXISTS conversations CASCADE;
+DROP TABLE IF EXISTS posts CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS metro_area_zipcodes CASCADE;
+DROP TABLE IF EXISTS metro_areas CASCADE;
+
+DROP TYPE IF EXISTS notification_type;
+DROP TYPE IF EXISTS report_action;
+DROP TYPE IF EXISTS report_status;
+DROP TYPE IF EXISTS report_target_type;
+DROP TYPE IF EXISTS message_type;
+DROP TYPE IF EXISTS post_status;
+DROP TYPE IF EXISTS post_category;
+
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+DROP FUNCTION IF EXISTS get_metro_by_zip(TEXT) CASCADE;
+
+-- =====================================================
+-- EXTENSIONS
+-- =====================================================
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -21,20 +51,21 @@ CREATE TYPE notification_type AS ENUM ('message', 'post_response', 'emergency_al
 -- TABLES
 -- =====================================================
 
--- Metro Areas
+-- Metro Areas (IDs are CBSA codes, e.g. '19100' for Dallas-Fort Worth)
 CREATE TABLE metro_areas (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   state TEXT NOT NULL,
+  population INTEGER,
+  cbsa_type TEXT DEFAULT 'metropolitan',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Metro Area ZIP Codes
+-- Metro Area ZIP Codes (each ZIP maps to exactly one metro)
 CREATE TABLE metro_area_zipcodes (
   id BIGSERIAL PRIMARY KEY,
   metro_area_id TEXT NOT NULL REFERENCES metro_areas(id) ON DELETE CASCADE,
-  zip_code TEXT NOT NULL,
-  UNIQUE(metro_area_id, zip_code)
+  zip_code TEXT NOT NULL UNIQUE
 );
 
 -- Users (extends auth.users)
@@ -43,7 +74,7 @@ CREATE TABLE users (
 
   -- Identity
   email TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
+  full_name TEXT NOT NULL,
   phone TEXT,
   profile_photo TEXT,
 
@@ -250,11 +281,12 @@ CREATE OR REPLACE FUNCTION get_metro_by_zip(zip TEXT)
 RETURNS TABLE (
   id TEXT,
   name TEXT,
-  state TEXT
+  state TEXT,
+  population INTEGER
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT m.id, m.name, m.state
+  SELECT m.id, m.name, m.state, m.population
   FROM metro_areas m
   JOIN metro_area_zipcodes z ON m.id = z.metro_area_id
   WHERE z.zip_code = zip
@@ -376,7 +408,7 @@ CREATE POLICY "Participants can view conversations"
   USING (
     EXISTS (
       SELECT 1 FROM conversation_participants
-      WHERE conversation_id = id AND user_id = auth.uid()
+      WHERE conversation_id = conversations.id AND user_id = auth.uid()
     )
   );
 
@@ -393,7 +425,7 @@ CREATE POLICY "Participants can update conversations"
   USING (
     EXISTS (
       SELECT 1 FROM conversation_participants
-      WHERE conversation_id = id AND user_id = auth.uid()
+      WHERE conversation_id = conversations.id AND user_id = auth.uid()
     )
   );
 
