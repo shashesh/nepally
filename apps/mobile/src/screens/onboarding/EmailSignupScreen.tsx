@@ -18,6 +18,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 import { markOnboardingComplete } from '../../utils/storage';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { TextButton } from '../../components/buttons/TextButton';
+import { APP_CONFIG } from '../../config/constants';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -49,8 +50,8 @@ export function EmailSignupScreen() {
       newErrors.email = 'Enter a valid email address';
     }
 
-    if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    if (password.length < APP_CONFIG.minPasswordLength) {
+      newErrors.password = `Password must be at least ${APP_CONFIG.minPasswordLength} characters`;
     }
 
     if (mode === 'signup' && password !== confirmPassword) {
@@ -197,7 +198,7 @@ export function EmailSignupScreen() {
               <Text style={styles.label}>Password</Text>
               <TextInput
                 style={[styles.input, errors.password && styles.inputError]}
-                placeholder="At least 6 characters"
+                placeholder={`At least ${APP_CONFIG.minPasswordLength} characters`}
                 placeholderTextColor={colors.text.disabled}
                 value={password}
                 onChangeText={setPassword}

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '../config/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { getUserData, saveUserData, clearAllData } from '../utils/storage';
@@ -19,6 +19,8 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  pauseAuthListener: () => void;
+  resumeAuthListener: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -27,6 +29,8 @@ export const AuthContext = createContext<AuthContextType>({
   loading: true,
   signOut: async () => {},
   refreshUser: async () => {},
+  pauseAuthListener: () => {},
+  resumeAuthListener: () => {},
 });
 
 interface AuthProviderProps {
@@ -37,6 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const authPausedRef = useRef(false);
 
   // Load user data from storage on mount
   useEffect(() => {
@@ -47,12 +52,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session?.user) {
-          setSupabaseUser(session.user);
-          await refreshUser();
-        } else {
+        // Skip auth state changes while paused (e.g. during password change)
+        if (authPausedRef.current) return;
+
+        if (event === 'SIGNED_OUT') {
           setSupabaseUser(null);
           setUser(null);
+        } else if (session?.user) {
+          setSupabaseUser(session.user);
+          await refreshUser();
         }
       }
     );
@@ -89,7 +97,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: { user: supabaseUser } } = await supabase.auth.getUser();
 
       if (!supabaseUser) {
-        setUser(null);
+        // Don't clear user here — transient auth operations (e.g. signInWithPassword
+        // during password change) can briefly return null. Only signOut should clear user.
         return;
       }
 
@@ -119,6 +128,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const pauseAuthListener = () => {
+    authPausedRef.current = true;
+  };
+
+  const resumeAuthListener = () => {
+    authPausedRef.current = false;
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -138,6 +155,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         loading,
         signOut,
         refreshUser,
+        pauseAuthListener,
+        resumeAuthListener,
       }}
     >
       {children}

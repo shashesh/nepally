@@ -32,6 +32,15 @@ export type PostStackParamList = {
 };
 
 /**
+ * Profile stack parameter list
+ */
+export type ProfileStackParamList = {
+  ProfileView: undefined;
+  EditProfile: undefined;
+  ChangePassword: undefined;
+};
+
+/**
  * Main tab navigator parameter list
  */
 export type MainTabParamList = {
@@ -39,7 +48,7 @@ export type MainTabParamList = {
   Search: undefined;
   Post: NavigatorScreenParams<PostStackParamList>;
   Messages: undefined;
-  Profile: undefined;
+  Profile: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 /**

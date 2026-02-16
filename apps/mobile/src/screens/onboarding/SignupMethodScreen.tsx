@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,16 +18,11 @@ import { TextButton } from '../../components/buttons/TextButton';
 export function SignupMethodScreen() {
   const navigation = useNavigation<any>();
 
-  const handleGoogleSignup = () => {
-    // TODO: Implement Google OAuth (stub for Phase 1)
-    console.log('Google signup pressed');
-    // For now, navigate directly to ZIP code entry
-    navigation.navigate('ZipCodeEntry', { userId: 'temp-user-id' });
-  };
-
-  const handlePhoneSignup = () => {
-    // TODO: Implement phone signup
-    console.log('Phone signup pressed');
+  const handleComingSoon = (method: string) => {
+    Alert.alert(
+      'Coming Soon',
+      `${method} signup will be available in a future update. Please use email signup for now.`
+    );
   };
 
   const handleEmailSignup = () => {
@@ -47,27 +43,27 @@ export function SignupMethodScreen() {
         {/* Signup Options */}
         <View style={styles.optionsContainer}>
           <TouchableOpacity
-            style={styles.optionCard}
-            onPress={handleGoogleSignup}
+            style={[styles.optionCard, styles.optionCardDisabled]}
+            onPress={() => handleComingSoon('Google')}
             activeOpacity={0.7}
           >
             <Ionicons name="logo-google" size={24} color={colors.error} />
             <View style={styles.optionContent}>
               <Text style={styles.optionLabel}>Continue with Google</Text>
-              <Text style={styles.optionSubtext}>Fastest signup option</Text>
+              <Text style={styles.optionSubtext}>Coming soon</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.optionCard}
-            onPress={handlePhoneSignup}
+            style={[styles.optionCard, styles.optionCardDisabled]}
+            onPress={() => handleComingSoon('Phone')}
             activeOpacity={0.7}
           >
             <Ionicons name="call" size={24} color={colors.success} />
             <View style={styles.optionContent}>
               <Text style={styles.optionLabel}>Continue with Phone</Text>
-              <Text style={styles.optionSubtext}>Verify via SMS</Text>
+              <Text style={styles.optionSubtext}>Coming soon</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
@@ -143,6 +139,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.card,
     padding: spacing.s,
     minHeight: heights.button.primary + spacing.s,
+  },
+  optionCardDisabled: {
+    opacity: 0.5,
   },
   optionContent: {
     flex: 1,

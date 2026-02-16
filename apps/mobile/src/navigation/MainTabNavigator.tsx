@@ -1,14 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { MainTabParamList } from '../types/navigation';
 import HomeScreen from '../screens/HomeScreen';
 import { PostNavigator } from './PostNavigator';
-import { useAuth } from '../hooks/useAuth';
+import { ProfileNavigator } from './ProfileNavigator';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
-import { spacing, borderRadius } from '../styles/spacing';
+import { spacing } from '../styles/spacing';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -28,32 +28,6 @@ function SearchScreen() {
 
 function MessagesScreen() {
   return <ComingSoonScreen label="Messages" />;
-}
-
-function ProfileScreen() {
-  const { user, signOut } = useAuth();
-
-  const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: signOut },
-    ]);
-  };
-
-  return (
-    <View style={styles.comingSoon}>
-      <Ionicons name="person-circle-outline" size={64} color={colors.text.disabled} />
-      <Text style={styles.comingSoonTitle}>{user?.full_name || 'Profile'}</Text>
-      <Text style={styles.comingSoonSubtitle}>{user?.email}</Text>
-      <Text style={styles.comingSoonSubtitle}>
-        Trust Level {user?.trust_level} · {user?.zip_code || 'No ZIP'}
-      </Text>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-        <Ionicons name="log-out-outline" size={20} color={colors.error} />
-        <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
-    </View>
-  );
 }
 
 export function MainTabNavigator() {
@@ -107,7 +81,7 @@ export function MainTabNavigator() {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
@@ -134,20 +108,5 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.secondary,
     marginTop: spacing.xs,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.m,
-    paddingVertical: spacing.s,
-    paddingHorizontal: spacing.m,
-    borderRadius: borderRadius.button,
-    borderWidth: 1,
-    borderColor: colors.error,
-  },
-  logoutText: {
-    ...typography.button,
-    color: colors.error,
   },
 });
