@@ -12,18 +12,26 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../hooks/useAuth';
 import { Level0Banner } from '../components/banners/Level0Banner';
 import { PostCard } from '../components/cards/PostCard';
 import { getPostsByMetroArea, Post } from '../services/api/posts';
+import { getOrCreateConversation } from '../services/api/conversations';
 import { isBannerDismissed, saveBannerDismissed, getMetroArea, saveMetroArea } from '../utils/storage';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
 import { spacing } from '../styles/spacing';
 import { TRUST_LEVELS } from '../config/constants';
-import { MainTabParamList } from '../types/navigation';
+import { MainTabParamList, HomeStackParamList } from '../types/navigation';
+
+type HomeScreenNavProp = CompositeNavigationProp<
+  NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
+  BottomTabNavigationProp<MainTabParamList>
+>;
 
 type Category = 'all' | 'housing' | 'jobs' | 'emergency' | 'travel';
 
@@ -54,7 +62,7 @@ function getPostMetadata(item: Post): string {
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const navigation = useNavigation<HomeScreenNavProp>();
   const [selectedCategory, setSelectedCategory] = useState<Category>('housing');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -141,18 +149,47 @@ export default function HomeScreen() {
   };
 
   const handlePostPress = (post: Post) => {
+    navigation.navigate('PostDetail', { postId: post.id });
+  };
+
+  const handleMessagePress = async (post: Post) => {
+    if (!user || !post.author) return;
+
     if (isLevel0) {
       Alert.alert(
         'Verify to Message',
-        'Please verify your phone number to view full post details and message the author.',
+        'Please verify your phone number to message post authors.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Verify Now', onPress: handleVerifyPress },
         ]
       );
-    } else {
-      // TODO: Navigate to post detail screen
-      console.log('Navigate to post:', post.id);
+      return;
+    }
+
+    const result = await getOrCreateConversation(
+      user.id,
+      user.full_name,
+      post.author.id,
+      post.author.full_name,
+      post.id
+    );
+
+    if (result.data) {
+      navigation.navigate('Messages', {
+        screen: 'MessageThread',
+        params: {
+          conversationId: result.data.conversationId,
+          otherUserId: post.author.id,
+          otherUserName: post.author.full_name,
+          otherUserTrustLevel: post.author.trust_level,
+          postId: post.id,
+          postTitle: post.title,
+          postCategory: post.category,
+        },
+      });
+    } else if (result.error) {
+      Alert.alert('Error', 'Failed to start conversation. Please try again.');
     }
   };
 
@@ -167,7 +204,7 @@ export default function HomeScreen() {
         ]
       );
     } else {
-      navigation.navigate('Post');
+      navigation.navigate('Post' as any);
     }
   };
 
@@ -260,8 +297,13 @@ export default function HomeScreen() {
             metadata={getPostMetadata(item)}
             timestamp={`Posted ${new Date(item.created_at).toLocaleDateString()}`}
             metroArea={item.location_city ? `${item.location_city}, ${item.location_state}` : 'Metro Area'}
-            isVerified={item.author?.trust_level >= TRUST_LEVELS.VERIFIED}
+            isVerified={(item.author?.trust_level ?? 0) >= TRUST_LEVELS.VERIFIED}
             onPress={() => handlePostPress(item)}
+            onMessagePress={
+              item.author_id !== user?.id
+                ? () => handleMessagePress(item)
+                : undefined
+            }
           />
         )}
         keyExtractor={(item) => item.id}

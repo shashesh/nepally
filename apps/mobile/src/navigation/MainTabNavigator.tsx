@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { MainTabParamList } from '../types/navigation';
-import HomeScreen from '../screens/HomeScreen';
+import { HomeNavigator } from './HomeNavigator';
 import { PostNavigator } from './PostNavigator';
 import { ProfileNavigator } from './ProfileNavigator';
+import { ChatNavigator } from './ChatNavigator';
+import { useAuth } from '../hooks/useAuth';
+import { getTotalUnreadCount } from '../services/api/messages';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
 import { spacing } from '../styles/spacing';
@@ -26,11 +30,25 @@ function SearchScreen() {
   return <ComingSoonScreen label="Search" />;
 }
 
-function MessagesScreen() {
-  return <ComingSoonScreen label="Messages" />;
-}
-
 export function MainTabNavigator() {
+  const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const refreshUnreadCount = useCallback(async () => {
+    if (!user?.id) return;
+    const result = await getTotalUnreadCount(user.id);
+    setUnreadCount(result.count);
+  }, [user?.id]);
+
+  // Refresh unread count when tab navigator is focused
+  useFocusEffect(
+    useCallback(() => {
+      refreshUnreadCount();
+      const interval = setInterval(refreshUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }, [refreshUnreadCount])
+  );
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -45,7 +63,7 @@ export function MainTabNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={HomeNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
@@ -72,11 +90,13 @@ export function MainTabNavigator() {
       />
       <Tab.Screen
         name="Messages"
-        component={MessagesScreen}
+        component={ChatNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubbles" size={size} color={color} />
           ),
+          tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.accent.red },
         }}
       />
       <Tab.Screen

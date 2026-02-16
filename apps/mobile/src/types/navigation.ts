@@ -41,13 +41,37 @@ export type ProfileStackParamList = {
 };
 
 /**
+ * Home stack parameter list (for post detail navigation)
+ */
+export type HomeStackParamList = {
+  HomeMain: undefined;
+  PostDetail: { postId: string };
+};
+
+/**
+ * Chat stack parameter list
+ */
+export type ChatStackParamList = {
+  ConversationList: undefined;
+  MessageThread: {
+    conversationId: string;
+    otherUserId: string;
+    otherUserName: string;
+    otherUserTrustLevel: number;
+    postId?: string;
+    postTitle?: string;
+    postCategory?: string;
+  };
+};
+
+/**
  * Main tab navigator parameter list
  */
 export type MainTabParamList = {
-  Home: undefined;
+  Home: NavigatorScreenParams<HomeStackParamList>;
   Search: undefined;
   Post: NavigatorScreenParams<PostStackParamList>;
-  Messages: undefined;
+  Messages: NavigatorScreenParams<ChatStackParamList>;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
 };
 

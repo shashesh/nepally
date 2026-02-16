@@ -108,17 +108,29 @@
 | MainTabNavigator | Done | 5 tabs (Home, Search, Post, Messages, Profile) |
 | PostNavigator | Done | CategorySelect → CreatePost stack |
 | ProfileNavigator | Done | ProfileView → EditProfile / ChangePassword stack |
+| HomeNavigator | Done | HomeMain → PostDetail stack |
+| ChatNavigator | Done | ConversationList → MessageThread stack |
 | Search tab screen | Stub | ComingSoonScreen placeholder |
-| Messages tab screen | Stub | ComingSoonScreen placeholder |
+| Messages tab screen | Done | Replaced stub with ChatNavigator |
 
 ### I. In-App Chat
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Chat UI | Not started | |
-| Supabase Realtime subscription | Not started | |
-| Conversation list | Not started | |
-| Message sending/receiving | Not started | |
+| blocked_users migration (002) | Done | Table, RLS policies, message send policy update |
+| Conversations API service | Done | getConversations, getOrCreateConversation, blockUser, isBlocked |
+| Messages API service | Done | getMessages, sendMessage, markAsRead, subscribeToMessages, getTotalUnreadCount |
+| ConversationItem component | Done | Avatar, name, post context, last message, timestamp, unread badge |
+| MessageBubble component | Done | Sent/received, read receipts (check marks) |
+| ChatInput component | Done | Multi-line, 1000 char limit, send button |
+| ConversationListScreen | Done | FlatList, pull-to-refresh, empty state with "Browse Posts" CTA |
+| MessageThreadScreen | Done | Realtime subscription, optimistic send, date separators, kebab menu |
+| PostDetailScreen | Done | Full post details, field rows, author info, "Contact Author" CTA |
+| PostCard message icon | Done | chatbubble-outline icon, hidden on own posts |
+| Read receipts | Done | Mark read on open, single/double check display |
+| Block user | Done | Kebab menu → confirmation → block → navigate back |
+| Unread badge on Messages tab | Done | Polls every 30s, shows count on tab icon |
+| Chat RLS policies | **DISABLED** | See Security TODO below |
 
 ### J. Photo Upload
 
@@ -153,3 +165,23 @@
 | Self-Service Ad Portal | Not started |
 | AI Moderation | Not started |
 | Resource Wiki | Not started |
+
+---
+
+## TODO: Security Vulnerabilities
+
+> These must be resolved before any production/beta release.
+
+| Issue | Tables Affected | Details | Priority |
+|-------|----------------|---------|----------|
+| **Chat RLS disabled** | `conversations`, `messages`, `conversation_participants` | RLS was disabled during development because policies were not being enforced despite correct definitions. Supabase PostgREST schema cache (`NOTIFY pgrst, 'reload schema'`) did not resolve it. Policies exist in migration files but are not active. **Any authenticated user can currently read/write all chat data.** | Critical |
+| **blocked_users RLS** | `blocked_users` | RLS is enabled and policies are defined in `002_blocked_users.sql`, but not tested end-to-end. Verify after fixing chat RLS. | High |
+
+**To re-enable chat RLS:**
+1. `ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;`
+2. `ALTER TABLE messages ENABLE ROW LEVEL SECURITY;`
+3. `ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;`
+4. Verify policies exist: `SELECT * FROM pg_policies WHERE tablename IN ('conversations', 'messages', 'conversation_participants');`
+5. If policies were dropped, re-run the relevant sections from `001_initial_schema.sql` and `002_blocked_users.sql`
+6. Run `NOTIFY pgrst, 'reload schema';` and test
+7. If still failing, investigate Supabase project-level RLS settings or recreate policies via Dashboard UI

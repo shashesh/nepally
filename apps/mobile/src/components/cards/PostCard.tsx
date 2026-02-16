@@ -20,6 +20,7 @@ interface PostCardProps {
   imageUrl?: string;
   isVerified?: boolean;
   onPress: () => void;
+  onMessagePress?: () => void;
 }
 
 const categoryIcons: Record<string, any> = {
@@ -45,6 +46,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   imageUrl,
   isVerified = false,
   onPress,
+  onMessagePress,
 }) => {
   return (
     <TouchableOpacity
@@ -90,6 +92,15 @@ export const PostCard: React.FC<PostCardProps> = ({
         <Text style={styles.timestamp} numberOfLines={1}>
           {timestamp} • {metroArea}
         </Text>
+        {onMessagePress && (
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={() => onMessagePress()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chatbubble-outline" size={18} color={colors.primary.main} />
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -143,5 +154,12 @@ const styles = StyleSheet.create({
   timestamp: {
     ...typography.caption,
     color: colors.text.secondary,
+    flex: 1,
+  },
+  messageButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
