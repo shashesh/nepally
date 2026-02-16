@@ -6,10 +6,12 @@ Quick reference for working with Claude Code on this project.
 
 ## Current Phase
 
-**EARLY DEVELOPMENT: Foundation & Phase 1**
-- Core architecture setup (React 19, Next.js 15, Expo 54)
-- Phase 1 onboarding flow implementation
-- User journey mapping and wireframing
+**PHASE 1 IN PROGRESS: Utility Core & Trust Foundation**
+- Onboarding flow complete (signup, login, ZIP/metro, tutorial)
+- Home feed with category filtering and post cards
+- Post creation with all 4 category forms (Housing, Jobs, Emergency, Travel)
+- Profile management (view, edit profile, change password)
+- Next up: In-app chat, photo upload, reporting system
 
 See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for current versions.
 

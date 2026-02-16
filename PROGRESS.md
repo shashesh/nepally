@@ -1,6 +1,6 @@
 # NUSA Development Progress
 
-**Last Updated:** 2026-02-13
+**Last Updated:** 2026-02-15
 
 ---
 
@@ -12,9 +12,11 @@
 |------|--------|-------|
 | Email signup/login | Done | EmailSignupScreen with signup/login toggle |
 | Supabase Auth integration | Done | Session persistence via AsyncStorage |
-| AuthContext (session, refresh, signOut) | Done | Listens to auth state changes |
-| Google OAuth signup | Stub | Button exists, navigates to ZIP entry with temp ID |
-| Phone SMS signup | Stub | Button exists, no implementation |
+| AuthContext (session, refresh, signOut) | Done | Listens to auth state changes, pause/resume support |
+| Password validation | Done | Uses APP_CONFIG.minPasswordLength (8 chars) |
+| Google OAuth signup | Stub | Shows "Coming soon" alert, button dimmed |
+| Phone SMS signup | Stub | Shows "Coming soon" alert, button dimmed |
+| Change password | Done | Verify current → update → navigate back with alert |
 | Trust Level 0 → 1 progression (phone verify) | Not started | |
 | Trust Level 1 → 2 progression | Not started | |
 
@@ -49,24 +51,25 @@
 | Category filter tabs | Done | All, Housing, Jobs, Emergency, Travel |
 | PostCard component | Done | Category icon, title, metadata, timestamp |
 | Level0Banner | Done | Verify prompt for trust level 0 users |
-| Posts service (getPostsByMetroArea) | **Bug** | Column mismatch: uses `expires_at`/`metadata` vs DB `expiry_date`/`fields` |
-| Posts service (createPost) | **Bug** | Missing required DB columns: `location_zip_code`, `location_city`, `location_state` |
+| Posts service (getPostsByMetroArea) | Done | Fixed column names to match DB schema |
+| Posts service (createPost) | Done | Includes all required DB columns |
 | Pull-to-refresh | Done | RefreshControl wired |
 | Empty state | Done | "No posts yet" with icon |
-| Metro area name in header | Partial | Shows "Your Metro Area" placeholder, not actual name |
+| Metro area name in header | Done | Loads from cache with Supabase fallback |
 
 ### E. Post Creation
 
 | Task | Status | Notes |
 |------|--------|-------|
-| CreatePostScreen | Not started | Need category selection + category-specific forms |
-| Housing form fields | Not started | Rent, move-in date, room type |
-| Jobs form fields | Not started | Title, pay, employment type, company |
-| Emergency form fields | Not started | Type, location, description + disclaimer |
-| Travel form fields | Not started | Date, route, airline |
-| Post expiry calculation | Not started | Auto-set based on category |
-| FAB → CreatePost navigation | Not started | FAB exists, handler is a stub |
-| Post tab → CreatePost navigation | Not started | Tab exists, screen is null |
+| CategorySelectScreen | Done | Grid of 4 categories with icons |
+| CreatePostScreen | Done | Dynamic form based on category |
+| Housing form fields | Done | Rent, move-in date, room type |
+| Jobs form fields | Done | Title, pay range, employment type, company |
+| Emergency form fields | Done | Type, location, description |
+| Travel form fields | Done | Date, route, airline |
+| Post expiry calculation | Done | Auto-set based on category constants |
+| PostNavigator | Done | CategorySelect → CreatePost stack |
+| Post tab navigation | Done | Tab wired to PostNavigator |
 
 ### F. Shared Components & Design System
 
@@ -86,19 +89,29 @@
 | Level0Banner | Done | |
 | TutorialCard | Done | |
 
-### G. Navigation
+### G. User Profile & Account Management
+
+| Task | Status | Notes |
+|------|--------|-------|
+| ProfileScreen | Done | Avatar with initials, name, email, trust badge, metro area, settings menu |
+| EditProfileScreen | Done | Edit name, phone, ZIP with auto metro lookup |
+| ChangePasswordScreen | Done | Current password verify, new + confirm, eye toggles |
+| ProfileNavigator | Done | ProfileView → EditProfile / ChangePassword stack |
+| Log out with confirmation | Done | Alert confirmation → signOut → back to Welcome |
+
+### H. Navigation
 
 | Task | Status | Notes |
 |------|--------|-------|
 | RootNavigator | Done | Onboarding ↔ Main switch |
 | OnboardingNavigator | Done | All onboarding screens |
 | MainTabNavigator | Done | 5 tabs (Home, Search, Post, Messages, Profile) |
-| Search tab screen | Stub | Returns null |
-| Post tab screen | Stub | Returns null |
-| Messages tab screen | Stub | Returns null |
-| Profile tab screen | Stub | Returns null |
+| PostNavigator | Done | CategorySelect → CreatePost stack |
+| ProfileNavigator | Done | ProfileView → EditProfile / ChangePassword stack |
+| Search tab screen | Stub | ComingSoonScreen placeholder |
+| Messages tab screen | Stub | ComingSoonScreen placeholder |
 
-### H. In-App Chat
+### I. In-App Chat
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -107,7 +120,7 @@
 | Conversation list | Not started | |
 | Message sending/receiving | Not started | |
 
-### I. Photo Upload
+### J. Photo Upload
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -115,7 +128,7 @@
 | Supabase Storage upload | Not started | |
 | Photo compression/resize | Not started | |
 
-### J. Reporting System
+### K. Reporting System
 
 | Task | Status | Notes |
 |------|--------|-------|
