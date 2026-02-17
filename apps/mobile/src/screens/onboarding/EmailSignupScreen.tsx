@@ -4,14 +4,16 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../config/supabase';
 import { createUserProfile, APP_CONFIG } from '@nusa/shared';
 import { AuthContext } from '../../contexts/AuthContext';
@@ -36,6 +38,8 @@ export function EmailSignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -196,15 +200,28 @@ export function EmailSignupScreen() {
 
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={[styles.input, errors.password && styles.inputError]}
-                placeholder={`At least ${APP_CONFIG.minPasswordLength} characters`}
-                placeholderTextColor={colors.text.disabled}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoComplete={isSignup ? 'new-password' : 'current-password'}
-              />
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={[styles.input, styles.inputFlex, errors.password && styles.inputError]}
+                  placeholder={`At least ${APP_CONFIG.minPasswordLength} characters`}
+                  placeholderTextColor={colors.text.disabled}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoComplete={isSignup ? 'new-password' : 'current-password'}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={22}
+                    color={colors.text.secondary}
+                  />
+                </TouchableOpacity>
+              </View>
               {errors.password && (
                 <Text style={styles.errorText}>{errors.password}</Text>
               )}
@@ -213,18 +230,32 @@ export function EmailSignupScreen() {
             {isSignup && (
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Confirm Password</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    errors.confirmPassword && styles.inputError,
-                  ]}
-                  placeholder="Re-enter your password"
-                  placeholderTextColor={colors.text.disabled}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  autoComplete="new-password"
-                />
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.inputFlex,
+                      errors.confirmPassword && styles.inputError,
+                    ]}
+                    placeholder="Re-enter your password"
+                    placeholderTextColor={colors.text.disabled}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirm}
+                    autoComplete="new-password"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowConfirm(!showConfirm)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={showConfirm ? 'eye-off-outline' : 'eye-outline'}
+                      size={22}
+                      color={colors.text.secondary}
+                    />
+                  </TouchableOpacity>
+                </View>
                 {errors.confirmPassword && (
                   <Text style={styles.errorText}>
                     {errors.confirmPassword}
@@ -300,6 +331,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 2,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   input: {
     height: 48,
     borderWidth: 1,
@@ -309,8 +344,18 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.primary,
   },
+  inputFlex: {
+    flex: 1,
+    paddingRight: 48,
+  },
   inputError: {
     borderColor: colors.error,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 12,
+    height: 48,
+    justifyContent: 'center',
   },
   errorText: {
     ...typography.caption,

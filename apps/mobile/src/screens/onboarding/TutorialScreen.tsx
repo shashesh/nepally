@@ -2,11 +2,11 @@ import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   FlatList,
   ViewToken,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { TutorialCard } from '../../components/tutorial/TutorialCard';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';

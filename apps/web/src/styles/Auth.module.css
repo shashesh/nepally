@@ -64,6 +64,29 @@
   border-color: var(--color-error);
 }
 
+.passwordWrapper {
+  position: relative;
+}
+
+.passwordWrapper .input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.eyeToggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+}
+
 .submitBtn {
   height: var(--button-height);
   background: var(--color-primary);

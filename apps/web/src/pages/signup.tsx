@@ -16,6 +16,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Redirect if already logged in
   if (user) {
@@ -112,15 +113,25 @@ export default function SignupPage() {
               <label htmlFor="password" className={styles.label}>
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                className={`${styles.input} ${passwordErrors.length > 0 ? styles.inputError : ''}`}
-                value={password}
-                onChange={(e) => handlePasswordChange(e.target.value)}
-                placeholder="Create a strong password"
-                autoComplete="new-password"
-              />
+              <div className={styles.passwordWrapper}>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  className={`${styles.input} ${passwordErrors.length > 0 ? styles.inputError : ''}`}
+                  value={password}
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                  placeholder="Create a strong password"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className={styles.eyeToggle}
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '🙈' : '👁'}
+                </button>
+              </div>
               {passwordErrors.length > 0 && (
                 <ul className={styles.passwordErrors}>
                   {passwordErrors.map((err) => (
