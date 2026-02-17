@@ -94,7 +94,7 @@ export function EmailSignupScreen() {
         // Don't block — auth account exists, profile can be retried
       }
 
-      navigation.navigate('ZipCodeEntry', { userId: data.user.id });
+      navigation.navigate('LocationPermission', { userId: data.user.id });
     } catch (error: any) {
       Alert.alert('Signup Failed', error.message || 'Something went wrong');
     } finally {
@@ -127,7 +127,7 @@ export function EmailSignupScreen() {
         // Returning user — mark onboarding complete so RootNavigator switches to Main
         await markOnboardingComplete();
       } else {
-        navigation.navigate('ZipCodeEntry', { userId: data.user.id });
+        navigation.navigate('LocationPermission', { userId: data.user.id });
       }
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Invalid credentials');

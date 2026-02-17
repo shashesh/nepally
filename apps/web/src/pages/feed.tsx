@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
+import { useLocation } from '../hooks/useLocation';
 import { supabase } from '../lib/supabase';
 import {
   getPostsByMetroArea,
@@ -23,6 +24,7 @@ const CATEGORIES: { label: string; value: PostCategory | 'all' }[] = [
 export default function FeedPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { activeLocation } = useLocation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -46,14 +48,16 @@ export default function FeedPage() {
     }
   }, [user, router]);
 
+  const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
+
   const loadPosts = useCallback(async () => {
-    if (!user?.metro_area_id) return;
+    if (!metroAreaId) return;
 
     setLoading(true);
     const category = activeCategory === 'all' ? undefined : activeCategory;
     const result = await getPostsByMetroArea(
       supabase,
-      user.metro_area_id,
+      metroAreaId,
       category,
       50
     );
@@ -62,7 +66,7 @@ export default function FeedPage() {
       setPosts(result.data);
     }
     setLoading(false);
-  }, [user?.metro_area_id, activeCategory]);
+  }, [metroAreaId, activeCategory]);
 
   // Load liked post IDs
   useEffect(() => {
@@ -114,7 +118,16 @@ export default function FeedPage() {
         <div className={styles.feedHeader}>
           <div>
             <h1 className={styles.feedTitle}>Community Feed</h1>
-            <p className={styles.metroName}>Your local area</p>
+            <p className={styles.metroName}>
+              {activeLocation
+                ? `${activeLocation.metro_name}, ${activeLocation.metro_state}`
+                : 'Your local area'}
+              {activeLocation?.is_temporary && (
+                <span style={{ fontStyle: 'italic', color: 'var(--color-warning)', marginLeft: 8, fontSize: '0.85em' }}>
+                  (Visiting)
+                </span>
+              )}
+            </p>
           </div>
         </div>
 

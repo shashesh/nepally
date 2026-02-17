@@ -10,6 +10,7 @@ export * from './types';
 export * from './constants/appConfig';
 export * from './constants/postCategories';
 export * from './constants/trustLevels';
+export * from './constants/location';
 
 // Utilities
 export * from './utils';

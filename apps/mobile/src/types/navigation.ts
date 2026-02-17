@@ -9,6 +9,9 @@ export type OnboardingStackParamList = {
   EmailSignup: {
     mode?: 'signup' | 'login';
   };
+  LocationPermission: {
+    userId: string;
+  };
   ZipCodeEntry: {
     userId: string;
   };
@@ -17,6 +20,7 @@ export type OnboardingStackParamList = {
     zipCode: string;
     metroAreaId: string;
     metroName: string;
+    fromGps?: boolean;
   };
   Tutorial: undefined;
 };
@@ -46,6 +50,8 @@ export type ProfileStackParamList = {
 export type HomeStackParamList = {
   HomeMain: undefined;
   PostDetail: { postId: string };
+  ManageLocations: undefined;
+  AddLocation: undefined;
 };
 
 /**

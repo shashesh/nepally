@@ -12,4 +12,8 @@ export const STORAGE_KEYS = {
   ONBOARDING_STEP: '@nusa:onboarding_step',
   BANNER_DISMISSED: '@nusa:banner_dismissed',
   METRO_AREA: '@nusa:metro_area',
+  ACTIVE_LOCATION: '@nusa:active_location',
+  LOCATION_PERMISSION_STATUS: '@nusa:location_permission_status',
+  LOCATION_SNOOZES: '@nusa:location_snoozes',
+  PERMISSION_BANNER_STATE: '@nusa:permission_banner_state',
 } as const;

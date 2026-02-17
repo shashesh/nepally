@@ -5,6 +5,7 @@ import {
   WelcomeScreen,
   SignupMethodScreen,
   EmailSignupScreen,
+  LocationPermissionScreen,
   ZipCodeEntryScreen,
   MetroConfirmationScreen,
   TutorialScreen,
@@ -23,6 +24,7 @@ export function OnboardingNavigator() {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="SignupMethod" component={SignupMethodScreen} />
       <Stack.Screen name="EmailSignup" component={EmailSignupScreen} />
+      <Stack.Screen name="LocationPermission" component={LocationPermissionScreen} />
       <Stack.Screen name="ZipCodeEntry" component={ZipCodeEntryScreen} />
       <Stack.Screen name="MetroConfirmation" component={MetroConfirmationScreen} />
       <Stack.Screen name="Tutorial" component={TutorialScreen} />

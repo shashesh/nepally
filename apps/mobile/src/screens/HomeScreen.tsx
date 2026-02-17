@@ -16,7 +16,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../hooks/useAuth';
+import { useLocation } from '../hooks/useLocation';
 import { Level0Banner } from '../components/banners/Level0Banner';
+import { LocationPermissionBanner } from '../components/banners/LocationPermissionBanner';
+import { LocationChangeSheet } from '../components/location/LocationChangeSheet';
+import { LocationSwitcherSheet } from '../components/location/LocationSwitcherSheet';
 import { PostCard } from '../components/cards/PostCard';
 import {
   getPostsByMetroArea,
@@ -27,7 +31,7 @@ import {
   TrustLevel,
 } from '@nusa/shared';
 import type { Post } from '@nusa/shared';
-import { isBannerDismissed, saveBannerDismissed, getMetroArea, saveMetroArea } from '../utils/storage';
+import { isBannerDismissed, saveBannerDismissed } from '../utils/storage';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
@@ -68,29 +72,45 @@ function getPostMetadata(item: Post): string {
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const {
+    activeLocation,
+    detectedLocation,
+    savedLocations,
+    showChangePrompt,
+    browseMetro,
+    updateMetroPermanent,
+    snoozeMetro,
+    dismissChangePrompt,
+    setManualOverride,
+  } = useLocation();
+  const [switcherVisible, setSwitcherVisible] = useState(false);
   const navigation = useNavigation<HomeScreenNavProp>();
   const [selectedCategory, setSelectedCategory] = useState<Category>('housing');
   const [posts, setPosts] = useState<Post[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [metroName, setMetroName] = useState<string | null>(null);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
+  // Derive metroName from activeLocation (or fall back to user's metro)
+  const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
+  const metroName = activeLocation
+    ? `${activeLocation.metro_name}, ${activeLocation.metro_state}`
+    : null;
+
   useEffect(() => {
     loadBannerState();
-    loadMetroName();
   }, []);
 
   // Reload posts and liked state every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      if (user?.metro_area_id) {
+      if (metroAreaId) {
         loadPosts();
       }
       loadLikedPosts();
-    }, [selectedCategory, user?.metro_area_id])
+    }, [selectedCategory, metroAreaId])
   );
 
   const loadBannerState = async () => {
@@ -98,35 +118,12 @@ export default function HomeScreen() {
     setBannerVisible(!dismissed);
   };
 
-  const loadMetroName = async () => {
-    // Try cache first
-    const cached = await getMetroArea();
-    if (cached) {
-      setMetroName(`${cached.name}, ${cached.state}`);
-      return;
-    }
-
-    // Cache empty (e.g. after logout/re-login) — fetch from DB and re-cache
-    if (user?.metro_area_id) {
-      const { data } = await supabase
-        .from('metro_areas')
-        .select('id, name, state')
-        .eq('id', user.metro_area_id)
-        .single();
-
-      if (data) {
-        setMetroName(`${data.name}, ${data.state}`);
-        saveMetroArea({ id: data.id, name: data.name, state: data.state });
-      }
-    }
-  };
-
   const loadPosts = async () => {
-    if (!user?.metro_area_id) return;
+    if (!metroAreaId) return;
 
     try {
       const category = selectedCategory === 'all' ? undefined : selectedCategory;
-      const result = await getPostsByMetroArea(supabase, user.metro_area_id, category);
+      const result = await getPostsByMetroArea(supabase, metroAreaId!, category);
 
       if (result.data) {
         setPosts(result.data);
@@ -323,12 +320,20 @@ export default function HomeScreen() {
 
       {/* Top Navigation */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <TouchableOpacity
+          style={styles.headerLeft}
+          onPress={() => setSwitcherVisible(true)}
+          activeOpacity={0.7}
+        >
           <Ionicons name="location" size={20} color={colors.primary.main} />
           <Text style={styles.metroName} numberOfLines={1}>
-            {metroName || (user?.metro_area_id ? 'Loading...' : 'No Location Set')}
+            {metroName || (metroAreaId ? 'Loading...' : 'No Location Set')}
           </Text>
-        </View>
+          <Ionicons name="chevron-down" size={14} color={colors.text.secondary} />
+          {activeLocation?.is_temporary && (
+            <Text style={styles.visitingLabel}>(Visiting)</Text>
+          )}
+        </TouchableOpacity>
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="search" size={24} color={colors.text.primary} />
@@ -346,6 +351,9 @@ export default function HomeScreen() {
           onDismiss={handleBannerDismiss}
         />
       )}
+
+      {/* Location Permission Banner */}
+      <LocationPermissionBanner />
 
       {/* Category Tabs */}
       <View style={styles.categoryTabs}>
@@ -399,6 +407,69 @@ export default function HomeScreen() {
         ListEmptyComponent={renderEmptyState}
       />
 
+      {/* Location Switcher */}
+      <LocationSwitcherSheet
+        visible={switcherVisible}
+        onClose={() => setSwitcherVisible(false)}
+        savedLocations={savedLocations}
+        activeLocation={activeLocation}
+        detectedLocation={detectedLocation}
+        onSelectSaved={(loc) => {
+          setSwitcherVisible(false);
+          if (loc.metro_area) {
+            setManualOverride({
+              metro_area_id: loc.metro_area_id,
+              metro_name: loc.metro_area.name,
+              metro_state: loc.metro_area.state,
+              source: 'saved',
+              is_temporary: false,
+            });
+          }
+        }}
+        onSelectDetected={() => {
+          setSwitcherVisible(false);
+          if (detectedLocation) {
+            browseMetro({
+              metro_area_id: detectedLocation.metro_area_id,
+              metro_name: detectedLocation.metro_name,
+              metro_state: detectedLocation.metro_state,
+              source: 'gps',
+              is_temporary: true,
+            });
+          }
+        }}
+      />
+
+      {/* Location Change Prompt */}
+      <LocationChangeSheet
+        visible={showChangePrompt}
+        detectedLocation={detectedLocation}
+        activeLocation={activeLocation}
+        onBrowse={() => {
+          if (detectedLocation) {
+            browseMetro({
+              metro_area_id: detectedLocation.metro_area_id,
+              metro_name: detectedLocation.metro_name,
+              metro_state: detectedLocation.metro_state,
+              source: 'gps',
+              is_temporary: true,
+            });
+          }
+        }}
+        onUpdate={() => {
+          if (detectedLocation) {
+            updateMetroPermanent(
+              detectedLocation.metro_area_id,
+              detectedLocation.metro_name,
+              detectedLocation.metro_state,
+              detectedLocation.zip_code
+            );
+          }
+        }}
+        onKeep={dismissChangePrompt}
+        onSnooze={snoozeMetro}
+      />
+
       {/* Floating Action Button */}
       <TouchableOpacity
         style={[styles.fab, isLevel0 && styles.fabDisabled]}
@@ -436,6 +507,11 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.primary,
     fontWeight: '600',
+  },
+  visitingLabel: {
+    ...typography.caption,
+    color: colors.primary.main,
+    fontWeight: '500',
   },
   headerRight: {
     flexDirection: 'row',

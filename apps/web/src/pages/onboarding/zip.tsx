@@ -1,10 +1,11 @@
 import React, { useState, FormEvent } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { isValidZipCode, cleanZipCode, getMetroByZip, updateUserLocation } from '@nusa/shared';
+import { isValidZipCode, cleanZipCode, getMetroByZip, updateUserLocation, addSavedLocation } from '@nusa/shared';
 import type { MetroArea } from '@nusa/shared';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+import { detectLocationMetro } from '../../lib/location';
 import styles from '../../styles/Auth.module.css';
 
 export default function ZipCodePage() {
@@ -15,6 +16,7 @@ export default function ZipCodePage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'zip' | 'confirm'>('zip');
+  const [detecting, setDetecting] = useState(false);
 
   if (!user) {
     router.replace('/login');
@@ -43,6 +45,27 @@ export default function ZipCodePage() {
     }
   }
 
+  async function handleDetectLocation() {
+    setDetecting(true);
+    setError('');
+
+    const result = await detectLocationMetro();
+    setDetecting(false);
+
+    if (result) {
+      setMetro({
+        id: result.metro_area_id,
+        name: result.metro_name,
+        state: result.metro_state,
+        population: null,
+      });
+      setZipCode(result.zip_code);
+      setStep('confirm');
+    } else {
+      setError("Couldn't detect your location. Please enter your ZIP code instead.");
+    }
+  }
+
   async function handleConfirm() {
     if (!metro || !user) return;
 
@@ -53,12 +76,15 @@ export default function ZipCodePage() {
       cleanZipCode(zipCode),
       metro.id
     );
-    setLoading(false);
 
     if (result.error) {
+      setLoading(false);
       setError('Failed to save location. Please try again.');
     } else {
+      // Create "Home" as the first saved location
+      await addSavedLocation(supabase, user.id, metro.id, 'Home', cleanZipCode(zipCode), true);
       await refreshUser();
+      setLoading(false);
       router.push('/feed');
     }
   }
@@ -105,6 +131,20 @@ export default function ZipCodePage() {
                   {loading ? 'Looking up...' : 'Find My Area'}
                 </button>
               </form>
+
+              <div style={{ textAlign: 'center', margin: 'var(--space-s) 0' }}>
+                <span style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>or</span>
+              </div>
+
+              <button
+                type="button"
+                className={styles.submitBtn}
+                onClick={handleDetectLocation}
+                disabled={detecting}
+                style={{ background: 'transparent', color: 'var(--color-primary)', border: '2px solid var(--color-primary)' }}
+              >
+                {detecting ? 'Detecting...' : '📍 Detect My Location'}
+              </button>
             </>
           )}
 

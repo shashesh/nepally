@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../config/constants';
+import type { ActiveLocation, LocationSnooze, PermissionBannerState } from '@nusa/shared';
 
 /**
  * AsyncStorage utility functions
@@ -143,5 +144,90 @@ export async function getMetroArea(): Promise<{
   } catch (error) {
     console.error('Failed to get metro area:', error);
     return null;
+  }
+}
+
+// ── Location Management ──────────────────────────────────────
+
+/**
+ * Save the active location (what the feed shows)
+ */
+export async function saveActiveLocation(location: ActiveLocation): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_LOCATION, JSON.stringify(location));
+  } catch (error) {
+    console.error('Failed to save active location:', error);
+  }
+}
+
+/**
+ * Get the active location
+ */
+export async function getActiveLocation(): Promise<ActiveLocation | null> {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_LOCATION);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('Failed to get active location:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear the active location
+ */
+export async function clearActiveLocation(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_LOCATION);
+  } catch (error) {
+    console.error('Failed to clear active location:', error);
+  }
+}
+
+/**
+ * Save location snooze entries
+ */
+export async function saveLocationSnoozes(snoozes: LocationSnooze[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.LOCATION_SNOOZES, JSON.stringify(snoozes));
+  } catch (error) {
+    console.error('Failed to save location snoozes:', error);
+  }
+}
+
+/**
+ * Get location snooze entries
+ */
+export async function getLocationSnoozes(): Promise<LocationSnooze[]> {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.LOCATION_SNOOZES);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Failed to get location snoozes:', error);
+    return [];
+  }
+}
+
+/**
+ * Save permission banner state
+ */
+export async function savePermissionBannerState(state: PermissionBannerState): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.PERMISSION_BANNER_STATE, JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to save permission banner state:', error);
+  }
+}
+
+/**
+ * Get permission banner state
+ */
+export async function getPermissionBannerState(): Promise<PermissionBannerState> {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.PERMISSION_BANNER_STATE);
+    return data ? JSON.parse(data) : { show_count: 0, last_shown_at: null };
+  } catch (error) {
+    console.error('Failed to get permission banner state:', error);
+    return { show_count: 0, last_shown_at: null };
   }
 }

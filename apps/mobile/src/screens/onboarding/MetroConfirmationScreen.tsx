@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { useMetroArea } from '../../hooks/useMetroArea';
 import { useAuth } from '../../hooks/useAuth';
+import { addSavedLocation } from '@nusa/shared';
+import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
@@ -42,10 +44,12 @@ export function MetroConfirmationScreen() {
       }),
     ]).start();
 
-    // Update user location
+    // Update user location and create first saved location
     if (userId && zipCode && metroAreaId) {
-      updateLocation(userId, zipCode, metroAreaId).then(() => {
-        refreshUser();
+      updateLocation(userId, zipCode, metroAreaId).then(async () => {
+        await refreshUser();
+        // Create "Home" as the first saved location
+        await addSavedLocation(supabase, userId, metroAreaId, 'Home', zipCode, true);
       });
     }
 

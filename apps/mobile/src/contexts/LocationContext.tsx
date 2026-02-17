@@ -1,0 +1,255 @@
+import React, { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
+import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../config/supabase';
+import {
+  getSavedLocations,
+  isMetroSnoozed,
+  hasMetroChanged,
+  createSnoozeEntry,
+  updateUserLocation,
+} from '@nusa/shared';
+import type {
+  ActiveLocation,
+  LocationDetectionResult,
+  SavedLocation,
+  LocationSnooze,
+} from '@nusa/shared';
+import {
+  getLocationPermissionStatus,
+  detectLocationMetro,
+} from '../services/location';
+import {
+  saveActiveLocation,
+  getActiveLocation,
+  saveLocationSnoozes,
+  getLocationSnoozes,
+} from '../utils/storage';
+
+interface LocationContextType {
+  activeLocation: ActiveLocation | null;
+  detectedLocation: LocationDetectionResult | null;
+  savedLocations: SavedLocation[];
+  showChangePrompt: boolean;
+  browseMetro: (metro: ActiveLocation) => void;
+  updateMetroPermanent: (metroAreaId: string, metroName: string, metroState: string, zipCode?: string) => Promise<void>;
+  snoozeMetro: (metroAreaId: string) => void;
+  setManualOverride: (metro: ActiveLocation) => void;
+  dismissChangePrompt: () => void;
+  refreshSavedLocations: () => Promise<void>;
+  checkLocationChange: () => Promise<void>;
+}
+
+export const LocationContext = createContext<LocationContextType>({
+  activeLocation: null,
+  detectedLocation: null,
+  savedLocations: [],
+  showChangePrompt: false,
+  browseMetro: () => {},
+  updateMetroPermanent: async () => {},
+  snoozeMetro: () => {},
+  setManualOverride: () => {},
+  dismissChangePrompt: () => {},
+  refreshSavedLocations: async () => {},
+  checkLocationChange: async () => {},
+});
+
+interface LocationProviderProps {
+  children: ReactNode;
+}
+
+export function LocationProvider({ children }: LocationProviderProps) {
+  const { user, refreshUser } = useAuth();
+  const [activeLocation, setActiveLocation] = useState<ActiveLocation | null>(null);
+  const [detectedLocation, setDetectedLocation] = useState<LocationDetectionResult | null>(null);
+  const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
+  const [showChangePrompt, setShowChangePrompt] = useState(false);
+  const [snoozes, setSnoozes] = useState<LocationSnooze[]>([]);
+  const manualOverrideRef = useRef(false);
+
+  // Load active location from storage and saved locations from DB on mount
+  useEffect(() => {
+    loadInitialState();
+  }, []);
+
+  // When user changes (login/logout), reload locations
+  useEffect(() => {
+    if (user) {
+      refreshSavedLocations();
+      // If no active location in storage, derive from user's metro
+      if (!activeLocation && user.metro_area_id) {
+        initActiveLocationFromUser();
+      }
+    } else {
+      setActiveLocation(null);
+      setSavedLocations([]);
+      setDetectedLocation(null);
+      setShowChangePrompt(false);
+    }
+  }, [user?.id]);
+
+  // AppState listener: check location on foreground
+  useEffect(() => {
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === 'active' && user && !manualOverrideRef.current) {
+        checkLocationChange();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [user, activeLocation, snoozes]);
+
+  async function loadInitialState() {
+    const [stored, storedSnoozes] = await Promise.all([
+      getActiveLocation(),
+      getLocationSnoozes(),
+    ]);
+
+    // Filter out expired snoozes
+    const activeSnoozes = storedSnoozes.filter(
+      (s) => new Date(s.snoozed_until) > new Date()
+    );
+    setSnoozes(activeSnoozes);
+
+    if (stored) {
+      // Clear temporary locations on app restart
+      if (stored.is_temporary) {
+        // Don't use the temporary location; fall through to user's metro
+      } else {
+        setActiveLocation(stored);
+        return;
+      }
+    }
+  }
+
+  async function initActiveLocationFromUser() {
+    if (!user?.metro_area_id) return;
+
+    // Fetch metro name from DB
+    const { data } = await supabase
+      .from('metro_areas')
+      .select('id, name, state')
+      .eq('id', user.metro_area_id)
+      .single();
+
+    if (data) {
+      const loc: ActiveLocation = {
+        metro_area_id: data.id,
+        metro_name: data.name,
+        metro_state: data.state,
+        source: 'saved',
+        is_temporary: false,
+      };
+      setActiveLocation(loc);
+      await saveActiveLocation(loc);
+    }
+  }
+
+  const refreshSavedLocations = useCallback(async () => {
+    if (!user) return;
+    const result = await getSavedLocations(supabase, user.id);
+    if (result.data) {
+      setSavedLocations(result.data);
+    }
+  }, [user?.id]);
+
+  const checkLocationChange = useCallback(async () => {
+    if (!activeLocation) return;
+
+    const permStatus = await getLocationPermissionStatus();
+    if (permStatus !== 'granted') return;
+
+    const detected = await detectLocationMetro();
+    if (!detected) return;
+
+    setDetectedLocation(detected);
+
+    if (
+      hasMetroChanged(activeLocation.metro_area_id, detected.metro_area_id) &&
+      !isMetroSnoozed(detected.metro_area_id, snoozes)
+    ) {
+      setShowChangePrompt(true);
+    }
+  }, [activeLocation, snoozes]);
+
+  const browseMetro = useCallback((metro: ActiveLocation) => {
+    const tempLocation: ActiveLocation = {
+      ...metro,
+      is_temporary: true,
+      source: 'gps',
+    };
+    setActiveLocation(tempLocation);
+    saveActiveLocation(tempLocation);
+    setShowChangePrompt(false);
+  }, []);
+
+  const updateMetroPermanent = useCallback(
+    async (metroAreaId: string, metroName: string, metroState: string, zipCode?: string) => {
+      if (!user) return;
+
+      // Update user's metro in DB
+      await updateUserLocation(supabase, user.id, zipCode ?? user.zip_code ?? '', metroAreaId);
+      await refreshUser();
+
+      const newLocation: ActiveLocation = {
+        metro_area_id: metroAreaId,
+        metro_name: metroName,
+        metro_state: metroState,
+        source: 'manual',
+        is_temporary: false,
+      };
+      setActiveLocation(newLocation);
+      await saveActiveLocation(newLocation);
+      setShowChangePrompt(false);
+    },
+    [user]
+  );
+
+  const snoozeMetro = useCallback(
+    (metroAreaId: string) => {
+      const entry = createSnoozeEntry(metroAreaId);
+      const updated = [...snoozes.filter((s) => s.metro_area_id !== metroAreaId), entry];
+      setSnoozes(updated);
+      saveLocationSnoozes(updated);
+      setShowChangePrompt(false);
+    },
+    [snoozes]
+  );
+
+  const setManualOverride = useCallback((metro: ActiveLocation) => {
+    manualOverrideRef.current = true;
+    const loc: ActiveLocation = {
+      ...metro,
+      is_temporary: false,
+      source: 'saved',
+    };
+    setActiveLocation(loc);
+    saveActiveLocation(loc);
+    setShowChangePrompt(false);
+  }, []);
+
+  const dismissChangePrompt = useCallback(() => {
+    setShowChangePrompt(false);
+  }, []);
+
+  return (
+    <LocationContext.Provider
+      value={{
+        activeLocation,
+        detectedLocation,
+        savedLocations,
+        showChangePrompt,
+        browseMetro,
+        updateMetroPermanent,
+        snoozeMetro,
+        setManualOverride,
+        dismissChangePrompt,
+        refreshSavedLocations,
+        checkLocationChange,
+      }}
+    >
+      {children}
+    </LocationContext.Provider>
+  );
+}

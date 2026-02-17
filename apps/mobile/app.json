@@ -29,7 +29,16 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "NUSA uses your location to show community posts near you.",
+          "locationAlwaysPermission": "NUSA uses your location to show community posts near you.",
+          "locationWhenInUsePermission": "NUSA uses your location to show community posts near you."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "your-project-id-here"

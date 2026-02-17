@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { getTotalUnreadCount } from '@nusa/shared';
+import LocationSwitcher from './LocationSwitcher';
 import styles from './Layout.module.css';
 
 interface LayoutProps {
@@ -41,6 +42,8 @@ export default function Layout({ children }: LayoutProps) {
           <Link href="/" className={styles.logo}>
             NUSA
           </Link>
+
+          {user && <LocationSwitcher />}
 
           {user && (
             <ul className={styles.navLinks}>
