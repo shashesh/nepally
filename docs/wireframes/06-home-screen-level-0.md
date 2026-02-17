@@ -41,14 +41,18 @@ This is the success state of the onboarding journey - the main home screen (loca
 │ ─── ───────── ────  ───────── ──────   │    Housing pre-selected (underline)
 ├─────────────────────────────────────────┤
 │                                         │
-│  ┌───────────────────────────────────┐ │ ← Post Card 1
-│  │ 🏠 Private Room in Richardson  ✓  │ │    White bg, 12px radius
-│  │                                   │ │    16px padding, 4px spacing
-│  │ $650/month • Available March 1    │ │
+│  ┌───────────────────────────────────┐ │ ← Post Card 1 (Enhanced)
+│  │ [SG] Sita Gurung ✓      2h ago    │ │    Author row with avatar
+│  │                                   │ │
+│  │ 🏠 Private Room in Richardson     │ │    Category + title
+│  │ $650/month • Available March 1    │ │    Price + details
+│  │ Looking for Nepali roommate to sh │ │    Description preview
+│  │ are 2BR apartment...  View More   │ │    (150 chars, "View More")
 │  │                                   │ │
 │  │ [Photo thumbnail]                 │ │    280x160px image
 │  │                                   │ │
-│  │ Posted 2 days ago • Dallas-FW     │ │    Caption: 13pt, gray
+│  │ ───────────────────────────────── │ │    Action bar separator
+│  │ ❤️ 24      💬 5      ✉️ Message    │ │    Like, Comment, Message
 │  └───────────────────────────────────┘ │
 │                                         │ ← 12px spacing
 │  ┌───────────────────────────────────┐ │ ← Post Card 2
@@ -283,7 +287,7 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ---
 
-### 5. Post Card (Feed Item)
+###5. Post Card (Enhanced - with Author, Description, Social Actions)
 
 **Type:** Card component (tappable)
 **Background:** White (#FFFFFF)
@@ -295,43 +299,151 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 **Card Layout (top to bottom):**
 
-#### Header Row
+#### Author Row (NEW)
+- **Author Avatar:** 40x40px/dp circle, left-aligned
+  - If profile photo exists: Display photo
+  - If no photo: Display initials (e.g., "JD" for John Doe)
+  - Background color based on trust level:
+    - Level 0: #E0E0E0 (Light Gray)
+    - Level 1: #4A90E2 (Blue)
+    - Level 2: #7B61FF (Purple)
+  - Text color: White, 16pt/14sp Semibold
+  - Border: 1px solid #E0E0E0
+- **Author Name:** "Sita Gurung" (14pt/13sp Medium, #212121)
+  - Position: To right of avatar, vertically centered
+  - Max width: Truncate if > 20 chars
+- **Trust Badge:** ✓ (verified checkmark), 16x16px/dp, #2E7D32
+  - Position: To right of name, only shown for Level 1+
+  - Hidden for Level 0 users
+- **Timestamp:** "2h ago" (12pt/11sp Regular, #757575)
+  - Position: Far right, vertically centered with name
+  - Relative time: "5m ago", "2h ago", "1d ago", "2w ago"
+- **Layout:** [Avatar] [Name + Badge] ............ [Timestamp]
+- **Margin:** 0-16px/dp from top (if first card element)
+
+#### Header Row (Category + Title)
 - **Icon:** Category emoji (🏠 for Housing), 20x20px/dp
 - **Title:** "Private Room in Richardson" (17pt/16sp Semibold, #212121)
-- **Verified Badge:** ✓ (green checkmark), 16x16px/dp, #2E7D32
-- **Layout:** Icon + Title (left), Verified Badge (right)
+- **Layout:** Icon + Title (left-aligned, wraps to 2 lines max)
+- **Margin:** 12px/dp from author row
 
 #### Price & Details Row
 - **Content:** "$650/month • Available March 1"
 - **Typography:** 15pt/14sp Regular, #757575
 - **Separator:** Bullet point (•) between price and details
 - **Max Lines:** 1 line (truncate if too long)
+- **Margin:** 4px/dp from title
+
+#### Description Preview (NEW)
+- **Content:** First 150 characters of post description
+- **Typography:** 14pt/13sp Regular, #424242
+- **Max Lines:** 2 lines with ellipsis if truncated
+- **Truncation Logic:** Cut at last complete word before 150 chars
+- **"View More" Link:** (NEW)
+  - Display only if description is truncated (> 150 chars)
+  - Text: "View More" (12pt/11sp Semibold, #1565C0 Primary Blue)
+  - Position: Inline at end of truncated text
+  - Underline: Yes
+  - Interaction: Tap to navigate to post detail screen
+- **Example:** "Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet environment. Rent is $800/month including utilities. Move-in date flexible (March 1... View More"
+- **Margin:** 8px/dp from price row, 12px/dp from action bar
 
 #### Photo Thumbnail (if post has photo)
 - **Dimensions:** Full card width x 160px/dp height
 - **Corner Radius:** 8px/dp
-- **Margin:** 12px/dp top, 12px/dp bottom
-- **Placeholder:** Gray background with house icon if no photo
-- **Interaction:** Tap image to view full screen (Level 0: shows verification prompt)
+- **Margin:** 12px/dp top and bottom
+- **Placeholder:** Gray background (#F5F5F5) with house icon if no photo
+- **Interaction:** Tap image to view full screen (Level 0: works normally)
+- **Position:** After description preview and before action bar
 
-#### Footer Row (Metadata)
-- **Content:** "Posted 2 days ago • Dallas-FW"
-- **Typography:** 13pt/12sp Regular, #757575 (Caption)
-- **Separator:** Bullet point (•) between timestamp and location
-- **Location:** Abbreviated metro name (max 15 chars)
+#### Action Bar (NEW - Social Engagement)
+- **Height:** 36px/dp
+- **Background:** Transparent (part of card)
+- **Border:** 1px top border #E0E0E0
+- **Padding:** 8px/dp vertical
+- **Layout:** Horizontal row with 3 actions, evenly spaced
+
+**Action 1: Like Button**
+- **Icon:** Heart outline (not liked) or Heart filled (liked)
+  - Size: 20x20px/dp
+  - Color: #757575 (outline), #DC143C Accent Red (filled)
+- **Count:** Number next to icon (e.g., "24")
+  - Typography: 14pt/13sp Regular, #757575
+  - Position: 4px/dp to right of icon
+  - Format: Exact number if < 1000, "1K" / "1.2K" if >= 1000
+  - Default: "0" (always shown, even if no likes)
+- **Touch Target:** 44x44pt / 48x48dp minimum
+- **Level 0 Behavior:**
+  - Icon grayed out (#BDBDBD)
+  - Tap shows toast: "Verify your account to like posts"
+  - Count still visible (user can see community engagement)
+- **Level 1+ Behavior:**
+  - Tap to like: Heart fills, count increments, animate (scale 1.2 → 1.0)
+  - Tap to unlike: Heart unfills, count decrements
+  - Optimistic UI update
+- **Accessibility:** "Like button, [liked/not liked], 24 likes"
+
+**Action 2: Comment Button**
+- **Icon:** Chat bubble outline
+  - Size: 20x20px/dp
+  - Color: #757575
+- **Count:** Number next to icon (e.g., "5")
+  - Typography: 14pt/13sp Regular, #757575
+  - Format: Exact number if < 1000, "1K" if >= 1000
+  - Default: "0" (always shown)
+- **Touch Target:** 44x44pt / 48x48dp minimum
+- **Level 0 Behavior:**
+  - Icon enabled (not grayed out)
+  - Tap navigates to post detail screen, scrolls to comments
+  - User can read comments but comment input is disabled
+- **Level 1+ Behavior:**
+  - Tap navigates to post detail screen, scrolls to comments section
+  - User can read and write comments
+- **Accessibility:** "Comment button, 5 comments"
+
+**Action 3: Message Button**
+- **Icon:** Direct message (paper plane or chat dots)
+  - Size: 20x20px/dp
+  - Color: #757575
+- **Label:** "Message" (optional, or icon-only)
+  - Typography: 14pt/13sp Regular, #757575 (if shown)
+- **Touch Target:** 44x44pt / 48x48dp minimum
+- **Level 0 Behavior:**
+  - Icon grayed out (#BDBDBD)
+  - Tap shows toast: "Verify your account to message"
+- **Level 1+ Behavior:**
+  - Tap opens/creates conversation with post author (existing chat feature)
+  - Hidden if viewing own post
+- **Accessibility:** "Message author button"
+
+**Action Bar Layout:**
+- [❤️ 24] ............ [💬 5] ............ [✉️ Message]
+- Equal spacing between actions
+- Left-aligned within card padding
 
 **States:**
-- **Default:** White background, subtle shadow
-- **Pressed:** Light gray background (#F5F5F5), scale 0.99
-- **Disabled (Level 0):** No visual change, but tap shows verification prompt
+- **Default:** All icons outline, light gray
+- **Like Active:** Heart filled, red color
+- **Pressed (Like):** Scale animation, instant feedback
+- **Pressed (Comment/Message):** Ripple effect (Android) or highlight (iOS)
+- **Disabled (Level 0):** Like and Message icons grayed out, tooltips on tap
 
 **Interaction:**
-- **Tap card:** Open post detail screen
-- **Level 0 behavior:** Post detail screen has "Verify to Message" banner, contact info hidden
+- **Tap card body:** Open post detail screen
+- **Tap author avatar/name:** Show toast "Coming soon" (future: navigate to user profile)
+- **Tap like button:** Toggle like (Level 1+), show verification toast (Level 0)
+- **Tap comment button:** Navigate to post detail, scroll to comments
+- **Tap message button:** Open chat conversation (Level 1+), show verification toast (Level 0)
+- **Tap "View More":** Navigate to post detail screen
 
 **Accessibility:**
-- Full card: "Housing post. Private Room in Richardson. Verified user. $650 per month. Available March 1. Posted 2 days ago in Dallas-Fort Worth. Button."
-- VoiceOver/TalkBack: Entire card is one tappable element
+- Full card structure:
+  - "Posted by Sita Gurung, verified, 2 hours ago"
+  - "Housing post. Private Room in Richardson. $650 per month. Available March 1."
+  - "Description: Looking for Nepali roommate to share 2BR apartment..."
+  - "24 likes, 5 comments. Like button. Comment button. Message button."
+- Each action is individually focusable for screen readers
+- VoiceOver/TalkBack can navigate through avatar, title, actions separately
 
 ---
 

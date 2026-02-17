@@ -140,7 +140,42 @@
 | Supabase Storage upload | Not started | |
 | Photo compression/resize | Not started | |
 
-### K. Reporting System
+### K. Post Interactions (Likes & Comments) - NEW
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Enhanced PostCard UI | Not started | Author avatar, description preview, action bar |
+| Avatar component | Not started | Photo or initials, trust-level colored background |
+| post_likes table (migration 003) | Not started | Individual like tracking |
+| post_comments table (migration 003) | Not started | Public comment threads |
+| likes_count, comments_count columns | Not started | Cached counters on posts table |
+| Database triggers for counters | Not started | Auto-increment/decrement counts |
+| Like button component | Not started | Heart icon, toggle like/unlike |
+| Comment list component | Not started | Display comments with avatars |
+| Comment input component | Not started | Multi-line input, 1000 char limit |
+| Likes API (like, unlike, getUserLikes) | Not started | |
+| Comments API (get, create, delete) | Not started | |
+| RLS policies (post_likes) | Not started | |
+| RLS policies (post_comments) | Not started | |
+| Level 0 disabled states | Not started | Show verification prompts |
+| "View More" link on PostCard | Not started | Navigate to detail when description truncated |
+
+### L. Profile Photo Upload - NEW
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Photo picker (camera/library) | Not started | iOS/Android permissions |
+| Image cropping UI | Not started | Square crop, zoom/pan |
+| Supabase Storage upload (avatars bucket) | Not started | Auto-compress to 500KB, 500x500px |
+| Avatar component with fallback | Not started | Photo or initials, trust-level colors |
+| Profile photo display (EditProfileScreen) | Not started | 64x64px with "Change Photo" button |
+| Remove photo option | Not started | Delete from Storage, set field to null |
+| Avatar in PostCard (author) | Not started | 40x40px |
+| Avatar in comments | Not started | 32x32px |
+| Avatar in chat | Not started | 40x40px (conversation list, thread) |
+| Avatar in profile screen | Not started | 64x64px |
+
+### M. Reporting System
 
 | Task | Status | Notes |
 |------|--------|-------|

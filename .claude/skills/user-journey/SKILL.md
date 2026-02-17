@@ -108,7 +108,7 @@ Create: `docs/user-journeys/[category]/[number]-[journey-name].md`
 **Metro:** [Example metro area, e.g., Dallas-Fort Worth]
 **Trust Level:** [0 = New | 1 = Verified | 2 = Contributor]
 **Tech Savviness:** [Low | Medium | High]
-**Primary Device:** [iOS | Android]
+**Primary Device:** [iOS | Android | Web Browser | Multiple]
 **Context:** [Why they're doing this now - what problem are they solving?]
 
 ## Step-by-Step Journey
@@ -176,10 +176,23 @@ Start
 
 | Step | Touchpoint | Channel | Data Required | Data Stored |
 |------|------------|---------|---------------|-------------|
-| 1 | Open category | Mobile App | User location | None |
-| 2 | Fill form | Mobile App | Post details | Draft saved |
-| 3 | Upload photo | Mobile App | Image file | Storage URL |
-| 4 | Submit | Mobile App | Complete data | New post record |
+| 1 | Open category | Mobile App / Web | User location | None |
+| 2 | Fill form | Mobile App / Web | Post details | Draft saved |
+| 3 | Upload photo | Mobile App / Web | Image file | Storage URL |
+| 4 | Submit | Mobile App / Web | Complete data | New post record |
+
+## Platform Considerations
+
+### Applies To
+- [ ] Mobile (iOS & Android)
+- [ ] Web (Desktop & Mobile Web)
+
+### Platform Differences
+| Step | Mobile Behavior | Web Behavior | Notes |
+|------|----------------|--------------|-------|
+| [N] | [How it works on mobile] | [How it works on web] | [Why different] |
+
+**NOTE:** If this journey applies to both platforms, both mobile and web implementations must be created. Shared logic (validation, API calls, types) lives in `packages/shared/`.
 
 ## Emotions & Experience
 
@@ -320,10 +333,11 @@ Start
 ## Questions & Assumptions
 
 ### Assumptions
-- User has smartphone with camera
+- User has smartphone with camera OR a web browser
 - User has stable internet connection
 - User is in a supported metro area
 - User has verified their account (Level 1+)
+- Journey flow is equivalent on mobile and web unless noted in Platform Differences
 - [Other relevant assumptions]
 
 ### Open Questions
@@ -383,4 +397,6 @@ Before marking journey as "Reviewed":
 - [ ] Visual flow diagram matches step-by-step description
 - [ ] User persona feels realistic and specific
 - [ ] Journey is validated against product roadmap principles
+- [ ] **Platform scope is defined** (Mobile, Web, or Both)
+- [ ] **Platform differences are documented** if journey applies to both
 - [ ] README.md index has been updated

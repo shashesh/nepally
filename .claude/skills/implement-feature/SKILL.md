@@ -7,15 +7,33 @@ description: Implement features with full context from specs, journeys, and wire
 
 When the user invokes `/implement-feature [feature-name]` or asks to implement a feature, follow this context-first approach to ensure you build exactly what's been designed.
 
-## CRITICAL PRINCIPLE: Context Before Code
+## CRITICAL PRINCIPLES
 
+### Context Before Code
 **NEVER start coding without gathering full context from:**
 1. Feature specification (if exists)
 2. User journey documentation
 3. Wireframe specifications
 4. Design system foundation
+5. Code sharing guide and monorepo structure
 
 **Coding without context leads to misalignment, rework, and wasted effort.**
+
+### Shared-First Architecture (MANDATORY)
+**Golden Rule: Share business logic, keep UI separate.**
+
+This is a cross-platform monorepo. ALL non-UI code MUST live in `packages/shared/` so both `apps/mobile/` and `apps/web/` consume a single source of truth.
+
+**Code Placement Decision Tree:**
+```
+Is it a UI component, screen, or page?
+  YES → apps/mobile/ (React Native) or apps/web/ (Next.js)
+Does it use platform-specific APIs (AsyncStorage, react-native, next/router)?
+  YES → apps/mobile/ or apps/web/
+Everything else → packages/shared/
+```
+
+**NEVER define types, validation schemas, API query functions, utility functions, or constants inside `apps/mobile/` or `apps/web/`. These ALWAYS go in `packages/shared/`.**
 
 ---
 
@@ -23,9 +41,16 @@ When the user invokes `/implement-feature [feature-name]` or asks to implement a
 
 ASK these questions:
 1. **Feature Name:** What feature are we implementing? (e.g., "signup-and-onboarding", "housing-post-creation")
-2. **Platform:** Mobile (React Native), Web (Next.js), or Both?
+2. **Platform:** Mobile (React Native), Web (Next.js), or Both? **(Default: Both)**
 3. **Scope:** Full feature or specific screens/components?
 4. **Related Journey:** Which user journey number does this implement? (e.g., Journey #01)
+
+**IMPORTANT — Platform answer drives implementation:**
+- **Both** (default): Implement shared layer in `packages/shared/` FIRST, then mobile UI in `apps/mobile/`, then web UI in `apps/web/`
+- **Mobile only**: STILL implement types, API calls, validation, utils, constants in `packages/shared/` — only the UI layer goes in `apps/mobile/`
+- **Web only**: STILL implement types, API calls, validation, utils, constants in `packages/shared/` — only the UI layer goes in `apps/web/`
+
+**Regardless of platform answer, all non-UI code goes in `packages/shared/`.**
 
 ---
 
@@ -74,6 +99,23 @@ Extract:
 - Component library (buttons, inputs, cards, badges)
 - Platform conventions (iOS HIG vs Material Design)
 
+### 1.5 Read Code Sharing Guide (MANDATORY)
+Always read: `docs/code-sharing-guide.md`
+
+Extract:
+- What MUST go in `packages/shared/` (types, API calls, validation, utils, constants)
+- What stays platform-specific (UI components, navigation, platform APIs)
+- API function pattern (dependency injection with Supabase client parameter)
+- Import rules (`@nusa/shared` imports only)
+
+### 1.6 Read Monorepo Structure
+Always read: `docs/monorepo-structure.md`
+
+Extract:
+- Package boundaries and build order
+- Import rules between workspaces
+- Existing shared exports (check `packages/shared/src/index.ts` to avoid duplication)
+
 ---
 
 ## Step 2: Create Implementation Plan
@@ -98,68 +140,98 @@ Step 1: Tap "Sign Up"
 ### 2.2 Identify Components Needed
 Break down into:
 - **Screens**: Full-screen components (e.g., WelcomeScreen, SignupMethodScreen)
-- **Shared Components**: Reusable UI elements (e.g., PrimaryButton, TextInput, TrustBadge)
-- **Services**: API clients, auth handlers, storage utilities
-- **Navigation**: Route definitions, stack navigators
-- **State Management**: Context providers, hooks
-- **Types**: TypeScript interfaces matching wireframe data
+- **Shared Components**: Reusable UI elements per platform (e.g., PrimaryButton, TextInput, TrustBadge)
+- **Shared Logic (packages/shared)**: Types, API functions, validation schemas, utils, constants
+- **Services**: Platform-specific client initialization only (Supabase client config)
+- **Navigation**: Route definitions, stack navigators (platform-specific)
+- **State Management**: Context providers, hooks (may wrap shared API functions)
+- **Types**: ALL TypeScript interfaces go in `packages/shared/src/types/` — NEVER in `apps/`
 
 ### 2.3 Define File Structure
+
+**ALWAYS start with shared package, then platform-specific code:**
+
 ```
-apps/mobile/src/
-├── screens/
-│   ├── onboarding/
-│   │   ├── WelcomeScreen.tsx
-│   │   ├── SignupMethodScreen.tsx
-│   │   ├── ZipCodeEntryScreen.tsx
-│   │   └── ...
-│   └── ...
-├── components/
+packages/shared/src/
+├── types/              ← ALL interfaces & type definitions
+│   ├── user.ts
+│   ├── post.ts
+│   └── [feature].ts
+├── api/                ← ALL Supabase query logic (accepts client param)
+│   ├── posts.ts
+│   ├── users.ts
+│   └── [feature].ts
+├── validation/         ← ALL Zod schemas
+│   ├── housing.ts
+│   └── [feature].ts
+├── utils/              ← ALL platform-agnostic helpers
+│   ├── date.ts
+│   ├── phone.ts
+│   └── zip.ts
+├── constants/          ← ALL enums, config objects
+│   ├── postCategories.ts
+│   └── trustLevels.ts
+└── index.ts            ← Re-exports everything
+
+apps/mobile/src/        ← React Native UI ONLY
+├── screens/            ← RN screen components (import from @nusa/shared)
+│   └── onboarding/
+├── components/         ← RN UI components (buttons, inputs, cards)
 │   ├── buttons/
-│   │   ├── PrimaryButton.tsx
-│   │   └── SecondaryButton.tsx
-│   ├── inputs/
-│   │   ├── TextInput.tsx
-│   │   └── ZipCodeInput.tsx
-│   └── ...
-├── navigation/
-│   └── OnboardingNavigator.tsx
-├── services/
-│   ├── auth/
-│   │   ├── phoneAuth.ts
-│   │   └── socialAuth.ts
-│   ├── api/
-│   │   └── metroArea.ts
-│   └── ...
-├── hooks/
-│   ├── useAuth.ts
-│   └── useMetroArea.ts
-├── styles/
-│   ├── colors.ts
-│   ├── typography.ts
-│   └── spacing.ts
-└── types/
-    └── index.ts
+│   └── inputs/
+├── navigation/         ← React Navigation stacks/tabs
+├── hooks/              ← RN hooks (wrap shared API functions)
+├── config/             ← Platform-specific config (Supabase client w/ AsyncStorage)
+│   └── supabase.ts
+└── styles/             ← RN StyleSheet (can import shared color values)
+
+apps/web/src/           ← Next.js UI ONLY
+├── pages/              ← Next.js pages (import from @nusa/shared)
+├── components/         ← React components (buttons, inputs, cards)
+├── hooks/              ← Web hooks (wrap shared API functions)
+├── lib/                ← Platform-specific config (Supabase client w/ localStorage)
+│   └── supabase.ts
+└── styles/             ← CSS/Tailwind
 ```
 
+**RED FLAGS — If you see these in your plan, STOP and restructure:**
+- Types/interfaces defined in `apps/mobile/src/types/` or `apps/web/src/types/`
+- API query logic in `apps/mobile/src/services/api/` or `apps/web/src/lib/api/`
+- Validation schemas in app directories instead of `packages/shared/src/validation/`
+- Same constant/enum defined in more than one place
+
 ### 2.4 Implementation Order
-Determine build order (bottom-up approach):
-1. **Foundation**: Design tokens (colors, typography, spacing)
-2. **Shared Components**: Buttons, inputs, cards (from design system)
-3. **Services**: API clients, auth handlers
-4. **Hooks**: Custom hooks for data fetching, auth state
-5. **Screens**: Individual screens following wireframes
-6. **Navigation**: Connect screens in proper flow
-7. **Integration**: End-to-end testing of user journey
+Determine build order (shared-first, bottom-up approach):
+1. **Shared Types**: Define all interfaces in `packages/shared/src/types/`
+2. **Shared Validation**: Create Zod schemas in `packages/shared/src/validation/`
+3. **Shared API Functions**: Supabase query logic in `packages/shared/src/api/` (dependency injection pattern)
+4. **Shared Utils/Constants**: Platform-agnostic helpers and enums in `packages/shared/src/utils/` and `constants/`
+5. **Export from shared index**: Update `packages/shared/src/index.ts` with all new exports
+6. **Mobile Foundation**: Design tokens (colors, typography, spacing) — platform-specific styling
+7. **Mobile UI Components**: Buttons, inputs, cards (importing types from `@nusa/shared`)
+8. **Mobile Hooks**: Custom hooks wrapping shared API functions
+9. **Mobile Screens**: Individual screens following wireframes
+10. **Mobile Navigation**: Connect screens in proper flow
+11. **Web Foundation**: Design tokens (CSS/Tailwind) — platform-specific styling
+12. **Web UI Components**: React components (importing types from `@nusa/shared`)
+13. **Web Pages**: Next.js pages following wireframes
+14. **Integration**: End-to-end testing of user journey on BOTH platforms
 
 ### 2.5 Validation Checklist
 Create checklist to verify implementation matches docs:
-- [ ] All wireframe screens implemented
+- [ ] All types/interfaces defined in `packages/shared/src/types/`
+- [ ] All API query logic defined in `packages/shared/src/api/` (not in apps/)
+- [ ] All validation schemas defined in `packages/shared/src/validation/`
+- [ ] All utils/constants defined in `packages/shared/` (not duplicated in apps/)
+- [ ] `packages/shared/src/index.ts` exports all new code
+- [ ] Mobile app imports from `@nusa/shared` (no local type/API/validation redefinition)
+- [ ] Web app imports from `@nusa/shared` (no local type/API/validation redefinition)
+- [ ] All wireframe screens implemented (mobile and/or web per platform scope)
 - [ ] All interactive states working (default, pressed, disabled, error, loading)
 - [ ] All validation rules from journey applied
 - [ ] All error cases from journey handled
 - [ ] Design system colors/typography/spacing used correctly
-- [ ] Platform-specific differences respected (iOS vs Android)
+- [ ] Platform-specific differences respected (iOS vs Android, desktop vs mobile web)
 - [ ] Accessibility requirements met (WCAG AA)
 - [ ] Success metrics are trackable
 
@@ -179,9 +251,78 @@ Use ExitPlanMode to get user approval before coding.
 
 ---
 
-## Step 4: Implement Foundation First
+## Step 4: Implement Shared Layer First (MANDATORY)
 
-### 4.1 Design Tokens
+Before writing ANY platform-specific code, build the shared foundation that both apps will consume.
+
+### 4.0 Shared Types
+Define all data model interfaces in `packages/shared/src/types/`:
+
+```typescript
+// packages/shared/src/types/[feature].ts
+// Types use snake_case matching Supabase database column names
+export interface Post {
+  id: string;
+  category: string;
+  title: string;
+  content: string;
+  author_id: string;
+  metro_area_id: string;
+  created_at: string;
+  expires_at: string;
+  status: 'active' | 'expired' | 'flagged';
+}
+```
+
+### 4.0b Shared API Functions
+Define all Supabase query logic in `packages/shared/src/api/` using dependency injection:
+
+```typescript
+// packages/shared/src/api/posts.ts
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Post } from '../types/post';
+
+export async function getPostsByMetro(
+  supabase: SupabaseClient,
+  metroId: string
+): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('metro_area_id', metroId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+```
+
+### 4.0c Shared Validation
+Define all Zod schemas in `packages/shared/src/validation/`:
+
+```typescript
+// packages/shared/src/validation/[feature].ts
+import { z } from 'zod';
+
+export const createPostSchema = z.object({
+  title: z.string().min(5).max(100),
+  content: z.string().min(10).max(2000),
+  category: z.enum(['housing', 'jobs', 'emergency', 'travel']),
+});
+export type CreatePostInput = z.infer<typeof createPostSchema>;
+```
+
+### 4.0d Update Shared Exports
+Always update `packages/shared/src/index.ts` to re-export new modules:
+
+```typescript
+// packages/shared/src/index.ts
+export * from './types/post';
+export * from './api/posts';
+export * from './validation/post';
+```
+
+### 4.1 Design Tokens (Platform-Specific)
 Create design system constants from `00-design-system-foundation.md`:
 
 **apps/mobile/src/styles/colors.ts**
@@ -321,23 +462,59 @@ export default function WelcomeScreen() {
 
 From user journey "Technical Requirements" section:
 
-### 6.1 Create API Clients
+### 6.1 Platform-Specific Supabase Client
+Each platform initializes its own Supabase client (this is the ONLY platform-specific API code):
+
 ```typescript
-// From Journey #01 Technical Requirements:
-// - POST /api/auth/signup
-// - POST /api/auth/verify-otp
-// - GET /api/metro-areas/by-zip/:zipCode
+// apps/mobile/src/config/supabase.ts — Uses AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { storage: AsyncStorage },
+});
+
+// apps/web/src/lib/supabase.ts — Uses localStorage (default)
+import { createClient } from '@supabase/supabase-js';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 ```
 
-### 6.2 Implement Data Validations
-Match exact validation rules from:
-- User journey "Validation/Constraints" sections
-- Wireframe "Form Validation" sections
+### 6.2 Platform Hooks Wrap Shared API Functions
+Mobile and web hooks import from `@nusa/shared` and pass their platform-specific client:
 
-### 6.3 Handle Error Cases
+```typescript
+// apps/mobile/src/hooks/usePosts.ts
+import { getPostsByMetro } from '@nusa/shared';
+import { supabase } from '../config/supabase';
+
+export function usePosts(metroId: string) {
+  // Pass mobile Supabase client to shared API function
+  return useQuery(['posts', metroId], () => getPostsByMetro(supabase, metroId));
+}
+
+// apps/web/src/hooks/usePosts.ts — Same pattern, different client
+import { getPostsByMetro } from '@nusa/shared';
+import { supabase } from '../lib/supabase';
+```
+
+### 6.3 Use Shared Validation
+```typescript
+// In any platform's form component:
+import { createPostSchema } from '@nusa/shared';
+
+const result = createPostSchema.safeParse(formData);
+if (!result.success) {
+  // Handle validation errors
+}
+```
+
+### 6.4 Handle Error Cases
 Implement all error scenarios from:
 - User journey "Error & Edge Cases" table
 - Wireframe "Error States" sections
+
+**NEVER duplicate Supabase query logic in `apps/mobile/src/services/api/` or `apps/web/src/lib/api/`. All queries go in `packages/shared/src/api/`.**
 
 ---
 
@@ -440,19 +617,44 @@ ASK:
 ## Quality Checklist
 
 Before marking feature as "complete":
-- [ ] All documentation read and understood (feature spec, journey, wireframes, design system)
+
+### Shared-First Compliance (CHECK FIRST)
+- [ ] ALL types/interfaces are in `packages/shared/src/types/` (NONE in `apps/`)
+- [ ] ALL API query functions are in `packages/shared/src/api/` (NONE in `apps/`)
+- [ ] ALL validation schemas are in `packages/shared/src/validation/` (NONE in `apps/`)
+- [ ] ALL platform-agnostic utils are in `packages/shared/src/utils/` (NONE duplicated in `apps/`)
+- [ ] ALL constants/enums are in `packages/shared/src/constants/` (NONE duplicated in `apps/`)
+- [ ] `packages/shared/src/index.ts` re-exports all new code
+- [ ] `packages/shared/` has ZERO imports from `react-native`, `expo-*`, or `next`
+- [ ] `apps/mobile/` imports types, API, validation from `@nusa/shared`
+- [ ] `apps/web/` imports types, API, validation from `@nusa/shared` (if web is in scope)
+- [ ] No type/function/constant defined in more than one place
+
+### Documentation & Context
+- [ ] All documentation read and understood (feature spec, journey, wireframes, design system, code-sharing-guide)
 - [ ] Implementation plan created and approved
+
+### Mobile Implementation
 - [ ] Design tokens created from design system
-- [ ] Shared components built from design system
+- [ ] UI components built from design system
 - [ ] All screens implemented matching wireframes exactly
 - [ ] All interactive states working (default, pressed, disabled, error, loading)
-- [ ] All validation rules applied
+- [ ] All validation rules applied (using shared Zod schemas)
 - [ ] All error cases handled
 - [ ] Navigation flow matches user journey
 - [ ] Platform differences respected (iOS vs Android)
 - [ ] Accessibility requirements met (WCAG AA)
 - [ ] Code commented with doc references
-- [ ] Implementation validated against docs
+
+### Web Implementation (if in scope)
+- [ ] Next.js pages created for all screens
+- [ ] Responsive layout implemented (desktop + mobile web)
+- [ ] Shared types, API, validation imported from `@nusa/shared`
+- [ ] All interactive states working
+- [ ] Accessibility requirements met
+
+### Final Validation
+- [ ] Implementation validated against wireframes
 - [ ] Edge cases tested
 - [ ] Implementation documented
 - [ ] Demo'd to user and approved
@@ -462,27 +664,31 @@ Before marking feature as "complete":
 ## Common Pitfalls to Avoid
 
 **❌ DON'T:**
-1. Start coding before reading all documentation
-2. Guess at colors, spacing, or typography (use design system tokens)
-3. Implement a generic solution (follow exact wireframe specs)
-4. Skip error states or edge cases
-5. Ignore platform-specific differences
-6. Hard-code values that should come from design system
-7. Skip validation that's documented in wireframes
-8. Forget accessibility requirements
-9. Deviate from designs without explicit user approval
+1. Start coding before reading all documentation (including code-sharing-guide.md)
+2. Define types/interfaces inside `apps/mobile/` or `apps/web/` — they belong in `packages/shared/`
+3. Write Supabase query logic inside `apps/` directories — it belongs in `packages/shared/src/api/`
+4. Duplicate validation schemas — use shared Zod schemas from `packages/shared/src/validation/`
+5. Define the same constant, enum, or utility in more than one place
+6. Import from `react-native`, `expo-*`, or `next` inside `packages/shared/`
+7. Build only mobile UI when the feature should work on both platforms
+8. Guess at colors, spacing, or typography (use design system tokens)
+9. Skip error states or edge cases
+10. Hard-code values that should come from design system or shared constants
+11. Forget to update `packages/shared/src/index.ts` with new exports
+12. Deviate from designs without explicit user approval
 
 **✅ DO:**
-1. Read feature spec, journey, wireframes, and design system FIRST
-2. Create implementation plan and get approval
-3. Build foundation (design tokens, shared components) first
-4. Match wireframes pixel-perfect
-5. Implement all interactive states
-6. Handle all error and edge cases
-7. Respect platform conventions
-8. Add doc references in code comments
-9. Validate against docs before marking complete
-10. Demo to user and iterate based on feedback
+1. Read feature spec, journey, wireframes, design system, AND code-sharing-guide FIRST
+2. Build `packages/shared/` layer FIRST (types → API → validation → utils → constants)
+3. Export everything from `packages/shared/src/index.ts`
+4. Import from `@nusa/shared` in both `apps/mobile/` and `apps/web/`
+5. Use dependency injection for API functions (pass Supabase client as parameter)
+6. Use snake_case for shared types matching Supabase DB columns
+7. Implement mobile UI AND web UI (unless explicitly scoped to one platform)
+8. Match wireframes pixel-perfect per platform
+9. Implement all interactive states and error cases
+10. Run `/shared-first-check` before marking feature complete
+11. Demo to user and iterate based on feedback
 
 ---
 

@@ -1,106 +1,84 @@
-import { PostCategory } from '../constants/postCategories';
-
 /**
- * Post data types
+ * Post data types — snake_case matching Supabase database columns
+ * See: supabase/migrations/001_initial_schema.sql, 003_post_interactions.sql
  */
 
-export interface BasePost {
+import type { UserSummary } from './user';
+
+export type PostCategory = 'housing' | 'jobs' | 'emergency' | 'travel';
+export type PostStatus = 'active' | 'expired' | 'removed' | 'pending';
+
+export interface Post {
   id: string;
-  authorId: string;
+  author_id: string;
   category: PostCategory;
-  metroAreaId: string;
+
+  // Location
+  metro_area_id: string;
+  location_zip_code: string;
+  location_city: string;
+  location_state: string;
+  location_lat?: number;
+  location_lng?: number;
+
+  // Content
   title: string;
   description: string;
   photos: string[];
-  location: {
-    zipCode: string;
-    city: string;
-    state: string;
-    coordinates?: {
-      lat: number;
-      lng: number;
-    };
-  };
-  status: 'active' | 'expired' | 'removed' | 'pending';
-  expiryDate: Date;
-  createdAt: Date;
-  updatedAt: Date;
+
+  // Category-specific fields (JSONB)
+  fields: Record<string, any>;
+
+  // Status
+  status: PostStatus;
+  expiry_date: string;
 
   // Engagement
-  viewsCount: number;
-  responsesCount: number;
-  reportsCount: number;
+  views_count: number;
+  responses_count: number;
+  reports_count: number;
+  likes_count: number;
+  comments_count: number;
+
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+
+  // Joined data (optional, from API queries)
+  author?: UserSummary;
 }
 
-// Housing-specific fields
-export interface HousingPost extends BasePost {
-  category: PostCategory.HOUSING;
-  fields: {
-    rentAmount: number;
-    moveInDate: Date;
-    roomType: 'private' | 'shared' | 'entire-place';
-    bedrooms: number;
-    bathrooms: number;
-    furnished: boolean;
-    utilitiesIncluded: boolean;
-    petsAllowed: boolean;
-    parking: boolean;
-    lease: 'month-to-month' | 'fixed-term';
-    contactMethod: 'in-app' | 'phone' | 'email';
-  };
+/** Post like */
+export interface PostLike {
+  id: string;
+  post_id: string;
+  user_id: string;
+  created_at: string;
 }
 
-// Jobs-specific fields
-export interface JobPost extends BasePost {
-  category: PostCategory.JOBS;
-  fields: {
-    jobTitle: string;
-    companyName: string;
-    employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
-    payRate: {
-      min: number;
-      max: number;
-      type: 'hourly' | 'annual' | 'per-project';
-    };
-    experienceRequired: 'entry' | 'mid' | 'senior';
-    benefits: string[];
-    remote: boolean;
-    contactMethod: 'in-app' | 'email' | 'apply-url';
-    applyUrl?: string;
-  };
+/** Post comment */
+export interface PostComment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  parent_comment_id: string | null;
+  is_deleted: boolean;
+  is_flagged: boolean;
+  created_at: string;
+  updated_at: string;
+
+  // Joined data
+  author?: UserSummary;
 }
 
-// Emergency-specific fields
-export interface EmergencyPost extends BasePost {
-  category: PostCategory.EMERGENCY;
-  fields: {
-    emergencyType: 'medical' | 'housing' | 'legal' | 'financial' | 'other';
-    urgency: 'critical' | 'high' | 'medium';
-    assistanceNeeded: string[];
-    contactPhone: string;
-    contactName: string;
-    verified: boolean;
-    verifiedBy?: string;
-    verifiedAt?: Date;
-    redAlertSent: boolean;
-  };
+/** API result wrappers */
+export interface PostsResult {
+  data?: Post[];
+  error?: Error;
 }
 
-// Travel-specific fields
-export interface TravelPost extends BasePost {
-  category: PostCategory.TRAVEL;
-  fields: {
-    travelDate: Date;
-    route: {
-      from: string;
-      to: string;
-    };
-    airline?: string;
-    seatsAvailable: number;
-    carryingPackages: boolean;
-    packageDetails?: string;
-    contactMethod: 'in-app' | 'phone';
-  };
+export interface PostResult {
+  data?: Post;
+  error?: Error;
 }
-
-export type Post = HousingPost | JobPost | EmergencyPost | TravelPost;

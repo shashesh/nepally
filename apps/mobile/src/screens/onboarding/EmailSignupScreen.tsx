@@ -13,12 +13,11 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
-import { createUserProfile } from '../../services/api/users';
+import { createUserProfile, APP_CONFIG } from '@nusa/shared';
 import { AuthContext } from '../../contexts/AuthContext';
 import { markOnboardingComplete } from '../../utils/storage';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { TextButton } from '../../components/buttons/TextButton';
-import { APP_CONFIG } from '../../config/constants';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -80,6 +79,7 @@ export function EmailSignupScreen() {
 
       // Create profile in users table
       const profileResult = await createUserProfile(
+        supabase,
         data.user.id,
         email.trim(),
         fullName.trim()

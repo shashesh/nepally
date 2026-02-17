@@ -16,7 +16,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { getMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
 import { ProfileStackParamList } from '../../types/navigation';
-import { TRUST_LEVELS } from '../../config/constants';
+import { TrustLevel } from '@nusa/shared';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -25,11 +25,11 @@ type Navigation = NativeStackNavigationProp<ProfileStackParamList, 'ProfileView'
 
 function getTrustLabel(level: number): string {
   switch (level) {
-    case TRUST_LEVELS.NEW:
+    case TrustLevel.NEW:
       return 'New Member';
-    case TRUST_LEVELS.VERIFIED:
+    case TrustLevel.VERIFIED:
       return 'Verified';
-    case TRUST_LEVELS.CONTRIBUTOR:
+    case TrustLevel.CONTRIBUTOR:
       return 'Contributor';
     default:
       return 'Unknown';
@@ -38,11 +38,11 @@ function getTrustLabel(level: number): string {
 
 function getTrustColor(level: number): string {
   switch (level) {
-    case TRUST_LEVELS.NEW:
+    case TrustLevel.NEW:
       return colors.badge.level0;
-    case TRUST_LEVELS.VERIFIED:
+    case TrustLevel.VERIFIED:
       return colors.badge.level1;
-    case TRUST_LEVELS.CONTRIBUTOR:
+    case TrustLevel.CONTRIBUTOR:
       return colors.badge.level2;
     default:
       return colors.badge.level0;

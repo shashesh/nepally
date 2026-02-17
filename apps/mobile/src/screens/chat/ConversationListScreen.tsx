@@ -14,11 +14,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { ConversationItem } from '../../components/chat/ConversationItem';
-import {
-  getConversations,
-  ConversationWithParticipant,
-} from '../../services/api/conversations';
+import { getConversations } from '@nusa/shared';
+import type { ConversationWithParticipant } from '@nusa/shared';
 import { ChatStackParamList } from '../../types/navigation';
+import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
@@ -34,7 +33,7 @@ export default function ConversationListScreen() {
 
   const loadConversations = useCallback(async () => {
     if (!user?.id) return;
-    const result = await getConversations(user.id);
+    const result = await getConversations(supabase, user.id);
     if (result.data) {
       setConversations(result.data);
     }

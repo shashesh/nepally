@@ -1,0 +1,10 @@
+/**
+ * Barrel export for all shared API functions
+ */
+
+export * from './posts';
+export * from './interactions';
+export * from './conversations';
+export * from './messages';
+export * from './users';
+export * from './metroArea';

@@ -1,11 +1,7 @@
 /**
- * Metro Area types — data comes from the database (seeded via Census + HUD APIs).
- * IDs are CBSA codes (e.g., '19100' for Dallas-Fort Worth-Arlington).
+ * Metro Area constants
+ *
+ * NOTE: The MetroArea interface is defined in types/metro.ts (canonical location).
+ * This file previously duplicated it. Now empty — kept for module structure.
+ * Import MetroArea from '../types/metro' or from the package root.
  */
-
-export interface MetroArea {
-  id: string;
-  name: string;
-  state: string;
-  population?: number;
-}

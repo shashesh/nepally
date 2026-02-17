@@ -1,25 +1,18 @@
-import { supabase } from '../../config/supabase';
-
-export interface ConversationWithParticipant {
-  id: string;
-  post_id: string | null;
-  last_message: string | null;
-  last_message_time: string | null;
-  created_at: string;
-  other_user_id: string;
-  other_user_name: string;
-  unread_count: number;
-  post_title?: string;
-  post_category?: string;
-}
+/**
+ * Shared Conversations API functions
+ * All Supabase query logic — accepts SupabaseClient via dependency injection
+ */
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { ConversationWithParticipant } from '../types/chat';
 
 /**
- * Get all conversations for a user, with other participant info and post context
+ * Get all conversations for a user, with other participant info and post context.
+ * Excludes conversations with blocked users.
  */
-export async function getConversations(userId: string): Promise<{
-  data?: ConversationWithParticipant[];
-  error?: Error;
-}> {
+export async function getConversations(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ data?: ConversationWithParticipant[]; error?: Error }> {
   try {
     // Get conversations where user is a participant
     const { data: myParticipations, error: partError } = await supabase
@@ -62,7 +55,7 @@ export async function getConversations(userId: string): Promise<{
 
     if (otherError) throw otherError;
 
-    // Check blocked users - exclude conversations with blocked users
+    // Check blocked users — exclude conversations with blocked users
     const { data: blocks } = await supabase
       .from('blocked_users')
       .select('blocker_id, blocked_id')
@@ -76,20 +69,23 @@ export async function getConversations(userId: string): Promise<{
       }
     }
 
-    // Build unread map
+    // Build lookup maps
     const unreadMap = new Map<string, number>();
     for (const p of myParticipations) {
       unreadMap.set(p.conversation_id, p.unread_count);
     }
 
-    // Build other participant map
     const otherMap = new Map<string, { user_id: string; name: string }>();
     if (otherParticipants) {
       for (const op of otherParticipants) {
-        otherMap.set(op.conversation_id, { user_id: op.user_id, name: op.name });
+        otherMap.set(op.conversation_id, {
+          user_id: op.user_id,
+          name: op.name,
+        });
       }
     }
 
+    // Assemble results
     const result: ConversationWithParticipant[] = [];
     for (const conv of conversations || []) {
       const other = otherMap.get(conv.id);
@@ -114,26 +110,26 @@ export async function getConversations(userId: string): Promise<{
     return { data: result };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch conversations'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to fetch conversations'),
     };
   }
 }
 
 /**
- * Get or create a conversation between two users about a post
+ * Get or create a conversation between two users (optionally about a post)
  */
 export async function getOrCreateConversation(
+  supabase: SupabaseClient,
   currentUserId: string,
   currentUserName: string,
   otherUserId: string,
   otherUserName: string,
   postId?: string
-): Promise<{
-  data?: { conversationId: string };
-  error?: Error;
-}> {
+): Promise<{ data?: { conversationId: string }; error?: Error }> {
   try {
-    // Check if conversation already exists between these users for this post
+    // Find conversations the current user participates in
     const { data: myConversations } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
@@ -152,8 +148,8 @@ export async function getOrCreateConversation(
       if (sharedConversations && sharedConversations.length > 0) {
         const sharedConvIds = sharedConversations.map((c) => c.conversation_id);
 
-        // If postId specified, find conversation for this specific post
         if (postId) {
+          // Find conversation for this specific post
           const { data: postConv } = await supabase
             .from('conversations')
             .select('id')
@@ -166,7 +162,7 @@ export async function getOrCreateConversation(
             return { data: { conversationId: postConv.id } };
           }
         } else {
-          // No post specified, find any conversation without a post
+          // Find any conversation without a post
           const { data: genericConv } = await supabase
             .from('conversations')
             .select('id')
@@ -185,9 +181,7 @@ export async function getOrCreateConversation(
     // No existing conversation found — create new one
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
-      .insert({
-        post_id: postId || null,
-      })
+      .insert({ post_id: postId || null })
       .select()
       .single();
 
@@ -204,7 +198,7 @@ export async function getOrCreateConversation(
 
     if (selfPartError) throw selfPartError;
 
-    // Then add other user (passes RLS: current user already exists in conversation)
+    // Then add other user
     const { error: otherPartError } = await supabase
       .from('conversation_participants')
       .insert({
@@ -218,7 +212,9 @@ export async function getOrCreateConversation(
     return { data: { conversationId: newConv.id } };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to create conversation'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to create conversation'),
     };
   }
 }
@@ -227,6 +223,7 @@ export async function getOrCreateConversation(
  * Block a user
  */
 export async function blockUser(
+  supabase: SupabaseClient,
   blockerId: string,
   blockedId: string
 ): Promise<{ error?: Error }> {
@@ -239,7 +236,9 @@ export async function blockUser(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to block user'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to block user'),
     };
   }
 }
@@ -248,6 +247,7 @@ export async function blockUser(
  * Check if either user has blocked the other
  */
 export async function isBlocked(
+  supabase: SupabaseClient,
   userId1: string,
   userId2: string
 ): Promise<{ blocked: boolean; error?: Error }> {
@@ -265,7 +265,9 @@ export async function isBlocked(
   } catch (error) {
     return {
       blocked: false,
-      error: error instanceof Error ? error : new Error('Failed to check block status'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to check block status'),
     };
   }
 }

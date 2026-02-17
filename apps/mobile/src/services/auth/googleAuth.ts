@@ -1,18 +1,9 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../../config/supabase';
+import type { GoogleAuthResult } from '@nusa/shared';
 
 WebBrowser.maybeCompleteAuthSession();
-
-interface GoogleAuthResult {
-  user?: {
-    id: string;
-    email: string;
-    full_name: string;
-    avatar_url?: string;
-  };
-  error?: Error;
-}
 
 /**
  * Sign up/in with Google OAuth

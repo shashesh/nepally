@@ -64,6 +64,26 @@ Full-detail view of a single post. Shows all post fields, author info, and provi
 │  │      💬  Contact Author           │  │ ← Primary CTA button
 │  └───────────────────────────────────┘  │
 │                                         │
+│  ── Comments ─────────────────────────  │ ← NEW: Comments section
+│  Comments (3)                           │
+│                                         │
+│  [PK]  Priya K.  ✓                      │ ← Comment 1
+│         Is parking included?            │
+│         1h ago                           │
+│                                         │
+│  [SG]  Sita G.  ✓  (Author)            │ ← Comment 2 (by author)
+│         Yes, one spot included!         │
+│         50m ago                          │
+│                                         │
+│  [RM]  Ram P.  ✓                        │ ← Comment 3
+│         Interested! Sending message.    │
+│         30m ago                          │
+│                                         │
+│  ┌───────────────────────────────────┐  │
+│  │ Add a comment...             [↑] │  │ ← Comment input (Level 1+)
+│  │                          0/1000   │  │    Sticky, auto-expand
+│  └───────────────────────────────────┘  │
+│                                         │
 │  Posted Feb 1, 2026 • Dallas-Fort Worth │ ← Footer metadata
 │                                         │
 └─────────────────────────────────────────┘
@@ -228,7 +248,153 @@ Each row is a horizontal layout:
 
 ---
 
-### 9. Footer Metadata
+### 9. Comments Section (NEW)
+
+**Type:** Scrollable list of comments with input
+**Position:** Below Contact Author button, above footer
+**Background:** White (#FFFFFF)
+**Margin:** 24px top from button
+
+#### Comments Header
+**Section header:** "Comments (5)" with horizontal rule
+**Typography:** 17pt/16sp Semibold, #212121
+**Count:** Dynamic based on number of non-deleted comments
+**Display:** "Comments (0)" if no comments
+
+#### Empty State (if no comments)
+**Message:** "No comments yet. Be the first to comment!"
+**Icon:** 💬 (chat bubble), 40px, #BDBDBD
+**Typography:** 15pt/14sp Regular, #757575
+**Layout:** Center-aligned, 60px vertical padding
+
+#### Comment List (if comments exist)
+**Type:** Vertical list of comment items
+**Max initial display:** 3 most recent comments
+**"Show all comments":** Link if > 3 comments, expands to full list
+**Spacing:** 16px between comment items
+
+#### Comment Item Layout
+Each comment is a horizontal row:
+
+```
+┌─────────────────────────────────────────┐
+│  [PK]  Priya Kumari  ✓                  │ ← Avatar + name + badge
+│        Is parking included?             │ ← Comment text
+│        1h ago                 [🗑️]       │ ← Timestamp + delete (own only)
+└─────────────────────────────────────────┘
+```
+
+**Components:**
+- **Avatar:** 32x32px circle
+  - If profile photo: display photo
+  - If no photo: initials (e.g., "PK")
+  - Background color by trust level (Level 0: gray, Level 1: blue, Level 2: purple)
+- **Name:** "Priya Kumari" (14pt/13sp Medium, #212121)
+  - Max width: Truncate if > 20 chars
+  - Position: To right of avatar, top-aligned
+- **Trust Badge:** ✓ (verified checkmark), 14x14px, #2E7D32
+  - Only shown for Level 1+
+  - Position: To right of name
+- **Comment Text:** User's comment content
+  - Typography: 14pt/13sp Regular, #424242
+  - Line height: 20px
+  - Max lines: Unlimited (full text shown)
+  - Max length: 1000 characters (enforced at input)
+  - Position: Below name, left-aligned with name
+- **Timestamp:** "1h ago" (12pt/11sp Regular, #757575)
+  - Relative time: "5m ago", "2h ago", "1d ago", "2w ago"
+  - Position: Below comment text, left-aligned
+- **Delete Button:** 🗑️ (trash icon), 18x18px, #C62828
+  - Only visible to comment author
+  - Position: Far right, vertically centered with timestamp
+  - Touch target: 44x44px minimum
+  - Tap action: Confirmation dialog → delete comment
+
+**Delete Confirmation Dialog:**
+- **Title:** "Delete Comment"
+- **Message:** "Are you sure you want to delete this comment? This cannot be undone."
+- **Buttons:** "Cancel" (gray), "Delete" (red destructive)
+
+**States:**
+- **Default:** White background
+- **Pressed (delete):** Fade out animation (300ms)
+- **Deleted:** Removed from list immediately
+
+---
+
+#### Comment Input (Level 1+ users only)
+
+**Type:** Multi-line text input with send button
+**Position:** Bottom of comments section, sticky when scrolling
+**Height:** Auto-expand as user types (48px default, 120px max)
+**Background:** #F5F5F5 (Light Gray)
+**Border:** 1px solid #E0E0E0
+**Corner radius:** 8px
+**Padding:** 12px all around
+**Margin:** 16px from comments list, 16px from footer
+
+**Layout:**
+```
+┌─────────────────────────────────────────┐
+│  Add a comment...                  [↑]  │ ← Input + send button
+│                                         │
+│                              0/1000     │ ← Character counter
+└─────────────────────────────────────────┘
+```
+
+**Components:**
+- **Text Input:**
+  - Placeholder: "Add a comment..."
+  - Typography: 15pt/14sp Regular, #424242
+  - Max length: 1000 characters
+  - Multi-line: Expands up to 5 lines before scrolling internally
+  - Text color: #212121
+  - Placeholder color: #BDBDBD
+- **Send Button:** ↑ (up arrow / paper plane icon)
+  - Size: 32x32px circle
+  - Position: Bottom-right corner of input
+  - Background: #1565C0 (Primary Blue) when enabled, #BDBDBD when disabled
+  - Icon color: White
+  - Touch target: 44x44px minimum
+  - **Disabled state:** when input is empty
+  - **Enabled state:** when input has 1-1000 chars
+  - **Loading state:** Spinner replaces icon when posting
+- **Character Counter:** "0/1000"
+  - Typography: 12pt/11sp Regular, #757575
+  - Position: Bottom-right below input
+  - Color changes to #C62828 (red) when at 950+ chars (warning)
+
+**States:**
+| State | Input Border | Send Button | Behavior |
+|-------|-------------|-------------|----------|
+| Default (empty) | #E0E0E0 | Gray (#BDBDBD), disabled | User can type |
+| Active (typing) | #1565C0 | Blue (#1565C0), enabled | User typing, can send |
+| Loading | #1565C0 | Blue + spinner | Posting comment to DB |
+| Error | #C62828 (red) | Blue, re-enabled | Show toast, allow retry |
+
+**Interaction:**
+1. User taps input → keyboard opens
+2. User types comment (1-1000 chars)
+3. Character counter updates in real-time
+4. Send button enabled when > 0 chars
+5. User taps send button
+6. Button shows loading spinner
+7. Comment posted to DB (optimistic UI: appears immediately in list)
+8. Input clears, keyboard stays open
+9. Post's `comments_count` increments
+10. Section header updates: "Comments (5)" → "Comments (6)"
+
+**Level 0 User Behavior:**
+- Comment input is replaced with verification prompt:
+- **Message:** "Verify your account to comment on posts"
+- **CTA Button:** "Verify Now" (16pt Semibold, #1565C0, navigates to verification flow)
+- **Background:** #FFF3E0 (Light Amber)
+- **Icon:** ⚠️ (warning), 20px, #E65100
+- **Height:** 64px
+
+---
+
+### 10. Footer Metadata
 
 **Typography:** 13pt/12sp Regular, #757575
 **Content:** "Posted Feb 1, 2026 • Dallas-Fort Worth"

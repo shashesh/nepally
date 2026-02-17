@@ -13,8 +13,9 @@ ASK the user these clarifying questions:
 1. **Problem Statement:** What user problem does this feature solve?
 2. **Target Users:** Who is the primary user? (New users, verified users, moderators, businesses?)
 3. **Metro Scope:** Is this metro-local, metro-wide, or global?
-4. **Phase Alignment:** Which roadmap phase does this belong to?
-5. **Dependencies:** Does this require other features to exist first?
+4. **Platform Scope:** Mobile only, Web only, or Both? (Default: Both)
+5. **Phase Alignment:** Which roadmap phase does this belong to?
+6. **Dependencies:** Does this require other features to exist first?
 
 Wait for answers before proceeding.
 
@@ -85,6 +86,28 @@ So that [benefit]
 
 - Metric 1: [How to measure]
 - Metric 2: [How to measure]
+
+## Platform Scope
+
+- [ ] Mobile (React Native)
+- [ ] Web (Next.js)
+
+## Code Architecture (Shared vs Platform-Specific)
+
+### Shared Code (`packages/shared/`)
+- **Types**: [list data model interfaces needed]
+- **API Functions**: [list Supabase query functions needed]
+- **Validation**: [list Zod schemas needed]
+- **Utils/Constants**: [list any new utility functions or constants]
+
+### Mobile-Specific (`apps/mobile/`)
+- **Screens**: [list RN screens]
+- **Components**: [list RN UI components]
+- **Navigation**: [changes to navigation stacks]
+
+### Web-Specific (`apps/web/`)
+- **Pages**: [list Next.js pages]
+- **Components**: [list React components]
 
 ## Open Questions
 

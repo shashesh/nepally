@@ -11,10 +11,11 @@ When the user invokes `/wireframe [screen-name]`, create detailed wireframe docu
 
 ASK these questions:
 1. **Screen Purpose:** What is the primary goal of this screen?
-2. **User Entry Point:** How does the user get to this screen?
-3. **Data Required:** What information must be displayed?
-4. **Actions Available:** What can the user do on this screen?
-5. **Exit Points:** Where can the user go from here?
+2. **Platform Scope:** Mobile only, Web only, or Both? (Default: Both)
+3. **User Entry Point:** How does the user get to this screen?
+4. **Data Required:** What information must be displayed?
+5. **Actions Available:** What can the user do on this screen?
+6. **Exit Points:** Where can the user go from here?
 
 ## Step 2: Create Wireframe Document
 
@@ -112,6 +113,31 @@ Example:
 - [ ] Scroll behavior
 - [ ] Safe area insets
 
+## Web / Desktop Considerations
+
+- [ ] Responsive layout (mobile web ≤768px, desktop ≥1024px)
+- [ ] Desktop layout variant (wider content area, optional sidebar)
+- [ ] Hover states for interactive elements
+- [ ] Keyboard navigation (Tab order, Enter to submit)
+- [ ] Browser back button behavior
+- [ ] Max content width (e.g., 640px for forms, 1200px for feeds)
+
+### Desktop Layout Variant (if platform scope includes Web)
+
+[If this screen needs a web variant, create a second ASCII wireframe for desktop breakpoint]
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Logo          Home   Browse   Messages   Profile    [Sign Out] │
+├────────────────────┬─────────────────────────────────────────────┤
+│                    │                                             │
+│  Sidebar (nav)     │  Main Content Area                         │
+│                    │  [Same form/content as mobile, wider]       │
+│                    │                                             │
+│                    │                                             │
+└────────────────────┴─────────────────────────────────────────────┘
+```
+
 ## Accessibility
 
 - [ ] Screen reader labels
@@ -138,6 +164,8 @@ Check wireframe against:
 - Trust level (does user have permission?)
 - Mandatory fields (from roadmap)
 - Mobile-first design
+- **Web parity:** If platform scope is "Both", does the web wireframe exist?
+- **Shared data:** Are the data requirements the same for both platforms? (They should use the same shared types from `packages/shared/`)
 
 ## Step 4: Present to User
 

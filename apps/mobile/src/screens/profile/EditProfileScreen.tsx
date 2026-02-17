@@ -12,10 +12,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { useMetroArea } from '../../hooks/useMetroArea';
-import { updateUserProfile } from '../../services/api/users';
+import { updateUserProfile, APP_CONFIG } from '@nusa/shared';
 import { saveMetroArea } from '../../utils/storage';
+import { supabase } from '../../config/supabase';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
-import { APP_CONFIG } from '../../config/constants';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -83,7 +83,7 @@ export function EditProfileScreen() {
 
     try {
       // Update name and phone
-      const profileResult = await updateUserProfile(user.id, {
+      const profileResult = await updateUserProfile(supabase, user.id, {
         full_name: fullName.trim(),
         phone: phone.trim() || undefined,
       });

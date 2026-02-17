@@ -9,7 +9,8 @@ import { PostNavigator } from './PostNavigator';
 import { ProfileNavigator } from './ProfileNavigator';
 import { ChatNavigator } from './ChatNavigator';
 import { useAuth } from '../hooks/useAuth';
-import { getTotalUnreadCount } from '../services/api/messages';
+import { getTotalUnreadCount } from '@nusa/shared';
+import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
 import { spacing } from '../styles/spacing';
@@ -36,7 +37,7 @@ export function MainTabNavigator() {
 
   const refreshUnreadCount = useCallback(async () => {
     if (!user?.id) return;
-    const result = await getTotalUnreadCount(user.id);
+    const result = await getTotalUnreadCount(supabase, user.id);
     setUnreadCount(result.count);
   }, [user?.id]);
 

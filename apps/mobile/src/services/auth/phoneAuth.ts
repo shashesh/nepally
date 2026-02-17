@@ -1,9 +1,5 @@
 import { supabase } from '../../config/supabase';
-
-interface PhoneAuthResult {
-  success: boolean;
-  error?: Error;
-}
+import type { PhoneAuthResult } from '@nusa/shared';
 
 /**
  * Send OTP to phone number

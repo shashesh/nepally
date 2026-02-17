@@ -15,22 +15,28 @@ This guide explains what code should be shared between mobile and web apps, and 
 
 **Location:** `packages/shared/src/types/`
 
+**IMPORTANT:** Shared types use **snake_case** matching Supabase database column names. See [ADR: Shared Types Use snake_case](decisions/2026-02-16-shared-types-snake-case.md).
+
 **Examples:**
 ```typescript
-// types/user.ts
+// types/user.ts — snake_case matching Supabase columns
 export interface User {
   id: string;
   email: string;
-  name: string;
-  metroAreaId: string;
-  trustLevel: TrustLevel;
+  full_name: string;
+  metro_area_id: string;
+  trust_level: number;
+  created_at: string;
 }
 
-// types/post.ts
+// types/post.ts — snake_case matching Supabase columns
 export interface Post {
   id: string;
-  category: PostCategory;
+  category: string;
   title: string;
+  author_id: string;
+  metro_area_id: string;
+  created_at: string;
   // ...
 }
 ```

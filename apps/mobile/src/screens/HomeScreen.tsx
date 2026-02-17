@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,21 +11,27 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../hooks/useAuth';
 import { Level0Banner } from '../components/banners/Level0Banner';
 import { PostCard } from '../components/cards/PostCard';
-import { getPostsByMetroArea, Post } from '../services/api/posts';
-import { getOrCreateConversation } from '../services/api/conversations';
+import {
+  getPostsByMetroArea,
+  getUserLikedPostIds,
+  likePost,
+  unlikePost,
+  getOrCreateConversation,
+  TrustLevel,
+} from '@nusa/shared';
+import type { Post } from '@nusa/shared';
 import { isBannerDismissed, saveBannerDismissed, getMetroArea, saveMetroArea } from '../utils/storage';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
 import { spacing } from '../styles/spacing';
-import { TRUST_LEVELS } from '../config/constants';
 import { MainTabParamList, HomeStackParamList } from '../types/navigation';
 
 type HomeScreenNavProp = CompositeNavigationProp<
@@ -65,23 +71,27 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavProp>();
   const [selectedCategory, setSelectedCategory] = useState<Category>('housing');
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [metroName, setMetroName] = useState<string | null>(null);
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
 
-  const isLevel0 = user?.trust_level === TRUST_LEVELS.NEW;
+  const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
   useEffect(() => {
     loadBannerState();
     loadMetroName();
   }, []);
 
-  useEffect(() => {
-    if (user?.metro_area_id) {
-      loadPosts();
-    }
-  }, [selectedCategory, user?.metro_area_id]);
+  // Reload posts and liked state every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.metro_area_id) {
+        loadPosts();
+      }
+      loadLikedPosts();
+    }, [selectedCategory, user?.metro_area_id])
+  );
 
   const loadBannerState = async () => {
     const dismissed = await isBannerDismissed('level0-banner');
@@ -114,10 +124,9 @@ export default function HomeScreen() {
   const loadPosts = async () => {
     if (!user?.metro_area_id) return;
 
-    setLoading(true);
     try {
       const category = selectedCategory === 'all' ? undefined : selectedCategory;
-      const result = await getPostsByMetroArea(user.metro_area_id, category);
+      const result = await getPostsByMetroArea(supabase, user.metro_area_id, category);
 
       if (result.data) {
         setPosts(result.data);
@@ -125,7 +134,6 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Failed to load posts:', error);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
@@ -138,6 +146,69 @@ export default function HomeScreen() {
   const handleBannerDismiss = async () => {
     await saveBannerDismissed('level0-banner');
     setBannerVisible(false);
+  };
+
+  const loadLikedPosts = async () => {
+    if (!user?.id) return;
+    const result = await getUserLikedPostIds(supabase, user.id);
+    if (result.data) {
+      setLikedPostIds(new Set(result.data));
+    }
+  };
+
+  const handleLikePress = async (post: Post) => {
+    if (isLevel0) {
+      Alert.alert(
+        'Verify to Like',
+        'Please verify your phone number to like posts.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Verify Now', onPress: handleVerifyPress },
+        ]
+      );
+      return;
+    }
+
+    const wasLiked = likedPostIds.has(post.id);
+
+    // Optimistic update
+    setLikedPostIds((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) next.delete(post.id);
+      else next.add(post.id);
+      return next;
+    });
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === post.id
+          ? { ...p, likes_count: p.likes_count + (wasLiked ? -1 : 1) }
+          : p
+      )
+    );
+
+    // Persist
+    const result = wasLiked ? await unlikePost(supabase, post.id) : await likePost(supabase, post.id);
+    if (result.error) {
+      // Revert on error
+      setLikedPostIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.add(post.id);
+        else next.delete(post.id);
+        return next;
+      });
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === post.id
+            ? { ...p, likes_count: p.likes_count + (wasLiked ? 1 : -1) }
+            : p
+        )
+      );
+      Alert.alert('Error', 'Failed to update like. Please try again.');
+    }
+  };
+
+  const handleCommentPress = (post: Post) => {
+    navigation.navigate('PostDetail', { postId: post.id, scrollToComments: true } as any);
   };
 
   const handleVerifyPress = () => {
@@ -168,6 +239,7 @@ export default function HomeScreen() {
     }
 
     const result = await getOrCreateConversation(
+      supabase,
       user.id,
       user.full_name,
       post.author.id,
@@ -294,11 +366,20 @@ export default function HomeScreen() {
           <PostCard
             category={item.category}
             title={item.title}
+            description={item.description}
             metadata={getPostMetadata(item)}
-            timestamp={`Posted ${new Date(item.created_at).toLocaleDateString()}`}
+            timestamp={item.created_at}
             metroArea={item.location_city ? `${item.location_city}, ${item.location_state}` : 'Metro Area'}
-            isVerified={(item.author?.trust_level ?? 0) >= TRUST_LEVELS.VERIFIED}
+            isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
+            authorName={item.author?.full_name}
+            authorPhotoUrl={item.author?.profile_photo}
+            authorTrustLevel={item.author?.trust_level ?? 0}
+            likesCount={item.likes_count ?? 0}
+            commentsCount={item.comments_count ?? 0}
+            isLiked={likedPostIds.has(item.id)}
             onPress={() => handlePostPress(item)}
+            onLikePress={() => handleLikePress(item)}
+            onCommentPress={() => handleCommentPress(item)}
             onMessagePress={
               item.author_id !== user?.id
                 ? () => handleMessagePress(item)

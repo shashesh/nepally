@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PostStackParamList } from '../../types/navigation';
 import { useAuth } from '../../hooks/useAuth';
-import { TRUST_LEVELS } from '../../config/constants';
+import { TrustLevel } from '@nusa/shared';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius, shadows } from '../../styles/spacing';
@@ -52,7 +52,7 @@ const CATEGORIES = [
 
 export default function CategorySelectScreen({ navigation }: Props) {
   const { user } = useAuth();
-  const isLevel0 = user?.trust_level === TRUST_LEVELS.NEW;
+  const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
   if (isLevel0) {
     return (

@@ -1,12 +1,10 @@
 import React, { useState, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   SafeAreaView,
   StatusBar,
   FlatList,
-  Dimensions,
   ViewToken,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -15,10 +13,7 @@ import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { TextButton } from '../../components/buttons/TextButton';
 import { useOnboarding } from '../../hooks/useOnboarding';
 import { colors } from '../../styles/colors';
-import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TUTORIAL_CARDS = [
   {

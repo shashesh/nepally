@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
-import { APP_CONFIG } from '../../config/constants';
+import { APP_CONFIG } from '@nusa/shared';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';

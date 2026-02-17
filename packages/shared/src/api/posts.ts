@@ -1,39 +1,15 @@
-import { supabase } from '../../config/supabase';
-
-export interface Post {
-  id: string;
-  category: 'housing' | 'jobs' | 'emergency' | 'travel';
-  title: string;
-  description: string;
-  metro_area_id: string;
-  author_id: string;
-  location_zip_code: string;
-  location_city: string;
-  location_state: string;
-  photos: string[];
-  fields: Record<string, any>;
-  status: 'active' | 'expired' | 'removed' | 'pending';
-  expiry_date: string;
-  created_at: string;
-  updated_at: string;
-  views_count: number;
-  responses_count: number;
-  author?: {
-    id: string;
-    full_name: string;
-    trust_level: number;
-  };
-}
-
-interface PostsResult {
-  data?: Post[];
-  error?: Error;
-}
+/**
+ * Shared Post API functions
+ * All Supabase query logic for posts — accepts SupabaseClient via dependency injection
+ */
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Post, PostsResult, PostResult } from '../types/post';
 
 /**
  * Get posts by metro area with optional category filter
  */
 export async function getPostsByMetroArea(
+  supabase: SupabaseClient,
   metroAreaId: string,
   category?: string,
   limit: number = 20
@@ -46,7 +22,8 @@ export async function getPostsByMetroArea(
         author:users!posts_author_id_fkey (
           id,
           full_name,
-          trust_level
+          trust_level,
+          profile_photo
         )
       `)
       .eq('metro_area_id', metroAreaId)
@@ -73,10 +50,10 @@ export async function getPostsByMetroArea(
 /**
  * Get post by ID
  */
-export async function getPostById(postId: string): Promise<{
-  data?: Post;
-  error?: Error;
-}> {
+export async function getPostById(
+  supabase: SupabaseClient,
+  postId: string
+): Promise<PostResult> {
   try {
     const { data, error } = await supabase
       .from('posts')
@@ -85,7 +62,8 @@ export async function getPostById(postId: string): Promise<{
         author:users!posts_author_id_fkey (
           id,
           full_name,
-          trust_level
+          trust_level,
+          profile_photo
         )
       `)
       .eq('id', postId)
@@ -105,23 +83,21 @@ export async function getPostById(postId: string): Promise<{
 /**
  * Create a new post
  */
-export async function createPost(params: {
-  metroAreaId: string;
-  category: Post['category'];
-  title: string;
-  description: string;
-  fields: Record<string, any>;
-  expiryDate: string;
-  locationZipCode: string;
-  locationCity: string;
-  locationState: string;
-}): Promise<{
-  data?: Post;
-  error?: Error;
-}> {
+export async function createPost(
+  supabase: SupabaseClient,
+  params: {
+    metroAreaId: string;
+    category: Post['category'];
+    title: string;
+    description: string;
+    fields: Record<string, any>;
+    expiryDate: string;
+    locationZipCode: string;
+    locationCity: string;
+    locationState: string;
+  }
+): Promise<PostResult> {
   try {
-    // Use the authenticated user's ID from the current session
-    // so author_id matches auth.uid() for the RLS policy
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
       return { error: new Error('You must be logged in to create a post') };

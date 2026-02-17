@@ -1,13 +1,8 @@
 import { useState, useCallback } from 'react';
-import { getMetroByZip } from '../services/api/metroArea';
-import { updateUserLocation } from '../services/api/users';
+import { getMetroByZip, updateUserLocation } from '@nusa/shared';
+import type { MetroArea } from '@nusa/shared';
 import { saveMetroArea, getMetroArea as getCachedMetroArea } from '../utils/storage';
-
-interface MetroArea {
-  id: string;
-  name: string;
-  state: string;
-}
+import { supabase } from '../config/supabase';
 
 interface UseMetroAreaReturn {
   metroArea: MetroArea | null;
@@ -31,7 +26,7 @@ export function useMetroArea(): UseMetroAreaReturn {
     setError(null);
 
     try {
-      const result = await getMetroByZip(zipCode);
+      const result = await getMetroByZip(supabase, zipCode);
 
       if (result.error) {
         setError(result.error.message);
@@ -60,7 +55,7 @@ export function useMetroArea(): UseMetroAreaReturn {
       setError(null);
 
       try {
-        const result = await updateUserLocation(userId, zipCode, metroAreaId);
+        const result = await updateUserLocation(supabase, userId, zipCode, metroAreaId);
 
         if (result.error) {
           setError(result.error.message);
@@ -83,9 +78,12 @@ export function useMetroArea(): UseMetroAreaReturn {
     try {
       const cached = await getCachedMetroArea();
       if (cached) {
-        setMetroArea(cached);
+        // AsyncStorage caches {id, name, state} — add population for type compat
+        const full: MetroArea = { ...cached, population: (cached as any).population ?? null };
+        setMetroArea(full);
+        return full;
       }
-      return cached;
+      return null;
     } catch (err) {
       console.error('Failed to load cached metro area:', err);
       return null;

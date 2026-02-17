@@ -1,12 +1,5 @@
 import { supabase } from '../../config/supabase';
-
-interface EmailAuthResult {
-  user?: {
-    id: string;
-    email: string;
-  };
-  error?: Error;
-}
+import type { EmailAuthResult } from '@nusa/shared';
 
 /**
  * Sign up with email and password

@@ -15,9 +15,9 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PostStackParamList } from '../../types/navigation';
 import { useAuth } from '../../hooks/useAuth';
-import { createPost } from '../../services/api/posts';
+import { createPost, POST_EXPIRY_DAYS } from '@nusa/shared';
 import { getMetroArea } from '../../utils/storage';
-import { POST_EXPIRY_DAYS } from '../../config/constants';
+import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius, heights } from '../../styles/spacing';
@@ -214,7 +214,7 @@ export default function CreatePostScreen({ route, navigation }: Props) {
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
-      const result = await createPost({
+      const result = await createPost(supabase, {
         metroAreaId: user.metro_area_id,
         category,
         title: title.trim(),

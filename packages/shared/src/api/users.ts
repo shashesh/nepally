@@ -1,15 +1,9 @@
-import { supabase } from '../../config/supabase';
-
-interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  phone?: string;
-  zip_code?: string;
-  metro_area_id?: string;
-  trust_level: number;
-  created_at: string;
-}
+/**
+ * Shared Users API functions
+ * All Supabase query logic — accepts SupabaseClient via dependency injection
+ */
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { User } from '../types/user';
 
 interface UserResult {
   data?: User;
@@ -19,7 +13,10 @@ interface UserResult {
 /**
  * Get user by ID
  */
-export async function getUserById(userId: string): Promise<UserResult> {
+export async function getUserById(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<UserResult> {
   try {
     const { data, error } = await supabase
       .from('users')
@@ -33,7 +30,9 @@ export async function getUserById(userId: string): Promise<UserResult> {
     return { data: data as User };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch user'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to fetch user'),
     };
   }
 }
@@ -42,6 +41,7 @@ export async function getUserById(userId: string): Promise<UserResult> {
  * Update user location (ZIP code and metro area)
  */
 export async function updateUserLocation(
+  supabase: SupabaseClient,
   userId: string,
   zipCode: string,
   metroAreaId: string
@@ -64,17 +64,20 @@ export async function updateUserLocation(
     return { data: data as User };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to update user location'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to update user location'),
     };
   }
 }
 
 /**
- * Update user profile
+ * Update user profile fields
  */
 export async function updateUserProfile(
+  supabase: SupabaseClient,
   userId: string,
-  updates: Partial<Pick<User, 'full_name' | 'phone'>>
+  updates: Partial<Pick<User, 'full_name' | 'phone' | 'profile_photo'>>
 ): Promise<UserResult> {
   try {
     const { data, error } = await supabase
@@ -93,7 +96,9 @@ export async function updateUserProfile(
     return { data: data as User };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to update profile'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to update profile'),
     };
   }
 }
@@ -102,6 +107,7 @@ export async function updateUserProfile(
  * Create user profile (called after auth signup)
  */
 export async function createUserProfile(
+  supabase: SupabaseClient,
   userId: string,
   email: string,
   fullName: string
@@ -124,7 +130,9 @@ export async function createUserProfile(
     return { data: data as User };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to create profile'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to create profile'),
     };
   }
 }

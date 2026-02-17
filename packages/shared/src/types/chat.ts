@@ -1,35 +1,50 @@
 /**
- * Chat and messaging types
+ * Chat and messaging types — snake_case matching Supabase database columns
+ * See: supabase/migrations/001_initial_schema.sql
  */
 
+/** Raw conversation row from conversations table */
 export interface Conversation {
   id: string;
-  participants: string[]; // User IDs
-  participantDetails: {
-    [userId: string]: {
-      name: string;
-      photo?: string;
-    };
-  };
-  postId?: string; // If conversation is about a specific post
-  lastMessage: string;
-  lastMessageTime: Date;
-  unreadCount: {
-    [userId: string]: number;
-  };
-  createdAt: Date;
-  updatedAt: Date;
+  post_id: string | null;
+  last_message: string | null;
+  last_message_time: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface Message {
+/** Denormalized conversation for list display (joined from multiple tables) */
+export interface ConversationWithParticipant {
   id: string;
-  conversationId: string;
-  senderId: string;
+  post_id: string | null;
+  last_message: string | null;
+  last_message_time: string | null;
+  created_at: string;
+  other_user_id: string;
+  other_user_name: string;
+  unread_count: number;
+  post_title?: string;
+  post_category?: string;
+}
+
+/** Message row from messages table */
+export interface ChatMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
   text: string;
-  timestamp: Date;
-  read: boolean;
-  readAt?: Date;
   type: 'text' | 'image' | 'system';
-  imageUrl?: string;
-  systemMessageType?: 'user-joined' | 'user-left' | 'post-expired';
+  image_url?: string;
+  system_message_type?: string;
+  read: boolean;
+  read_at: string | null;
+  timestamp: string;
+}
+
+/** Blocked user relationship */
+export interface BlockedUser {
+  id: string;
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
 }

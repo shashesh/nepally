@@ -1,0 +1,124 @@
+.authPage {
+  max-width: 440px;
+  margin: var(--space-xl) auto;
+}
+
+.authCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-l);
+  box-shadow: var(--shadow-sm);
+}
+
+.authTitle {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  margin-bottom: var(--space-xs);
+}
+
+.authSubtitle {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-bottom: var(--space-m);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.label {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.input {
+  height: var(--input-height);
+  padding: 0 var(--space-s);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fast);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+  border-width: 2px;
+}
+
+.inputError {
+  border-color: var(--color-error);
+}
+
+.submitBtn {
+  height: var(--button-height);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  margin-top: var(--space-xs);
+}
+
+.submitBtn:hover {
+  background: var(--color-primary-dark);
+}
+
+.submitBtn:disabled {
+  background: var(--color-disabled);
+  cursor: not-allowed;
+}
+
+.error {
+  background: #FFEBEE;
+  color: var(--color-error);
+  padding: var(--space-s);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+
+.switchText {
+  text-align: center;
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-m);
+}
+
+.switchLink {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.passwordErrors {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.passwordErrors li {
+  font-size: var(--font-size-caption);
+  color: var(--color-error);
+  padding: 2px 0;
+}
+
+.passwordErrors li::before {
+  content: '• ';
+}

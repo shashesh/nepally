@@ -76,7 +76,54 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 - Disclaimer shown before submission: "⚠️ This is NOT a replacement for 911. Call emergency services first for life-threatening situations."
 - Emergency posts do NOT trigger metro-wide alerts (Red Alert system is Phase 2)
 
-### C. In-App Communication System
+### C. Social Engagement Features (NEW)
+
+**Enhanced Post Cards:** Redesigned home feed for better discoverability and trust.
+
+**Features:**
+- **Author visibility:** Post cards show author name, profile photo (or initials), and trust badge
+- **Description previews:** First 150 characters displayed on feed with "View More" link
+- **Social signals:** Like and comment counts visible on every post
+- **Action bar:** Quick actions for Like, Comment, and Message directly from feed
+
+**Post Likes (Helpful Votes):**
+- **Purpose:** Users can mark posts as helpful to bookmark and indicate quality
+- **Visibility:** Like count displayed on post cards and detail screens
+- **Access:** Level 1+ users can like posts; Level 0 users can view likes
+- **Benefits:** Posts with 10+ likes receive "Helpful" badge, higher search ranking
+- **Database:** Individual like tracking prevents duplicate likes per user
+
+**Post Comments (Public Discussion):**
+- **Purpose:** Public Q&A threads on posts, separate from private chat
+- **Features:**
+  - Comment on any post to ask questions visible to all users
+  - Authors can reply publicly (benefits entire community)
+  - Comment counter shown on post cards
+  - Delete own comments
+- **Access:** Level 1+ users can comment; Level 0 users can read comments
+- **Moderation:** Comments can be reported and reviewed by moderators
+- **Character limit:** 1000 characters per comment
+
+**Profile Photos:**
+- **Purpose:** Build trust and recognition through profile photos
+- **Upload:** Users can upload profile photos from camera or photo library
+- **Cropping:** Square (1:1) crop with zoom/pan controls
+- **Storage:** Supabase Storage, auto-compressed to 500KB, 500x500px
+- **Display:** Profile photos shown in post cards, comments, chat, profile screen
+- **Fallback:** Initials displayed when no photo (colored by trust level)
+
+**Benefits:**
+- Increased trust through author visibility and social proof
+- Reduced repetitive questions via public comments
+- Better content discovery through likes and engagement metrics
+- Stronger community identity through profile photos
+
+**Level 0 User Experience:**
+- Can view all likes and comments (read-only access)
+- Like and comment buttons show verification prompts
+- Encourages phone verification to unlock full engagement
+
+### D. In-App Communication System
 
 **Real-Time Chat:** Built on Supabase Realtime for instant messaging between users.
 
@@ -98,7 +145,7 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 - Users can block abusive contacts
 - Reported conversations flagged for moderator review
 
-### D. Photo Upload & Storage
+### E. Photo Upload & Storage
 
 **Supabase Storage Integration:** Secure cloud storage for user-uploaded images.
 
@@ -116,7 +163,7 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 - Inappropriate images removed within 24 hours
 - Repeat violators banned from photo uploads
 
-### E. Basic Reporting System
+### F. Basic Reporting System
 
 **User Reporting:** Simple flagging mechanism for spam, scams, and inappropriate content.
 
@@ -131,7 +178,7 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 - Remove (delete content, notify poster)
 - Ban user (permanent account suspension)
 
-### F. Admin Dashboard
+### G. Admin Dashboard
 
 **Web-Based Interface:** Supabase Admin SDK for moderator tools.
 

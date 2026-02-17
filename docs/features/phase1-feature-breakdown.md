@@ -185,16 +185,35 @@ Build the core infrastructure that everything else depends on.
 - **Dependencies:** 3.2
 - **Estimated Effort:** 1 day
 
-**3.5 Profile Photo Upload** 🔄
-- **What:** Allow users to add profile picture
+**3.5 Profile Photo Upload & Display** ⭐ (PRIORITY)
+- **What:** Allow users to upload profile photos and display avatars throughout app
 - **Acceptance Criteria:**
-  - Upload single photo
-  - Crop/resize to square (200x200px)
-  - Display in profile and next to posts/chats
-  - Default avatar if no photo uploaded
-- **Dependencies:** 7.1 (Photo Upload Core)
-- **Estimated Effort:** 2 days
-- **Note:** Can be built in parallel with photo upload feature
+  - Upload photo from camera or photo library
+  - Square crop (1:1 aspect ratio) with zoom/pan controls
+  - Auto-compress to 500KB, 500x500px
+  - Upload to Supabase Storage: `avatars/{userId}.jpg`
+  - Update `users.profile_photo` field with Storage URL
+  - **Avatar Component:**
+    - Display profile photo if uploaded
+    - Fallback to initials (first letter of first + last name) if no photo
+    - Background color based on trust level:
+      - Level 0: Light Gray (#E0E0E0)
+      - Level 1: Blue (#4A90E2)
+      - Level 2: Purple (#7B61FF)
+    - Circular shape, white text, sizes: 32px (comments), 40px (post cards), 64px (profile)
+  - **Display locations:**
+    - Post cards (author avatar, 40x40px)
+    - Post detail screen (author section, 40x40px)
+    - Comments (commenter avatar, 32x32px)
+    - Chat conversation list and message thread (40x40px)
+    - Profile screen (64x64px)
+  - Remove photo option (delete from Storage, set field to null)
+  - Permission handling (camera, photo library)
+  - Loading state during upload
+  - Error handling (network failure, invalid format, file too large)
+- **Dependencies:** 3.1 (Basic Profile)
+- **Estimated Effort:** 3 days
+- **Note:** NOW REQUIRED for social engagement features (5.9, 5.10, 5.11)
 
 ---
 
@@ -392,7 +411,79 @@ Build the structured post engine.
 - **Dependencies:** 5.3
 - **Estimated Effort:** 1-2 days
 
-**5.9 Post Sorting**
+**5.9 Enhanced Post Card UIgith Social Engagement** (NEW)
+- **What:** Redesign post cards with author info and engagement actions
+- **Acceptance Criteria:**
+  - Display author avatar (40x40px circle): profile photo or initials with trust-level colored background
+  - Display author name + trust badge next to avatar
+  - Move timestamp to top-right (relative time: "2h ago")
+  - Display category icon + title (existing, keep)
+  - Display description preview (150 chars max, truncate at word boundary)
+  - "View More" link if description truncated (navigates to detail)
+  - Action bar at bottom with 3 actions:
+    - Like button (heart icon) + count
+    - Comment button (chat bubble) + count
+    - Message button (direct message icon)
+  - Level 0 users: Like and Message buttons disabled with tooltips
+  - Tap card body → navigate to PostDetailScreen
+  - Tap author avatar/name → show "Coming soon" toast (future: user profile)
+- **Dependencies:** 5.3, 3.5 (Profile Photo Display)
+- **Estimated Effort:** 2-3 days
+- **Related:** Feature 5.10 (Likes), 5.11 (Comments)
+
+**5.10 Post Likes / Helpful Votes** (NEW)
+- **What:** Users can like posts to indicate helpfulness
+- **Acceptance Criteria:**
+  - Like button on post cards and post detail screen
+  - Heart icon: outline when not liked, filled red when liked
+  - Tap to like/unlike (toggle)
+  - Like count displayed next to button (e.g., "24" or "0")
+  - Count formatted: exact number if < 1000, "1K"/"1.2K" if >= 1000
+  - Each user can like each post only once (database constraint)
+  - Level 1+ users can like; Level 0 sees disabled state + verification toast
+  - Optimistic UI: update immediately, revert on error
+  - Database: `post_likes` table with (post_id, user_id, created_at)
+  - Database: `posts.likes_count` cached counter (updated via trigger)
+  - RLS policies: Anyone can view likes, Level 1+ can insert/delete own likes
+  - API functions: likePost(), unlikePost(), getUserLikedPosts()
+  - Load user's liked posts on app start (for UI state)
+- **Dependencies:** 5.4 (Post Detail), 4.1 (Trust Levels)
+- **Estimated Effort:** 2-3 days
+- **Database:** Adds `post_likes` table, `posts.likes_count` column, triggers
+
+**5.11 Post Comments / Public Replies** (NEW)
+- **What:** Public comment threads on posts
+- **Acceptance Criteria:**
+  - Comments section on PostDetailScreen below "Contact Author" button
+  - Section header: "Comments (5)" with count
+  - Empty state: "No comments yet. Be the first to comment!" with icon
+  - Comment list (flat, chronological, newest first):
+    - Each comment shows: avatar (32x32px), name, trust badge, comment text, timestamp, delete button (own comments only)
+  - Comment input at bottom (sticky):
+    - Multi-line text input (max 1000 chars)
+    - Character counter: "0/1000"
+    - Send button (enabled when 1-1000 chars)
+    - Level 1+ users can comment
+    - Level 0 users see disabled input with: "Verify your account to comment"
+  - Create comment:
+    - User types comment, taps send
+    - Optimistic UI: comment appears immediately
+    - Post to database, increment post's `comments_count`
+    - Input clears after successful post
+  - Delete comment:
+    - Trash icon visible only to comment author
+    - Confirmation dialog: "Delete this comment?" → "Cancel" / "Delete"
+    - Soft delete (`is_deleted = true`), remove from list, decrement count
+  - Database: `post_comments` table with (post_id, author_id, content, is_deleted, created_at)
+  - Database: `posts.comments_count` cached counter (updated via trigger)
+  - RLS policies: Anyone can view non-deleted comments, Level 1+ can insert/delete own comments
+  - API functions: getPostComments(), createComment(), deleteComment()
+  - Update comment counter on post cards in real-time
+- **Dependencies:** 5.4 (Post Detail), 4.1 (Trust Levels), 3.5 (Profile Photos for avatars)
+- **Estimated Effort:** 4-5 days
+-  **Database:** Adds `post_comments` table, `posts.comments_count` column, triggers
+
+**5.12 Post Sorting** (formerly 5.9)
 - **What:** Sort posts by different criteria
 - **Acceptance Criteria:**
   - Sort by: Most Recent (default), Expiring Soon, Most Relevant (future)
@@ -401,7 +492,7 @@ Build the structured post engine.
 - **Dependencies:** 5.3
 - **Estimated Effort:** 1-2 days
 
-**5.10 Draft Posts** 🔄
+**5.13 Draft Posts** (formerly 5.10) 🔄
 - **What:** Save incomplete posts as drafts
 - **Acceptance Criteria:**
   - Auto-save form data every 30 seconds

@@ -1,27 +1,18 @@
-import { supabase } from '../../config/supabase';
-import { RealtimeChannel } from '@supabase/supabase-js';
-
-export interface ChatMessage {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  text: string;
-  type: 'text' | 'image' | 'system';
-  read: boolean;
-  read_at: string | null;
-  timestamp: string;
-}
+/**
+ * Shared Messages API functions
+ * All Supabase query logic — accepts SupabaseClient via dependency injection
+ */
+import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
+import type { ChatMessage } from '../types/chat';
 
 /**
  * Get messages for a conversation in chronological order
  */
 export async function getMessages(
+  supabase: SupabaseClient,
   conversationId: string,
   limit: number = 50
-): Promise<{
-  data?: ChatMessage[];
-  error?: Error;
-}> {
+): Promise<{ data?: ChatMessage[]; error?: Error }> {
   try {
     const { data, error } = await supabase
       .from('messages')
@@ -31,11 +22,12 @@ export async function getMessages(
       .limit(limit);
 
     if (error) throw error;
-
     return { data: (data || []) as ChatMessage[] };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch messages'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to fetch messages'),
     };
   }
 }
@@ -44,13 +36,11 @@ export async function getMessages(
  * Send a message and update conversation metadata
  */
 export async function sendMessage(
+  supabase: SupabaseClient,
   conversationId: string,
   senderId: string,
   text: string
-): Promise<{
-  data?: ChatMessage;
-  error?: Error;
-}> {
+): Promise<{ data?: ChatMessage; error?: Error }> {
   try {
     const now = new Date().toISOString();
 
@@ -95,7 +85,9 @@ export async function sendMessage(
     return { data: message as ChatMessage };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to send message'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to send message'),
     };
   }
 }
@@ -104,6 +96,7 @@ export async function sendMessage(
  * Mark all unread messages in a conversation as read for a user
  */
 export async function markAsRead(
+  supabase: SupabaseClient,
   conversationId: string,
   userId: string
 ): Promise<{ error?: Error }> {
@@ -128,15 +121,19 @@ export async function markAsRead(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to mark as read'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to mark as read'),
     };
   }
 }
 
 /**
- * Subscribe to new messages in a conversation via Supabase Realtime
+ * Subscribe to new messages in a conversation via Supabase Realtime.
+ * Returns a RealtimeChannel that the caller should unsubscribe when done.
  */
 export function subscribeToMessages(
+  supabase: SupabaseClient,
   conversationId: string,
   onNewMessage: (message: ChatMessage) => void,
   onMessageUpdate?: (message: ChatMessage) => void
@@ -175,10 +172,10 @@ export function subscribeToMessages(
 /**
  * Get total unread message count across all conversations for a user
  */
-export async function getTotalUnreadCount(userId: string): Promise<{
-  count: number;
-  error?: Error;
-}> {
+export async function getTotalUnreadCount(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ count: number; error?: Error }> {
   try {
     const { data, error } = await supabase
       .from('conversation_participants')
@@ -188,12 +185,17 @@ export async function getTotalUnreadCount(userId: string): Promise<{
 
     if (error) throw error;
 
-    const count = (data || []).reduce((sum, p) => sum + (p.unread_count || 0), 0);
+    const count = (data || []).reduce(
+      (sum, p) => sum + (p.unread_count || 0),
+      0
+    );
     return { count };
   } catch (error) {
     return {
       count: 0,
-      error: error instanceof Error ? error : new Error('Failed to get unread count'),
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to get unread count'),
     };
   }
 }

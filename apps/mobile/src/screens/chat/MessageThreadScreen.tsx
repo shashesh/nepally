@@ -22,14 +22,15 @@ import {
   sendMessage,
   markAsRead,
   subscribeToMessages,
-  ChatMessage,
-} from '../../services/api/messages';
-import { blockUser } from '../../services/api/conversations';
+  blockUser,
+  TrustLevel,
+} from '@nusa/shared';
+import type { ChatMessage } from '@nusa/shared';
 import { ChatStackParamList } from '../../types/navigation';
+import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
-import { TRUST_LEVELS } from '../../config/constants';
 
 type ThreadRouteProp = RouteProp<ChatStackParamList, 'MessageThread'>;
 type ThreadNavProp = NativeStackNavigationProp<ChatStackParamList, 'MessageThread'>;
@@ -64,6 +65,7 @@ export default function MessageThreadScreen() {
     loadMessages();
 
     const channel = subscribeToMessages(
+      supabase,
       conversationId,
       (newMessage) => {
         // Skip messages from current user — already handled by optimistic UI
@@ -79,7 +81,7 @@ export default function MessageThreadScreen() {
           if (prev.find((m) => m.id === newMessage.id)) return prev;
           return [...prev, newMessage];
         });
-        markAsRead(conversationId, user?.id || '');
+        markAsRead(supabase, conversationId, user?.id || '');
         // Scroll to bottom
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
@@ -101,12 +103,12 @@ export default function MessageThreadScreen() {
   // Mark as read on mount
   useEffect(() => {
     if (user?.id) {
-      markAsRead(conversationId, user.id);
+      markAsRead(supabase, conversationId, user.id);
     }
   }, [conversationId, user?.id]);
 
   const loadMessages = async () => {
-    const result = await getMessages(conversationId);
+    const result = await getMessages(supabase, conversationId);
     if (result.data) {
       setMessages(result.data);
     }
@@ -133,7 +135,7 @@ export default function MessageThreadScreen() {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 50);
 
-      const result = await sendMessage(conversationId, user.id, text);
+      const result = await sendMessage(supabase, conversationId, user.id, text);
       if (result.data) {
         // Replace temp message with real one
         setMessages((prev) =>
@@ -160,7 +162,7 @@ export default function MessageThreadScreen() {
           style: 'destructive',
           onPress: async () => {
             if (!user?.id) return;
-            await blockUser(user.id, otherUserId);
+            await blockUser(supabase, user.id, otherUserId);
             navigation.goBack();
           },
         },
@@ -224,7 +226,7 @@ export default function MessageThreadScreen() {
           <Text style={styles.headerName} numberOfLines={1}>
             {otherUserName}
           </Text>
-          {otherUserTrustLevel >= TRUST_LEVELS.VERIFIED && (
+          {otherUserTrustLevel >= TrustLevel.VERIFIED && (
             <Ionicons
               name="checkmark-circle"
               size={16}

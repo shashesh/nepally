@@ -45,6 +45,13 @@
    - Only create/modify files when requested
    - User will say "commit" or "commit and push" when ready
 
+6. **Shared-First Code Architecture (MANDATORY)**
+   - ALL non-UI code (types, API calls, validation, utils, constants) MUST live in `packages/shared/`
+   - `apps/mobile/` and `apps/web/` MUST import from `@nusa/shared` — NEVER redefine locally
+   - `packages/shared/` MUST NOT import from `react-native`, `expo-*`, or `next`
+   - If the same type/function/constant exists in more than one place, it belongs in `packages/shared/`
+   - Always read `docs/code-sharing-guide.md` and `docs/monorepo-structure.md` before implementing
+
 ## Implementation Workflow (CRITICAL)
 
 When implementing features, ALWAYS follow this sequence:
@@ -54,25 +61,37 @@ When implementing features, ALWAYS follow this sequence:
    - Read user journey: `docs/user-journeys/[category]/[number]-[journey-name].md`
    - Read wireframes: `docs/wireframes/[screen-name].md`
    - Read design system: `docs/wireframes/00-design-system-foundation.md`
+   - Read code sharing guide: `docs/code-sharing-guide.md`
+   - Read monorepo structure: `docs/monorepo-structure.md`
 
-2. **Planning** (Use EnterPlanMode)
+2. **Platform & Sharing Analysis** (MANDATORY before planning)
+   - Determine target platforms: Mobile, Web, or Both (default: Both)
+   - For each code unit, decide: `packages/shared/` or `apps/{platform}/`?
+   - List what goes in `packages/shared/` FIRST
+   - Check existing `packages/shared/src/index.ts` exports to avoid duplication
+
+3. **Planning** (Use EnterPlanMode)
    - Map documentation to code structure
    - Identify all components needed
-   - Define file structure and implementation order
+   - Define file structure with shared package as foundation
    - Create validation checklist
 
-3. **Implementation** (Only after approval)
-   - Build foundation first (design tokens from design system)
-   - Build shared components (buttons, inputs, cards)
-   - Build screens matching wireframes exactly
-   - Implement navigation matching user journey
+4. **Implementation** (Only after approval — SHARED LAYER FIRST)
+   - Shared types in `packages/shared/src/types/`
+   - Shared validation in `packages/shared/src/validation/`
+   - Shared API functions in `packages/shared/src/api/` (dependency injection pattern)
+   - Shared utils/constants in `packages/shared/src/utils/` and `constants/`
+   - Update `packages/shared/src/index.ts` exports
+   - Mobile UI: screens, components, navigation importing from `@nusa/shared`
+   - Web UI: pages, components importing from `@nusa/shared`
    - Handle all error cases from documentation
 
-4. **Validation** (Before marking complete)
+5. **Validation** (Before marking complete)
    - Verify implementation matches wireframes pixel-perfect
    - Test all interactive states (default, pressed, disabled, error, loading)
    - Verify all validation rules from wireframes
    - Test all edge cases from user journey
+   - Run `/shared-first-check` to verify no duplicated types/logic
    - Demo to user and iterate
 
 **Use `/implement-feature [feature-name]` skill for guided implementation.**

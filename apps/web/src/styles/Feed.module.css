@@ -1,0 +1,202 @@
+.feedPage {
+  max-width: var(--content-width);
+  margin: 0 auto;
+}
+
+.feedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-m);
+}
+
+.feedTitle {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+}
+
+.metroName {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
+/* ── Category Tabs ───────────────────────── */
+.tabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-m);
+  overflow-x: auto;
+  padding-bottom: var(--space-xs);
+}
+
+.tab {
+  padding: var(--space-xs) var(--space-s);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.tab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tabActive {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* ── Post Card ───────────────────────────── */
+.postCard {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-s);
+  margin-bottom: var(--space-s);
+  text-decoration: none;
+  color: inherit;
+  transition: all var(--transition-fast);
+}
+
+.postCard:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+}
+
+.postCardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+.postAuthorAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.postAuthorInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.postAuthorName {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.postTimestamp {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+}
+
+.postCategoryBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.categoryHousing { background: #E3F2FD; color: #1565C0; }
+.categoryJobs { background: #E8F5E9; color: #2E7D32; }
+.categoryEmergency { background: #FFEBEE; color: #C62828; }
+.categoryTravel { background: #FFF3E0; color: #E65100; }
+
+.postTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-xxs);
+  color: var(--color-text-primary);
+}
+
+.postDescription {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: var(--space-xs);
+}
+
+.postFooter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+.postStat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Empty State ─────────────────────────── */
+.emptyState {
+  text-align: center;
+  padding: var(--space-xl) var(--space-m);
+  color: var(--color-text-secondary);
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  margin-bottom: var(--space-s);
+}
+
+/* ── Loading ─────────────────────────────── */
+.loading {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--color-text-secondary);
+}
+
+/* ── Level 0 Banner ──────────────────────── */
+.levelBanner {
+  background: var(--color-banner-bg);
+  color: var(--color-banner-text);
+  padding: var(--space-s);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-small);
+  margin-bottom: var(--space-m);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.levelBanner span {
+  flex: 1;
+}
+
+.dismissBtn {
+  background: none;
+  border: none;
+  color: var(--color-banner-text);
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  padding: 4px;
+}

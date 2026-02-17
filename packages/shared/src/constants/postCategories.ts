@@ -2,12 +2,7 @@
  * Post categories and their configurations
  */
 
-export enum PostCategory {
-  HOUSING = 'housing',
-  JOBS = 'jobs',
-  EMERGENCY = 'emergency',
-  TRAVEL = 'travel',
-}
+import type { PostCategory } from '../types/post';
 
 export interface PostCategoryConfig {
   id: PostCategory;
@@ -18,29 +13,29 @@ export interface PostCategoryConfig {
 }
 
 export const POST_CATEGORIES: Record<PostCategory, PostCategoryConfig> = {
-  [PostCategory.HOUSING]: {
-    id: PostCategory.HOUSING,
+  housing: {
+    id: 'housing',
     name: 'Housing',
     expiryDays: 30,
     maxPhotos: 10,
     requiresModeration: false,
   },
-  [PostCategory.JOBS]: {
-    id: PostCategory.JOBS,
+  jobs: {
+    id: 'jobs',
     name: 'Jobs',
     expiryDays: 30,
     maxPhotos: 3,
     requiresModeration: false,
   },
-  [PostCategory.EMERGENCY]: {
-    id: PostCategory.EMERGENCY,
+  emergency: {
+    id: 'emergency',
     name: 'Emergency',
     expiryDays: 7,
     maxPhotos: 5,
     requiresModeration: true, // Red Alert system
   },
-  [PostCategory.TRAVEL]: {
-    id: PostCategory.TRAVEL,
+  travel: {
+    id: 'travel',
     name: 'Travel',
     expiryDays: 2, // Expires 2 days after travel date
     maxPhotos: 2,
