@@ -2,8 +2,8 @@
 
 **Screen Number:** 06
 **Journey Reference:** [01-signup-and-onboarding.md](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 13
-**User Story:** As a new Level 0 user who just completed onboarding, I want to browse local posts in my metro area so I can find relevant housing, jobs, emergencies, and travel coordination.
-**Last Updated:** 2026-02-12
+**User Story:** As a new Level 0 user who just completed onboarding, I want to browse local and global posts in my metro area so I can find relevant community content tagged with Housing, Jobs, Help, and more.
+**Last Updated:** 2026-02-17
 **Status:** Draft
 
 ---
@@ -11,9 +11,9 @@
 ## Screen Purpose
 
 This is the success state of the onboarding journey - the main home screen (local feed). For Level 0 users, it shows:
-- Local posts from their metro area
+- Local posts from their metro area + global posts from premium users
 - Level 0 banner promoting verification
-- Category tabs for filtering content
+- Tag filter chips for filtering content (Housing, Jobs, Help, Question, Politics, Discussion, Emergency)
 - Floating + button (slightly disabled for Level 0)
 
 **Key Goals:**
@@ -22,6 +22,7 @@ This is the success state of the onboarding journey - the main home screen (loca
 - Enable browsing and exploring content
 - Set expectations for Level 0 limitations (view-only)
 - Provide clear path to Level 1 verification
+- Display Local/Global badges on post cards
 
 ---
 
@@ -31,50 +32,47 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ```
 ┌─────────────────────────────────────────┐
-│ Dallas-Fort Worth ▼    🔍  🔔           │ ← Top nav: 44px height
-│                                         │    Location, Search, Notifications
+│ 📍 New York-Newark-    🔍  💬  🔔       │ ← Top nav: 44-56px height
+│    Jersey City ▼                        │    Location (2-line), Search,
+│                                         │    Messages (badge), Notifications
 ├─────────────────────────────────────────┤
 │ ⚠️  You're viewing only. Verify phone  │ ← Level 0 banner: 64px height
 │    to post and message. [Verify Now] X │    Yellow bg (#FFF3E0), dismissible
 ├─────────────────────────────────────────┤
-│ All  Housing  Jobs  Emergency  Travel   │ ← Category tabs: 48px height
-│ ─── ───────── ────  ───────── ──────   │    Housing pre-selected (underline)
+│ All  Housing  Jobs  Help  [More ▼]     │ ← Filter chips: 48px height
+│                                         │    Non-scroll, 4-5 chips + "More"
 ├─────────────────────────────────────────┤
 │                                         │
 │  ┌───────────────────────────────────┐ │ ← Post Card 1 (Enhanced)
 │  │ [SG] Sita Gurung ✓      2h ago    │ │    Author row with avatar
 │  │                                   │ │
-│  │ 🏠 Private Room in Richardson     │ │    Category + title
-│  │ $650/month • Available March 1    │ │    Price + details
+│  │ Looking for Nepali Roommate       │ │    Title (no category prefix)
+│  │ 📍 Local                          │ │    Local badge
 │  │ Looking for Nepali roommate to sh │ │    Description preview
 │  │ are 2BR apartment...  View More   │ │    (150 chars, "View More")
 │  │                                   │ │
 │  │ [Photo thumbnail]                 │ │    280x160px image
 │  │                                   │ │
+│  │ ┌─────────┐ ┌──────────┐          │ │    Tag pills
+│  │ │🏠Housing│ │❓Question│          │ │
+│  │ └─────────┘ └──────────┘          │ │
 │  │ ───────────────────────────────── │ │    Action bar separator
 │  │ ❤️ 24      💬 5      ✉️ Message    │ │    Like, Comment, Message
 │  └───────────────────────────────────┘ │
 │                                         │ ← 12px spacing
 │  ┌───────────────────────────────────┐ │ ← Post Card 2
-│  │ 🏠 2BR Apartment in Plano      ✓  │ │
+│  │ [RK] Rajesh K. ✓      5h ago      │ │
 │  │                                   │ │
-│  │ $1,200/month • Available now      │ │
+│  │ Hiring Line Cooks - Nepali Rest.  │ │
+│  │ 🌐 Global                         │ │    Global badge (premium)
+│  │ We're hiring experienced line coo │ │
+│  │ ks for our new Nepali restaurant  │ │
 │  │                                   │ │
-│  │ [Photo thumbnail]                 │ │
-│  │                                   │ │
-│  │ Posted 5 hours ago • Dallas-FW    │ │
+│  │ ┌──────┐ ┌──────┐                 │ │
+│  │ │💼Jobs│ │🤝Help│                 │ │
+│  │ └──────┘ └──────┘                 │ │
+│  │ ❤️ 8      💬 2      ✉️ Message     │ │
 │  └───────────────────────────────────┘ │
-│                                         │
-│  ┌───────────────────────────────────┐ │ ← Post Card 3
-│  │ 🏠 Looking for Roommate (Nepali)✓ │ │
-│  │                                   │ │
-│  │ $500/month • Shared kitchen       │ │
-│  │                                   │ │
-│  │ [Photo thumbnail]                 │ │
-│  │                                   │ │
-│  │ Posted 1 day ago • Dallas-FW      │ │
-│  └───────────────────────────────────┘ │
-│                                         │
 │                                         │
 │                                    [+] │ ← Floating action button
 │                                         │    56x56px, bottom-right
@@ -87,45 +85,42 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ```
 ┌─────────────────────────────────────────┐
-│ Dallas-Fort Worth ▼    🔍  🔔           │ ← Top app bar: 56dp height
-│                                         │
+│ 📍 New York-Newark-    🔍  💬  🔔       │ ← Top app bar: 56-72dp height
+│    Jersey City ▼                        │    Location (2-line), Search,
+│                                         │    Messages (badge), Notifications
 ├─────────────────────────────────────────┤
 │ ⚠️  You're viewing only. Verify phone  │ ← Level 0 banner: 72dp height
 │    to post and message. [VERIFY NOW] X │    Yellow bg, ALL CAPS button
 ├─────────────────────────────────────────┤
-│ ALL  HOUSING  JOBS  EMERGENCY  TRAVEL   │ ← Tabs: 48dp height
-│ ─── ──────── ───── ───────── ──────────│    Material TabLayout
-│                                         │    ALL CAPS labels
+│ ALL  HOUSING  JOBS  HELP  [MORE ▼]     │ ← Filter chips: 48dp height
+│                                         │    Non-scroll, 4-5 chips + "More"
 ├─────────────────────────────────────────┤
 │                                         │
 │  ┌───────────────────────────────────┐ │ ← Post Card 1
-│  │ 🏠 Private Room in Richardson  ✓  │ │    Material Card, 8dp elevation
+│  │ [SG] Sita Gurung ✓      2h ago    │ │    Material Card, 8dp elevation
 │  │                                   │ │    16dp padding
-│  │ $650/month • Available March 1    │ │
+│  │ Looking for Nepali Roommate       │ │
+│  │ 📍 Local                          │ │    Badge pill
+│  │ Looking for Nepali roommate to... │ │    Description preview
 │  │                                   │ │
 │  │ [Photo thumbnail]                 │ │    match_parent x 160dp
 │  │                                   │ │
-│  │ Posted 2 days ago • Dallas-FW     │ │    12sp caption, gray
+│  │ ┌─────────┐ ┌──────────┐          │ │    Tag pills
+│  │ │🏠Housing│ │❓Question│          │ │
+│  │ └─────────┘ └──────────┘          │ │
+│  │ ❤️ 24      💬 5      ✉️ Message    │ │
 │  └───────────────────────────────────┘ │
 │                                         │ ← 12dp spacing
 │  ┌───────────────────────────────────┐ │ ← Post Card 2
-│  │ 🏠 2BR Apartment in Plano      ✓  │ │
+│  │ [RK] Rajesh K. ✓      5h ago      │ │
 │  │                                   │ │
-│  │ $1,200/month • Available now      │ │
+│  │ Hiring Line Cooks - Nepali Rest.  │ │
+│  │ 🌐 Global                         │ │    Global badge
 │  │                                   │ │
-│  │ [Photo thumbnail]                 │ │
-│  │                                   │ │
-│  │ Posted 5 hours ago • Dallas-FW    │ │
-│  └───────────────────────────────────┘ │
-│                                         │
-│  ┌───────────────────────────────────┐ │ ← Post Card 3
-│  │ 🏠 Looking for Roommate (Nepali)✓ │ │
-│  │                                   │ │
-│  │ $500/month • Shared kitchen       │ │
-│  │                                   │ │
-│  │ [Photo thumbnail]                 │ │
-│  │                                   │ │
-│  │ Posted 1 day ago • Dallas-FW      │ │
+│  │ ┌──────┐ ┌──────┐                 │ │
+│  │ │💼Jobs│ │🤝Help│                 │ │
+│  │ └──────┘ └──────┘                 │ │
+│  │ ❤️ 8      💬 2      ✉️ Message     │ │
 │  └───────────────────────────────────┘ │
 │                                         │
 │                                    [+] │ ← FAB: 56x56dp
@@ -141,26 +136,40 @@ This is the success state of the onboarding journey - the main home screen (loca
 ### 1. Top Navigation Bar
 
 **Type:** Navigation bar / App bar
-**Height:** 44px (iOS) / 56dp (Android)
+**Height:** 44-56px (iOS) / 56-72dp (Android) - flexible to accommodate 2-line location
 **Background:** White (#FFFFFF)
 **Border:** 1px bottom border #E0E0E0 (iOS) or elevation 2dp (Android)
 
 **Components (left to right):**
 
 #### Location Dropdown
-- **Label:** "Dallas-Fort Worth" (dynamic, user's metro area)
-- **Icon:** Chevron down (▼), 16px/dp, #757575
+- **Label:** User's metro area name (e.g., "New York-Newark-Jersey City")
+- **Icon:** Location pin (📍) prefix, Chevron down (▼) suffix, 16px/dp, #757575
 - **Typography:** 17pt/16sp Semibold, #212121
 - **Touch Target:** Full text + icon, minimum 44x44pt / 48x48dp
-- **Interaction:** Tap to open metro area selector (future: change location)
-- **Truncation:** Max 25 characters, truncate with "..." if longer
+- **Interaction:** Tap to open location switcher sheet
+- **Multi-line:** Allow up to 2 lines for long metro names
+- **Max Width:** 60% of screen width (to leave room for icons)
+- **Visiting Indicator:** "(Visiting)" label shown when browsing temporarily
 
 #### Search Icon
 - **Icon:** Magnifying glass (🔍), 24x24px/dp
-- **Position:** Top-right, 12px/dp from Notification icon
+- **Position:** Top-right, first icon in icon group
 - **Touch Target:** 44x44pt / 48x48dp
 - **Interaction:** Tap to open search screen
 - **Color:** #757575 (Medium Gray)
+
+#### Messages Icon (NEW)
+- **Icon:** Chat bubbles (💬), 24x24px/dp
+- **Position:** Between Search and Notifications icons
+- **Touch Target:** 44x44pt / 48x48dp
+- **Badge:** Red circle with unread count (if > 0)
+  - Shows number for 1-99, shows "99+" for higher
+  - Badge size: 16px diameter minimum
+  - Badge color: #DC143C (Accent Red)
+  - Badge text: White, 10pt/9sp Bold
+- **Interaction:** Tap to navigate to Messages/Conversations screen
+- **Color:** #757575 (Medium Gray), badge: #DC143C (Accent Red)
 
 #### Notification Bell Icon
 - **Icon:** Bell (🔔), 24x24px/dp
@@ -231,41 +240,65 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ---
 
-### 3. Category Tabs
+### 3. Tag Filter Chips
 
-**Type:** Horizontal tab bar
+**Type:** Non-scrollable chip bar with "More" dropdown
 **Height:** 48px/dp
 **Background:** White (#FFFFFF)
 **Border:** 1px bottom border #E0E0E0 (or elevation on Android)
+**Layout:** Flexbox row, no horizontal scroll
 
-**Tab Labels:**
-- All
-- Housing (pre-selected on first load)
+**Visible Chips (4-5 based on screen width):**
+- All (always first, always visible)
+- Housing
 - Jobs
-- Emergency
-- Travel
+- Help
+- [More ▼] (always last, opens sheet with remaining tags)
 
-**Tab Styling:**
-- **Typography:** 15pt/14sp Semibold (iOS) / 14sp Medium ALL CAPS (Android)
-- **Color:**
-  - Active tab: #1565C0 (Primary Blue)
-  - Inactive tabs: #757575 (Medium Gray)
-- **Underline (Active):** 2px solid #1565C0, bottom of tab
-- **Spacing:** 16px/dp between tabs
-- **Scroll:** Horizontal scroll if all tabs don't fit (unlikely on phone)
+**"More" Dropdown Sheet:**
+- **Trigger:** Tap "More" chip
+- **Type:** Bottom sheet modal
+- **Content:** Grid/list of remaining tags (Question, Politics, Discussion, Emergency)
+- **Multi-select:** Checkmarks indicate selected tags
+- **Actions:** "Apply" button to confirm, "Clear" to deselect all
+- **Close:** Tap outside, swipe down, or tap Apply
+
+**Chip Styling:**
+- **Shape:** Pill-shaped (border-radius: 20px/dp)
+- **Height:** 32px/dp
+- **Padding:** 12px/dp horizontal, 6px/dp vertical
+- **Typography:** 14pt/13sp Medium
+- **Colors:**
+  - Active chip: White text on #1565C0 (Primary Blue) background
+  - Inactive chips: #757575 text on #F5F5F5 background, 1px border #E0E0E0
+  - "More" chip: #757575 text on #F5F5F5 background, chevron-down icon
+  - "More" chip (with selections): #1565C0 text, shows count badge (e.g., "More +2")
+- **Icon:** Optional tag emoji prefix (e.g., 🏠 Housing, 💼 Jobs)
+- **Spacing:** 8px/dp between chips
 
 **Interaction:**
-- Tap tab → Filter feed to show only posts of that category
-- Active tab has blue text + underline
-- Smooth animation: Underline slides from old tab to new tab (200ms)
+- Tap visible chip → Toggle filter on/off (multi-select supported)
+- Tap "More" chip → Open tag selector sheet
+- "All" chip resets all filters (clears both visible and "More" selections)
+- Active chips have filled blue background
+- Smooth animation: Chip fills with color (150ms)
+- Multiple chips can be active simultaneously (e.g., Housing + Jobs + Question)
 
 **Accessibility:**
-- Each tab: "Housing tab, selected" or "Jobs tab"
-- VoiceOver/TalkBack: Swipe to navigate between tabs
+- Each chip: "Housing filter, selected" or "Jobs filter, not selected"
+- "More" chip: "More filters, button, 2 selected" (if applicable)
+- VoiceOver/TalkBack: Navigate between chips
+- Sheet is fully accessible with focus trap
 
 **Initial State:**
-- "Housing" tab is pre-selected (based on persona's goal in journey)
-- Feed shows only Housing posts initially
+- "All" chip is active (no filtering)
+- Feed shows all posts (local + global)
+- "More" chip shows no badge (no additional filters active)
+
+**Responsive Behavior:**
+- On narrow screens: Show 4 chips + "More"
+- On wider screens: Show 5 chips + "More"
+- Chips don't wrap to second line
 
 ---
 
@@ -277,8 +310,8 @@ This is the success state of the onboarding journey - the main home screen (loca
 **Pull-to-Refresh:** Yes (pulls down to refresh feed)
 
 **Empty State:**
-- If no posts in selected category: Show illustration + message
-- Message: "No housing posts in your area yet. Check back soon!"
+- If no posts matching selected tags: Show illustration + message
+- Message: "No posts matching your filters in this area. Try different tags!"
 - Illustration: Empty state graphic (subtle mountain silhouette)
 
 **Loading State:**
@@ -287,7 +320,7 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ---
 
-###5. Post Card (Enhanced - with Author, Description, Social Actions)
+###5. Post Card (Enhanced - with Author, Description, Tags, Badge, Social Actions)
 
 **Type:** Card component (tappable)
 **Background:** White (#FFFFFF)
@@ -321,18 +354,22 @@ This is the success state of the onboarding journey - the main home screen (loca
 - **Layout:** [Avatar] [Name + Badge] ............ [Timestamp]
 - **Margin:** 0-16px/dp from top (if first card element)
 
-#### Header Row (Category + Title)
-- **Icon:** Category emoji (🏠 for Housing), 20x20px/dp
-- **Title:** "Private Room in Richardson" (17pt/16sp Semibold, #212121)
-- **Layout:** Icon + Title (left-aligned, wraps to 2 lines max)
+#### Header Row (Title)
+- **Title:** "Looking for Nepali Roommate" (17pt/16sp Semibold, #212121)
+- **Layout:** Title only (left-aligned, wraps to 2 lines max)
 - **Margin:** 12px/dp from author row
 
-#### Price & Details Row
-- **Content:** "$650/month • Available March 1"
-- **Typography:** 15pt/14sp Regular, #757575
-- **Separator:** Bullet point (•) between price and details
-- **Max Lines:** 1 line (truncate if too long)
+#### Local/Global Badge
+- **Content:** 📍 Local or 🌐 Global
+- **Typography:** 12pt/11sp Medium
+- **Colors:**
+  - Local: #388E3C text on #E8F5E9 background
+  - Global: #1565C0 text on #E3F2FD background
+- **Shape:** Pill-shaped (border-radius: 12px)
+- **Padding:** 6px/dp horizontal, 2px/dp vertical
+- **Position:** Below title, left-aligned
 - **Margin:** 4px/dp from title
+- **Visibility:** Always shown on every post card
 
 #### Description Preview (NEW)
 - **Content:** First 150 characters of post description
@@ -345,16 +382,34 @@ This is the success state of the onboarding journey - the main home screen (loca
   - Position: Inline at end of truncated text
   - Underline: Yes
   - Interaction: Tap to navigate to post detail screen
-- **Example:** "Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet environment. Rent is $800/month including utilities. Move-in date flexible (March 1... View More"
-- **Margin:** 8px/dp from price row, 12px/dp from action bar
+- **Example:** "Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet environment. Rent is $800/month including utilities... View More"
+- **Margin:** 8px/dp from badge
 
 #### Photo Thumbnail (if post has photo)
 - **Dimensions:** Full card width x 160px/dp height
 - **Corner Radius:** 8px/dp
 - **Margin:** 12px/dp top and bottom
-- **Placeholder:** Gray background (#F5F5F5) with house icon if no photo
+- **Placeholder:** Gray background (#F5F5F5) with image icon if no photo
 - **Interaction:** Tap image to view full screen (Level 0: works normally)
-- **Position:** After description preview and before action bar
+- **Position:** After description preview
+
+#### Tag Pills Row (NEW)
+- **Type:** Horizontal row of pill-shaped tag badges
+- **Position:** Below photo (or below description if no photo)
+- **Margin:** 8px/dp from photo, 12px/dp before action bar
+- **Pill Styling:**
+  - **Shape:** Pill (border-radius: 12px/dp)
+  - **Height:** 24px/dp
+  - **Padding:** 8px/dp horizontal, 4px/dp vertical
+  - **Background:** Tag-specific color at 15% opacity (e.g., Housing green at 15%)
+  - **Text:** Tag icon + name (e.g., "🏠 Housing")
+  - **Typography:** 11pt/10sp Medium, tag-specific color
+  - **Spacing:** 6px/dp between pills
+- **Max Display:** Show up to 3 pills (all assigned tags)
+- **Interaction:** Tap tag pill → Activate that tag in filter chips above
+- **Examples:**
+  - `[🏠 Housing]` `[❓ Question]`
+  - `[💼 Jobs]` `[🤝 Help]`
 
 #### Action Bar (NEW - Social Engagement)
 - **Height:** 36px/dp
@@ -439,8 +494,9 @@ This is the success state of the onboarding journey - the main home screen (loca
 **Accessibility:**
 - Full card structure:
   - "Posted by Sita Gurung, verified, 2 hours ago"
-  - "Housing post. Private Room in Richardson. $650 per month. Available March 1."
+  - "Looking for Nepali Roommate. Local post."
   - "Description: Looking for Nepali roommate to share 2BR apartment..."
+  - "Tags: Housing, Question."
   - "24 likes, 5 comments. Like button. Comment button. Message button."
 - Each action is individually focusable for screen readers
 - VoiceOver/TalkBack can navigate through avatar, title, actions separately
@@ -479,19 +535,66 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ---
 
+### 7. Bottom Navigation Bar
+
+**Type:** Tab bar / Bottom navigation
+**Height:** 56px (iOS) / 56dp (Android) + safe area
+**Background:** White (#FFFFFF)
+**Border:** 1px top border #E0E0E0 (iOS) or elevation 8dp (Android)
+**Position:** Fixed at bottom of screen
+
+**Tabs (left to right):**
+
+#### Home Tab
+- **Icon:** Home (filled when active, outline when inactive)
+- **Label:** "Home"
+- **Active Color:** #1565C0 (Primary Blue)
+- **Inactive Color:** #757575 (Medium Gray)
+
+#### Create Post Tab
+- **Icon:** Add circle
+- **Label:** "Post"
+- **Active Color:** #1565C0 (Primary Blue)
+- **Inactive Color:** #757575 (Medium Gray)
+- **Note:** FAB on home screen provides same functionality
+
+#### Events Tab (NEW)
+- **Icon:** Calendar outline (`calendar-outline`)
+- **Label:** "Events"
+- **Active Color:** #1565C0 (Primary Blue)
+- **Inactive Color:** #757575 (Medium Gray)
+- **Status:** Coming Soon placeholder in Phase 1
+
+#### Marketplace Tab (NEW)
+- **Icon:** Storefront outline (`storefront-outline`)
+- **Label:** "Marketplace"
+- **Active Color:** #1565C0 (Primary Blue)
+- **Inactive Color:** #757575 (Medium Gray)
+- **Status:** Coming Soon placeholder in Phase 1
+
+#### Profile Tab
+- **Icon:** Person (filled when active, outline when inactive)
+- **Label:** "Profile"
+- **Active Color:** #1565C0 (Primary Blue)
+- **Inactive Color:** #757575 (Medium Gray)
+
+**Note:** Search and Messages have been moved to the top navigation bar. Messages icon in top nav shows unread badge.
+
+---
+
 ## Spacing & Layout Details
 
 ### Vertical Layout (Top to Bottom)
 1. Top safe area: Auto
 2. Top nav bar: 44px/56dp
 3. Level 0 banner: 64px/72dp (dismissible)
-4. Category tabs: 48px/dp
+4. Tag filter chips: 48px/dp
 5. Feed padding: 12px/dp top
-6. Post card 1: ~360px height (with photo)
+6. Post card 1: ~400px height (with photo, tags, badge)
 7. Spacing: 12px/dp
-8. Post card 2: ~360px height
+8. Post card 2: ~400px height
 9. Spacing: 12px/dp
-10. Post card 3: ~360px height
+10. Post card 3: ~400px height
 11. Continue scrolling (infinite scroll or pagination)
 12. Bottom padding: 80px/dp (for FAB clearance)
 
@@ -510,8 +613,9 @@ This is the success state of the onboarding journey - the main home screen (loca
 1. **User lands on home screen after onboarding**
 2. **User sees Level 0 banner** → Reads message (5 seconds)
 3. **User dismisses banner** (optional) → Tap X
-4. **User browses Housing posts** → Scrolls through feed
-5. **User taps post card** → Opens post detail screen
+4. **User browses posts** → Scrolls through feed (local + global mixed)
+5. **User taps tag filter chip** (optional) → Feed filters by tag
+6. **User taps post card** → Opens post detail screen
 6. **User sees "Verify to Message" prompt on detail screen**
 7. **User returns to home screen, taps "Verify Now" in banner**
 8. **Navigate to Journey #02 (Trust Level Verification)**
@@ -522,10 +626,12 @@ This is the success state of the onboarding journey - the main home screen (loca
 3. **User taps "Verify Now"** → Navigate to Journey #02
 4. **User taps "Cancel"** → Modal closes, returns to feed
 
-### Alternative Flow (Switch Category)
-1. **User taps "Jobs" tab**
-2. **Feed updates to show only Jobs posts** (loading spinner, then posts)
-3. **Tab underline slides from Housing to Jobs** (animation)
+### Alternative Flow (Filter by Tag)
+1. **User taps "Jobs" chip**
+2. **Chip fills with blue** (selected state)
+3. **Feed updates to show only posts tagged with Jobs** (loading spinner, then posts)
+4. **User can tap additional chips** to further narrow (multi-select)
+5. **User taps "All" chip** to reset all filters
 
 ### Alternative Flow (Search)
 1. **User taps Search icon (top-right)**
@@ -549,12 +655,12 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ## Error States & Edge Cases
 
-### Edge Case: No Posts in Category
-**Scenario:** User switches to "Emergency" tab, but no emergency posts in their metro area
+### Edge Case: No Posts Matching Tags
+**Scenario:** User selects "Emergency" filter chip, but no emergency-tagged posts in their metro area
 **Behavior:**
 - Show empty state illustration (mountain silhouette)
-- Message: "No emergency posts in your area. That's good news!"
-- Subtext: "Check back later or switch to another category."
+- Message: "No posts matching your filters. That's okay!"
+- Subtext: "Try different tags or check back later."
 
 ---
 
@@ -630,8 +736,8 @@ This is the success state of the onboarding journey - the main home screen (loca
   2. "Search button"
   3. "Notifications, 2 unread"
   4. "Warning. You're viewing only. Verify phone to post and message. Verify Now button. Close button."
-  5. "Tab bar: All, Housing, Jobs, Emergency, Travel. Housing selected."
-  6. "Housing post. Private Room in Richardson. Verified user. $650 per month. Available March 1. Posted 2 days ago. Button."
+  5. "Filter chips: All, Housing, Jobs, Help, Question, Politics, Discussion, Emergency. All selected."
+  6. "Post. Looking for Nepali Roommate. Local. Verified user. Tags: Housing, Question. 24 likes, 5 comments. Button."
   7. [Repeat for each post card]
   8. "Create post, button, requires verification"
 
@@ -640,6 +746,7 @@ This is the success state of the onboarding journey - the main home screen (loca
 - Banner buttons (Verify Now, X): 44x44pt / 48x48dp - ✓
 - Category tabs: Full height (48px/dp), minimum 44x44pt / 48x48dp width
 - Post cards: Full card is tappable, exceeds minimum
+- Tag pills: Minimum 44x44pt / 48x48dp touch target
 - FAB: 56x56px/dp - ✓
 
 ### Color Contrast
@@ -675,10 +782,10 @@ This is the success state of the onboarding journey - the main home screen (loca
 ---
 
 ### Tab Switch Animation
-**Underline Slide:**
-- Duration: 200ms
+**Chip Toggle:**
+- Duration: 150ms
 - Easing: Ease-in-out
-- Underline slides from old tab to new tab position
+- Chip fills with color (active) or returns to neutral (inactive)
 - Feed cross-fades: Old posts fade out (100ms), new posts fade in (200ms delay)
 
 ---
@@ -720,14 +827,13 @@ This is the success state of the onboarding journey - the main home screen (loca
   - `home_nav_location`: "{metro_name}"
   - `home_banner_level0`: "You're viewing only. Verify phone to post and message."
   - `home_banner_verify_btn`: "Verify Now"
-  - `home_tab_all`: "All"
-  - `home_tab_housing`: "Housing"
-  - `home_tab_jobs`: "Jobs"
-  - `home_tab_emergency`: "Emergency"
-  - `home_tab_travel`: "Travel"
+  - `home_chip_all`: "All"
+  - `home_chip_{tag_slug}`: Dynamic from tags table
   - `home_fab_hint`: "Create post"
-  - `home_empty_housing`: "No housing posts in your area yet. Check back soon!"
+  - `home_empty_tags`: "No posts matching your filters in this area. Try different tags!"
   - `home_error_network`: "Could not load posts. Please check your connection and try again."
+  - `home_badge_local`: "Local"
+  - `home_badge_global`: "Global"
 
 ### Tone & Voice
 - **Welcoming:** User just completed onboarding, celebrate their arrival
@@ -746,8 +852,9 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ### State Management
 **Screen State:**
-- `selectedTab`: string ("all" | "housing" | "jobs" | "emergency" | "travel")
-- `posts`: array of post objects
+- `selectedTags`: string[] (tag slugs, empty = "All")
+- `availableTags`: Tag[] (from tags table)
+- `posts`: array of post objects (with tags and is_global)
 - `isLoading`: boolean
 - `bannerDismissed`: boolean (session-scoped)
 - `userTrustLevel`: number (0, 1, or 2)
@@ -758,15 +865,22 @@ This is the success state of the onboarding journey - the main home screen (loca
 ```javascript
 {
   id: "post_123",
-  category: "housing",
-  title: "Private Room in Richardson",
-  price: "$650/month",
-  details: "Available March 1",
+  title: "Looking for Nepali Roommate",
+  description: "Looking for Nepali roommate to share 2BR apartment near UTD campus...",
+  tags: ["housing", "question"],
+  tag_names: ["Housing", "Question"],
+  is_global: false,
   photoUrl: "https://...",
-  postedAt: "2024-02-10T10:30:00Z",
+  postedAt: "2026-02-10T10:30:00Z",
   metroAreaId: "dallas-fort-worth-arlington",
-  authorVerified: true,
-  authorTrustLevel: 1
+  author: {
+    id: "user_456",
+    name: "Sita Gurung",
+    verified: true,
+    trustLevel: 1
+  },
+  likes_count: 24,
+  comments_count: 5
 }
 ```
 
@@ -789,10 +903,10 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ### API Integration
 
-**Endpoint:** `GET /posts?metro_area_id={id}&category={category}&limit=10&offset=0`
+**Endpoint:** `GET /posts?metro_area_id={id}&tags={slugs}&limit=10&offset=0`
 **Request Params:**
 - `metro_area_id`: User's metro area ID (from user profile)
-- `category`: "all" | "housing" | "jobs" | "emergency" | "travel"
+- `tags`: Comma-separated tag slugs (optional, empty = all tags)
 - `limit`: Number of posts to fetch (default: 10)
 - `offset`: Pagination offset (default: 0)
 
@@ -802,25 +916,31 @@ This is the success state of the onboarding journey - the main home screen (loca
   "posts": [
     {
       "id": "post_123",
-      "category": "housing",
-      "title": "Private Room in Richardson",
-      "price": "$650/month",
-      "details": "Available March 1",
+      "title": "Looking for Nepali Roommate",
+      "description": "Looking for Nepali roommate to share 2BR apartment near UTD...",
+      "tags": [
+        { "slug": "housing", "name": "Housing", "icon": "home", "color": "#4CAF50" },
+        { "slug": "question", "name": "Question", "icon": "question", "color": "#9C27B0" }
+      ],
+      "is_global": false,
       "photo_url": "https://...",
-      "posted_at": "2024-02-10T10:30:00Z",
+      "posted_at": "2026-02-10T10:30:00Z",
+      "likes_count": 24,
+      "comments_count": 5,
       "author": {
         "id": "user_456",
-        "name": "Priya S.",
+        "name": "Sita Gurung",
         "verified": true,
         "trust_level": 1
       }
     }
-    // ... more posts
   ],
   "total": 47,
   "has_more": true
 }
 ```
+
+**Note:** Feed includes both local posts (metro_area_id match) AND global posts (is_global = true) from any metro area. Global posts are mixed into the feed chronologically, not separated.
 
 **Caching:**
 - Cache posts in memory for current session
@@ -841,15 +961,16 @@ This is the success state of the onboarding journey - the main home screen (loca
 ## Design References
 
 ### Inspiration
-- **Nextdoor Feed:** Local posts with category tabs
+- **Reddit Feed:** Tag-based filtering with pill badges
+- **Nextdoor Feed:** Local posts with community content
 - **Airbnb Listings:** Clean card-based feed with photos
-- **Facebook Marketplace:** Category filtering, verified badges
+- **Facebook Marketplace:** Verified badges, card layout
 
 ### Design System Components Used
 - Top Navigation Bar
 - Banner (Level 0 warning)
-- Tab Bar (Category tabs)
-- Post Card (from design system)
+- Filter Chips (Tag filter bar)
+- Post Card (with tag pills, badge, social actions)
 - Floating Action Button (adapted for Level 0)
 
 ---
@@ -857,21 +978,26 @@ This is the success state of the onboarding journey - the main home screen (loca
 ## Testing Checklist
 
 ### Functional Tests
-- [ ] Feed loads posts from user's metro area
-- [ ] Category tabs filter posts correctly
+- [ ] Feed loads posts from user's metro area + global posts
+- [ ] Tag filter chips filter posts correctly (multi-select)
+- [ ] "All" chip resets filters
+- [ ] Post cards show tag pills and Local/Global badge
 - [ ] Level 0 banner displays and is dismissible
 - [ ] "Verify Now" button navigates to verification flow
 - [ ] Post cards navigate to detail screen
 - [ ] FAB shows verification modal for Level 0
 - [ ] Pull-to-refresh updates feed
 - [ ] Infinite scroll loads more posts
+- [ ] Tags load dynamically from database
 
 ### Visual Tests
 - [ ] All components display correctly
 - [ ] Post cards have correct spacing and styling
+- [ ] Tag pills display with correct colors
+- [ ] Local/Global badges display correctly
 - [ ] Banner has yellow background and warning icon
 - [ ] FAB is semi-transparent (50% opacity)
-- [ ] Category tabs show active underline
+- [ ] Filter chips show active/inactive states correctly
 - [ ] Safe area insets respected
 
 ### Accessibility Tests
@@ -883,17 +1009,23 @@ This is the success state of the onboarding journey - the main home screen (loca
 
 ### Integration Tests
 - [ ] API fetches posts correctly
-- [ ] Posts filtered by category and metro area
+- [ ] Posts filtered by tags and metro area
+- [ ] Global posts appear in local feed
+- [ ] Tag data loads from tags table
 - [ ] Images load and display properly
 - [ ] Error states handled gracefully
 - [ ] Empty states show correct messages
 
 ### Edge Case Tests
-- [ ] No posts in category shows empty state
+- [ ] No posts matching tags shows empty state
 - [ ] Network error shows retry option
 - [ ] Very long metro name truncates correctly
 - [ ] Images fail gracefully (show placeholder)
 - [ ] Pagination works smoothly
+- [ ] Global posts display with correct badge
+- [ ] Multiple tag filter selection works
+- [ ] Posts with 1, 2, or 3 tags display correctly
+- [ ] Tag pills don't overflow card width
 
 ---
 

@@ -1,7 +1,7 @@
 # NUSA App: Product Roadmap
 
-**Version:** 1.1
-**Last Updated:** 2026-02-06 (Phase 1 Refinement)
+**Version:** 1.2
+**Last Updated:** 2026-02-17 (Tags Redesign, Global Posts & Premium)
 
 ---
 
@@ -21,9 +21,10 @@ Solve the "information noise" of Facebook by shifting from an algorithm-based fe
 To maintain relevance and prevent "feed fatigue," the app is built on a location-based hierarchy.
 
 ### How It Works
-- **Content Tagging:** Every piece of content (except Global Ads) is tagged with a **Metro Area ID**
+- **Content Tagging:** Every piece of content is tagged with a **Metro Area ID** (local posts) or marked as **Global** (premium feature)
 - **Onboarding Flow:** Users enter their ZIP Code → App maps it to the official **US Census Metro Area** (e.g., *Dallas-Fort Worth-Arlington*)
-- **Default View:** The "Local Feed" is the home screen, ensuring users only see housing or jobs within their commuting distance
+- **Default View:** The home feed shows local posts from the user's metro area **plus** global posts, with a badge distinguishing 📍 Local vs 🌐 Global
+- **Premium Users:** Can create global posts visible across all metro areas and save up to 5 locations
 
 ---
 
@@ -46,35 +47,81 @@ To prevent spam, accounts have "Trust Levels":
 - **Level 1 → Level 2:** Achieve 10+ approved posts with average 5+ upvotes each OR receive moderator endorsement
 - **Demotion Policy:** Users flagged 5+ times with confirmed violations may be demoted or banned
 
-### B. Smart Post Engine (Structured Forms)
+### B. Tag-Based Post Engine (Reddit-Style)
 
-Each category has mandatory fields and auto-expiry to keep content fresh:
+Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No structured category-specific fields — users describe everything in the body text. Tags are stored in the database for scalability (not enums).
 
-| Category | Mandatory Fields | Expiry | Access Level | Photos |
-|----------|-----------------|--------|--------------|--------|
-| 🏠 Housing | Rent amount, Move-in date, Room Type (dropdown: Private Room, Shared Room, Studio, 1BR, 2BR+), Metro Area | 30 days | Level 1+ | 1-3 photos |
-| 💼 Jobs | Job Title, Pay range, Employment Type (dropdown: Full-Time, Part-Time, Contract, Internship, Gig), Company Name, Metro Area | 30 days | Level 1+ | 1-3 photos |
-| 🚨 Emergency | Emergency Type (dropdown: Medical, Legal, Financial, Travel, Housing, Other), Location/Hospital, Brief Description, Metro Area | 7 days | **Level 1+ ONLY** | Optional |
-| ✈️ Travel | Travel Date, Route (US Metro ↔ Nepal City dropdowns), Airline (optional), Metro Area (departure city) | 2 days after travel | Level 1+ | Optional |
+**Create Post Flow (Single Screen):**
+- **Title** (required, 5-200 characters)
+- **Body** (required, 10-5000 characters)
+- **Tags** (1-3 required, selectable chip/pill buttons)
+- **Photos** (optional, up to 3 images)
+- **Global toggle** (premium users only — makes post visible across all metro areas)
+
+**Available Tags:**
+
+| Tag | Icon | Description | Special Behavior |
+|-----|------|-------------|------------------|
+| 🏠 Housing | home | Rent, roommates, apartments, housing questions | None |
+| 💼 Jobs | briefcase | Job postings, hiring, career questions | None |
+| 🆘 Help | hand | Requests for help, assistance, favors | None |
+| ❓ Question | question | General questions about life in the US | None |
+| 🏛️ Politics | building | Community politics, policy discussions | None |
+| 💬 Discussion | chat | Open discussions, opinions, community topics | None |
+| 🚨 Emergency | warning | Emergencies requiring community coordination | Requires moderator approval; post starts as `pending` |
+
+**Tag System Architecture:**
+- Tags stored in a `tags` database table (scalable — new tags added without code changes)
+- Posts linked to tags via `post_tags` junction table (many-to-many)
+- Each tag has: name, slug, icon, color, description, requires_moderation flag
+- New tags can be added by admins at any time
+
+**Post Lifecycle:**
+- No auto-expiry — posts remain active until manually deleted by author or removed by moderators
+- Posts can be reported and auto-hidden with 3+ reports (pending moderator review)
+- Authors can delete their own posts at any time
 
 **Contact Method:** All post inquiries handled via in-app chat system (Level 1+ can message post authors)
 
 **Photo Specifications:**
-- Max 3 photos per post (Housing and Jobs categories)
+- Max 3 photos per post (optional for all tags)
 - Auto-compressed to 2MB max per photo
 - Resized to 1200px width for optimal mobile viewing
 - Stored in Supabase Storage
 
-**Post Expiry Behavior:**
-- Expired posts hidden from default feed but accessible via "Show Expired" filter
-- Users receive notification 3 days before expiry
-- One-time renewal option (must update at least one field)
-- Posts permanently deleted 90 days after expiry
-
-**Emergency Post Safety:**
-- Restricted to Level 1+ (verified users only) to prevent spam
+**Emergency Tag Safety:**
+- Selecting the Emergency tag triggers moderator review (post created with `status = 'pending'`)
 - Disclaimer shown before submission: "⚠️ This is NOT a replacement for 911. Call emergency services first for life-threatening situations."
-- Emergency posts do NOT trigger metro-wide alerts (Red Alert system is Phase 2)
+- Moderators must approve before the post becomes visible in feeds
+- Red Alert metro-wide push notification system remains a Phase 2 feature
+
+### B2. Premium Subscription & Global Posts
+
+**Premium Model:** Users can upgrade to premium for enhanced features.
+
+| Feature | Free User | Premium User |
+|---------|-----------|-------------|
+| Create local posts | ✅ (Level 1+) | ✅ |
+| Create global posts | ❌ | ✅ (toggle on create post) |
+| Saved locations | 1 (Home only) | Up to 5 (Home, Work, custom) |
+| Location switching | ❌ | ✅ |
+| All other features | ✅ | ✅ |
+
+**Global Posts:**
+- Premium users see a "Global" toggle on the create post screen
+- Global posts appear in **all metro area feeds** alongside local posts
+- Post cards display a badge: 🌐 "Global" or 📍 "Local"
+- Global posts have `is_global = true` in the database
+
+**Premium Implementation:**
+- `is_premium` boolean flag on users table (default: false)
+- Billing integration (Stripe/IAP) deferred to Phase 3
+- Premium status can be set by admins or via future billing webhook
+
+**Saved Locations (Premium Gating):**
+- Free users: 1 saved location (Home), set during onboarding
+- Premium users: Up to 5 saved locations with custom labels
+- Location switcher in home feed header only functional for premium users
 
 ### C. Social Engagement Features (NEW)
 
@@ -122,6 +169,17 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 - Can view all likes and comments (read-only access)
 - Like and comment buttons show verification prompts
 - Encourages phone verification to unlock full engagement
+
+### C2. Home Feed Design
+
+**Unified Feed with Filter Chips:**
+- Single scrollable feed showing all posts (local + global mixed)
+- Horizontal filter chip bar above the feed with all available tags
+- "All" chip selected by default; multiple chips can be selected for multi-tag filtering
+- Each post card displays:
+  - Tag pills (showing which tags the post has)
+  - 📍 Local / 🌐 Global badge on each card
+  - Author info, description preview, social engagement actions (likes, comments, message)
 
 ### D. In-App Communication System
 
@@ -192,6 +250,42 @@ Each category has mandatory fields and auto-expiry to keep content fresh:
 - Moderators defined by email whitelist
 - Activity logs for all moderator actions
 - Audit trail for accountability
+
+### H. Events (Documentation Only)
+
+**Purpose:** Community event discovery and coordination.
+
+**Phase 1 Scope:**
+- Bottom navigation tab with "Coming Soon" placeholder
+- Feature specification documented for future implementation
+
+**Future Features:**
+- Browse upcoming events by metro area
+- Event details: title, date/time, location, description
+- Filter by event type (Cultural, Religious, Social, Career)
+- RSVP functionality with attendance tracking
+- Event creation by verified users (Level 1+)
+- Push notification reminders
+
+See [Events Feature Spec](docs/features/events.md) for full details.
+
+### I. Marketplace (Documentation Only)
+
+**Purpose:** Business listings and service discovery for the community.
+
+**Phase 1 Scope:**
+- Bottom navigation tab with "Coming Soon" placeholder
+- Feature specification documented for future implementation
+
+**Future Features:**
+- Browse local Nepalese businesses and services
+- Business categories: Restaurants, Grocery, Professional Services, etc.
+- Business profiles with photos, hours, contact info
+- Review and rating system
+- Verified business badges
+- Paid promotion tiers (Phase 3 revenue)
+
+See [Marketplace Feature Spec](docs/features/marketplace.md) for full details.
 
 ---
 

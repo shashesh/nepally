@@ -4,6 +4,7 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { RootStackParamList } from '../types/navigation';
 import { OnboardingNavigator } from './OnboardingNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
+import { ChatNavigator } from './ChatNavigator';
 import { useAuth } from '../hooks/useAuth';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { colors } from '../styles/colors';
@@ -40,7 +41,10 @@ export function RootNavigator() {
       {showOnboarding ? (
         <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
       ) : (
-        <Stack.Screen name="Main" component={MainTabNavigator} />
+        <>
+          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <Stack.Screen name="Chat" component={ChatNavigator} />
+        </>
       )}
     </Stack.Navigator>
   );

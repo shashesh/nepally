@@ -22,15 +22,18 @@ import { LocationPermissionBanner } from '../components/banners/LocationPermissi
 import { LocationChangeSheet } from '../components/location/LocationChangeSheet';
 import { LocationSwitcherSheet } from '../components/location/LocationSwitcherSheet';
 import { PostCard } from '../components/cards/PostCard';
+import { TagFilterBar } from '../components/filters/TagFilterBar';
 import {
   getPostsByMetroArea,
+  getTags,
   getUserLikedPostIds,
   likePost,
   unlikePost,
   getOrCreateConversation,
+  getTotalUnreadCount,
   TrustLevel,
 } from '@nusa/shared';
-import type { Post } from '@nusa/shared';
+import type { Post, Tag } from '@nusa/shared';
 import { isBannerDismissed, saveBannerDismissed } from '../utils/storage';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
@@ -42,33 +45,6 @@ type HomeScreenNavProp = CompositeNavigationProp<
   NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
   BottomTabNavigationProp<MainTabParamList>
 >;
-
-type Category = 'all' | 'housing' | 'jobs' | 'emergency' | 'travel';
-
-const CATEGORIES = [
-  { id: 'all', label: 'All', icon: 'grid' },
-  { id: 'housing', label: 'Housing', icon: 'home' },
-  { id: 'jobs', label: 'Jobs', icon: 'briefcase' },
-  { id: 'emergency', label: 'Emergency', icon: 'warning' },
-  { id: 'travel', label: 'Travel', icon: 'airplane' },
-] as const;
-
-function getPostMetadata(item: Post): string {
-  if (item.category === 'housing' && item.fields?.rentAmount) {
-    return `$${item.fields.rentAmount}/month`;
-  }
-  if (item.category === 'jobs' && item.fields?.payRate) {
-    const pay = item.fields.payRate;
-    return `$${pay.min}–$${pay.max} ${pay.type}`;
-  }
-  if (item.category === 'travel' && item.fields?.route) {
-    return `${item.fields.route.from} → ${item.fields.route.to}`;
-  }
-  if (item.category === 'emergency' && item.fields?.emergencyType) {
-    return `${item.fields.urgency} – ${item.fields.emergencyType}`;
-  }
-  return item.description;
-}
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -85,11 +61,16 @@ export default function HomeScreen() {
   } = useLocation();
   const [switcherVisible, setSwitcherVisible] = useState(false);
   const navigation = useNavigation<HomeScreenNavProp>();
-  const [selectedCategory, setSelectedCategory] = useState<Category>('housing');
+
+  // Tag filter state (multi-select)
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
@@ -101,29 +82,47 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadBannerState();
+    loadTags();
   }, []);
 
-  // Reload posts and liked state every time the screen comes into focus
+  // Reload posts, liked state, and unread count every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       if (metroAreaId) {
         loadPosts();
       }
       loadLikedPosts();
-    }, [selectedCategory, metroAreaId])
+      refreshUnreadCount();
+      // Refresh unread count periodically
+      const interval = setInterval(refreshUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }, [selectedTagSlugs, metroAreaId])
   );
+
+  const refreshUnreadCount = useCallback(async () => {
+    if (!user?.id) return;
+    const result = await getTotalUnreadCount(supabase, user.id);
+    setUnreadCount(result.count);
+  }, [user?.id]);
 
   const loadBannerState = async () => {
     const dismissed = await isBannerDismissed('level0-banner');
     setBannerVisible(!dismissed);
   };
 
+  const loadTags = async () => {
+    const result = await getTags(supabase);
+    if (result.data) {
+      setAvailableTags(result.data);
+    }
+  };
+
   const loadPosts = async () => {
     if (!metroAreaId) return;
 
     try {
-      const category = selectedCategory === 'all' ? undefined : selectedCategory;
-      const result = await getPostsByMetroArea(supabase, metroAreaId!, category);
+      const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
+      const result = await getPostsByMetroArea(supabase, metroAreaId!, slugs);
 
       if (result.data) {
         setPosts(result.data);
@@ -245,7 +244,7 @@ export default function HomeScreen() {
     );
 
     if (result.data) {
-      navigation.navigate('Messages', {
+      navigation.getParent()?.navigate('Chat', {
         screen: 'MessageThread',
         params: {
           conversationId: result.data.conversationId,
@@ -254,7 +253,6 @@ export default function HomeScreen() {
           otherUserTrustLevel: post.author.trust_level,
           postId: post.id,
           postTitle: post.title,
-          postCategory: post.category,
         },
       });
     } else if (result.error) {
@@ -277,31 +275,24 @@ export default function HomeScreen() {
     }
   };
 
-  const renderCategoryTab = (category: typeof CATEGORIES[number]) => {
-    const isSelected = selectedCategory === category.id;
+  const handleTagChipPress = (slug: string) => {
+    setSelectedTagSlugs((prev) => {
+      if (prev.includes(slug)) {
+        return prev.filter((s) => s !== slug);
+      }
+      return [...prev, slug];
+    });
+  };
 
-    return (
-      <TouchableOpacity
-        key={category.id}
-        style={[styles.categoryTab, isSelected && styles.categoryTabActive]}
-        onPress={() => setSelectedCategory(category.id as Category)}
-        activeOpacity={0.7}
-      >
-        <Ionicons
-          name={category.icon as any}
-          size={20}
-          color={isSelected ? colors.primary.main : colors.text.secondary}
-        />
-        <Text
-          style={[
-            styles.categoryLabel,
-            isSelected && styles.categoryLabelActive,
-          ]}
-        >
-          {category.label}
-        </Text>
-      </TouchableOpacity>
-    );
+  const handleAllChipPress = () => {
+    setSelectedTagSlugs([]);
+  };
+
+  const handleMessagesPress = () => {
+    // Navigate to Chat/Conversations screen
+    navigation.getParent()?.navigate('Chat', {
+      screen: 'ConversationList',
+    });
   };
 
   const renderEmptyState = () => (
@@ -309,7 +300,9 @@ export default function HomeScreen() {
       <Ionicons name="document-text-outline" size={64} color={colors.text.disabled} />
       <Text style={styles.emptyTitle}>No posts yet</Text>
       <Text style={styles.emptySubtitle}>
-        Be the first to post in this category!
+        {selectedTagSlugs.length > 0
+          ? 'No posts matching your filters in this area. Try different tags!'
+          : 'Be the first to post in your community!'}
       </Text>
     </View>
   );
@@ -326,17 +319,29 @@ export default function HomeScreen() {
           activeOpacity={0.7}
         >
           <Ionicons name="location" size={20} color={colors.primary.main} />
-          <Text style={styles.metroName} numberOfLines={1}>
-            {metroName || (metroAreaId ? 'Loading...' : 'No Location Set')}
-          </Text>
+          <View style={styles.locationTextContainer}>
+            <Text style={styles.metroName} numberOfLines={2}>
+              {metroName || (metroAreaId ? 'Loading...' : 'No Location Set')}
+            </Text>
+            {activeLocation?.is_temporary && (
+              <Text style={styles.visitingLabel}>(Visiting)</Text>
+            )}
+          </View>
           <Ionicons name="chevron-down" size={14} color={colors.text.secondary} />
-          {activeLocation?.is_temporary && (
-            <Text style={styles.visitingLabel}>(Visiting)</Text>
-          )}
         </TouchableOpacity>
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="search" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={handleMessagesPress}>
+            <Ionicons name="chatbubbles-outline" size={24} color={colors.text.primary} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="notifications-outline" size={24} color={colors.text.primary} />
@@ -355,29 +360,24 @@ export default function HomeScreen() {
       {/* Location Permission Banner */}
       <LocationPermissionBanner />
 
-      {/* Category Tabs */}
-      <View style={styles.categoryTabs}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={CATEGORIES}
-          renderItem={({ item }) => renderCategoryTab(item)}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.categoryTabsContent}
-        />
-      </View>
+      {/* Tag Filter Chips */}
+      <TagFilterBar
+        tags={availableTags}
+        selectedSlugs={selectedTagSlugs}
+        onTagPress={handleTagChipPress}
+        onAllPress={handleAllChipPress}
+      />
 
       {/* Posts Feed */}
       <FlatList
         data={posts}
         renderItem={({ item }) => (
           <PostCard
-            category={item.category}
             title={item.title}
             description={item.description}
-            metadata={getPostMetadata(item)}
             timestamp={item.created_at}
-            metroArea={item.location_city ? `${item.location_city}, ${item.location_state}` : 'Metro Area'}
+            tags={item.tags}
+            isGlobal={item.is_global}
             isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
             authorName={item.author?.full_name}
             authorPhotoUrl={item.author?.profile_photo}
@@ -388,6 +388,7 @@ export default function HomeScreen() {
             onPress={() => handlePostPress(item)}
             onLikePress={() => handleLikePress(item)}
             onCommentPress={() => handleCommentPress(item)}
+            onTagPress={handleTagChipPress}
             onMessagePress={
               item.author_id !== user?.id
                 ? () => handleMessagePress(item)
@@ -501,12 +502,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    flexShrink: 1,
     gap: spacing.xs,
+    marginRight: spacing.s,
+  },
+  locationTextContainer: {
+    flexShrink: 1,
+    flexDirection: 'column',
   },
   metroName: {
     ...typography.body,
     color: colors.text.primary,
     fontWeight: '600',
+    flexShrink: 1,
   },
   visitingLabel: {
     ...typography.caption,
@@ -515,39 +523,29 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     flexDirection: 'row',
+    flexShrink: 0,
     gap: spacing.s,
   },
   iconButton: {
     padding: spacing.xs,
+    position: 'relative',
   },
-  categoryTabs: {
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  categoryTabsContent: {
-    paddingHorizontal: spacing.xs,
-    gap: spacing.xs,
-  },
-  categoryTab: {
-    flexDirection: 'row',
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: colors.accent.red,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.s,
-    paddingVertical: spacing.s,
-    gap: spacing.xs,
-    borderRadius: 20,
   },
-  categoryTabActive: {
-    backgroundColor: colors.primary.light,
-  },
-  categoryLabel: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontSize: 14,
-  },
-  categoryLabelActive: {
-    color: colors.primary.main,
-    fontWeight: '600',
+  badgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '700',
   },
   postsContent: {
     padding: spacing.s,

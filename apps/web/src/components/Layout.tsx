@@ -57,12 +57,30 @@ export default function Layout({ children }: LayoutProps) {
               </li>
               <li>
                 <Link
+                  href="/events"
+                  className={`${styles.navLink} ${isActive('/events') ? styles.navLinkActive : ''}`}
+                >
+                  Events
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/marketplace"
+                  className={`${styles.navLink} ${isActive('/marketplace') ? styles.navLinkActive : ''}`}
+                >
+                  Marketplace
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/messages"
                   className={`${styles.navLink} ${isActive('/messages') ? styles.navLinkActive : ''}`}
                 >
                   Messages
                   {unreadCount > 0 && (
-                    <span className={styles.badge}>{unreadCount}</span>
+                    <span className={styles.badge}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
                   )}
                 </Link>
               </li>

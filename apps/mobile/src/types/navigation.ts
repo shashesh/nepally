@@ -29,10 +29,7 @@ export type OnboardingStackParamList = {
  * Post creation stack parameter list
  */
 export type PostStackParamList = {
-  CategorySelect: undefined;
-  CreatePost: {
-    category: 'housing' | 'jobs' | 'emergency' | 'travel';
-  };
+  CreatePost: undefined;
 };
 
 /**
@@ -66,8 +63,23 @@ export type ChatStackParamList = {
     otherUserTrustLevel: number;
     postId?: string;
     postTitle?: string;
-    postCategory?: string;
   };
+};
+
+/**
+ * Events stack parameter list
+ */
+export type EventsStackParamList = {
+  EventsList: undefined;
+  // Future: EventDetail: { eventId: string };
+};
+
+/**
+ * Marketplace stack parameter list
+ */
+export type MarketplaceStackParamList = {
+  MarketplaceMain: undefined;
+  // Future: BusinessDetail: { businessId: string };
 };
 
 /**
@@ -75,10 +87,11 @@ export type ChatStackParamList = {
  */
 export type MainTabParamList = {
   Home: NavigatorScreenParams<HomeStackParamList>;
-  Search: undefined;
   Post: NavigatorScreenParams<PostStackParamList>;
-  Messages: NavigatorScreenParams<ChatStackParamList>;
+  Events: NavigatorScreenParams<EventsStackParamList>;
+  Marketplace: NavigatorScreenParams<MarketplaceStackParamList>;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
+  // Messages moved to top nav, but keeping ChatNavigator accessible via navigation
 };
 
 /**
@@ -87,6 +100,7 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   Onboarding: NavigatorScreenParams<OnboardingStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
+  Chat: NavigatorScreenParams<ChatStackParamList>;
 };
 
 declare global {

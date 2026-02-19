@@ -7,19 +7,16 @@ import { useLocation } from '../hooks/useLocation';
 import { supabase } from '../lib/supabase';
 import {
   getPostsByMetroArea,
+  getTags,
   getUserLikedPostIds,
   formatRelativeTime,
+  TAG_EMOJI,
+  TAG_COLORS,
+  DEFAULT_TAG_COLOR,
 } from '@nusa/shared';
-import type { Post, PostCategory } from '@nusa/shared';
+import type { Post, Tag } from '@nusa/shared';
+import TagFilterBar from '../components/TagFilterBar';
 import styles from '../styles/Feed.module.css';
-
-const CATEGORIES: { label: string; value: PostCategory | 'all' }[] = [
-  { label: 'All', value: 'all' },
-  { label: '🏠 Housing', value: 'housing' },
-  { label: '💼 Jobs', value: 'jobs' },
-  { label: '🚨 Emergency', value: 'emergency' },
-  { label: '✈️ Travel', value: 'travel' },
-];
 
 export default function FeedPage() {
   const router = useRouter();
@@ -28,14 +25,24 @@ export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<PostCategory | 'all'>('all');
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
-  // Parse category from URL query
+  // Tag-based filtering (multi-select)
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
+
+  // Load tags on mount
   useEffect(() => {
-    const { category } = router.query;
-    if (category && ['housing', 'jobs', 'emergency', 'travel'].includes(category as string)) {
-      setActiveCategory(category as PostCategory);
+    getTags(supabase).then((result) => {
+      if (result.data) setAvailableTags(result.data);
+    });
+  }, []);
+
+  // Parse tag filters from URL query
+  useEffect(() => {
+    const { tags } = router.query;
+    if (tags && typeof tags === 'string') {
+      setSelectedTagSlugs(tags.split(',').filter(Boolean));
     }
   }, [router.query]);
 
@@ -54,11 +61,11 @@ export default function FeedPage() {
     if (!metroAreaId) return;
 
     setLoading(true);
-    const category = activeCategory === 'all' ? undefined : activeCategory;
+    const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
     const result = await getPostsByMetroArea(
       supabase,
       metroAreaId,
-      category,
+      slugs,
       50
     );
 
@@ -66,7 +73,7 @@ export default function FeedPage() {
       setPosts(result.data);
     }
     setLoading(false);
-  }, [metroAreaId, activeCategory]);
+  }, [metroAreaId, selectedTagSlugs]);
 
   // Load liked post IDs
   useEffect(() => {
@@ -83,11 +90,21 @@ export default function FeedPage() {
     loadPosts();
   }, [loadPosts]);
 
-  function handleCategoryChange(category: PostCategory | 'all') {
-    setActiveCategory(category);
-    // Update URL without navigation
-    const query = category === 'all' ? {} : { category };
-    router.replace({ pathname: '/feed', query }, undefined, { shallow: true });
+  function handleTagChipToggle(slug: string) {
+    setSelectedTagSlugs((prev) => {
+      const next = prev.includes(slug)
+        ? prev.filter((s) => s !== slug)
+        : [...prev, slug];
+      // Update URL without navigation
+      const query = next.length > 0 ? { tags: next.join(',') } : {};
+      router.replace({ pathname: '/feed', query }, undefined, { shallow: true });
+      return next;
+    });
+  }
+
+  function handleAllChip() {
+    setSelectedTagSlugs([]);
+    router.replace({ pathname: '/feed' }, undefined, { shallow: true });
   }
 
   if (!user) return null;
@@ -123,26 +140,41 @@ export default function FeedPage() {
                 ? `${activeLocation.metro_name}, ${activeLocation.metro_state}`
                 : 'Your local area'}
               {activeLocation?.is_temporary && (
-                <span style={{ fontStyle: 'italic', color: 'var(--color-warning)', marginLeft: 8, fontSize: '0.85em' }}>
+                <span className={styles.visitingBadge}>
                   (Visiting)
                 </span>
               )}
             </p>
           </div>
+          {user.trust_level >= 1 && (
+            <Link
+              href="/posts/create"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: 'var(--color-primary)',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontSize: 14,
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              + Create Post
+            </Link>
+          )}
         </div>
 
-        {/* Category Tabs */}
-        <div className={styles.tabs}>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.value}
-              className={`${styles.tab} ${activeCategory === cat.value ? styles.tabActive : ''}`}
-              onClick={() => handleCategoryChange(cat.value)}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
+        {/* Tag Filter Chips */}
+        <TagFilterBar
+          tags={availableTags}
+          selectedSlugs={selectedTagSlugs}
+          onTagToggle={handleTagChipToggle}
+          onAllPress={handleAllChip}
+        />
 
         {/* Post List */}
         {loading ? (
@@ -151,7 +183,11 @@ export default function FeedPage() {
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🏔️</div>
             <h3>No posts yet</h3>
-            <p>Be the first to share something with your community!</p>
+            <p>
+              {selectedTagSlugs.length > 0
+                ? 'No posts matching your filters in this area. Try different tags!'
+                : 'Be the first to share something with your community!'}
+            </p>
           </div>
         ) : (
           posts.map((post) => (
@@ -159,6 +195,7 @@ export default function FeedPage() {
               key={post.id}
               post={post}
               liked={likedIds.has(post.id)}
+              onTagClick={handleTagChipToggle}
             />
           ))
         )}
@@ -167,16 +204,15 @@ export default function FeedPage() {
   );
 }
 
-function PostCard({ post, liked }: { post: Post; liked: boolean }) {
-  const categoryClass =
-    post.category === 'housing'
-      ? styles.categoryHousing
-      : post.category === 'jobs'
-        ? styles.categoryJobs
-        : post.category === 'emergency'
-          ? styles.categoryEmergency
-          : styles.categoryTravel;
-
+function PostCard({
+  post,
+  liked,
+  onTagClick,
+}: {
+  post: Post;
+  liked: boolean;
+  onTagClick: (slug: string) => void;
+}) {
   return (
     <Link href={`/posts/${post.id}`} className={styles.postCard}>
       <div className={styles.postCardHeader}>
@@ -191,13 +227,53 @@ function PostCard({ post, liked }: { post: Post; liked: boolean }) {
             {formatRelativeTime(new Date(post.created_at))}
           </div>
         </div>
-        <span className={`${styles.postCategoryBadge} ${categoryClass}`}>
-          {post.category}
+        {/* Local / Global badge */}
+        <span
+          className={styles.postCategoryBadge}
+          style={{
+            backgroundColor: post.is_global ? '#E3F2FD' : '#E8F5E9',
+            color: post.is_global ? '#1565C0' : '#388E3C',
+          }}
+        >
+          {post.is_global ? '🌐 Global' : '📍 Local'}
         </span>
       </div>
 
       <div className={styles.postTitle}>{post.title}</div>
       <div className={styles.postDescription}>{post.description}</div>
+
+      {/* Tag pills */}
+      {post.tags && post.tags.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0' }}>
+          {post.tags.map((tag) => {
+            const tagColor = TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
+            const emoji = TAG_EMOJI[tag.slug] || '';
+            return (
+              <span
+                key={tag.id}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onTagClick(tag.slug);
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '2px 8px',
+                  borderRadius: 12,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: tagColor,
+                  backgroundColor: `${tagColor}26`, // 15% opacity
+                  cursor: 'pointer',
+                }}
+              >
+                {emoji ? `${emoji} ${tag.name}` : tag.name}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       <div className={styles.postFooter}>
         <span className={styles.postStat}>
