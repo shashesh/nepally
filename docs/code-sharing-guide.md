@@ -52,25 +52,25 @@ export interface Post {
 
 **Examples:**
 ```typescript
-// validation/housing.ts
+// validation/post.ts
 import { z } from 'zod';
 
-export const housingPostSchema = z.object({
-  title: z.string().min(10).max(100),
-  rentAmount: z.number().min(0).max(10000),
-  roomType: z.enum(['private', 'shared', 'entire-place']),
-  // ...
+export const createPostSchema = z.object({
+  title: z.string().min(5).max(200),
+  body: z.string().min(10).max(5000),
+  tags: z.array(z.string()).min(1).max(3),
+  is_global: z.boolean().optional(),
 });
 
-export type HousingPostInput = z.infer<typeof housingPostSchema>;
+export type CreatePostInput = z.infer<typeof createPostSchema>;
 ```
 
 **Usage in apps:**
 ```typescript
 // Mobile or web
-import { housingPostSchema } from '@nusa/shared';
+import { createPostSchema } from '@nusa/shared';
 
-const result = housingPostSchema.safeParse(formData);
+const result = createPostSchema.safeParse(formData);
 if (!result.success) {
   console.error(result.error);
 }
@@ -116,22 +116,13 @@ export function formatPhoneNumber(phone: string): string {
 
 **Examples:**
 ```typescript
-// constants/postCategories.ts
-export enum PostCategory {
-  HOUSING = 'housing',
-  JOBS = 'jobs',
-  EMERGENCY = 'emergency',
-  TRAVEL = 'travel',
-}
+// constants/tags.ts
+export const DEFAULT_TAGS = [
+  'Housing', 'Jobs', 'Help', 'Question',
+  'Politics', 'Discussion', 'Emergency',
+] as const;
 
-export const POST_CATEGORIES = {
-  [PostCategory.HOUSING]: {
-    name: 'Housing',
-    expiryDays: 30,
-    maxPhotos: 10,
-  },
-  // ...
-};
+export type DefaultTag = typeof DEFAULT_TAGS[number];
 ```
 
 **Why shared:**
@@ -194,15 +185,13 @@ export function calculateTrustLevel(user: User): TrustLevel {
   return TrustLevel.NEW;
 }
 
-// logic/postExpiry.ts
-export function isExpired(post: Post): boolean {
-  return new Date() > post.expiryDate;
+// logic/post.ts
+export function canPostGlobally(user: User): boolean {
+  return user.is_premium;
 }
 
-export function calculateExpiryDate(category: PostCategory): Date {
-  const now = new Date();
-  const days = POST_CATEGORIES[category].expiryDays;
-  return new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+export function requiresModeration(tags: string[]): boolean {
+  return tags.includes('Emergency');
 }
 ```
 
@@ -279,26 +268,25 @@ export function Button({ title, onPress }) {
 
 **Shared logic:**
 ```typescript
-// packages/shared/src/validation/housing.ts
-export const housingPostSchema = z.object({
-  title: z.string().min(10).max(100),
-  rentAmount: z.number().min(0),
-  // ...
+// packages/shared/src/validation/post.ts
+export const createPostSchema = z.object({
+  title: z.string().min(5).max(200),
+  body: z.string().min(10).max(5000),
+  tags: z.array(z.string()).min(1).max(3),
 });
 ```
 
 **Mobile UI:**
 ```typescript
-// apps/mobile/src/screens/CreateHousingPost.tsx
-import { housingPostSchema } from '@nusa/shared';
+// apps/mobile/src/screens/CreatePostScreen.tsx
+import { createPostSchema } from '@nusa/shared';
 
-export function CreateHousingPost() {
+export function CreatePostScreen() {
   const [formData, setFormData] = useState({});
 
   const handleSubmit = () => {
-    const result = housingPostSchema.safeParse(formData);
+    const result = createPostSchema.safeParse(formData);
     if (!result.success) {
-      // Show errors (React Native UI)
       Alert.alert('Error', result.error.message);
       return;
     }
@@ -308,7 +296,7 @@ export function CreateHousingPost() {
   return (
     <View>
       <TextInput placeholder="Title" onChangeText={...} />
-      {/* More fields */}
+      {/* Body, tag picker, etc. */}
     </View>
   );
 }
@@ -316,16 +304,15 @@ export function CreateHousingPost() {
 
 **Web UI:**
 ```typescript
-// apps/web/src/pages/posts/create/housing.tsx
-import { housingPostSchema } from '@nusa/shared';
+// apps/web/src/pages/posts/create.tsx
+import { createPostSchema } from '@nusa/shared';
 
-export default function CreateHousingPost() {
+export default function CreatePost() {
   const [formData, setFormData] = useState({});
 
   const handleSubmit = () => {
-    const result = housingPostSchema.safeParse(formData);
+    const result = createPostSchema.safeParse(formData);
     if (!result.success) {
-      // Show errors (React UI)
       alert(result.error.message);
       return;
     }
@@ -335,7 +322,7 @@ export default function CreateHousingPost() {
   return (
     <form onSubmit={handleSubmit}>
       <input placeholder="Title" onChange={...} />
-      {/* More fields */}
+      {/* Body, tag picker, etc. */}
     </form>
   );
 }

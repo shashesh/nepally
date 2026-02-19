@@ -26,12 +26,6 @@ End-to-end user experience documentation created using `/user-journey` skill.
 ### `/decisions`
 Architecture Decision Records (ADRs) documenting important choices.
 
-## Historical
-
-| File | Purpose |
-|------|---------|
-| [refinement-analysis-phase1-2026-02-06.md](./refinement-analysis-phase1-2026-02-06.md) | Phase 1 roadmap refinement analysis (historical) |
-
 ## Creating New Documentation
 
 - Use custom Claude skills (`/design-feature`, `/wireframe`, `/user-journey`)

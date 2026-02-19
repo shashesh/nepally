@@ -203,7 +203,7 @@ npm run dev
 
 **You should see:**
 ```
-   ▲ Next.js 16.1.6
+   ▲ Next.js 15.5.12
    - Local:        http://localhost:3000
    - Ready in 2.3s
 ```
@@ -243,7 +243,7 @@ npm run dev
 
 6. **Home Screen (Level 0)** ✓
    - Yellow Level 0 banner appears at top
-   - Category tabs: All, Housing, Jobs, Emergency, Travel
+   - Tag filter chips
    - Empty state (no posts yet)
    - Floating + button (50% opacity, disabled)
    - Tap + button → Shows "Verify to Post" alert
@@ -364,7 +364,7 @@ npx react-native start --reset-cache
 - [ ] Progress dots animate correctly
 - [ ] Home screen loads
 - [ ] Level 0 banner appears
-- [ ] Category tabs work
+- [ ] Tag filter chips work
 - [ ] Banner dismisses and stays dismissed
 - [ ] Tapping + button shows "Verify to Post" alert
 

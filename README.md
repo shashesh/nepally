@@ -28,7 +28,7 @@ For detailed setup instructions, see [Setup & Testing Guide](./SETUP-AND-TESTING
 
 - **Metro-First Location Model** - Content tagged with US Census Metro Area IDs
 - **Trust & Safety System** - Multi-tiered account system (Level 0-2)
-- **Smart Post Engine** - Category-based posts with mandatory fields and auto-expiry
+- **Tag-Based Post Engine** - Reddit-style posts with scalable tag system (Housing, Jobs, Help, etc.)
 - **Two-Step Red Alert System** - Moderator-verified emergency broadcasts
 
 ## Tech Stack
@@ -84,14 +84,13 @@ See [Monorepo Structure](./docs/monorepo-structure.md) for details.
 - [Wireframes](./docs/wireframes/) - Screen wireframe documentation
 
 ### Claude Code
-- [QUICK-START.md](./QUICK-START.md) - Working with Claude Code on this project
 - [CLAUDE.md](./CLAUDE.md) - Claude Code instructions
 
 ## Development Phases
 
 ### Phase 1: Utility Core & Trust Foundation (Current)
 - Identity verification and trust levels
-- Structured posting forms (Housing, Jobs, Emergency, Travel)
+- Tag-based posting (Reddit-style)
 - Metro-based feeds
 - In-app chat
 

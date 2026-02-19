@@ -86,7 +86,6 @@ nusa/
 ├── tsconfig.json         # Base TypeScript config
 ├── package.json          # Root package.json (workspaces)
 ├── CLAUDE.md             # Instructions for Claude Code
-├── QUICK-START.md        # Claude Code workflow guide
 ├── TECH-VERSIONS.md      # Technology version source of truth
 ├── SETUP-AND-TESTING-GUIDE.md  # Development setup guide
 ├── product-roadmap.md    # Product roadmap
