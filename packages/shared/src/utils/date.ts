@@ -2,23 +2,6 @@
  * Date utility functions
  */
 
-export function calculateExpiryDate(category: string): Date {
-  const now = new Date();
-  const expiryDays: Record<string, number> = {
-    housing: 30,
-    jobs: 30,
-    emergency: 7,
-    travel: 2,
-  };
-
-  const days = expiryDays[category] || 30;
-  return new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-}
-
-export function isExpired(expiryDate: Date): boolean {
-  return new Date() > expiryDate;
-}
-
 export function formatRelativeTime(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();

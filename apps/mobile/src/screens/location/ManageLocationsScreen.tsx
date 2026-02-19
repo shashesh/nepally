@@ -18,7 +18,7 @@ import {
   updateSavedLocation,
   deleteSavedLocation,
   setDefaultSavedLocation,
-  MAX_SAVED_LOCATIONS,
+  MAX_SAVED_LOCATIONS_PREMIUM,
 } from '@nusa/shared';
 import type { SavedLocation } from '@nusa/shared';
 import { supabase } from '../../config/supabase';
@@ -179,7 +179,7 @@ export default function ManageLocationsScreen() {
         contentContainerStyle={styles.listContent}
         ListFooterComponent={
           <View style={styles.footer}>
-            {savedLocations.length < MAX_SAVED_LOCATIONS && (
+            {savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={handleAddLocation}

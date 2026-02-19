@@ -26,6 +26,9 @@ import {
   createComment,
   deleteComment,
   TrustLevel,
+  TAG_EMOJI,
+  TAG_COLORS,
+  DEFAULT_TAG_COLOR,
 } from '@nusa/shared';
 import type { Post, PostComment } from '@nusa/shared';
 import { Avatar } from '../components/Avatar';
@@ -37,62 +40,14 @@ import { spacing, borderRadius } from '../styles/spacing';
 
 type DetailRouteProp = RouteProp<HomeStackParamList, 'PostDetail'>;
 
-const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  housing: 'home',
-  jobs: 'briefcase',
-  emergency: 'warning',
-  travel: 'airplane',
-};
-
-const categoryColors: Record<string, string> = {
-  housing: colors.primary.main,
-  jobs: colors.success,
-  emergency: colors.error,
-  travel: colors.accent.red,
-};
-
-function getFieldRows(post: Post): { icon: string; label: string; value: string }[] {
-  const fields = post.fields || {};
-  const rows: { icon: string; label: string; value: string }[] = [];
-
-  switch (post.category) {
-    case 'housing':
-      if (fields.rentAmount) rows.push({ icon: 'cash', label: 'Rent', value: `$${fields.rentAmount}/month` });
-      if (fields.moveInDate) rows.push({ icon: 'calendar', label: 'Move-in', value: new Date(fields.moveInDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) });
-      if (fields.roomType) rows.push({ icon: 'bed', label: 'Room Type', value: fields.roomType });
-      break;
-    case 'jobs':
-      if (fields.payRate) rows.push({ icon: 'cash', label: 'Pay', value: `$${fields.payRate.min}–$${fields.payRate.max} ${fields.payRate.type}` });
-      if (fields.employmentType) rows.push({ icon: 'briefcase', label: 'Type', value: fields.employmentType });
-      if (fields.company) rows.push({ icon: 'business', label: 'Company', value: fields.company });
-      break;
-    case 'emergency':
-      if (fields.emergencyType) rows.push({ icon: 'warning', label: 'Type', value: fields.emergencyType });
-      if (fields.urgency) rows.push({ icon: 'alert-circle', label: 'Urgency', value: fields.urgency });
-      break;
-    case 'travel':
-      if (fields.travelDate) rows.push({ icon: 'calendar', label: 'Date', value: new Date(fields.travelDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) });
-      if (fields.route) rows.push({ icon: 'navigate', label: 'Route', value: `${fields.route.from} → ${fields.route.to}` });
-      if (fields.airline) rows.push({ icon: 'airplane', label: 'Airline', value: fields.airline });
-      break;
-  }
-
-  // Location
-  if (post.location_city) {
-    rows.push({ icon: 'location', label: 'Location', value: `${post.location_city}, ${post.location_state}` });
-  }
-
-  // Expiry
-  const expiryDate = new Date(post.expiry_date);
-  const now = new Date();
-  const daysLeft = Math.ceil((expiryDate.getTime() - now.getTime()) / 86400000);
-  if (daysLeft > 0) {
-    rows.push({ icon: 'time', label: 'Expires', value: `in ${daysLeft} days` });
-  } else {
-    rows.push({ icon: 'time', label: 'Status', value: 'Expired' });
-  }
-
-  return rows;
+/**
+ * Convert a hex color to an rgba string at the given alpha.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 export default function PostDetailScreen() {
@@ -272,7 +227,6 @@ export default function PostDetailScreen() {
             otherUserTrustLevel: post.author.trust_level,
             postId: post.id,
             postTitle: post.title,
-            postCategory: post.category,
           },
         });
       }
@@ -301,9 +255,6 @@ export default function PostDetailScreen() {
     );
   }
 
-  const fieldRows = getFieldRows(post);
-  const catColor = categoryColors[post.category] || colors.primary.main;
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -314,45 +265,51 @@ export default function PostDetailScreen() {
         <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
 
         <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
-        {/* Category Badge */}
-        <View style={[styles.categoryBadge, { backgroundColor: catColor + '1A' }]}>
-          <Ionicons
-            name={categoryIcons[post.category]}
-            size={16}
-            color={catColor}
-          />
-          <Text style={[styles.categoryText, { color: catColor }]}>
-            {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
+        {/* Local / Global Badge */}
+        <View style={[styles.categoryBadge, { backgroundColor: post.is_global ? '#E3F2FD' : '#E8F5E9' }]}>
+          <Text style={{ fontSize: 14, color: post.is_global ? '#1565C0' : '#388E3C', fontWeight: '500' }}>
+            {post.is_global ? '🌐 Global' : '📍 Local'}
           </Text>
         </View>
 
         {/* Title */}
         <Text style={styles.title}>{post.title}</Text>
 
+        {/* Tag Pills */}
+        {post.tags && post.tags.length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            {post.tags.map((tag) => {
+              const tagColor = TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
+              const emoji = TAG_EMOJI[tag.slug] || '';
+              return (
+                <View
+                  key={tag.id}
+                  style={{
+                    borderRadius: 12,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    backgroundColor: hexToRgba(tagColor, 0.15),
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: tagColor }}>
+                    {emoji ? `${emoji} ${tag.name}` : tag.name}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
         {/* Details Section */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>DETAILS</Text>
-          {fieldRows.map((row, index) => (
-            <View key={index} style={styles.fieldRow}>
-              <Ionicons
-                name={row.icon as any}
-                size={18}
-                color={colors.text.secondary}
-                style={styles.fieldIcon}
-              />
-              <Text style={styles.fieldLabel}>{row.label}</Text>
-              <Text
-                style={[
-                  styles.fieldValue,
-                  row.label === 'Expires' && {
-                    color: row.value === 'Expired' ? colors.error : colors.success,
-                  },
-                ]}
-              >
-                {row.value}
-              </Text>
+          {post.location_city && (
+            <View style={styles.fieldRow}>
+              <Ionicons name="location" size={18} color={colors.text.secondary} style={styles.fieldIcon} />
+              <Text style={styles.fieldLabel}>Location</Text>
+              <Text style={styles.fieldValue}>{post.location_city}, {post.location_state}</Text>
             </View>
-          ))}
+          )}
         </View>
 
         {/* Description Section */}

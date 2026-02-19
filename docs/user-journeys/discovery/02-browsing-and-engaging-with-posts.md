@@ -3,7 +3,7 @@
 **Journey Number:** 02
 **Category:** Discovery
 **User Persona:** Verified User (Level 1)
-**Last Updated:** 2026-02-16
+**Last Updated:** 2026-02-17
 **Status:** Draft
 
 ## Journey Overview
@@ -63,14 +63,14 @@
 - Header: "Dallas-Fort Worth-Arlington, TX" with location pin icon
 - Search icon (top-right)
 - Notifications bell icon (top-right)
-- Category filter tabs: All (selected), Housing, Jobs, Emergency, Travel
+- Category filter tabs: All (selected), Housing, Jobs, Help, Question, Politics, Discussion, Emergency
 - List of post cards with:
   - **Author avatar** (circular profile photo or initials)
   - **Author name** + trust badge (blue checkmark)
-  - **Category icon** (house, briefcase, warning, plane)
   - **Post title** (bold, prominent)
-  - **Key metadata** (rent $800/month, location Dallas, TX)
+  - **Local/Global badge** (📍 Local or 🌐 Global)
   - **Description preview** (2 lines, "Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, qu..." with "View More" link)
+  - **Tag pills** (e.g., [🏠 Housing] [❓ Question])
   - **Action bar at bottom:**
     - Heart icon (outline) + likes count "12"
     - Comment bubble icon + comments count "3"
@@ -193,11 +193,9 @@
   - Category icon + "Housing"
   - **Full description** (no truncation):
     "Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet environment. Rent is $800/month including utilities. Move-in date flexible (March 1 or later). I'm a grad student at UTD studying Computer Science. Prefer someone who speaks Nepali and respects cultural values. Apartment has in-unit washer/dryer, gym, pool. Close to Indian grocery stores."
-  - **Field rows:**
-    - Rent: $800/month
-    - Move-in Date: March 1, 2026
-    - Room Type: Private Room
-    - Location: Dallas, TX 75080
+  - **Tag pills:** [🏠 Housing] [❓ Question]
+  - **Local/Global badge:** 📍 Local
+  - **Location:** Dallas, TX 75080
   - Timestamp: "Posted 2h ago"
 - **Action bar:**
   - Like button (heart icon) + count "12" (inline, prominent)

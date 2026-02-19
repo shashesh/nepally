@@ -35,13 +35,6 @@ import { spacing } from '../../styles/spacing';
 type ThreadRouteProp = RouteProp<ChatStackParamList, 'MessageThread'>;
 type ThreadNavProp = NativeStackNavigationProp<ChatStackParamList, 'MessageThread'>;
 
-const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  housing: 'home',
-  jobs: 'briefcase',
-  emergency: 'warning',
-  travel: 'airplane',
-};
-
 export default function MessageThreadScreen() {
   const { user } = useAuth();
   const route = useRoute<ThreadRouteProp>();
@@ -52,7 +45,6 @@ export default function MessageThreadScreen() {
     otherUserName,
     otherUserTrustLevel,
     postTitle,
-    postCategory,
   } = route.params;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -256,10 +248,10 @@ export default function MessageThreadScreen() {
       )}
 
       {/* Post Context Bar */}
-      {postTitle && postCategory && (
+      {postTitle && (
         <View style={styles.postBar}>
           <Ionicons
-            name={categoryIcons[postCategory] || 'document'}
+            name="document-text-outline"
             size={16}
             color={colors.text.secondary}
           />

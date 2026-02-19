@@ -61,7 +61,6 @@ export default function ConversationListScreen() {
       otherUserTrustLevel: 1, // We don't have this in the list query; default to verified
       postId: conv.post_id || undefined,
       postTitle: conv.post_title,
-      postCategory: conv.post_category,
     });
   };
 

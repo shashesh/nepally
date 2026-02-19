@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { getShortMetroName, MAX_SAVED_LOCATIONS, hasMetroChanged } from '@nusa/shared';
+import { getShortMetroName, MAX_SAVED_LOCATIONS_PREMIUM, hasMetroChanged } from '@nusa/shared';
 import type { SavedLocation, ActiveLocation, LocationDetectionResult } from '@nusa/shared';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -134,7 +134,7 @@ export function LocationSwitcherSheet({
           <View style={styles.divider} />
 
           {/* Add a Location */}
-          {savedLocations.length < MAX_SAVED_LOCATIONS && (
+          {savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
             <TouchableOpacity
               style={styles.addButton}
               onPress={handleAddLocation}

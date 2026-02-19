@@ -25,6 +25,9 @@ export interface User {
   helpful_votes_received: number;
   reports_received: number;
 
+  // Premium
+  is_premium: boolean;
+
   // Moderation
   is_banned: boolean;
   ban_reason?: string;

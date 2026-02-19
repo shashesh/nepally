@@ -3,6 +3,7 @@
  */
 
 export * from './posts';
+export * from './tags';
 export * from './interactions';
 export * from './conversations';
 export * from './messages';

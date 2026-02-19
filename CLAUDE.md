@@ -20,12 +20,20 @@ The platform uses a multi-tiered account system:
 - **Level 1 (Verified)**: Phone/social media verified, full posting rights
 - **Level 2 (Contributor)**: High engagement/vouched, elevated visibility
 
-### Smart Post Engine (Structured Content)
-Posts are category-based with mandatory fields and auto-expiry:
-- **Housing**: Rent, move-in date, room type (expires in 30 days)
-- **Jobs**: Title, pay, employment type (expires in 30 days)
-- **Emergency**: Type, location, contact info (expires in 7 days)
-- **Travel**: Date, route, airline (expires 2 days after travel)
+### Tag-Based Post Engine (Reddit-Style)
+Posts use a simplified Reddit-style format with a scalable tag system:
+- **Title + Body + Tags**: All posts have a title, body, and 1-3 tags (mandatory)
+- **Tags**: Housing, Jobs, Help, Question, Politics, Discussion, Emergency (stored in DB `tags` table, scalable)
+- **No structured fields**: No category-specific mandatory fields (rent, pay range, etc.)
+- **No auto-expiry**: Posts remain active until deleted by author or removed by moderators
+- **Emergency tag**: Requires moderator approval before becoming visible
+- **Global posts**: Premium users can toggle posts as global (visible in all metro feeds)
+- **Badges**: Post cards show 📍 Local / 🌐 Global badge
+
+### Premium Subscription
+- `is_premium` flag on users (billing deferred)
+- Premium perks: global posting + up to 5 saved locations
+- Free users: local posts only, 1 saved location
 
 ### Two-Step Red Alert System
 Emergency broadcasts require moderator verification:
@@ -174,10 +182,10 @@ When implementing any feature, follow this mandatory sequence:
 ## Development Phases
 
 ### Phase 1: Utility Core & Trust Foundation
-Focus on identity verification, structured posting forms, metro-based feeds, and in-app chat.
+Focus on identity verification, tag-based posting (Reddit-style), metro-based feeds with global post support, premium subscription scaffolding, and in-app chat.
 
 ### Phase 2: Community Safety & Growth
 Implement the Red Alert system, peer vs. business distinction, and hyper-local filtering.
 
 ### Phase 3: Sustainability & Ecosystem
-Build self-service ad portal, AI moderation, and resource wiki for immigration/tax/legal guides.
+Build self-service ad portal, AI moderation, billing integration (Stripe/IAP), and resource wiki for immigration/tax/legal guides.

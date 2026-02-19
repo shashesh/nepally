@@ -1,44 +1,10 @@
 /**
- * Post categories and their configurations
+ * @deprecated Post categories have been replaced by the tag system.
+ * Use `@nusa/shared` Tag types and the tags API instead.
+ * See: docs/decisions/2026-02-17-post-tags-redesign-and-premium.md
+ *
+ * This file is kept temporarily for backward-compatibility during migration.
+ * Import from `./tags` instead.
  */
 
-import type { PostCategory } from '../types/post';
-
-export interface PostCategoryConfig {
-  id: PostCategory;
-  name: string;
-  expiryDays: number;
-  maxPhotos: number;
-  requiresModeration: boolean;
-}
-
-export const POST_CATEGORIES: Record<PostCategory, PostCategoryConfig> = {
-  housing: {
-    id: 'housing',
-    name: 'Housing',
-    expiryDays: 30,
-    maxPhotos: 10,
-    requiresModeration: false,
-  },
-  jobs: {
-    id: 'jobs',
-    name: 'Jobs',
-    expiryDays: 30,
-    maxPhotos: 3,
-    requiresModeration: false,
-  },
-  emergency: {
-    id: 'emergency',
-    name: 'Emergency',
-    expiryDays: 7,
-    maxPhotos: 5,
-    requiresModeration: true, // Red Alert system
-  },
-  travel: {
-    id: 'travel',
-    name: 'Travel',
-    expiryDays: 2, // Expires 2 days after travel date
-    maxPhotos: 2,
-    requiresModeration: false,
-  },
-};
+export { TAG_COLORS, TAG_EMOJI, MAX_TAGS_PER_POST, MAX_PHOTOS_PER_POST } from './tags';

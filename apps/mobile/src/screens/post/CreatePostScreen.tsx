@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,220 +10,155 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PostStackParamList } from '../../types/navigation';
 import { useAuth } from '../../hooks/useAuth';
-import { createPost, POST_EXPIRY_DAYS } from '@nusa/shared';
-import { getMetroArea } from '../../utils/storage';
+import { useLocation } from '../../hooks/useLocation';
+import {
+  createPost,
+  getTags,
+  TAG_EMOJI,
+  TAG_COLORS,
+  DEFAULT_TAG_COLOR,
+  MAX_TAGS_PER_POST,
+  MAX_PHOTOS_PER_POST,
+} from '@nusa/shared';
+import type { Tag } from '@nusa/shared';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
-import { typography } from '../../styles/typography';
-import { spacing, borderRadius, heights } from '../../styles/spacing';
+import { spacing, borderRadius } from '../../styles/spacing';
 
 type Props = NativeStackScreenProps<PostStackParamList, 'CreatePost'>;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  housing: 'Housing',
-  jobs: 'Jobs',
-  emergency: 'Emergency',
-  travel: 'Travel',
-};
+const TITLE_MAX = 150;
+const TITLE_COUNTER_THRESHOLD = 120;
+const BODY_MAX = 5000;
+const BODY_COUNTER_THRESHOLD = 4500;
 
-const ROOM_TYPES = ['Private Room', 'Shared Room', 'Studio', '1BR', '2BR+'];
-const EMPLOYMENT_TYPES = ['Full-Time', 'Part-Time', 'Contract', 'Internship'];
-const EMERGENCY_TYPES = ['Medical', 'Legal', 'Financial', 'Travel', 'Housing', 'Other'];
-const URGENCY_LEVELS = ['Critical', 'High', 'Medium'];
-
-function PickerField({
-  label,
-  options,
-  value,
-  onSelect,
-}: {
-  label: string;
-  options: string[];
-  value: string;
-  onSelect: (val: string) => void;
-}) {
-  return (
-    <View style={styles.fieldGroup}>
-      <Text style={styles.label}>{label}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.pickerRow}>
-          {options.map((opt) => (
-            <TouchableOpacity
-              key={opt}
-              style={[styles.pickerChip, value === opt && styles.pickerChipActive]}
-              onPress={() => onSelect(opt)}
-            >
-              <Text
-                style={[
-                  styles.pickerChipText,
-                  value === opt && styles.pickerChipTextActive,
-                ]}
-              >
-                {opt}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-export default function CreatePostScreen({ route, navigation }: Props) {
-  const { category } = route.params;
+export default function CreatePostScreen({ navigation }: Props) {
   const { user } = useAuth();
+  const { activeLocation } = useLocation();
+
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Common fields
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const isDirty = title.trim().length > 0 || body.trim().length > 0 || selectedTagIds.length > 0;
+  const isFormValid =
+    title.trim().length >= 5 &&
+    body.trim().length >= 10 &&
+    selectedTagIds.length >= 1 &&
+    !submitting;
 
-  // Housing fields
-  const [rentAmount, setRentAmount] = useState('');
-  const [moveInDate, setMoveInDate] = useState('');
-  const [roomType, setRoomType] = useState(ROOM_TYPES[0]);
+  const hasEmergencyTag = availableTags.some(
+    (t) => t.slug === 'emergency' && selectedTagIds.includes(t.id)
+  );
+  const requiresModeration = availableTags.some(
+    (t) => selectedTagIds.includes(t.id) && t.requires_moderation
+  );
 
-  // Jobs fields
-  const [companyName, setCompanyName] = useState('');
-  const [payMin, setPayMin] = useState('');
-  const [payMax, setPayMax] = useState('');
-  const [employmentType, setEmploymentType] = useState(EMPLOYMENT_TYPES[0]);
+  const metroName = activeLocation
+    ? `${activeLocation.metro_name}, ${activeLocation.metro_state}`
+    : user?.metro_area_id
+      ? 'Your local area'
+      : null;
 
-  // Emergency fields
-  const [emergencyType, setEmergencyType] = useState(EMERGENCY_TYPES[0]);
-  const [urgency, setUrgency] = useState(URGENCY_LEVELS[1]);
-  const [contactPhone, setContactPhone] = useState('');
-  const [contactName, setContactName] = useState('');
+  useEffect(() => {
+    loadTags();
+  }, []);
 
-  // Travel fields
-  const [travelDate, setTravelDate] = useState('');
-  const [travelFrom, setTravelFrom] = useState('');
-  const [travelTo, setTravelTo] = useState('');
-  const [airline, setAirline] = useState('');
-  const [seatsAvailable, setSeatsAvailable] = useState('1');
+  // Custom header
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity onPress={handleCancel} hitSlop={8}>
+          <Text style={headerStyles.cancel}>Cancel</Text>
+        </TouchableOpacity>
+      ),
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={!isFormValid}
+          style={[headerStyles.postBtn, !isFormValid && headerStyles.postBtnDisabled]}
+          hitSlop={8}
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Text
+              style={[headerStyles.postBtnText, !isFormValid && headerStyles.postBtnTextDisabled]}
+            >
+              Post
+            </Text>
+          )}
+        </TouchableOpacity>
+      ),
+      title: 'Create Post',
+    });
+  }, [isFormValid, submitting, isDirty, title, body, selectedTagIds]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: `New ${CATEGORY_LABELS[category]} Post` });
-  }, [category, navigation]);
+  async function loadTags() {
+    const result = await getTags(supabase);
+    if (result.data) setAvailableTags(result.data);
+  }
 
-  const buildFields = (): Record<string, any> => {
-    switch (category) {
-      case 'housing':
-        return {
-          rentAmount: rentAmount ? Number(rentAmount) : 0,
-          moveInDate,
-          roomType: roomType.toLowerCase().replace(/\s+/g, '-'),
-        };
-      case 'jobs':
-        return {
-          companyName,
-          employmentType: employmentType.toLowerCase().replace(/\s+/g, '-'),
-          payRate: {
-            min: payMin ? Number(payMin) : 0,
-            max: payMax ? Number(payMax) : 0,
-            type: 'annual',
-          },
-        };
-      case 'emergency':
-        return {
-          emergencyType: emergencyType.toLowerCase(),
-          urgency: urgency.toLowerCase(),
-          contactPhone,
-          contactName,
-          verified: false,
-          redAlertSent: false,
-        };
-      case 'travel':
-        return {
-          travelDate,
-          route: { from: travelFrom, to: travelTo },
-          airline: airline || undefined,
-          seatsAvailable: seatsAvailable ? Number(seatsAvailable) : 1,
-        };
-      default:
-        return {};
+  function handleCancel() {
+    if (isDirty) {
+      Alert.alert('Discard Post?', 'You have unsaved changes. Are you sure you want to discard this post?', [
+        { text: 'Keep Editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
+      ]);
+    } else {
+      navigation.goBack();
     }
-  };
+  }
 
-  const validate = (): string | null => {
-    if (!title.trim()) return 'Title is required';
-    if (!description.trim()) return 'Description is required';
+  function toggleTag(tagId: string) {
+    setSelectedTagIds((prev) => {
+      if (prev.includes(tagId)) {
+        return prev.filter((id) => id !== tagId);
+      }
+      if (prev.length >= MAX_TAGS_PER_POST) return prev;
+      return [...prev, tagId];
+    });
+  }
 
-    switch (category) {
-      case 'housing':
-        if (!rentAmount) return 'Rent amount is required';
-        break;
-      case 'jobs':
-        if (!companyName.trim()) return 'Company name is required';
-        break;
-      case 'emergency':
-        if (!contactPhone.trim()) return 'Contact phone is required';
-        if (!contactName.trim()) return 'Contact name is required';
-        break;
-      case 'travel':
-        if (!travelDate.trim()) return 'Travel date is required';
-        if (!travelFrom.trim()) return 'Departure city is required';
-        if (!travelTo.trim()) return 'Destination city is required';
-        break;
-    }
-    return null;
-  };
+  async function handleSubmit() {
+    if (!isFormValid || !user) return;
 
-  const handleSubmit = async () => {
-    const validationError = validate();
-    if (validationError) {
-      Alert.alert('Missing Information', validationError);
-      return;
-    }
-
-    if (category === 'emergency') {
-      Alert.alert(
-        'Emergency Disclaimer',
-        'This platform is a community notice board. For life-threatening emergencies, always call 911 first. Your post will be reviewed by community moderators.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'I Understand', onPress: submitPost },
-        ]
-      );
-      return;
-    }
-
-    await submitPost();
-  };
-
-  const submitPost = async () => {
-    if (!user) return;
-
-    if (!user.metro_area_id || !user.zip_code) {
+    const metroAreaId = activeLocation?.metro_area_id ?? user.metro_area_id;
+    if (!metroAreaId || !user.zip_code) {
       Alert.alert('Location Required', 'Please complete onboarding with a valid ZIP code before posting.');
+      return;
+    }
+
+    // Level 0 check
+    if (user.trust_level < 1) {
+      Alert.alert('Verify to Post', 'Please verify your phone number to create posts.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const metro = await getMetroArea();
-      const cityName = metro?.name?.split('-')[0]?.trim() || metro?.name || 'Unknown';
-      const stateName = metro?.state || 'Unknown';
-
-      const expiryDays = POST_EXPIRY_DAYS[category];
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + expiryDays);
+      const cityName = activeLocation?.metro_name?.split('-')[0]?.trim() || 'Unknown';
+      const stateName = activeLocation?.metro_state || 'Unknown';
 
       const result = await createPost(supabase, {
-        metroAreaId: user.metro_area_id,
-        category,
         title: title.trim(),
-        description: description.trim(),
-        fields: buildFields(),
-        expiryDate: expiryDate.toISOString(),
+        description: body.trim(),
+        tag_ids: selectedTagIds,
+        is_global: isGlobal,
+        metroAreaId,
         locationZipCode: user.zip_code,
         locationCity: cityName,
         locationState: stateName,
+        requiresModeration,
       });
 
       if (result.error) {
@@ -231,355 +166,340 @@ export default function CreatePostScreen({ route, navigation }: Props) {
         return;
       }
 
-      Alert.alert('Post Created', 'Your post is now live!', [
-        { text: 'OK', onPress: () => navigation.navigate('CategorySelect') },
-      ]);
-    } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      if (requiresModeration) {
+        Alert.alert(
+          'Submitted for Review',
+          'Your emergency post has been submitted for moderator review.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert('Post Published!', 'Your post is now live.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      }
+    } catch {
+      Alert.alert('Error', 'Could not create post. Please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const renderHousingFields = () => (
-    <>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Rent Amount ($/month) *</Text>
-        <TextInput
-          style={styles.input}
-          value={rentAmount}
-          onChangeText={setRentAmount}
-          placeholder="e.g. 800"
-          keyboardType="numeric"
-          placeholderTextColor={colors.text.disabled}
-        />
-      </View>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Move-in Date</Text>
-        <TextInput
-          style={styles.input}
-          value={moveInDate}
-          onChangeText={setMoveInDate}
-          placeholder="e.g. 2026-03-01"
-          placeholderTextColor={colors.text.disabled}
-        />
-      </View>
-      <PickerField
-        label="Room Type"
-        options={ROOM_TYPES}
-        value={roomType}
-        onSelect={setRoomType}
-      />
-    </>
-  );
-
-  const renderJobsFields = () => (
-    <>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Company Name *</Text>
-        <TextInput
-          style={styles.input}
-          value={companyName}
-          onChangeText={setCompanyName}
-          placeholder="Company or business name"
-          placeholderTextColor={colors.text.disabled}
-        />
-      </View>
-      <View style={styles.row}>
-        <View style={[styles.fieldGroup, styles.flex1]}>
-          <Text style={styles.label}>Pay Min ($)</Text>
-          <TextInput
-            style={styles.input}
-            value={payMin}
-            onChangeText={setPayMin}
-            placeholder="Min"
-            keyboardType="numeric"
-            placeholderTextColor={colors.text.disabled}
-          />
-        </View>
-        <View style={[styles.fieldGroup, styles.flex1]}>
-          <Text style={styles.label}>Pay Max ($)</Text>
-          <TextInput
-            style={styles.input}
-            value={payMax}
-            onChangeText={setPayMax}
-            placeholder="Max"
-            keyboardType="numeric"
-            placeholderTextColor={colors.text.disabled}
-          />
-        </View>
-      </View>
-      <PickerField
-        label="Employment Type"
-        options={EMPLOYMENT_TYPES}
-        value={employmentType}
-        onSelect={setEmploymentType}
-      />
-    </>
-  );
-
-  const renderEmergencyFields = () => (
-    <>
-      <PickerField
-        label="Emergency Type"
-        options={EMERGENCY_TYPES}
-        value={emergencyType}
-        onSelect={setEmergencyType}
-      />
-      <PickerField
-        label="Urgency"
-        options={URGENCY_LEVELS}
-        value={urgency}
-        onSelect={setUrgency}
-      />
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Contact Name *</Text>
-        <TextInput
-          style={styles.input}
-          value={contactName}
-          onChangeText={setContactName}
-          placeholder="Who to contact"
-          placeholderTextColor={colors.text.disabled}
-        />
-      </View>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Contact Phone *</Text>
-        <TextInput
-          style={styles.input}
-          value={contactPhone}
-          onChangeText={setContactPhone}
-          placeholder="Phone number"
-          keyboardType="phone-pad"
-          placeholderTextColor={colors.text.disabled}
-        />
-      </View>
-    </>
-  );
-
-  const renderTravelFields = () => (
-    <>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Travel Date *</Text>
-        <TextInput
-          style={styles.input}
-          value={travelDate}
-          onChangeText={setTravelDate}
-          placeholder="e.g. 2026-03-15"
-          placeholderTextColor={colors.text.disabled}
-        />
-      </View>
-      <View style={styles.row}>
-        <View style={[styles.fieldGroup, styles.flex1]}>
-          <Text style={styles.label}>From *</Text>
-          <TextInput
-            style={styles.input}
-            value={travelFrom}
-            onChangeText={setTravelFrom}
-            placeholder="Departure"
-            placeholderTextColor={colors.text.disabled}
-          />
-        </View>
-        <View style={[styles.fieldGroup, styles.flex1]}>
-          <Text style={styles.label}>To *</Text>
-          <TextInput
-            style={styles.input}
-            value={travelTo}
-            onChangeText={setTravelTo}
-            placeholder="Destination"
-            placeholderTextColor={colors.text.disabled}
-          />
-        </View>
-      </View>
-      <View style={styles.row}>
-        <View style={[styles.fieldGroup, styles.flex1]}>
-          <Text style={styles.label}>Airline</Text>
-          <TextInput
-            style={styles.input}
-            value={airline}
-            onChangeText={setAirline}
-            placeholder="Optional"
-            placeholderTextColor={colors.text.disabled}
-          />
-        </View>
-        <View style={[styles.fieldGroup, styles.flex1]}>
-          <Text style={styles.label}>Seats</Text>
-          <TextInput
-            style={styles.input}
-            value={seatsAvailable}
-            onChangeText={setSeatsAvailable}
-            placeholder="1"
-            keyboardType="numeric"
-            placeholderTextColor={colors.text.disabled}
-          />
-        </View>
-      </View>
-    </>
-  );
-
-  const renderCategoryFields = () => {
-    switch (category) {
-      case 'housing':
-        return renderHousingFields();
-      case 'jobs':
-        return renderJobsFields();
-      case 'emergency':
-        return renderEmergencyFields();
-      case 'travel':
-        return renderTravelFields();
-    }
-  };
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <KeyboardAvoidingView
         style={styles.flex1}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {/* Common fields */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Title *</Text>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Title Input */}
+          <View style={styles.titleSection}>
             <TextInput
-              style={styles.input}
+              style={styles.titleInput}
               value={title}
               onChangeText={setTitle}
-              placeholder={`What's your ${category} post about?`}
-              placeholderTextColor={colors.text.disabled}
-              maxLength={120}
+              placeholder="What's this about?"
+              placeholderTextColor="#9E9E9E"
+              maxLength={TITLE_MAX}
+              accessibilityLabel="Post title, required"
+              accessibilityHint="Enter a title for your post"
             />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Description *</Text>
-            <TextInput
-              style={[styles.input, styles.multiline]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Provide more details..."
-              placeholderTextColor={colors.text.disabled}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              maxLength={2000}
-            />
-          </View>
-
-          {/* Divider */}
-          <View style={styles.divider} />
-          <Text style={styles.sectionTitle}>
-            {CATEGORY_LABELS[category]} Details
-          </Text>
-
-          {/* Category-specific fields */}
-          {renderCategoryFields()}
-
-          {/* Submit */}
-          <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={submitting}
-            activeOpacity={0.8}
-          >
-            {submitting ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.submitButtonText}>Publish Post</Text>
+            {title.length >= TITLE_COUNTER_THRESHOLD && (
+              <Text
+                style={[
+                  styles.charCounter,
+                  title.length >= 140 && styles.charCounterWarning,
+                ]}
+              >
+                {title.length}/{TITLE_MAX}
+              </Text>
             )}
-          </TouchableOpacity>
+          </View>
+
+          {/* Body Textarea */}
+          <View style={styles.bodySection}>
+            <TextInput
+              style={styles.bodyInput}
+              value={body}
+              onChangeText={setBody}
+              placeholder="Write your post details here..."
+              placeholderTextColor="#9E9E9E"
+              multiline
+              textAlignVertical="top"
+              maxLength={BODY_MAX}
+              accessibilityLabel="Post body, required"
+              accessibilityHint="Enter the details of your post"
+            />
+            {body.length >= BODY_COUNTER_THRESHOLD && (
+              <Text
+                style={[
+                  styles.charCounter,
+                  body.length >= 4800 && styles.charCounterWarning,
+                ]}
+              >
+                {body.length}/{BODY_MAX}
+              </Text>
+            )}
+          </View>
+
+          {/* Tag Selection */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Tags (1-3 required)</Text>
+            <View style={styles.tagGrid}>
+              {availableTags.map((tag) => {
+                const isSelected = selectedTagIds.includes(tag.id);
+                const tagColor = tag.color || TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
+                const emoji = TAG_EMOJI[tag.slug] || '';
+                const isDisabled = !isSelected && selectedTagIds.length >= MAX_TAGS_PER_POST;
+
+                return (
+                  <TouchableOpacity
+                    key={tag.id}
+                    style={[
+                      styles.tagChip,
+                      isSelected && {
+                        backgroundColor: `${tagColor}26`,
+                        borderColor: tagColor,
+                        borderWidth: 2,
+                      },
+                      isDisabled && styles.tagChipDisabled,
+                    ]}
+                    onPress={() => toggleTag(tag.id)}
+                    disabled={isDisabled}
+                    activeOpacity={0.7}
+                    accessibilityLabel={`${tag.name} tag, ${isSelected ? 'selected' : 'not selected'}`}
+                    accessibilityRole="button"
+                  >
+                    <Text
+                      style={[
+                        styles.tagChipText,
+                        isSelected && { color: tagColor, fontWeight: '600' },
+                        isDisabled && styles.tagChipTextDisabled,
+                      ]}
+                    >
+                      {emoji ? `${emoji} ${tag.name}` : tag.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Emergency Warning */}
+            {hasEmergencyTag && (
+              <View style={styles.emergencyWarning}>
+                <Text style={styles.emergencyWarningText}>
+                  Emergency posts require moderator approval before becoming visible. This is NOT a replacement for 911.
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Photo Attachment */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.photoRow}
+              activeOpacity={0.7}
+              accessibilityLabel={`Add photos, optional. 0 of ${MAX_PHOTOS_PER_POST} photos added.`}
+            >
+              <Text style={styles.photoIcon}>📷</Text>
+              <Text style={styles.photoLabel}>Add Photos (optional)</Text>
+              <Text style={styles.photoCount}>0/{MAX_PHOTOS_PER_POST}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Location Info */}
+          {metroName && (
+            <View style={styles.locationRow}>
+              <Text style={styles.locationText}>📍 Posting to: {metroName}</Text>
+            </View>
+          )}
+
+          {/* Global Toggle (Premium Only) */}
+          {user?.is_premium && (
+            <View style={styles.globalRow}>
+              <View style={styles.globalInfo}>
+                <Text style={styles.globalLabel}>🌐 Post Globally</Text>
+                <Text style={styles.globalSublabel}>Visible in all metro areas</Text>
+              </View>
+              <Switch
+                value={isGlobal}
+                onValueChange={setIsGlobal}
+                trackColor={{ false: '#E0E0E0', true: colors.primary.main }}
+                thumbColor={colors.white}
+                accessibilityLabel="Post globally toggle"
+                accessibilityHint="When on, your post will be visible in all metro areas"
+              />
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+const headerStyles = StyleSheet.create({
+  cancel: {
+    fontSize: 17,
+    color: colors.primary.main,
+  },
+  postBtn: {
+    backgroundColor: colors.primary.main,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  postBtnDisabled: {
+    backgroundColor: '#F5F5F5',
+  },
+  postBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  postBtnTextDisabled: {
+    color: '#BDBDBD',
+  },
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   flex1: {
     flex: 1,
   },
   content: {
-    padding: spacing.s,
     paddingBottom: spacing.xl,
   },
-  fieldGroup: {
-    marginBottom: spacing.s,
+  titleSection: {
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.s,
   },
-  label: {
-    ...typography.label,
-    color: colors.text.secondary,
-    marginBottom: spacing.xxs,
+  titleInput: {
+    fontSize: 20,
     fontWeight: '600',
+    color: '#212121',
   },
-  input: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.input,
-    height: heights.input,
+  bodySection: {
     paddingHorizontal: spacing.s,
-    ...typography.input,
-    color: colors.text.primary,
+    paddingVertical: spacing.s,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    minHeight: 120,
   },
-  multiline: {
-    height: 120,
-    paddingTop: spacing.s,
+  bodyInput: {
+    fontSize: 16,
+    color: '#212121',
+    minHeight: 100,
   },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.s,
+  charCounter: {
+    fontSize: 12,
+    color: '#757575',
+    textAlign: 'right',
+    marginTop: spacing.xxs,
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.s,
+  charCounterWarning: {
+    color: colors.error,
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.s,
-    fontSize: 18,
-  },
-  pickerRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  pickerChip: {
+  section: {
     paddingHorizontal: spacing.s,
-    paddingVertical: spacing.xs,
-    borderRadius: 20,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingVertical: spacing.s,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
   },
-  pickerChipActive: {
-    backgroundColor: colors.primary.light,
-    borderColor: colors.primary.main,
-  },
-  pickerChipText: {
-    ...typography.body,
+  sectionLabel: {
     fontSize: 14,
-    color: colors.text.secondary,
-  },
-  pickerChipTextActive: {
-    color: colors.primary.main,
     fontWeight: '600',
+    color: '#757575',
+    marginBottom: spacing.s,
   },
-  submitButton: {
-    backgroundColor: colors.primary.main,
-    height: heights.button.primary,
-    borderRadius: borderRadius.button,
+  tagGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagChip: {
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: spacing.m,
   },
-  submitButtonDisabled: {
-    opacity: 0.6,
+  tagChipDisabled: {
+    opacity: 0.5,
   },
-  submitButtonText: {
-    ...typography.button,
-    color: colors.white,
+  tagChipText: {
+    fontSize: 14,
+    color: '#757575',
+  },
+  tagChipTextDisabled: {
+    color: '#BDBDBD',
+  },
+  emergencyWarning: {
+    backgroundColor: '#FFEBEE',
+    padding: spacing.xs,
+    borderRadius: borderRadius.input,
+    marginTop: spacing.xs,
+  },
+  emergencyWarningText: {
+    fontSize: 12,
+    color: colors.error,
+    lineHeight: 18,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+  },
+  photoIcon: {
+    fontSize: 20,
+    marginRight: spacing.xs,
+  },
+  photoLabel: {
+    fontSize: 15,
+    color: '#757575',
+    flex: 1,
+  },
+  photoCount: {
+    fontSize: 14,
+    color: '#757575',
+  },
+  locationRow: {
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.s,
+    backgroundColor: '#F5F5F5',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#757575',
+  },
+  globalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.s,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  globalInfo: {
+    flex: 1,
+  },
+  globalLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#212121',
+  },
+  globalSublabel: {
+    fontSize: 12,
+    color: '#757575',
+    marginTop: 2,
   },
 });

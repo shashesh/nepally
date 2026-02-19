@@ -12,7 +12,7 @@ import {
   searchMetroAreas,
   getMetroByZip,
   isValidZipCode,
-  MAX_SAVED_LOCATIONS,
+  MAX_SAVED_LOCATIONS_PREMIUM,
   SUGGESTED_LOCATION_LABELS,
 } from '@nusa/shared';
 import type { SavedLocation, MetroArea } from '@nusa/shared';
@@ -126,7 +126,7 @@ export default function ManageLocationsPage() {
         <div style={pageStyles.header}>
           <h1 style={pageStyles.title}>Manage Locations</h1>
           <span style={pageStyles.count}>
-            {savedLocations.length} of {MAX_SAVED_LOCATIONS}
+            {savedLocations.length} of {MAX_SAVED_LOCATIONS_PREMIUM}
           </span>
         </div>
 
@@ -197,7 +197,7 @@ export default function ManageLocationsPage() {
         </div>
 
         {/* Add location */}
-        {!showAdd && savedLocations.length < MAX_SAVED_LOCATIONS && (
+        {!showAdd && savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
           <button
             style={pageStyles.addBtn}
             onClick={() => setShowAdd(true)}

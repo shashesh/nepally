@@ -12,7 +12,7 @@ Add social engagement features to posts: likes (helpful votes) and public commen
 
 ## Problem Statement
 
-Current post cards on the home feed are minimal, showing only title, price, and basic metadata. Users cannot:
+Current post cards on the home feed are minimal, showing only title and basic metadata. Users cannot:
 - See who posted without clicking into the detail screen
 - Preview the post description
 - Publicly indicate if a post is helpful (like/helpful vote)
@@ -69,7 +69,8 @@ This creates friction in discovery and reduces community trust signals.
 - [ ] Display author name next to avatar (14px, medium weight)
 - [ ] Display trust badge next to name (verified checkmark for Level 1+)
 - [ ] Display post title (16px, bold, unchanged)
-- [ ] Display category icon and metadata (rent/salary, location, unchanged)
+- [ ] Display Local/Global badge (📍 Local or 🌐 Global pill)
+- [ ] Display tag pills below title (1-3 colored pills from post's tags)
 - [ ] Display post description preview:
   - Max 150 characters (truncate at last complete word)
   - 2 lines max with ellipsis

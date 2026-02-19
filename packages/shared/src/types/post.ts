@@ -1,17 +1,39 @@
 /**
  * Post data types — snake_case matching Supabase database columns
- * See: supabase/migrations/001_initial_schema.sql, 003_post_interactions.sql
+ * See: supabase/migrations/001_initial_schema.sql, 003_post_interactions.sql,
+ *      005_tags_and_premium.sql
  */
 
 import type { UserSummary } from './user';
 
-export type PostCategory = 'housing' | 'jobs' | 'emergency' | 'travel';
-export type PostStatus = 'active' | 'expired' | 'removed' | 'pending';
+// ── Tag System ──────────────────────────────────────────────────────
+/** A tag loaded from the `tags` table */
+export interface Tag {
+  id: string;
+  name: string;        // e.g. "Housing"
+  slug: string;        // e.g. "housing"
+  icon: string | null; // e.g. "home" or emoji
+  color: string | null; // hex e.g. "#4CAF50"
+  description: string | null;
+  is_system: boolean;
+  requires_moderation: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+/** Row in the `post_tags` junction table */
+export interface PostTag {
+  id: number;
+  post_id: string;
+  tag_id: string;
+}
+
+// ── Post ────────────────────────────────────────────────────────────
+export type PostStatus = 'active' | 'removed' | 'pending';
 
 export interface Post {
   id: string;
   author_id: string;
-  category: PostCategory;
 
   // Location
   metro_area_id: string;
@@ -26,12 +48,11 @@ export interface Post {
   description: string;
   photos: string[];
 
-  // Category-specific fields (JSONB)
-  fields: Record<string, any>;
+  // Global / Premium
+  is_global: boolean;
 
   // Status
   status: PostStatus;
-  expiry_date: string;
 
   // Engagement
   views_count: number;
@@ -46,6 +67,9 @@ export interface Post {
 
   // Joined data (optional, from API queries)
   author?: UserSummary;
+
+  /** Tags joined via post_tags → tags. Populated by feed/detail queries. */
+  tags?: Tag[];
 }
 
 /** Post like */
@@ -80,5 +104,10 @@ export interface PostsResult {
 
 export interface PostResult {
   data?: Post;
+  error?: Error;
+}
+
+export interface TagsResult {
+  data?: Tag[];
   error?: Error;
 }

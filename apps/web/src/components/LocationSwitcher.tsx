@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useLocation } from '../hooks/useLocation';
-import { getShortMetroName, hasMetroChanged, MAX_SAVED_LOCATIONS } from '@nusa/shared';
+import { getShortMetroName, hasMetroChanged, MAX_SAVED_LOCATIONS_PREMIUM } from '@nusa/shared';
 import type { SavedLocation } from '@nusa/shared';
 import styles from './LocationSwitcher.module.css';
 
@@ -127,7 +127,7 @@ export default function LocationSwitcher() {
 
             <div className={styles.divider} />
 
-            {savedLocations.length < MAX_SAVED_LOCATIONS && (
+            {savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
               <button
                 className={styles.addButton}
                 onClick={() => {

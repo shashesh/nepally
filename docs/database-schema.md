@@ -11,12 +11,15 @@ NUSA uses **PostgreSQL** via Supabase, a relational database with powerful query
 1. `users` - User profiles and account data
 2. `metro_areas` - US Census metro areas
 3. `metro_area_zipcodes` - ZIP codes for metro areas (junction table)
-4. `posts` - Housing, jobs, emergency, travel posts
-5. `conversations` - Chat conversations
-6. `conversation_participants` - Conversation participant junction table
-7. `messages` - Chat messages
-8. `reports` - Content reports from users
-9. `notifications` - Push notification records
+4. `tags` - Post tags/categories (scalable, database-driven)
+5. `posts` - User-created posts (title + body + tags)
+6. `post_tags` - Junction table linking posts to tags (many-to-many)
+7. `conversations` - Chat conversations
+8. `conversation_participants` - Conversation participant junction table
+9. `messages` - Chat messages
+10. `reports` - Content reports from users
+11. `notifications` - Push notification records
+12. `user_saved_locations` - Saved metro area locations per user
 
 ## Tables Detail
 
@@ -51,6 +54,9 @@ CREATE TABLE users (
   posts_count INTEGER NOT NULL DEFAULT 0,
   helpful_votes_received INTEGER NOT NULL DEFAULT 0,
   reports_received INTEGER NOT NULL DEFAULT 0,
+
+  -- Premium
+  is_premium BOOLEAN NOT NULL DEFAULT false,
 
   -- Moderation
   is_banned BOOLEAN NOT NULL DEFAULT false,
@@ -109,6 +115,7 @@ CREATE POLICY "Moderators can delete users"
   "posts_count": 5,
   "helpful_votes_received": 12,
   "reports_received": 0,
+  "is_premium": false,
   "is_banned": false,
   "is_moderator": false,
   "created_at": "2024-01-15T10:30:00Z",
@@ -208,7 +215,80 @@ CREATE POLICY "Only service role can modify metro ZIP codes"
 
 ---
 
-### 3. Posts Table
+### 3. Tags Table (NEW)
+
+**Table:** `tags`
+
+**Primary Key:** `id` (UUID)
+
+**Schema:**
+```sql
+CREATE TABLE tags (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE,
+  icon TEXT,                    -- emoji or icon name (e.g., 'home', 'briefcase')
+  color TEXT,                   -- hex color for UI (e.g., '#4A90E2')
+  description TEXT,
+  is_system BOOLEAN NOT NULL DEFAULT true,   -- system tags can't be deleted by users
+  requires_moderation BOOLEAN NOT NULL DEFAULT false,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_tags_slug ON tags(slug);
+CREATE INDEX idx_tags_sort ON tags(sort_order);
+
+-- Row Level Security
+ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can read tags
+CREATE POLICY "Tags are viewable by everyone"
+  ON tags FOR SELECT
+  USING (true);
+
+-- Only service role / moderators can manage tags
+CREATE POLICY "Only moderators can modify tags"
+  ON tags FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+    )
+  );
+```
+
+**Seed Data:**
+```sql
+INSERT INTO tags (name, slug, icon, color, description, is_system, requires_moderation, sort_order) VALUES
+  ('Housing',    'housing',    'home',      '#4CAF50', 'Rent, roommates, apartments, housing questions', true, false, 1),
+  ('Jobs',       'jobs',       'briefcase', '#2196F3', 'Job postings, hiring, career questions',         true, false, 2),
+  ('Help',       'help',       'hand',      '#FF9800', 'Requests for help, assistance, favors',          true, false, 3),
+  ('Question',   'question',   'question',  '#9C27B0', 'General questions about life in the US',          true, false, 4),
+  ('Politics',   'politics',   'building',  '#607D8B', 'Community politics, policy discussions',          true, false, 5),
+  ('Discussion', 'discussion', 'chat',      '#00BCD4', 'Open discussions, opinions, community topics',    true, false, 6),
+  ('Emergency',  'emergency',  'warning',   '#F44336', 'Emergencies requiring community coordination',    true, true,  7);
+```
+
+**Example:**
+```json
+{
+  "id": "a1b2c3d4-...",
+  "name": "Housing",
+  "slug": "housing",
+  "icon": "home",
+  "color": "#4CAF50",
+  "description": "Rent, roommates, apartments, housing questions",
+  "is_system": true,
+  "requires_moderation": false,
+  "sort_order": 1,
+  "created_at": "2026-02-17T00:00:00Z"
+}
+```
+
+---
+
+### 4. Posts Table
 
 **Table:** `posts`
 
@@ -216,15 +296,13 @@ CREATE POLICY "Only service role can modify metro ZIP codes"
 
 **Schema:**
 ```sql
-CREATE TYPE post_category AS ENUM ('housing', 'jobs', 'emergency', 'travel');
-CREATE TYPE post_status AS ENUM ('active', 'expired', 'removed', 'pending');
+CREATE TYPE post_status AS ENUM ('active', 'removed', 'pending');
 
 CREATE TABLE posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Identity
   author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  category post_category NOT NULL,
 
   -- Location
   metro_area_id TEXT NOT NULL REFERENCES metro_areas(id),
@@ -239,17 +317,18 @@ CREATE TABLE posts (
   description TEXT NOT NULL,
   photos TEXT[] DEFAULT '{}',
 
-  -- Category-specific fields (JSONB for flexibility)
-  fields JSONB NOT NULL DEFAULT '{}',
+  -- Global / Premium
+  is_global BOOLEAN NOT NULL DEFAULT false,
 
   -- Status
   status post_status NOT NULL DEFAULT 'active',
-  expiry_date TIMESTAMPTZ NOT NULL,
 
   -- Engagement
   views_count INTEGER NOT NULL DEFAULT 0,
   responses_count INTEGER NOT NULL DEFAULT 0,
   reports_count INTEGER NOT NULL DEFAULT 0,
+  likes_count INTEGER NOT NULL DEFAULT 0,
+  comments_count INTEGER NOT NULL DEFAULT 0,
 
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -257,18 +336,12 @@ CREATE TABLE posts (
 );
 
 -- Indexes for common queries
-CREATE INDEX idx_posts_metro_category_status_created
-  ON posts(metro_area_id, category, status, created_at DESC);
-CREATE INDEX idx_posts_metro_status_expiry
-  ON posts(metro_area_id, status, expiry_date);
+CREATE INDEX idx_posts_metro_status_created
+  ON posts(metro_area_id, status, created_at DESC);
 CREATE INDEX idx_posts_author_created
   ON posts(author_id, created_at DESC);
-CREATE INDEX idx_posts_category ON posts(category);
 CREATE INDEX idx_posts_status ON posts(status);
-CREATE INDEX idx_posts_expiry ON posts(expiry_date) WHERE status = 'active';
-
--- GIN index for JSONB fields
-CREATE INDEX idx_posts_fields ON posts USING GIN(fields);
+CREATE INDEX idx_posts_is_global ON posts(is_global) WHERE is_global = true;
 
 -- Row Level Security
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
@@ -288,7 +361,6 @@ CREATE POLICY "Verified users can create posts"
       AND trust_level >= 1
     )
     AND author_id = auth.uid()
-    AND status = 'active'
   );
 
 -- Post authors and moderators can update posts
@@ -312,114 +384,101 @@ CREATE POLICY "Authors and moderators can delete posts"
   );
 ```
 
-#### Post Field Schemas (JSONB)
+### 5. Post Tags Junction Table (NEW)
 
-**Housing:**
-```typescript
-{
-  rentAmount: number;
-  moveInDate: string; // ISO date
-  roomType: 'private' | 'shared' | 'entire-place';
-  bedrooms: number;
-  bathrooms: number;
-  furnished: boolean;
-  utilitiesIncluded: boolean;
-  petsAllowed: boolean;
-  parking: boolean;
-  lease: 'month-to-month' | 'fixed-term';
-  contactMethod: 'in-app' | 'phone' | 'email';
-}
+**Table:** `post_tags`
+
+**Schema:**
+```sql
+CREATE TABLE post_tags (
+  id BIGSERIAL PRIMARY KEY,
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  UNIQUE(post_id, tag_id)
+);
+
+-- Indexes
+CREATE INDEX idx_post_tags_post ON post_tags(post_id);
+CREATE INDEX idx_post_tags_tag ON post_tags(tag_id);
+
+-- Enforce max 3 tags per post
+CREATE OR REPLACE FUNCTION check_max_post_tags()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (SELECT COUNT(*) FROM post_tags WHERE post_id = NEW.post_id) >= 3 THEN
+    RAISE EXCEPTION 'Maximum of 3 tags per post';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER enforce_max_post_tags
+  BEFORE INSERT ON post_tags
+  FOR EACH ROW
+  EXECUTE FUNCTION check_max_post_tags();
+
+-- Row Level Security
+ALTER TABLE post_tags ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can read post tags
+CREATE POLICY "Post tags are viewable by everyone"
+  ON post_tags FOR SELECT
+  USING (true);
+
+-- Post authors can manage their post's tags
+CREATE POLICY "Post authors can manage tags"
+  ON post_tags FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM posts WHERE id = post_id AND author_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Post authors can delete tags"
+  ON post_tags FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM posts WHERE id = post_id AND author_id = auth.uid()
+    )
+  );
 ```
 
-**Jobs:**
-```typescript
-{
-  jobTitle: string;
-  companyName: string;
-  employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
-  payRate: {
-    min: number;
-    max: number;
-    type: 'hourly' | 'annual' | 'per-project';
-  };
-  experienceRequired: 'entry' | 'mid' | 'senior';
-  benefits: string[];
-  remote: boolean;
-  contactMethod: 'in-app' | 'email' | 'apply-url';
-  applyUrl?: string;
-}
+**Example:**
+```json
+// Post with 2 tags (Housing + Question)
+[
+  { "id": 1, "post_id": "post-uuid-1", "tag_id": "housing-tag-uuid" },
+  { "id": 2, "post_id": "post-uuid-1", "tag_id": "question-tag-uuid" }
+]
 ```
 
-**Emergency:**
-```typescript
-{
-  emergencyType: 'medical' | 'housing' | 'legal' | 'financial' | 'other';
-  urgency: 'critical' | 'high' | 'medium';
-  assistanceNeeded: string[];
-  contactPhone: string;
-  contactName: string;
-  verified: boolean;
-  verifiedBy?: string; // UUID
-  verifiedAt?: string; // ISO timestamp
-  redAlertSent: boolean;
-}
-```
-
-**Travel:**
-```typescript
-{
-  travelDate: string; // ISO date
-  route: {
-    from: string;
-    to: string;
-  };
-  airline?: string;
-  seatsAvailable: number;
-  carryingPackages: boolean;
-  packageDetails?: string;
-  contactMethod: 'in-app' | 'phone';
-}
-```
-
-**Example (Housing Post):**
+**Example (Post):**
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440001",
   "author_id": "550e8400-e29b-41d4-a716-446655440000",
-  "category": "housing",
   "metro_area_id": "19100",
   "location_zip_code": "75201",
   "location_city": "Dallas",
   "location_state": "TX",
-  "title": "1 Bedroom Available in Uptown Dallas",
-  "description": "Clean, furnished room in 2BR apartment. Close to DART...",
-  "photos": ["https://res.cloudinary.com/..."],
-  "fields": {
-    "rentAmount": 800,
-    "moveInDate": "2024-03-01",
-    "roomType": "private",
-    "bedrooms": 1,
-    "bathrooms": 1,
-    "furnished": true,
-    "utilitiesIncluded": true,
-    "petsAllowed": false,
-    "parking": true,
-    "lease": "month-to-month",
-    "contactMethod": "in-app"
-  },
+  "title": "Looking for Nepali Roommate near UTD",
+  "description": "Clean, furnished room in 2BR apartment. Close to DART rail. $800/month including utilities. Move-in date flexible.",
+  "photos": ["https://storage.supabase.co/..."],
+  "is_global": false,
   "status": "active",
-  "expiry_date": "2024-03-30T00:00:00Z",
   "views_count": 45,
   "responses_count": 3,
   "reports_count": 0,
-  "created_at": "2024-02-01T10:00:00Z",
-  "updated_at": "2024-02-01T10:00:00Z"
+  "likes_count": 12,
+  "comments_count": 3,
+  "created_at": "2026-02-01T10:00:00Z",
+  "updated_at": "2026-02-01T10:00:00Z"
 }
 ```
 
 ---
 
-### 4. Conversations Tables
+### 6. Conversations Tables
 
 **Table:** `conversations`
 
@@ -517,7 +576,7 @@ CREATE POLICY "Users can update own participation"
 
 ---
 
-### 5. Messages Table
+### 7. Messages Table
 
 **Table:** `messages`
 
@@ -620,7 +679,7 @@ CREATE POLICY "Senders can delete own messages"
 
 ---
 
-### 6. Reports Table
+### 8. Reports Table
 
 **Table:** `reports`
 
@@ -709,7 +768,7 @@ CREATE POLICY "Moderators can delete reports"
 
 ---
 
-### 7. Notifications Table
+### 9. Notifications Table
 
 **Table:** `notifications`
 
@@ -761,6 +820,8 @@ All relationships are enforced via foreign keys:
 - `users.metro_area_id` → `metro_areas.id`
 - `posts.author_id` → `users.id`
 - `posts.metro_area_id` → `metro_areas.id`
+- `post_tags.post_id` → `posts.id`
+- `post_tags.tag_id` → `tags.id`
 - `conversations.post_id` → `posts.id`
 - `conversation_participants.conversation_id` → `conversations.id`
 - `conversation_participants.user_id` → `users.id`
@@ -769,23 +830,49 @@ All relationships are enforced via foreign keys:
 - `reports.reported_by` → `users.id`
 - `reports.reviewed_by` → `users.id`
 - `notifications.user_id` → `users.id`
+- `user_saved_locations.user_id` → `users.id`
+- `user_saved_locations.metro_area_id` → `metro_areas.id`
 
 ---
 
 ## Query Patterns
 
-### Get posts in metro area by category
+### Get posts in metro area (local feed)
 
 ```sql
-SELECT * FROM posts
-WHERE metro_area_id = '19100'
-  AND category = 'housing'
-  AND status = 'active'
-ORDER BY created_at DESC
+SELECT p.*, ARRAY_AGG(t.slug) as tag_slugs, ARRAY_AGG(t.name) as tag_names
+FROM posts p
+JOIN post_tags pt ON p.id = pt.post_id
+JOIN tags t ON pt.tag_id = t.id
+WHERE (p.metro_area_id = '19100' OR p.is_global = true)
+  AND p.status = 'active'
+GROUP BY p.id
+ORDER BY p.created_at DESC
 LIMIT 20;
 ```
 
-**Uses index:** `idx_posts_metro_category_status_created`
+**Uses index:** `idx_posts_metro_status_created`, `idx_posts_is_global`
+
+### Get posts filtered by tag
+
+```sql
+SELECT p.*, ARRAY_AGG(t.slug) as tag_slugs
+FROM posts p
+JOIN post_tags pt ON p.id = pt.post_id
+JOIN tags t ON pt.tag_id = t.id
+WHERE (p.metro_area_id = '19100' OR p.is_global = true)
+  AND p.status = 'active'
+  AND p.id IN (
+    SELECT post_id FROM post_tags
+    JOIN tags ON tags.id = post_tags.tag_id
+    WHERE tags.slug = 'housing'
+  )
+GROUP BY p.id
+ORDER BY p.created_at DESC
+LIMIT 20;
+```
+
+**Uses index:** `idx_post_tags_tag`, `idx_tags_slug`
 
 ### Get user's conversations with unread counts
 
@@ -819,15 +906,30 @@ WHERE z.zip_code = '75201'
 LIMIT 1;
 ```
 
-### Get expired posts
+### Get all available tags
 
 ```sql
-SELECT * FROM posts
-WHERE status = 'active'
-  AND expiry_date <= NOW();
+SELECT * FROM tags
+ORDER BY sort_order ASC;
 ```
 
-**Uses index:** `idx_posts_expiry`
+**Uses index:** `idx_tags_sort`
+
+### Get global posts only
+
+```sql
+SELECT p.*, ARRAY_AGG(t.name) as tag_names
+FROM posts p
+JOIN post_tags pt ON p.id = pt.post_id
+JOIN tags t ON pt.tag_id = t.id
+WHERE p.is_global = true
+  AND p.status = 'active'
+GROUP BY p.id
+ORDER BY p.created_at DESC
+LIMIT 20;
+```
+
+**Uses index:** `idx_posts_is_global`
 
 ---
 

@@ -1,7 +1,7 @@
 # Phase 1: Feature Breakdown & Implementation Sequence
 
-**Version:** 1.0
-**Date:** 2026-02-06
+**Version:** 1.1
+**Date:** 2026-02-17
 **Phase:** Phase 1 - Utility Core & Trust Foundation
 
 ---
@@ -23,7 +23,8 @@ This document breaks down Phase 1 into small, implementable features with a reco
 - 👤 **User Profiles** (5 features)
 - 🏆 **Trust Level System** (8 features)
 - 📝 **Post Engine - Core** (10 features)
-- 🏠 **Post Categories** (4 features)
+- �️ **Tag System** (3 features)
+- 👑 **Premium & Global Posts** (3 features)
 - 💬 **In-App Chat** (8 features)
 - 📸 **Photo Upload** (5 features)
 - 🚨 **Reporting System** (4 features)
@@ -282,7 +283,7 @@ Build the trust level system that prevents spam.
 - **Acceptance Criteria:**
   - Level 0: Max 1 post per day
   - Level 1+: No daily limit (but rate limit of 10 posts/hour)
-  - Emergency category: Require Level 1+ (block Level 0)
+  - Emergency tag: Require Level 1+ (block Level 0); post created as `pending` status
   - Display error message if limit exceeded
   - Display countdown timer until next post allowed
 - **Dependencies:** 4.1, 5.1
@@ -322,33 +323,43 @@ Build the structured post engine.
 - **Acceptance Criteria:**
   - Post ID (unique identifier)
   - Author ID (user who created it)
-  - Category (Housing, Jobs, Emergency, Travel)
-  - Metro Area ID
+  - Tags (1-3, via `post_tags` junction table linked to `tags` table)
+  - Metro Area ID (for local posts)
+  - `is_global` flag (default false, premium users only)
   - Creation timestamp
-  - Expiry timestamp
-  - Status (active, expired, flagged, removed)
-  - Category-specific fields (flexible structure)
+  - Status (active, removed, pending)
+  - No `expiry_date` column (posts do not auto-expire)
+  - No `category` column (replaced by tags)
+  - No `fields` JSONB column (no structured fields)
 - **Dependencies:** 2.3, 3.1, 4.1
 - **Estimated Effort:** 2 days
 
-**5.2 Post Creation Form - Base**
-- **What:** Reusable form framework for all categories
+**5.2 Post Creation Form - Reddit-Style (Single Screen)**
+- **What:** Simplified single-screen create post form
 - **Acceptance Criteria:**
-  - Category selection screen
-  - Dynamic form that changes based on category
-  - Form validation (required fields)
-  - Auto-save draft (optional for MVP)
-  - Submit button
-- **Dependencies:** 5.1
+  - Title input (required, 5-200 characters)
+  - Body text area (required, 10-5000 characters)
+  - Tag selector: horizontal scrollable chip/pill buttons
+  - User must select 1-3 tags (at least 1 mandatory)
+  - Tags loaded from database `tags` table
+  - Optional photo picker (up to 3 photos)
+  - Global toggle (visible only to premium users)
+  - Emergency disclaimer shown when Emergency tag selected
+  - Emergency posts created with `status = 'pending'`
+  - No category-specific structured fields
+  - Submit button creates post
+  - On success, navigate back to feed
+- **Dependencies:** 5.1, 5.14 (Tag System)
 - **Estimated Effort:** 3 days
 
-**5.3 Post Feed - Local Metro**
-- **What:** Display posts from user's metro area
+**5.3 Post Feed - Local Metro + Global**
+- **What:** Display posts from user's metro area plus global posts
 - **Acceptance Criteria:**
   - List view of posts (most recent first)
-  - Filter by user's metro area
-  - Show post preview (title, category icon, first line)
-  - Show author name and trust level
+  - Filter by user's metro area (local posts) + include global posts (`is_global = true`)
+  - Show post preview (title, tag pills, first line of body)
+  - Show 📍 Local / 🌐 Global badge on each post card
+  - Show author name, avatar, and trust level
   - Show post age (e.g., "2 hours ago")
   - Infinite scroll / pagination
 - **Dependencies:** 5.1, 2.4
@@ -357,13 +368,15 @@ Build the structured post engine.
 **5.4 Post Detail View**
 - **What:** Full view of a single post
 - **Acceptance Criteria:**
-  - Display all post fields
-  - Display author info (name, trust level)
+  - Display post title, body (full text), tag pills
+  - Display author info (name, avatar, trust level)
   - Display post timestamp
-  - Display expiry countdown (e.g., "Expires in 28 days")
+  - Display 📍 Local / 🌐 Global badge
   - "Contact Author" button (opens chat)
   - "Report" button
   - Display photos if any
+  - No expiry countdown (posts don't expire)
+  - No category-specific field rows (all info is in body text)
 - **Dependencies:** 5.3
 - **Estimated Effort:** 2-3 days
 
@@ -372,10 +385,10 @@ Build the structured post engine.
 - **Acceptance Criteria:**
   - Only post author can edit
   - Edit button on post detail view
-  - Pre-fill form with existing data
+  - Pre-fill form with existing data (title, body, tags)
+  - Can change tags after creation
   - Update post in database
   - Show "Edited" label with timestamp
-  - Cannot change category after creation
 - **Dependencies:** 5.4
 - **Estimated Effort:** 2 days
 
@@ -395,20 +408,23 @@ Build the structured post engine.
 - **Acceptance Criteria:**
   - Search bar in feed
   - Search across post titles and descriptions
-  - Filter by category (optional)
+  - Filter by tag (optional, multi-select)
   - Filter by metro area (default to local)
   - Display search results
 - **Dependencies:** 5.3
 - **Estimated Effort:** 2-3 days
 
-**5.8 Post Filtering**
-- **What:** Filter feed by category
+**5.8 Post Filtering by Tags**
+- **What:** Filter feed by tags using horizontal filter chips
 - **Acceptance Criteria:**
-  - Filter chips: All, Housing, Jobs, Emergency, Travel
-  - Tap to filter feed
-  - Display active filter
-  - Clear filter button
-- **Dependencies:** 5.3
+  - Scrollable horizontal chip bar above the feed
+  - "All" chip selected by default
+  - Chips for each tag loaded from database
+  - Multiple chips can be selected for multi-tag filtering
+  - Tap to toggle filter; active chips are highlighted
+  - Feed updates to show posts matching selected tags
+  - Clear all filters button
+- **Dependencies:** 5.3, 5.14
 - **Estimated Effort:** 1-2 days
 
 **5.9 Enhanced Post Card UIgith Social Engagement** (NEW)
@@ -486,7 +502,7 @@ Build the structured post engine.
 **5.12 Post Sorting** (formerly 5.9)
 - **What:** Sort posts by different criteria
 - **Acceptance Criteria:**
-  - Sort by: Most Recent (default), Expiring Soon, Most Relevant (future)
+  - Sort by: Most Recent (default), Most Liked, Most Commented
   - Dropdown or tabs for sort options
   - Re-query posts with new sort order
 - **Dependencies:** 5.3
@@ -506,70 +522,48 @@ Build the structured post engine.
 
 ---
 
-#### 🏠 Post Categories - Specific Forms
+#### �️ Tag System & Premium Features
 
-**6.1 Housing Post Form**
-- **What:** Structured form for housing posts
+**5.14 Tag System (Database-Driven)**
+- **What:** Scalable tag system stored in database (replaces old category enum)
 - **Acceptance Criteria:**
-  - Rent amount ($, numeric input)
-  - Move-in date (date picker)
-  - Room type (dropdown: Private Room, Shared Room, Studio, 1BR, 2BR+)
-  - Description (text area, max 500 chars)
-  - Metro area (auto-filled from user profile, editable)
-  - Photo upload (1-3 photos)
-  - Validation: All fields required except description
-- **Dependencies:** 5.2, 7.2 (Photo Upload)
-- **Estimated Effort:** 2-3 days
+  - `tags` table with: id, name, slug, icon, color, description, is_system, requires_moderation, sort_order
+  - `post_tags` junction table linking posts to tags (many-to-many)
+  - Seed 7 initial tags: Housing, Jobs, Help, Question, Politics, Discussion, Emergency
+  - Emergency tag has `requires_moderation = true`
+  - API: `getTags()` returns all active tags
+  - API: `getTagBySlug(slug)` returns single tag
+  - Tags loaded dynamically in UI (not hardcoded)
+  - New tags can be added via admin/DB without code changes
+- **Dependencies:** 5.1
+- **Estimated Effort:** 2 days
 
-**6.2 Jobs Post Form**
-- **What:** Structured form for job posts
+**5.15 Post-Tag Assignment**
+- **What:** Allow posts to have 1-3 tags
 - **Acceptance Criteria:**
-  - Job title (text input)
-  - Pay range ($, two numeric inputs: min and max)
-  - Employment type (dropdown: Full-Time, Part-Time, Contract, Internship, Gig)
-  - Company name (text input)
-  - Description (text area, max 500 chars)
-  - "Do you need transportation to this job?" (yes/no toggle)
-  - Metro area (auto-filled, editable)
-  - Photo upload (1-3 photos)
-- **Dependencies:** 5.2, 7.2
-- **Estimated Effort:** 2-3 days
+  - Create post form shows tag selector (chips/pills)
+  - User must select at least 1, maximum 3 tags
+  - Tags saved to `post_tags` junction table on post creation
+  - Post feed queries join with `post_tags` and `tags` tables
+  - Post cards display tag pills (colored badges)
+  - Filter feed by tag(s) via the `post_tags` junction
+- **Dependencies:** 5.14, 5.2
+- **Estimated Effort:** 2 days
 
-**6.3 Emergency Post Form**
-- **What:** Structured form for emergency posts (Level 1+ only)
+**5.16 Premium Subscription & Global Posts**
+- **What:** Premium flag on users + global post creation
 - **Acceptance Criteria:**
-  - Emergency type (dropdown: Medical, Legal, Financial, Travel, Housing, Other)
-  - Location/Hospital (text input)
-  - Brief description (text area, max 300 chars)
-  - Metro area (auto-filled, editable)
-  - Photo upload (optional)
-  - Trust level check: Block Level 0 users
-  - Display disclaimer before submission (see 6.4)
-- **Dependencies:** 5.2, 4.6, 7.2
-- **Estimated Effort:** 2-3 days
-
-**6.4 Emergency Post Disclaimer**
-- **What:** Show warning before first emergency post
-- **Acceptance Criteria:**
-  - Modal dialog before form submission
-  - Text: "⚠️ This is NOT a replacement for 911. Call emergency services first for life-threatening situations."
-  - Checkbox: "I understand this platform is for community coordination only"
-  - Cannot submit until checkbox checked
-  - Show only on first emergency post per user
-- **Dependencies:** 6.3
-- **Estimated Effort:** 1 day
-
-**6.5 Travel Post Form**
-- **What:** Structured form for travel posts
-- **Acceptance Criteria:**
-  - Travel date (date picker)
-  - Route: Two dropdowns (US Metro Area ↔ Nepal City)
-  - Airline (text input, optional)
-  - Description (text area, max 300 chars)
-  - Metro area (departure city, auto-filled, editable)
-  - Photo upload (optional)
-- **Dependencies:** 5.2, 7.2
-- **Estimated Effort:** 2-3 days
+  - `is_premium` boolean on users table (default false)
+  - `is_global` boolean on posts table (default false)
+  - Premium users see "Global" toggle on create post form
+  - Non-premium users do not see the toggle (or it's disabled with upsell)
+  - Global posts (`is_global = true`) appear in ALL metro area feeds
+  - Post cards show 📍 Local or 🌐 Global badge
+  - Saved locations limited to 1 for free users, up to 5 for premium
+  - Location switcher disabled for non-premium users
+  - Admin can manually set `is_premium` (billing deferred to Phase 3)
+- **Dependencies:** 5.1, 3.1
+- **Estimated Effort:** 3 days
 
 ---
 
@@ -860,44 +854,43 @@ Build reporting and admin tools.
 
 ---
 
-### MILESTONE 7: Post Lifecycle (Weeks 11-13)
+### MILESTONE 7: Premium & Global (Weeks 11-13)
 
-Handle post expiry and renewal.
+Build the premium subscription scaffolding and global post features.
 
-#### ⏰ Post Expiry
+#### 👑 Premium & Global Posts
 
-**11.1 Expiry Calculation**
-- **What:** Calculate expiry date for each post
+**15.1 Premium User Flag**
+- **What:** Add premium status to user accounts
 - **Acceptance Criteria:**
-  - Housing/Jobs: 30 days from creation
-  - Emergency: 7 days from creation
-  - Travel: Travel date + 2 days
-  - Store expiry timestamp on post creation
-  - Display expiry countdown in post detail ("Expires in 28 days")
-- **Dependencies:** 5.1
-- **Estimated Effort:** 1-2 days
-
-**11.2 Expiry Notification**
-- **What:** Notify users 3 days before post expires
-- **Acceptance Criteria:**
-  - Daily job checks posts expiring in 3 days
-  - Send push notification to post author
-  - Notification text: "Your [category] post expires in 3 days. Tap to renew."
-  - Tap opens post detail view
-- **Dependencies:** 11.1, 12.1 (Push Notifications)
+  - `is_premium` column on users table
+  - Premium badge displayed on profile
+  - Premium status check in create post flow (for global toggle)
+  - Admin can set premium status manually
+  - Premium perks UI: show what premium unlocks
+- **Dependencies:** 3.1
 - **Estimated Effort:** 2 days
 
-**11.3 Expired Post Handling**
-- **What:** Hide expired posts and allow renewal
+**15.2 Global Post Creation**
+- **What:** Premium users can create posts visible everywhere
 - **Acceptance Criteria:**
-  - Daily job marks posts past expiry as "expired"
-  - Hide expired posts from default feed
-  - "Show Expired" toggle in feed (shows expired posts)
-  - "Renew Post" button on expired posts (own posts only)
-  - Renew = update at least one field + reset expiry
-  - Max 1 renewal per post
-- **Dependencies:** 11.1, 5.5
-- **Estimated Effort:** 2-3 days
+  - "Global" toggle on create post form (premium only)
+  - Toggle sets `is_global = true` on the post
+  - Non-premium users: toggle hidden or shows upsell prompt
+  - Global posts skip metro_area_id requirement (or set to author's home metro)
+  - Post cards display 🌐 Global badge
+- **Dependencies:** 15.1, 5.2
+- **Estimated Effort:** 2 days
+
+**15.3 Global Posts in Feed**
+- **What:** Show global posts alongside local posts in all metro feeds
+- **Acceptance Criteria:**
+  - Feed query includes `is_global = true` posts from any metro area
+  - Global posts mixed chronologically with local posts
+  - 📍 Local / 🌐 Global badge clearly distinguishes post scope
+  - Tag filter chips work across both local and global posts
+- **Dependencies:** 15.2, 5.3
+- **Estimated Effort:** 2 days
 
 ---
 
@@ -1007,16 +1000,16 @@ Cannot launch without these:
 - Basic Profile (3.1-3.3)
 - Trust Level Core (4.1-4.4, 4.6)
 - Post Engine Core (5.1-5.6)
-- All Category Forms (6.1-6.5)
+- Tag System (5.14-5.15)
 - Photo Upload Core (7.1-7.4)
 - Chat Core (8.1-8.5)
 - Reporting Core (9.1-9.2)
 - Admin Core (10.1-10.3)
-- Expiry Core (11.1-11.3)
+- Premium & Global (15.1-15.3)
 - Push Notifications Core (12.1-12.2)
 - Onboarding Flow (13.1)
 
-**Total Must-Have Features:** 45
+**Total Must-Have Features:** 43
 
 ### Should-Have (Important but can defer)
 Significantly improves UX but not blockers:
@@ -1069,19 +1062,19 @@ Map features to Phase 1 success metrics:
 - Depends on: Onboarding (13.1), Phone Verification (4.3-4.4)
 
 **Metric: 500+ active listings**
-- Depends on: Post Engine (5.1-5.6), Category Forms (6.1-6.5)
+- Depends on: Post Engine (5.1-5.6), Tag System (5.14-5.15), Premium (15.1-15.3)
 
 **Metric: <5% spam/scam rate**
 - Depends on: Trust Levels (4.1-4.6), Reporting (9.1-9.2), Admin Dashboard (10.2-10.3)
 
 **Metric: 200+ emergency help requests**
-- Depends on: Emergency Form (6.3-6.4), Chat (8.1-8.5)
+- Depends on: Emergency Tag + Moderation (5.14, 4.6), Chat (8.1-8.5)
 
 **Metric: 50+ chat messages per day**
 - Depends on: Chat System (8.1-8.5), Notifications (12.2)
 
 **Metric: 80%+ posts include photos**
-- Depends on: Photo Upload (7.1-7.4), Category Forms with photo fields (6.1, 6.2)
+- Depends on: Photo Upload (7.1-7.4), Create Post Form (5.2)
 
 ---
 
@@ -1089,11 +1082,11 @@ Map features to Phase 1 success metrics:
 
 **Weeks 1-4:** Foundation (Auth, Location, Profile basics)
 **Weeks 3-6:** Trust & Verification (parallel start)
-**Weeks 5-10:** Core Posting (forms, feed, categories)
+**Weeks 5-10:** Core Posting (tag-based forms, feed, filtering)
 **Weeks 7-10:** Photos (parallel)
 **Weeks 8-14:** Chat (most complex feature)
 **Weeks 10-14:** Moderation & Admin (parallel)
-**Weeks 11-13:** Expiry & Lifecycle
+**Weeks 11-13:** Premium & Global Posts
 **Weeks 12-14:** Notifications (parallel)
 **Weeks 14-16:** Testing, polish, bug fixes, beta launch
 

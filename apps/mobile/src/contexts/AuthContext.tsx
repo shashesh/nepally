@@ -11,6 +11,7 @@ interface User {
   zip_code?: string;
   metro_area_id?: string;
   trust_level: number;
+  is_premium: boolean;
 }
 
 interface AuthContextType {
@@ -119,6 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         zip_code: userData.zip_code,
         metro_area_id: userData.metro_area_id,
         trust_level: userData.trust_level,
+        is_premium: userData.is_premium ?? false,
       };
 
       setUser(userProfile);

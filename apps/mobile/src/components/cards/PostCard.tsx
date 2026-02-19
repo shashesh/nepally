@@ -11,16 +11,19 @@ import { Avatar } from '../Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius, shadows } from '../../styles/spacing';
+import type { Tag } from '@nusa/shared';
+import { TAG_EMOJI, TAG_COLORS, DEFAULT_TAG_COLOR } from '@nusa/shared';
 
 interface PostCardProps {
-  category: 'housing' | 'jobs' | 'emergency' | 'travel';
   title: string;
   description?: string;
-  metadata: string;
   timestamp: string;
-  metroArea: string;
   imageUrl?: string;
   isVerified?: boolean;
+  /** Tags attached to this post */
+  tags?: Tag[];
+  /** Whether this post is a global (premium) post */
+  isGlobal?: boolean;
   // Author info
   authorName?: string;
   authorPhotoUrl?: string | null;
@@ -34,21 +37,19 @@ interface PostCardProps {
   onMessagePress?: () => void;
   onLikePress?: () => void;
   onCommentPress?: () => void;
+  /** Called when user taps a tag pill — parent can activate the filter */
+  onTagPress?: (slug: string) => void;
 }
 
-const categoryIcons: Record<string, any> = {
-  housing: 'home',
-  jobs: 'briefcase',
-  emergency: 'warning',
-  travel: 'airplane',
-};
-
-const categoryColors: Record<string, string> = {
-  housing: colors.primary.main,
-  jobs: colors.success,
-  emergency: colors.error,
-  travel: colors.accent.red,
-};
+/**
+ * Convert a hex color to an rgba string at the given alpha.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 /**
  * Format a count for display (e.g. 1234 → "1.2K")
@@ -94,13 +95,13 @@ function getRelativeTime(dateStr: string): string {
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
-  category,
   title,
   description,
-  metadata,
   timestamp,
   imageUrl,
   isVerified = false,
+  tags = [],
+  isGlobal = false,
   authorName,
   authorPhotoUrl,
   authorTrustLevel = 0,
@@ -111,6 +112,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onMessagePress,
   onLikePress,
   onCommentPress,
+  onTagPress,
 }) => {
   const descPreview = description ? truncateDescription(description) : null;
 
@@ -150,23 +152,17 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       )}
 
-      {/* Category + Title */}
-      <View style={styles.titleRow}>
-        <Ionicons
-          name={categoryIcons[category]}
-          size={20}
-          color={categoryColors[category]}
-          style={styles.icon}
-        />
-        <Text style={styles.title} numberOfLines={2}>
-          {title}
+      {/* Title */}
+      <Text style={styles.title} numberOfLines={2}>
+        {title}
+      </Text>
+
+      {/* Local / Global Badge */}
+      <View style={[styles.badge, isGlobal ? styles.badgeGlobal : styles.badgeLocal]}>
+        <Text style={[styles.badgeText, isGlobal ? styles.badgeTextGlobal : styles.badgeTextLocal]}>
+          {isGlobal ? '🌐 Global' : '📍 Local'}
         </Text>
       </View>
-
-      {/* Price / Metadata */}
-      <Text style={styles.metadata} numberOfLines={1}>
-        {metadata}
-      </Text>
 
       {/* Description Preview */}
       {descPreview && (
@@ -187,6 +183,31 @@ export const PostCard: React.FC<PostCardProps> = ({
           style={styles.image}
           resizeMode="cover"
         />
+      )}
+
+      {/* Tag Pills */}
+      {tags.length > 0 && (
+        <View style={styles.tagRow}>
+          {tags.map((tag) => {
+            const tagColor = TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
+            const emoji = TAG_EMOJI[tag.slug] || '';
+            return (
+              <TouchableOpacity
+                key={tag.id}
+                style={[styles.tagPill, { backgroundColor: hexToRgba(tagColor, 0.15) }]}
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  onTagPress?.(tag.slug);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tagPillText, { color: tagColor }]}>
+                  {emoji ? `${emoji} ${tag.name}` : tag.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       )}
 
       {/* Action Bar */}
@@ -274,25 +295,35 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   // Title row
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xxs,
-  },
-  icon: {
-    marginRight: spacing.xs,
-  },
   title: {
     ...typography.h3,
     color: colors.text.primary,
-    flex: 1,
     fontSize: 17,
+    marginBottom: 4,
   },
-  metadata: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontSize: 15,
+  // Local / Global badge
+  badge: {
+    alignSelf: 'flex-start',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     marginBottom: spacing.xs,
+  },
+  badgeLocal: {
+    backgroundColor: '#E8F5E9',
+  },
+  badgeGlobal: {
+    backgroundColor: '#E3F2FD',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  badgeTextLocal: {
+    color: '#388E3C',
+  },
+  badgeTextGlobal: {
+    color: '#1565C0',
   },
   // Description
   descriptionRow: {
@@ -315,6 +346,22 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.input,
     marginBottom: spacing.xs,
     backgroundColor: colors.background,
+  },
+  // Tag pills
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 12,
+  },
+  tagPill: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  tagPillText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   // Action bar
   actionBar: {

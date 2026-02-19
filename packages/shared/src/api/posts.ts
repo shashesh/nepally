@@ -1,45 +1,76 @@
 /**
  * Shared Post API functions
  * All Supabase query logic for posts — accepts SupabaseClient via dependency injection
+ *
+ * Updated for tag-based post system (no categories, no expiry).
+ * See: docs/decisions/2026-02-17-post-tags-redesign-and-premium.md
  */
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { Post, PostsResult, PostResult } from '../types/post';
+import type { Post, PostsResult, PostResult, Tag } from '../types/post';
+
+// ── Select fragment used across queries ─────────────────────────────
+const POST_SELECT = `
+  *,
+  author:users!posts_author_id_fkey (
+    id,
+    full_name,
+    trust_level,
+    profile_photo
+  ),
+  post_tags(
+    tag:tags(id, name, slug, icon, color)
+  )
+`;
 
 /**
- * Get posts by metro area with optional category filter
+ * Flatten the nested post_tags → tag join into a flat `tags` array on the Post.
+ */
+function flattenPostTags(raw: any): Post {
+  const { post_tags, ...rest } = raw;
+  const tags: Tag[] = (post_tags || [])
+    .map((pt: any) => pt.tag)
+    .filter(Boolean);
+  return { ...rest, tags } as Post;
+}
+
+/**
+ * Get posts by metro area (local + global), with optional tag filter.
+ *
+ * The feed includes:
+ *  - Active posts matching the user's metro area (local)
+ *  - Active global posts (is_global = true) from any metro area
+ * Both types are mixed chronologically.
  */
 export async function getPostsByMetroArea(
   supabase: SupabaseClient,
   metroAreaId: string,
-  category?: string,
-  limit: number = 20
+  tagSlugs?: string[],
+  limit: number = 20,
+  offset: number = 0
 ): Promise<PostsResult> {
   try {
     let query = supabase
       .from('posts')
-      .select(`
-        *,
-        author:users!posts_author_id_fkey (
-          id,
-          full_name,
-          trust_level,
-          profile_photo
-        )
-      `)
-      .eq('metro_area_id', metroAreaId)
+      .select(POST_SELECT)
       .eq('status', 'active')
+      .or(`metro_area_id.eq.${metroAreaId},is_global.eq.true`)
       .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (category) {
-      query = query.eq('category', category);
-    }
+      .range(offset, offset + limit - 1);
 
     const { data, error } = await query;
 
     if (error) throw error;
 
-    return { data: (data || []) as Post[] };
+    let posts: Post[] = (data || []).map(flattenPostTags);
+
+    // Client-side tag filtering (lightweight — could move to RPC if volume grows)
+    if (tagSlugs && tagSlugs.length > 0) {
+      posts = posts.filter((p) =>
+        p.tags?.some((t) => tagSlugs.includes(t.slug))
+      );
+    }
+
+    return { data: posts };
   } catch (error) {
     return {
       error: error instanceof Error ? error : new Error('Failed to fetch posts'),
@@ -48,7 +79,7 @@ export async function getPostsByMetroArea(
 }
 
 /**
- * Get post by ID
+ * Get post by ID (with author + tags)
  */
 export async function getPostById(
   supabase: SupabaseClient,
@@ -57,22 +88,14 @@ export async function getPostById(
   try {
     const { data, error } = await supabase
       .from('posts')
-      .select(`
-        *,
-        author:users!posts_author_id_fkey (
-          id,
-          full_name,
-          trust_level,
-          profile_photo
-        )
-      `)
+      .select(POST_SELECT)
       .eq('id', postId)
       .single();
 
     if (error) throw error;
     if (!data) throw new Error('Post not found');
 
-    return { data: data as Post };
+    return { data: flattenPostTags(data) };
   } catch (error) {
     return {
       error: error instanceof Error ? error : new Error('Failed to fetch post'),
@@ -81,54 +104,74 @@ export async function getPostById(
 }
 
 /**
- * Create a new post
+ * Create a new post (Reddit-style: title + body + tag IDs)
  */
 export async function createPost(
   supabase: SupabaseClient,
   params: {
-    metroAreaId: string;
-    category: Post['category'];
     title: string;
     description: string;
-    fields: Record<string, any>;
-    expiryDate: string;
+    tag_ids: string[];
+    photos?: string[];
+    is_global?: boolean;
+    metroAreaId: string;
     locationZipCode: string;
     locationCity: string;
     locationState: string;
+    /** If any selected tag has requires_moderation = true, pass true here */
+    requiresModeration?: boolean;
   }
 ): Promise<PostResult> {
   try {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
     if (!authUser) {
       return { error: new Error('You must be logged in to create a post') };
     }
 
-    const { data, error } = await supabase
+    // 1. Insert the post
+    const { data: postData, error: postError } = await supabase
       .from('posts')
       .insert({
         author_id: authUser.id,
         metro_area_id: params.metroAreaId,
-        category: params.category,
         title: params.title,
         description: params.description,
-        fields: params.fields,
-        expiry_date: params.expiryDate,
+        photos: params.photos ?? [],
+        is_global: params.is_global ?? false,
+        status: params.requiresModeration ? 'pending' : 'active',
         location_zip_code: params.locationZipCode,
         location_city: params.locationCity,
         location_state: params.locationState,
-        photos: '{}',
-        status: 'active',
       })
       .select()
       .single();
 
-    if (error) {
-      console.error('Supabase createPost error:', error.message, error.details, error.hint);
-      return { error: new Error(error.message) };
+    if (postError) {
+      console.error('Supabase createPost error:', postError.message, postError.details, postError.hint);
+      return { error: new Error(postError.message) };
     }
-    if (!data) return { error: new Error('No data returned after insert') };
+    if (!postData) return { error: new Error('No data returned after insert') };
 
-    return { data: data as Post };
+    // 2. Insert post_tags rows
+    if (params.tag_ids.length > 0) {
+      const tagRows = params.tag_ids.map((tagId) => ({
+        post_id: postData.id,
+        tag_id: tagId,
+      }));
+
+      const { error: tagError } = await supabase
+        .from('post_tags')
+        .insert(tagRows);
+
+      if (tagError) {
+        console.error('Failed to insert post_tags:', tagError.message);
+        // Post was already created — log but don't fail the whole operation
+      }
+    }
+
+    return { data: postData as Post };
   } catch (error) {
     console.error('createPost exception:', error);
     return {
@@ -136,3 +179,4 @@ export async function createPost(
     };
   }
 }
+

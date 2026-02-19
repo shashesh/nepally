@@ -3,68 +3,69 @@
 **Screen Number:** 09
 **Feature Reference:** [in-app-chat.md](../features/in-app-chat.md) - Feature 8.2 (entry point), [phase1-feature-breakdown.md](../features/phase1-feature-breakdown.md) - Feature 5.4
 **User Story:** As a user, I want to see the full details of a post so I can decide whether to contact the author.
-**Last Updated:** 2026-02-15
+**Last Updated:** 2026-02-17
 **Status:** Draft
 
 ---
 
 ## Screen Purpose
 
-Full-detail view of a single post. Shows all post fields, author info, and provides the "Contact Author" CTA that initiates the chat flow. This screen bridges browsing (home feed) to communication (chat).
+Full-detail view of a single post. Shows title, full description, tags, author info, Local/Global badge, and provides the "Contact Author" CTA that initiates the chat flow. This screen bridges browsing (home feed) to communication (chat).
 
 **Key Goals:**
 - Display all post information clearly
+- Show tags and Local/Global badge
 - Prominent "Contact Author" button (primary CTA)
 - Show author trust level for safety
-- Display expiry countdown
 - Link to chat with post author
 
 ---
 
 ## Visual Layout
 
-### Housing Post Example
+### Post Example
 
 ```
 ┌─────────────────────────────────────────┐
 │  ←                              ⋮       │ ← Header: back + kebab menu
 ├─────────────────────────────────────────┤
 │                                         │
-│  🏠 Housing                             │ ← Category badge
+│  Looking for Nepali Roommate near UTD   │ ← Title (H2, bold)
 │                                         │
-│  Private Room in Richardson             │ ← Title (H2, bold)
+│  📍 Local                                │ ← Local/Global badge
+│                                         │
+│  ┌─────────┐ ┌──────────┐              │
+│  │🏠Housing│ │❓Question│              │ ← Tag pills
+│  └─────────┘ └──────────┘              │
 │                                         │
 │  ┌───────────────────────────────────┐  │
-│  │                                   │  │ ← Photo placeholder (if photos)
+│  │                                   │  │ ← Photo carousel (if photos)
 │  │         [Photo 1 of 3]           │  │    Full width, 200px height
-│  │                                   │  │    Swipeable carousel
+│  │                                   │  │    Swipeable
 │  │                        1 / 3      │  │
 │  └───────────────────────────────────┘  │
 │                                         │
-│  ── Details ──────────────────────────  │
-│                                         │
-│  💰 Rent           $650/month           │ ← Field rows
-│  📅 Move-in        March 1, 2026        │
-│  🛏️ Room Type      Private Room         │
-│  📍 Location       Richardson, TX       │
-│  ⏰ Expires        in 28 days           │
-│                                         │
 │  ── Description ──────────────────────  │
 │                                         │
-│  Clean, furnished room in 2BR           │
+│  Clean, furnished room in 2BR           │ ← Full description
 │  apartment. Close to DART rail.         │
-│  Utilities included. No smoking.        │
+│  $800/month including utilities.        │
+│  Move-in date flexible. No smoking.     │
+│                                         │
+│  📍 Richardson, TX                       │ ← Location
 │                                         │
 │  ── Posted By ────────────────────────  │
 │                                         │
 │  [RK]  Ram K.  ✓ Verified              │ ← Author info row
 │        Member since Jan 2026            │
 │                                         │
+│  ❤️ 12    💬 3                            │ ← Like + Comment counts
+│                                         │
 │  ┌───────────────────────────────────┐  │
 │  │      💬  Contact Author           │  │ ← Primary CTA button
 │  └───────────────────────────────────┘  │
 │                                         │
-│  ── Comments ─────────────────────────  │ ← NEW: Comments section
+│  ── Comments ─────────────────────────  │ ← Comments section
 │  Comments (3)                           │
 │                                         │
 │  [PK]  Priya K.  ✓                      │ ← Comment 1
@@ -99,9 +100,12 @@ Full-detail view of a single post. Shows all post fields, author info, and provi
 │     [Verify Now]                        │
 ├─────────────────────────────────────────┤
 │                                         │
-│  🏠 Housing                             │
+│  Looking for Nepali Roommate near UTD   │
+│  📍 Local                                │
 │                                         │
-│  Private Room in Richardson             │
+│  ┌─────────┐ ┌──────────┐              │
+│  │🏠Housing│ │❓Question│              │
+│  └─────────┘ └──────────┘              │
 │                                         │
 │  ... (same details as above) ...        │
 │                                         │
@@ -130,14 +134,22 @@ Full-detail view of a single post. Shows all post fields, author info, and provi
 
 ---
 
-### 2. Category Badge
+### 2. Tag Pills
 
-**Type:** Inline label
-**Layout:** Icon + category name
-- **Icon:** Category emoji (🏠/💼/🚨/✈️), 20px
-- **Text:** "Housing" / "Jobs" / "Emergency" / "Travel"
-- **Typography:** 13pt/12sp Semibold, category color
-- **Background:** Category color at 10% opacity, pill shape, 8px padding
+**Type:** Horizontal row of pill-shaped tag badges
+**Position:** Below Local/Global badge
+**Margin:** 8px below badge, 16px above photos
+
+**Pill Styling:**
+- **Shape:** Pill (border-radius: 12px)
+- **Height:** 24px
+- **Padding:** 8px horizontal, 4px vertical
+- **Background:** Tag-specific color at 15% opacity
+- **Text:** Tag icon + name (e.g., "🏠 Housing")
+- **Typography:** 12pt/11sp Medium, tag-specific color
+- **Spacing:** 6px between pills
+
+**Interaction:** Tap tag pill → Navigate to home screen filtered by that tag
 
 ---
 
@@ -145,7 +157,22 @@ Full-detail view of a single post. Shows all post fields, author info, and provi
 
 **Typography:** 28pt/28sp Bold (H2), #212121
 **Max lines:** 3
-**Margin:** 8px below category badge, 16px above photos
+**Margin:** 16px horizontal, 8px below header
+
+---
+
+### 3a. Local/Global Badge
+
+**Type:** Inline pill badge
+**Position:** Below title
+**Margin:** 4px below title
+
+**Styling:**
+- 📍 Local: #388E3C text on #E8F5E9 background
+- 🌐 Global: #1565C0 text on #E3F2FD background
+- **Shape:** Pill (border-radius: 12px)
+- **Typography:** 12pt/11sp Medium
+- **Padding:** 6px horizontal, 2px vertical
 
 ---
 
@@ -160,42 +187,33 @@ Full-detail view of a single post. Shows all post fields, author info, and provi
 
 ---
 
-### 5. Details Section
-
-**Section header:** "Details" with horizontal rule
-**Typography:** 13pt Semibold, #757575, uppercase
-
-**Field Rows:**
-Each row is a horizontal layout:
-- **Icon:** 20px, category-appropriate color
-- **Label:** 15pt Regular, #757575, 120px fixed width
-- **Value:** 15pt Semibold, #212121, flex
-
-**Fields by Category:**
-
-| Category | Fields Shown |
-|----------|-------------|
-| Housing | Rent, Move-in Date, Room Type, Location, Expires |
-| Jobs | Pay Range, Employment Type, Company, Location, Expires |
-| Emergency | Emergency Type, Urgency, Location, Expires |
-| Travel | Travel Date, Route, Airline, Expires |
-
-**Expiry display:**
-- Active: "in 28 days" (#2E7D32 green)
-- Expiring soon (≤3 days): "in 2 days" (#F57C00 amber)
-- Expired: "Expired" (#C62828 red)
-
-**Row height:** 40px, with 1px #F5F5F5 divider between rows
-
----
-
-### 6. Description Section
+### 5. Description Section
 
 **Section header:** "Description" with horizontal rule
 **Typography:** 16pt/16sp Regular, #212121
 **Line height:** 24px
-**Max display:** 200 chars initially, "Read more" if longer
-**"Read more":** Text button, #1565C0, expands to full text
+**Max display:** Full text shown (no truncation on detail screen)
+
+**Location Row:**
+- **Icon:** 📍 Pin, 20px
+- **Text:** "Richardson, TX" (15pt Regular, #757575)
+- **Margin:** 16px below description text
+
+---
+
+### 5a. Engagement Row
+
+**Position:** Below description section
+**Layout:** Horizontal row with like and comment counts
+**Margin:** 16px top
+
+**Components:**
+- **Like Button:** ❤️ Heart + count (e.g., "12")
+  - Tappable to toggle like (Level 1+)
+  - Level 0: grayed out, tap shows verification toast
+- **Comment Count:** 💬 Bubble + count (e.g., "3")
+  - Tappable to scroll to comments section
+- **Typography:** 15pt/14sp Regular, #757575
 
 ---
 
@@ -433,7 +451,7 @@ When user taps the message icon directly on PostCard (bypasses this screen):
 |----------|------------------|
 | Own post | "Contact Author" button hidden, show "Edit Post" instead (future) |
 | Level 0 user | Banner at top, CTA says "Verify to Message" (gray) |
-| Post expired | Show "Expired" badge, CTA still works (can still message) |
+| Post expired | Removed. Posts no longer expire. |
 | Post removed by moderator | Show "This post has been removed" message, no CTA |
 | Author account deleted | Author shows "[Deleted User]", CTA hidden |
 | No photos | Photo carousel section hidden entirely |
@@ -449,7 +467,10 @@ When user taps the message icon directly on PostCard (bypasses this screen):
 ```typescript
 const { data } = await supabase
   .from('posts')
-  .select(`*, author:users!posts_author_id_fkey (id, full_name, trust_level, created_at)`)
+  .select(`*, 
+    author:users!posts_author_id_fkey (id, full_name, trust_level, created_at),
+    post_tags(tag:tags(id, name, slug, icon, color))
+  `)
   .eq('id', postId)
   .single();
 ```
@@ -486,11 +507,13 @@ const { data } = await supabase
 
 - [ ] Screen title: "Post detail"
 - [ ] All field labels and values announced together
+- [ ] Tag pills announced with names
+- [ ] Local/Global badge announced
 - [ ] Photos carousel announces "Photo 1 of 3"
 - [ ] CTA button state clearly announced (enabled/disabled)
 - [ ] Level 0 banner text readable
 - [ ] Touch targets: all buttons 44px+ minimum
-- [ ] Category colors have sufficient contrast with backgrounds
+- [ ] Tag colors have sufficient contrast with backgrounds
 
 ---
 

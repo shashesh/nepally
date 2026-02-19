@@ -1,6 +1,5 @@
 import Head from 'next/head';
 import Link from 'next/link';
-import type { PostCategory } from '@nusa/shared';
 import { useAuth } from '../hooks/useAuth';
 import styles from '../styles/Home.module.css';
 
@@ -26,7 +25,7 @@ export default function Home() {
         </p>
 
         {user && (
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div className={styles.ctaContainer}>
             <Link href="/feed" className={styles.ctaLink}>
               Go to Your Feed &rarr;
             </Link>
@@ -34,31 +33,31 @@ export default function Home() {
         )}
 
         <div className={styles.categories}>
-          <h2>Explore Categories</h2>
+          <h2>Explore Tags</h2>
           <div className={styles.grid}>
-            <CategoryCard
+            <TagCard
               icon="🏠"
               title="Housing"
               description="Find roommates, apartments, and housing opportunities"
-              category="housing"
+              slug="housing"
             />
-            <CategoryCard
+            <TagCard
               icon="💼"
               title="Jobs"
               description="Discover job openings and career opportunities"
-              category="jobs"
+              slug="jobs"
             />
-            <CategoryCard
-              icon="🚨"
-              title="Emergency"
-              description="Get urgent help from the community"
-              category="emergency"
+            <TagCard
+              icon="🤝"
+              title="Help"
+              description="Ask for or offer help to the community"
+              slug="help"
             />
-            <CategoryCard
-              icon="✈️"
-              title="Travel"
-              description="Find travel companions and coordinate trips"
-              category="travel"
+            <TagCard
+              icon="❓"
+              title="Question"
+              description="Ask questions and get answers from the community"
+              slug="question"
             />
           </div>
         </div>
@@ -67,16 +66,16 @@ export default function Home() {
   );
 }
 
-interface CategoryCardProps {
+interface TagCardProps {
   icon: string;
   title: string;
   description: string;
-  category: PostCategory;
+  slug: string;
 }
 
-function CategoryCard({ icon, title, description, category }: CategoryCardProps) {
+function TagCard({ icon, title, description, slug }: TagCardProps) {
   return (
-    <Link href={`/feed?category=${category}`} className={styles.card}>
+    <Link href={`/feed?tags=${slug}`} className={styles.card}>
       <div className={styles.icon}>{icon}</div>
       <h3>{title}</h3>
       <p>{description}</p>

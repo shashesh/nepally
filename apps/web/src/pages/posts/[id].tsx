@@ -13,6 +13,9 @@ import {
   getUserLikedPostIds,
   getOrCreateConversation,
   formatRelativeTime,
+  TAG_EMOJI,
+  TAG_COLORS,
+  DEFAULT_TAG_COLOR,
 } from '@nusa/shared';
 import type { Post, PostComment } from '@nusa/shared';
 import styles from '../../styles/PostDetail.module.css';
@@ -122,15 +125,6 @@ export default function PostDetailPage() {
     );
   }
 
-  const catClass =
-    post.category === 'housing'
-      ? styles.catHousing
-      : post.category === 'jobs'
-        ? styles.catJobs
-        : post.category === 'emergency'
-          ? styles.catEmergency
-          : styles.catTravel;
-
   return (
     <>
       <Head>
@@ -156,8 +150,15 @@ export default function PostDetailPage() {
                 {post.location_city}, {post.location_state}
               </div>
             </div>
-            <span className={`${styles.categoryBadge} ${catClass}`}>
-              {post.category}
+            {/* Local / Global badge */}
+            <span
+              className={styles.categoryBadge}
+              style={{
+                backgroundColor: post.is_global ? '#E3F2FD' : '#E8F5E9',
+                color: post.is_global ? '#1565C0' : '#388E3C',
+              }}
+            >
+              {post.is_global ? '🌐 Global' : '📍 Local'}
             </span>
           </div>
 
@@ -165,23 +166,30 @@ export default function PostDetailPage() {
           <h1 className={styles.postTitle}>{post.title}</h1>
           <div className={styles.postBody}>{post.description}</div>
 
-          {/* Category-specific Fields */}
-          {post.fields && Object.keys(post.fields).length > 0 && (
-            <div className={styles.fieldsGrid}>
-              {Object.entries(post.fields).map(([key, value]) => (
-                <div key={key} className={styles.fieldItem}>
-                  <span className={styles.fieldLabel}>
-                    {key.replace(/_/g, ' ')}
+          {/* Tag pills */}
+          {post.tags && post.tags.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '12px 0' }}>
+              {post.tags.map((tag) => {
+                const tagColor = TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
+                const emoji = TAG_EMOJI[tag.slug] || '';
+                return (
+                  <span
+                    key={tag.id}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '3px 10px',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: tagColor,
+                      backgroundColor: `${tagColor}26`,
+                    }}
+                  >
+                    {emoji ? `${emoji} ${tag.name}` : tag.name}
                   </span>
-                  <span className={styles.fieldValue}>
-                    {typeof value === 'boolean'
-                      ? value
-                        ? 'Yes'
-                        : 'No'
-                      : String(value)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

@@ -2,8 +2,11 @@
  * Location-related constants
  */
 
-/** Maximum number of saved locations per user */
-export const MAX_SAVED_LOCATIONS = 5;
+/** Maximum number of saved locations for free users */
+export const MAX_SAVED_LOCATIONS_FREE = 1;
+
+/** Maximum number of saved locations for premium users */
+export const MAX_SAVED_LOCATIONS_PREMIUM = 5;
 
 /** Hours to suppress location change prompt for a snoozed metro */
 export const LOCATION_SNOOZE_HOURS = 24;

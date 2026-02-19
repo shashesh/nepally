@@ -43,7 +43,7 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 | **L.2** GPS-to-Metro Mapping | Reverse geocode GPS coordinates to determine which metro area the user is in | Must-have |
 | **L.3** Location Change Detection | On app open/foreground, check GPS and compare to active metro area | Must-have |
 | **L.4** Location Change Prompt | Modal/bottom sheet asking user to browse temporarily or update home location | Must-have |
-| **L.5** Saved Locations | Users can save up to 5 named locations (Home, Work, custom names) | Must-have |
+| **L.5** Saved Locations | Users can save named locations (Home, Work, custom). Free users: 1 location. Premium users: up to 5 locations. | Must-have |
 | **L.6** Location Switcher (Home Screen) | Tappable location in header opens saved locations picker | Must-have |
 | **L.7** Permission Denied Fallback | Use onboarding ZIP as fallback + periodic subtle banner reminding to enable location | Must-have |
 | **L.8** Snooze Prompt | "Remind me later" option on location change prompt (24-hour snooze) | Must-have |
@@ -152,7 +152,8 @@ mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 **After "Update My Location" (permanent):**
 - Database `metro_area_id` updated
 - Secondary prompt: "Save [Metro Name] as a location?" with name input field
-- If user has < 5 saved locations, pre-fill name suggestion ("Home", "Work", or metro name)
+- If user has fewer than their max saved locations (1 for free, 5 for premium), pre-fill name suggestion ("Home", "Work", or metro name)
+- If free user already has 1 saved location, show prompt: "Upgrade to Premium for up to 5 saved locations"
 
 ### L.5 — Saved Locations
 
@@ -170,7 +171,9 @@ user_saved_locations table:
 
 Constraints:
   - UNIQUE(user_id, metro_area_id) — can't save same metro area twice
-  - Max 5 per user (enforced at app level + DB check constraint)
+  - Free users: max 1 saved location
+  - Premium users: max 5 saved locations
+  - Enforced via application-level check (query user.is_premium + COUNT of saved locations)
   - Exactly one is_default = true per user
 ```
 
@@ -277,13 +280,12 @@ CREATE TABLE user_saved_locations (
   UNIQUE(user_id, metro_area_id)
 );
 
--- Max 5 locations per user
-ALTER TABLE user_saved_locations
-  ADD CONSTRAINT max_saved_locations
-  CHECK (
-    (SELECT COUNT(*) FROM user_saved_locations usl WHERE usl.user_id = user_id) <= 5
-  );
--- Note: CHECK constraint with subquery may not work in PostgreSQL.
+-- Max saved locations enforced at application level:
+-- Free users: 1 location, Premium users: 5 locations
+-- Use a trigger or application check:
+-- IF (user.is_premium = false AND count >= 1) THEN RAISE
+-- IF (user.is_premium = true AND count >= 5) THEN RAISE
+-- Note: Pure CHECK constraint with subquery doesn't work in PostgreSQL.
 -- Enforce via RLS policy or application-level check + trigger instead.
 
 -- Indexes
@@ -346,7 +348,8 @@ WHERE metro_area_id IS NOT NULL;
 - `suggestLocationName(existingNames)` → `string` (suggests next available default name)
 
 ### Constants (`src/constants/location.ts`)
-- `MAX_SAVED_LOCATIONS = 5`
+- `MAX_SAVED_LOCATIONS_FREE = 1`
+- `MAX_SAVED_LOCATIONS_PREMIUM = 5`
 - `SNOOZE_DURATION_HOURS = 24`
 - `LOCATION_REMINDER_MAX_SHOWS = 3`
 - `LOCATION_REMINDER_COOLDOWN_DAYS = 7`
