@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* Tailwind-Inspired Style */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f9fafb;
+  color: #111827;
+  line-height: 1.5;
+  margin: 0;
+  padding: 20px;
+}
+
+/* Typography */
+.wmd-h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 1rem 0;
+  letter-spacing: -0.025em;
+}
+
+.wmd-h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 1.5rem 0 1rem 0;
+  letter-spacing: -0.025em;
+}
+
+.wmd-h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 1.25rem 0 0.75rem 0;
+}
+
+.wmd-h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.wmd-paragraph {
+  color: #6b7280;
+  margin: 0.75rem 0;
+  font-size: 1rem;
+}
+
+/* Buttons */
+.wmd-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  background: #e5e7eb;
+  color: #374151;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.wmd-button:hover {
+  background: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wmd-button-primary, .wmd-button.wmd-button-primary {
+  background: #6366f1;
+  color: white;
+}
+
+.wmd-button-primary:hover, .wmd-button.wmd-button-primary:hover {
+  background: #4f46e5;
+}
+
+.wmd-button:disabled, .wmd-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button States */
+.wmd-state-loading {
+  background: #e0e7ff !important;
+  color: #6366f1 !important;
+  position: relative;
+  padding-left: 2.5rem;
+}
+
+.wmd-state-loading::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #6366f1;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.wmd-state-error {
+  background: #fef2f2 !important;
+  color: #ef4444 !important;
+  border: 1px solid #fca5a5;
+}
+
+.wmd-state-success {
+  background: #f0fdf4 !important;
+  color: #22c55e !important;
+  border: 1px solid #86efac;
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Forms */
+.wmd-input, .wmd-textarea, .wmd-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.15s ease;
+  color: #111827;
+}
+
+.wmd-input:focus, .wmd-textarea:focus, .wmd-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.wmd-input::placeholder, .wmd-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
+}
+
+.wmd-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.5rem;
+  padding-right: 2.5rem;
+}
+
+/* Checkboxes and Radios */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+/* Cards and Containers */
+.wmd-container-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.wmd-container-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.wmd-container-hero .wmd-h1,
+.wmd-container-hero .wmd-h2,
+.wmd-container-hero .wmd-h3,
+.wmd-container-hero .wmd-paragraph {
+  color: white;
+}
+
+.wmd-container-modal {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 600px;
+  position: relative;
+}
+
+.wmd-container-footer {
+  background: #1f2937;
+  color: #e5e7eb;
+  padding: 2rem;
+  margin-top: 3rem;
+  border-radius: 0.75rem;
+}
+
+.wmd-container-footer .wmd-paragraph,
+.wmd-container-footer .wmd-nav-item {
+  color: #e5e7eb;
+}
+
+.wmd-container-section {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wmd-container-section:last-child {
+  border-bottom: none;
+}
+
+/* Alerts */
+.wmd-container-alert {
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  border-left: 4px solid;
+}
+
+.wmd-container-alert.wmd-warning {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.wmd-container-alert.wmd-state-error {
+  background: #fee2e2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.wmd-container-alert.wmd-state-success {
+  background: #d1fae5;
+  border-left-color: #10b981;
+  color: #065f46;
+}
+
+/* Navigation */
+.wmd-nav {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin-bottom: 2rem;
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: #4b5563;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.wmd-nav-item:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.wmd-brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #111827;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Lists */
+.wmd-list {
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wmd-list-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+}
+
+.wmd-list-item:last-child {
+  border-bottom: none;
+}
+
+/* Grid */
+.wmd-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.wmd-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.wmd-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.wmd-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Tables */
+.wmd-table {
+  width: 100%;
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin: 1rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.wmd-table th {
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wmd-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.wmd-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table cell alignment - more specific to override th/td defaults */
+.wmd-table .wmd-align-left {
+  text-align: left !important;
+}
+
+.wmd-table .wmd-align-center {
+  text-align: center !important;
+}
+
+.wmd-table .wmd-align-right {
+  text-align: right !important;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  vertical-align: middle;
+}
+
+
+/* Utility classes */
+.wmd-separator {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.wmd-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wmd-code {
+  background: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  font-size: 0.875rem;
+  color: #6366f1;
+}
+
+.wmd-blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  color: #4b5563;
+  font-style: italic;
+}
+
+/* Button group */
+.wmd-container-button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+/* Form group */
+.wmd-container-form-group {
+  margin: 1rem 0;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.wmd-container-loading-state::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1.5rem;
+  border: 4px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.wmd-container-empty-state {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.75rem;
+  padding: 4rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  color: #6b7280;
+}
+
+.wmd-container-empty-state::before {
+  content: '📭';
+  display: block;
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.wmd-container-error-state {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  color: #991b1b;
+}
+
+.wmd-container-error-state::before {
+  content: '⚠️';
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid-2,
+  .wmd-grid-3,
+  .wmd-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .wmd-nav-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wmd-brand {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-tailwind">
+  <h1 class="wmd-h1">Wireframe: Signup Method Selection</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Screen:</strong> 02 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-02-19
+<strong>Journey:</strong> <a href="../user-journeys/onboarding/01-signup-and-onboarding.md">01-signup-and-onboarding</a> - Step 5
+<strong>Story:</strong> As a new user, I want to choose how I sign up (Google, Phone, or Email) so I can create an account using my preferred method.</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen Purpose</h2>
+<p class="wmd-paragraph">This screen allows users to select their preferred signup method. It emphasizes ease and privacy to build trust while providing multiple options for different user preferences.</p>
+<p class="wmd-paragraph"><strong>Key Goals:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Present three clear signup options</li>
+  <li class="wmd-list-item">Reduce decision paralysis with guidance (recommend Google for speed)</li>
+  <li class="wmd-list-item">Build trust with privacy reassurance</li>
+  <li class="wmd-list-item">Enable quick signup for tech-savvy users</li>
+  <li class="wmd-list-item">Support less tech-savvy users with phone option</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Visual Wireframe</h2>
+<div class="wmd-container-hero">
+  <h1 class="wmd-h1">Create Your Account</h1>
+  <p class="wmd-paragraph">Join the Nepali community in your area</p>
+</div>
+<div class="wmd-container-card">
+  
+</div>
+<div class="wmd-container-card">
+  
+</div>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">🔒 We&#039;ll never post without your permission</p>
+</div>
+<div class="wmd-container-footer">
+  <p class="wmd-paragraph">Already have an account?<a href="/login">Log In</a></p>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-alert error">
+  <button class="wmd-button">Dismiss</button>
+</div>
+<div class="wmd-container-alert error">
+  <div class="wmd-container-button-group">
+  <button class="wmd-button">Try Again</button>
+  <button class="wmd-button">Dismiss</button>
+</div>
+</div>
+<div class="wmd-container-alert error">
+  <button class="wmd-button">Dismiss</button>
+</div>
+<div class="wmd-container-alert error">
+  <div class="wmd-container-button-group">
+  <button class="wmd-button">Log In Instead</button>
+  <button class="wmd-button">Dismiss</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Component Specifications</h2>
+<h3 class="wmd-h3">1. Navigation Bar / Top App Bar</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Navigation Bar</td>
+    <td class="wmd-table-cell wmd-align-left">Top App Bar</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44px</td>
+    <td class="wmd-table-cell wmd-align-left">56dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Back Control</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;&lt; Back&quot; text, 17pt, #1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">Material arrow_back icon, 24dp, #212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Tap Area</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44×44pt minimum</td>
+    <td class="wmd-table-cell wmd-align-left">48×48dp minimum</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Interaction:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Tap/Click: Navigate back to Screen 01 (Welcome Screen)</li>
+  <li class="wmd-list-item">iOS: Swipe right from left edge also goes back</li>
+  <li class="wmd-list-item">Android: Hardware back button also goes back</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong> Label "Back" or "Navigate back"; VoiceOver/TalkBack announces "Back button"</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">2. Screen Title</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Text (Heading)</td>
+    <td class="wmd-table-cell wmd-align-left">Text (Heading)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Content</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Create Your Account&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Create Your Account&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">34pt Bold, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">34sp Medium, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#212121 (Almost Black)</td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Left</td>
+    <td class="wmd-table-cell wmd-align-left">Left</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px from left edge</td>
+    <td class="wmd-table-cell wmd-align-left">16dp from left edge</td>
+  </tr>
+  </tbody>
+</table>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Semantic heading: H1</li>
+  <li class="wmd-list-item">a11y: VoiceOver/TalkBack reads &quot;Create Your Account&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">3. Subtitle</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Text (Body)</td>
+    <td class="wmd-table-cell wmd-align-left">Text (Body)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Content</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Join the Nepali community in your area&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Join the Nepali community in your area&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">17pt Regular, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">16sp Regular, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#757575 (Medium Gray)</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Left</td>
+    <td class="wmd-table-cell wmd-align-left">Left</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px from left edge</td>
+    <td class="wmd-table-cell wmd-align-left">16dp from left edge</td>
+  </tr>
+  </tbody>
+</table>
+<ul class="wmd-list">
+  <li class="wmd-list-item">a11y: Semantic paragraph; screen reader reads full sentence</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">4. Google Signup Option</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Button (Large, card-style)</td>
+    <td class="wmd-table-cell wmd-align-left">Button (Large, card-style)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Continue with Google&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Continue with Google&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">56px (includes padding)</td>
+    <td class="wmd-table-cell wmd-align-left">64dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">match_parent − 32px margins</td>
+    <td class="wmd-table-cell wmd-align-left">match_parent − 32dp margins</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Corner Radius</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px</td>
+    <td class="wmd-table-cell wmd-align-left">12dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px solid #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1dp solid #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Elevation</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Subtle shadow (0 2px 4px rgba(0,0,0,0.1))</td>
+    <td class="wmd-table-cell wmd-align-left">1dp Material elevation</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px all around</td>
+    <td class="wmd-table-cell wmd-align-left">16dp all around</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Main Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">17pt Semibold, #212121</td>
+    <td class="wmd-table-cell wmd-align-left">16sp Semibold, #212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Benefit Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">13pt Regular, #757575</td>
+    <td class="wmd-table-cell wmd-align-left">12sp Regular, #757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Google &quot;G&quot; logo (multicolor), 24×24px</td>
+    <td class="wmd-table-cell wmd-align-left">Google &quot;G&quot; logo (multicolor), 24×24dp</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Content Layout:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Left: Google icon (24×24, 16px/dp from left edge)</li>
+  <li class="wmd-list-item">Center: &quot;Continue with Google&quot; (main label) + &quot;Quick signup • Verification required later&quot; (benefit)</li>
+  <li class="wmd-list-item">Right: Chevron indicator (optional, light gray)</li>
+</ul>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Default: White bg, gray border</li>
+  <li class="wmd-list-item">Pressed: #F5F5F5 bg, scale 0.99</li>
+  <li class="wmd-list-item">Focused (Android): Blue 2px border</li>
+  <li class="wmd-list-item">Loading: Spinner in center of card, hide main text, disable all other buttons, gray out other options</li>
+</ul>
+<p class="wmd-paragraph"><strong>Interaction:</strong> Tap → Initiate Google OAuth flow; show loading spinner during OAuth; haptic feedback (iOS)
+<strong>a11y:</strong> Label "Continue with Google", Hint "Sign up using your Google account. Quick signup with verification required later.", Trait: Button, touch target: full card size (exceeds 44pt/48dp)</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">5. Phone Number Signup Option</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Button (Large, card-style)</td>
+    <td class="wmd-table-cell wmd-align-left">Button (Large, card-style)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Continue with Phone Number&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Continue with Phone Number&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Dimensions</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Same as Google option</td>
+    <td class="wmd-table-cell wmd-align-left">Same as Google option</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Styling</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Same as Google option</td>
+    <td class="wmd-table-cell wmd-align-left">Same as Google option</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">📱 or system phone icon, 24×24px, #1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">Material &quot;phone&quot; icon, 24×24dp, #1565C0</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Content Layout:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Left: Phone icon (24×24, 16px/dp from left edge, #1565C0)</li>
+  <li class="wmd-list-item">Center: &quot;Continue with Phone Number&quot; (main label) + &quot;Quick signup • Verification required later&quot; (benefit)</li>
+  <li class="wmd-list-item">Right: Chevron indicator (optional)</li>
+</ul>
+<p class="wmd-paragraph"><strong>States:</strong> Same as Google option
+<strong>Interaction:</strong> Tap → Navigate to phone number entry screen (not in this wireframe); haptic feedback (iOS)
+<strong>a11y:</strong> Label "Continue with Phone Number", Hint "Sign up using your phone number. Quick signup with verification required later.", Trait: Button</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">6. Email Signup Option</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Button (Large, card-style)</td>
+    <td class="wmd-table-cell wmd-align-left">Button (Large, card-style)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Continue with Email&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Continue with Email&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Dimensions</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Same as Google option</td>
+    <td class="wmd-table-cell wmd-align-left">Same as Google option</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Styling</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Same as Google option</td>
+    <td class="wmd-table-cell wmd-align-left">Same as Google option</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">✉ or system mail icon, 24×24px, #1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">Material &quot;email&quot; icon, 24×24dp, #1565C0</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Content Layout:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Left: Email icon (24×24, 16px/dp from left edge, #1565C0)</li>
+  <li class="wmd-list-item">Center: &quot;Continue with Email&quot; (main label) + &quot;Quick signup • Verification required later&quot; (benefit)</li>
+  <li class="wmd-list-item">Right: Chevron indicator (optional)</li>
+</ul>
+<p class="wmd-paragraph"><strong>States:</strong> Same as Google option
+<strong>Interaction:</strong> Tap → Navigate to email entry screen (not in this wireframe); haptic feedback (iOS)
+<strong>a11y:</strong> Label "Continue with Email", Hint "Sign up using your email address. Quick signup with verification required later.", Trait: Button</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">7. Privacy Reassurance Text</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Text with icon</td>
+    <td class="wmd-table-cell wmd-align-left">Text with icon</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Content</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;🔒 We&#039;ll never post without your permission&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;🔒 We&#039;ll never post without your permission&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">13pt Regular, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">12sp Regular, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#757575 (Medium Gray)</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Lock emoji or lock icon, 16px</td>
+    <td class="wmd-table-cell wmd-align-left">Lock emoji or lock icon, 16dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Below signup options, 24px spacing</td>
+    <td class="wmd-table-cell wmd-align-left">Below signup options, 24dp spacing</td>
+  </tr>
+  </tbody>
+</table>
+<ul class="wmd-list">
+  <li class="wmd-list-item">a11y: Label &quot;We&#039;ll never post without your permission&quot;; icon has alt text &quot;Lock icon&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">8. Log In Link (Footer)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Text with link</td>
+    <td class="wmd-table-cell wmd-align-left">Text with link</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Content</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Already have an account? Log In&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Already have an account? LOG IN&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">13pt Regular, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">12sp Regular, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#757575 (regular text)</td>
+    <td class="wmd-table-cell wmd-align-left">#757575 (regular text)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Link Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">24px from bottom</td>
+    <td class="wmd-table-cell wmd-align-left">24dp from bottom</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Link Style</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Underline on press only</td>
+    <td class="wmd-table-cell wmd-align-left">Always underlined, ALL CAPS</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Interaction:</strong> Tap "Log In" → Navigate to Login Screen (out of scope)
+<strong>a11y:</strong> Full text "Already have an account? Log In"; link has clear focus indicator; VoiceOver/TalkBack announces "Link, Log In"</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Spacing &amp; Layout</h2>
+<h3 class="wmd-h3">Vertical Stack (Top to Bottom)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">#</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Height</th>
+    <th class="wmd-table-cell wmd-align-left">Spacing After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Safe area / Status bar</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Nav bar</td>
+    <td class="wmd-table-cell wmd-align-left">44px / 56dp</td>
+    <td class="wmd-table-cell wmd-align-left">24px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Title</td>
+    <td class="wmd-table-cell wmd-align-left">~40px</td>
+    <td class="wmd-table-cell wmd-align-left">8px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Subtitle</td>
+    <td class="wmd-table-cell wmd-align-left">~50px</td>
+    <td class="wmd-table-cell wmd-align-left">32px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">Google option</td>
+    <td class="wmd-table-cell wmd-align-left">56px / 64dp</td>
+    <td class="wmd-table-cell wmd-align-left">16px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Phone option</td>
+    <td class="wmd-table-cell wmd-align-left">56px / 64dp</td>
+    <td class="wmd-table-cell wmd-align-left">16px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">7</td>
+    <td class="wmd-table-cell wmd-align-left">Email option</td>
+    <td class="wmd-table-cell wmd-align-left">56px / 64dp</td>
+    <td class="wmd-table-cell wmd-align-left">24px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">8</td>
+    <td class="wmd-table-cell wmd-align-left">Privacy text</td>
+    <td class="wmd-table-cell wmd-align-left">~20px</td>
+    <td class="wmd-table-cell wmd-align-left">Flex</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">9</td>
+    <td class="wmd-table-cell wmd-align-left">Log In link</td>
+    <td class="wmd-table-cell wmd-align-left">~30px</td>
+    <td class="wmd-table-cell wmd-align-left">24px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">10</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom safe area</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Total Minimum Height:</strong> ~520px (fits small devices)</p>
+<p class="wmd-paragraph"><strong>Horizontal:</strong> 16px/dp margins on both sides. All option cards full width minus 32px/dp. Text left-aligned with 16px/dp margin.</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">User Interactions</h2>
+<h3 class="wmd-h3">Primary Flow</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User lands on screen from Welcome Screen</li>
+  <li class="wmd-list-item">User reads three options → Takes 5–10 seconds to decide</li>
+  <li class="wmd-list-item">User taps &quot;Continue with Google&quot; (most common choice)</li>
+  <li class="wmd-list-item">System initiates Google OAuth flow → Redirect to Google consent screen</li>
+  <li class="wmd-list-item">User approves permissions → Return to app, create account</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flows</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">User taps &quot;Continue with Phone Number&quot; → Navigate to phone entry screen</li>
+  <li class="wmd-list-item">User taps &quot;Continue with Email&quot; → Navigate to email entry screen</li>
+  <li class="wmd-list-item">User taps &quot;Log In&quot; → Navigate to Login Screen</li>
+  <li class="wmd-list-item">User taps Back → Return to Screen 01 (Welcome Screen)</li>
+</ul>
+<h3 class="wmd-h3">Decision Guidance</h3>
+<p class="wmd-paragraph"><strong>Recommendations to reduce decision paralysis:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Consider adding &quot;Most popular&quot; or &quot;Recommended&quot; badge on Google option</li>
+  <li class="wmd-list-item">Benefit text emphasizes all are &quot;Quick signup&quot;</li>
+  <li class="wmd-list-item">Privacy reassurance reduces concern about linking Google account</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Platform-Specific Differences</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Aspect</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Back Navigation</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;&lt; Back&quot; text button</td>
+    <td class="wmd-table-cell wmd-align-left">Back arrow icon</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Option Card Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">56px</td>
+    <td class="wmd-table-cell wmd-align-left">64dp (slightly taller)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Typography</strong></td>
+    <td class="wmd-table-cell wmd-align-left">San Francisco, 17pt body</td>
+    <td class="wmd-table-cell wmd-align-left">Roboto, 16sp body</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Card Shadow</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Subtle iOS shadow (0 2px 4px rgba(0,0,0,0.1))</td>
+    <td class="wmd-table-cell wmd-align-left">Material elevation 1dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Button Pressed State</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Scale 0.99 + haptic</td>
+    <td class="wmd-table-cell wmd-align-left">Scale 0.99 + ripple effect</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Link Style</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Underline on press only</td>
+    <td class="wmd-table-cell wmd-align-left">Always underlined</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Log In Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Log In&quot; (title case)</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;LOG IN&quot; (ALL CAPS)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Hardware Back Button</strong></td>
+    <td class="wmd-table-cell wmd-align-left">N/A (swipe gesture)</td>
+    <td class="wmd-table-cell wmd-align-left">Goes to previous screen</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Error States &amp; Edge Cases</h2>
+<h3 class="wmd-h3">Google OAuth Cancelled</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Scenario: User taps Google option, but cancels Google permission screen</li>
+  <li class="wmd-list-item">Behavior: Return to this screen (no navigation); show brief toast &quot;Signup cancelled. Please choose a method to continue.&quot;; no error UI, allow retry</li>
+  <li class="wmd-list-item">Recovery: User can tap Google option again</li>
+</ul>
+<h3 class="wmd-h3">Google OAuth Error</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Scenario: Google OAuth fails (network error, timeout, server error)</li>
+  <li class="wmd-list-item">Behavior: Return to this screen; error banner at top: red (#C62828) bg, white text, dismissible; buttons remain enabled</li>
+  <li class="wmd-list-item">Recovery: User can tap &quot;Try Again&quot; in banner, or choose Phone/Email instead</li>
+</ul>
+<h3 class="wmd-h3">No Internet Connection</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Scenario: User taps any signup option with no internet</li>
+  <li class="wmd-list-item">Behavior: Error banner immediately: red (#C62828) bg, white text, dismissible; buttons remain enabled</li>
+  <li class="wmd-list-item">Recovery: Dismiss banner and retry after connecting; banner auto-dismisses when connection restored</li>
+</ul>
+<h3 class="wmd-h3">User Already Registered</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Scenario: User attempts to sign up with a Google account that&#039;s already registered</li>
+  <li class="wmd-list-item">Behavior: After OAuth, backend detects duplicate email; error banner: &quot;This email is already registered. Please log in or use a different account.&quot;; &quot;Log In Instead&quot; button in banner</li>
+  <li class="wmd-list-item">Recovery: Tap &quot;Log In Instead&quot; → navigate to Login Screen; or go back and choose a different method</li>
+</ul>
+<h3 class="wmd-h3">Google Account Picker (Multiple Accounts)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Scenario: User has multiple Google accounts on device</li>
+  <li class="wmd-list-item">Behavior: Google OAuth shows account picker automatically; user selects which account; proceed with selected account</li>
+  <li class="wmd-list-item">Note: Handled by Google, not NUSA UI</li>
+</ul>
+<h3 class="wmd-h3">Very Small Screen (iPhone SE 1st gen, 320×568px)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Behavior: Reduce option card height to 48px; reduce font sizes slightly (15pt/14sp main labels); reduce spacing between cards to 12px; all content still visible and tappable</li>
+</ul>
+<h3 class="wmd-h3">Large Accessibility Text (200%+)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Behavior: Support Dynamic Type (iOS) / Large Text (Android); option cards expand vertically to fit text; may require vertical scrolling; maintain readability</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<h3 class="wmd-h3">Screen Reader Order</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">&quot;Back button&quot;</li>
+  <li class="wmd-list-item">&quot;Create Your Account&quot;</li>
+  <li class="wmd-list-item">&quot;Join the Nepali community in your area&quot;</li>
+  <li class="wmd-list-item">&quot;Continue with Google. Sign up using your Google account. Quick signup with verification required later.&quot;</li>
+  <li class="wmd-list-item">&quot;Continue with Phone Number. Sign up using your phone number. Quick signup with verification required later.&quot;</li>
+  <li class="wmd-list-item">&quot;Continue with Email. Sign up using your email address. Quick signup with verification required later.&quot;</li>
+  <li class="wmd-list-item">&quot;We&#039;ll never post without your permission&quot;</li>
+  <li class="wmd-list-item">&quot;Already have an account? Log In&quot;</li>
+</ol>
+<h3 class="wmd-h3">Touch Targets</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">All option cards: min 44×44pt (iOS) / 48×48dp (Android) — exceeds (56px/64dp height) ✓</li>
+  <li class="wmd-list-item">Back button: min 44×44pt / 48×48dp ✓</li>
+  <li class="wmd-list-item">Log In link: min 44×44pt touch area (add invisible padding if needed)</li>
+</ul>
+<h3 class="wmd-h3">Color Contrast (WCAG)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Ratio</th>
+    <th class="wmd-table-cell wmd-align-left">Level</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Title (#212121 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">16.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Body text (#757575 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">4.6:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Card text (#212121 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">16.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Privacy text (#757575 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">4.6:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Focus Indicators</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">iOS VoiceOver: yellow outline on focused card</li>
+  <li class="wmd-list-item">Android TalkBack: green rectangle on focused card</li>
+  <li class="wmd-list-item">Android keyboard navigation: blue focus ring around entire card</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Animations &amp; Transitions</h2>
+<h3 class="wmd-h3">Screen Entry</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Step</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Delay</th>
+    <th class="wmd-table-cell wmd-align-left">Duration</th>
+    <th class="wmd-table-cell wmd-align-left">Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Screen slide</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">Slide from right (iOS) / Slide up (Android), ease-in-out</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Google card</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in (ease-out)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Phone card</td>
+    <td class="wmd-table-cell wmd-align-left">100ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in (ease-out), staggered</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Email card</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in (ease-out), staggered</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Option Card Press</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Duration: 150ms, ease-in-out</li>
+  <li class="wmd-list-item">Scale 0.99 + background to #F5F5F5</li>
+  <li class="wmd-list-item">iOS: light haptic feedback | Android: ripple from tap point</li>
+</ul>
+<h3 class="wmd-h3">Loading State (Google OAuth)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Spinner in center of Google card, hide main text</li>
+  <li class="wmd-list-item">Disable all other buttons, gray out other options</li>
+</ul>
+<h3 class="wmd-h3">Error Banner</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Slide down from top: 300ms, ease-out</li>
+  <li class="wmd-list-item">Auto-dismiss after 5 seconds or user taps X</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Content &amp; Localization</h2>
+<h3 class="wmd-h3">Copy Requirements</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Title: Clear, action-oriented (&quot;Create Your Account&quot;)</li>
+  <li class="wmd-list-item">Subtitle: Emphasize community and local focus</li>
+  <li class="wmd-list-item">Option Labels: Start with &quot;Continue with...&quot; for consistency</li>
+  <li class="wmd-list-item">Benefit Text: Keep under 60 characters, emphasize speed (&quot;Quick signup&quot;)</li>
+  <li class="wmd-list-item">Privacy Text: Build trust, address concerns proactively</li>
+</ul>
+<h3 class="wmd-h3">String Keys</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Key</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">signup_title</code></td>
+    <td class="wmd-table-cell wmd-align-left">Create Your Account</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">signup_subtitle</code></td>
+    <td class="wmd-table-cell wmd-align-left">Join the Nepali community in your area</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">signup_google</code></td>
+    <td class="wmd-table-cell wmd-align-left">Continue with Google</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">signup_phone</code></td>
+    <td class="wmd-table-cell wmd-align-left">Continue with Phone Number</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">signup_email</code></td>
+    <td class="wmd-table-cell wmd-align-left">Continue with Email</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">signup_benefit</code></td>
+    <td class="wmd-table-cell wmd-align-left">Quick signup • Verification required later</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">signup_privacy</code></td>
+    <td class="wmd-table-cell wmd-align-left">We&#039;ll never post without your permission</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">signup_login_link</code></td>
+    <td class="wmd-table-cell wmd-align-left">Already have an account? Log In</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Tone</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Friendly: &quot;Join the Nepali community&quot;</li>
+  <li class="wmd-list-item">Reassuring: Privacy text addresses concerns</li>
+  <li class="wmd-list-item">Clear: Simple, jargon-free language</li>
+  <li class="wmd-list-item">Helpful: Benefit text guides decision</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Technical Notes</h2>
+<h3 class="wmd-h3">Identifiers</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Route: /signup-method</li>
+  <li class="wmd-list-item">iOS: SignupMethodViewController / SignupMethodScreen</li>
+  <li class="wmd-list-item">Android: SignupMethodActivity / SignupMethodFragment</li>
+</ul>
+<h3 class="wmd-h3">State Management</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Variable</th>
+    <th class="wmd-table-cell wmd-align-left">Type</th>
+    <th class="wmd-table-cell wmd-align-left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">selectedMethod</code></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">null | &#039;google&#039; | &#039;phone&#039; | &#039;email&#039;</code></td>
+    <td class="wmd-table-cell wmd-align-left">Currently selected signup method</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">isLoading</code></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">boolean</code></td>
+    <td class="wmd-table-cell wmd-align-left">Whether OAuth is in progress</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">errorMessage</code></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">string | null</code></td>
+    <td class="wmd-table-cell wmd-align-left">Active error message to display</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph">No persistent state across sessions.</p>
+<h3 class="wmd-h3">Navigation</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Direction</th>
+    <th class="wmd-table-cell wmd-align-left">Trigger</th>
+    <th class="wmd-table-cell wmd-align-left">Destination</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Sign Up&quot; on Screen 01</td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">Deep link <code class="wmd-code-inline">nusa://signup</code></td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Google option</td>
+    <td class="wmd-table-cell wmd-align-left">Google OAuth → Screen 03 (ZIP Code Entry)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Phone option</td>
+    <td class="wmd-table-cell wmd-align-left">Phone entry screen (future)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Email option</td>
+    <td class="wmd-table-cell wmd-align-left">Email entry screen (future)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Back button</td>
+    <td class="wmd-table-cell wmd-align-left">Screen 01 (Welcome Screen)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Log In link</td>
+    <td class="wmd-table-cell wmd-align-left">Login Screen (out of scope)</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">API Integration — Google OAuth Flow</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps &quot;Continue with Google&quot;</li>
+  <li class="wmd-list-item">Set isLoading = true, show spinner</li>
+  <li class="wmd-list-item">Initiate OAuth: GoogleSignIn.signIn()</li>
+  <li class="wmd-list-item">Redirect to Google consent screen (external)</li>
+  <li class="wmd-list-item">User approves → Google redirects back with OAuth token</li>
+  <li class="wmd-list-item">App receives token</li>
+  <li class="wmd-list-item">Call API: POST /auth/signup/google with token</li>
+  <li class="wmd-list-item">API returns: { user_id, session_token }</li>
+  <li class="wmd-list-item">Store session token securely</li>
+  <li class="wmd-list-item">Navigate to Screen 03 (ZIP Code Entry)</li>
+</ol>
+<p class="wmd-paragraph"><strong>Error Handling:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">OAuth cancelled → toast, reset isLoading</li>
+  <li class="wmd-list-item">OAuth error → error banner, reset isLoading</li>
+  <li class="wmd-list-item">Network error → error banner with retry</li>
+  <li class="wmd-list-item">Server error → generic error banner</li>
+</ul>
+<h3 class="wmd-h3">Performance</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Pre-load Google SDK for instant OAuth (load on app launch)</li>
+  <li class="wmd-list-item">Icons: vector or 2×/3× PNG for crisp display</li>
+  <li class="wmd-list-item">Animate cards on screen entry for polish (stagger fade-in)</li>
+</ul>
+<h3 class="wmd-h3">Design System Components Used</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Large Button (Card style) — adapted from Primary Button</li>
+  <li class="wmd-list-item">H1 Typography (34pt/sp Bold)</li>
+  <li class="wmd-list-item">Body Typography (17pt/16sp Regular)</li>
+  <li class="wmd-list-item">Caption Typography (13pt/12sp Regular)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Testing Checklist</h2>
+<h3 class="wmd-h3">Functional Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Google option initiates OAuth flow</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Phone option navigates to phone entry screen</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Email option navigates to email entry screen</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Back button returns to Welcome Screen</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Log In link navigates to Login Screen</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>OAuth cancellation handled gracefully</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>OAuth error shows error banner</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Visual Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>All three option cards display correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Icons are aligned and sized properly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Text wraps correctly on narrow screens (320px width)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Privacy text is centered</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Footer link is centered at bottom</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Safe area insets respected</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Accessibility Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>VoiceOver/TalkBack reads all elements in correct order</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>All touch targets meet 44pt/48dp minimum</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Color contrast meets WCAG AA standards</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Dynamic Type/Large Text works correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Focus indicators visible</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Integration Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Google OAuth completes successfully</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Session token stored securely</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Navigation to Screen 03 works</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Error states trigger correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Network errors handled gracefully</span>
+  </label>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Open Questions</h2>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>&quot;Recommended&quot; badge on Google option? — Pro: reduces decision paralysis. Con: may seem biased. Rec: A/B test signup completion rate.</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>&quot;Most users choose this&quot; social proof? — Pro: leverages social proof. Con: no data yet. Rec: add after &gt;100 signups and 60%+ choose Google.</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Same benefit text for all methods? — Current: all say &quot;Quick signup • Verification required later&quot;. Alt: differentiate (Phone → &quot;No password needed&quot;). Rec: keep consistent.</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Show estimated time per method? — Example: &quot;2 min&quot; for Google, &quot;3 min&quot; for Phone. Pro: sets expectations. Con: may be inaccurate, adds clutter. Rec: skip, keep simple.</span>
+  </label>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Related Screens</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Relation</th>
+    <th class="wmd-table-cell wmd-align-left">Screen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Previous</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./01-welcome-screen.md" class="wmd-link">01-welcome-screen.md</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Next</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./03-zip-code-entry.md" class="wmd-link">03-zip-code-entry.md</a> (after successful signup)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Journey</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../user-journeys/onboarding/01-signup-and-onboarding.md" class="wmd-link">01-signup-and-onboarding</a> - Step 5</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Status:</strong> Draft — Ready for Review
+<strong>Next:</strong> Create Screen 03 (ZIP Code Entry)</p>
+</body>
+</html>

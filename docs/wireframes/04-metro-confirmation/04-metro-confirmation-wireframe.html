@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* wiremd Wireframe Style - Traditional grayscale wireframes */
+* {
+  box-sizing: border-box;
+}
+
+body.wmd-root {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f0f0f0;
+  color: #000;
+  padding: 30px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Headings */
+.wmd-h1, .wmd-h2, .wmd-h3, .wmd-h4, .wmd-h5, .wmd-h6 {
+  font-weight: bold;
+  margin: 1.2em 0 0.6em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wmd-h1 { font-size: 2em; }
+.wmd-h2 { font-size: 1.75em; }
+.wmd-h3 { font-size: 1.5em; }
+.wmd-h4 { font-size: 1.25em; }
+.wmd-h5 { font-size: 1.1em; }
+.wmd-h6 { font-size: 1em; }
+
+/* Paragraph */
+.wmd-paragraph {
+  margin: 0.6em 0;
+}
+
+/* Buttons */
+.wmd-button {
+  display: inline-block;
+  padding: 8px 16px;
+  margin: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    #ddd,
+    #ddd 10px,
+    #ccc 10px,
+    #ccc 20px
+  );
+  border: 2px solid #000;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.wmd-button-primary, .wmd-button.wmd-primary {
+  background: repeating-linear-gradient(
+    45deg,
+    #888,
+    #888 10px,
+    #777 10px,
+    #777 20px
+  );
+  color: #fff;
+}
+
+.wmd-button-secondary, .wmd-button.wmd-secondary {
+  background: #fff;
+}
+
+.wmd-button-danger, .wmd-button.wmd-danger {
+  background: repeating-linear-gradient(
+    45deg,
+    #666,
+    #666 10px,
+    #555 10px,
+    #555 20px
+  );
+  color: #fff;
+}
+
+.wmd-button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Inputs */
+.wmd-input, .wmd-textarea, .wmd-select {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  padding: 6px 10px;
+  margin: 4px 0;
+  font-family: inherit;
+  font-size: 13px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+.wmd-input::placeholder, .wmd-textarea::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f0f0f0;
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Checkboxes and Radios */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #000;
+  cursor: pointer;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  font-size: 1em;
+  line-height: 1;
+  margin: 0 4px;
+  vertical-align: middle;
+}
+
+/* Containers */
+.wmd-container-hero, .wmd-container-card, .wmd-container-modal {
+  background: #fff;
+  border: 3px solid #000;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.wmd-container-hero {
+  background: repeating-linear-gradient(
+    0deg,
+    #fafafa,
+    #fafafa 2px,
+    #fff 2px,
+    #fff 4px
+  );
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.wmd-container-card {
+  max-width: 400px;
+}
+
+.wmd-container-modal {
+  max-width: 500px;
+  margin: 32px auto;
+  border-width: 4px;
+}
+
+/* Navigation */
+.wmd-nav {
+  background: repeating-linear-gradient(
+    90deg,
+    #e0e0e0,
+    #e0e0e0 2px,
+    #d0d0d0 2px,
+    #d0d0d0 4px
+  );
+  border: 2px solid #000;
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wmd-brand {
+  font-weight: bold;
+  font-size: 1.1em;
+  text-transform: uppercase;
+  margin-right: auto;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: #000;
+  text-decoration: none;
+  font-weight: normal;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #666;
+  border-radius: 3px;
+}
+
+.wmd-nav-item:hover {
+  background: #f5f5f5;
+  border-color: #000;
+}
+
+/* Grid */
+.wmd-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 3), 1fr);
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.wmd-grid-item {
+  background: #fff;
+  border: 2px solid #000;
+  padding: 16px;
+}
+
+/* Lists */
+.wmd-list {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.wmd-list-item {
+  margin: 4px 0;
+}
+
+/* Blockquote */
+.wmd-blockquote {
+  border-left: 4px solid #000;
+  padding-left: 16px;
+  margin: 16px 0;
+  background: #f5f5f5;
+  padding: 12px 16px;
+}
+
+/* Code */
+.wmd-code-inline {
+  background: #e0e0e0;
+  border: 1px solid #000;
+  padding: 2px 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.wmd-code-block {
+  background: #f0f0f0;
+  border: 2px solid #000;
+  padding: 12px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.wmd-code-block code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+/* Separator */
+.wmd-separator {
+  border: none;
+  border-top: 2px solid #000;
+  margin: 24px 0;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: repeating-linear-gradient(
+    0deg,
+    #fff,
+    #fff 2px,
+    #f5f5f5 2px,
+    #f5f5f5 4px
+  );
+  border: 2px solid #000;
+  padding: 40px;
+  margin: 16px 0;
+  text-align: center;
+  position: relative;
+}
+
+.wmd-container-loading-state::before {
+  content: '⟳';
+  display: block;
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  animation: spin 2s linear infinite;
+}
+
+.wmd-container-empty-state {
+  background: #fff;
+  border: 2px dashed #666;
+  padding: 60px 40px;
+  margin: 16px 0;
+  text-align: center;
+  color: #666;
+}
+
+.wmd-container-empty-state::before {
+  content: '[EMPTY]';
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 0.2em;
+  margin-bottom: 16px;
+  color: #999;
+}
+
+.wmd-container-error-state {
+  background: repeating-linear-gradient(
+    45deg,
+    #fff,
+    #fff 10px,
+    #f0f0f0 10px,
+    #f0f0f0 20px
+  );
+  border: 3px solid #000;
+  padding: 40px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.wmd-container-error-state::before {
+  content: '⚠';
+  display: block;
+  font-size: 56px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #000;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-wireframe">
+  <h1 class="wmd-h1">Wireframe: Metro Confirmation</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Screen:</strong> 04 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-02-19
+<strong>Journey:</strong> <a href="../user-journeys/onboarding/01-signup-and-onboarding.md">01-signup-and-onboarding</a> - Step 9
+<strong>Story:</strong> As a new user who just entered my ZIP code, I want confirmation that NUSA mapped me to the correct metro area so I know I'll see relevant local posts.</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen Purpose</h2>
+<p class="wmd-paragraph">This screen provides positive feedback after ZIP code validation, confirming the user&#039;s metro area mapping. It serves as a brief celebration moment and builds confidence that the user will see relevant local content.</p>
+<p class="wmd-paragraph"><strong>Key Goals:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Confirm correct metro area mapping (visual success feedback)</li>
+  <li class="wmd-list-item">Show user that they&#039;re part of an active local community</li>
+  <li class="wmd-list-item">Build excitement for what&#039;s next (tutorial and local feed)</li>
+  <li class="wmd-list-item">Provide quick, non-blocking transition to tutorial</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Visual Wireframe</h2>
+<div class="wmd-container-hero">
+  <h1 class="wmd-h1">You&#039;re in Dallas-Fort Worth-Arlington!</h1>
+  <p class="wmd-paragraph">Join 2,847 verified members in your area</p>
+  <button class="wmd-button wmd-button-primary">Continue</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-alert info">
+  <button class="wmd-button wmd-button-primary">Continue</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-alert info">
+  <h1 class="wmd-h1">You&#039;re in New York-Newark-Jersey City!</h1>
+  <p class="wmd-paragraph">Join 12,503 verified members in your area</p>
+  <button class="wmd-button wmd-button-primary">Continue</button>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Component Specifications</h2>
+<h3 class="wmd-h3">1. Success Checkmark Icon</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Icon with background circle</td>
+    <td class="wmd-table-cell wmd-align-left">Icon with background circle</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Circle Size</strong></td>
+    <td class="wmd-table-cell wmd-align-left">80×80px</td>
+    <td class="wmd-table-cell wmd-align-left">80×80dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Checkmark Size</strong></td>
+    <td class="wmd-table-cell wmd-align-left">40×40px inside circle</td>
+    <td class="wmd-table-cell wmd-align-left">40×40dp inside circle</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Centered, top third of screen</td>
+    <td class="wmd-table-cell wmd-align-left">Centered, top third of screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Circle Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#2E7D32 (Success Green)</td>
+    <td class="wmd-table-cell wmd-align-left">#2E7D32 (Success Green)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Checkmark Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">None or subtle white (2px)</td>
+    <td class="wmd-table-cell wmd-align-left">None or subtle white (2px)</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Animation on Load:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Circle: Scale from 0 to 1.0 (300ms, ease-out)</li>
+  <li class="wmd-list-item">Checkmark: Draw animation (path animation) from top-left to bottom-right (300ms, starts 100ms after circle)</li>
+  <li class="wmd-list-item">Optional: Subtle pulse effect (scale 1.0 → 1.05 → 1.0) after drawing completes</li>
+  <li class="wmd-list-item">Total animation time: 600ms</li>
+  <li class="wmd-list-item">a11y: Alt text &quot;Success checkmark&quot;, not interactive; VoiceOver/TalkBack announces &quot;Success&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">2. Metro Area Confirmation Text</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Heading (H1)</td>
+    <td class="wmd-table-cell wmd-align-left">Heading (H1)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">28pt Bold, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">28sp Medium, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#212121 (Almost Black)</td>
+    <td class="wmd-table-cell wmd-align-left">#212121 (Almost Black)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">320px</td>
+    <td class="wmd-table-cell wmd-align-left">320dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Line Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1.2×</td>
+    <td class="wmd-table-cell wmd-align-left">1.2×</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Dynamic Content:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Content template: &quot;You&#039;re in {metro_name}!&quot;</li>
+  <li class="wmd-list-item">Metro area name fetched from API response</li>
+  <li class="wmd-list-item">Always include exclamation mark for excitement</li>
+  <li class="wmd-list-item">If metro name is &gt;40 chars, consider abbreviation</li>
+  <li class="wmd-list-item">a11y: Semantic heading H1; VoiceOver/TalkBack reads full text (e.g., &quot;You&#039;re in Dallas-Fort Worth-Arlington!&quot;)</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">3. Member Count Subtext</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Body text (paragraph)</td>
+    <td class="wmd-table-cell wmd-align-left">Body text (paragraph)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">17pt Regular, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">16sp Regular, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#757575 (Medium Gray)</td>
+    <td class="wmd-table-cell wmd-align-left">#757575 (Medium Gray)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">320px</td>
+    <td class="wmd-table-cell wmd-align-left">320dp</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Dynamic Content:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Content template: &quot;Join {count} verified members in your area&quot;</li>
+  <li class="wmd-list-item">Member count uses comma separators (2,847 not 2847)</li>
+  <li class="wmd-list-item">If count &lt; 100: Show &quot;Join {count} verified members&quot; (no comma)</li>
+  <li class="wmd-list-item">If count = 0 or 1: Show &quot;Be among the first members in your area&quot;</li>
+</ul>
+<p class="wmd-paragraph"><strong>Purpose:</strong> Social proof, excitement, reassurance</p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">a11y: Semantic paragraph; VoiceOver/TalkBack reads full text</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">4. Continue Button (Primary)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+    <td class="wmd-table-cell wmd-align-left">56dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Full width − 32px margins</td>
+    <td class="wmd-table-cell wmd-align-left">match_parent − 32dp margins</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Corner Radius</strong></td>
+    <td class="wmd-table-cell wmd-align-left">8px</td>
+    <td class="wmd-table-cell wmd-align-left">8dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0 (Primary Blue)</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0 (Primary Blue)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">17pt Semibold, White, &quot;Continue&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">14sp Medium, White, &quot;CONTINUE&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bottom, 24px above bottom edge / safe area</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom, 24dp above bottom edge / safe area</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Default: #1565C0 background, white text</li>
+  <li class="wmd-list-item">Pressed: #104D99 background, scale 0.98</li>
+  <li class="wmd-list-item">Loading: Show spinner (if API call needed), disable tap</li>
+</ul>
+<p class="wmd-paragraph"><strong>Interaction:</strong> Tap → Navigate to Screen 05 (Onboarding Tutorial) + haptic (iOS light impact)</p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">No API call needed (metro already saved on previous screen)</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong> Label "Continue", Hint "Continue to onboarding tutorial", min touch target 48×48pt (iOS) / 56×56dp (Android)</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Spacing &amp; Layout</h2>
+<h3 class="wmd-h3">Vertical Stack (Top to Bottom)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">#</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Height</th>
+    <th class="wmd-table-cell wmd-align-left">Spacing After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Safe area / Status bar</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Flexible space</td>
+    <td class="wmd-table-cell wmd-align-left">Flex</td>
+    <td class="wmd-table-cell wmd-align-left">Pushes content to center</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Checkmark icon</td>
+    <td class="wmd-table-cell wmd-align-left">80px/dp</td>
+    <td class="wmd-table-cell wmd-align-left">32px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Metro name text</td>
+    <td class="wmd-table-cell wmd-align-left">~70px (2 lines max)</td>
+    <td class="wmd-table-cell wmd-align-left">16px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">Member count text</td>
+    <td class="wmd-table-cell wmd-align-left">~50px (2 lines max)</td>
+    <td class="wmd-table-cell wmd-align-left">Flex</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Continue button</td>
+    <td class="wmd-table-cell wmd-align-left">48px / 56dp</td>
+    <td class="wmd-table-cell wmd-align-left">24px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">7</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom safe area</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Total Minimum Height:</strong> ~400px (fits all small devices)
+<strong>Content is vertically centered</strong> with button anchored to bottom</p>
+<p class="wmd-paragraph"><strong>Horizontal:</strong> 16px/dp margins on both sides. Button full width minus 32px/dp. Text max 320px centered.</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">User Interactions</h2>
+<h3 class="wmd-h3">Primary Flow</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Screen loads after successful ZIP validation → Checkmark animation plays (600ms)</li>
+  <li class="wmd-list-item">User reads metro area name and member count → ~3–5 seconds</li>
+  <li class="wmd-list-item">User taps &quot;Continue&quot; → Navigate to Screen 05 (Onboarding Tutorial)</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Auto-Advance — Optional Enhancement)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Auto-advance to tutorial after 3 seconds</li>
+  <li class="wmd-list-item">Show countdown indicator: &quot;Continuing in 3... 2... 1...&quot;</li>
+  <li class="wmd-list-item">User can tap &quot;Continue&quot; early to skip countdown</li>
+  <li class="wmd-list-item">User can tap anywhere on screen to cancel countdown</li>
+  <li class="wmd-list-item">Recommendation: Keep manual Continue button (gives user control, prevents feeling rushed)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Platform-Specific Differences</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Aspect</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Checkmark Animation</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Scale + path draw</td>
+    <td class="wmd-table-cell wmd-align-left">Scale + path draw (same)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Button Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+    <td class="wmd-table-cell wmd-align-left">56dp (Material Design)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Button Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Title case (&quot;Continue&quot;)</td>
+    <td class="wmd-table-cell wmd-align-left">ALL CAPS (&quot;CONTINUE&quot;)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Typography</strong></td>
+    <td class="wmd-table-cell wmd-align-left">San Francisco (28pt H1, 17pt body)</td>
+    <td class="wmd-table-cell wmd-align-left">Roboto (28sp H1, 16sp body)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Press Feedback</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Scale 0.98 + haptic (light impact)</td>
+    <td class="wmd-table-cell wmd-align-left">Scale 0.98 + ripple</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Haptic Feedback</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Light impact on button tap</td>
+    <td class="wmd-table-cell wmd-align-left">No haptic (ripple only)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Screen Transition</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Slide in from right (300ms)</td>
+    <td class="wmd-table-cell wmd-align-left">Slide up from bottom (300ms, material motion)</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Error States &amp; Edge Cases</h2>
+<h3 class="wmd-h3">Edge Case: No Member Count Data</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> API doesn't return member count or count is 0
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show alternative text: &quot;Be among the first members in your area&quot;</li>
+  <li class="wmd-list-item">Or: &quot;You&#039;re all set! Let&#039;s explore NUSA&quot;</li>
+  <li class="wmd-list-item">Still show checkmark and metro name</li>
+</ul>
+<h3 class="wmd-h3">Edge Case: Very Long Metro Area Name</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> Metro name is >40 characters (e.g., "New York-Newark-Jersey City, NY-NJ-PA")
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Allow text to wrap to 2–3 lines</li>
+  <li class="wmd-list-item">Reduce font size slightly (24pt/sp instead of 28pt/sp)</li>
+  <li class="wmd-list-item">Ensure all text remains readable</li>
+</ul>
+<h3 class="wmd-h3">Edge Case: Metro Name Not Available</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> API returns metro_area_id but no display name
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show generic success message: &quot;You&#039;re all set!&quot;</li>
+  <li class="wmd-list-item">Show member count if available</li>
+  <li class="wmd-list-item">Log error for debugging</li>
+</ul>
+<h3 class="wmd-h3">Edge Case: User Presses Back Button</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> User taps back (Android hardware back or iOS swipe)
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">iOS: Disable swipe-back gesture (prevent going back to ZIP entry)</li>
+  <li class="wmd-list-item">Android: Intercept back button, show confirmation: &quot;Go back and change your ZIP code?&quot;</li>
+  <li class="wmd-list-item">Confirmation buttons: &quot;Change ZIP&quot; (returns to Screen 03) and &quot;Cancel&quot; (stays on current screen)</li>
+  <li class="wmd-list-item">Rationale: Prevent accidental return to ZIP entry after successful validation</li>
+</ul>
+<h3 class="wmd-h3">Edge Case: API Error (Metro Name Fetch Failed)</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> API call to get metro details fails
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show checkmark and generic success message: &quot;You&#039;re all set!&quot;</li>
+  <li class="wmd-list-item">Use cached metro name from Screen 03 if available</li>
+  <li class="wmd-list-item">Continue button still works (no blocking)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<h3 class="wmd-h3">Screen Reader Order</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">&quot;Success&quot; (checkmark icon)</li>
+  <li class="wmd-list-item">&quot;You&#039;re in Dallas-Fort Worth-Arlington!&quot; (metro name heading)</li>
+  <li class="wmd-list-item">&quot;Join 2,847 verified members in your area&quot; (member count)</li>
+  <li class="wmd-list-item">&quot;Continue&quot; button</li>
+</ol>
+<h3 class="wmd-h3">Screen Title</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Announced as: &quot;Location Confirmed&quot;</li>
+</ul>
+<h3 class="wmd-h3">Touch Targets</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Continue button: 48×48pt (iOS) / 56×56dp (Android) — meets minimum</li>
+  <li class="wmd-list-item">Checkmark icon: Not interactive (no touch target needed)</li>
+</ul>
+<h3 class="wmd-h3">Color Contrast (WCAG)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Ratio</th>
+    <th class="wmd-table-cell wmd-align-left">Level</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Metro name (#212121 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">16.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Member count (#757575 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">4.6:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Button text (White on #1565C0)</td>
+    <td class="wmd-table-cell wmd-align-left">7.2:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Checkmark (White on #2E7D32)</td>
+    <td class="wmd-table-cell wmd-align-left">8.5:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Focus Indicators</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">iOS VoiceOver: yellow outline on Continue button</li>
+  <li class="wmd-list-item">Android TalkBack: green rectangle on Continue button</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Animations &amp; Transitions</h2>
+<h3 class="wmd-h3">Screen Entry Animation</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Step</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Delay</th>
+    <th class="wmd-table-cell wmd-align-left">Duration</th>
+    <th class="wmd-table-cell wmd-align-left">Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Background</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade from transparent to white (ease-out)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Checkmark circle</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">Scale 0→1.0, ease-out (spring effect), bg #2E7D32</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Checkmark path</td>
+    <td class="wmd-table-cell wmd-align-left">100ms</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">Path draw top-left to bottom-right, white</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Checkmark pulse</td>
+    <td class="wmd-table-cell wmd-align-left">400ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Scale 1.0→1.05→1.0 (optional gentle rotation ±3°)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">Metro name text</td>
+    <td class="wmd-table-cell wmd-align-left">700ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in (ease-out)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Member count text</td>
+    <td class="wmd-table-cell wmd-align-left">800ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in (ease-out)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">7</td>
+    <td class="wmd-table-cell wmd-align-left">Continue button</td>
+    <td class="wmd-table-cell wmd-align-left">1000ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in (ease-out)</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Total:</strong> ~1200ms to full visibility</p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">iOS: Light haptic feedback at checkmark completion (300ms mark)</li>
+</ul>
+<h3 class="wmd-h3">Button Press</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Duration: 150ms, ease-in-out</li>
+  <li class="wmd-list-item">Scale 0.98 + background darkens to #104D99</li>
+  <li class="wmd-list-item">iOS: light haptic | Android: ripple from tap point</li>
+</ul>
+<h3 class="wmd-h3">Screen Exit (Navigate to Tutorial)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">iOS: Slide in from right (300ms, ease-in-out)</li>
+  <li class="wmd-list-item">Android: Slide up from bottom (300ms, material motion)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Content &amp; Localization</h2>
+<h3 class="wmd-h3">Copy Requirements</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Metro Name: Use official US Census Metro Area name</li>
+  <li class="wmd-list-item">Member Count: Always show if available (social proof)</li>
+  <li class="wmd-list-item">Tone: Celebratory, welcoming (&quot;You&#039;re in...!&quot; with exclamation)</li>
+  <li class="wmd-list-item">Button Label: Simple imperative (&quot;Continue&quot;)</li>
+</ul>
+<h3 class="wmd-h3">String Keys</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Key</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">metro_confirm_title</code></td>
+    <td class="wmd-table-cell wmd-align-left">You&#039;re in {metro_name}!</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">metro_confirm_members_plural</code></td>
+    <td class="wmd-table-cell wmd-align-left">Join {count} verified members in your area</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">metro_confirm_members_few</code></td>
+    <td class="wmd-table-cell wmd-align-left">Join {count} verified members in your area</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">metro_confirm_members_zero</code></td>
+    <td class="wmd-table-cell wmd-align-left">Be among the first members in your area</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">metro_confirm_button</code></td>
+    <td class="wmd-table-cell wmd-align-left">Continue</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Dynamic Placeholders</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">{metro_name}: Dallas-Fort Worth-Arlington</li>
+  <li class="wmd-list-item">{count}: 2,847 (formatted with commas)</li>
+</ul>
+<h3 class="wmd-h3">Tone</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Celebratory: &quot;You&#039;re in...!&quot; (exclamation mark adds excitement)</li>
+  <li class="wmd-list-item">Welcoming: &quot;Join X members&quot; (you&#039;re part of a community)</li>
+  <li class="wmd-list-item">Encouraging: Social proof builds confidence</li>
+  <li class="wmd-list-item">Simple: No jargon, clear next step</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Technical Notes</h2>
+<h3 class="wmd-h3">Identifiers</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Route: /onboarding/metro-confirmation</li>
+  <li class="wmd-list-item">iOS: MetroConfirmationViewController / MetroConfirmationScreen</li>
+  <li class="wmd-list-item">Android: MetroConfirmationActivity / MetroConfirmationFragment</li>
+</ul>
+<h3 class="wmd-h3">State Management</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">metroAreaId: string (e.g., &quot;dallas-fort-worth-arlington&quot;)</li>
+  <li class="wmd-list-item">metroName: string (e.g., &quot;Dallas-Fort Worth-Arlington&quot;)</li>
+  <li class="wmd-list-item">memberCount: number (e.g., 2847)</li>
+  <li class="wmd-list-item">animationComplete: boolean (true after checkmark animation finishes)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Data Source:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Metro area name + ID: Passed from Screen 03 via navigation params</li>
+  <li class="wmd-list-item">Member count: Fetched from API or pre-loaded database</li>
+</ul>
+<h3 class="wmd-h3">Navigation</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Direction</th>
+    <th class="wmd-table-cell wmd-align-left">Trigger</th>
+    <th class="wmd-table-cell wmd-align-left">Destination</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">ZIP validation success (Screen 03)</td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">Nav params: <code class="wmd-code-inline">{ metroAreaId, metroName, memberCount }</code></td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Continue&quot;</td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">/onboarding/tutorial</code> (Screen 05)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Back button (Android)</td>
+    <td class="wmd-table-cell wmd-align-left">Confirmation dialog → Screen 03 or stay</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Params passed to next screen:</strong> None (metro area already saved in DB)</p>
+<h3 class="wmd-h3">API Integration</h3>
+<p class="wmd-paragraph"><strong>Endpoint (Optional):</strong> GET /metro-areas/:metro_area_id/stats
+<strong>Purpose:</strong> Fetch member count for social proof</p>
+<pre class="wmd-code-block"><code data-lang="json">{
+  &quot;metro_area_id&quot;: &quot;dallas-fort-worth-arlington&quot;,
+  &quot;metro_name&quot;: &quot;Dallas-Fort Worth-Arlington&quot;,
+  &quot;member_count&quot;: 2847,
+  &quot;verified_count&quot;: 1203
+}</code></pre>
+<p class="wmd-paragraph"><strong>Timing:</strong> Fetch during Screen 03 (ZIP validation) to avoid delay; fallback: show metro name without count</p>
+<h3 class="wmd-h3">Performance</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Use CSS/native animations (not JavaScript) for smooth 60fps</li>
+  <li class="wmd-list-item">Cache member count in memory</li>
+  <li class="wmd-list-item">Pass metro name via navigation params (no API call needed on this screen)</li>
+  <li class="wmd-list-item">Use vector SVG for checkmark (crisp at all sizes)</li>
+</ul>
+<h3 class="wmd-h3">Design System Components Used</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Success Checkmark Icon (new component — green circle)</li>
+  <li class="wmd-list-item">Primary Button (from design system)</li>
+  <li class="wmd-list-item">H1 Typography (28pt/sp Bold)</li>
+  <li class="wmd-list-item">Body Typography (17pt/16sp Regular)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Testing Checklist</h2>
+<h3 class="wmd-h3">Functional Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Screen receives metro area name and member count</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Checkmark animation plays on load</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Metro name displays correctly (with line wrapping if needed)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Member count displays with comma separators</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Continue button navigates to Screen 05 (Tutorial)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Back button (Android) shows confirmation dialog</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Visual Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Checkmark is centered and sized correctly (80×80px/dp)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Text is center-aligned and readable</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Button is positioned at bottom with proper padding</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Animation plays smoothly (60fps)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Safe area insets respected (iPhone notch, Android nav bar)</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Accessibility Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>VoiceOver/TalkBack reads all elements in order</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Checkmark announced as &quot;Success&quot;</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Metro name and member count read correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Continue button touch target meets 44pt/48dp minimum</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Color contrast meets WCAG AA standards</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Animation Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Checkmark animation completes in ~600ms</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Text fades in after checkmark (stagger effect)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Button appears last (~1 second total)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>No animation jank or lag</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Haptic feedback triggers on iOS (optional)</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Edge Case Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Very long metro name wraps correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Zero member count shows alternative text</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>No member count data handled gracefully</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>API error handled gracefully</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Back button confirmation works (Android)</span>
+  </label>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Open Questions</h2>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should we auto-advance after 3 seconds?</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Pro: Faster onboarding, less tapping</li>
+  <li class="wmd-list-item">Con: User may feel rushed, miss information</li>
+  <li class="wmd-list-item">Rec: Keep manual Continue button (gives user control)</li>
+</ul>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should we show metro area map preview?</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Pro: Visual confirmation of location</li>
+  <li class="wmd-list-item">Con: Adds complexity, requires map API</li>
+  <li class="wmd-list-item">Rec: Skip for Phase 1, consider for Phase 2</li>
+</ul>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should we show more stats? (e.g., &quot;1,203 verified members&quot;)</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Pro: More social proof</li>
+  <li class="wmd-list-item">Con: Clutters screen, may overwhelm</li>
+  <li class="wmd-list-item">Rec: Keep simple — just total member count</li>
+</ul>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should we add confetti animation?</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Pro: More celebratory, fun</li>
+  <li class="wmd-list-item">Con: May feel gimmicky, slows down onboarding</li>
+  <li class="wmd-list-item">Rec: A/B test — measure user sentiment</li>
+</ul>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should we allow user to change metro area here?</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Pro: Catch errors immediately</li>
+  <li class="wmd-list-item">Con: Adds friction, delays progress</li>
+  <li class="wmd-list-item">Rec: No — user can change in Settings later if needed</li>
+</ul>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Related Screens</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Relation</th>
+    <th class="wmd-table-cell wmd-align-left">Screen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Previous</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./03-zip-code-entry.md" class="wmd-link">03-zip-code-entry.md</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Next</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./05-onboarding-tutorial.md" class="wmd-link">05-onboarding-tutorial.md</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Journey</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../user-journeys/onboarding/01-signup-and-onboarding.md" class="wmd-link">01-signup-and-onboarding</a> - Step 9</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Status:</strong> Draft — Ready for Review
+<strong>Next:</strong> Create Screen 05 (Onboarding Tutorial)</p>
+</body>
+</html>

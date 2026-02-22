@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* Material Design Inspired Style */
+body {
+  font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background: #fafafa;
+  color: rgba(0, 0, 0, 0.87);
+  line-height: 1.5;
+  margin: 0;
+  padding: 20px;
+}
+
+/* Typography - Material Design Type Scale */
+.wmd-h1 {
+  font-size: 2.125rem;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.87);
+  margin: 0 0 1rem 0;
+  letter-spacing: 0;
+}
+
+.wmd-h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  margin: 1.5rem 0 1rem 0;
+  letter-spacing: 0.0075em;
+}
+
+.wmd-h3 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  margin: 1.25rem 0 0.75rem 0;
+  letter-spacing: 0.0125em;
+}
+
+.wmd-h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  margin: 1rem 0 0.5rem 0;
+  letter-spacing: 0.015em;
+}
+
+.wmd-paragraph {
+  color: rgba(0, 0, 0, 0.6);
+  margin: 0.75rem 0;
+  font-size: 1rem;
+  letter-spacing: 0.00938em;
+}
+
+/* Material Buttons */
+.wmd-button {
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.02857em;
+  text-transform: uppercase;
+  transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+              box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+              border-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  background: transparent;
+  color: #6200ee;
+  position: relative;
+  overflow: hidden;
+}
+
+.wmd-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(98, 0, 238, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.wmd-button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.wmd-button:hover {
+  background: rgba(98, 0, 238, 0.04);
+}
+
+.wmd-button-primary, .wmd-button.wmd-button-primary {
+  background: #6200ee;
+  color: white;
+  box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2),
+              0px 2px 2px 0px rgba(0,0,0,0.14),
+              0px 1px 5px 0px rgba(0,0,0,0.12);
+}
+
+.wmd-button-primary::before {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.wmd-button-primary:hover, .wmd-button.wmd-button-primary:hover {
+  background: #6200ee;
+  box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2),
+              0px 4px 5px 0px rgba(0,0,0,0.14),
+              0px 1px 10px 0px rgba(0,0,0,0.12);
+}
+
+.wmd-button:disabled, .wmd-button[disabled] {
+  color: rgba(0, 0, 0, 0.26);
+  background: rgba(0, 0, 0, 0.12);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Button States */
+.wmd-state-loading {
+  background: #e8eaf6 !important;
+  color: #6200ee !important;
+  position: relative;
+  padding-left: 2.5rem;
+}
+
+.wmd-state-loading::after {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #6200ee;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.wmd-state-error {
+  background: #b00020 !important;
+  color: white !important;
+}
+
+.wmd-state-success {
+  background: #00c853 !important;
+  color: white !important;
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Material Form Inputs */
+.wmd-input, .wmd-textarea, .wmd-select {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.42);
+  font-size: 1rem;
+  background: transparent;
+  transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.wmd-input:focus, .wmd-textarea:focus, .wmd-select:focus {
+  outline: none;
+  border-bottom: 2px solid #6200ee;
+  margin-bottom: -1px;
+}
+
+.wmd-input::placeholder, .wmd-textarea::placeholder {
+  color: rgba(0, 0, 0, 0.42);
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  color: rgba(0, 0, 0, 0.38);
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom-color: rgba(0, 0, 0, 0.26);
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.42);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.wmd-textarea:focus {
+  border: 2px solid #6200ee;
+  margin: -1px;
+}
+
+.wmd-select {
+  cursor: pointer;
+}
+
+/* Checkboxes and Radios - Material Style */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #6200ee;
+}
+
+/* Material Cards - Elevation System */
+.wmd-container-card {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),
+              0px 1px 1px 0px rgba(0,0,0,0.14),
+              0px 1px 3px 0px rgba(0,0,0,0.12);
+  padding: 16px;
+  margin: 16px 0;
+  transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+
+.wmd-container-card:hover {
+  box-shadow: 0px 3px 3px -2px rgba(0,0,0,0.2),
+              0px 3px 4px 0px rgba(0,0,0,0.14),
+              0px 1px 8px 0px rgba(0,0,0,0.12);
+}
+
+.wmd-container-hero {
+  background: linear-gradient(135deg, #6200ee 0%, #3700b3 100%);
+  color: white;
+  border-radius: 4px;
+  padding: 48px 24px;
+  margin: 24px 0;
+  text-align: center;
+  box-shadow: 0px 3px 5px -1px rgba(0,0,0,0.2),
+              0px 6px 10px 0px rgba(0,0,0,0.14),
+              0px 1px 18px 0px rgba(0,0,0,0.12);
+}
+
+.wmd-container-hero .wmd-h1,
+.wmd-container-hero .wmd-h2,
+.wmd-container-hero .wmd-h3,
+.wmd-container-hero .wmd-paragraph {
+  color: white;
+}
+
+.wmd-container-modal {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0px 11px 15px -7px rgba(0,0,0,0.2),
+              0px 24px 38px 3px rgba(0,0,0,0.14),
+              0px 9px 46px 8px rgba(0,0,0,0.12);
+  padding: 24px;
+  margin: 24px auto;
+  max-width: 600px;
+  position: relative;
+}
+
+.wmd-container-footer {
+  background: #212121;
+  color: rgba(255, 255, 255, 0.87);
+  padding: 24px;
+  margin-top: 48px;
+  border-radius: 4px;
+}
+
+.wmd-container-footer .wmd-paragraph,
+.wmd-container-footer .wmd-nav-item {
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.wmd-container-section {
+  padding: 24px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.wmd-container-section:last-child {
+  border-bottom: none;
+}
+
+/* Material Alerts */
+.wmd-container-alert {
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+}
+
+.wmd-container-alert.wmd-warning {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.wmd-container-alert.wmd-state-error {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.wmd-container-alert.wmd-state-success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* Material Navigation - App Bar Style */
+.wmd-nav {
+  background: #6200ee;
+  color: white;
+  padding: 0 16px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2),
+              0px 4px 5px 0px rgba(0,0,0,0.14),
+              0px 1px 10px 0px rgba(0,0,0,0.12);
+  margin-bottom: 24px;
+  border-radius: 4px;
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.87);
+  text-decoration: none;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.wmd-nav-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.wmd-brand {
+  font-weight: 500;
+  font-size: 1.25rem;
+  color: white;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Material Lists */
+.wmd-list {
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.2),
+              0px 1px 1px 0px rgba(0,0,0,0.14),
+              0px 2px 1px -1px rgba(0,0,0,0.12);
+}
+
+.wmd-list-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.87);
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+
+.wmd-list-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.wmd-list-item:last-child {
+  border-bottom: none;
+}
+
+/* Material Grid */
+.wmd-grid {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.wmd-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.wmd-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.wmd-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Material Tables */
+.wmd-table {
+  width: 100%;
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.2),
+              0px 1px 1px 0px rgba(0,0,0,0.14),
+              0px 2px 1px -1px rgba(0,0,0,0.12);
+  margin: 16px 0;
+}
+
+.wmd-table th {
+  background: #fafafa;
+  padding: 16px;
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.87);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.wmd-table td {
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.wmd-table tr:last-child td {
+  border-bottom: none;
+}
+
+.wmd-table tr:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Table cell alignment - more specific to override th/td defaults */
+.wmd-table .wmd-align-left {
+  text-align: left !important;
+}
+
+.wmd-table .wmd-align-center {
+  text-align: center !important;
+}
+
+.wmd-table .wmd-align-right {
+  text-align: right !important;
+}
+
+/* Material Icons */
+.wmd-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+
+/* Utility classes */
+.wmd-separator {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  margin: 24px 0;
+}
+
+.wmd-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.2),
+              0px 1px 1px 0px rgba(0,0,0,0.14),
+              0px 2px 1px -1px rgba(0,0,0,0.12);
+}
+
+.wmd-code {
+  background: rgba(98, 0, 238, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.875rem;
+  color: #6200ee;
+}
+
+.wmd-blockquote {
+  border-left: 4px solid #6200ee;
+  padding-left: 16px;
+  margin: 16px 0;
+  color: rgba(0, 0, 0, 0.6);
+  font-style: italic;
+}
+
+/* Button group */
+.wmd-container-button-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+/* Form group */
+.wmd-container-form-group {
+  margin: 16px 0;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: white;
+  border-radius: 4px;
+  padding: 48px 32px;
+  margin: 24px 0;
+  text-align: center;
+  box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2),
+              0px 4px 5px 0px rgba(0,0,0,0.14),
+              0px 1px 10px 0px rgba(0,0,0,0.12);
+}
+
+.wmd-container-loading-state::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 24px;
+  border: 3px solid rgba(98, 0, 238, 0.2);
+  border-top-color: #6200ee;
+  border-radius: 50%;
+  animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.wmd-container-empty-state {
+  background: #fafafa;
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  padding: 64px 32px;
+  margin: 24px 0;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.wmd-container-empty-state::before {
+  content: '📭';
+  display: block;
+  font-size: 64px;
+  margin-bottom: 24px;
+  opacity: 0.3;
+}
+
+.wmd-container-error-state {
+  background: #ffebee;
+  border-radius: 4px;
+  padding: 48px 32px;
+  margin: 24px 0;
+  text-align: center;
+  color: #c62828;
+  box-shadow: 0px 1px 3px 0px rgba(198, 40, 40, 0.2);
+}
+
+.wmd-container-error-state::before {
+  content: '⚠️';
+  display: block;
+  font-size: 48px;
+  margin-bottom: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid-2,
+  .wmd-grid-3,
+  .wmd-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .wmd-nav-content {
+    flex-direction: column;
+    align-items: flex-start;
+    height: auto;
+    padding: 12px 0;
+  }
+
+  .wmd-nav {
+    height: auto;
+  }
+
+  .wmd-brand {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-material">
+  <h1 class="wmd-h1">Wireframe: Location Change Prompt</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Screen:</strong> 12 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-02-19
+<strong>Journey:</strong> <a href="../user-journeys/location/01-location-permission-and-detection.md">01-location-permission-and-detection</a> - Scenario C, Step 2
+<strong>Feature:</strong> <a href="../features/dynamic-location-management.md">dynamic-location-management</a> - Features L.3, L.4, L.8
+<strong>Story:</strong> As a traveling user, I want the app to notice I'm in a different city and give me the option to browse local content or keep my home feed.
+<strong>Platforms:</strong> Mobile + Web</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen Purpose</h2>
+<p class="wmd-paragraph">A bottom sheet (mobile) or modal (web) that appears when the app detects the user is in a different metro area than their active location. Gives users three clear choices: browse temporarily, update permanently, or dismiss.</p>
+<p class="wmd-paragraph"><strong>Key Goals:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Inform user that a location mismatch was detected</li>
+  <li class="wmd-list-item">Provide clear, understandable options without jargon</li>
+  <li class="wmd-list-item">Allow snoozing to prevent prompt fatigue</li>
+  <li class="wmd-list-item">Not block app usage (user can dismiss and continue)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Visual Wireframe</h2>
+<h3 class="wmd-h3">Mobile — Bottom Sheet</h3>
+<div class="wmd-container-modal">
+  <p class="wmd-paragraph">It looks like you're in
+<strong>Houston</strong></p>
+  <p class="wmd-paragraph">Would you like to see community posts from this area?</p>
+  <button class="wmd-button wmd-button-primary">Browse Houston</button>
+  <button class="wmd-button wmd-outline">Update My Location</button>
+  <button class="wmd-button wmd-secondary">Keep Dallas-Fort Worth</button>
+  <hr class="wmd-separator" />
+  <ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Don&#039;t ask again for 24 hours</span>
+  </label>
+</ul>
+</div>
+<h3 class="wmd-h3">Web — Centered Modal</h3>
+<div class="wmd-container-modal wmd-web">
+  <p class="wmd-paragraph">📍</p>
+  <p class="wmd-paragraph">It looks like you're in
+<strong>Houston</strong></p>
+  <p class="wmd-paragraph">Would you like to see community posts from this area?</p>
+  <button class="wmd-button wmd-button-primary">Browse Houston</button>
+  <button class="wmd-button wmd-outline">Update My Location</button>
+  <button class="wmd-button wmd-secondary">Keep Dallas-Fort Worth</button>
+  <hr class="wmd-separator" />
+  <ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Don&#039;t ask again for 24 hours</span>
+  </label>
+</ul>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Interactive States</h2>
+<h3 class="wmd-h3">Action: &quot;Browse [Metro]&quot; tapped</h3>
+<p class="wmd-paragraph"><strong>System behavior:</strong></p>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Bottom sheet dismisses (slide down animation)</li>
+  <li class="wmd-list-item">Home screen header updates: &quot;[Metro Name]&quot; + &quot;(Visiting)&quot; tag</li>
+  <li class="wmd-list-item">Feed refreshes with posts from detected metro area</li>
+  <li class="wmd-list-item">If snooze checkbox was checked → save snooze record</li>
+  <li class="wmd-list-item">Set manual override flag (no more GPS prompts this session)</li>
+</ol>
+<p class="wmd-paragraph"><strong>Visiting indicator on home screen:</strong></p>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">Houston (Visiting) ▼   🔍 🔔</p>
+</div>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph">&quot;(Visiting)&quot; shown in lighter color / smaller font next to metro name</p>
+</blockquote>
+<h3 class="wmd-h3">Action: &quot;Update My Location&quot; tapped</h3>
+<p class="wmd-paragraph"><strong>System behavior:</strong></p>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Bottom sheet content transitions to &quot;Save Location&quot; sub-view:</li>
+</ol>
+<div class="wmd-container-modal">
+  <p class="wmd-paragraph">You're now viewing posts from
+<strong>Houston-The Woodlands, TX</strong></p>
+  <p class="wmd-paragraph">Save this as a named location?</p>
+  <input type="text" class="wmd-input" placeholder="Houston" />
+  <p class="wmd-paragraph">Suggested: Home Work School</p>
+  <button class="wmd-button wmd-button-primary">Save Location</button>
+  <button class="wmd-button wmd-secondary">Skip</button>
+</div>
+<ol class="wmd-list">
+  <li class="wmd-list-item">If user has 5 saved locations already:<ul class="wmd-list">
+  <li class="wmd-list-item">Show: &quot;You&#039;ve reached the max of 5 locations.&quot;</li>
+  <li class="wmd-list-item">&quot;Manage Locations&quot; link instead of save option</li>
+  <li class="wmd-list-item">Metro is still updated in DB, just not saved as named location</li>
+</ul></li>
+  <li class="wmd-list-item">If &quot;Save Location&quot; tapped:<ul class="wmd-list">
+  <li class="wmd-list-item">Create entry in user_saved_locations</li>
+  <li class="wmd-list-item">Dismiss bottom sheet</li>
+  <li class="wmd-list-item">Feed refreshes with new metro</li>
+  <li class="wmd-list-item">Set manual override flag</li>
+</ul></li>
+  <li class="wmd-list-item">If &quot;Skip&quot; tapped:<ul class="wmd-list">
+  <li class="wmd-list-item">Metro updated in DB (users.metro_area_id)</li>
+  <li class="wmd-list-item">No saved location created</li>
+  <li class="wmd-list-item">Dismiss bottom sheet</li>
+  <li class="wmd-list-item">Feed refreshes</li>
+</ul></li>
+</ol>
+<h3 class="wmd-h3">Action: &quot;Keep [Current]&quot; tapped or sheet dismissed</h3>
+<p class="wmd-paragraph"><strong>System behavior:</strong></p>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Bottom sheet dismisses</li>
+  <li class="wmd-list-item">Feed unchanged (stays on current metro)</li>
+  <li class="wmd-list-item">If snooze checkbox was checked → save snooze record for detected metro</li>
+  <li class="wmd-list-item">No manual override flag set (GPS will check again on next foreground)</li>
+</ol>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Component Specifications</h2>
+<h3 class="wmd-h3">1. Bottom Sheet Container (Mobile)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.white</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border radius (top)</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">24px horizontal, 20px top, 32px bottom (safe area aware)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Handle bar</strong></td>
+    <td class="wmd-table-cell wmd-align-left">40px wide, 4px tall, <code class="wmd-code-inline">colors.border</code> color, centered, 8px from top</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Overlay</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">rgba(0,0,0,0.4)</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Animation</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Slide up from bottom, 300ms ease-out</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Dismissible</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Swipe down or tap overlay to dismiss (same as &quot;Keep [Current]&quot;)</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">2. Modal Container (Web)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">var(--color-surface)</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border radius</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">var(--radius-lg)</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">420px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">32px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Box shadow</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">var(--shadow-lg)</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Close button</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Top-right, 24x24px, <code class="wmd-code-inline">X</code> icon</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Overlay</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">rgba(0,0,0,0.4)</code>, click to dismiss</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">3. Location Pin Icon</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">location-sharp</code> (Ionicons) or custom map pin SVG</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Size</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.primary</code> (#1565C0)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Left-aligned with text (mobile), centered (web)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Bottom margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">4. Headline</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Line 1</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;It looks like you&#039;re in&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Line 2</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;[Detected Metro Short Name]&quot; — e.g., &quot;Houston&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font size</strong></td>
+    <td class="wmd-table-cell wmd-align-left">20px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font weight</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bold (700) for metro name, Regular (400) for &quot;It looks like...&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.text.primary</code>, metro name in <code class="wmd-code-inline">colors.primary</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Bottom margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">8px</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Metro name display rule:</strong> Use the first part of the metro name before the first hyphen. Examples:</p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">&quot;Houston-The Woodlands-Sugar Land, TX&quot; → &quot;Houston&quot;</li>
+  <li class="wmd-list-item">&quot;Dallas-Fort Worth-Arlington, TX&quot; → &quot;Dallas-Fort Worth&quot;</li>
+  <li class="wmd-list-item">&quot;New York-Newark-Jersey City, NY&quot; → &quot;New York&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">5. Body Text</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Would you like to see community posts from this area?&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font size</strong></td>
+    <td class="wmd-table-cell wmd-align-left">15px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.text.secondary</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Bottom margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">24px</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">6. Button — &quot;Browse [Metro]&quot; (Primary)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Browse [Short Metro Name]&quot; (e.g., &quot;Browse Houston&quot;)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Component</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">PrimaryButton</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Full width</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Bottom margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon (optional)</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">navigate-outline</code> Ionicon, left of text</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">7. Button — &quot;Update My Location&quot; (Secondary/Outlined)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Update My Location&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Full width</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Transparent</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1.5px solid <code class="wmd-code-inline">colors.primary</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text color</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.primary</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font weight</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Semibold (600)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Bottom margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">8. Link — &quot;Keep [Current Metro]&quot; (Tertiary)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Keep [Current Short Metro Name]&quot; (e.g., &quot;Keep Dallas-Fort Worth&quot;)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Text link, not button</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font size</strong></td>
+    <td class="wmd-table-cell wmd-align-left">14px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.text.secondary</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Bottom margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">20px</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">9. Divider</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Dashed or thin solid line</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.border</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">0px horizontal (full width of content area)</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">10. Snooze Checkbox</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Don&#039;t ask again for 24 hours&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font size</strong></td>
+    <td class="wmd-table-cell wmd-align-left">14px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.text.secondary</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Checkbox</strong></td>
+    <td class="wmd-table-cell wmd-align-left">20x20px, unchecked by default, <code class="wmd-code-inline">colors.primary</code> when checked</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Top margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px below divider</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Left-aligned</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">11. Save Location Sub-View</h3>
+<h4 class="wmd-h4">Success Confirmation</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Green checkmark ✅</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Headline</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Location Updated&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">20px Bold</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">colors.success</code> for icon, <code class="wmd-code-inline">colors.text.primary</code> for text</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Name Input</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Pre-filled</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Short metro name or next default name</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px <code class="wmd-code-inline">colors.border</code>, focus: <code class="wmd-code-inline">colors.primary</code></td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Quick-Fill Chips (Suggested Names)</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Labels</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Home&quot;, &quot;Work&quot;, &quot;School&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Style</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Tappable chips, fill input on tap</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Visibility</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Hide already-used names</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Save Location Button</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Save Location&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Component</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">PrimaryButton</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Full width</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Skip Link</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Skip&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Text link</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Behavior</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Updates metro but doesn&#039;t save as named location</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Permission Denied Reminder Banner</h2>
+<p class="wmd-paragraph">This is a separate component shown on the home screen when location permission was denied.</p>
+<h3 class="wmd-h3">Mobile</h3>
+<div class="wmd-container-alert info">
+  <p class="wmd-paragraph">📍 Enable location for a better experience. <button class="wmd-button">Turn On</button><button class="wmd-button wmd-close">X</button></p>
+</div>
+<h3 class="wmd-h3">Web</h3>
+<div class="wmd-container-alert info wmd-full-width">
+  <p class="wmd-paragraph">📍 Enable location for a better experience. <button class="wmd-button">Turn On</button><button class="wmd-button wmd-close">X</button></p>
+</div>
+<h3 class="wmd-h3">Banner Specifications</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Light blue <code class="wmd-code-inline">#E3F2FD</code> (mobile), <code class="wmd-code-inline">var(--color-info-bg)</code> (web)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">52px (mobile), 44px (web)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">location-outline</code> Ionicon, 18px, <code class="wmd-code-inline">colors.primary</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Enable location for a better experience.&quot; 14px, <code class="wmd-code-inline">colors.text.primary</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>"Turn On" link</strong></td>
+    <td class="wmd-table-cell wmd-align-left">14px, bold, <code class="wmd-code-inline">colors.primary</code>, underline on press</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Close [X]</strong></td>
+    <td class="wmd-table-cell wmd-align-left">20x20px, <code class="wmd-code-inline">colors.text.secondary</code>, 8px hitSlop</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Below header, above category tabs (mobile) / top of page (web)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Animation</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Slide down on show, slide up on dismiss</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Banner Logic</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Rule</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>First show</strong></td>
+    <td class="wmd-table-cell wmd-align-left">On first home screen visit after permission denied</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>After dismiss</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Don&#039;t show again for 7 days</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max total shows</strong></td>
+    <td class="wmd-table-cell wmd-align-left">3 (after 3rd dismissal, never show again)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Storage key</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">location_reminder_dismiss_count</code>, <code class="wmd-code-inline">location_reminder_last_dismissed</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>"Turn On" action (mobile)</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">Linking.openSettings()</code> → opens app settings</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>"Turn On" action (web)</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Re-triggers browser geolocation prompt</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Bottom sheet announced: &quot;Location change detected&quot; when opened</li>
+  <li class="wmd-list-item">All buttons have descriptive accessibilityLabel:<ul class="wmd-list">
+  <li class="wmd-list-item">&quot;Browse Houston temporarily&quot;</li>
+  <li class="wmd-list-item">&quot;Update your home location to Houston&quot;</li>
+  <li class="wmd-list-item">&quot;Keep Dallas-Fort Worth as your location&quot;</li>
+</ul></li>
+  <li class="wmd-list-item">Snooze checkbox: &quot;Don&#039;t ask again for 24 hours, checkbox, unchecked&quot;</li>
+  <li class="wmd-list-item">Overlay tap to dismiss has accessibilityLabel=&quot;Dismiss location prompt&quot;</li>
+  <li class="wmd-list-item">Web modal: Focus trapped inside modal, Escape key to dismiss</li>
+  <li class="wmd-list-item">Banner: &quot;Turn On&quot; has aria-label=&quot;Open location settings&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Animation &amp; Transitions</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Transition</th>
+    <th class="wmd-table-cell wmd-align-left">Duration</th>
+    <th class="wmd-table-cell wmd-align-left">Easing</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Bottom sheet slide up</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">ease-out</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Bottom sheet dismiss (slide down)</td>
+    <td class="wmd-table-cell wmd-align-left">250ms</td>
+    <td class="wmd-table-cell wmd-align-left">ease-in</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Overlay fade in</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">linear</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Content transition (to save sub-view)</td>
+    <td class="wmd-table-cell wmd-align-left">250ms</td>
+    <td class="wmd-table-cell wmd-align-left">ease-in-out</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Banner slide down (show)</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">ease-out</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Banner slide up (dismiss)</td>
+    <td class="wmd-table-cell wmd-align-left">150ms</td>
+    <td class="wmd-table-cell wmd-align-left">ease-in</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Web modal fade + scale in</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">ease-out, scale 0.95→1.0</td>
+  </tr>
+  </tbody>
+</table>
+</body>
+</html>

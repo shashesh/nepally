@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* Tailwind-Inspired Style */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f9fafb;
+  color: #111827;
+  line-height: 1.5;
+  margin: 0;
+  padding: 20px;
+}
+
+/* Typography */
+.wmd-h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 1rem 0;
+  letter-spacing: -0.025em;
+}
+
+.wmd-h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 1.5rem 0 1rem 0;
+  letter-spacing: -0.025em;
+}
+
+.wmd-h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 1.25rem 0 0.75rem 0;
+}
+
+.wmd-h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.wmd-paragraph {
+  color: #6b7280;
+  margin: 0.75rem 0;
+  font-size: 1rem;
+}
+
+/* Buttons */
+.wmd-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  background: #e5e7eb;
+  color: #374151;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.wmd-button:hover {
+  background: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wmd-button-primary, .wmd-button.wmd-button-primary {
+  background: #6366f1;
+  color: white;
+}
+
+.wmd-button-primary:hover, .wmd-button.wmd-button-primary:hover {
+  background: #4f46e5;
+}
+
+.wmd-button:disabled, .wmd-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button States */
+.wmd-state-loading {
+  background: #e0e7ff !important;
+  color: #6366f1 !important;
+  position: relative;
+  padding-left: 2.5rem;
+}
+
+.wmd-state-loading::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #6366f1;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.wmd-state-error {
+  background: #fef2f2 !important;
+  color: #ef4444 !important;
+  border: 1px solid #fca5a5;
+}
+
+.wmd-state-success {
+  background: #f0fdf4 !important;
+  color: #22c55e !important;
+  border: 1px solid #86efac;
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Forms */
+.wmd-input, .wmd-textarea, .wmd-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.15s ease;
+  color: #111827;
+}
+
+.wmd-input:focus, .wmd-textarea:focus, .wmd-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.wmd-input::placeholder, .wmd-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
+}
+
+.wmd-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.5rem;
+  padding-right: 2.5rem;
+}
+
+/* Checkboxes and Radios */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+/* Cards and Containers */
+.wmd-container-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.wmd-container-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.wmd-container-hero .wmd-h1,
+.wmd-container-hero .wmd-h2,
+.wmd-container-hero .wmd-h3,
+.wmd-container-hero .wmd-paragraph {
+  color: white;
+}
+
+.wmd-container-modal {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 600px;
+  position: relative;
+}
+
+.wmd-container-footer {
+  background: #1f2937;
+  color: #e5e7eb;
+  padding: 2rem;
+  margin-top: 3rem;
+  border-radius: 0.75rem;
+}
+
+.wmd-container-footer .wmd-paragraph,
+.wmd-container-footer .wmd-nav-item {
+  color: #e5e7eb;
+}
+
+.wmd-container-section {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wmd-container-section:last-child {
+  border-bottom: none;
+}
+
+/* Alerts */
+.wmd-container-alert {
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  border-left: 4px solid;
+}
+
+.wmd-container-alert.wmd-warning {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.wmd-container-alert.wmd-state-error {
+  background: #fee2e2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.wmd-container-alert.wmd-state-success {
+  background: #d1fae5;
+  border-left-color: #10b981;
+  color: #065f46;
+}
+
+/* Navigation */
+.wmd-nav {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin-bottom: 2rem;
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: #4b5563;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.wmd-nav-item:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.wmd-brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #111827;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Lists */
+.wmd-list {
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wmd-list-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+}
+
+.wmd-list-item:last-child {
+  border-bottom: none;
+}
+
+/* Grid */
+.wmd-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.wmd-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.wmd-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.wmd-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Tables */
+.wmd-table {
+  width: 100%;
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin: 1rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.wmd-table th {
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wmd-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.wmd-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table cell alignment - more specific to override th/td defaults */
+.wmd-table .wmd-align-left {
+  text-align: left !important;
+}
+
+.wmd-table .wmd-align-center {
+  text-align: center !important;
+}
+
+.wmd-table .wmd-align-right {
+  text-align: right !important;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  vertical-align: middle;
+}
+
+
+/* Utility classes */
+.wmd-separator {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.wmd-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wmd-code {
+  background: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  font-size: 0.875rem;
+  color: #6366f1;
+}
+
+.wmd-blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  color: #4b5563;
+  font-style: italic;
+}
+
+/* Button group */
+.wmd-container-button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+/* Form group */
+.wmd-container-form-group {
+  margin: 1rem 0;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.wmd-container-loading-state::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1.5rem;
+  border: 4px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.wmd-container-empty-state {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.75rem;
+  padding: 4rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  color: #6b7280;
+}
+
+.wmd-container-empty-state::before {
+  content: '📭';
+  display: block;
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.wmd-container-error-state {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  color: #991b1b;
+}
+
+.wmd-container-error-state::before {
+  content: '⚠️';
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid-2,
+  .wmd-grid-3,
+  .wmd-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .wmd-nav-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wmd-brand {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-tailwind">
+  <h1 class="wmd-h1">Wireframe: Create Post (Reddit-Style)</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Screen:</strong> 14 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-02-19
+<strong>Journey:</strong> Post Creation User Journey
+<strong>Story:</strong> As a verified (Level 1+) user, I want to create a post with a title, body, and tags so I can share information with my local community (or globally if I'm a premium user).</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen Purpose</h2>
+<p class="wmd-paragraph">A single-screen, Reddit-style post creation form. Users write a title and body, select 1-3 tags, optionally add photos, and premium users can toggle global visibility.</p>
+<p class="wmd-paragraph"><strong>Key Goals:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Simple, fast post creation (&lt; 60 seconds for typical post)</li>
+  <li class="wmd-list-item">Mandatory tags for content organization (1–3 tags)</li>
+  <li class="wmd-list-item">Optional photo attachments</li>
+  <li class="wmd-list-item">Premium users can toggle global visibility</li>
+  <li class="wmd-list-item">Emergency tag triggers moderation disclaimer</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Visual Wireframe</h2>
+<h3 class="wmd-h3">Standard User</h3>
+<nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item">✕ Cancel</a>
+    <a href="#" class="wmd-nav-item">Create Post</a>
+    <a href="#" class="wmd-nav-item">[Post]{state:disabled}</a>
+  </div>
+</nav>
+<div class="wmd-container-card">
+  <textarea class="wmd-textarea" rows="5," placeholder="Write your post details here..."></textarea>
+</div>
+<div class="wmd-container-card">
+  <div class="wmd-container-form-group">
+  [🏠 Housing]{.outline}  [💼 Jobs]{.outline}  [🤝 Help]{.outline}  [❓ Question]{.outline}
+  <button class="wmd-button wmd-outline">🏛 Politics</button>
+  <button class="wmd-button wmd-outline">💬 Discussion</button>
+  <button class="wmd-button wmd-outline">⚠️ Emergency</button>
+</div>
+</div>
+<div class="wmd-container-card">
+  <div class="wmd-container-form-group">
+  📷 
+  <button class="wmd-button">Add Photos (optional)</button>
+  <strong>0/5</strong>
+</div>
+</div>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">📍 Posting to:<strong>Dallas-Fort Worth</strong></p>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Premium User (Global Toggle Visible)</h3>
+<nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item">✕ Cancel</a>
+    <a href="#" class="wmd-nav-item">Create Post</a>
+    <a href="#" class="wmd-nav-item">[Post]{state:disabled}</a>
+  </div>
+</nav>
+<div class="wmd-container-card">
+  <textarea class="wmd-textarea" rows="5," placeholder="Write your post details here..."></textarea>
+</div>
+<div class="wmd-container-card">
+  <div class="wmd-container-form-group">
+  [🏠 Housing]{.outline}  [💼 Jobs]{.outline}  [🤝 Help]{.outline}  [❓ Question]{.outline}
+  <button class="wmd-button wmd-outline">🏛 Politics</button>
+  <button class="wmd-button wmd-outline">💬 Discussion</button>
+  <button class="wmd-button wmd-outline">⚠️ Emergency</button>
+</div>
+</div>
+<div class="wmd-container-card">
+  <div class="wmd-container-form-group">
+  📷 
+  <button class="wmd-button">Add Photos (optional)</button>
+  <strong>0/5</strong>
+</div>
+</div>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">🌐 Post Globally  [OFF]
+<em>Visible in all metro areas</em>
+:::</p>
+  <hr class="wmd-separator" />
+  <h3 class="wmd-h3">Emergency Tag Selected State</h3>
+</div>
+<div class="wmd-container-alert warning">
+  <hr class="wmd-separator" />
+  <h3 class="wmd-h3">Discard Confirmation Modal</h3>
+</div>
+<div class="wmd-container-modal">
+  <p class="wmd-paragraph">You have unsaved changes. Are you sure you want to discard this post?</p>
+  <button class="wmd-button wmd-destructive">Discard</button>
+  <button class="wmd-button wmd-outline">Keep Editing</button>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Level 0 Blocked State</h3>
+<div class="wmd-container-alert error">
+  <p class="wmd-paragraph">You need to verify your phone number before you can create posts.</p>
+  <button class="wmd-button wmd-button-primary">Verify Now</button>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Component Specifications</h2>
+<h3 class="wmd-h3">1. Top Navigation Bar</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Navigation bar</td>
+    <td class="wmd-table-cell wmd-align-left">App bar</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44px</td>
+    <td class="wmd-table-cell wmd-align-left">56dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom #E0E0E0</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Cancel Button (Left)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Label: &quot;Cancel&quot; (iOS) or ✕ icon (Android)</li>
+  <li class="wmd-list-item">Typography: 17pt/16sp Regular, #1565C0 (Primary Blue)</li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp</li>
+  <li class="wmd-list-item">Interaction: Tap to dismiss screen (with discard confirmation if content entered)</li>
+</ul>
+<h4 class="wmd-h4">Screen Title (Center)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Label: &quot;Create Post&quot;</li>
+  <li class="wmd-list-item">Typography: 17pt/16sp Semibold, #212121</li>
+  <li class="wmd-list-item">Alignment: Center</li>
+</ul>
+<h4 class="wmd-h4">Post Button (Right)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Label: &quot;Post&quot;</li>
+  <li class="wmd-list-item">Typography: 17pt/16sp Semibold</li>
+  <li class="wmd-list-item">Colors:<ul class="wmd-list">
+  <li class="wmd-list-item">Enabled: #FFFFFF text on #1565C0 (Primary Blue) pill background</li>
+  <li class="wmd-list-item">Disabled: #BDBDBD text on #F5F5F5 background</li>
+</ul></li>
+  <li class="wmd-list-item">Shape: Pill (border-radius: 16px), padding: 12px horizontal, 6px vertical</li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp</li>
+  <li class="wmd-list-item">Interaction: Tap to submit post (enabled only when form is valid)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Post Button Enable Conditions:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Title is non-empty (minimum 5 characters)</li>
+  <li class="wmd-list-item">Body is non-empty (minimum 10 characters)</li>
+  <li class="wmd-list-item">At least 1 tag selected</li>
+  <li class="wmd-list-item">Not currently submitting</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">2. Title Input</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Single-line text input</td>
+    <td class="wmd-table-cell wmd-align-left">Single-line text input</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px horizontal, 12px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">16dp horizontal, 12dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">None (borderless style)</td>
+    <td class="wmd-table-cell wmd-align-left">None (borderless style)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Placeholder</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;What&#039;s this about?&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;What&#039;s this about?&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Placeholder Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#9E9E9E</td>
+    <td class="wmd-table-cell wmd-align-left">#9E9E9E</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Typography</strong></td>
+    <td class="wmd-table-cell wmd-align-left">20pt Semibold, #212121</td>
+    <td class="wmd-table-cell wmd-align-left">18sp Semibold, #212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Length</strong></td>
+    <td class="wmd-table-cell wmd-align-left">150 characters</td>
+    <td class="wmd-table-cell wmd-align-left">150 characters</td>
+  </tr>
+  </tbody>
+</table>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Character Counter: Shown at 120+ characters (&quot;120/150&quot;), right-aligned</li>
+  <li class="wmd-list-item">Counter Color: #757575, turns #C62828 (Error Red) at 140+</li>
+</ul>
+<p class="wmd-paragraph"><strong>Validation:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Minimum 5 characters</li>
+  <li class="wmd-list-item">Maximum 150 characters</li>
+  <li class="wmd-list-item">No empty/whitespace-only titles</li>
+  <li class="wmd-list-item">Error shown inline below field: &quot;Title must be at least 5 characters&quot;</li>
+</ul>
+<p class="wmd-paragraph"><strong>Accessibility:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Label: &quot;Post title, required&quot;</li>
+  <li class="wmd-list-item">Hint: &quot;Enter a title for your post&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">3. Body Textarea</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Multi-line text input (auto-expanding)</td>
+    <td class="wmd-table-cell wmd-align-left">Multi-line text input (auto-expanding)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px horizontal, 12px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">16dp horizontal, 12dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Min Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">120px</td>
+    <td class="wmd-table-cell wmd-align-left">120dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Scrollable after 300px</td>
+    <td class="wmd-table-cell wmd-align-left">Scrollable after 300dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Placeholder</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Write your post details here...&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Write your post details here...&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Placeholder Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#9E9E9E</td>
+    <td class="wmd-table-cell wmd-align-left">#9E9E9E</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Typography</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16pt Regular, #212121</td>
+    <td class="wmd-table-cell wmd-align-left">15sp Regular, #212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Length</strong></td>
+    <td class="wmd-table-cell wmd-align-left">5000 characters</td>
+    <td class="wmd-table-cell wmd-align-left">5000 characters</td>
+  </tr>
+  </tbody>
+</table>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Character Counter: Shown at 4500+ characters (&quot;4500/5000&quot;)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Validation:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Minimum 10 characters</li>
+  <li class="wmd-list-item">Maximum 5000 characters</li>
+  <li class="wmd-list-item">Error shown inline: &quot;Body must be at least 10 characters&quot;</li>
+</ul>
+<p class="wmd-paragraph"><strong>Accessibility:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Label: &quot;Post body, required&quot;</li>
+  <li class="wmd-list-item">Hint: &quot;Enter the details of your post&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">4. Tag Selection</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Wrapped grid of selectable tag chips</td>
+    <td class="wmd-table-cell wmd-align-left">Wrapped grid of selectable tag chips</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px horizontal</td>
+    <td class="wmd-table-cell wmd-align-left">16dp horizontal</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Section Label</strong></td>
+    <td class="wmd-table-cell wmd-align-left">14pt Semibold, #757575</td>
+    <td class="wmd-table-cell wmd-align-left">13sp Semibold, #757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Tags (1-3 required)&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Tags (1-3 required)&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px bottom</td>
+    <td class="wmd-table-cell wmd-align-left">12dp bottom</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Tag Chips (loaded from tags table, sorted by sort_order):</strong></p>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Tag</th>
+    <th class="wmd-table-cell wmd-align-left">Icon</th>
+    <th class="wmd-table-cell wmd-align-left">Color</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Housing</td>
+    <td class="wmd-table-cell wmd-align-left">🏠</td>
+    <td class="wmd-table-cell wmd-align-left">#4CAF50</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Jobs</td>
+    <td class="wmd-table-cell wmd-align-left">💼</td>
+    <td class="wmd-table-cell wmd-align-left">#2196F3</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Help</td>
+    <td class="wmd-table-cell wmd-align-left">🤝</td>
+    <td class="wmd-table-cell wmd-align-left">#FF9800</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Question</td>
+    <td class="wmd-table-cell wmd-align-left">❓</td>
+    <td class="wmd-table-cell wmd-align-left">#9C27B0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Politics</td>
+    <td class="wmd-table-cell wmd-align-left">🏛</td>
+    <td class="wmd-table-cell wmd-align-left">#607D8B</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Discussion</td>
+    <td class="wmd-table-cell wmd-align-left">💬</td>
+    <td class="wmd-table-cell wmd-align-left">#00BCD4</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Emergency</td>
+    <td class="wmd-table-cell wmd-align-left">⚠️</td>
+    <td class="wmd-table-cell wmd-align-left">#F44336</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Chip Styling:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Shape: Pill (border-radius: 20px/dp)</li>
+  <li class="wmd-list-item">Height: 36px/dp</li>
+  <li class="wmd-list-item">Padding: 12px/dp horizontal, 8px/dp vertical</li>
+  <li class="wmd-list-item">Layout: Wrap to multiple rows (flexbox wrapping)</li>
+  <li class="wmd-list-item">Spacing: 8px/dp horizontal, 8px/dp vertical between rows</li>
+</ul>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Unselected: #F5F5F5 background, 1px #E0E0E0 border, #757575 text</li>
+  <li class="wmd-list-item">Selected: Tag color at 15% opacity background, tag color border (2px), tag color text</li>
+  <li class="wmd-list-item">Disabled (max reached): Unselected chips become 50% opacity when 3 tags selected</li>
+  <li class="wmd-list-item">Selected + can deselect: Tap selected chip to deselect</li>
+</ul>
+<p class="wmd-paragraph"><strong>Emergency Tag Special Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">When Emergency is selected, show inline warning:<ul class="wmd-list">
+  <li class="wmd-list-item">⚠️ &quot;Emergency posts require moderator approval before becoming visible.&quot;</li>
+  <li class="wmd-list-item">Typography: 12pt/11sp Regular, #C62828 (Error Red)</li>
+  <li class="wmd-list-item">Background: #FFEBEE (light red), padding 8px, margin 8px top</li>
+  <li class="wmd-list-item">Includes &quot;Learn More&quot; link (#1565C0)</li>
+</ul></li>
+</ul>
+<p class="wmd-paragraph"><strong>Validation:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Minimum 1 tag required</li>
+  <li class="wmd-list-item">Maximum 3 tags allowed</li>
+  <li class="wmd-list-item">Error shown below chips: &quot;Please select at least 1 tag&quot;</li>
+</ul>
+<p class="wmd-paragraph"><strong>Accessibility:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Section: &quot;Tags section, 1 to 3 required&quot;</li>
+  <li class="wmd-list-item">Each chip: &quot;Housing tag, not selected&quot; or &quot;Housing tag, selected, 1 of 3&quot;</li>
+  <li class="wmd-list-item">When max reached: &quot;Maximum 3 tags selected. Deselect a tag to change.&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">5. Photo Attachment</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Horizontal photo picker row</td>
+    <td class="wmd-table-cell wmd-align-left">Horizontal photo picker row</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px horizontal</td>
+    <td class="wmd-table-cell wmd-align-left">16dp horizontal</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">📷 24x24px</td>
+    <td class="wmd-table-cell wmd-align-left">📷 24x24dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Add Photos (optional)&quot;, 15pt Regular, #757575</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Add Photos (optional)&quot;, 14sp Regular, #757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Counter</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;0/5&quot; right-aligned</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;0/5&quot; right-aligned</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Touch Target</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Full row 48px</td>
+    <td class="wmd-table-cell wmd-align-left">Full row 48dp</td>
+  </tr>
+  </tbody>
+</table>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Interaction: Tap to open photo picker (camera or gallery)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Photo Thumbnails (when photos added):</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Size: 80x80px/dp squares</li>
+  <li class="wmd-list-item">Corner Radius: 8px/dp</li>
+  <li class="wmd-list-item">Layout: Horizontal scroll, 8px/dp spacing</li>
+  <li class="wmd-list-item">Remove Button: Small ✕ (16x16px) on top-right corner of each thumbnail</li>
+  <li class="wmd-list-item">Max Photos: 5</li>
+  <li class="wmd-list-item">Position: Below the &quot;Add Photos&quot; button</li>
+</ul>
+<p class="wmd-paragraph"><strong>Accessibility:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">&quot;Add photos, optional. 0 of 5 photos added.&quot;</li>
+  <li class="wmd-list-item">Each thumbnail: &quot;Photo 1, remove button&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">6. Location Info</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Read-only informational row</td>
+    <td class="wmd-table-cell wmd-align-left">Read-only informational row</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px horizontal, 12px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">16dp horizontal, 12dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5 (Light Gray)</td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5 (Light Gray)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">📍 20x20px</td>
+    <td class="wmd-table-cell wmd-align-left">📍 20x20dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Typography</strong></td>
+    <td class="wmd-table-cell wmd-align-left">14pt Regular, #757575</td>
+    <td class="wmd-table-cell wmd-align-left">13sp Regular, #757575</td>
+  </tr>
+  </tbody>
+</table>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Content: &quot;Posting to: Dallas-Fort Worth&quot; (user&#039;s current metro area)</li>
+  <li class="wmd-list-item">Note: This is the user&#039;s active metro area. Not editable on this screen.</li>
+</ul>
+<p class="wmd-paragraph"><strong>Accessibility:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">&quot;Posting to Dallas-Fort Worth. This post will appear in the Dallas-Fort Worth feed.&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">7. Global Toggle (Premium Users Only)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Toggle switch row</td>
+    <td class="wmd-table-cell wmd-align-left">Toggle switch row</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px horizontal, 12px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">16dp horizontal, 12dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Visibility</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Only if <code class="wmd-code-inline">user.is_premium === true</code></td>
+    <td class="wmd-table-cell wmd-align-left">Only if <code class="wmd-code-inline">user.is_premium === true</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">🌐 20x20px</td>
+    <td class="wmd-table-cell wmd-align-left">🌐 20x20dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label</strong></td>
+    <td class="wmd-table-cell wmd-align-left">15pt Medium, #212121, &quot;Post Globally&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">14sp Medium, #212121, &quot;Post Globally&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Sublabel</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12pt Regular, #757575, &quot;Visible in all metro areas&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">11sp Regular, #757575, &quot;Visible in all metro areas&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Toggle Off</strong></td>
+    <td class="wmd-table-cell wmd-align-left">UISwitch, gray track (#E0E0E0)</td>
+    <td class="wmd-table-cell wmd-align-left">Material Switch, gray track (#E0E0E0)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Toggle On</strong></td>
+    <td class="wmd-table-cell wmd-align-left">UISwitch, blue track (#1565C0)</td>
+    <td class="wmd-table-cell wmd-align-left">Material Switch, blue track (#1565C0)</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Default: OFF (post is local to user&#039;s metro area)</li>
+  <li class="wmd-list-item">ON: Post will be visible in all metro area feeds with 🌐 Global badge</li>
+  <li class="wmd-list-item">Animation: Smooth toggle (200ms)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Non-Premium Users:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">This entire section is hidden (not shown at all, no upsell)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Accessibility:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">&quot;Post globally toggle, off. When on, your post will be visible in all metro areas.&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Form Validation Summary</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Field</th>
+    <th class="wmd-table-cell wmd-align-left">Required</th>
+    <th class="wmd-table-cell wmd-align-left">Min</th>
+    <th class="wmd-table-cell wmd-align-left">Max</th>
+    <th class="wmd-table-cell wmd-align-left">Error Message</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Title</td>
+    <td class="wmd-table-cell wmd-align-left">Yes</td>
+    <td class="wmd-table-cell wmd-align-left">5 chars</td>
+    <td class="wmd-table-cell wmd-align-left">150 chars</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Title must be 5-150 characters&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Body</td>
+    <td class="wmd-table-cell wmd-align-left">Yes</td>
+    <td class="wmd-table-cell wmd-align-left">10 chars</td>
+    <td class="wmd-table-cell wmd-align-left">5000 chars</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Body must be at least 10 characters&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Tags</td>
+    <td class="wmd-table-cell wmd-align-left">Yes</td>
+    <td class="wmd-table-cell wmd-align-left">1 tag</td>
+    <td class="wmd-table-cell wmd-align-left">3 tags</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Select 1-3 tags&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Photos</td>
+    <td class="wmd-table-cell wmd-align-left">No</td>
+    <td class="wmd-table-cell wmd-align-left">0</td>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Maximum 5 photos&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Global</td>
+    <td class="wmd-table-cell wmd-align-left">No</td>
+    <td class="wmd-table-cell wmd-align-left">-</td>
+    <td class="wmd-table-cell wmd-align-left">-</td>
+    <td class="wmd-table-cell wmd-align-left">(Premium only toggle)</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">User Interactions</h2>
+<h3 class="wmd-h3">Primary Flow (Create Local Post)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps FAB (+) on home screen → Navigate to this screen</li>
+  <li class="wmd-list-item">User types title → Character counter appears at 120+</li>
+  <li class="wmd-list-item">User types body → Textarea expands as needed</li>
+  <li class="wmd-list-item">User taps 1-3 tag chips → Chips highlight in tag color</li>
+  <li class="wmd-list-item">User optionally adds photos → Thumbnails appear</li>
+  <li class="wmd-list-item">User taps &quot;Post&quot; button → Loading spinner, then success</li>
+  <li class="wmd-list-item">Success: Navigate back to home screen, new post visible at top</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Premium Global Post)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Steps 1-5 same as above</li>
+  <li class="wmd-list-item">User toggles &quot;Post Globally&quot; ON → Toggle animation</li>
+  <li class="wmd-list-item">User taps &quot;Post&quot; button → Post created with is_global = true</li>
+  <li class="wmd-list-item">Success: Post visible in all metro area feeds with 🌐 badge</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Emergency Tag)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Steps 1-3 same as above</li>
+  <li class="wmd-list-item">User selects &quot;Emergency&quot; tag → Warning banner appears</li>
+  <li class="wmd-list-item">User reads warning → Post will require moderator approval</li>
+  <li class="wmd-list-item">User taps &quot;Post&quot; button → Post status = &quot;pending&quot;</li>
+  <li class="wmd-list-item">Success toast: &quot;Your emergency post has been submitted for moderator review.&quot;</li>
+  <li class="wmd-list-item">Navigate back to home screen → Post NOT visible until approved</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Cancel with Content)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User has entered some content</li>
+  <li class="wmd-list-item">User taps Cancel/✕</li>
+  <li class="wmd-list-item">Confirmation dialog appears:<ul class="wmd-list">
+  <li class="wmd-list-item">Title: &quot;Discard Post?&quot;</li>
+  <li class="wmd-list-item">Message: &quot;You have unsaved changes. Are you sure you want to discard this post?&quot;</li>
+  <li class="wmd-list-item">Buttons: &quot;Discard&quot; (destructive) and &quot;Keep Editing&quot; (default)</li>
+</ul></li>
+  <li class="wmd-list-item">User taps &quot;Discard&quot; → Navigate back, content lost</li>
+  <li class="wmd-list-item">User taps &quot;Keep Editing&quot; → Dialog closes, continue editing</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Cancel Empty)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps Cancel/✕ with no content entered</li>
+  <li class="wmd-list-item">Navigate back immediately (no confirmation needed)</li>
+</ol>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Platform-Specific Differences</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Aspect</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Cancel Button</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Text &quot;Cancel&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">✕ icon</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Post Button</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Pill shape, right</td>
+    <td class="wmd-table-cell wmd-align-left">Filled button, right</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Keyboard</strong></td>
+    <td class="wmd-table-cell wmd-align-left">iOS keyboard with Done bar</td>
+    <td class="wmd-table-cell wmd-align-left">Android keyboard with action button</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Photo Picker</strong></td>
+    <td class="wmd-table-cell wmd-align-left">UIImagePickerController</td>
+    <td class="wmd-table-cell wmd-align-left">Intent.ACTION_PICK</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Toggle</strong></td>
+    <td class="wmd-table-cell wmd-align-left">UISwitch</td>
+    <td class="wmd-table-cell wmd-align-left">Material Switch</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Discard Dialog</strong></td>
+    <td class="wmd-table-cell wmd-align-left">UIAlertController</td>
+    <td class="wmd-table-cell wmd-align-left">MaterialAlertDialog</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Error States &amp; Edge Cases</h2>
+<h3 class="wmd-h3">Edge Case: Network Error on Submit</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> User taps "Post" but network fails
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show error toast: &quot;Could not create post. Please check your connection and try again.&quot;</li>
+  <li class="wmd-list-item">Post button re-enables for retry</li>
+  <li class="wmd-list-item">Content preserved in form</li>
+</ul>
+<h3 class="wmd-h3">Edge Case: Image Upload Fails</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> One of the photos fails to upload
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show error on specific thumbnail: Red border + retry icon</li>
+  <li class="wmd-list-item">Other photos upload successfully</li>
+  <li class="wmd-list-item">User can tap retry or remove failed photo</li>
+</ul>
+<h3 class="wmd-h3">Edge Case: Session Expires During Creation</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> Auth session expires while user is composing
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">On submit: Show error &quot;Session expired. Please log in again.&quot;</li>
+  <li class="wmd-list-item">Navigate to login screen, then back to create post with content preserved (if possible)</li>
+</ul>
+<h3 class="wmd-h3">Edge Case: User is Level 0</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> Level 0 user somehow reaches create post screen
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show full-screen message: &quot;Verify your phone to create posts&quot;</li>
+  <li class="wmd-list-item">CTA: &quot;Verify Now&quot; → Navigate to verification flow</li>
+  <li class="wmd-list-item">Back button returns to home</li>
+</ul>
+<h3 class="wmd-h3">Edge Case: All 3 Tags Selected, User Tries to Add More</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> User has 3 tags selected and taps a 4th
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Unselected chips are visually disabled (50% opacity)</li>
+  <li class="wmd-list-item">Tap does nothing (no toast needed, visual state is clear)</li>
+  <li class="wmd-list-item">User must deselect one tag before selecting another</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<h3 class="wmd-h3">Screen Reader Order</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">&quot;Cancel button&quot;</li>
+  <li class="wmd-list-item">&quot;Create Post, heading&quot;</li>
+  <li class="wmd-list-item">&quot;Post button, disabled&quot;</li>
+  <li class="wmd-list-item">&quot;Post title, required, text field&quot;</li>
+  <li class="wmd-list-item">&quot;Post body, required, text field&quot;</li>
+  <li class="wmd-list-item">&quot;Tags section, 1 to 3 required. Housing tag, not selected. Jobs tag, not selected...&quot; (etc.)</li>
+  <li class="wmd-list-item">&quot;Add photos, optional, button&quot;</li>
+  <li class="wmd-list-item">&quot;Posting to Dallas-Fort Worth&quot;</li>
+  <li class="wmd-list-item">(Premium only) &quot;Post globally toggle, off&quot;</li>
+</ol>
+<h3 class="wmd-h3">Touch Targets</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Cancel button: 44x44pt / 48x48dp ✓</li>
+  <li class="wmd-list-item">Post button: 44x44pt / 48x48dp ✓</li>
+  <li class="wmd-list-item">Tag chips: 36px height, 44px touch target ✓</li>
+  <li class="wmd-list-item">Photo add: Full row 48px ✓</li>
+  <li class="wmd-list-item">Toggle: Standard switch size ✓</li>
+</ul>
+<h3 class="wmd-h3">Color Contrast</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Ratio</th>
+    <th class="wmd-table-cell wmd-align-left">Level</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Title text (#212121 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">16.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Placeholder text (#9E9E9E on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">3.4:1</td>
+    <td class="wmd-table-cell wmd-align-left">Informational only</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Tag text (various on white)</td>
+    <td class="wmd-table-cell wmd-align-left">All meet 4.5:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Post button (#FFFFFF on #1565C0)</td>
+    <td class="wmd-table-cell wmd-align-left">7.2:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Animations &amp; Transitions</h2>
+<h3 class="wmd-h3">Screen Entry</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">iOS: Slide up from bottom (modal presentation, 300ms)</li>
+  <li class="wmd-list-item">Android: Slide up from bottom (material motion, 300ms)</li>
+</ul>
+<h3 class="wmd-h3">Tag Chip Selection</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Duration: 150ms</li>
+  <li class="wmd-list-item">Effect: Background fills with tag color, border color changes</li>
+  <li class="wmd-list-item">Scale: Brief 1.05 → 1.0 bounce</li>
+</ul>
+<h3 class="wmd-h3">Post Submission</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Post button shows inline spinner (replace &quot;Post&quot; text with spinner)</li>
+  <li class="wmd-list-item">Duration: Loading until API responds</li>
+  <li class="wmd-list-item">Success: Dismiss screen with slide-down animation</li>
+</ul>
+<h3 class="wmd-h3">Photo Add</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Thumbnail fades in (200ms) when photo selected</li>
+  <li class="wmd-list-item">Remove: Thumbnail fades out + shifts remaining photos left (200ms)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Technical Notes</h2>
+<h3 class="wmd-h3">Screen Identifier</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">iOS: CreatePostViewController</li>
+  <li class="wmd-list-item">Android: CreatePostActivity / CreatePostFragment</li>
+  <li class="wmd-list-item">Route name: /create-post</li>
+</ul>
+<h3 class="wmd-h3">State Management</h3>
+<pre class="wmd-code-block"><code data-lang="javascript">{
+  title: &quot;&quot;,                    // string, max 150
+  body: &quot;&quot;,                     // string, max 5000
+  selectedTags: [],             // string[] of tag IDs, max 3
+  availableTags: [],            // Tag[] from database
+  photos: [],                   // { uri: string, uploading: boolean, error: boolean }[]
+  isGlobal: false,              // boolean, only for premium
+  isSubmitting: false,          // boolean
+  isDirty: false,               // boolean, true if any field has content
+  userIsPremium: false,         // boolean
+  metroAreaId: &quot;19100&quot;,         // string
+  metroName: &quot;Dallas-Fort Worth&quot; // string
+}</code></pre>
+<h3 class="wmd-h3">API Integration</h3>
+<p class="wmd-paragraph"><strong>Submit Post:</strong></p>
+<pre class="wmd-code-block"><code>POST /posts
+Content-Type: application/json
+Authorization: Bearer {token}
+
+{
+  &quot;title&quot;: &quot;Looking for Nepali Roommate&quot;,
+  &quot;description&quot;: &quot;Looking for Nepali roommate to share 2BR apartment...&quot;,
+  &quot;tag_ids&quot;: [&quot;tag-uuid-1&quot;, &quot;tag-uuid-2&quot;],
+  &quot;photos&quot;: [&quot;https://storage.supabase.co/...&quot;],
+  &quot;is_global&quot;: false,
+  &quot;metro_area_id&quot;: &quot;19100&quot;,
+  &quot;location_zip_code&quot;: &quot;75201&quot;,
+  &quot;location_city&quot;: &quot;Dallas&quot;,
+  &quot;location_state&quot;: &quot;TX&quot;
+}</code></pre>
+<p class="wmd-paragraph"><strong>Response (Success):</strong></p>
+<pre class="wmd-code-block"><code data-lang="json">{
+  &quot;id&quot;: &quot;new-post-uuid&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;created_at&quot;: &quot;2026-02-17T10:00:00Z&quot;
+}</code></pre>
+<p class="wmd-paragraph"><strong>Response (Emergency - Pending):</strong></p>
+<pre class="wmd-code-block"><code data-lang="json">{
+  &quot;id&quot;: &quot;new-post-uuid&quot;,
+  &quot;status&quot;: &quot;pending&quot;,
+  &quot;message&quot;: &quot;Your emergency post has been submitted for moderator review.&quot;,
+  &quot;created_at&quot;: &quot;2026-02-17T10:00:00Z&quot;
+}</code></pre>
+<p class="wmd-paragraph"><strong>Fetch Tags:</strong></p>
+<pre class="wmd-code-block"><code>GET /tags</code></pre>
+<p class="wmd-paragraph">Returns all tags sorted by sort_order. Cache locally for session duration.</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Content &amp; Localization</h2>
+<h3 class="wmd-h3">Placeholder Text</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Title: &quot;What&#039;s this about?&quot;</li>
+  <li class="wmd-list-item">Body: &quot;Write your post details here...&quot;</li>
+</ul>
+<h3 class="wmd-h3">String Keys</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Key</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_title</code></td>
+    <td class="wmd-table-cell wmd-align-left">Create Post</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_cancel</code></td>
+    <td class="wmd-table-cell wmd-align-left">Cancel</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_submit</code></td>
+    <td class="wmd-table-cell wmd-align-left">Post</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_title_placeholder</code></td>
+    <td class="wmd-table-cell wmd-align-left">What&#039;s this about?</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_body_placeholder</code></td>
+    <td class="wmd-table-cell wmd-align-left">Write your post details here...</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_tags_label</code></td>
+    <td class="wmd-table-cell wmd-align-left">Tags (1-3 required)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_photos_label</code></td>
+    <td class="wmd-table-cell wmd-align-left">Add Photos (optional)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_photos_count</code></td>
+    <td class="wmd-table-cell wmd-align-left">{count}/5</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_location</code></td>
+    <td class="wmd-table-cell wmd-align-left">Posting to: {metro_name}</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_global_label</code></td>
+    <td class="wmd-table-cell wmd-align-left">Post Globally</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_global_sublabel</code></td>
+    <td class="wmd-table-cell wmd-align-left">Visible in all metro areas</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_emergency_warning</code></td>
+    <td class="wmd-table-cell wmd-align-left">Emergency posts require moderator approval before becoming visible.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_discard_title</code></td>
+    <td class="wmd-table-cell wmd-align-left">Discard Post?</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_discard_message</code></td>
+    <td class="wmd-table-cell wmd-align-left">You have unsaved changes. Are you sure you want to discard this post?</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_discard_confirm</code></td>
+    <td class="wmd-table-cell wmd-align-left">Discard</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_discard_cancel</code></td>
+    <td class="wmd-table-cell wmd-align-left">Keep Editing</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_error_network</code></td>
+    <td class="wmd-table-cell wmd-align-left">Could not create post. Please check your connection and try again.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_success</code></td>
+    <td class="wmd-table-cell wmd-align-left">Post published!</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">create_post_emergency_success</code></td>
+    <td class="wmd-table-cell wmd-align-left">Your emergency post has been submitted for moderator review.</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Testing Checklist</h2>
+<h3 class="wmd-h3">Functional Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Title input accepts text, enforces 150 char max</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Body textarea expands, enforces 5000 char max</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>1-3 tags can be selected, chips toggle correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>4th tag cannot be selected when 3 active</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Emergency tag shows warning banner</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Photos can be added and removed (max 5)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Post button disabled when form invalid</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Post button enabled when form valid</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Successful submission navigates back</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Emergency post creates with &quot;pending&quot; status</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Cancel with content shows discard confirmation</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Cancel without content navigates back immediately</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Global toggle only visible for premium users</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Global toggle sets is_global on submission</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Visual Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tag chips display correct colors for each tag</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Selected chips have filled background</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Post button pill shape with correct enabled/disabled states</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Character counters appear at threshold</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Photo thumbnails layout correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Emergency warning has red background</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Accessibility Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>All form fields have labels</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tag chips announce selected state</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Post button announces enabled/disabled</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Screen reader reads through form in logical order</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Edge Case Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Network error preserves form content</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Image upload failure shows retry</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Very long title truncates at 150 chars</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Session expiry handled gracefully</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Level 0 user blocked from posting</span>
+  </label>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Related Screens</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Relation</th>
+    <th class="wmd-table-cell wmd-align-left">Screen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Previous</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./06-home-screen-level-0.md" class="wmd-link">06-home-screen-level-0.md</a> (via FAB)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Next</td>
+    <td class="wmd-table-cell wmd-align-left">Home Screen (on success, post appears at top of feed)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Related</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./09-post-detail.md" class="wmd-link">09-post-detail.md</a> — View of the created post</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Related</td>
+    <td class="wmd-table-cell wmd-align-left">Post Edit Screen (reuses same form with pre-filled data)</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Status:</strong> Draft — Ready for Review</p>
+</body>
+</html>

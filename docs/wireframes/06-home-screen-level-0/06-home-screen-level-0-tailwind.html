@@ -1,0 +1,2293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* Tailwind-Inspired Style */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f9fafb;
+  color: #111827;
+  line-height: 1.5;
+  margin: 0;
+  padding: 20px;
+}
+
+/* Typography */
+.wmd-h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 1rem 0;
+  letter-spacing: -0.025em;
+}
+
+.wmd-h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 1.5rem 0 1rem 0;
+  letter-spacing: -0.025em;
+}
+
+.wmd-h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 1.25rem 0 0.75rem 0;
+}
+
+.wmd-h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.wmd-paragraph {
+  color: #6b7280;
+  margin: 0.75rem 0;
+  font-size: 1rem;
+}
+
+/* Buttons */
+.wmd-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  background: #e5e7eb;
+  color: #374151;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.wmd-button:hover {
+  background: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wmd-button-primary, .wmd-button.wmd-button-primary {
+  background: #6366f1;
+  color: white;
+}
+
+.wmd-button-primary:hover, .wmd-button.wmd-button-primary:hover {
+  background: #4f46e5;
+}
+
+.wmd-button:disabled, .wmd-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button States */
+.wmd-state-loading {
+  background: #e0e7ff !important;
+  color: #6366f1 !important;
+  position: relative;
+  padding-left: 2.5rem;
+}
+
+.wmd-state-loading::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #6366f1;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.wmd-state-error {
+  background: #fef2f2 !important;
+  color: #ef4444 !important;
+  border: 1px solid #fca5a5;
+}
+
+.wmd-state-success {
+  background: #f0fdf4 !important;
+  color: #22c55e !important;
+  border: 1px solid #86efac;
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Forms */
+.wmd-input, .wmd-textarea, .wmd-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.15s ease;
+  color: #111827;
+}
+
+.wmd-input:focus, .wmd-textarea:focus, .wmd-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.wmd-input::placeholder, .wmd-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
+}
+
+.wmd-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.5rem;
+  padding-right: 2.5rem;
+}
+
+/* Checkboxes and Radios */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+/* Cards and Containers */
+.wmd-container-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.wmd-container-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.wmd-container-hero .wmd-h1,
+.wmd-container-hero .wmd-h2,
+.wmd-container-hero .wmd-h3,
+.wmd-container-hero .wmd-paragraph {
+  color: white;
+}
+
+.wmd-container-modal {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 600px;
+  position: relative;
+}
+
+.wmd-container-footer {
+  background: #1f2937;
+  color: #e5e7eb;
+  padding: 2rem;
+  margin-top: 3rem;
+  border-radius: 0.75rem;
+}
+
+.wmd-container-footer .wmd-paragraph,
+.wmd-container-footer .wmd-nav-item {
+  color: #e5e7eb;
+}
+
+.wmd-container-section {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wmd-container-section:last-child {
+  border-bottom: none;
+}
+
+/* Alerts */
+.wmd-container-alert {
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  border-left: 4px solid;
+}
+
+.wmd-container-alert.wmd-warning {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.wmd-container-alert.wmd-state-error {
+  background: #fee2e2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.wmd-container-alert.wmd-state-success {
+  background: #d1fae5;
+  border-left-color: #10b981;
+  color: #065f46;
+}
+
+/* Navigation */
+.wmd-nav {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin-bottom: 2rem;
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: #4b5563;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.wmd-nav-item:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.wmd-brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #111827;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Lists */
+.wmd-list {
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wmd-list-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+}
+
+.wmd-list-item:last-child {
+  border-bottom: none;
+}
+
+/* Grid */
+.wmd-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.wmd-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.wmd-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.wmd-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Tables */
+.wmd-table {
+  width: 100%;
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin: 1rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.wmd-table th {
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wmd-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.wmd-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table cell alignment - more specific to override th/td defaults */
+.wmd-table .wmd-align-left {
+  text-align: left !important;
+}
+
+.wmd-table .wmd-align-center {
+  text-align: center !important;
+}
+
+.wmd-table .wmd-align-right {
+  text-align: right !important;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  vertical-align: middle;
+}
+
+
+/* Utility classes */
+.wmd-separator {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.wmd-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wmd-code {
+  background: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  font-size: 0.875rem;
+  color: #6366f1;
+}
+
+.wmd-blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  color: #4b5563;
+  font-style: italic;
+}
+
+/* Button group */
+.wmd-container-button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+/* Form group */
+.wmd-container-form-group {
+  margin: 1rem 0;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.wmd-container-loading-state::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1.5rem;
+  border: 4px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.wmd-container-empty-state {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.75rem;
+  padding: 4rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  color: #6b7280;
+}
+
+.wmd-container-empty-state::before {
+  content: '📭';
+  display: block;
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.wmd-container-error-state {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  color: #991b1b;
+}
+
+.wmd-container-error-state::before {
+  content: '⚠️';
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid-2,
+  .wmd-grid-3,
+  .wmd-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .wmd-nav-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wmd-brand {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-tailwind">
+  <h1 class="wmd-h1">Wireframe: Home Screen (Level 0)</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Screen:</strong> 06 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-02-19
+<strong>Journey:</strong> <a href="../user-journeys/onboarding/01-signup-and-onboarding.md">01-signup-and-onboarding</a> - Step 13
+<strong>Story:</strong> As a new Level 0 user who just completed onboarding, I want to browse local and global posts in my metro area so I can find relevant community content tagged with Housing, Jobs, Help, and more.</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen Purpose + Key Goals</h2>
+<p class="wmd-paragraph">This is the success state of the onboarding journey - the main home screen (local feed). For Level 0 users, it shows:</p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Local posts from their metro area + global posts from premium users</li>
+  <li class="wmd-list-item">Level 0 banner promoting verification</li>
+  <li class="wmd-list-item">Tag filter chips for filtering content (Housing, Jobs, Help, Question, Politics, Discussion, Emergency)</li>
+  <li class="wmd-list-item">Floating + button (slightly disabled for Level 0)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Key Goals:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show user that onboarding worked (seeing real local posts)</li>
+  <li class="wmd-list-item">Encourage verification through prominent banner</li>
+  <li class="wmd-list-item">Enable browsing and exploring content</li>
+  <li class="wmd-list-item">Set expectations for Level 0 limitations (view-only)</li>
+  <li class="wmd-list-item">Provide clear path to Level 1 verification</li>
+  <li class="wmd-list-item">Display Local/Global badges on post cards</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Visual Wireframe</h2>
+<div class="wmd-container-nav">
+  <p class="wmd-paragraph">📍 New York-Newark-Jersey City ▼ {.location-dropdown}
+    🔍 {.icon-button}   💬 {.icon-button}   🔔 {.icon-button}</p>
+</div>
+<div class="wmd-container-alert warning">
+  <p class="wmd-paragraph">⚠️ You&#039;re viewing only. Verify phone to post and message.   <button class="wmd-button wmd-outline">Verify Now</button>   ✕ {.dismiss}</p>
+</div>
+<div class="wmd-container-nav">
+  <div class="wmd-container-form-group">
+  [<em>All</em>]   
+  <button class="wmd-button">Housing</button>
+     
+  <button class="wmd-button">Jobs</button>
+     
+  <button class="wmd-button">Help</button>
+     
+  <button class="wmd-button">More ▼</button>
+</div>
+</div>
+<div class="wmd-container-card">
+  <h3 class="wmd-h3">Looking for Nepali Roommate</h3>
+  <p class="wmd-paragraph">📍 Local {.badge-local}</p>
+  <p class="wmd-paragraph">Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet environment. Rent is $800/month including utilities... <button class="wmd-button wmd-outline">View More</button></p>
+  <div class="wmd-container-form-group">
+  <img src="assets/placeholder.png" alt="Photo thumbnail" class="wmd-image" />
+</div>
+  <p class="wmd-paragraph">🏠 Housing   ❓ Question</p>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph">❤️ 24    💬 5    ✉️ Message</p>
+</div>
+<div class="wmd-container-card">
+  <h3 class="wmd-h3">Hiring Line Cooks - Nepali Rest.</h3>
+  <p class="wmd-paragraph">🌐 Global {.badge-global}</p>
+  <p class="wmd-paragraph">We&#039;re hiring experienced line cooks for our new Nepali restaurant...</p>
+  <p class="wmd-paragraph">💼 Jobs   🤝 Help</p>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph">❤️ 8    💬 2    ✉️ Message</p>
+</div>
+<button class="wmd-button wmd-fab wmd-button-primary wmd-state-semi-disabled">+</button>
+<nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item"></a>
+    <a href="#" class="wmd-nav-item">Post</a>
+    <a href="#" class="wmd-nav-item">Events</a>
+    <a href="#" class="wmd-nav-item">Marketplace</a>
+    <a href="#" class="wmd-nav-item">Profile</a>
+  </div>
+</nav>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Empty State (No Posts Matching Tags)</h3>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">No posts matching your filters. That&#039;s okay!</p>
+  <p class="wmd-paragraph">Try different tags or check back later.</p>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Empty State (First User in Metro)</h3>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">Be the first to post in <button class="wmd-button">Metro Name</button>!</p>
+  <button class="wmd-button wmd-button-primary">Verify Phone to Post</button>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Network Error State</h3>
+<div class="wmd-container-alert error">
+  <button class="wmd-button wmd-button-primary">Retry</button>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">FAB Verification Modal (Level 0)</h3>
+<div class="wmd-container-modal">
+  <h3 class="wmd-h3">Verify Your Phone to Post</h3>
+  <p class="wmd-paragraph">You need to verify your phone number to create posts and message others.</p>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button wmd-button-primary">Verify Now</button>
+  <button class="wmd-button wmd-secondary">Cancel</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Component Specifications</h2>
+<h3 class="wmd-h3">1. Top Navigation Bar</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Navigation bar</td>
+    <td class="wmd-table-cell wmd-align-left">App bar</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44–56px (flexible for 2-line location)</td>
+    <td class="wmd-table-cell wmd-align-left">56–72dp (flexible for 2-line location)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">elevation 2dp</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Components (left to right):</strong></p>
+<h4 class="wmd-h4">Location Dropdown</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Label: User&#039;s metro area name (e.g., &quot;New York-Newark-Jersey City&quot;)</li>
+  <li class="wmd-list-item">Icon: Location pin (📍) prefix, Chevron down (▼) suffix, 16px/dp, #757575</li>
+  <li class="wmd-list-item">Typography: 17pt/16sp Semibold, #212121</li>
+  <li class="wmd-list-item">Touch Target: Full text + icon, minimum 44x44pt / 48x48dp</li>
+  <li class="wmd-list-item">Interaction: Tap to open location switcher sheet</li>
+  <li class="wmd-list-item">Multi-line: Allow up to 2 lines for long metro names</li>
+  <li class="wmd-list-item">Max Width: 60% of screen width (to leave room for icons)</li>
+  <li class="wmd-list-item">Visiting Indicator: &quot;(Visiting)&quot; label shown when browsing temporarily</li>
+</ul>
+<h4 class="wmd-h4">Search Icon</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: Magnifying glass (🔍), 24x24px/dp</li>
+  <li class="wmd-list-item">Position: Top-right, first icon in icon group</li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp</li>
+  <li class="wmd-list-item">Interaction: Tap to open search screen</li>
+  <li class="wmd-list-item">Color: #757575 (Medium Gray)</li>
+</ul>
+<h4 class="wmd-h4">Messages Icon (NEW)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: Chat bubbles (💬), 24x24px/dp</li>
+  <li class="wmd-list-item">Position: Between Search and Notifications icons</li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp</li>
+  <li class="wmd-list-item">Badge: Red circle with unread count (if &gt; 0)<ul class="wmd-list">
+  <li class="wmd-list-item">Shows number for 1-99, shows &quot;99+&quot; for higher</li>
+  <li class="wmd-list-item">Badge size: 16px diameter minimum</li>
+  <li class="wmd-list-item">Badge color: #DC143C (Accent Red)</li>
+  <li class="wmd-list-item">Badge text: White, 10pt/9sp Bold</li>
+</ul></li>
+  <li class="wmd-list-item">Interaction: Tap to navigate to Messages/Conversations screen</li>
+  <li class="wmd-list-item">Color: #757575 (Medium Gray), badge: #DC143C (Accent Red)</li>
+</ul>
+<h4 class="wmd-h4">Notification Bell Icon</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: Bell (🔔), 24x24px/dp</li>
+  <li class="wmd-list-item">Position: Far top-right, 16px/dp from edge</li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp</li>
+  <li class="wmd-list-item">Badge: Red dot (8px) if unread notifications</li>
+  <li class="wmd-list-item">Interaction: Tap to open notifications screen</li>
+  <li class="wmd-list-item">Color: #757575 (Medium Gray), badge: #DC143C (Accent Red)</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Location: &quot;Dallas-Fort Worth, button, change location&quot;</li>
+  <li class="wmd-list-item">Search: &quot;Search button&quot;</li>
+  <li class="wmd-list-item">Notifications: &quot;Notifications, [X unread]&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">2. Level 0 Banner (Verification Prompt)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Dismissible banner</td>
+    <td class="wmd-table-cell wmd-align-left">Dismissible banner</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">64px</td>
+    <td class="wmd-table-cell wmd-align-left">72dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#FFF3E0 (Light Amber)</td>
+    <td class="wmd-table-cell wmd-align-left">#FFF3E0 (Light Amber)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px all around</td>
+    <td class="wmd-table-cell wmd-align-left">16dp all around</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">None or 1px bottom #F57C00</td>
+    <td class="wmd-table-cell wmd-align-left">None or 1px bottom #F57C00</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Components (left to right):</strong></p>
+<h4 class="wmd-h4">Warning Icon</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: ⚠️ (warning triangle), 20x20px/dp</li>
+  <li class="wmd-list-item">Color: #E65100 (Dark Amber)</li>
+  <li class="wmd-list-item">Position: Left side, 12px/dp from edge</li>
+</ul>
+<h4 class="wmd-h4">Message Text</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Content: &quot;You&#039;re viewing only. Verify phone to post and message.&quot;</li>
+  <li class="wmd-list-item">Typography: 15pt/14sp Regular, #E65100 (Dark Amber)</li>
+  <li class="wmd-list-item">Max Lines: 2 lines (wraps on narrow screens)</li>
+  <li class="wmd-list-item">Alignment: Left</li>
+</ul>
+<h4 class="wmd-h4">Verify Now Button (Inline CTA)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Label: &quot;Verify Now&quot;</li>
+  <li class="wmd-list-item">Style: Text button (not filled)</li>
+  <li class="wmd-list-item">Typography: 15pt/14sp Semibold, #1565C0 (Primary Blue)</li>
+  <li class="wmd-list-item">Underline: Yes (always visible)</li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp minimum</li>
+  <li class="wmd-list-item">Interaction: Tap to start verification flow (Journey #02)</li>
+</ul>
+<h4 class="wmd-h4">Dismiss Button (X)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: X (close), 16x16px/dp</li>
+  <li class="wmd-list-item">Color: #E65100 (Dark Amber)</li>
+  <li class="wmd-list-item">Position: Far right, 12px/dp from edge</li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp</li>
+  <li class="wmd-list-item">Interaction: Tap to dismiss banner (hides for current session, reappears on next launch)</li>
+</ul>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Default: Visible for Level 0 users</li>
+  <li class="wmd-list-item">Dismissed: Hidden until next app launch</li>
+  <li class="wmd-list-item">Pressed (Verify Now): Darken blue text color</li>
+  <li class="wmd-list-item">Pressed (X): Fade out banner (300ms)</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Full text: &quot;Warning. You&#039;re viewing only. Verify phone to post and message. Verify Now button. Close button.&quot;</li>
+  <li class="wmd-list-item">Verify Now: &quot;Verify Now, button&quot;</li>
+  <li class="wmd-list-item">Dismiss: &quot;Close banner, button&quot;</li>
+</ul>
+<p class="wmd-paragraph"><strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Always shown on first home screen load for Level 0 users</li>
+  <li class="wmd-list-item">Dismissible per session (reappears on next app launch)</li>
+  <li class="wmd-list-item">Permanently hidden once user reaches Level 1</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">3. Tag Filter Chips</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Non-scrollable chip bar</td>
+    <td class="wmd-table-cell wmd-align-left">Non-scrollable chip bar</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+    <td class="wmd-table-cell wmd-align-left">48dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">elevation on Android</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Layout</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Flexbox row, no horizontal scroll</td>
+    <td class="wmd-table-cell wmd-align-left">Flexbox row, no horizontal scroll</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Visible Chips (4-5 based on screen width):</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">All (always first, always visible)</li>
+  <li class="wmd-list-item">Housing</li>
+  <li class="wmd-list-item">Jobs</li>
+  <li class="wmd-list-item">Help</li>
+  <li class="wmd-list-item">[More ▼] (always last, opens sheet with remaining tags)</li>
+</ul>
+<p class="wmd-paragraph"><strong>"More" Dropdown Sheet:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Trigger: Tap &quot;More&quot; chip</li>
+  <li class="wmd-list-item">Type: Bottom sheet modal</li>
+  <li class="wmd-list-item">Content: Grid/list of remaining tags (Question, Politics, Discussion, Emergency)</li>
+  <li class="wmd-list-item">Multi-select: Checkmarks indicate selected tags</li>
+  <li class="wmd-list-item">Actions: &quot;Apply&quot; button to confirm, &quot;Clear&quot; to deselect all</li>
+  <li class="wmd-list-item">Close: Tap outside, swipe down, or tap Apply</li>
+</ul>
+<p class="wmd-paragraph"><strong>Chip Styling:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Shape: Pill-shaped (border-radius: 20px/dp)</li>
+  <li class="wmd-list-item">Height: 32px/dp</li>
+  <li class="wmd-list-item">Padding: 12px/dp horizontal, 6px/dp vertical</li>
+  <li class="wmd-list-item">Typography: 14pt/13sp Medium</li>
+  <li class="wmd-list-item">Colors:<ul class="wmd-list">
+  <li class="wmd-list-item">Active chip: White text on #1565C0 (Primary Blue) background</li>
+  <li class="wmd-list-item">Inactive chips: #757575 text on #F5F5F5 background, 1px border #E0E0E0</li>
+  <li class="wmd-list-item">&quot;More&quot; chip: #757575 text on #F5F5F5 background, chevron-down icon</li>
+  <li class="wmd-list-item">&quot;More&quot; chip (with selections): #1565C0 text, shows count badge (e.g., &quot;More +2&quot;)</li>
+</ul></li>
+  <li class="wmd-list-item">Icon: Optional tag emoji prefix (e.g., 🏠 Housing, 💼 Jobs)</li>
+  <li class="wmd-list-item">Spacing: 8px/dp between chips</li>
+</ul>
+<p class="wmd-paragraph"><strong>Interaction:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Tap visible chip → Toggle filter on/off (multi-select supported)</li>
+  <li class="wmd-list-item">Tap &quot;More&quot; chip → Open tag selector sheet</li>
+  <li class="wmd-list-item">&quot;All&quot; chip resets all filters (clears both visible and &quot;More&quot; selections)</li>
+  <li class="wmd-list-item">Active chips have filled blue background</li>
+  <li class="wmd-list-item">Smooth animation: Chip fills with color (150ms)</li>
+  <li class="wmd-list-item">Multiple chips can be active simultaneously (e.g., Housing + Jobs + Question)</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Each chip: &quot;Housing filter, selected&quot; or &quot;Jobs filter, not selected&quot;</li>
+  <li class="wmd-list-item">&quot;More&quot; chip: &quot;More filters, button, 2 selected&quot; (if applicable)</li>
+  <li class="wmd-list-item">VoiceOver/TalkBack: Navigate between chips</li>
+  <li class="wmd-list-item">Sheet is fully accessible with focus trap</li>
+</ul>
+<p class="wmd-paragraph"><strong>Initial State:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">&quot;All&quot; chip is active (no filtering)</li>
+  <li class="wmd-list-item">Feed shows all posts (local + global)</li>
+  <li class="wmd-list-item">&quot;More&quot; chip shows no badge (no additional filters active)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Responsive Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">On narrow screens: Show 4 chips + &quot;More&quot;</li>
+  <li class="wmd-list-item">On wider screens: Show 5 chips + &quot;More&quot;</li>
+  <li class="wmd-list-item">Chips don&#039;t wrap to second line</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">4. Post Feed (Scrollable List)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">UITableView / UICollectionView</td>
+    <td class="wmd-table-cell wmd-align-left">RecyclerView</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5 (Light Gray)</td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5 (Light Gray)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px on sides, 12px between cards</td>
+    <td class="wmd-table-cell wmd-align-left">16dp on sides, 12dp between cards</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Pull-to-Refresh</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Native iOS refresh control</td>
+    <td class="wmd-table-cell wmd-align-left">Material SwipeRefreshLayout</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Empty State:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">If no posts matching selected tags: Show illustration + message</li>
+  <li class="wmd-list-item">Message: &quot;No posts matching your filters in this area. Try different tags!&quot;</li>
+  <li class="wmd-list-item">Illustration: Empty state graphic (subtle mountain silhouette)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Loading State:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show skeleton cards (3 placeholder cards with shimmer animation)</li>
+  <li class="wmd-list-item">Or show spinner in center if first load</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">5. Post Card (Enhanced — with Author, Description, Tags, Badge, Social Actions)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Card component (tappable)</td>
+    <td class="wmd-table-cell wmd-align-left">Material Card (tappable)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px solid #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">elevation 2dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Corner Radius</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px</td>
+    <td class="wmd-table-cell wmd-align-left">12dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px all around</td>
+    <td class="wmd-table-cell wmd-align-left">16dp all around</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px L/R, 12px between cards</td>
+    <td class="wmd-table-cell wmd-align-left">16dp L/R, 12dp between cards</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Shadow</strong></td>
+    <td class="wmd-table-cell wmd-align-left">0 2px 4px rgba(0,0,0,0.1)</td>
+    <td class="wmd-table-cell wmd-align-left">elevation 2dp</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Card Layout (top to bottom):</strong></p>
+<h4 class="wmd-h4">Author Row (NEW)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Author Avatar: 40x40px/dp circle, left-aligned<ul class="wmd-list">
+  <li class="wmd-list-item">If profile photo exists: Display photo</li>
+  <li class="wmd-list-item">If no photo: Display initials (e.g., &quot;JD&quot; for John Doe)</li>
+  <li class="wmd-list-item">Background color based on trust level:<ul class="wmd-list">
+  <li class="wmd-list-item">Level 0: #E0E0E0 (Light Gray)</li>
+  <li class="wmd-list-item">Level 1: #4A90E2 (Blue)</li>
+  <li class="wmd-list-item">Level 2: #7B61FF (Purple)</li>
+</ul></li>
+  <li class="wmd-list-item">Text color: White, 16pt/14sp Semibold</li>
+  <li class="wmd-list-item">Border: 1px solid #E0E0E0</li>
+</ul></li>
+  <li class="wmd-list-item">Author Name: &quot;Sita Gurung&quot; (14pt/13sp Medium, #212121)<ul class="wmd-list">
+  <li class="wmd-list-item">Position: To right of avatar, vertically centered</li>
+  <li class="wmd-list-item">Max width: Truncate if &gt; 20 chars</li>
+</ul></li>
+  <li class="wmd-list-item">Trust Badge: ✓ (verified checkmark), 16x16px/dp, #2E7D32<ul class="wmd-list">
+  <li class="wmd-list-item">Position: To right of name, only shown for Level 1+</li>
+  <li class="wmd-list-item">Hidden for Level 0 users</li>
+</ul></li>
+  <li class="wmd-list-item">Timestamp: &quot;2h ago&quot; (12pt/11sp Regular, #757575)<ul class="wmd-list">
+  <li class="wmd-list-item">Position: Far right, vertically centered with name</li>
+  <li class="wmd-list-item">Relative time: &quot;5m ago&quot;, &quot;2h ago&quot;, &quot;1d ago&quot;, &quot;2w ago&quot;</li>
+</ul></li>
+  <li class="wmd-list-item">Layout: [Avatar] [Name + Badge] ............ [Timestamp]</li>
+  <li class="wmd-list-item">Margin: 0-16px/dp from top (if first card element)</li>
+</ul>
+<h4 class="wmd-h4">Header Row (Title)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Title: &quot;Looking for Nepali Roommate&quot; (17pt/16sp Semibold, #212121)</li>
+  <li class="wmd-list-item">Layout: Title only (left-aligned, wraps to 2 lines max)</li>
+  <li class="wmd-list-item">Margin: 12px/dp from author row</li>
+</ul>
+<h4 class="wmd-h4">Local/Global Badge</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Local</th>
+    <th class="wmd-table-cell wmd-align-left">Global</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Content</strong></td>
+    <td class="wmd-table-cell wmd-align-left">📍 Local</td>
+    <td class="wmd-table-cell wmd-align-left">🌐 Global</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Typography</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12pt/11sp Medium</td>
+    <td class="wmd-table-cell wmd-align-left">12pt/11sp Medium</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#388E3C</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#E8F5E9</td>
+    <td class="wmd-table-cell wmd-align-left">#E3F2FD</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Shape</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Pill (border-radius: 12px)</td>
+    <td class="wmd-table-cell wmd-align-left">Pill (border-radius: 12px)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">6px H, 2px V</td>
+    <td class="wmd-table-cell wmd-align-left">6px H, 2px V</td>
+  </tr>
+  </tbody>
+</table>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Position: Below title, left-aligned</li>
+  <li class="wmd-list-item">Margin: 4px/dp from title</li>
+  <li class="wmd-list-item">Visibility: Always shown on every post card</li>
+</ul>
+<h4 class="wmd-h4">Description Preview (NEW)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Content: First 150 characters of post description</li>
+  <li class="wmd-list-item">Typography: 14pt/13sp Regular, #424242</li>
+  <li class="wmd-list-item">Max Lines: 2 lines with ellipsis if truncated</li>
+  <li class="wmd-list-item">Truncation Logic: Cut at last complete word before 150 chars</li>
+  <li class="wmd-list-item">&quot;View More&quot; Link: (NEW)<ul class="wmd-list">
+  <li class="wmd-list-item">Display only if description is truncated (&gt; 150 chars)</li>
+  <li class="wmd-list-item">Text: &quot;View More&quot; (12pt/11sp Semibold, #1565C0 Primary Blue)</li>
+  <li class="wmd-list-item">Position: Inline at end of truncated text</li>
+  <li class="wmd-list-item">Underline: Yes</li>
+  <li class="wmd-list-item">Interaction: Tap to navigate to post detail screen</li>
+</ul></li>
+  <li class="wmd-list-item">Example: &quot;Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet environment. Rent is $800/month including utilities... View More&quot;</li>
+  <li class="wmd-list-item">Margin: 8px/dp from badge</li>
+</ul>
+<h4 class="wmd-h4">Photo Thumbnail (if post has photo)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Dimensions: Full card width x 160px/dp height</li>
+  <li class="wmd-list-item">Corner Radius: 8px/dp</li>
+  <li class="wmd-list-item">Margin: 12px/dp top and bottom</li>
+  <li class="wmd-list-item">Placeholder: Gray background (#F5F5F5) with image icon if no photo</li>
+  <li class="wmd-list-item">Interaction: Tap image to view full screen (Level 0: works normally)</li>
+  <li class="wmd-list-item">Position: After description preview</li>
+</ul>
+<h4 class="wmd-h4">Tag Pills Row (NEW)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Type: Horizontal row of pill-shaped tag badges</li>
+  <li class="wmd-list-item">Position: Below photo (or below description if no photo)</li>
+  <li class="wmd-list-item">Margin: 8px/dp from photo, 12px/dp before action bar</li>
+  <li class="wmd-list-item">Pill Styling:<ul class="wmd-list">
+  <li class="wmd-list-item">Shape: Pill (border-radius: 12px/dp)</li>
+  <li class="wmd-list-item">Height: 24px/dp</li>
+  <li class="wmd-list-item">Padding: 8px/dp horizontal, 4px/dp vertical</li>
+  <li class="wmd-list-item">Background: Tag-specific color at 15% opacity (e.g., Housing green at 15%)</li>
+  <li class="wmd-list-item">Text: Tag icon + name (e.g., &quot;🏠 Housing&quot;)</li>
+  <li class="wmd-list-item">Typography: 11pt/10sp Medium, tag-specific color</li>
+  <li class="wmd-list-item">Spacing: 6px/dp between pills</li>
+</ul></li>
+  <li class="wmd-list-item">Max Display: Show up to 3 pills (all assigned tags)</li>
+  <li class="wmd-list-item">Interaction: Tap tag pill → Activate that tag in filter chips above</li>
+  <li class="wmd-list-item">Examples:<ul class="wmd-list">
+  <li class="wmd-list-item">[🏠 Housing] [❓ Question]</li>
+  <li class="wmd-list-item">[💼 Jobs] [🤝 Help]</li>
+</ul></li>
+</ul>
+<h4 class="wmd-h4">Action Bar (NEW — Social Engagement)</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">36px</td>
+    <td class="wmd-table-cell wmd-align-left">36dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Transparent (part of card)</td>
+    <td class="wmd-table-cell wmd-align-left">Transparent (part of card)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">8px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">8dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Layout</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Horizontal row, 3 actions, evenly spaced</td>
+    <td class="wmd-table-cell wmd-align-left">Horizontal row, 3 actions, evenly spaced</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Action 1: Like Button</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: Heart outline (not liked) or Heart filled (liked)<ul class="wmd-list">
+  <li class="wmd-list-item">Size: 20x20px/dp</li>
+  <li class="wmd-list-item">Color: #757575 (outline), #DC143C Accent Red (filled)</li>
+</ul></li>
+  <li class="wmd-list-item">Count: Number next to icon (e.g., &quot;24&quot;)<ul class="wmd-list">
+  <li class="wmd-list-item">Typography: 14pt/13sp Regular, #757575</li>
+  <li class="wmd-list-item">Position: 4px/dp to right of icon</li>
+  <li class="wmd-list-item">Format: Exact number if &lt; 1000, &quot;1K&quot; / &quot;1.2K&quot; if &gt;= 1000</li>
+  <li class="wmd-list-item">Default: &quot;0&quot; (always shown, even if no likes)</li>
+</ul></li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp minimum</li>
+  <li class="wmd-list-item">Level 0 Behavior:<ul class="wmd-list">
+  <li class="wmd-list-item">Icon grayed out (#BDBDBD)</li>
+  <li class="wmd-list-item">Tap shows toast: &quot;Verify your account to like posts&quot;</li>
+  <li class="wmd-list-item">Count still visible (user can see community engagement)</li>
+</ul></li>
+  <li class="wmd-list-item">Level 1+ Behavior:<ul class="wmd-list">
+  <li class="wmd-list-item">Tap to like: Heart fills, count increments, animate (scale 1.2 → 1.0)</li>
+  <li class="wmd-list-item">Tap to unlike: Heart unfills, count decrements</li>
+  <li class="wmd-list-item">Optimistic UI update</li>
+</ul></li>
+  <li class="wmd-list-item">a11y: &quot;Like button, [liked/not liked], 24 likes&quot;</li>
+</ul>
+<p class="wmd-paragraph"><strong>Action 2: Comment Button</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: Chat bubble outline<ul class="wmd-list">
+  <li class="wmd-list-item">Size: 20x20px/dp</li>
+  <li class="wmd-list-item">Color: #757575</li>
+</ul></li>
+  <li class="wmd-list-item">Count: Number next to icon (e.g., &quot;5&quot;)<ul class="wmd-list">
+  <li class="wmd-list-item">Typography: 14pt/13sp Regular, #757575</li>
+  <li class="wmd-list-item">Format: Exact number if &lt; 1000, &quot;1K&quot; if &gt;= 1000</li>
+  <li class="wmd-list-item">Default: &quot;0&quot; (always shown)</li>
+</ul></li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp minimum</li>
+  <li class="wmd-list-item">Level 0 Behavior:<ul class="wmd-list">
+  <li class="wmd-list-item">Icon enabled (not grayed out)</li>
+  <li class="wmd-list-item">Tap navigates to post detail screen, scrolls to comments</li>
+  <li class="wmd-list-item">User can read comments but comment input is disabled</li>
+</ul></li>
+  <li class="wmd-list-item">Level 1+ Behavior:<ul class="wmd-list">
+  <li class="wmd-list-item">Tap navigates to post detail screen, scrolls to comments section</li>
+  <li class="wmd-list-item">User can read and write comments</li>
+</ul></li>
+  <li class="wmd-list-item">a11y: &quot;Comment button, 5 comments&quot;</li>
+</ul>
+<p class="wmd-paragraph"><strong>Action 3: Message Button</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: Direct message (paper plane or chat dots)<ul class="wmd-list">
+  <li class="wmd-list-item">Size: 20x20px/dp</li>
+  <li class="wmd-list-item">Color: #757575</li>
+</ul></li>
+  <li class="wmd-list-item">Label: &quot;Message&quot; (optional, or icon-only)<ul class="wmd-list">
+  <li class="wmd-list-item">Typography: 14pt/13sp Regular, #757575 (if shown)</li>
+</ul></li>
+  <li class="wmd-list-item">Touch Target: 44x44pt / 48x48dp minimum</li>
+  <li class="wmd-list-item">Level 0 Behavior:<ul class="wmd-list">
+  <li class="wmd-list-item">Icon grayed out (#BDBDBD)</li>
+  <li class="wmd-list-item">Tap shows toast: &quot;Verify your account to message&quot;</li>
+</ul></li>
+  <li class="wmd-list-item">Level 1+ Behavior:<ul class="wmd-list">
+  <li class="wmd-list-item">Tap opens/creates conversation with post author (existing chat feature)</li>
+  <li class="wmd-list-item">Hidden if viewing own post</li>
+</ul></li>
+  <li class="wmd-list-item">a11y: &quot;Message author button&quot;</li>
+</ul>
+<p class="wmd-paragraph"><strong>Action Bar Layout:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">[❤️ 24] ............ [💬 5] ............ [✉️ Message]</li>
+  <li class="wmd-list-item">Equal spacing between actions</li>
+  <li class="wmd-list-item">Left-aligned within card padding</li>
+</ul>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Default: All icons outline, light gray</li>
+  <li class="wmd-list-item">Like Active: Heart filled, red color</li>
+  <li class="wmd-list-item">Pressed (Like): Scale animation, instant feedback</li>
+  <li class="wmd-list-item">Pressed (Comment/Message): Ripple effect (Android) or highlight (iOS)</li>
+  <li class="wmd-list-item">Disabled (Level 0): Like and Message icons grayed out, tooltips on tap</li>
+</ul>
+<p class="wmd-paragraph"><strong>Interaction:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Tap card body: Open post detail screen</li>
+  <li class="wmd-list-item">Tap author avatar/name: Show toast &quot;Coming soon&quot; (future: navigate to user profile)</li>
+  <li class="wmd-list-item">Tap like button: Toggle like (Level 1+), show verification toast (Level 0)</li>
+  <li class="wmd-list-item">Tap comment button: Navigate to post detail, scroll to comments</li>
+  <li class="wmd-list-item">Tap message button: Open chat conversation (Level 1+), show verification toast (Level 0)</li>
+  <li class="wmd-list-item">Tap &quot;View More&quot;: Navigate to post detail screen</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Full card structure:<ul class="wmd-list">
+  <li class="wmd-list-item">&quot;Posted by Sita Gurung, verified, 2 hours ago&quot;</li>
+  <li class="wmd-list-item">&quot;Looking for Nepali Roommate. Local post.&quot;</li>
+  <li class="wmd-list-item">&quot;Description: Looking for Nepali roommate to share 2BR apartment...&quot;</li>
+  <li class="wmd-list-item">&quot;Tags: Housing, Question.&quot;</li>
+  <li class="wmd-list-item">&quot;24 likes, 5 comments. Like button. Comment button. Message button.&quot;</li>
+</ul></li>
+  <li class="wmd-list-item">Each action is individually focusable for screen readers</li>
+  <li class="wmd-list-item">VoiceOver/TalkBack can navigate through avatar, title, actions separately</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">6. Floating Action Button (FAB) — Create Post</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Floating Action Button</td>
+    <td class="wmd-table-cell wmd-align-left">Material FAB (standard)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Dimensions</strong></td>
+    <td class="wmd-table-cell wmd-align-left">56x56px circle</td>
+    <td class="wmd-table-cell wmd-align-left">56x56dp circle</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bottom-right, 16px from edges</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom-right, 16dp from edges</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0 at 50% opacity (Level 0)</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0 at 50% opacity (Level 0)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">+ (plus), 24x24px, white</td>
+    <td class="wmd-table-cell wmd-align-left">+ (plus), 24x24dp, white</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Shadow</strong></td>
+    <td class="wmd-table-cell wmd-align-left">0 4px 8px rgba(0,0,0,0.2)</td>
+    <td class="wmd-table-cell wmd-align-left">elevation 6dp</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Level 0 (current): 50% opacity, semi-transparent</li>
+  <li class="wmd-list-item">Level 1+: Full opacity (100%), bright blue</li>
+  <li class="wmd-list-item">Pressed: Scale 0.95, darker blue</li>
+</ul>
+<p class="wmd-paragraph"><strong>Interaction:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Tap (Level 0): Show modal with verification prompt<ul class="wmd-list">
+  <li class="wmd-list-item">Modal title: &quot;Verify Your Phone to Post&quot;</li>
+  <li class="wmd-list-item">Modal message: &quot;You need to verify your phone number to create posts and message others.&quot;</li>
+  <li class="wmd-list-item">Modal buttons: &quot;Verify Now&quot; (primary) and &quot;Cancel&quot; (secondary)</li>
+</ul></li>
+  <li class="wmd-list-item">Tap (Level 1+): Open &quot;Create Post&quot; screen (not in this journey)</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Label: &quot;Create post, button, requires verification&quot;</li>
+  <li class="wmd-list-item">Hint: &quot;Verify your phone to unlock posting&quot;</li>
+  <li class="wmd-list-item">Trait: Button</li>
+</ul>
+<p class="wmd-paragraph"><strong>Visual Cue:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Semi-transparent appearance signals &quot;not fully enabled&quot;</li>
+  <li class="wmd-list-item">Users can still tap to learn why it&#039;s disabled</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">7. Bottom Navigation Bar</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Tab bar</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom navigation</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">56px + safe area</td>
+    <td class="wmd-table-cell wmd-align-left">56dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px top border #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">elevation 8dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Fixed at bottom</td>
+    <td class="wmd-table-cell wmd-align-left">Fixed at bottom</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Tabs (left to right):</strong></p>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Tab</th>
+    <th class="wmd-table-cell wmd-align-left">Icon (Active)</th>
+    <th class="wmd-table-cell wmd-align-left">Icon (Inactive)</th>
+    <th class="wmd-table-cell wmd-align-left">Label</th>
+    <th class="wmd-table-cell wmd-align-left">Active Color</th>
+    <th class="wmd-table-cell wmd-align-left">Inactive Color</th>
+    <th class="wmd-table-cell wmd-align-left">Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Home</td>
+    <td class="wmd-table-cell wmd-align-left">Home filled</td>
+    <td class="wmd-table-cell wmd-align-left">Home outline</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Home&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Create Post</td>
+    <td class="wmd-table-cell wmd-align-left">Add circle</td>
+    <td class="wmd-table-cell wmd-align-left">Add circle</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Post&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">FAB provides same functionality</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Events (NEW)</td>
+    <td class="wmd-table-cell wmd-align-left">Calendar filled</td>
+    <td class="wmd-table-cell wmd-align-left">Calendar outline</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Events&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">Coming Soon placeholder in Phase 1</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Marketplace (NEW)</td>
+    <td class="wmd-table-cell wmd-align-left">Storefront filled</td>
+    <td class="wmd-table-cell wmd-align-left">Storefront outline</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Marketplace&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">Coming Soon placeholder in Phase 1</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Profile</td>
+    <td class="wmd-table-cell wmd-align-left">Person filled</td>
+    <td class="wmd-table-cell wmd-align-left">Person outline</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Profile&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Note:</strong> Search and Messages have been moved to the top navigation bar. Messages icon in top nav shows unread badge.</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Spacing &amp; Layout</h2>
+<h3 class="wmd-h3">Vertical Layout (Top to Bottom)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">#</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Height</th>
+    <th class="wmd-table-cell wmd-align-left">Spacing After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Top safe area</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Top nav bar</td>
+    <td class="wmd-table-cell wmd-align-left">44px / 56dp</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Level 0 banner</td>
+    <td class="wmd-table-cell wmd-align-left">64px / 72dp (dismissible)</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Tag filter chips</td>
+    <td class="wmd-table-cell wmd-align-left">48px/dp</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">Feed padding</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+    <td class="wmd-table-cell wmd-align-left">12px/dp top</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Post card 1</td>
+    <td class="wmd-table-cell wmd-align-left">~400px (with photo, tags, badge)</td>
+    <td class="wmd-table-cell wmd-align-left">12px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">7</td>
+    <td class="wmd-table-cell wmd-align-left">Post card 2</td>
+    <td class="wmd-table-cell wmd-align-left">~400px</td>
+    <td class="wmd-table-cell wmd-align-left">12px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">8</td>
+    <td class="wmd-table-cell wmd-align-left">Post card 3</td>
+    <td class="wmd-table-cell wmd-align-left">~400px</td>
+    <td class="wmd-table-cell wmd-align-left">12px/dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">9</td>
+    <td class="wmd-table-cell wmd-align-left">Continue scrolling</td>
+    <td class="wmd-table-cell wmd-align-left">Infinite scroll or pagination</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">10</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom padding</td>
+    <td class="wmd-table-cell wmd-align-left">80px/dp (FAB clearance)</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Total Visible Height:</strong> ~800px (fits 2-2.5 cards on screen at once)</p>
+<h3 class="wmd-h3">Horizontal Layout</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Screen margins: 16px/dp on both sides</li>
+  <li class="wmd-list-item">Post cards: Full width minus 32px/dp (16px margins × 2)</li>
+  <li class="wmd-list-item">Feed background: Full width (edge to edge)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">User Interactions</h2>
+<h3 class="wmd-h3">Primary Flow (Browse Posts)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User lands on home screen after onboarding</li>
+  <li class="wmd-list-item">User sees Level 0 banner → Reads message (5 seconds)</li>
+  <li class="wmd-list-item">User dismisses banner (optional) → Tap X</li>
+  <li class="wmd-list-item">User browses posts → Scrolls through feed (local + global mixed)</li>
+  <li class="wmd-list-item">User taps tag filter chip (optional) → Feed filters by tag</li>
+  <li class="wmd-list-item">User taps post card → Opens post detail screen</li>
+  <li class="wmd-list-item">User sees &quot;Verify to Message&quot; prompt on detail screen</li>
+  <li class="wmd-list-item">User returns to home screen, taps &quot;Verify Now&quot; in banner</li>
+  <li class="wmd-list-item">Navigate to Journey #02 (Trust Level Verification)</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Create Post Attempt)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps FAB (+ button)</li>
+  <li class="wmd-list-item">Modal appears: &quot;Verify Your Phone to Post&quot;</li>
+  <li class="wmd-list-item">User taps &quot;Verify Now&quot; → Navigate to Journey #02</li>
+  <li class="wmd-list-item">User taps &quot;Cancel&quot; → Modal closes, returns to feed</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Filter by Tag)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps &quot;Jobs&quot; chip</li>
+  <li class="wmd-list-item">Chip fills with blue (selected state)</li>
+  <li class="wmd-list-item">Feed updates to show only posts tagged with Jobs (loading spinner, then posts)</li>
+  <li class="wmd-list-item">User can tap additional chips to further narrow (multi-select)</li>
+  <li class="wmd-list-item">User taps &quot;All&quot; chip to reset all filters</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Search)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps Search icon (top-right)</li>
+  <li class="wmd-list-item">Navigate to Search screen (out of scope for this journey)</li>
+</ol>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Platform-Specific Differences</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Aspect</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Top Bar</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Navigation bar, 44px</td>
+    <td class="wmd-table-cell wmd-align-left">App bar, 56dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Tab Labels</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Title case (&quot;Housing&quot;)</td>
+    <td class="wmd-table-cell wmd-align-left">ALL CAPS (&quot;HOUSING&quot;)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Post Card Shadow</strong></td>
+    <td class="wmd-table-cell wmd-align-left">0 2px 4px rgba shadow</td>
+    <td class="wmd-table-cell wmd-align-left">Material elevation 2dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>FAB</strong></td>
+    <td class="wmd-table-cell wmd-align-left">iOS doesn&#039;t have official FAB pattern, but we&#039;ll use it for consistency</td>
+    <td class="wmd-table-cell wmd-align-left">Material FAB (standard)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Pull-to-Refresh</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Native iOS refresh control</td>
+    <td class="wmd-table-cell wmd-align-left">Material SwipeRefreshLayout</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Scroll Behavior</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Smooth momentum scroll</td>
+    <td class="wmd-table-cell wmd-align-left">Material scroll with edge glow</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Banner Dismiss</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Fade out animation</td>
+    <td class="wmd-table-cell wmd-align-left">Fade out + swipe away</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Error States &amp; Edge Cases</h2>
+<h3 class="wmd-h3">Edge Case: No Posts Matching Tags</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> User selects "Emergency" filter chip, but no emergency-tagged posts in their metro area
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show empty state illustration (mountain silhouette)</li>
+  <li class="wmd-list-item">Message: &quot;No posts matching your filters. That&#039;s okay!&quot;</li>
+  <li class="wmd-list-item">Subtext: &quot;Try different tags or check back later.&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Edge Case: No Posts in Metro Area (First User)</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> User is the first person in a new metro area, no posts at all
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show empty state illustration</li>
+  <li class="wmd-list-item">Message: &quot;Be the first to post in [Metro Name]!&quot;</li>
+  <li class="wmd-list-item">CTA button: &quot;Verify Phone to Post&quot; (navigates to verification)</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Edge Case: Network Error (Feed Fails to Load)</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> API call to fetch posts fails (timeout, no internet)
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show error banner at top: &quot;Could not load posts. Please check your connection and try again.&quot;</li>
+  <li class="wmd-list-item">Banner: Red background (#C62828), white text, &quot;Retry&quot; button</li>
+  <li class="wmd-list-item">Keep previous posts visible if cached</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Edge Case: User Taps Post Without Verification (Level 0)</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> User taps post card to view details
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Navigate to post detail screen</li>
+  <li class="wmd-list-item">Show banner on detail screen: &quot;Verify phone to contact poster&quot;</li>
+  <li class="wmd-list-item">Contact info is hidden behind &quot;Click to Reveal&quot; (requires Level 1)</li>
+  <li class="wmd-list-item">Back button returns to home screen</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Edge Case: User Dismisses Banner Multiple Times</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> User dismisses Level 0 banner repeatedly across sessions
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Banner reappears on each app launch (for first 7 days)</li>
+  <li class="wmd-list-item">After 7 days or 5 dismissals: Show less frequently (every 3rd launch)</li>
+  <li class="wmd-list-item">Banner permanently hides once user reaches Level 1</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Edge Case: Very Long Metro Area Name</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> Metro name is >25 characters (e.g., "New York-Newark-Jersey City")
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Truncate in top nav: &quot;New York-Newark-J...&quot;</li>
+  <li class="wmd-list-item">Show full name in dropdown/tooltip on tap</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Edge Case: User Has Slow Internet (Images Don&#039;t Load)</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> Post card images fail to load
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show placeholder: Gray box with house icon</li>
+  <li class="wmd-list-item">&quot;Image unavailable&quot; text (caption)</li>
+  <li class="wmd-list-item">Card layout remains intact, rest of post visible</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Edge Case: User Scrolls to Bottom of Feed (Pagination)</h3>
+<p class="wmd-paragraph"><strong>Scenario:</strong> User reaches end of loaded posts
+<strong>Behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Show loading spinner at bottom</li>
+  <li class="wmd-list-item">Load next 10 posts automatically (infinite scroll)</li>
+  <li class="wmd-list-item">If no more posts: Show &quot;You&#039;ve reached the end&quot; message</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<h3 class="wmd-h3">Screen Reader Support</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Screen Title: &quot;Home Screen, Dallas-Fort Worth&quot;</li>
+  <li class="wmd-list-item">Reading Order:<ol class="wmd-list">
+  <li class="wmd-list-item">&quot;Dallas-Fort Worth, button, change location&quot;</li>
+  <li class="wmd-list-item">&quot;Search button&quot;</li>
+  <li class="wmd-list-item">&quot;Notifications, 2 unread&quot;</li>
+  <li class="wmd-list-item">&quot;Warning. You&#039;re viewing only. Verify phone to post and message. Verify Now button. Close button.&quot;</li>
+  <li class="wmd-list-item">&quot;Filter chips: All, Housing, Jobs, Help, Question, Politics, Discussion, Emergency. All selected.&quot;</li>
+  <li class="wmd-list-item">&quot;Post. Looking for Nepali Roommate. Local. Verified user. Tags: Housing, Question. 24 likes, 5 comments. Button.&quot;</li>
+  <li class="wmd-list-item">[Repeat for each post card]</li>
+  <li class="wmd-list-item">&quot;Create post, button, requires verification&quot;</li>
+</ol></li>
+</ul>
+<h3 class="wmd-h3">Touch Targets</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">All nav buttons (Location, Search, Notifications): 44x44pt / 48x48dp — ✓</li>
+  <li class="wmd-list-item">Banner buttons (Verify Now, X): 44x44pt / 48x48dp — ✓</li>
+  <li class="wmd-list-item">Category tabs: Full height (48px/dp), minimum 44x44pt / 48x48dp width</li>
+  <li class="wmd-list-item">Post cards: Full card is tappable, exceeds minimum</li>
+  <li class="wmd-list-item">Tag pills: Minimum 44x44pt / 48x48dp touch target</li>
+  <li class="wmd-list-item">FAB: 56x56px/dp — ✓</li>
+</ul>
+<h3 class="wmd-h3">Color Contrast</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Ratio</th>
+    <th class="wmd-table-cell wmd-align-left">Level</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Nav text (#212121 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">16.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Banner text (#E65100 on #FFF3E0)</td>
+    <td class="wmd-table-cell wmd-align-left">5.8:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Tab text (active #1565C0 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">7.2:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Post card text (#212121 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">16.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Post metadata (#757575 on #FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">4.6:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Focus Indicators</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">All interactive elements have clear focus states</li>
+  <li class="wmd-list-item">iOS: VoiceOver yellow outline</li>
+  <li class="wmd-list-item">Android: TalkBack green rectangle</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Animations &amp; Transitions</h2>
+<h3 class="wmd-h3">Screen Entry (from Tutorial)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Step</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Delay</th>
+    <th class="wmd-table-cell wmd-align-left">Duration</th>
+    <th class="wmd-table-cell wmd-align-left">Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Screen</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">iOS: Slide in from right; Android: Slide up from bottom</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Feed cards</td>
+    <td class="wmd-table-cell wmd-align-left">100ms stagger per card</td>
+    <td class="wmd-table-cell wmd-align-left">200ms each</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Pull-to-Refresh</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Pull down from top of feed</li>
+  <li class="wmd-list-item">Show refresh indicator (spinner + &quot;Fetching latest posts...&quot;)</li>
+  <li class="wmd-list-item">Feed updates, cards fade in (200ms per card)</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Tab Switch (Chip Toggle)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Duration: 150ms</li>
+  <li class="wmd-list-item">Easing: Ease-in-out</li>
+  <li class="wmd-list-item">Chip fills with color (active) or returns to neutral (inactive)</li>
+  <li class="wmd-list-item">Feed cross-fades: Old posts fade out (100ms), new posts fade in (200ms delay)</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Post Card Tap</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Duration: 150ms</li>
+  <li class="wmd-list-item">Effect: Background color to light gray (#F5F5F5), scale 0.99</li>
+  <li class="wmd-list-item">Navigation to detail screen: Slide in from right (iOS) or shared element transition (Android)</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">FAB Tap (Level 0 Modal)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Background overlay: Fade in to 50% black (200ms)</li>
+  <li class="wmd-list-item">Modal: Slide up from bottom (iOS) or fade in (Android)</li>
+  <li class="wmd-list-item">Duration: 300ms, ease-out</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Banner Dismiss</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Duration: 300ms</li>
+  <li class="wmd-list-item">Effect: Banner fades out + slides up</li>
+  <li class="wmd-list-item">Feed cards move up to fill space (animate layout change)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Content &amp; Localization</h2>
+<h3 class="wmd-h3">Copy Requirements</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Banner Message: Clear, concise (under 80 characters)</li>
+  <li class="wmd-list-item">Empty State Messages: Friendly, helpful (provide next steps)</li>
+  <li class="wmd-list-item">Error Messages: Specific, actionable (tell user what to do)</li>
+  <li class="wmd-list-item">Post Metadata: Relative time (&quot;2 days ago&quot; not &quot;2024-02-10&quot;)</li>
+</ul>
+<h3 class="wmd-h3">String Keys</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Key</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_nav_location</code></td>
+    <td class="wmd-table-cell wmd-align-left">{metro_name}</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_banner_level0</code></td>
+    <td class="wmd-table-cell wmd-align-left">You&#039;re viewing only. Verify phone to post and message.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_banner_verify_btn</code></td>
+    <td class="wmd-table-cell wmd-align-left">Verify Now</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_chip_all</code></td>
+    <td class="wmd-table-cell wmd-align-left">All</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_chip_{tag_slug}</code></td>
+    <td class="wmd-table-cell wmd-align-left">Dynamic from tags table</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_fab_hint</code></td>
+    <td class="wmd-table-cell wmd-align-left">Create post</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_empty_tags</code></td>
+    <td class="wmd-table-cell wmd-align-left">No posts matching your filters in this area. Try different tags!</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_error_network</code></td>
+    <td class="wmd-table-cell wmd-align-left">Could not load posts. Please check your connection and try again.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_badge_local</code></td>
+    <td class="wmd-table-cell wmd-align-left">Local</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">home_badge_global</code></td>
+    <td class="wmd-table-cell wmd-align-left">Global</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Tone &amp; Voice</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Welcoming: User just completed onboarding, celebrate their arrival</li>
+  <li class="wmd-list-item">Helpful: Banner guides user to next step (verification)</li>
+  <li class="wmd-list-item">Transparent: Explain why Level 0 is limited</li>
+  <li class="wmd-list-item">Friendly: Use casual language (&quot;You&#039;re viewing only&quot; not &quot;Viewing mode: Read-only&quot;)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Technical Notes</h2>
+<h3 class="wmd-h3">Screen Identifier</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">iOS: HomeViewController or FeedViewController</li>
+  <li class="wmd-list-item">Android: HomeActivity or FeedFragment</li>
+  <li class="wmd-list-item">Route name: /home or /feed</li>
+</ul>
+<h3 class="wmd-h3">State Management</h3>
+<p class="wmd-paragraph"><strong>Screen State:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">selectedTags: string[] (tag slugs, empty = &quot;All&quot;)</li>
+  <li class="wmd-list-item">availableTags: Tag[] (from tags table)</li>
+  <li class="wmd-list-item">posts: array of post objects (with tags and is_global)</li>
+  <li class="wmd-list-item">isLoading: boolean</li>
+  <li class="wmd-list-item">bannerDismissed: boolean (session-scoped)</li>
+  <li class="wmd-list-item">userTrustLevel: number (0, 1, or 2)</li>
+  <li class="wmd-list-item">metroAreaId: string</li>
+  <li class="wmd-list-item">metroName: string</li>
+</ul>
+<p class="wmd-paragraph"><strong>Post Object:</strong></p>
+<pre class="wmd-code-block"><code data-lang="javascript">{
+  id: &quot;post_123&quot;,
+  title: &quot;Looking for Nepali Roommate&quot;,
+  description: &quot;Looking for Nepali roommate to share 2BR apartment near UTD campus...&quot;,
+  tags: [&quot;housing&quot;, &quot;question&quot;],
+  tag_names: [&quot;Housing&quot;, &quot;Question&quot;],
+  is_global: false,
+  photoUrl: &quot;https://...&quot;,
+  postedAt: &quot;2026-02-10T10:30:00Z&quot;,
+  metroAreaId: &quot;dallas-fort-worth-arlington&quot;,
+  author: {
+    id: &quot;user_456&quot;,
+    name: &quot;Sita Gurung&quot;,
+    verified: true,
+    trustLevel: 1
+  },
+  likes_count: 24,
+  comments_count: 5
+}</code></pre>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Navigation</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Direction</th>
+    <th class="wmd-table-cell wmd-align-left">Trigger</th>
+    <th class="wmd-table-cell wmd-align-left">Destination</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">From Screen 05 (Onboarding Tutorial) — &quot;Get Started&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">App launch (if user already onboarded)</td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">Deep link <code class="wmd-code-inline">nusa://home</code> or <code class="wmd-code-inline">nusa://feed</code></td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Verify Now&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Journey #02 (Trust Level Verification)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Tap post card</td>
+    <td class="wmd-table-cell wmd-align-left">Post Detail screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Tap Search icon</td>
+    <td class="wmd-table-cell wmd-align-left">Search screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Tap Notifications</td>
+    <td class="wmd-table-cell wmd-align-left">Notifications screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Modal</td>
+    <td class="wmd-table-cell wmd-align-left">Tap FAB (Level 0)</td>
+    <td class="wmd-table-cell wmd-align-left">Verification modal → Journey #02</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">API Integration</h3>
+<p class="wmd-paragraph"><strong>Endpoint:</strong> GET /posts?metro_area_id={id}&tags={slugs}&limit=10&offset=0</p>
+<p class="wmd-paragraph"><strong>Request Params:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">metro_area_id: User&#039;s metro area ID (from user profile)</li>
+  <li class="wmd-list-item">tags: Comma-separated tag slugs (optional, empty = all tags)</li>
+  <li class="wmd-list-item">limit: Number of posts to fetch (default: 10)</li>
+  <li class="wmd-list-item">offset: Pagination offset (default: 0)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Response:</strong></p>
+<pre class="wmd-code-block"><code data-lang="json">{
+  &quot;posts&quot;: [
+    {
+      &quot;id&quot;: &quot;post_123&quot;,
+      &quot;title&quot;: &quot;Looking for Nepali Roommate&quot;,
+      &quot;description&quot;: &quot;Looking for Nepali roommate to share 2BR apartment near UTD...&quot;,
+      &quot;tags&quot;: [
+        { &quot;slug&quot;: &quot;housing&quot;, &quot;name&quot;: &quot;Housing&quot;, &quot;icon&quot;: &quot;home&quot;, &quot;color&quot;: &quot;#4CAF50&quot; },
+        { &quot;slug&quot;: &quot;question&quot;, &quot;name&quot;: &quot;Question&quot;, &quot;icon&quot;: &quot;question&quot;, &quot;color&quot;: &quot;#9C27B0&quot; }
+      ],
+      &quot;is_global&quot;: false,
+      &quot;photo_url&quot;: &quot;https://...&quot;,
+      &quot;posted_at&quot;: &quot;2026-02-10T10:30:00Z&quot;,
+      &quot;likes_count&quot;: 24,
+      &quot;comments_count&quot;: 5,
+      &quot;author&quot;: {
+        &quot;id&quot;: &quot;user_456&quot;,
+        &quot;name&quot;: &quot;Sita Gurung&quot;,
+        &quot;verified&quot;: true,
+        &quot;trust_level&quot;: 1
+      }
+    }
+  ],
+  &quot;total&quot;: 47,
+  &quot;has_more&quot;: true
+}</code></pre>
+<p class="wmd-paragraph"><strong>Note:</strong> Feed includes both local posts (metro_area_id match) AND global posts (is_global = true) from any metro area. Global posts are mixed into the feed chronologically, not separated.</p>
+<p class="wmd-paragraph"><strong>Caching:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Cache posts in memory for current session</li>
+  <li class="wmd-list-item">Invalidate cache on pull-to-refresh</li>
+  <li class="wmd-list-item">Persist last 50 posts to disk for offline viewing</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Performance Considerations</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Lazy load images: Use progressive JPEG or WebP, load thumbnails first</li>
+  <li class="wmd-list-item">Pagination: Load 10 posts at a time (infinite scroll)</li>
+  <li class="wmd-list-item">Skeleton loading: Show placeholder cards while fetching</li>
+  <li class="wmd-list-item">Debounce tab switches: Wait 200ms before API call (prevent rapid tab tapping)</li>
+  <li class="wmd-list-item">Cache posts: Store in memory, reduce API calls</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Design References</h2>
+<h3 class="wmd-h3">Inspiration</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Reddit Feed: Tag-based filtering with pill badges</li>
+  <li class="wmd-list-item">Nextdoor Feed: Local posts with community content</li>
+  <li class="wmd-list-item">Airbnb Listings: Clean card-based feed with photos</li>
+  <li class="wmd-list-item">Facebook Marketplace: Verified badges, card layout</li>
+</ul>
+<h3 class="wmd-h3">Design System Components Used</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Top Navigation Bar</li>
+  <li class="wmd-list-item">Banner (Level 0 warning)</li>
+  <li class="wmd-list-item">Filter Chips (Tag filter bar)</li>
+  <li class="wmd-list-item">Post Card (with tag pills, badge, social actions)</li>
+  <li class="wmd-list-item">Floating Action Button (adapted for Level 0)</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Testing Checklist</h2>
+<h3 class="wmd-h3">Functional Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Feed loads posts from user&#039;s metro area + global posts</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tag filter chips filter posts correctly (multi-select)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>&quot;All&quot; chip resets filters</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Post cards show tag pills and Local/Global badge</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Level 0 banner displays and is dismissible</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>&quot;Verify Now&quot; button navigates to verification flow</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Post cards navigate to detail screen</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>FAB shows verification modal for Level 0</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Pull-to-refresh updates feed</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Infinite scroll loads more posts</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tags load dynamically from database</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Visual Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>All components display correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Post cards have correct spacing and styling</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tag pills display with correct colors</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Local/Global badges display correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Banner has yellow background and warning icon</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>FAB is semi-transparent (50% opacity)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Filter chips show active/inactive states correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Safe area insets respected</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Accessibility Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>VoiceOver/TalkBack reads all elements in order</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>All touch targets meet 44pt/48dp minimum</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Color contrast meets WCAG AA</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Focus indicators visible</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tab navigation works with screen reader</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Integration Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>API fetches posts correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Posts filtered by tags and metro area</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Global posts appear in local feed</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tag data loads from tags table</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Images load and display properly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Error states handled gracefully</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Empty states show correct messages</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Edge Case Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>No posts matching tags shows empty state</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Network error shows retry option</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Very long metro name truncates correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Images fail gracefully (show placeholder)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Pagination works smoothly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Global posts display with correct badge</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Multiple tag filter selection works</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Posts with 1, 2, or 3 tags display correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tag pills don&#039;t overflow card width</span>
+  </label>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Open Questions</h2>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should we show &quot;Featured&quot; posts at top of feed?</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Pro: Highlights quality posts, rewards active users</li>
+  <li class="wmd-list-item">Con: May feel like ads, reduces organic discovery</li>
+  <li class="wmd-list-item">Recommendation: Not in Phase 1, consider for Phase 2</li>
+</ul>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should we allow filtering by distance? (e.g., within 10 miles)</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Pro: More precise local filtering</li>
+  <li class="wmd-list-item">Con: Requires GPS permission, adds complexity</li>
+  <li class="wmd-list-item">Recommendation: Add in Phase 2 as &quot;Hyper-local&quot; filter</li>
+</ul>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should we show post counts in category tabs? (e.g., &quot;Housing (47)&quot;)</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Pro: Helps users prioritize active categories</li>
+  <li class="wmd-list-item">Con: Clutters UI, may discourage exploring empty categories</li>
+  <li class="wmd-list-item">Recommendation: A/B test - measure category engagement</li>
+</ul>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should banner be dismissible permanently or per session?</span>
+  </label><ul class="wmd-list">
+  <li class="wmd-list-item">Current: Per session (reappears on next launch)</li>
+  <li class="wmd-list-item">Alternative: Permanent dismiss (only for 7 days, then reappears)</li>
+  <li class="wmd-list-item">Recommendation: Per session, gradually reduce frequency after multiple dismissals</li>
+</ul>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Related Screens</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Relation</th>
+    <th class="wmd-table-cell wmd-align-left">Screen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Previous</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./05-onboarding-tutorial.md" class="wmd-link">05-onboarding-tutorial.md</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Next</td>
+    <td class="wmd-table-cell wmd-align-left">Post Detail Screen (out of scope for this journey)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Journey</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../user-journeys/onboarding/01-signup-and-onboarding.md" class="wmd-link">01-signup-and-onboarding</a> - Step 13 (Success State)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Related</td>
+    <td class="wmd-table-cell wmd-align-left">Journey #02: Trust Level Verification (user will likely proceed here next)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Related</td>
+    <td class="wmd-table-cell wmd-align-left">Journey #07: Browse and Search Posts (user is already browsing)</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Status:</strong> Draft — Ready for Review
+<strong>Onboarding Journey Complete:</strong> This is the final success state of Journey #01</p>
+</body>
+</html>

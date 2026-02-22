@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* wiremd Sketch Style - Balsamiq-inspired hand-drawn mockups */
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body.wmd-root {
+  font-family: 'Kalam', 'Comic Sans MS', 'Marker Felt', 'Chalkboard', cursive, sans-serif;
+  background: #f5f5dc;
+  color: #333;
+  padding: 20px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Headings */
+.wmd-h1, .wmd-h2, .wmd-h3, .wmd-h4, .wmd-h5, .wmd-h6 {
+  font-weight: bold;
+  margin: 1em 0 0.5em;
+  line-height: 1.3;
+}
+
+.wmd-h1 { font-size: 2em; text-decoration: underline; }
+.wmd-h2 { font-size: 1.75em; }
+.wmd-h3 { font-size: 1.5em; }
+.wmd-h4 { font-size: 1.25em; }
+.wmd-h5 { font-size: 1.1em; }
+.wmd-h6 { font-size: 1em; }
+
+/* Paragraph */
+.wmd-paragraph {
+  margin: 0.5em 0;
+}
+
+/* Buttons */
+.wmd-button {
+  display: inline-block;
+  padding: 8px 16px;
+  margin: 4px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+  transform: rotate(-0.5deg);
+  transition: all 0.1s;
+}
+
+.wmd-button:hover {
+  transform: rotate(-0.5deg) translateY(-2px);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+}
+
+.wmd-button-primary, .wmd-button.wmd-primary {
+  background: #87CEEB;
+  border-color: #4682B4;
+}
+
+.wmd-button-secondary, .wmd-button.wmd-secondary {
+  background: #DDD;
+  border-color: #999;
+}
+
+.wmd-button-danger, .wmd-button.wmd-danger {
+  background: #FFB6C1;
+  border-color: #DC143C;
+}
+
+.wmd-button[disabled], .wmd-button.wmd-state-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wmd-button.wmd-loading::after {
+  content: '...';
+  animation: loading 1s infinite;
+}
+
+/* Inputs */
+.wmd-input, .wmd-textarea, .wmd-select {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  margin: 4px 0;
+  font-family: inherit;
+  font-size: 14px;
+  background: #fff;
+  border: 2px solid #666;
+  border-radius: 4px;
+  transform: rotate(0.3deg);
+}
+
+.wmd-input:focus, .wmd-textarea:focus, .wmd-select:focus {
+  outline: 2px solid #4682B4;
+  outline-offset: 2px;
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Checkboxes and Radios */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  font-size: 1.2em;
+  line-height: 1;
+  vertical-align: middle;
+  margin: 0 0.2em;
+}
+
+/* Containers */
+.wmd-container-hero, .wmd-container-card, .wmd-container-modal {
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 16px 0;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+  transform: rotate(-0.3deg);
+}
+
+.wmd-container-hero {
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE6CC 100%);
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.wmd-container-card {
+  max-width: 400px;
+}
+
+.wmd-container-modal {
+  position: relative;
+  max-width: 500px;
+  margin: 32px auto;
+  border-width: 4px;
+}
+
+/* Radio Groups */
+.wmd-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.wmd-radio-group-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.wmd-radio-group-inline .wmd-radio {
+  margin: 0;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  font-size: 1.2em;
+  line-height: 1;
+  vertical-align: middle;
+  margin: 0 0.2em;
+}
+
+/* Navigation */
+.wmd-nav {
+  background: #87CEEB;
+  border: 3px solid #4682B4;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.15);
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wmd-brand {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-right: auto;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: #000;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 6px 14px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+  transform: rotate(0.3deg);
+  transition: all 0.1s;
+}
+
+.wmd-nav-item:hover {
+  transform: rotate(0.3deg) translateY(-1px);
+  box-shadow: 2px 3px 0 rgba(0,0,0,0.15);
+  background: #f8f8f8;
+}
+
+.wmd-nav .wmd-button {
+  margin: 0;
+}
+
+/* Grid */
+.wmd-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 3), 1fr);
+  gap: 24px;
+  margin: 24px 0;
+}
+
+.wmd-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.wmd-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.wmd-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+.wmd-grid-item {
+  background: #fff;
+  border: 2px solid #666;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  transform: rotate(0.5deg);
+}
+
+.wmd-grid-item:nth-child(even) {
+  transform: rotate(-0.5deg);
+}
+
+/* Lists */
+.wmd-list {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.wmd-list-item {
+  margin: 4px 0;
+}
+
+/* Blockquote */
+.wmd-blockquote {
+  border-left: 4px solid #666;
+  padding-left: 16px;
+  margin: 16px 0;
+  font-style: italic;
+  color: #555;
+}
+
+/* Code */
+.wmd-code-inline {
+  background: #FFF3CD;
+  border: 1px solid #FFC107;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.wmd-code-block {
+  background: #FFF3CD;
+  border: 2px solid #FFC107;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.wmd-code-block code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+/* Separator */
+.wmd-separator {
+  border: none;
+  border-top: 3px dashed #666;
+  margin: 24px 0;
+}
+
+/* Table */
+.wmd-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 3px solid #000;
+  border-radius: 8px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.wmd-table th, .wmd-table td {
+  border: 2px solid #666;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.wmd-table th {
+  background: #DDD;
+  font-weight: bold;
+}
+
+/* Table cell alignment - more specific to override th/td defaults */
+.wmd-table .wmd-align-left {
+  text-align: left !important;
+}
+
+.wmd-table .wmd-align-center {
+  text-align: center !important;
+}
+
+.wmd-table .wmd-align-right {
+  text-align: right !important;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: #fff;
+  border: 2px solid #87CEEB;
+  border-radius: 8px;
+  padding: 32px;
+  margin: 16px 0;
+  text-align: center;
+  position: relative;
+}
+
+.wmd-container-loading-state::before {
+  content: '⟳';
+  display: block;
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: spin 1.5s linear infinite;
+  transform-origin: center;
+}
+
+.wmd-container-empty-state {
+  background: #f5f5f5;
+  border: 2px dashed #999;
+  border-radius: 8px;
+  padding: 48px 32px;
+  margin: 16px 0;
+  text-align: center;
+  color: #666;
+}
+
+.wmd-container-empty-state::before {
+  content: '📭';
+  display: block;
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.wmd-container-error-state {
+  background: #FFE6E6;
+  border: 3px solid #DC143C;
+  border-radius: 8px;
+  padding: 32px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.wmd-container-error-state::before {
+  content: '⚠️';
+  display: block;
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .wmd-nav-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wmd-brand {
+    margin-right: 0;
+  }
+}
+
+@keyframes loading {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-sketch">
+  <h1 class="wmd-h1">Wireframe: Message Thread Screen</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Screen:</strong> 08 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-02-19
+<strong>Journey:</strong> <a href="../features/in-app-chat.md">in-app-chat.md</a> - Features 8.4, 8.5, 8.6, 8.7
+<strong>Story:</strong> As a verified user, I want to send and receive messages in a conversation so I can coordinate with other community members about posts.</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen Purpose</h2>
+<p class="wmd-paragraph">Full chat thread between two users, linked to a specific post. Displays messages chronologically with real-time updates via Supabase Realtime. WhatsApp-inspired design with sent messages on the right (blue) and received on the left (gray).</p>
+<p class="wmd-paragraph"><strong>Key Goals:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Clear, familiar chat interface (WhatsApp-like)</li>
+  <li class="wmd-list-item">Real-time message delivery</li>
+  <li class="wmd-list-item">Post context always visible so users remember what they&#039;re discussing</li>
+  <li class="wmd-list-item">Easy send flow with keyboard management</li>
+  <li class="wmd-list-item">Read receipts for message status</li>
+  <li class="wmd-list-item">Block option for safety</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Visual Wireframe</h2>
+<div class="wmd-container-navbar">
+  <div class="wmd-container-form-group">
+  <button class="wmd-button">←</button>
+  <strong>Ram K.</strong>✓ 
+  <button class="wmd-button">⋮</button>
+</div>
+</div>
+<div class="wmd-container-card wmd-post-context">
+  <p class="wmd-paragraph">🏠 Private Room in Richardson <button class="wmd-button">→</button></p>
+</div>
+<div class="wmd-container-card wmd-date-separator">
+  <p class="wmd-paragraph">── Today ──</p>
+</div>
+<div class="wmd-container-card wmd-bubble-received">
+  <p class="wmd-paragraph">10:30 AM</p>
+</div>
+<div class="wmd-container-card wmd-bubble-sent">
+  <p class="wmd-paragraph">10:32 AM ✓✓</p>
+</div>
+<div class="wmd-container-card wmd-bubble-received">
+  <p class="wmd-paragraph">10:33 AM</p>
+</div>
+<div class="wmd-container-card wmd-bubble-sent">
+  <p class="wmd-paragraph">10:35 AM ✓</p>
+</div>
+<div class="wmd-container-footer">
+  <div class="wmd-container-button-group">
+  <button class="wmd-button">Type a message...___</button>
+  <button class="wmd-button wmd-button-primary">➤</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Header Menu (⋮ pressed)</h3>
+<div class="wmd-container-dropdown">
+  <button class="wmd-button wmd-destructive">Block User</button>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Block Confirmation Dialog</h3>
+<div class="wmd-container-modal">
+  <p class="wmd-paragraph">They won&#039;t be able to message you. You can unblock them later in Settings.</p>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button wmd-outline">Cancel</button>
+  <button class="wmd-button wmd-destructive">Block</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">New Message Indicator (when scrolled up)</h3>
+<div class="wmd-container-card wmd-floating-pill">
+  <p class="wmd-paragraph">New message ↓</p>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Empty Thread State</h3>
+<div class="wmd-container-card wmd-system-message">
+  <p class="wmd-paragraph">You started a conversation about<strong>Private Room in Richardson</strong></p>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Post Deleted State</h3>
+<div class="wmd-container-card wmd-post-context-deleted">
+  <p class="wmd-paragraph">Post no longer available</p>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Send Failure State</h3>
+<div class="wmd-container-card wmd-bubble-sent wmd-error">
+  <p class="wmd-paragraph">10:35 AM ⚠️ Tap to retry</p>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Blocked State</h3>
+<div class="wmd-container-footer wmd-state-disabled">
+  <p class="wmd-paragraph">You can&#039;t message this user.</p>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Error Banner</h3>
+<div class="wmd-container-alert error">
+  <div class="wmd-container-form-group">
+  <span class="wmd-icon" data-icon="warning" aria-label="warning">⚠️</span>
+  <strong>Message failed to send.</strong>Tap the message to retry.
+</div>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Component Specifications</h2>
+<h3 class="wmd-h3">1. Header Bar</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Navigation bar with user info</td>
+    <td class="wmd-table-cell wmd-align-left">Navigation bar with user info</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44px</td>
+    <td class="wmd-table-cell wmd-align-left">56dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom #E0E0E0</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Back Button</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">← chevron-left, 24px</td>
+    <td class="wmd-table-cell wmd-align-left">← arrow-left, 24dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0 (Primary Blue)</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Touch Target</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44×44px</td>
+    <td class="wmd-table-cell wmd-align-left">48×48dp</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Action:</strong> Navigate back to ConversationListScreen</p>
+<h4 class="wmd-h4">User Info</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Name Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">17pt Semibold, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">17sp Medium, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Name Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Trust Badge</strong></td>
+    <td class="wmd-table-cell wmd-align-left">✓ 16px, #2E7D32 (green) for Level 1+</td>
+    <td class="wmd-table-cell wmd-align-left">✓ 16dp, #2E7D32</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Touch target:</strong> Tap name → navigate to user profile (future)</p>
+<h4 class="wmd-h4">Kebab Menu (⋮)</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Three dots vertical, 24px</td>
+    <td class="wmd-table-cell wmd-align-left">Three dots vertical, 24dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Touch Target</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44×44px</td>
+    <td class="wmd-table-cell wmd-align-left">48×48dp</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Action:</strong> Open dropdown menu</p>
+<p class="wmd-paragraph"><strong>Menu Items:</strong></p>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Item</th>
+    <th class="wmd-table-cell wmd-align-left">Icon</th>
+    <th class="wmd-table-cell wmd-align-left">Color</th>
+    <th class="wmd-table-cell wmd-align-left">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">View Profile</td>
+    <td class="wmd-table-cell wmd-align-left">person-outline</td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+    <td class="wmd-table-cell wmd-align-left">Navigate to public profile (future)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Block User</td>
+    <td class="wmd-table-cell wmd-align-left">close-circle</td>
+    <td class="wmd-table-cell wmd-align-left">#C62828 (Error Red)</td>
+    <td class="wmd-table-cell wmd-align-left">Show block confirmation</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">2. Post Context Bar</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Tappable info bar</td>
+    <td class="wmd-table-cell wmd-align-left">Tappable info bar</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+    <td class="wmd-table-cell wmd-align-left">48dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5 (Light Gray)</td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px horizontal, 12px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">16dp horizontal, 12dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom #E0E0E0</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Components:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Category Icon: 🏠/💼/🚨/✈️ (16px)</li>
+  <li class="wmd-list-item">Post Title: &quot;Private Room in Richardson&quot; (15pt Regular, #212121)</li>
+  <li class="wmd-list-item">Chevron: → (16px, #757575) — indicates tappable</li>
+  <li class="wmd-list-item">Truncation: Max 30 chars, &quot;...&quot;</li>
+  <li class="wmd-list-item">Action: Tap → navigate to PostDetailScreen</li>
+</ul>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Post exists: Category icon + title + chevron</li>
+  <li class="wmd-list-item">Post deleted: &quot;Post no longer available&quot; in #757575, no chevron, not tappable</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong> "Related post: Housing, Private Room in Richardson. Button."</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">3. Date Separator</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Inline divider with date label</td>
+    <td class="wmd-table-cell wmd-align-left">Inline divider with date label</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">32px</td>
+    <td class="wmd-table-cell wmd-align-left">32dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px top, 8px bottom</td>
+    <td class="wmd-table-cell wmd-align-left">16dp top, 8dp bottom</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Line</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12pt Regular, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">12sp Regular, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Label Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Rounded pill, #F5F5F5, 8px padding horizontal</td>
+    <td class="wmd-table-cell wmd-align-left">Rounded pill, #F5F5F5, 8dp padding horizontal</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+    <td class="wmd-table-cell wmd-align-left">Center</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Date format rules:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Today → &quot;Today&quot;</li>
+  <li class="wmd-list-item">Yesterday → &quot;Yesterday&quot;</li>
+  <li class="wmd-list-item">This week → Day name (&quot;Monday&quot;)</li>
+  <li class="wmd-list-item">This year → &quot;Feb 14&quot;</li>
+  <li class="wmd-list-item">Older → &quot;Feb 14, 2025&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">4. Message Bubble — Received</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Left-aligned</td>
+    <td class="wmd-table-cell wmd-align-left">Left-aligned</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">75% screen width</td>
+    <td class="wmd-table-cell wmd-align-left">75% screen width</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#F0F0F0 (Light Gray)</td>
+    <td class="wmd-table-cell wmd-align-left">#F0F0F0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Corner Radius</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px (top-left: 4px for tail)</td>
+    <td class="wmd-table-cell wmd-align-left">16dp (top-left: 4dp for tail)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px horizontal, 8px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">12dp horizontal, 8dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px left, 64px right (min), 4px between consecutive</td>
+    <td class="wmd-table-cell wmd-align-left">16dp left, 64dp right (min), 4dp between consecutive</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16pt Regular, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">16sp Regular, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Lines</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Unlimited (wraps)</td>
+    <td class="wmd-table-cell wmd-align-left">Unlimited (wraps)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Timestamp Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">11pt Regular</td>
+    <td class="wmd-table-cell wmd-align-left">11sp Regular</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Timestamp Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Timestamp Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bottom-right of bubble, inline if space</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom-right of bubble, inline if space</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>a11y:</strong> "Ram K. said: Hi! I saw your post about the room. Is it still available? 10:30 AM."</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">5. Message Bubble — Sent</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Alignment</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Right-aligned</td>
+    <td class="wmd-table-cell wmd-align-left">Right-aligned</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">75% screen width</td>
+    <td class="wmd-table-cell wmd-align-left">75% screen width</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0 (Primary Blue)</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Corner Radius</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px (top-right: 4px for tail)</td>
+    <td class="wmd-table-cell wmd-align-left">16dp (top-right: 4dp for tail)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px horizontal, 8px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">12dp horizontal, 8dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">64px left (min), 16px right</td>
+    <td class="wmd-table-cell wmd-align-left">64dp left (min), 16dp right</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16pt Regular, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">16sp Regular, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF (White)</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Timestamp Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">11pt Regular</td>
+    <td class="wmd-table-cell wmd-align-left">11sp Regular</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Timestamp Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">rgba(255,255,255,0.7)</td>
+    <td class="wmd-table-cell wmd-align-left">rgba(255,255,255,0.7)</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Read Receipt Icon (after timestamp):</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">✓ (single check) = Sent, not yet read — rgba(255,255,255,0.7)</li>
+  <li class="wmd-list-item">✓✓ (double check) = Read — #FFFFFF (bright white)</li>
+  <li class="wmd-list-item">Position: Bottom-right of bubble</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong> "You said: Yes! It's still available. Would you like to come see it? 10:32 AM. Read."</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">6. Message Input Bar</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Fixed bottom bar</td>
+    <td class="wmd-table-cell wmd-align-left">Fixed bottom bar</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">56px min (grows, max 120px)</td>
+    <td class="wmd-table-cell wmd-align-left">56dp min (grows, max 120dp)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px top #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">1px top #E0E0E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">8px horizontal, 8px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">8dp horizontal, 8dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Safe Area</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Respects bottom safe area (notch)</td>
+    <td class="wmd-table-cell wmd-align-left">Respects navigation bar</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Text Input</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Placeholder</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Type a message...&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Type a message...&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Placeholder Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#BDBDBD</td>
+    <td class="wmd-table-cell wmd-align-left">#BDBDBD</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text Font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16pt Regular, San Francisco</td>
+    <td class="wmd-table-cell wmd-align-left">16sp Regular, Roboto</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5</td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Corner Radius</strong></td>
+    <td class="wmd-table-cell wmd-align-left">24px (pill shape)</td>
+    <td class="wmd-table-cell wmd-align-left">24dp (pill shape)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px horizontal, 10px vertical</td>
+    <td class="wmd-table-cell wmd-align-left">12dp horizontal, 10dp vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">40px default, max 104px (4 lines)</td>
+    <td class="wmd-table-cell wmd-align-left">40dp default, max 104dp (4 lines)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Chars</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1000</td>
+    <td class="wmd-table-cell wmd-align-left">1000</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Multi-line</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Yes, auto-grows</td>
+    <td class="wmd-table-cell wmd-align-left">Yes, auto-grows</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Keyboard</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Default text</td>
+    <td class="wmd-table-cell wmd-align-left">Default text</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Return Key</strong></td>
+    <td class="wmd-table-cell wmd-align-left">New line (not send)</td>
+    <td class="wmd-table-cell wmd-align-left">New line (not send)</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>a11y:</strong> "Message input field. Type a message."</p>
+<h4 class="wmd-h4">Send Button</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Arrow up in circle (➤), 36×36px</td>
+    <td class="wmd-table-cell wmd-align-left">Arrow up in circle (➤), 36×36dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon Color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Touch Target</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44×44px</td>
+    <td class="wmd-table-cell wmd-align-left">48×48dp</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Right of text input, 8px gap</td>
+    <td class="wmd-table-cell wmd-align-left">Right of text input, 8dp gap</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Disabled: Background #E0E0E0 (Gray), when input is empty</li>
+  <li class="wmd-list-item">Enabled: Background #1565C0 (Primary Blue), when input has text</li>
+  <li class="wmd-list-item">Pressed: Background #104D99 (Darker blue)</li>
+  <li class="wmd-list-item">Sending: Brief scale animation (0.9 → 1.0)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Keyboard behavior:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Input bar moves up with keyboard (KeyboardAvoidingView)</li>
+  <li class="wmd-list-item">Messages scroll up to keep newest visible</li>
+  <li class="wmd-list-item">Tap outside input or scroll dismisses keyboard</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong> "Send message, button. Disabled." / "Send message, button."</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">7. New Message Floating Pill</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Shape</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Pill</td>
+    <td class="wmd-table-cell wmd-align-left">Pill</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Text</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;New message ↓&quot;, 12pt, White</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;New message ↓&quot;, 12sp, White</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Floating above input bar</td>
+    <td class="wmd-table-cell wmd-align-left">Floating above input bar</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Action:</strong> Tap → scroll to bottom
+<strong>Auto-dismiss:</strong> When user scrolls to bottom</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Spacing &amp; Layout</h2>
+<h3 class="wmd-h3">Vertical Stack (Top to Bottom)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">#</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Height</th>
+    <th class="wmd-table-cell wmd-align-left">Spacing After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Safe area / Status bar</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Header bar</td>
+    <td class="wmd-table-cell wmd-align-left">44px / 56dp</td>
+    <td class="wmd-table-cell wmd-align-left">0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Post context bar</td>
+    <td class="wmd-table-cell wmd-align-left">48px / 48dp</td>
+    <td class="wmd-table-cell wmd-align-left">0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Message list (scrollable)</td>
+    <td class="wmd-table-cell wmd-align-left">Flex</td>
+    <td class="wmd-table-cell wmd-align-left">0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">Input bar</td>
+    <td class="wmd-table-cell wmd-align-left">56px min / 56dp min</td>
+    <td class="wmd-table-cell wmd-align-left">0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom safe area (iOS)</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Horizontal:</strong> Messages have 16px/dp edge margin. Bubbles max 75% screen width. Input bar has 8px/dp padding.</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">User Interactions</h2>
+<h3 class="wmd-h3">Sending a Message</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps text input → keyboard appears</li>
+  <li class="wmd-list-item">Input bar slides up above keyboard</li>
+  <li class="wmd-list-item">Message list scrolls to keep latest messages visible</li>
+  <li class="wmd-list-item">User types message (send button activates)</li>
+  <li class="wmd-list-item">User taps Send button</li>
+  <li class="wmd-list-item">Message bubble appears immediately (optimistic UI, lighter opacity)</li>
+  <li class="wmd-list-item">Message sent to Supabase</li>
+  <li class="wmd-list-item">On success: bubble becomes full opacity, single check (✓) appears</li>
+  <li class="wmd-list-item">On failure: show error indicator (red ⚠️ icon), tap to retry</li>
+</ol>
+<h3 class="wmd-h3">Receiving a Message (Real-time)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Supabase Realtime subscription fires INSERT event on messages table</li>
+  <li class="wmd-list-item">New message bubble animates in from bottom</li>
+  <li class="wmd-list-item">Message list auto-scrolls to bottom (if user was at bottom)</li>
+  <li class="wmd-list-item">If user scrolled up: show &quot;New message ↓&quot; floating pill at bottom</li>
+  <li class="wmd-list-item">Mark message as read (update read field, read_at timestamp)</li>
+</ol>
+<h3 class="wmd-h3">Read Receipt Updates</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">When recipient opens thread: all unread messages marked as read</li>
+  <li class="wmd-list-item">Supabase Realtime fires UPDATE event</li>
+  <li class="wmd-list-item">Sender&#039;s message bubbles update: ✓ → ✓✓</li>
+</ol>
+<h3 class="wmd-h3">Block User Flow</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps ⋮ menu → &quot;Block User&quot;</li>
+  <li class="wmd-list-item">Confirmation dialog appears</li>
+  <li class="wmd-list-item">User taps &quot;Block&quot;:<ul class="wmd-list">
+  <li class="wmd-list-item">blocked_users record created</li>
+  <li class="wmd-list-item">Navigate back to ConversationListScreen</li>
+  <li class="wmd-list-item">Conversation removed from both users&#039; lists</li>
+  <li class="wmd-list-item">Toast: &quot;User blocked&quot;</li>
+</ul></li>
+  <li class="wmd-list-item">User taps &quot;Cancel&quot;: dialog closes</li>
+</ol>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Error States &amp; Edge Cases</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Scenario</th>
+    <th class="wmd-table-cell wmd-align-left">Expected Behavior</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Message send fails (network)</td>
+    <td class="wmd-table-cell wmd-align-left">Show red ⚠️ icon on bubble, &quot;Tap to retry&quot; tooltip</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Post deleted</td>
+    <td class="wmd-table-cell wmd-align-left">Post context bar: &quot;Post no longer available&quot; (gray, not tappable)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Other user blocked you</td>
+    <td class="wmd-table-cell wmd-align-left">Input bar replaced with: &quot;You can&#039;t message this user.&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Very long message (&gt;1000 chars)</td>
+    <td class="wmd-table-cell wmd-align-left">Character counter appears at 900+, input stops at 1000</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Empty thread (just created)</td>
+    <td class="wmd-table-cell wmd-align-left">Show system message: &quot;You started a conversation about [post title]&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">500+ messages in thread</td>
+    <td class="wmd-table-cell wmd-align-left">Paginate: load latest 50, &quot;Load earlier messages&quot; at top</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Rapid send (spam)</td>
+    <td class="wmd-table-cell wmd-align-left">Rate limit: 30 msgs/min, show &quot;Slow down&quot; toast if exceeded</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Other user offline</td>
+    <td class="wmd-table-cell wmd-align-left">Messages still sent (they&#039;ll see them when online). No presence indicator in V1</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Keyboard covers messages</td>
+    <td class="wmd-table-cell wmd-align-left">KeyboardAvoidingView moves input up, scroll adjusts</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Data Requirements</h2>
+<p class="wmd-paragraph"><strong>Initial Load:</strong></p>
+<pre class="wmd-code-block"><code data-lang="sql">SELECT * FROM messages
+WHERE conversation_id = {conversation_id}
+ORDER BY timestamp ASC
+LIMIT 50 OFFSET (total - 50);</code></pre>
+<p class="wmd-paragraph"><strong>Real-time Subscription:</strong></p>
+<pre class="wmd-code-block"><code data-lang="typescript">supabase.channel(&#039;messages:conversation_id&#039;)
+  .on(&#039;postgres_changes&#039;, {
+    event: &#039;INSERT&#039;,
+    schema: &#039;public&#039;,
+    table: &#039;messages&#039;,
+    filter: `conversation_id=eq.${conversationId}`
+  }, handleNewMessage)
+  .on(&#039;postgres_changes&#039;, {
+    event: &#039;UPDATE&#039;,
+    schema: &#039;public&#039;,
+    table: &#039;messages&#039;,
+    filter: `conversation_id=eq.${conversationId}`
+  }, handleMessageUpdate)
+  .subscribe();</code></pre>
+<p class="wmd-paragraph"><strong>Send Message:</strong></p>
+<pre class="wmd-code-block"><code data-lang="typescript">await supabase.from(&#039;messages&#039;).insert({
+  conversation_id,
+  sender_id: currentUser.id,
+  text: messageText,
+  type: &#039;text&#039;,
+});</code></pre>
+<p class="wmd-paragraph"><strong>Mark as Read (on thread open):</strong></p>
+<pre class="wmd-code-block"><code data-lang="typescript">await supabase.from(&#039;messages&#039;)
+  .update({ read: true, read_at: new Date().toISOString() })
+  .eq(&#039;conversation_id&#039;, conversationId)
+  .neq(&#039;sender_id&#039;, currentUser.id)
+  .eq(&#039;read&#039;, false);
+
+await supabase.from(&#039;conversation_participants&#039;)
+  .update({ unread_count: 0 })
+  .eq(&#039;conversation_id&#039;, conversationId)
+  .eq(&#039;user_id&#039;, currentUser.id);</code></pre>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Navigation</h2>
+<p class="wmd-paragraph"><strong>Entry Points:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Tap conversation row in ConversationListScreen</li>
+  <li class="wmd-list-item">Tap &quot;Contact Author&quot; on PostDetailScreen (creates conversation first)</li>
+  <li class="wmd-list-item">Tap message icon on PostCard (creates conversation first)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Exit Points:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Back button → ConversationListScreen</li>
+  <li class="wmd-list-item">Tap post context bar → PostDetailScreen</li>
+  <li class="wmd-list-item">Block user → ConversationListScreen (conversation removed)</li>
+</ul>
+<p class="wmd-paragraph"><strong>Params received:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">conversationId: string — which conversation to display</li>
+  <li class="wmd-list-item">otherUserName: string — for header display</li>
+  <li class="wmd-list-item">otherUserTrustLevel: number — for trust badge</li>
+  <li class="wmd-list-item">postId?: string — linked post (for context bar)</li>
+  <li class="wmd-list-item">postTitle?: string — for display</li>
+  <li class="wmd-list-item">postCategory?: string — for icon</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Screen title announced: &quot;Conversation with Ram K.&quot;</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Messages read in chronological order</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Each bubble announces sender, text, time, and read status</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Send button state (enabled/disabled) announced</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Post context bar announced as button</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Block confirmation dialog traps focus</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Keyboard navigation: Tab through input → send</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Color contrast: white text on blue (#1565C0) = 7.2:1 (passes AA)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Touch targets: all buttons 44px+ minimum</span>
+  </label>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Related Screens</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Relation</th>
+    <th class="wmd-table-cell wmd-align-left">Screen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Previous</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./07-conversation-list.md" class="wmd-link">07-conversation-list.md</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Related</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="./09-post-detail.md" class="wmd-link">09-post-detail.md</a> (post context tap, Contact Author entry)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Feature</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../features/in-app-chat.md" class="wmd-link">in-app-chat.md</a></td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Status:</strong> Draft — Ready for Review</p>
+</body>
+</html>

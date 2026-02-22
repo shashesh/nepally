@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* Tailwind-Inspired Style */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f9fafb;
+  color: #111827;
+  line-height: 1.5;
+  margin: 0;
+  padding: 20px;
+}
+
+/* Typography */
+.wmd-h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 1rem 0;
+  letter-spacing: -0.025em;
+}
+
+.wmd-h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 1.5rem 0 1rem 0;
+  letter-spacing: -0.025em;
+}
+
+.wmd-h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 1.25rem 0 0.75rem 0;
+}
+
+.wmd-h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.wmd-paragraph {
+  color: #6b7280;
+  margin: 0.75rem 0;
+  font-size: 1rem;
+}
+
+/* Buttons */
+.wmd-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  background: #e5e7eb;
+  color: #374151;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.wmd-button:hover {
+  background: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wmd-button-primary, .wmd-button.wmd-button-primary {
+  background: #6366f1;
+  color: white;
+}
+
+.wmd-button-primary:hover, .wmd-button.wmd-button-primary:hover {
+  background: #4f46e5;
+}
+
+.wmd-button:disabled, .wmd-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button States */
+.wmd-state-loading {
+  background: #e0e7ff !important;
+  color: #6366f1 !important;
+  position: relative;
+  padding-left: 2.5rem;
+}
+
+.wmd-state-loading::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #6366f1;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.wmd-state-error {
+  background: #fef2f2 !important;
+  color: #ef4444 !important;
+  border: 1px solid #fca5a5;
+}
+
+.wmd-state-success {
+  background: #f0fdf4 !important;
+  color: #22c55e !important;
+  border: 1px solid #86efac;
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Forms */
+.wmd-input, .wmd-textarea, .wmd-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.15s ease;
+  color: #111827;
+}
+
+.wmd-input:focus, .wmd-textarea:focus, .wmd-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.wmd-input::placeholder, .wmd-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
+}
+
+.wmd-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.5rem;
+  padding-right: 2.5rem;
+}
+
+/* Checkboxes and Radios */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+/* Cards and Containers */
+.wmd-container-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.wmd-container-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.wmd-container-hero .wmd-h1,
+.wmd-container-hero .wmd-h2,
+.wmd-container-hero .wmd-h3,
+.wmd-container-hero .wmd-paragraph {
+  color: white;
+}
+
+.wmd-container-modal {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 600px;
+  position: relative;
+}
+
+.wmd-container-footer {
+  background: #1f2937;
+  color: #e5e7eb;
+  padding: 2rem;
+  margin-top: 3rem;
+  border-radius: 0.75rem;
+}
+
+.wmd-container-footer .wmd-paragraph,
+.wmd-container-footer .wmd-nav-item {
+  color: #e5e7eb;
+}
+
+.wmd-container-section {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wmd-container-section:last-child {
+  border-bottom: none;
+}
+
+/* Alerts */
+.wmd-container-alert {
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  border-left: 4px solid;
+}
+
+.wmd-container-alert.wmd-warning {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.wmd-container-alert.wmd-state-error {
+  background: #fee2e2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.wmd-container-alert.wmd-state-success {
+  background: #d1fae5;
+  border-left-color: #10b981;
+  color: #065f46;
+}
+
+/* Navigation */
+.wmd-nav {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin-bottom: 2rem;
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: #4b5563;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.wmd-nav-item:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.wmd-brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #111827;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Lists */
+.wmd-list {
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wmd-list-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+}
+
+.wmd-list-item:last-child {
+  border-bottom: none;
+}
+
+/* Grid */
+.wmd-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.wmd-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.wmd-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.wmd-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Tables */
+.wmd-table {
+  width: 100%;
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin: 1rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.wmd-table th {
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wmd-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.wmd-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table cell alignment - more specific to override th/td defaults */
+.wmd-table .wmd-align-left {
+  text-align: left !important;
+}
+
+.wmd-table .wmd-align-center {
+  text-align: center !important;
+}
+
+.wmd-table .wmd-align-right {
+  text-align: right !important;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  vertical-align: middle;
+}
+
+
+/* Utility classes */
+.wmd-separator {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.wmd-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wmd-code {
+  background: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  font-size: 0.875rem;
+  color: #6366f1;
+}
+
+.wmd-blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  color: #4b5563;
+  font-style: italic;
+}
+
+/* Button group */
+.wmd-container-button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+/* Form group */
+.wmd-container-form-group {
+  margin: 1rem 0;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.wmd-container-loading-state::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1.5rem;
+  border: 4px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.wmd-container-empty-state {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.75rem;
+  padding: 4rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  color: #6b7280;
+}
+
+.wmd-container-empty-state::before {
+  content: '📭';
+  display: block;
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.wmd-container-error-state {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  color: #991b1b;
+}
+
+.wmd-container-error-state::before {
+  content: '⚠️';
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid-2,
+  .wmd-grid-3,
+  .wmd-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .wmd-nav-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wmd-brand {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-tailwind">
+  <h1 class="wmd-h1">NUSA Design System Foundation</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Document:</strong> 00 | <strong>Version:</strong> 1.0 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-02-19</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Brand Identity</h2>
+<h3 class="wmd-h3">Mission Alignment</h3>
+<p class="wmd-paragraph">NUSA is a <strong>utility-first community platform</strong> that must feel:</p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Trustworthy - Users need to feel safe sharing housing/emergency info</li>
+  <li class="wmd-list-item">Culturally Connected - Resonate with Nepali diaspora without being stereotypical</li>
+  <li class="wmd-list-item">Simple &amp; Familiar - Like WhatsApp simplicity + Nextdoor community feel</li>
+  <li class="wmd-list-item">Local-First - Metro area focus must be obvious</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Color Psychology &amp; Palette</h2>
+<h3 class="wmd-h3">Primary Colors</h3>
+<p class="wmd-paragraph"><strong>Recommendation: Blue + Nepali Red Blend</strong></p>
+<h4 class="wmd-h4">Primary Blue (Trust &amp; Stability)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Color: #1565C0 (Deep Blue)</li>
+  <li class="wmd-list-item">Psychology: Trust, security, reliability</li>
+  <li class="wmd-list-item">Usage: Primary buttons, headers, links, verification badges</li>
+  <li class="wmd-list-item">Rationale: Blue is universally associated with trust and safety. Critical for a platform where users share personal info (housing, emergency contacts).</li>
+</ul>
+<h4 class="wmd-h4">Accent Red (Nepali Identity)</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Color: #DC143C (Crimson Red - from Nepal flag)</li>
+  <li class="wmd-list-item">Psychology: Energy, urgency, cultural pride</li>
+  <li class="wmd-list-item">Usage: Emergency posts, important alerts, Level 2 badges, subtle accent touches</li>
+  <li class="wmd-list-item">Rationale: Connects to Nepali national flag without being overwhelming. Use sparingly for impact.</li>
+</ul>
+<h4 class="wmd-h4">Supporting Colors</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Success Green: #2E7D32 (Forest Green) - Verification success, post published</li>
+  <li class="wmd-list-item">Warning Yellow: #F57C00 (Amber) - Level 0 banner, caution messages</li>
+  <li class="wmd-list-item">Error Red: #C62828 (Error Red) - Form errors, spam warnings</li>
+  <li class="wmd-list-item">Neutral Gray Scale:<ul class="wmd-list">
+  <li class="wmd-list-item">Background: #F5F5F5 (Light Gray)</li>
+  <li class="wmd-list-item">Text Primary: #212121 (Almost Black)</li>
+  <li class="wmd-list-item">Text Secondary: #757575 (Medium Gray)</li>
+  <li class="wmd-list-item">Borders: #E0E0E0 (Light Gray)</li>
+</ul></li>
+</ul>
+<h3 class="wmd-h3">Color Palette Summary</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Token</th>
+    <th class="wmd-table-cell wmd-align-left">Hex</th>
+    <th class="wmd-table-cell wmd-align-left">Usage</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Primary Blue</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">Buttons, headers, links, badges</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Pressed Blue</td>
+    <td class="wmd-table-cell wmd-align-left">#104D99</td>
+    <td class="wmd-table-cell wmd-align-left">Button pressed state (10% darker)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Accent Red</td>
+    <td class="wmd-table-cell wmd-align-left">#DC143C</td>
+    <td class="wmd-table-cell wmd-align-left">Emergency, alerts, Level 2 badges</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Success Green</td>
+    <td class="wmd-table-cell wmd-align-left">#2E7D32</td>
+    <td class="wmd-table-cell wmd-align-left">Verification, post published</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Warning Amber</td>
+    <td class="wmd-table-cell wmd-align-left">#F57C00</td>
+    <td class="wmd-table-cell wmd-align-left">Level 0 banner, caution</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Error Red</td>
+    <td class="wmd-table-cell wmd-align-left">#C62828</td>
+    <td class="wmd-table-cell wmd-align-left">Form errors, spam warnings</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Background</td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5</td>
+    <td class="wmd-table-cell wmd-align-left">Page background</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Text Primary</td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+    <td class="wmd-table-cell wmd-align-left">Body text</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Text Secondary</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+    <td class="wmd-table-cell wmd-align-left">Captions, metadata</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Border</td>
+    <td class="wmd-table-cell wmd-align-left">#E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">Card borders, dividers</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Disabled Gray</td>
+    <td class="wmd-table-cell wmd-align-left">#BDBDBD</td>
+    <td class="wmd-table-cell wmd-align-left">Disabled buttons</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Cultural Touches (Subtle Integration)</h2>
+<h3 class="wmd-h3">Where to Add Nepali Elements</h3>
+<p class="wmd-paragraph"><strong>✅ DO Use:</strong></p>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Icon Style - Slightly rounded, friendly icons (like Nepali art&#039;s organic curves)</li>
+  <li class="wmd-list-item">Empty States - Subtle mountain silhouette illustrations (Mt. Everest connection)</li>
+  <li class="wmd-list-item">Success Animations - Brief khata (prayer flag) flutter animation on verification success</li>
+  <li class="wmd-list-item">Accent Patterns - Thin red line dividers (subtle nod to flag colors)</li>
+  <li class="wmd-list-item">Font Weight - Slightly bolder for better Devanagari rendering (future Nepali language support)</li>
+</ol>
+<p class="wmd-paragraph"><strong>❌ DON'T Use:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Heavy traditional patterns (too busy for mobile)</li>
+  <li class="wmd-list-item">Mandala backgrounds (cliché, reduces readability)</li>
+  <li class="wmd-list-item">Temple imagery (not relevant to housing/jobs)</li>
+  <li class="wmd-list-item">Devanagari script in English version (confusing, wait for Phase 2 localization)</li>
+</ul>
+<h3 class="wmd-h3">Cultural Connection Through Functionality</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Metro-first approach resonates with Nepali culture (strong local community bonds)</li>
+  <li class="wmd-list-item">Trust level system mirrors Nepali &quot;parichaya&quot; (introduction/reference) culture</li>
+  <li class="wmd-list-item">Emergency post system aligns with community helping each other</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Typography</h2>
+<h3 class="wmd-h3">Font Family</h3>
+<p class="wmd-paragraph"><strong>Primary Font: San Francisco (iOS) / Roboto (Android)</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Rationale: Use platform defaults for familiarity and performance</li>
+  <li class="wmd-list-item">Future: Consider adding Nepali-compatible font (e.g., Noto Sans Devanagari) for Phase 2</li>
+</ul>
+<h3 class="wmd-h3">Type Scale</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">iOS (SF Pro)</th>
+    <th class="wmd-table-cell wmd-align-left">Android (Roboto)</th>
+    <th class="wmd-table-cell wmd-align-left">Use Case</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>H1</strong></td>
+    <td class="wmd-table-cell wmd-align-left">34pt Bold</td>
+    <td class="wmd-table-cell wmd-align-left">34sp Medium</td>
+    <td class="wmd-table-cell wmd-align-left">Screen titles</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>H2</strong></td>
+    <td class="wmd-table-cell wmd-align-left">28pt Bold</td>
+    <td class="wmd-table-cell wmd-align-left">28sp Medium</td>
+    <td class="wmd-table-cell wmd-align-left">Section headers</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>H3</strong></td>
+    <td class="wmd-table-cell wmd-align-left">22pt Semibold</td>
+    <td class="wmd-table-cell wmd-align-left">22sp Regular</td>
+    <td class="wmd-table-cell wmd-align-left">Card titles</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Body</strong></td>
+    <td class="wmd-table-cell wmd-align-left">17pt Regular</td>
+    <td class="wmd-table-cell wmd-align-left">16sp Regular</td>
+    <td class="wmd-table-cell wmd-align-left">Body text, descriptions</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Caption</strong></td>
+    <td class="wmd-table-cell wmd-align-left">13pt Regular</td>
+    <td class="wmd-table-cell wmd-align-left">12sp Regular</td>
+    <td class="wmd-table-cell wmd-align-left">Metadata (time, location)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Button</strong></td>
+    <td class="wmd-table-cell wmd-align-left">17pt Semibold</td>
+    <td class="wmd-table-cell wmd-align-left">14sp Medium</td>
+    <td class="wmd-table-cell wmd-align-left">Button labels</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Spacing System (8pt Grid)</h2>
+<p class="wmd-paragraph">Use multiples of 8 for consistency:</p>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Token</th>
+    <th class="wmd-table-cell wmd-align-left">Size</th>
+    <th class="wmd-table-cell wmd-align-left">Usage</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>XXS</strong></td>
+    <td class="wmd-table-cell wmd-align-left">4px</td>
+    <td class="wmd-table-cell wmd-align-left">Tight spacing, icon padding</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>XS</strong></td>
+    <td class="wmd-table-cell wmd-align-left">8px</td>
+    <td class="wmd-table-cell wmd-align-left">Small gaps, list item padding</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>S</strong></td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+    <td class="wmd-table-cell wmd-align-left">Default spacing between elements</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>M</strong></td>
+    <td class="wmd-table-cell wmd-align-left">24px</td>
+    <td class="wmd-table-cell wmd-align-left">Section spacing</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>L</strong></td>
+    <td class="wmd-table-cell wmd-align-left">32px</td>
+    <td class="wmd-table-cell wmd-align-left">Screen padding, major sections</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>XL</strong></td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+    <td class="wmd-table-cell wmd-align-left">Hero elements, onboarding</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Component Library</h2>
+<h3 class="wmd-h3">Buttons</h3>
+<h4 class="wmd-h4">Primary Button</h4>
+<button class="wmd-button wmd-button-primary">Continue to NUSA</button>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Font: 17pt Semibold, White text</li>
+  <li class="wmd-list-item">Background: #1565C0 (Primary Blue)</li>
+  <li class="wmd-list-item">Height: 48px (iOS) / 56dp (Android)</li>
+  <li class="wmd-list-item">Corner Radius: 8px</li>
+</ul>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">State</th>
+    <th class="wmd-table-cell wmd-align-left">Appearance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Default</td>
+    <td class="wmd-table-cell wmd-align-left">Blue background (#1565C0), white text</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Pressed</td>
+    <td class="wmd-table-cell wmd-align-left">10% darker blue (#104D99)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Disabled</td>
+    <td class="wmd-table-cell wmd-align-left">Gray background (#BDBDBD), white text</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Loading</td>
+    <td class="wmd-table-cell wmd-align-left">Spinner inside button, text hidden</td>
+  </tr>
+  </tbody>
+</table>
+<button class="wmd-button wmd-state-disabled" disabled>Continue to NUSA</button>
+<h4 class="wmd-h4">Secondary Button (Outline)</h4>
+<button class="wmd-button wmd-outline">Skip for Now</button>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Font: 17pt Regular, Blue text</li>
+  <li class="wmd-list-item">Background: Transparent</li>
+  <li class="wmd-list-item">Border: 2px solid #1565C0</li>
+  <li class="wmd-list-item">Height: 48px</li>
+</ul>
+<h4 class="wmd-h4">Text Button (Link Style)</h4>
+<button class="wmd-button wmd-secondary">Skip Tutorial</button>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Blue underline on press</li>
+</ul>
+<h4 class="wmd-h4">Button Comparison</h4>
+<div class="wmd-container-button-group">
+  <button class="wmd-button wmd-button-primary">Primary Action</button>
+  <button class="wmd-button wmd-outline">Outline Action</button>
+  <button class="wmd-button wmd-secondary">Text Action</button>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Input Fields</h3>
+<h4 class="wmd-h4">Standard Text Input</h4>
+<p class="wmd-paragraph"><strong>Label</strong> — <em>13pt Regular, Gray</em></p>
+<input type="text" class="wmd-input" placeholder="Placeholder text" />
+<ul class="wmd-list">
+  <li class="wmd-list-item">Border: 1px solid #E0E0E0</li>
+  <li class="wmd-list-item">Height: 56px</li>
+  <li class="wmd-list-item">Corner Radius: 8px</li>
+  <li class="wmd-list-item">Active State: 2px border #1565C0</li>
+  <li class="wmd-list-item">Error State: 2px border #C62828 + error text below</li>
+</ul>
+<h4 class="wmd-h4">Number Input (with prefix)</h4>
+<p class="wmd-paragraph"><strong>Monthly Rent</strong></p>
+<input type="text" class="wmd-input" placeholder="$ 650" />
+<ul class="wmd-list">
+  <li class="wmd-list-item">Dollar sign prefix built into input</li>
+</ul>
+<h4 class="wmd-h4">Input States</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">State</th>
+    <th class="wmd-table-cell wmd-align-left">Border</th>
+    <th class="wmd-table-cell wmd-align-left">Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Default</td>
+    <td class="wmd-table-cell wmd-align-left">1px solid #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">Neutral border</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Active/Focus</td>
+    <td class="wmd-table-cell wmd-align-left">2px solid #1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">Blue highlight</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Error</td>
+    <td class="wmd-table-cell wmd-align-left">2px solid #C62828</td>
+    <td class="wmd-table-cell wmd-align-left">Red border + error message below</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Disabled</td>
+    <td class="wmd-table-cell wmd-align-left">1px solid #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">Gray background, no interaction</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Cards</h3>
+<h4 class="wmd-h4">Post Card (Feed Item)</h4>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">$650/month · Available March 1</p>
+  <button class="wmd-button">Photo thumbnail</button>
+  <p class="wmd-paragraph">Posted 2 days ago · 📍 Dallas-Fort Worth</p>
+</div>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Background: White</li>
+  <li class="wmd-list-item">Border: 1px solid #E0E0E0</li>
+  <li class="wmd-list-item">Corner Radius: 12px</li>
+  <li class="wmd-list-item">Padding: 16px</li>
+  <li class="wmd-list-item">Shadow: 0 2px 4px rgba(0,0,0,0.1)</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Badges</h3>
+<h4 class="wmd-h4">Trust Level Badges</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Level</th>
+    <th class="wmd-table-cell wmd-align-left">Badge</th>
+    <th class="wmd-table-cell wmd-align-left">Visual</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Level 0</td>
+    <td class="wmd-table-cell wmd-align-left">◯ New</td>
+    <td class="wmd-table-cell wmd-align-left">Gray circle</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Level 1</td>
+    <td class="wmd-table-cell wmd-align-left">✓ Verified</td>
+    <td class="wmd-table-cell wmd-align-left">Green checkmark</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Level 2</td>
+    <td class="wmd-table-cell wmd-align-left">✓✓ Contributor</td>
+    <td class="wmd-table-cell wmd-align-left">Blue double checkmark</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Status Badges</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Status</th>
+    <th class="wmd-table-cell wmd-align-left">Badge</th>
+    <th class="wmd-table-cell wmd-align-left">Color</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Active</td>
+    <td class="wmd-table-cell wmd-align-left">🟢 Active</td>
+    <td class="wmd-table-cell wmd-align-left">Green</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Expired</td>
+    <td class="wmd-table-cell wmd-align-left">🔴 Expired</td>
+    <td class="wmd-table-cell wmd-align-left">Red</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">Banners</h3>
+<h4 class="wmd-h4">Level 0 Banner (Promotional)</h4>
+<div class="wmd-container-alert warning">
+  <p class="wmd-paragraph">Dismissible: <button class="wmd-button wmd-secondary">✕</button></p>
+</div>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Background: #FFF3E0 (Light Amber)</li>
+  <li class="wmd-list-item">Text: #E65100 (Dark Amber)</li>
+  <li class="wmd-list-item">Height: 64px</li>
+  <li class="wmd-list-item">Dismissible: Yes</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">iOS vs Android Differences</h2>
+<h3 class="wmd-h3">Navigation</h3>
+<h4 class="wmd-h4">iOS</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Back button: &quot;&lt; Back&quot; (text-based, top-left)</li>
+  <li class="wmd-list-item">Tab bar at bottom</li>
+  <li class="wmd-list-item">Large title headers (collapsible)</li>
+  <li class="wmd-list-item">Swipe right to go back (native gesture)</li>
+</ul>
+<h4 class="wmd-h4">Android</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Back button: &quot;←&quot; (icon-based, top-left)</li>
+  <li class="wmd-list-item">Bottom nav or hamburger menu</li>
+  <li class="wmd-list-item">Standard size headers</li>
+  <li class="wmd-list-item">Hardware back button support</li>
+</ul>
+<h3 class="wmd-h3">Modals</h3>
+<h4 class="wmd-h4">iOS</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Slide up from bottom (card style)</li>
+  <li class="wmd-list-item">Pull-down-to-dismiss gesture</li>
+  <li class="wmd-list-item">Rounded top corners</li>
+</ul>
+<h4 class="wmd-h4">Android</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Slide up from bottom (full screen or bottom sheet)</li>
+  <li class="wmd-list-item">Back button to dismiss</li>
+  <li class="wmd-list-item">Square corners or slightly rounded</li>
+</ul>
+<h3 class="wmd-h3">Keyboards</h3>
+<h4 class="wmd-h4">iOS</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">&quot;Done&quot; button on number keyboards</li>
+  <li class="wmd-list-item">Return key says &quot;Next&quot; or &quot;Done&quot;</li>
+</ul>
+<h4 class="wmd-h4">Android</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Hardware back button dismisses</li>
+  <li class="wmd-list-item">Return key says &quot;Next&quot; or &quot;Done&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Icon Style</h2>
+<h3 class="wmd-h3">Design Philosophy</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Rounded: 2px corner radius on square elements</li>
+  <li class="wmd-list-item">Stroke Width: 2px for consistency</li>
+  <li class="wmd-list-item">Size: 24x24px default</li>
+  <li class="wmd-list-item">Color: Inherit from text color or use Primary Blue</li>
+</ul>
+<h3 class="wmd-h3">Icon Set (Recommended: SF Symbols for iOS / Material Icons for Android)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Function</th>
+    <th class="wmd-table-cell wmd-align-left">iOS Symbol</th>
+    <th class="wmd-table-cell wmd-align-left">Material Icon</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Housing</td>
+    <td class="wmd-table-cell wmd-align-left">house.fill</td>
+    <td class="wmd-table-cell wmd-align-left">home</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Jobs</td>
+    <td class="wmd-table-cell wmd-align-left">briefcase.fill</td>
+    <td class="wmd-table-cell wmd-align-left">work</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Emergency</td>
+    <td class="wmd-table-cell wmd-align-left">exclamationmark.triangle.fill</td>
+    <td class="wmd-table-cell wmd-align-left">warning</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Travel</td>
+    <td class="wmd-table-cell wmd-align-left">airplane</td>
+    <td class="wmd-table-cell wmd-align-left">flight</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Verified</td>
+    <td class="wmd-table-cell wmd-align-left">checkmark.seal.fill</td>
+    <td class="wmd-table-cell wmd-align-left">verified</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Location</td>
+    <td class="wmd-table-cell wmd-align-left">location.fill</td>
+    <td class="wmd-table-cell wmd-align-left">location_on</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Search</td>
+    <td class="wmd-table-cell wmd-align-left">magnifyingglass</td>
+    <td class="wmd-table-cell wmd-align-left">search</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Profile</td>
+    <td class="wmd-table-cell wmd-align-left">person.circle.fill</td>
+    <td class="wmd-table-cell wmd-align-left">account_circle</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Animations &amp; Transitions</h2>
+<h3 class="wmd-h3">Screen Transitions</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Duration: 300ms (iOS standard)</li>
+  <li class="wmd-list-item">Easing: Ease-in-out cubic bezier</li>
+  <li class="wmd-list-item">Direction:<ul class="wmd-list">
+  <li class="wmd-list-item">Forward navigation: Slide in from right</li>
+  <li class="wmd-list-item">Back navigation: Slide out to right</li>
+</ul></li>
+</ul>
+<h3 class="wmd-h3">Micro-interactions</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Interaction</th>
+    <th class="wmd-table-cell wmd-align-left">Effect</th>
+    <th class="wmd-table-cell wmd-align-left">Duration</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Button Press</td>
+    <td class="wmd-table-cell wmd-align-left">Scale 0.95 (subtle press feedback)</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Card Tap</td>
+    <td class="wmd-table-cell wmd-align-left">Scale 0.98 + shadow increase</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Success State</td>
+    <td class="wmd-table-cell wmd-align-left">✓ fade in + scale from 0.8 to 1.0</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Loading</td>
+    <td class="wmd-table-cell wmd-align-left">Spinner fade in after 500ms delay</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Onboarding Tutorial</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Card Swipe: Smooth horizontal scroll with momentum</li>
+  <li class="wmd-list-item">Progress Dots: Animate active dot with scale pulse</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<h3 class="wmd-h3">Minimum Requirements (WCAG AA)</h3>
+<h4 class="wmd-h4">Color Contrast</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Requirement</th>
+    <th class="wmd-table-cell wmd-align-left">Minimum Ratio</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Text on background</td>
+    <td class="wmd-table-cell wmd-align-left">4.5:1</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Large text (18pt+)</td>
+    <td class="wmd-table-cell wmd-align-left">3:1</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Interactive elements</td>
+    <td class="wmd-table-cell wmd-align-left">3:1</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Touch Targets</h4>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Platform</th>
+    <th class="wmd-table-cell wmd-align-left">Minimum</th>
+    <th class="wmd-table-cell wmd-align-left">Recommended</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">iOS</td>
+    <td class="wmd-table-cell wmd-align-left">44x44pt</td>
+    <td class="wmd-table-cell wmd-align-left">48x48pt</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Android</td>
+    <td class="wmd-table-cell wmd-align-left">48x48dp</td>
+    <td class="wmd-table-cell wmd-align-left">56x56dp</td>
+  </tr>
+  </tbody>
+</table>
+<h4 class="wmd-h4">Screen Reader Support</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">All buttons have descriptive labels</li>
+  <li class="wmd-list-item">Form fields have associated labels</li>
+  <li class="wmd-list-item">Error messages are announced</li>
+  <li class="wmd-list-item">Images have alt text</li>
+</ul>
+<h4 class="wmd-h4">Dynamic Type</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Support iOS Dynamic Type (user can increase text size)</li>
+  <li class="wmd-list-item">Support Android Large Text accessibility setting</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Dark Mode (Future Phase)</h2>
+<div class="wmd-container-alert info">
+  <ul class="wmd-list">
+  <li class="wmd-list-item">Use semantic color names (primary, secondary, background) not hex values</li>
+  <li class="wmd-list-item">Avoid pure white (#FFFFFF) - use off-white (#F5F5F5) for easier dark mode inversion</li>
+  <li class="wmd-list-item">Test high contrast for accessibility</li>
+</ul>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Platform-Specific Guidelines Followed</h2>
+<h3 class="wmd-h3">iOS Human Interface Guidelines</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">✅ 44pt minimum touch targets</li>
+  <li class="wmd-list-item">✅ SF Symbols for icons</li>
+  <li class="wmd-list-item">✅ Native navigation patterns</li>
+  <li class="wmd-list-item">✅ System fonts (San Francisco)</li>
+</ul>
+<h3 class="wmd-h3">Android Material Design</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">✅ 48dp minimum touch targets</li>
+  <li class="wmd-list-item">✅ Material Icons</li>
+  <li class="wmd-list-item">✅ Elevation and shadows</li>
+  <li class="wmd-list-item">✅ Roboto font family</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Design Inspiration</h2>
+<h3 class="wmd-h3">References</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Nextdoor - Local feed design, trust badges, community feel</li>
+  <li class="wmd-list-item">WhatsApp - Simple, clean, familiar to Nepali users</li>
+  <li class="wmd-list-item">Airbnb - Verification UI, trust indicators, clean cards</li>
+</ol>
+<h3 class="wmd-h3">What We&#039;re Borrowing</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">From Nextdoor: Trust level badges, local-first navigation</li>
+  <li class="wmd-list-item">From WhatsApp: Minimalist design, familiar chat patterns</li>
+  <li class="wmd-list-item">From Airbnb: Verification flow, clear photo guidelines</li>
+</ul>
+<h3 class="wmd-h3">What Makes NUSA Unique</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Metro-first location model (not neighborhood or city)</li>
+  <li class="wmd-list-item">3-tier trust system (Level 0, 1, 2)</li>
+  <li class="wmd-list-item">Tag-based post engine (Reddit-style)</li>
+  <li class="wmd-list-item">Premium subscription for global posts</li>
+  <li class="wmd-list-item">Subtle Nepali cultural touches</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">File Structure for Wireframes</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">File</th>
+    <th class="wmd-table-cell wmd-align-left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><a href="00-design-system-foundation.md" class="wmd-link">00-design-system-foundation.md</a></td>
+    <td class="wmd-table-cell wmd-align-left">This file</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><a href="01-welcome-screen.md" class="wmd-link">01-welcome-screen.md</a></td>
+    <td class="wmd-table-cell wmd-align-left">Welcome / splash screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><a href="02-signup-method-selection.md" class="wmd-link">02-signup-method-selection.md</a></td>
+    <td class="wmd-table-cell wmd-align-left">Signup method selection</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><a href="03-zip-code-entry.md" class="wmd-link">03-zip-code-entry.md</a></td>
+    <td class="wmd-table-cell wmd-align-left">ZIP code entry</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><a href="04-metro-confirmation.md" class="wmd-link">04-metro-confirmation.md</a></td>
+    <td class="wmd-table-cell wmd-align-left">Metro area confirmation</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><a href="05-onboarding-tutorial.md" class="wmd-link">05-onboarding-tutorial.md</a></td>
+    <td class="wmd-table-cell wmd-align-left">Onboarding tutorial</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><a href="06-home-screen-level-0.md" class="wmd-link">06-home-screen-level-0.md</a></td>
+    <td class="wmd-table-cell wmd-align-left">Home screen (Level 0)</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Next Steps</h2>
+<p class="wmd-paragraph">After design system is approved:</p>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Create low-fidelity wireframes for all 6 onboarding screens</li>
+  <li class="wmd-list-item">Review and iterate based on feedback</li>
+  <li class="wmd-list-item">Create high-fidelity mockups (with actual colors, photos)</li>
+  <li class="wmd-list-item">Build interactive prototype (Figma or similar)</li>
+  <li class="wmd-list-item">User testing with 5 Nepali community members</li>
+</ol>
+<hr class="wmd-separator" />
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Design System Status:</strong> Ready for Review | <strong>Next:</strong> Create individual screen wireframes</p>
+</blockquote>
+</body>
+</html>
