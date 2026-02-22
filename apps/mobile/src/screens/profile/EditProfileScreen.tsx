@@ -8,13 +8,25 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TouchableOpacity,
+  ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { File } from 'expo-file-system';
 import { useAuth } from '../../hooks/useAuth';
 import { useMetroArea } from '../../hooks/useMetroArea';
-import { updateUserProfile, APP_CONFIG } from '@nusa/shared';
+import {
+  updateUserProfile,
+  uploadProfilePhoto,
+  deleteProfilePhoto,
+  APP_CONFIG,
+} from '@nusa/shared';
 import { saveMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
+import { Avatar } from '../../components/Avatar';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
@@ -33,10 +45,16 @@ export function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Photo state
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoStatus, setPhotoStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [localPhotoUri, setLocalPhotoUri] = useState<string | null>(null);
+
   const originalZip = user?.zip_code || '';
+  const displayPhotoUrl = localPhotoUri || user?.profile_photo || null;
+  const hasPhoto = !!displayPhotoUrl;
 
   const handleZipChange = async (value: string) => {
-    // Only allow digits
     const cleaned = value.replace(/\D/g, '').slice(0, APP_CONFIG.zipCodeLength);
     setZipCode(cleaned);
     setMetroName(null);
@@ -56,6 +74,133 @@ export function EditProfileScreen() {
         }));
       }
     }
+  };
+
+  const requestPermission = async (type: 'camera' | 'library'): Promise<boolean> => {
+    const result = type === 'camera'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!result.granted) {
+      const permissionName = type === 'camera' ? 'Camera' : 'Photo Library';
+      Alert.alert(
+        `${permissionName} Access Required`,
+        `NUSA needs ${permissionName.toLowerCase()} access to set your profile photo. Please enable it in Settings.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ]
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const processAndUploadImage = async (uri: string) => {
+    if (!user) return;
+
+    setPhotoUploading(true);
+    setPhotoStatus(null);
+
+    try {
+      // Resize to 500x500 JPEG 80%
+      const manipulated = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 500, height: 500 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      // Read file as ArrayBuffer using new expo-file-system File API
+      const file = new File(manipulated.uri);
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Upload to Supabase Storage
+      const { url, error: uploadError } = await uploadProfilePhoto(supabase, user.id, arrayBuffer);
+      if (uploadError) throw uploadError;
+
+      // Update user profile with new photo URL
+      const { error: profileError } = await updateUserProfile(supabase, user.id, {
+        profile_photo: url,
+      });
+      if (profileError) throw profileError;
+
+      setLocalPhotoUri(url!);
+      await refreshUser();
+      setPhotoStatus({ type: 'success', message: 'Photo updated' });
+    } catch (error: any) {
+      setPhotoStatus({ type: 'error', message: error.message || 'Failed to upload photo' });
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const granted = await requestPermission('camera');
+    if (!granted) return;
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await processAndUploadImage(result.assets[0].uri);
+    }
+  };
+
+  const handleChooseFromLibrary = async () => {
+    const granted = await requestPermission('library');
+    if (!granted) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await processAndUploadImage(result.assets[0].uri);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!user) return;
+
+    setPhotoUploading(true);
+    setPhotoStatus(null);
+
+    try {
+      await deleteProfilePhoto(supabase, user.id);
+      const { error: profileError } = await updateUserProfile(supabase, user.id, {
+        profile_photo: undefined,
+      });
+      if (profileError) throw profileError;
+
+      setLocalPhotoUri(null);
+      await refreshUser();
+      setPhotoStatus({ type: 'success', message: 'Photo removed' });
+    } catch (error: any) {
+      setPhotoStatus({ type: 'error', message: error.message || 'Failed to remove photo' });
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const handlePhotoPress = () => {
+    const options: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
+      { text: 'Take Photo', onPress: handleTakePhoto },
+      { text: 'Choose from Library', onPress: handleChooseFromLibrary },
+    ];
+
+    if (hasPhoto) {
+      options.push({ text: 'Remove Photo', onPress: handleRemovePhoto, style: 'destructive' });
+    }
+
+    options.push({ text: 'Cancel', style: 'cancel' });
+
+    Alert.alert('Profile Photo', undefined, options);
   };
 
   const validate = (): boolean => {
@@ -82,7 +227,6 @@ export function EditProfileScreen() {
     setSaving(true);
 
     try {
-      // Update name and phone
       const profileResult = await updateUserProfile(supabase, user.id, {
         full_name: fullName.trim(),
         phone: phone.trim() || undefined,
@@ -92,13 +236,11 @@ export function EditProfileScreen() {
         throw profileResult.error;
       }
 
-      // Update location if ZIP changed
       if (zipCode !== originalZip && resolvedMetroId) {
         const locationSuccess = await updateLocation(user.id, zipCode, resolvedMetroId);
         if (!locationSuccess) {
           Alert.alert('Warning', 'Profile updated but location change failed. Please try again.');
         } else {
-          // Update local cache
           const metro = await fetchMetroByZip(zipCode);
           if (metro) {
             await saveMetroArea(metro);
@@ -126,6 +268,38 @@ export function EditProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Profile Photo */}
+        <View style={styles.photoSection}>
+          <TouchableOpacity onPress={handlePhotoPress} disabled={photoUploading} activeOpacity={0.7}>
+            <View style={styles.avatarWrapper}>
+              <Avatar
+                name={user?.full_name || '?'}
+                photoUrl={displayPhotoUrl}
+                trustLevel={user?.trust_level}
+                size="xlarge"
+              />
+              {photoUploading && (
+                <View style={styles.uploadOverlay}>
+                  <ActivityIndicator size="small" color={colors.white} />
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handlePhotoPress} disabled={photoUploading}>
+            <Text style={styles.photoLink}>
+              {hasPhoto ? 'Change Photo' : 'Add Photo'}
+            </Text>
+          </TouchableOpacity>
+          {photoStatus && (
+            <Text style={[
+              styles.photoStatusText,
+              photoStatus.type === 'success' ? styles.photoStatusSuccess : styles.photoStatusError,
+            ]}>
+              {photoStatus.message}
+            </Text>
+          )}
+        </View>
+
         {/* Full Name */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Full Name</Text>
@@ -200,6 +374,35 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: spacing.l,
     gap: spacing.m,
+  },
+  photoSection: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoLink: {
+    ...typography.body,
+    color: colors.primary.main,
+    fontWeight: '600',
+  },
+  photoStatusText: {
+    ...typography.caption,
+  },
+  photoStatusSuccess: {
+    color: colors.success,
+  },
+  photoStatusError: {
+    color: colors.error,
   },
   fieldContainer: {
     gap: 4,

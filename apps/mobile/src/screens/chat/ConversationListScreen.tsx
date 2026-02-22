@@ -58,7 +58,8 @@ export default function ConversationListScreen() {
       conversationId: conv.id,
       otherUserId: conv.other_user_id,
       otherUserName: conv.other_user_name,
-      otherUserTrustLevel: 1, // We don't have this in the list query; default to verified
+      otherUserTrustLevel: conv.other_user_trust_level ?? 0,
+      otherUserPhotoUrl: conv.other_user_photo,
       postId: conv.post_id || undefined,
       postTitle: conv.post_title,
     });
@@ -101,6 +102,8 @@ export default function ConversationListScreen() {
         renderItem={({ item }) => (
           <ConversationItem
             otherUserName={item.other_user_name}
+            otherUserPhoto={item.other_user_photo}
+            otherUserTrustLevel={item.other_user_trust_level}
             lastMessage={item.last_message}
             lastMessageTime={item.last_message_time}
             unreadCount={item.unread_count}

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { colors } from '../styles/colors';
 
-type AvatarSize = 'small' | 'medium' | 'large';
+type AvatarSize = 'small' | 'medium' | 'large' | 'xlarge';
 
 interface AvatarProps {
   name: string;
@@ -15,12 +15,14 @@ const SIZES: Record<AvatarSize, number> = {
   small: 32,  // Comments
   medium: 40, // Post cards, conversation list
   large: 64,  // Profile screen
+  xlarge: 80, // Profile header
 };
 
 const FONT_SIZES: Record<AvatarSize, number> = {
   small: 12,
   medium: 14,
   large: 24,
+  xlarge: 28,
 };
 
 const TRUST_COLORS: Record<number, string> = {

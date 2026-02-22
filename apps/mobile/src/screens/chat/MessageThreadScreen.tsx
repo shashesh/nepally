@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../hooks/useAuth';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { ChatInput } from '../../components/chat/ChatInput';
+import { Avatar } from '../../components/Avatar';
 import {
   getMessages,
   sendMessage,
@@ -44,6 +45,7 @@ export default function MessageThreadScreen() {
     otherUserId,
     otherUserName,
     otherUserTrustLevel,
+    otherUserPhotoUrl,
     postTitle,
   } = route.params;
 
@@ -213,6 +215,13 @@ export default function MessageThreadScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
         </TouchableOpacity>
+
+        <Avatar
+          name={otherUserName}
+          photoUrl={otherUserPhotoUrl}
+          trustLevel={otherUserTrustLevel}
+          size="small"
+        />
 
         <View style={styles.headerInfo}>
           <Text style={styles.headerName} numberOfLines={1}>

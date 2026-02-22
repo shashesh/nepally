@@ -17,6 +17,7 @@ import { getMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
 import { ProfileStackParamList } from '../../types/navigation';
 import { TrustLevel } from '@nusa/shared';
+import { Avatar } from '../../components/Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -47,15 +48,6 @@ function getTrustColor(level: number): string {
     default:
       return colors.badge.level0;
   }
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 export function ProfileScreen() {
@@ -104,10 +96,13 @@ export function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Avatar & Basic Info */}
         <View style={styles.header}>
-          <View style={[styles.avatar, { borderColor: trustColor }]}>
-            <Text style={styles.avatarText}>
-              {user?.full_name ? getInitials(user.full_name) : '?'}
-            </Text>
+          <View style={styles.avatarContainer}>
+            <Avatar
+              name={user?.full_name || '?'}
+              photoUrl={user?.profile_photo}
+              trustLevel={trustLevel}
+              size="xlarge"
+            />
           </View>
           <Text style={styles.name}>{user?.full_name || 'User'}</Text>
           <Text style={styles.email}>{user?.email}</Text>
@@ -193,19 +188,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.m,
     paddingHorizontal: spacing.l,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary.light,
-    borderWidth: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarContainer: {
     marginBottom: spacing.s,
-  },
-  avatarText: {
-    ...typography.h2,
-    color: colors.primary.main,
   },
   name: {
     ...typography.h3,

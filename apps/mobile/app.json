@@ -37,6 +37,13 @@
           "locationAlwaysPermission": "NUSA uses your location to show community posts near you.",
           "locationWhenInUsePermission": "NUSA uses your location to show community posts near you."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "NUSA needs access to your photos to set a profile picture.",
+          "cameraPermission": "NUSA needs access to your camera to take a profile photo."
+        }
       ]
     ],
     "extra": {

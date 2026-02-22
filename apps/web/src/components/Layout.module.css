@@ -116,42 +116,37 @@
   text-decoration: none;
 }
 
-.userInfo {
+/* ── Right-side icon buttons ────────────── */
+.navRight {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-small);
+  gap: 8px;
 }
 
-.avatar {
-  width: 32px;
-  height: 32px;
+.iconButton {
+  position: relative;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: white;
+  background: transparent;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-bold);
-}
-
-.signOutBtn {
-  background: none;
-  border: none;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-small);
-  cursor: pointer;
-  padding: var(--space-xs);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.signOutBtn:hover {
-  color: var(--color-error);
+.iconButton:hover {
+  background: rgba(21, 101, 192, 0.08);
+  color: var(--color-primary);
 }
 
-/* Badge for unread messages */
-.badge {
+.iconBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -163,7 +158,131 @@
   border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: var(--font-weight-bold);
-  margin-left: 4px;
+}
+
+/* ── Tooltip ────────────────────────────── */
+.tooltipWrapper {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text-primary);
+  color: white;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  z-index: 201;
+}
+
+.tooltipWrapper:hover .tooltip {
+  opacity: 1;
+}
+
+/* ── Avatar Dropdown ────────────────────── */
+.avatarButton {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  transition: opacity var(--transition-fast);
+}
+
+.avatarButton:hover {
+  opacity: 0.8;
+}
+
+.dropdownWrapper {
+  position: relative;
+}
+
+.dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  min-width: 240px;
+  padding: var(--space-xs) 0;
+}
+
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  padding: var(--space-s) var(--space-m);
+}
+
+.dropdownHeaderText {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dropdownName {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownEmail {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownDivider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-xs) var(--space-m);
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: var(--space-s) var(--space-m);
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+
+.dropdownItem:hover {
+  background: rgba(21, 101, 192, 0.06);
+  text-decoration: none;
+}
+
+.dropdownItemDanger {
+  composes: dropdownItem;
+  color: var(--color-error);
+}
+
+.dropdownItemDanger:hover {
+  background: rgba(211, 47, 47, 0.06);
 }
 
 /* ── Main Content ────────────────────────── */
@@ -209,5 +328,18 @@
   .navLink {
     padding: var(--space-xxs) var(--space-xs);
     font-size: var(--font-size-caption);
+  }
+
+  .navRight {
+    gap: 4px;
+  }
+
+  .iconButton {
+    width: 36px;
+    height: 36px;
+  }
+
+  .dropdown {
+    min-width: 220px;
   }
 }

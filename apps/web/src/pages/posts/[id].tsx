@@ -18,6 +18,7 @@ import {
   DEFAULT_TAG_COLOR,
 } from '@nusa/shared';
 import type { Post, PostComment } from '@nusa/shared';
+import Avatar from '../../components/Avatar';
 import styles from '../../styles/PostDetail.module.css';
 
 export default function PostDetailPage() {
@@ -138,9 +139,12 @@ export default function PostDetailPage() {
         <div className={styles.postDetail}>
           {/* Header */}
           <div className={styles.postHeader}>
-            <div className={styles.authorAvatar}>
-              {post.author?.full_name?.charAt(0).toUpperCase() || '?'}
-            </div>
+            <Avatar
+              name={post.author?.full_name || '?'}
+              photoUrl={post.author?.profile_photo}
+              trustLevel={post.author?.trust_level}
+              size="medium"
+            />
             <div className={styles.authorInfo}>
               <div className={styles.authorName}>
                 {post.author?.full_name || 'Anonymous'}
@@ -244,9 +248,12 @@ export default function PostDetailPage() {
           ) : (
             comments.map((comment) => (
               <div key={comment.id} className={styles.comment}>
-                <div className={styles.commentAvatar}>
-                  {comment.author?.full_name?.charAt(0).toUpperCase() || '?'}
-                </div>
+                <Avatar
+                  name={comment.author?.full_name || '?'}
+                  photoUrl={comment.author?.profile_photo}
+                  trustLevel={comment.author?.trust_level}
+                  size="small"
+                />
                 <div className={styles.commentContent}>
                   <span className={styles.commentAuthor}>
                     {comment.author?.full_name || 'Anonymous'}

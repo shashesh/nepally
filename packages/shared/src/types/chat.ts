@@ -22,6 +22,8 @@ export interface ConversationWithParticipant {
   created_at: string;
   other_user_id: string;
   other_user_name: string;
+  other_user_photo?: string | null;
+  other_user_trust_level?: number;
   unread_count: number;
   post_title?: string;
   post_category?: string;

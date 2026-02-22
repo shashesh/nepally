@@ -29,7 +29,14 @@
       "Bash(npm ls:*)",
       "Bash(npx tsc:*)",
       "WebFetch(domain:www.huduser.gov)",
-      "Bash(npx expo export --platform web --output-dir /tmp/nusa-export-test --dump-sourcemap)"
+      "Bash(npx expo export --platform web --output-dir /tmp/nusa-export-test --dump-sourcemap)",
+      "Bash(npx expo config)",
+      "Bash(xargs ls:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:akonan.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npx expo install expo-image-picker expo-image-manipulator expo-file-system)"
     ]
   }
 }

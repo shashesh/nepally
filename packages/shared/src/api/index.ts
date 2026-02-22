@@ -10,3 +10,4 @@ export * from './messages';
 export * from './users';
 export * from './metroArea';
 export * from './savedLocations';
+export * from './storage';

@@ -85,6 +85,26 @@ export async function getConversations(
       }
     }
 
+    // Fetch profile photos and trust levels for other participants
+    const otherUserIds = Array.from(new Set(
+      (otherParticipants || []).map((op) => op.user_id)
+    ));
+    const userInfoMap = new Map<string, { profile_photo: string | null; trust_level: number }>();
+    if (otherUserIds.length > 0) {
+      const { data: userProfiles } = await supabase
+        .from('users')
+        .select('id, profile_photo, trust_level')
+        .in('id', otherUserIds);
+      if (userProfiles) {
+        for (const u of userProfiles) {
+          userInfoMap.set(u.id, {
+            profile_photo: u.profile_photo,
+            trust_level: u.trust_level,
+          });
+        }
+      }
+    }
+
     // Assemble results
     const result: ConversationWithParticipant[] = [];
     for (const conv of conversations || []) {
@@ -93,6 +113,7 @@ export async function getConversations(
       if (blockedUserIds.has(other.user_id)) continue;
 
       const post = conv.post as any;
+      const userInfo = userInfoMap.get(other.user_id);
       result.push({
         id: conv.id,
         post_id: conv.post_id,
@@ -101,6 +122,8 @@ export async function getConversations(
         created_at: conv.created_at,
         other_user_id: other.user_id,
         other_user_name: other.name,
+        other_user_photo: userInfo?.profile_photo ?? null,
+        other_user_trust_level: userInfo?.trust_level ?? 0,
         unread_count: unreadMap.get(conv.id) || 0,
         post_title: post?.title,
         post_category: post?.category,

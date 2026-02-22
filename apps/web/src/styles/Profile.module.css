@@ -18,18 +18,86 @@
   margin-bottom: var(--space-l);
 }
 
-.profileAvatar {
-  width: 80px;
-  height: 80px;
+/* ── Avatar + Photo Upload ────────────────── */
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.avatarWrapper {
+  position: relative;
+}
+
+.avatarOverlay {
+  position: absolute;
+  inset: 0;
   border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: white;
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  font-weight: var(--font-weight-bold);
-  flex-shrink: 0;
+  color: white;
+  font-size: 1.2rem;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.photoActions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.photoBtn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.photoBtn:hover {
+  text-decoration: underline;
+}
+
+.photoBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.photoBtnDanger {
+  background: none;
+  border: none;
+  color: var(--color-error);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.photoBtnDanger:hover {
+  text-decoration: underline;
+}
+
+.photoBtnDanger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.photoSuccess {
+  font-size: var(--font-size-caption);
+  color: var(--color-success);
+}
+
+.photoError {
+  font-size: var(--font-size-caption);
+  color: var(--color-error);
 }
 
 .profileName {

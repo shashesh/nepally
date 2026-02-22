@@ -8,6 +8,7 @@ interface User {
   email: string;
   full_name: string;
   phone?: string;
+  profile_photo?: string;
   zip_code?: string;
   metro_area_id?: string;
   trust_level: number;
@@ -117,6 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: userData.email,
         full_name: userData.full_name,
         phone: userData.phone,
+        profile_photo: userData.profile_photo || undefined,
         zip_code: userData.zip_code,
         metro_area_id: userData.metro_area_id,
         trust_level: userData.trust_level,

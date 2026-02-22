@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { getConversations, formatRelativeTime } from '@nusa/shared';
 import type { ConversationWithParticipant } from '@nusa/shared';
+import Avatar from '../../components/Avatar';
 import styles from '../../styles/Messages.module.css';
 
 export default function MessagesPage() {
@@ -62,9 +63,12 @@ export default function MessagesPage() {
                 href={`/messages/${conv.id}`}
                 className={styles.conversationItem}
               >
-                <div className={styles.convAvatar}>
-                  {conv.other_user_name?.charAt(0).toUpperCase() || '?'}
-                </div>
+                <Avatar
+                  name={conv.other_user_name || '?'}
+                  photoUrl={conv.other_user_photo}
+                  trustLevel={conv.other_user_trust_level}
+                  size="medium"
+                />
                 <div className={styles.convContent}>
                   <div className={styles.convHeader}>
                     <span className={styles.convName}>

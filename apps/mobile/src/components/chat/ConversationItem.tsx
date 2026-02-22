@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Avatar } from '../Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
@@ -14,20 +15,14 @@ const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 interface ConversationItemProps {
   otherUserName: string;
+  otherUserPhoto?: string | null;
+  otherUserTrustLevel?: number;
   lastMessage: string | null;
   lastMessageTime: string | null;
   unreadCount: number;
   postTitle?: string;
   postCategory?: string;
   onPress: () => void;
-}
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -48,6 +43,8 @@ function formatRelativeTime(dateStr: string): string {
 
 export const ConversationItem: React.FC<ConversationItemProps> = ({
   otherUserName,
+  otherUserPhoto,
+  otherUserTrustLevel,
   lastMessage,
   lastMessageTime,
   unreadCount,
@@ -64,8 +61,13 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
       activeOpacity={0.7}
     >
       {/* Avatar */}
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{getInitials(otherUserName)}</Text>
+      <View style={styles.avatarContainer}>
+        <Avatar
+          name={otherUserName}
+          photoUrl={otherUserPhoto}
+          trustLevel={otherUserTrustLevel}
+          size="medium"
+        />
       </View>
 
       {/* Content */}
@@ -130,19 +132,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary.light,
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarContainer: {
     marginRight: 12,
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary.main,
   },
   content: {
     flex: 1,

@@ -16,6 +16,7 @@ import {
 } from '@nusa/shared';
 import type { Post, Tag } from '@nusa/shared';
 import TagFilterBar from '../components/TagFilterBar';
+import Avatar from '../components/Avatar';
 import styles from '../styles/Feed.module.css';
 
 export default function FeedPage() {
@@ -216,9 +217,12 @@ function PostCard({
   return (
     <Link href={`/posts/${post.id}`} className={styles.postCard}>
       <div className={styles.postCardHeader}>
-        <div className={styles.postAuthorAvatar}>
-          {post.author?.full_name?.charAt(0).toUpperCase() || '?'}
-        </div>
+        <Avatar
+          name={post.author?.full_name || '?'}
+          photoUrl={post.author?.profile_photo}
+          trustLevel={post.author?.trust_level}
+          size="medium"
+        />
         <div className={styles.postAuthorInfo}>
           <div className={styles.postAuthorName}>
             {post.author?.full_name || 'Anonymous'}
