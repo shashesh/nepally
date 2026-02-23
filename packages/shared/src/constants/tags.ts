@@ -44,4 +44,4 @@ export const MAX_TAGS_PER_POST = 3;
 /**
  * Maximum number of photos per post
  */
-export const MAX_PHOTOS_PER_POST = 5;
+export const MAX_PHOTOS_PER_POST = 3;

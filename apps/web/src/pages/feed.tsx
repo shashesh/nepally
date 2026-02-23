@@ -18,6 +18,9 @@ import TagFilterBar from '../components/TagFilterBar';
 import Avatar from '../components/Avatar';
 import styles from '../styles/Feed.module.css';
 
+const LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
+const LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
+
 interface FeedPageProps {
   routeBasePath?: string;
 }
@@ -31,7 +34,12 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxZoomLevel, setLightboxZoomLevel] = useState(0);
+  const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
   const latestLoadRequestId = useRef(0);
+  const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Tag-based filtering (multi-select)
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
@@ -99,6 +107,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
     setLoading(true);
     setLoadError(null);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     try {
       const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
       const requestPromise = getPostsByMetroArea(
@@ -107,20 +116,26 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
         slugs,
         50
       );
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Timed out while loading posts')), 12000);
+      const timeoutPromise = new Promise<{ error: Error }>((resolve) => {
+        timeoutId = setTimeout(
+          () => resolve({ error: new Error('Timed out while loading posts') }),
+          12000
+        );
       });
       const result = await Promise.race([requestPromise, timeoutPromise]);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
 
       if (requestId !== latestLoadRequestId.current) return;
 
-      if (result.error) {
+      if ('error' in result && result.error) {
         setPosts([]);
         setLoadError('Could not load posts. Please check your connection and try again.');
         return;
       }
 
-      if (result.data) {
+      if ('data' in result && result.data) {
         setPosts(result.data);
       } else {
         setPosts([]);
@@ -131,6 +146,9 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       setPosts([]);
       setLoadError('Could not load posts. Please check your connection and try again.');
     } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       if (requestId === latestLoadRequestId.current) {
         setLoading(false);
       }
@@ -151,6 +169,110 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   useEffect(() => {
     loadPosts();
   }, [loadPosts]);
+
+  useEffect(() => {
+    return () => {
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (lightboxPhotos.length === 0) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeLightbox();
+      }
+      if (event.key === 'ArrowRight') {
+        resetLightboxChromeTimer();
+        setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
+      }
+      if (event.key === 'ArrowLeft') {
+        resetLightboxChromeTimer();
+        setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxPhotos]);
+
+  function clearLightboxChromeTimer() {
+    if (lightboxChromeHideTimeoutRef.current) {
+      clearTimeout(lightboxChromeHideTimeoutRef.current);
+      lightboxChromeHideTimeoutRef.current = null;
+    }
+  }
+
+  function resetLightboxChromeTimer() {
+    setLightboxChromeVisible(true);
+    clearLightboxChromeTimer();
+    lightboxChromeHideTimeoutRef.current = setTimeout(() => {
+      setLightboxChromeVisible(false);
+    }, LIGHTBOX_CHROME_HIDE_DELAY_MS);
+  }
+
+  function openLightbox(photos: string[], startIndex: number) {
+    const safePhotos = photos.filter(Boolean);
+    if (safePhotos.length === 0) return;
+    const normalizedIndex = Math.min(Math.max(startIndex, 0), safePhotos.length - 1);
+    setLightboxPhotos(safePhotos);
+    setLightboxIndex(normalizedIndex);
+    setLightboxZoomLevel(0);
+    resetLightboxChromeTimer();
+  }
+
+  function closeLightbox() {
+    clearLightboxChromeTimer();
+    setLightboxPhotos([]);
+    setLightboxIndex(0);
+    setLightboxZoomLevel(0);
+    setLightboxChromeVisible(true);
+  }
+
+  function showNextLightboxPhoto() {
+    resetLightboxChromeTimer();
+    setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
+    setLightboxZoomLevel(0);
+  }
+
+  function showPreviousLightboxPhoto() {
+    resetLightboxChromeTimer();
+    setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+    setLightboxZoomLevel(0);
+  }
+
+  function zoomInLightbox() {
+    resetLightboxChromeTimer();
+    setLightboxZoomLevel((prev) => Math.min(prev + 1, LIGHTBOX_ZOOM_LEVELS.length - 1));
+  }
+
+  function zoomOutLightbox() {
+    resetLightboxChromeTimer();
+    setLightboxZoomLevel((prev) => Math.max(prev - 1, 0));
+  }
+
+  function handleLightboxWheel(event: React.WheelEvent<HTMLImageElement>) {
+    resetLightboxChromeTimer();
+    event.preventDefault();
+    if (event.deltaY < 0) {
+      zoomInLightbox();
+    } else {
+      zoomOutLightbox();
+    }
+  }
+
+  function getLightboxImageZoomClass(level: number): string {
+    if (level === 0) return styles.lightboxImageZoom0;
+    if (level === 1) return styles.lightboxImageZoom1;
+    if (level === 2) return styles.lightboxImageZoom2;
+    if (level === 3) return styles.lightboxImageZoom3;
+    if (level === 4) return styles.lightboxImageZoom4;
+    if (level === 5) return styles.lightboxImageZoom5;
+    return styles.lightboxImageZoom6;
+  }
 
   function handleTagChipToggle(slug: string) {
     setSelectedTagSlugs((prev) => {
@@ -292,8 +414,102 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               onTagClick={handleTagChipToggle}
               currentUserId={user?.id}
               onAvatarChat={handleAvatarChat}
+              onOpenLightbox={openLightbox}
             />
           ))
+        )}
+
+        {lightboxPhotos.length > 0 && (
+          <div className={styles.lightboxOverlay} onClick={closeLightbox} role="presentation">
+            <div
+              className={styles.lightboxContent}
+              onClick={(e) => e.stopPropagation()}
+              onMouseMove={resetLightboxChromeTimer}
+              onTouchStart={resetLightboxChromeTimer}
+            >
+              <button
+                type="button"
+                className={`${styles.lightboxClose} ${styles.lightboxChrome} ${
+                  lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                }`}
+                onClick={closeLightbox}
+                aria-label="Close image viewer"
+              >
+                ✕
+              </button>
+
+              <img
+                src={lightboxPhotos[lightboxIndex]}
+                alt={`Post photo ${lightboxIndex + 1}`}
+                className={`${styles.lightboxImage} ${getLightboxImageZoomClass(lightboxZoomLevel)}`}
+                onWheel={handleLightboxWheel}
+                onDoubleClick={() => {
+                  resetLightboxChromeTimer();
+                  setLightboxZoomLevel((prev) => (prev === 0 ? 3 : 0));
+                }}
+              />
+
+              <div
+                className={`${styles.lightboxZoomControls} ${styles.lightboxChrome} ${
+                  lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                }`}
+              >
+                <button
+                  type="button"
+                  className={styles.lightboxZoomBtn}
+                  onClick={zoomOutLightbox}
+                  disabled={lightboxZoomLevel === 0}
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <span className={styles.lightboxZoomLabel}>
+                  {Math.round(LIGHTBOX_ZOOM_LEVELS[lightboxZoomLevel] * 100)}%
+                </span>
+                <button
+                  type="button"
+                  className={styles.lightboxZoomBtn}
+                  onClick={zoomInLightbox}
+                  disabled={lightboxZoomLevel === LIGHTBOX_ZOOM_LEVELS.length - 1}
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+              </div>
+
+              {lightboxPhotos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.lightboxNavBtn} ${styles.lightboxNavPrev} ${styles.lightboxChrome} ${
+                      lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                    }`}
+                    onClick={showPreviousLightboxPhoto}
+                    aria-label="Previous image"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.lightboxNavBtn} ${styles.lightboxNavNext} ${styles.lightboxChrome} ${
+                      lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                    }`}
+                    onClick={showNextLightboxPhoto}
+                    aria-label="Next image"
+                  >
+                    ›
+                  </button>
+                  <div
+                    className={`${styles.lightboxCounter} ${styles.lightboxChrome} ${
+                      lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                    }`}
+                  >
+                    {lightboxIndex + 1} / {lightboxPhotos.length}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </>
@@ -310,16 +526,21 @@ function PostCard({
   onTagClick,
   currentUserId,
   onAvatarChat,
+  onOpenLightbox,
 }: {
   post: Post;
   liked: boolean;
   onTagClick: (slug: string) => void;
   currentUserId?: string;
   onAvatarChat?: (authorId: string, authorName: string) => void;
+  onOpenLightbox: (photos: string[], startIndex: number) => void;
 }) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [mediaIndex, setMediaIndex] = useState(0);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const mediaTouchStartXRef = useRef<number | null>(null);
   const isOwnPost = currentUserId === post.author_id;
+  const photoUrls = (post.photos || []).filter(Boolean).slice(0, 3);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -336,6 +557,49 @@ function PostCard({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [avatarMenuOpen]);
+
+  useEffect(() => {
+    setMediaIndex(0);
+  }, [post.id]);
+
+  function handleMediaKeyDown(event: React.KeyboardEvent<HTMLDivElement>, startIndex: number) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenLightbox(photoUrls, startIndex);
+  }
+
+  function showPreviousMedia(event?: React.SyntheticEvent) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (photoUrls.length <= 1) return;
+    setMediaIndex((prev) => (prev - 1 + photoUrls.length) % photoUrls.length);
+  }
+
+  function showNextMedia(event?: React.SyntheticEvent) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (photoUrls.length <= 1) return;
+    setMediaIndex((prev) => (prev + 1) % photoUrls.length);
+  }
+
+  function handleMediaTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    mediaTouchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function handleMediaTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    if (mediaTouchStartXRef.current === null || photoUrls.length <= 1) return;
+    const endX = event.changedTouches[0]?.clientX ?? mediaTouchStartXRef.current;
+    const delta = endX - mediaTouchStartXRef.current;
+    mediaTouchStartXRef.current = null;
+
+    if (Math.abs(delta) < 40) return;
+    if (delta > 0) {
+      showPreviousMedia();
+    } else {
+      showNextMedia();
+    }
+  }
 
   return (
     <Link href={`/posts/${post.id}`} className={styles.postCard}>
@@ -405,6 +669,69 @@ function PostCard({
 
       <div className={styles.postTitle}>{post.title}</div>
       <div className={styles.postDescription}>{post.description}</div>
+
+      {/* Photos */}
+      {photoUrls.length > 0 && (
+        <div className={styles.postMediaWrap}>
+          <div
+            className={`${styles.postMediaBtn} ${styles.postMediaCarousel}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onOpenLightbox(photoUrls, mediaIndex);
+            }}
+            onKeyDown={(e) => handleMediaKeyDown(e, mediaIndex)}
+            onTouchStart={handleMediaTouchStart}
+            onTouchEnd={handleMediaTouchEnd}
+            role="button"
+            tabIndex={0}
+            aria-label="Open post image"
+          >
+            <img
+              src={photoUrls[mediaIndex]}
+              alt={`Post image ${mediaIndex + 1}`}
+              className={styles.postMediaImg}
+              loading="lazy"
+            />
+
+            {photoUrls.length > 1 && (
+              <>
+                <div className={styles.postMediaCounter}>
+                  {mediaIndex + 1} / {photoUrls.length}
+                </div>
+                <div
+                  className={`${styles.postMediaNavBtn} ${styles.postMediaNavPrev}`}
+                  onClick={showPreviousMedia}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      showPreviousMedia(e);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Previous image"
+                >
+                  ‹
+                </div>
+                <div
+                  className={`${styles.postMediaNavBtn} ${styles.postMediaNavNext}`}
+                  onClick={showNextMedia}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      showNextMedia(e);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Next image"
+                >
+                  ›
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tag pills */}
       {post.tags && post.tags.length > 0 && (

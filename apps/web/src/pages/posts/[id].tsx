@@ -21,6 +21,10 @@ import type { Post, PostComment } from '@nusa/shared';
 import Avatar from '../../components/Avatar';
 import styles from '../../styles/PostDetail.module.css';
 
+const DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS = 1500;
+const DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
+const DETAIL_LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
+
 export default function PostDetailPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -36,13 +40,37 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [carouselChromeVisible, setCarouselChromeVisible] = useState(true);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxZoomLevel, setLightboxZoomLevel] = useState(0);
+  const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
+  const touchStartXRef = useRef<number | null>(null);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const carouselChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
     loadPost(id);
     loadComments(id);
   }, [id]);
+
+  useEffect(() => {
+    setCurrentPhotoIndex(0);
+  }, [post?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (carouselChromeHideTimeoutRef.current) {
+        clearTimeout(carouselChromeHideTimeoutRef.current);
+      }
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user && post) {
@@ -161,6 +189,161 @@ export default function PostDetailPage() {
   }
 
   const commentThreads = buildSingleLevelCommentThreads(comments);
+  const postPhotos = (post?.photos || []).filter(Boolean).slice(0, 3);
+
+  function clearCarouselChromeTimer() {
+    if (carouselChromeHideTimeoutRef.current) {
+      clearTimeout(carouselChromeHideTimeoutRef.current);
+      carouselChromeHideTimeoutRef.current = null;
+    }
+  }
+
+  function resetCarouselChromeTimer() {
+    setCarouselChromeVisible(true);
+    if (postPhotos.length <= 1) return;
+    clearCarouselChromeTimer();
+    carouselChromeHideTimeoutRef.current = setTimeout(() => {
+      setCarouselChromeVisible(false);
+    }, DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS);
+  }
+
+  useEffect(() => {
+    if (postPhotos.length <= 1) {
+      clearCarouselChromeTimer();
+      setCarouselChromeVisible(true);
+      return;
+    }
+
+    resetCarouselChromeTimer();
+  }, [post?.id, postPhotos.length]);
+
+  useEffect(() => {
+    if (lightboxPhotos.length === 0) return;
+
+    function handleLightboxKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeLightbox();
+      }
+      if (event.key === 'ArrowRight') {
+        resetLightboxChromeTimer();
+        setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
+      }
+      if (event.key === 'ArrowLeft') {
+        resetLightboxChromeTimer();
+        setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+      }
+    }
+
+    document.addEventListener('keydown', handleLightboxKeyDown);
+    return () => document.removeEventListener('keydown', handleLightboxKeyDown);
+  }, [lightboxPhotos]);
+
+  function clearLightboxChromeTimer() {
+    if (lightboxChromeHideTimeoutRef.current) {
+      clearTimeout(lightboxChromeHideTimeoutRef.current);
+      lightboxChromeHideTimeoutRef.current = null;
+    }
+  }
+
+  function resetLightboxChromeTimer() {
+    setLightboxChromeVisible(true);
+    clearLightboxChromeTimer();
+    lightboxChromeHideTimeoutRef.current = setTimeout(() => {
+      setLightboxChromeVisible(false);
+    }, DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS);
+  }
+
+  function openLightbox(photos: string[], startIndex: number) {
+    const safePhotos = photos.filter(Boolean);
+    if (safePhotos.length === 0) return;
+
+    const normalizedIndex = Math.min(Math.max(startIndex, 0), safePhotos.length - 1);
+    setLightboxPhotos(safePhotos);
+    setLightboxIndex(normalizedIndex);
+    setLightboxZoomLevel(0);
+    resetLightboxChromeTimer();
+  }
+
+  function closeLightbox() {
+    clearLightboxChromeTimer();
+    setLightboxPhotos([]);
+    setLightboxIndex(0);
+    setLightboxZoomLevel(0);
+    setLightboxChromeVisible(true);
+  }
+
+  function showPreviousLightboxPhoto() {
+    if (lightboxPhotos.length <= 1) return;
+    resetLightboxChromeTimer();
+    setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+    setLightboxZoomLevel(0);
+  }
+
+  function showNextLightboxPhoto() {
+    if (lightboxPhotos.length <= 1) return;
+    resetLightboxChromeTimer();
+    setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
+    setLightboxZoomLevel(0);
+  }
+
+  function zoomInLightbox() {
+    resetLightboxChromeTimer();
+    setLightboxZoomLevel((prev) => Math.min(prev + 1, DETAIL_LIGHTBOX_ZOOM_LEVELS.length - 1));
+  }
+
+  function zoomOutLightbox() {
+    resetLightboxChromeTimer();
+    setLightboxZoomLevel((prev) => Math.max(prev - 1, 0));
+  }
+
+  function handleLightboxWheel(event: React.WheelEvent<HTMLImageElement>) {
+    resetLightboxChromeTimer();
+    event.preventDefault();
+    if (event.deltaY < 0) {
+      zoomInLightbox();
+    } else {
+      zoomOutLightbox();
+    }
+  }
+
+  function getLightboxImageZoomClass(level: number): string {
+    if (level === 0) return styles.lightboxImageZoom0;
+    if (level === 1) return styles.lightboxImageZoom1;
+    if (level === 2) return styles.lightboxImageZoom2;
+    if (level === 3) return styles.lightboxImageZoom3;
+    if (level === 4) return styles.lightboxImageZoom4;
+    if (level === 5) return styles.lightboxImageZoom5;
+    return styles.lightboxImageZoom6;
+  }
+
+  function showPreviousPhoto() {
+    if (postPhotos.length <= 1) return;
+    resetCarouselChromeTimer();
+    setCurrentPhotoIndex((prev) => (prev - 1 + postPhotos.length) % postPhotos.length);
+  }
+
+  function showNextPhoto() {
+    if (postPhotos.length <= 1) return;
+    resetCarouselChromeTimer();
+    setCurrentPhotoIndex((prev) => (prev + 1) % postPhotos.length);
+  }
+
+  function handleCarouselTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    resetCarouselChromeTimer();
+    touchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function handleCarouselTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    resetCarouselChromeTimer();
+    if (touchStartXRef.current === null) return;
+    const endX = event.changedTouches[0]?.clientX ?? touchStartXRef.current;
+    const delta = endX - touchStartXRef.current;
+    touchStartXRef.current = null;
+
+    if (Math.abs(delta) < 40) return;
+    if (delta > 0) showPreviousPhoto();
+    else showNextPhoto();
+  }
 
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
@@ -228,6 +411,65 @@ export default function PostDetailPage() {
 
           <h1 className={styles.postTitle}>{post.title}</h1>
           <div className={styles.postBody}>{post.description}</div>
+
+          {postPhotos.length > 0 && (
+            <div
+              className={styles.mediaCarousel}
+              onTouchStart={handleCarouselTouchStart}
+              onTouchEnd={handleCarouselTouchEnd}
+              onMouseMove={resetCarouselChromeTimer}
+            >
+              <img
+                src={postPhotos[currentPhotoIndex]}
+                alt={`Post image ${currentPhotoIndex + 1}`}
+                className={styles.mediaCarouselImage}
+                onClick={() => openLightbox(postPhotos, currentPhotoIndex)}
+              />
+
+              {postPhotos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.mediaCarouselNav} ${styles.mediaCarouselNavPrev} ${styles.mediaCarouselChrome} ${
+                      carouselChromeVisible ? styles.mediaCarouselChromeVisible : styles.mediaCarouselChromeHidden
+                    }`}
+                    onClick={showPreviousPhoto}
+                    aria-label="Previous image"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.mediaCarouselNav} ${styles.mediaCarouselNavNext} ${styles.mediaCarouselChrome} ${
+                      carouselChromeVisible ? styles.mediaCarouselChromeVisible : styles.mediaCarouselChromeHidden
+                    }`}
+                    onClick={showNextPhoto}
+                    aria-label="Next image"
+                  >
+                    ›
+                  </button>
+                  <div
+                    className={`${styles.mediaCarouselDots} ${styles.mediaCarouselChrome} ${
+                      carouselChromeVisible ? styles.mediaCarouselChromeVisible : styles.mediaCarouselChromeHidden
+                    }`}
+                  >
+                    {postPhotos.map((_, index) => (
+                      <button
+                        key={`dot-${index}`}
+                        type="button"
+                        className={`${styles.mediaCarouselDot} ${index === currentPhotoIndex ? styles.mediaCarouselDotActive : ''}`}
+                        onClick={() => {
+                          resetCarouselChromeTimer();
+                          setCurrentPhotoIndex(index);
+                        }}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           <div className={styles.postActions}>
             <button
@@ -370,6 +612,99 @@ export default function PostDetailPage() {
             ))
           )}
         </div>
+
+        {lightboxPhotos.length > 0 && (
+          <div className={styles.lightboxOverlay} onClick={closeLightbox} role="presentation">
+            <div
+              className={styles.lightboxContent}
+              onClick={(event) => event.stopPropagation()}
+              onMouseMove={resetLightboxChromeTimer}
+              onTouchStart={resetLightboxChromeTimer}
+            >
+              <div
+                className={`${styles.lightboxTopRight} ${styles.lightboxChrome} ${
+                  lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                }`}
+              >
+                {lightboxPhotos.length > 1 && (
+                  <div className={styles.lightboxCounter}>{lightboxIndex + 1} / {lightboxPhotos.length}</div>
+                )}
+                <button
+                  type="button"
+                  className={styles.lightboxClose}
+                  onClick={closeLightbox}
+                  aria-label="Close image viewer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <img
+                src={lightboxPhotos[lightboxIndex]}
+                alt={`Post photo ${lightboxIndex + 1}`}
+                className={`${styles.lightboxImage} ${getLightboxImageZoomClass(lightboxZoomLevel)}`}
+                onWheel={handleLightboxWheel}
+                onDoubleClick={() => {
+                  resetLightboxChromeTimer();
+                  setLightboxZoomLevel((prev) => (prev === 0 ? 3 : 0));
+                }}
+              />
+
+              <div
+                className={`${styles.lightboxZoomControls} ${styles.lightboxChrome} ${
+                  lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                }`}
+              >
+                <button
+                  type="button"
+                  className={styles.lightboxZoomBtn}
+                  onClick={zoomOutLightbox}
+                  disabled={lightboxZoomLevel === 0}
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <span className={styles.lightboxZoomLabel}>
+                  {Math.round(DETAIL_LIGHTBOX_ZOOM_LEVELS[lightboxZoomLevel] * 100)}%
+                </span>
+                <button
+                  type="button"
+                  className={styles.lightboxZoomBtn}
+                  onClick={zoomInLightbox}
+                  disabled={lightboxZoomLevel === DETAIL_LIGHTBOX_ZOOM_LEVELS.length - 1}
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+              </div>
+
+              {lightboxPhotos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.lightboxNavBtn} ${styles.lightboxNavPrev} ${styles.lightboxChrome} ${
+                      lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                    }`}
+                    onClick={showPreviousLightboxPhoto}
+                    aria-label="Previous image"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.lightboxNavBtn} ${styles.lightboxNavNext} ${styles.lightboxChrome} ${
+                      lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
+                    }`}
+                    onClick={showNextLightboxPhoto}
+                    aria-label="Next image"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

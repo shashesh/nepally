@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ interface PostCardProps {
   description?: string;
   timestamp: string;
   imageUrl?: string;
+  imageUrls?: string[];
   isVerified?: boolean;
   /** Tags attached to this post */
   tags?: Tag[];
@@ -49,6 +50,8 @@ interface PostCardProps {
   onAvatarViewProfile?: () => void;
   /** Called when user selects "Chat" from avatar menu */
   onAvatarChat?: () => void;
+  /** Called when user taps a post image */
+  onMediaPress?: (photos: string[], startIndex: number) => void;
 }
 
 /**
@@ -109,6 +112,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   description,
   timestamp,
   imageUrl,
+  imageUrls,
   isVerified = false,
   tags = [],
   isGlobal = false,
@@ -127,10 +131,29 @@ export const PostCard: React.FC<PostCardProps> = ({
   onMorePress,
   onAvatarViewProfile,
   onAvatarChat,
+  onMediaPress,
 }) => {
   const descPreview = description ? truncateDescription(description) : null;
   const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
+  const [mediaIndex, setMediaIndex] = useState(0);
   const isOwnPost = authorId && currentUserId && authorId === currentUserId;
+  const mediaUrls = (imageUrls && imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [])
+    .filter(Boolean)
+    .slice(0, 3) as string[];
+
+  useEffect(() => {
+    setMediaIndex(0);
+  }, [title, timestamp]);
+
+  function showPreviousMedia() {
+    if (mediaUrls.length <= 1) return;
+    setMediaIndex((prev) => (prev - 1 + mediaUrls.length) % mediaUrls.length);
+  }
+
+  function showNextMedia() {
+    if (mediaUrls.length <= 1) return;
+    setMediaIndex((prev) => (prev + 1) % mediaUrls.length);
+  }
 
   return (
     <TouchableOpacity
@@ -212,13 +235,54 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       )}
 
-      {/* Photo */}
-      {imageUrl && (
-        <Image
-          source={{ uri: imageUrl }}
-          style={styles.image}
-          resizeMode="cover"
-        />
+      {/* Photos */}
+      {mediaUrls.length > 0 && (
+        <View style={styles.mediaWrap}>
+          <TouchableOpacity
+            style={styles.mediaCarouselFrame}
+            activeOpacity={0.9}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onMediaPress?.(mediaUrls, mediaIndex);
+            }}
+          >
+            <Image source={{ uri: mediaUrls[mediaIndex] }} style={styles.mediaCarouselImage} resizeMode="cover" />
+
+            {mediaUrls.length > 1 && (
+              <>
+                <View style={styles.mediaCounterPill}>
+                  <Text style={styles.mediaCounterText}>{mediaIndex + 1} / {mediaUrls.length}</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.mediaNavButton, styles.mediaNavButtonLeft]}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    showPreviousMedia();
+                  }}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous image"
+                >
+                  <Text style={styles.mediaNavText}>‹</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.mediaNavButton, styles.mediaNavButtonRight]}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    showNextMedia();
+                  }}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next image"
+                >
+                  <Text style={styles.mediaNavText}>›</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Tag Pills */}
@@ -400,12 +464,61 @@ const styles = StyleSheet.create({
     color: colors.primary.main,
   },
   // Image
-  image: {
-    width: '100%',
-    height: 160,
-    borderRadius: borderRadius.input,
+  mediaWrap: {
     marginBottom: spacing.xs,
+  },
+  mediaCarouselFrame: {
+    width: '100%',
+    aspectRatio: 16 / 10,
+    borderRadius: borderRadius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
     backgroundColor: colors.background,
+    position: 'relative',
+  },
+  mediaCarouselImage: {
+    width: '100%',
+    height: '100%',
+  },
+  mediaCounterPill: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    backgroundColor: colors.overlayMedium,
+  },
+  mediaCounterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    color: colors.white,
+  },
+  mediaNavButton: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.overlayMedium,
+  },
+  mediaNavButtonLeft: {
+    left: 8,
+  },
+  mediaNavButtonRight: {
+    right: 8,
+  },
+  mediaNavText: {
+    fontSize: 19,
+    lineHeight: 19,
+    color: colors.white,
+    fontWeight: '700',
+    marginTop: -1,
   },
   // Tag pills
   tagRow: {

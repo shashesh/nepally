@@ -44,3 +44,45 @@ CREATE POLICY "Users can delete own avatar"
     AND auth.role() = 'authenticated'
     AND name = auth.uid()::text || '.jpg'
   );
+
+-- =====================================================
+-- Post Photos Bucket
+-- =====================================================
+
+-- Public bucket for post photos
+-- Naming convention: post-photos/{userId}/{timestamp-random-filename}.jpg
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('post-photos', 'post-photos', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- RLS: Anyone can read post photos (public content)
+CREATE POLICY "Anyone can view post photos"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'post-photos');
+
+-- RLS: Authenticated users can upload into their own folder
+CREATE POLICY "Users can upload own post photos"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'post-photos'
+    AND auth.role() = 'authenticated'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- RLS: Authenticated users can update files in their own folder
+CREATE POLICY "Users can update own post photos"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'post-photos'
+    AND auth.role() = 'authenticated'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- RLS: Authenticated users can delete files in their own folder
+CREATE POLICY "Users can delete own post photos"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'post-photos'
+    AND auth.role() = 'authenticated'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );

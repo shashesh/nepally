@@ -6,10 +6,14 @@ import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
 import {
   createPost,
+  deletePostPhotos,
   getTags,
   TAG_EMOJI,
   MAX_TAGS_PER_POST,
   MAX_PHOTOS_PER_POST,
+  MAX_POST_PHOTO_BYTES,
+  uploadPostPhotos,
+  validatePostPhotoFile,
 } from '@nusa/shared';
 import type { Tag } from '@nusa/shared';
 import styles from '../../styles/CreatePost.module.css';
@@ -19,6 +23,12 @@ const TITLE_COUNTER_THRESHOLD = 120;
 const BODY_MAX = 5000;
 const BODY_COUNTER_THRESHOLD = 4500;
 
+type SelectedPhoto = {
+  id: string;
+  file: File;
+  preview_url: string;
+};
+
 export default function CreatePostPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -27,6 +37,7 @@ export default function CreatePostPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +45,11 @@ export default function CreatePostPage() {
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  const isDirty = title.trim().length > 0 || body.trim().length > 0 || selectedTagIds.length > 0;
+  const isDirty =
+    title.trim().length > 0 ||
+    body.trim().length > 0 ||
+    selectedTagIds.length > 0 ||
+    selectedPhotos.length > 0;
   const titleLength = title.trim().length;
   const bodyLength = body.trim().length;
   const titleValid = titleLength >= 5;
@@ -100,7 +115,57 @@ export default function CreatePostPage() {
         return;
       }
     }
+    clearSelectedPhotos();
     router.back();
+  }
+
+  function handlePhotoInputChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+
+    if (files.length === 0) return;
+
+    if (selectedPhotos.length + files.length > MAX_PHOTOS_PER_POST) {
+      setError(`You can upload up to ${MAX_PHOTOS_PER_POST} photos per post.`);
+      return;
+    }
+
+    const nextPhotos: SelectedPhoto[] = [];
+    for (const file of files) {
+      const validation = validatePostPhotoFile({
+        mime_type: file.type,
+        size_bytes: file.size,
+      });
+      if (validation.error) {
+        setError(validation.error.message);
+        return;
+      }
+
+      nextPhotos.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        preview_url: URL.createObjectURL(file),
+      });
+    }
+
+    setError('');
+    setSelectedPhotos((prev) => [...prev, ...nextPhotos]);
+  }
+
+  function removeSelectedPhoto(photoId: string) {
+    setSelectedPhotos((prev) => {
+      const target = prev.find((item) => item.id === photoId);
+      if (target) {
+        URL.revokeObjectURL(target.preview_url);
+      }
+      return prev.filter((item) => item.id !== photoId);
+    });
+  }
+  function clearSelectedPhotos() {
+    selectedPhotos.forEach((photo) => {
+      URL.revokeObjectURL(photo.preview_url);
+    });
+    setSelectedPhotos([]);
   }
 
   async function handleSubmit() {
@@ -114,14 +179,38 @@ export default function CreatePostPage() {
     }
 
     setSubmitting(true);
+    let uploadedPhotoPaths: string[] = [];
     try {
       const cityName = activeLocation?.metro_name?.split('-')[0]?.trim() || 'Unknown';
       const stateName = activeLocation?.metro_state || 'Unknown';
+
+      let photoUrls: string[] = [];
+      if (selectedPhotos.length > 0) {
+        const uploadInputs = await Promise.all(
+          selectedPhotos.map(async (photo) => ({
+            user_id: user.id,
+            file_data: await photo.file.arrayBuffer(),
+            mime_type: photo.file.type || 'image/jpeg',
+            size_bytes: photo.file.size,
+            file_name: photo.file.name,
+          }))
+        );
+
+        const uploadResult = await uploadPostPhotos(supabase, uploadInputs);
+        if (uploadResult.error || !uploadResult.urls) {
+          setError(uploadResult.error?.message || 'Failed to upload photos');
+          return;
+        }
+
+        photoUrls = uploadResult.urls;
+        uploadedPhotoPaths = uploadResult.paths || [];
+      }
 
       const result = await createPost(supabase, {
         title: title.trim(),
         description: body.trim(),
         tag_ids: selectedTagIds,
+        photos: photoUrls,
         is_global: isGlobal,
         metroAreaId,
         locationZipCode: user.zip_code,
@@ -131,10 +220,14 @@ export default function CreatePostPage() {
       });
 
       if (result.error) {
+        if (uploadedPhotoPaths.length > 0) {
+          await deletePostPhotos(supabase, uploadedPhotoPaths);
+        }
         setError(result.error.message);
         return;
       }
 
+      clearSelectedPhotos();
       router.push('/feed');
     } catch {
       setError('Could not create post. Please check your connection and try again.');
@@ -248,12 +341,41 @@ export default function CreatePostPage() {
 
         {/* Photo Attachment */}
         <div className={styles.section}>
-          <div className={styles.photoRow}>
-            <span className={styles.photoIcon}>📷</span>
-            <span className={styles.photoLabel}>Add Photos (optional)</span>
-            <span className={styles.photoCount}>0/{MAX_PHOTOS_PER_POST}</span>
-          </div>
+          <label className={styles.photoRowButton}>
+            <input
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              multiple
+              className={styles.hiddenFileInput}
+              onChange={handlePhotoInputChange}
+              disabled={selectedPhotos.length >= MAX_PHOTOS_PER_POST || submitting}
+            />
+            <span className={styles.photoRow}>
+              <span className={styles.photoIcon}>📷</span>
+              <span className={styles.photoLabel}>Add Photos (optional)</span>
+              <span className={styles.photoCount}>{selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</span>
+            </span>
+          </label>
           <div className={styles.sectionHint}>Photos are optional and not required to publish.</div>
+          <div className={styles.sectionHint}>Allowed: JPG, PNG, WEBP up to {Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each.</div>
+
+          {selectedPhotos.length > 0 && (
+            <div className={styles.photoPreviewRow}>
+              {selectedPhotos.map((photo, index) => (
+                <div key={photo.id} className={styles.photoPreviewItem}>
+                  <img src={photo.preview_url} alt={`Selected photo ${index + 1}`} className={styles.photoPreviewImage} />
+                  <button
+                    type="button"
+                    className={styles.photoRemoveBtn}
+                    onClick={() => removeSelectedPhoto(photo.id)}
+                    aria-label={`Remove photo ${index + 1}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Location Info */}

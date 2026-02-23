@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState, useEffect } from 'react';
+import React, { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Image,
+  Linking,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PostStackParamList } from '../../types/navigation';
@@ -19,12 +23,15 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import {
   createPost,
+  deletePostPhotos,
   getTags,
+  MAX_POST_PHOTO_BYTES,
   TAG_EMOJI,
   TAG_COLORS,
   DEFAULT_TAG_COLOR,
   MAX_TAGS_PER_POST,
   MAX_PHOTOS_PER_POST,
+  uploadPostPhotos,
 } from '@nusa/shared';
 import type { Tag } from '@nusa/shared';
 import { supabase } from '../../config/supabase';
@@ -39,6 +46,14 @@ const TITLE_COUNTER_THRESHOLD = 120;
 const BODY_MAX = 5000;
 const BODY_COUNTER_THRESHOLD = 4500;
 
+type SelectedPhoto = {
+  id: string;
+  uri: string;
+  mime_type: string;
+  size_bytes: number;
+  file_name?: string;
+};
+
 export default function CreatePostScreen({ navigation }: Props) {
   const { user } = useAuth();
   const { activeLocation } = useLocation();
@@ -46,13 +61,24 @@ export default function CreatePostScreen({ navigation }: Props) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
+  // Ref to always have current selectedPhotos in handleSubmit, avoiding stale closure
+  // through the navigation header's useLayoutEffect
+  const selectedPhotosRef = useRef<SelectedPhoto[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [tagsLoading, setTagsLoading] = useState(false);
   const [tagsError, setTagsError] = useState<string | null>(null);
 
-  const isDirty = title.trim().length > 0 || body.trim().length > 0 || selectedTagIds.length > 0;
+  // Keep ref in sync so handleSubmit always reads the latest photos
+  selectedPhotosRef.current = selectedPhotos;
+
+  const isDirty =
+    title.trim().length > 0 ||
+    body.trim().length > 0 ||
+    selectedTagIds.length > 0 ||
+    selectedPhotos.length > 0;
   const titleLength = title.trim().length;
   const bodyLength = body.trim().length;
   const titleValid = titleLength >= 5;
@@ -159,6 +185,72 @@ export default function CreatePostScreen({ navigation }: Props) {
     });
   }
 
+  async function requestPhotoLibraryPermission(): Promise<boolean> {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.granted) return true;
+
+    Alert.alert(
+      'Photo Library Access Required',
+      'NUSA needs photo library access so you can attach images to your post.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ]
+    );
+    return false;
+  }
+
+  async function handlePickPhotos() {
+    if (selectedPhotos.length >= MAX_PHOTOS_PER_POST) {
+      Alert.alert('Photo Limit Reached', `You can upload up to ${MAX_PHOTOS_PER_POST} photos per post.`);
+      return;
+    }
+
+    const hasPermission = await requestPhotoLibraryPermission();
+    if (!hasPermission) return;
+
+    const remaining = MAX_PHOTOS_PER_POST - selectedPhotos.length;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+      quality: 1,
+    });
+
+    if (result.canceled || result.assets.length === 0) return;
+
+    const nextPhotos: SelectedPhoto[] = [];
+    for (const asset of result.assets) {
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const fileName = asset.fileName || undefined;
+
+      // Only validate mime type at pick time — size is validated at upload
+      // (asset.fileSize is unreliable on some devices/OS versions)
+      const allowedMimeTypes: string[] = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedMimeTypes.includes(mimeType)) {
+        Alert.alert('Invalid Photo', 'Unsupported image type. Allowed: JPG, PNG, WEBP');
+        return;
+      }
+
+      nextPhotos.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        uri: asset.uri,
+        mime_type: mimeType,
+        size_bytes: asset.fileSize ?? 0,
+        file_name: fileName,
+      });
+    }
+
+    setSelectedPhotos((prev) => {
+      const merged = [...prev, ...nextPhotos];
+      return merged.slice(0, MAX_PHOTOS_PER_POST);
+    });
+  }
+
+  function handleRemovePhoto(photoId: string) {
+    setSelectedPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
+  }
+
   async function handleSubmit() {
     if (!canSubmit || !user) return;
 
@@ -175,14 +267,50 @@ export default function CreatePostScreen({ navigation }: Props) {
     }
 
     setSubmitting(true);
+    let uploadedPhotoPaths: string[] = [];
     try {
       const cityName = activeLocation?.metro_name?.split('-')[0]?.trim() || 'Unknown';
       const stateName = activeLocation?.metro_state || 'Unknown';
+
+      let photoUrls: string[] = [];
+      const photosToUpload = selectedPhotosRef.current;
+      if (photosToUpload.length > 0) {
+        const uploadInputs = await Promise.all(
+          photosToUpload.map(async (photo) => {
+            // Use expo-file-system legacy API — reliable for file:// URIs on iOS/Android
+            const base64 = await FileSystem.readAsStringAsync(photo.uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            const binaryStr = atob(base64);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+              bytes[i] = binaryStr.charCodeAt(i);
+            }
+            return {
+              user_id: user.id,
+              file_data: bytes.buffer as ArrayBuffer,
+              mime_type: photo.mime_type,
+              size_bytes: bytes.length,
+              file_name: photo.file_name,
+            };
+          })
+        );
+
+        const uploadResult = await uploadPostPhotos(supabase, uploadInputs);
+        if (uploadResult.error || !uploadResult.urls) {
+          Alert.alert('Upload Error', uploadResult.error?.message || 'Failed to upload photos');
+          return;
+        }
+
+        photoUrls = uploadResult.urls;
+        uploadedPhotoPaths = uploadResult.paths || [];
+      }
 
       const result = await createPost(supabase, {
         title: title.trim(),
         description: body.trim(),
         tag_ids: selectedTagIds,
+        photos: photoUrls,
         is_global: isGlobal,
         metroAreaId,
         locationZipCode: user.zip_code,
@@ -192,6 +320,9 @@ export default function CreatePostScreen({ navigation }: Props) {
       });
 
       if (result.error) {
+        if (uploadedPhotoPaths.length > 0) {
+          await deletePostPhotos(supabase, uploadedPhotoPaths);
+        }
         Alert.alert('Error', result.error.message);
         return;
       }
@@ -348,14 +479,35 @@ export default function CreatePostScreen({ navigation }: Props) {
           <View style={styles.section}>
             <TouchableOpacity
               style={styles.photoRow}
+              onPress={handlePickPhotos}
+              disabled={submitting || selectedPhotos.length >= MAX_PHOTOS_PER_POST}
               activeOpacity={0.7}
-              accessibilityLabel={`Add photos, optional. 0 of ${MAX_PHOTOS_PER_POST} photos added.`}
+              accessibilityLabel={`Add photos, optional. ${selectedPhotos.length} of ${MAX_PHOTOS_PER_POST} photos added.`}
             >
               <Text style={styles.photoIcon}>📷</Text>
               <Text style={styles.photoLabel}>Add Photos (optional)</Text>
-              <Text style={styles.photoCount}>0/{MAX_PHOTOS_PER_POST}</Text>
+              <Text style={styles.photoCount}>{selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</Text>
             </TouchableOpacity>
             <Text style={styles.optionalHint}>Photos are optional and not required to publish.</Text>
+            <Text style={styles.optionalHint}>Allowed: JPG, PNG, WEBP up to {Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each.</Text>
+
+            {selectedPhotos.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoPreviewRow}>
+                {selectedPhotos.map((photo, index) => (
+                  <View key={photo.id} style={styles.photoPreviewItem}>
+                    <Image source={{ uri: photo.uri }} style={styles.photoPreviewImage} resizeMode="cover" />
+                    <TouchableOpacity
+                      style={styles.photoRemoveButton}
+                      onPress={() => handleRemovePhoto(photo.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove photo ${index + 1}`}
+                    >
+                      <Text style={styles.photoRemoveButtonText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* Location Info */}
@@ -561,6 +713,40 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
+  },
+  photoPreviewRow: {
+    marginTop: spacing.xs,
+    gap: spacing.xs,
+  },
+  photoPreviewItem: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  photoPreviewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoRemoveButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoRemoveButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 14,
   },
   locationRow: {
     paddingHorizontal: spacing.s,

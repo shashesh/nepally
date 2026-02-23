@@ -9,6 +9,7 @@ export * from './types';
 // Constants
 export * from './constants/appConfig';
 export * from './constants/postCategories';
+export * from './constants/postPhotos';
 export * from './constants/tags';
 export * from './constants/trustLevels';
 export * from './constants/location';

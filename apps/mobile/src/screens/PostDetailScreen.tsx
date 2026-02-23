@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,18 @@ import {
   Share,
   Modal,
   Pressable,
+  Image,
+  Animated,
+  useWindowDimensions,
 } from 'react-native';
+import {
+  PinchGestureHandler,
+  PanGestureHandler,
+  State,
+  GestureHandlerRootView,
+  ScrollView as GHScrollView,
+  type PinchGestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -43,6 +54,11 @@ import { typography } from '../styles/typography';
 import { spacing, borderRadius } from '../styles/spacing';
 
 type DetailRouteProp = RouteProp<HomeStackParamList, 'PostDetail'>;
+const DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS = 1500;
+const DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
+const LIGHTBOX_MIN_SCALE = 1;
+const LIGHTBOX_MAX_SCALE = 4;
+const DOUBLE_TAP_ZOOM_SCALE = 2.5;
 
 /**
  * Convert a hex color to an rgba string at the given alpha.
@@ -54,6 +70,226 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+function PinchableLightboxImage({
+  uri,
+  onInteract,
+  onZoomChange,
+  viewportWidth,
+  viewportHeight,
+}: {
+  uri: string;
+  onInteract: () => void;
+  onZoomChange: (zoomed: boolean) => void;
+  viewportWidth: number;
+  viewportHeight: number;
+}) {
+  // Scale
+  const baseScale = useRef(new Animated.Value(1)).current;
+  const pinchScale = useRef(new Animated.Value(1)).current;
+  // displayScale is the same Animated.multiply pattern as the original working code
+  const displayScale = useMemo(() => Animated.multiply(baseScale, pinchScale), [baseScale, pinchScale]);
+  const currentScale = useRef(1);
+
+  // Pan — single Animated.Values, registered by the Animated.View transform on mount.
+  // Using setOffset/flattenOffset for accumulation avoids Animated.add, which requires
+  // panDelta to be registered via a live Animated.event. With single values, the transform
+  // registration is sufficient.
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const currentPanX = useRef(0);
+  const currentPanY = useRef(0);
+  const panActive = useRef(false);
+
+  const [isZoomed, setIsZoomed] = useState(false);
+  const lastTapTime = useRef(0);
+
+  const pinchRef = useRef<any>(null);
+  const panRef = useRef<any>(null);
+
+  const clampPan = useCallback((s: number, x: number, y: number) => {
+    const maxX = Math.max(0, (viewportWidth * (s - 1)) / 2);
+    const maxY = Math.max(0, (viewportHeight * (s - 1)) / 2);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  }, [viewportWidth, viewportHeight]);
+
+  const resetAll = useCallback((animated: boolean) => {
+    currentScale.current = 1;
+    currentPanX.current = 0;
+    currentPanY.current = 0;
+    panActive.current = false;
+    pinchScale.setValue(1);
+    // Collapse any offset before resetting
+    translateX.flattenOffset();
+    translateY.flattenOffset();
+    setIsZoomed(false);
+    onZoomChange(false);
+    if (animated) {
+      Animated.parallel([
+        Animated.spring(baseScale, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 0 }),
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, speed: 18, bounciness: 0 }),
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 18, bounciness: 0 }),
+      ]).start();
+    } else {
+      baseScale.setValue(1);
+      translateX.setValue(0);
+      translateY.setValue(0);
+    }
+  }, [baseScale, pinchScale, translateX, translateY, onZoomChange]);
+
+  useEffect(() => {
+    resetAll(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uri]);
+
+  // --- Pinch gesture (identical structure to original working code) ---
+  const onPinchEvent = useMemo(
+    () => Animated.event([{ nativeEvent: { scale: pinchScale } }], { useNativeDriver: true }),
+    [pinchScale]
+  );
+
+  const onPinchStateChange = useCallback((event: PinchGestureHandlerStateChangeEvent) => {
+    onInteract();
+    if (event.nativeEvent.oldState !== State.ACTIVE) return;
+
+    const next = Math.max(
+      LIGHTBOX_MIN_SCALE,
+      Math.min(LIGHTBOX_MAX_SCALE, currentScale.current * event.nativeEvent.scale)
+    );
+    currentScale.current = next;
+    baseScale.setValue(next);
+    pinchScale.setValue(1);
+
+    const zoomed = next > 1;
+    setIsZoomed(zoomed);
+    onZoomChange(zoomed);
+
+    // Collapse offset so translate values are at their true accumulated position
+    translateX.flattenOffset();
+    translateY.flattenOffset();
+
+    if (!zoomed) {
+      currentPanX.current = 0;
+      currentPanY.current = 0;
+      Animated.parallel([
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, speed: 20, bounciness: 0 }),
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 20, bounciness: 0 }),
+      ]).start();
+    } else {
+      // Clamp pan position for new scale; re-set offset for next pan
+      const clamped = clampPan(next, currentPanX.current, currentPanY.current);
+      currentPanX.current = clamped.x;
+      currentPanY.current = clamped.y;
+      translateX.setValue(clamped.x);
+      translateY.setValue(clamped.y);
+    }
+  }, [baseScale, pinchScale, translateX, translateY, onInteract, onZoomChange, clampPan]);
+
+  // --- Pan gesture (setOffset for accumulation) ---
+  const onPanEvent = useMemo(
+    () => Animated.event(
+      [{ nativeEvent: { translationX: translateX, translationY: translateY } }],
+      { useNativeDriver: true }
+    ),
+    [translateX, translateY]
+  );
+
+  const onPanStateChange = useCallback((event: any) => {
+    const { state, oldState } = event.nativeEvent;
+
+    // Set offset at gesture start so Animated.event delta is relative to current position.
+    // iOS fires BEGAN first; Android may go straight to ACTIVE.
+    if (!panActive.current && (state === State.BEGAN || state === State.ACTIVE)) {
+      panActive.current = true;
+      translateX.setOffset(currentPanX.current);
+      translateY.setOffset(currentPanY.current);
+      translateX.setValue(0);
+      translateY.setValue(0);
+    }
+
+    if (oldState === State.ACTIVE) {
+      panActive.current = false;
+      const rawX = currentPanX.current + event.nativeEvent.translationX;
+      const rawY = currentPanY.current + event.nativeEvent.translationY;
+
+      // Collapse offset → value = rawX/rawY
+      translateX.flattenOffset();
+      translateY.flattenOffset();
+
+      const clamped = clampPan(currentScale.current, rawX, rawY);
+      currentPanX.current = clamped.x;
+      currentPanY.current = clamped.y;
+
+      if (rawX !== clamped.x || rawY !== clamped.y) {
+        Animated.parallel([
+          Animated.spring(translateX, { toValue: clamped.x, useNativeDriver: true, speed: 20, bounciness: 0 }),
+          Animated.spring(translateY, { toValue: clamped.y, useNativeDriver: true, speed: 20, bounciness: 0 }),
+        ]).start();
+      }
+    }
+  }, [translateX, translateY, clampPan]);
+
+  // Double-tap via manual timing on a Pressable.
+  const handlePress = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapTime.current < 300) {
+      lastTapTime.current = 0;
+      onInteract();
+      if (currentScale.current > 1) {
+        resetAll(true);
+      } else {
+        currentScale.current = DOUBLE_TAP_ZOOM_SCALE;
+        setIsZoomed(true);
+        onZoomChange(true);
+        Animated.spring(baseScale, {
+          toValue: DOUBLE_TAP_ZOOM_SCALE,
+          useNativeDriver: true,
+          speed: 18,
+          bounciness: 0,
+        }).start();
+      }
+    } else {
+      lastTapTime.current = now;
+      onInteract();
+    }
+  }, [baseScale, resetAll, onInteract, onZoomChange]);
+
+  // Structure: PanGestureHandler (outer) → PinchGestureHandler (inner, direct parent of
+  // transform view). Matches the RNGH recommended pattern for simultaneous pinch+pan.
+  // PinchGestureHandler's direct child has the transform — same as the original working code.
+  return (
+    <PanGestureHandler
+      ref={panRef}
+      simultaneousHandlers={pinchRef}
+      onGestureEvent={onPanEvent}
+      onHandlerStateChange={onPanStateChange}
+      enabled={isZoomed}
+    >
+      <Animated.View style={styles.lightboxImagePinchWrap}>
+        <PinchGestureHandler
+          ref={pinchRef}
+          simultaneousHandlers={panRef}
+          onGestureEvent={onPinchEvent}
+          onHandlerStateChange={onPinchStateChange}
+        >
+          <Animated.View
+            style={[
+              styles.lightboxImagePinchWrap,
+              { transform: [{ scale: displayScale }, { translateX }, { translateY }] },
+            ]}
+          >
+            <Pressable style={styles.lightboxImage} onPress={handlePress}>
+              <Image source={{ uri }} style={styles.lightboxImage} resizeMode="contain" />
+            </Pressable>
+          </Animated.View>
+        </PinchGestureHandler>
+      </Animated.View>
+    </PanGestureHandler>
+  );
+}
+
 export default function PostDetailScreen() {
   const { user } = useAuth();
   const route = useRoute<DetailRouteProp>();
@@ -61,6 +297,8 @@ export default function PostDetailScreen() {
   const { postId } = route.params;
   const scrollViewRef = useRef<ScrollView>(null);
   const commentsRef = useRef<View>(null);
+  const detailCarouselRef = useRef<ScrollView>(null);
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
 
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,16 +315,114 @@ export default function PostDetailScreen() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [replyTarget, setReplyTarget] = useState<PostComment | null>(null);
   const [expandedReplyParents, setExpandedReplyParents] = useState<Record<string, boolean>>({});
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [detailCarouselChromeVisible, setDetailCarouselChromeVisible] = useState(true);
+  const [lightboxVisible, setLightboxVisible] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
+  const [lightboxIsZoomed, setLightboxIsZoomed] = useState(false);
+  const detailCarouselChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lightboxScrollRef = useRef<ScrollView>(null);
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
   const isOwnPost = post?.author_id === user?.id;
   const commentThreads = useMemo(() => buildSingleLevelCommentThreads(comments), [comments]);
+  const postPhotos = (post?.photos || []).filter(Boolean).slice(0, 3);
+  const detailCarouselWidth = Math.max(viewportWidth - spacing.s * 2, 1);
 
   useEffect(() => {
     loadPost();
     loadComments();
     loadLikeState();
   }, [postId]);
+
+  useEffect(() => {
+    setCurrentPhotoIndex(0);
+  }, [post?.id]);
+
+  const clearDetailCarouselChromeTimer = useCallback(() => {
+    if (detailCarouselChromeHideTimeoutRef.current) {
+      clearTimeout(detailCarouselChromeHideTimeoutRef.current);
+      detailCarouselChromeHideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const resetDetailCarouselChromeTimer = useCallback(() => {
+    setDetailCarouselChromeVisible(true);
+    if (postPhotos.length <= 1) return;
+    clearDetailCarouselChromeTimer();
+    detailCarouselChromeHideTimeoutRef.current = setTimeout(() => {
+      setDetailCarouselChromeVisible(false);
+    }, DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS);
+  }, [clearDetailCarouselChromeTimer, postPhotos.length]);
+
+  useEffect(() => {
+    return () => {
+      clearDetailCarouselChromeTimer();
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+      }
+    };
+  }, [clearDetailCarouselChromeTimer]);
+
+  useEffect(() => {
+    if (postPhotos.length <= 1) {
+      clearDetailCarouselChromeTimer();
+      setDetailCarouselChromeVisible(true);
+      return;
+    }
+
+    resetDetailCarouselChromeTimer();
+  }, [post?.id, postPhotos.length, clearDetailCarouselChromeTimer, resetDetailCarouselChromeTimer]);
+
+  const clearLightboxChromeTimer = useCallback(() => {
+    if (lightboxChromeHideTimeoutRef.current) {
+      clearTimeout(lightboxChromeHideTimeoutRef.current);
+      lightboxChromeHideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const resetLightboxChromeTimer = useCallback(() => {
+    setLightboxChromeVisible(true);
+    clearLightboxChromeTimer();
+    lightboxChromeHideTimeoutRef.current = setTimeout(() => {
+      setLightboxChromeVisible(false);
+    }, DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS);
+  }, [clearLightboxChromeTimer]);
+
+  useEffect(() => {
+    if (!lightboxVisible) {
+      clearLightboxChromeTimer();
+      setLightboxChromeVisible(true);
+      return;
+    }
+
+    resetLightboxChromeTimer();
+  }, [lightboxVisible, clearLightboxChromeTimer, resetLightboxChromeTimer]);
+
+  const handleOpenLightbox = useCallback(
+    (startIndex: number) => {
+      const normalizedIndex = Math.min(Math.max(startIndex, 0), Math.max(postPhotos.length - 1, 0));
+      setLightboxIndex(normalizedIndex);
+      setLightboxVisible(true);
+      setTimeout(() => {
+        lightboxScrollRef.current?.scrollTo({
+          x: normalizedIndex * viewportWidth,
+          animated: false,
+        });
+      }, 0);
+    },
+    [postPhotos.length, viewportWidth]
+  );
+
+  const handleCloseLightbox = useCallback(() => {
+    clearLightboxChromeTimer();
+    setLightboxVisible(false);
+    setLightboxIndex(0);
+    setLightboxChromeVisible(true);
+    setLightboxIsZoomed(false);
+  }, [clearLightboxChromeTimer]);
 
   const loadPost = async () => {
     const result = await getPostById(supabase, postId);
@@ -318,6 +654,110 @@ export default function PostDetailScreen() {
 
           {post.description ? <Text style={styles.description}>{post.description}</Text> : null}
 
+          {postPhotos.length > 0 && (
+            <View style={styles.detailCarouselWrap} onTouchStart={resetDetailCarouselChromeTimer}>
+              <ScrollView
+                ref={detailCarouselRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScrollBeginDrag={resetDetailCarouselChromeTimer}
+                onMomentumScrollEnd={(event) => {
+                  resetDetailCarouselChromeTimer();
+                  const nextIndex = Math.round(event.nativeEvent.contentOffset.x / detailCarouselWidth);
+                  setCurrentPhotoIndex(nextIndex);
+                }}
+              >
+                {postPhotos.map((photoUrl, index) => (
+                  <View key={`${photoUrl}-${index}`} style={[styles.detailCarouselSlide, { width: detailCarouselWidth }]}>
+                    <TouchableOpacity
+                      style={styles.detailCarouselImageButton}
+                      activeOpacity={0.95}
+                      onPress={() => {
+                        resetDetailCarouselChromeTimer();
+                        handleOpenLightbox(index);
+                      }}
+                    >
+                      <Image source={{ uri: photoUrl }} style={styles.detailCarouselImage} resizeMode="cover" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+
+              {postPhotos.length > 1 && (
+                <>
+                  <TouchableOpacity
+                    style={[
+                      styles.detailCarouselChrome,
+                      styles.detailCarouselNavBtn,
+                      styles.detailCarouselPrevBtn,
+                      detailCarouselChromeVisible ? styles.detailCarouselChromeVisible : styles.detailCarouselChromeHidden,
+                    ]}
+                    disabled={!detailCarouselChromeVisible}
+                    onPress={() => {
+                      resetDetailCarouselChromeTimer();
+                      const nextIndex = (currentPhotoIndex - 1 + postPhotos.length) % postPhotos.length;
+                      detailCarouselRef.current?.scrollTo({ x: nextIndex * detailCarouselWidth, animated: true });
+                      setCurrentPhotoIndex(nextIndex);
+                    }}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Previous image"
+                  >
+                    <Ionicons name="chevron-back" size={18} color={colors.white} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.detailCarouselChrome,
+                      styles.detailCarouselNavBtn,
+                      styles.detailCarouselNextBtn,
+                      detailCarouselChromeVisible ? styles.detailCarouselChromeVisible : styles.detailCarouselChromeHidden,
+                    ]}
+                    disabled={!detailCarouselChromeVisible}
+                    onPress={() => {
+                      resetDetailCarouselChromeTimer();
+                      const nextIndex = (currentPhotoIndex + 1) % postPhotos.length;
+                      detailCarouselRef.current?.scrollTo({ x: nextIndex * detailCarouselWidth, animated: true });
+                      setCurrentPhotoIndex(nextIndex);
+                    }}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Next image"
+                  >
+                    <Ionicons name="chevron-forward" size={18} color={colors.white} />
+                  </TouchableOpacity>
+
+                  <View
+                    style={[
+                      styles.detailCarouselChrome,
+                      styles.detailCarouselDots,
+                      detailCarouselChromeVisible ? styles.detailCarouselChromeVisible : styles.detailCarouselChromeHidden,
+                    ]}
+                    pointerEvents={detailCarouselChromeVisible ? 'auto' : 'none'}
+                  >
+                    {postPhotos.map((_, index) => (
+                      <TouchableOpacity
+                        key={`detail-dot-${index}`}
+                        style={[
+                          styles.detailCarouselDot,
+                          index === currentPhotoIndex && styles.detailCarouselDotActive,
+                        ]}
+                        onPress={() => {
+                          resetDetailCarouselChromeTimer();
+                          detailCarouselRef.current?.scrollTo({ x: index * detailCarouselWidth, animated: true });
+                          setCurrentPhotoIndex(index);
+                        }}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.actionButton} onPress={handleLikePress} activeOpacity={0.7}>
               <Ionicons
@@ -489,6 +929,77 @@ export default function PostDetailScreen() {
           </Text>
         </ScrollView>
 
+        <Modal
+          visible={lightboxVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={handleCloseLightbox}
+        >
+          {/* GestureHandlerRootView is required inside Modal on Android —
+              React Native Modals render in a separate native window that the
+              app-level GestureHandlerRootView in App.tsx does not cover. */}
+          <GestureHandlerRootView style={styles.gestureRootFill}>
+          <View style={styles.lightboxOverlay}>
+            <Pressable style={styles.lightboxBackdrop} onPress={handleCloseLightbox} />
+            <View
+              style={[
+                styles.lightboxChrome,
+                styles.lightboxTopRight,
+                lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden,
+              ]}
+              pointerEvents="box-none"
+            >
+              {postPhotos.length > 1 && (
+                <View style={styles.lightboxCounterPill}>
+                  <Text style={styles.lightboxCounterText}>{lightboxIndex + 1} / {postPhotos.length}</Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={styles.lightboxCloseBtn}
+                onPress={handleCloseLightbox}
+                accessibilityRole="button"
+                accessibilityLabel="Close image viewer"
+              >
+                <Ionicons name="close" size={24} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={styles.lightboxViewport}
+              onTouchStart={resetLightboxChromeTimer}
+            >
+              <GHScrollView
+                ref={lightboxScrollRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                scrollEnabled={!lightboxIsZoomed}
+                onScrollBeginDrag={resetLightboxChromeTimer}
+                onMomentumScrollEnd={(event) => {
+                  resetLightboxChromeTimer();
+                  const nextIndex = Math.round(event.nativeEvent.contentOffset.x / viewportWidth);
+                  setLightboxIndex(nextIndex);
+                }}
+              >
+                {postPhotos.map((photoUrl, index) => (
+                  <View key={`${photoUrl}-${index}`} style={[styles.lightboxSlide, { width: viewportWidth }]}>
+                    <View style={styles.lightboxZoomContent}>
+                      <PinchableLightboxImage
+                        uri={photoUrl}
+                        onInteract={resetLightboxChromeTimer}
+                        onZoomChange={setLightboxIsZoomed}
+                        viewportWidth={viewportWidth}
+                        viewportHeight={viewportHeight * 0.82}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </GHScrollView>
+            </View>
+          </View>
+          </GestureHandlerRootView>
+        </Modal>
+
         {/* Avatar Tap Menu */}
         <Modal
           visible={avatarMenuVisible}
@@ -602,6 +1113,151 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: 24,
     marginBottom: spacing.s,
+  },
+  detailCarouselWrap: {
+    position: 'relative',
+    borderRadius: borderRadius.input,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    marginBottom: spacing.s,
+    aspectRatio: 16 / 10,
+  },
+  detailCarouselSlide: {
+    height: '100%',
+  },
+  detailCarouselImageButton: {
+    width: '100%',
+    height: '100%',
+  },
+  detailCarouselImage: {
+    width: '100%',
+    height: '100%',
+  },
+  detailCarouselChrome: {
+    opacity: 1,
+  },
+  detailCarouselChromeVisible: {
+    opacity: 1,
+  },
+  detailCarouselChromeHidden: {
+    opacity: 0,
+  },
+  detailCarouselNavBtn: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.overlayMedium,
+  },
+  detailCarouselPrevBtn: {
+    left: spacing.xs,
+  },
+  detailCarouselNextBtn: {
+    right: spacing.xs,
+  },
+  detailCarouselDots: {
+    position: 'absolute',
+    bottom: spacing.xs,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  detailCarouselDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  detailCarouselDotActive: {
+    backgroundColor: colors.white,
+  },
+  gestureRootFill: {
+    flex: 1,
+  },
+  lightboxOverlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lightboxBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+  },
+  lightboxTopRight: {
+    position: 'absolute',
+    top: spacing.xl,
+    right: spacing.s,
+    zIndex: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  lightboxChrome: {
+    opacity: 1,
+  },
+  lightboxChromeVisible: {
+    opacity: 1,
+  },
+  lightboxChromeHidden: {
+    opacity: 0,
+  },
+  lightboxCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.overlayMedium,
+  },
+  lightboxViewport: {
+    width: '100%',
+    height: '82%',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  lightboxSlide: {
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.s,
+  },
+  lightboxZoomContent: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'visible',
+  },
+  lightboxImage: {
+    width: '100%',
+    height: '100%',
+  },
+  lightboxImagePinchWrap: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'visible',
+  },
+  lightboxCounterPill: {
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    backgroundColor: colors.overlayMedium,
+    marginRight: spacing.xs,
+  },
+  lightboxCounterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    color: colors.white,
   },
   authorInfo: {
     flex: 1,

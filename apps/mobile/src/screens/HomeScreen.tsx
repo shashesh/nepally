@@ -254,7 +254,7 @@ export default function HomeScreen() {
     navigation.navigate('PostDetail', { postId: post.id });
   };
 
-  const handleAvatarViewProfile = (post: Post) => {
+  const handleAvatarViewProfile = () => {
     Alert.alert('Coming Soon', 'User profiles will be available in a future update.');
   };
 
@@ -481,6 +481,7 @@ export default function HomeScreen() {
             title={item.title}
             description={item.description}
             timestamp={item.created_at}
+            imageUrls={item.photos}
             tags={item.tags}
             isGlobal={item.is_global}
             isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
@@ -496,9 +497,10 @@ export default function HomeScreen() {
             authorId={item.author_id}
             currentUserId={user?.id}
             onTagPress={handleTagChipPress}
-            onAvatarViewProfile={() => handleAvatarViewProfile(item)}
+            onAvatarViewProfile={handleAvatarViewProfile}
             onAvatarChat={() => handleAvatarChat(item)}
             onMorePress={() => handleMorePress(item)}
+            onMediaPress={() => handlePostPress(item)}
           />
         )}
         keyExtractor={(item) => item.id}
