@@ -1,6 +1,32 @@
 # NUSA Development Progress
 
-**Last Updated:** 2026-02-15
+**Last Updated:** 2026-02-23
+
+---
+
+## Recent Updates (2026-02-23)
+
+### Post Management (Web + Mobile)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Edit Post (shared API) | Done | Added `updatePost(...)` in `packages/shared/src/api/posts.ts` |
+| Edit Post (mobile) | Done | `CreatePostScreen` supports edit mode, prefill, and save |
+| Edit Post (web) | Done | `/posts/create?edit=<postId>` loads existing post and saves changes |
+| Delete Post (web) | Done | Added owner action on feed card + post detail |
+| Share Post (web) | Done | Added owner/non-owner action on feed card + post detail |
+| Post options parity (web/mobile) | Done | Web now includes Edit/Delete/Share options matching mobile behavior |
+
+### Post Photos in Edit Mode (Web + Mobile)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Keep existing photos on edit | Done | Existing URLs preloaded in edit mode |
+| Remove existing photos on edit | Done | Removed URLs converted to storage paths and cleaned up |
+| Add new photos on edit | Done | Upload pipeline reused in edit flow |
+| Persist final photo list on save | Done | `updatePost` now accepts and saves ordered `photos[]` |
+| Explicit reorder controls | Done | `←/→` thumbnail controls on web + mobile in edit mode |
+| Drag-and-drop reorder (web) | Done | Web edit thumbnails support drag/drop with visual target state |
 
 ---
 

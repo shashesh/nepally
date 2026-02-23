@@ -1,8 +1,27 @@
 # Phase 1: Feature Breakdown & Implementation Sequence
 
-**Version:** 1.1
-**Date:** 2026-02-17
+**Version:** 1.2
+**Date:** 2026-02-23
 **Phase:** Phase 1 - Utility Core & Trust Foundation
+
+---
+
+## Implementation Update (2026-02-23)
+
+The following Phase 1 post-management work is now implemented across web and mobile:
+
+- ✅ **Edit Post:** Existing posts can be reopened in the create-post form, prefilled, edited, and saved.
+- ✅ **Delete Post (Web parity):** Web feed cards and post detail now expose author delete actions (mobile already had delete).
+- ✅ **Share Post (Web parity):** Web feed cards and post detail now expose share actions (mobile already had share).
+- ✅ **Post Action Menu Parity:** Web now matches mobile owner action set (Edit, Share, Delete).
+- ✅ **Edit Photos:** Authors can keep/remove existing photos and add new photos during edit.
+- ✅ **Explicit Reorder Interaction:** Edit mode supports thumbnail reorder with arrow controls on web and mobile.
+- ✅ **Web Drag-and-Drop Reorder:** Web edit mode adds drag-and-drop ordering with visual drag state.
+
+Technical implementation shipped in shared layer:
+
+- ✅ `updatePost(...)` added to shared API (`packages/shared/src/api/posts.ts`).
+- ✅ `getPostPhotoPathFromUrl(...)` added for storage cleanup (`packages/shared/src/api/storage.ts`).
 
 ---
 

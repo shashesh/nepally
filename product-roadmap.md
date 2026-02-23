@@ -1,7 +1,7 @@
 # NUSA App: Product Roadmap
 
 **Version:** 1.2
-**Last Updated:** 2026-02-17 (Tags Redesign, Global Posts & Premium)
+**Last Updated:** 2026-02-23 (Post Management: Edit/Delete/Share + Photo Reordering)
 
 ---
 
@@ -57,6 +57,7 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 - **Tags** (1-3 required, selectable chip/pill buttons)
 - **Photos** (optional, up to 3 images)
 - **Global toggle** (premium users only — makes post visible across all metro areas)
+- **Edit mode:** Authors can reopen the same form to edit title/body/tags/photos and save changes
 
 **Available Tags:**
 
@@ -79,7 +80,9 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 **Post Lifecycle:**
 - No auto-expiry — posts remain active until manually deleted by author or removed by moderators
 - Posts can be reported and auto-hidden with 3+ reports (pending moderator review)
+- Authors can edit their own posts at any time (title, body, tags, global toggle, photos)
 - Authors can delete their own posts at any time
+- Author-owned post menus include **Edit Post**, **Delete Post**, and **Share Post** on mobile and web feed/detail views
 
 **Contact Method:** All post inquiries handled via in-app chat system (Level 1+ can message post authors)
 
@@ -88,6 +91,7 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 - Auto-compressed to 2MB max per photo
 - Resized to 1200px width for optimal mobile viewing
 - Stored in Supabase Storage
+- In edit mode, authors can remove existing photos, add new photos, and reorder final photo sequence before saving
 
 **Emergency Tag Safety:**
 - Selecting the Emergency tag triggers moderator review (post created with `status = 'pending'`)

@@ -23,7 +23,10 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import {
   createPost,
+  getPostById,
+  updatePost,
   deletePostPhotos,
+  getPostPhotoPathFromUrl,
   getTags,
   MAX_POST_PHOTO_BYTES,
   TAG_EMOJI,
@@ -54,13 +57,21 @@ type SelectedPhoto = {
   file_name?: string;
 };
 
-export default function CreatePostScreen({ navigation }: Props) {
+type EditablePhoto =
+  | { kind: 'existing'; existing_url: string }
+  | { kind: 'new'; photo: SelectedPhoto };
+
+export default function CreatePostScreen({ navigation, route }: Props) {
+  const editPostId = route.params?.editPostId;
+  const isEditing = typeof editPostId === 'string' && editPostId.length > 0;
   const { user } = useAuth();
   const { activeLocation } = useLocation();
 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [removedExistingPhotoPaths, setRemovedExistingPhotoPaths] = useState<string[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
   // Ref to always have current selectedPhotos in handleSubmit, avoiding stale closure
   // through the navigation header's useLayoutEffect
@@ -70,21 +81,52 @@ export default function CreatePostScreen({ navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [tagsLoading, setTagsLoading] = useState(false);
   const [tagsError, setTagsError] = useState<string | null>(null);
+  const [loadingExistingPost, setLoadingExistingPost] = useState(false);
+  const [initialForm, setInitialForm] = useState<{
+    title: string;
+    body: string;
+    selectedTagIds: string[];
+    isGlobal: boolean;
+    existingPhotos: string[];
+  }>({
+    title: '',
+    body: '',
+    selectedTagIds: [],
+    isGlobal: false,
+    existingPhotos: [],
+  });
 
   // Keep ref in sync so handleSubmit always reads the latest photos
   selectedPhotosRef.current = selectedPhotos;
 
+  const initialTagSet = new Set(initialForm.selectedTagIds);
+  const currentTagSet = new Set(selectedTagIds);
+  const tagsChanged =
+    initialForm.selectedTagIds.length !== selectedTagIds.length ||
+    selectedTagIds.some((id) => !initialTagSet.has(id)) ||
+    initialForm.selectedTagIds.some((id) => !currentTagSet.has(id));
+  const existingPhotosChanged =
+    initialForm.existingPhotos.length !== existingPhotos.length ||
+    initialForm.existingPhotos.some((url, index) => existingPhotos[index] !== url);
   const isDirty =
-    title.trim().length > 0 ||
-    body.trim().length > 0 ||
-    selectedTagIds.length > 0 ||
+    title.trim() !== initialForm.title.trim() ||
+    body.trim() !== initialForm.body.trim() ||
+    tagsChanged ||
+    isGlobal !== initialForm.isGlobal ||
+    existingPhotosChanged ||
     selectedPhotos.length > 0;
   const titleLength = title.trim().length;
   const bodyLength = body.trim().length;
   const titleValid = titleLength >= 5;
   const bodyValid = bodyLength >= 10;
   const tagsValid = selectedTagIds.length >= 1 && selectedTagIds.length <= MAX_TAGS_PER_POST;
-  const canSubmit = titleValid && bodyValid && tagsValid && !submitting && !tagsLoading;
+  const canSubmit =
+    titleValid &&
+    bodyValid &&
+    tagsValid &&
+    !submitting &&
+    !tagsLoading &&
+    !loadingExistingPost;
 
   const hasEmergencyTag = availableTags.some(
     (t) => t.slug === 'emergency' && selectedTagIds.includes(t.id)
@@ -103,8 +145,15 @@ export default function CreatePostScreen({ navigation }: Props) {
     loadTags();
   }, []);
 
+  useEffect(() => {
+    if (!isEditing || !editPostId || availableTags.length === 0) return;
+    loadExistingPost(editPostId);
+  }, [isEditing, editPostId, availableTags.length]);
+
   const postButtonHint = tagsLoading
     ? 'Loading tags...'
+    : loadingExistingPost
+      ? 'Loading post...'
     : !titleValid
       ? 'Title must be at least 5 characters'
       : !bodyValid
@@ -142,15 +191,25 @@ export default function CreatePostScreen({ navigation }: Props) {
               <Text
                 style={[headerStyles.postBtnText, !canSubmit && headerStyles.postBtnTextDisabled]}
               >
-                Post
+                {isEditing ? 'Save' : 'Post'}
               </Text>
             )}
           </TouchableOpacity>
         </View>
       ),
-      title: 'Create Post',
+      title: isEditing ? 'Edit Post' : 'Create Post',
     });
-  }, [canSubmit, submitting, isDirty, title, body, selectedTagIds, tagsLoading]);
+  }, [
+    canSubmit,
+    submitting,
+    isDirty,
+    title,
+    body,
+    selectedTagIds,
+    tagsLoading,
+    loadingExistingPost,
+    isEditing,
+  ]);
 
   async function loadTags() {
     setTagsLoading(true);
@@ -162,6 +221,43 @@ export default function CreatePostScreen({ navigation }: Props) {
       setTagsError('Unable to load tags. Pull to refresh or reopen this screen.');
     }
     setTagsLoading(false);
+  }
+
+  async function loadExistingPost(postId: string) {
+    setLoadingExistingPost(true);
+    const result = await getPostById(supabase, postId);
+
+    if (!result.data) {
+      Alert.alert('Error', result.error?.message || 'Unable to load post for editing.', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+      setLoadingExistingPost(false);
+      return;
+    }
+
+    if (user?.id && result.data.author_id !== user.id) {
+      Alert.alert('Not Allowed', 'You can only edit your own posts.', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+      setLoadingExistingPost(false);
+      return;
+    }
+
+    const existingTagIds = (result.data.tags || []).map((tag) => tag.id);
+    setTitle(result.data.title || '');
+    setBody(result.data.description || '');
+    setSelectedTagIds(existingTagIds);
+    setIsGlobal(Boolean(result.data.is_global));
+    setExistingPhotos(result.data.photos || []);
+    setRemovedExistingPhotoPaths([]);
+    setInitialForm({
+      title: result.data.title || '',
+      body: result.data.description || '',
+      selectedTagIds: existingTagIds,
+      isGlobal: Boolean(result.data.is_global),
+      existingPhotos: result.data.photos || [],
+    });
+    setLoadingExistingPost(false);
   }
 
   function handleCancel() {
@@ -201,7 +297,8 @@ export default function CreatePostScreen({ navigation }: Props) {
   }
 
   async function handlePickPhotos() {
-    if (selectedPhotos.length >= MAX_PHOTOS_PER_POST) {
+    const currentPhotoCount = existingPhotos.length + selectedPhotos.length;
+    if (currentPhotoCount >= MAX_PHOTOS_PER_POST) {
       Alert.alert('Photo Limit Reached', `You can upload up to ${MAX_PHOTOS_PER_POST} photos per post.`);
       return;
     }
@@ -209,7 +306,7 @@ export default function CreatePostScreen({ navigation }: Props) {
     const hasPermission = await requestPhotoLibraryPermission();
     if (!hasPermission) return;
 
-    const remaining = MAX_PHOTOS_PER_POST - selectedPhotos.length;
+    const remaining = MAX_PHOTOS_PER_POST - currentPhotoCount;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
@@ -251,8 +348,133 @@ export default function CreatePostScreen({ navigation }: Props) {
     setSelectedPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
   }
 
+  function handleRemoveExistingPhoto(photoUrl: string) {
+    setExistingPhotos((prev) => prev.filter((url) => url !== photoUrl));
+    const path = getPostPhotoPathFromUrl(photoUrl);
+    if (path) {
+      setRemovedExistingPhotoPaths((prev) => {
+        if (prev.includes(path)) return prev;
+        return [...prev, path];
+      });
+    }
+  }
+
+  function getCombinedEditablePhotos(): EditablePhoto[] {
+    return [
+      ...existingPhotos.map((url) => ({ kind: 'existing' as const, existing_url: url })),
+      ...selectedPhotos.map((photo) => ({ kind: 'new' as const, photo })),
+    ];
+  }
+
+  function applyCombinedEditablePhotos(photos: EditablePhoto[]) {
+    setExistingPhotos(
+      photos
+        .filter((item): item is { kind: 'existing'; existing_url: string } => item.kind === 'existing')
+        .map((item) => item.existing_url)
+    );
+    setSelectedPhotos(
+      photos
+        .filter((item): item is { kind: 'new'; photo: SelectedPhoto } => item.kind === 'new')
+        .map((item) => item.photo)
+    );
+  }
+
+  function movePhotoAtIndex(photoIndex: number, direction: -1 | 1) {
+    const combined = getCombinedEditablePhotos();
+    const targetIndex = photoIndex + direction;
+    if (targetIndex < 0 || targetIndex >= combined.length) return;
+
+    const reordered = [...combined];
+    [reordered[photoIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[photoIndex]];
+    applyCombinedEditablePhotos(reordered);
+  }
+
   async function handleSubmit() {
     if (!canSubmit || !user) return;
+
+    if (isEditing && editPostId) {
+      setSubmitting(true);
+      let uploadedPhotoPaths: string[] = [];
+      try {
+        const combinedPhotos = getCombinedEditablePhotos();
+        let newPhotoUrls: string[] = [];
+        const uploadedUrlByPhotoId = new Map<string, string>();
+        const photosToUpload = selectedPhotosRef.current;
+        if (photosToUpload.length > 0) {
+          const uploadInputs = await Promise.all(
+            photosToUpload.map(async (photo) => {
+              const base64 = await FileSystem.readAsStringAsync(photo.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+              const binaryStr = atob(base64);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+              }
+              return {
+                user_id: user.id,
+                file_data: bytes.buffer as ArrayBuffer,
+                mime_type: photo.mime_type,
+                size_bytes: bytes.length,
+                file_name: photo.file_name,
+              };
+            })
+          );
+
+          const uploadResult = await uploadPostPhotos(supabase, uploadInputs);
+          if (uploadResult.error || !uploadResult.urls) {
+            Alert.alert('Upload Error', uploadResult.error?.message || 'Failed to upload photos');
+            return;
+          }
+
+          newPhotoUrls = uploadResult.urls;
+          uploadedPhotoPaths = uploadResult.paths || [];
+          photosToUpload.forEach((photo, index) => {
+            const uploadedUrl = newPhotoUrls[index];
+            if (uploadedUrl) {
+              uploadedUrlByPhotoId.set(photo.id, uploadedUrl);
+            }
+          });
+        }
+
+        const orderedPhotoUrls = combinedPhotos
+          .map((photo) => {
+            if (photo.kind === 'existing') return photo.existing_url;
+            return uploadedUrlByPhotoId.get(photo.photo.id) || null;
+          })
+          .filter((url): url is string => Boolean(url));
+
+        const result = await updatePost(supabase, {
+          post_id: editPostId,
+          title: title.trim(),
+          description: body.trim(),
+          tag_ids: selectedTagIds,
+          is_global: user.is_premium ? isGlobal : false,
+          photos: orderedPhotoUrls,
+        });
+
+        if (result.error) {
+          if (uploadedPhotoPaths.length > 0) {
+            await deletePostPhotos(supabase, uploadedPhotoPaths);
+          }
+          Alert.alert('Error', result.error.message);
+          return;
+        }
+
+        if (removedExistingPhotoPaths.length > 0) {
+          await deletePostPhotos(supabase, removedExistingPhotoPaths);
+        }
+
+        Alert.alert('Post Updated', 'Your post has been updated successfully.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      } catch {
+        Alert.alert('Error', 'Could not update post. Please check your connection and try again.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     const metroAreaId = activeLocation?.metro_area_id ?? user.metro_area_id;
     if (!metroAreaId || !user.zip_code) {
@@ -480,33 +702,74 @@ export default function CreatePostScreen({ navigation }: Props) {
             <TouchableOpacity
               style={styles.photoRow}
               onPress={handlePickPhotos}
-              disabled={submitting || selectedPhotos.length >= MAX_PHOTOS_PER_POST}
+              disabled={submitting || existingPhotos.length + selectedPhotos.length >= MAX_PHOTOS_PER_POST}
               activeOpacity={0.7}
-              accessibilityLabel={`Add photos, optional. ${selectedPhotos.length} of ${MAX_PHOTOS_PER_POST} photos added.`}
+              accessibilityLabel={`Add photos, optional. ${existingPhotos.length + selectedPhotos.length} of ${MAX_PHOTOS_PER_POST} photos added.`}
             >
               <Text style={styles.photoIcon}>📷</Text>
               <Text style={styles.photoLabel}>Add Photos (optional)</Text>
-              <Text style={styles.photoCount}>{selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</Text>
+              <Text style={styles.photoCount}>{existingPhotos.length + selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</Text>
             </TouchableOpacity>
             <Text style={styles.optionalHint}>Photos are optional and not required to publish.</Text>
             <Text style={styles.optionalHint}>Allowed: JPG, PNG, WEBP up to {Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each.</Text>
 
-            {selectedPhotos.length > 0 && (
+            {(existingPhotos.length > 0 || selectedPhotos.length > 0) && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoPreviewRow}>
-                {selectedPhotos.map((photo, index) => (
-                  <View key={photo.id} style={styles.photoPreviewItem}>
-                    <Image source={{ uri: photo.uri }} style={styles.photoPreviewImage} resizeMode="cover" />
-                    <TouchableOpacity
-                      style={styles.photoRemoveButton}
-                      onPress={() => handleRemovePhoto(photo.id)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Remove photo ${index + 1}`}
-                    >
-                      <Text style={styles.photoRemoveButtonText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                {getCombinedEditablePhotos().map((photo, index, arr) => {
+                  const isExisting = photo.kind === 'existing';
+                  const photoUrl = isExisting ? photo.existing_url : photo.photo.uri;
+
+                  return (
+                    <View key={`${isExisting ? 'existing' : 'new'}-${photoUrl}-${index}`} style={styles.photoPreviewItem}>
+                      <Image source={{ uri: photoUrl }} style={styles.photoPreviewImage} resizeMode="cover" />
+                      <TouchableOpacity
+                        style={styles.photoRemoveButton}
+                        onPress={() => {
+                          if (isExisting) {
+                            handleRemoveExistingPhoto(photo.existing_url);
+                          } else {
+                            handleRemovePhoto(photo.photo.id);
+                          }
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove photo ${index + 1}`}
+                      >
+                        <Text style={styles.photoRemoveButtonText}>✕</Text>
+                      </TouchableOpacity>
+
+                      {isEditing && arr.length > 1 && (
+                        <View style={styles.photoReorderControls}>
+                          <TouchableOpacity
+                            style={[styles.photoReorderButton, index === 0 && styles.photoReorderButtonDisabled]}
+                            disabled={index === 0}
+                            onPress={() => movePhotoAtIndex(index, -1)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Move photo ${index + 1} left`}
+                          >
+                            <Text style={styles.photoReorderButtonText}>←</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.photoReorderButton,
+                              index === arr.length - 1 && styles.photoReorderButtonDisabled,
+                            ]}
+                            disabled={index === arr.length - 1}
+                            onPress={() => movePhotoAtIndex(index, 1)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Move photo ${index + 1} right`}
+                          >
+                            <Text style={styles.photoReorderButtonText}>→</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
               </ScrollView>
+            )}
+
+            {isEditing && existingPhotos.length + selectedPhotos.length > 1 && (
+              <Text style={styles.optionalHint}>Reorder photos using ← and → controls on each thumbnail.</Text>
             )}
           </View>
 
@@ -746,6 +1009,32 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 12,
     fontWeight: '600',
+    lineHeight: 14,
+  },
+  photoReorderControls: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    bottom: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 4,
+  },
+  photoReorderButton: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoReorderButtonDisabled: {
+    opacity: 0.35,
+  },
+  photoReorderButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '700',
     lineHeight: 14,
   },
   locationRow: {

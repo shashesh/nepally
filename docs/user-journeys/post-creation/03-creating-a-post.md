@@ -307,6 +307,74 @@
 
 ---
 
+## Variant: Editing an Existing Post (Author)
+
+### Step E1: Open Post Options
+**User Action:** Author taps the post options menu (⋯) from feed card or post detail.
+
+**System Response:** Show options including:
+- Edit Post
+- Share Post
+- Delete Post
+
+**User Sees:** Ownership-aware action menu with edit option.
+
+---
+
+### Step E2: Enter Edit Mode
+**User Action:** Author selects **Edit Post**.
+
+**System Response:** Navigate to the post form in edit mode with existing values prefilled.
+
+**User Sees:**
+- Header title: "Edit Post"
+- Primary action: "Save"
+- Existing title/body/tags populated
+- Existing photos shown as thumbnails
+
+---
+
+### Step E3: Update Content
+**User Action:** Author edits title/body/tags and optionally changes visibility (premium global toggle).
+
+**System Response:** Validate edited content with same create-post rules.
+
+**User Sees:**
+- Real-time validation
+- Save button enabled only when form is valid
+
+---
+
+### Step E4: Manage Photos (Edit Mode)
+**User Action:** Author updates photos:
+- Remove existing photos
+- Add new photos
+- Reorder photos explicitly
+
+**System Response:**
+- Removed existing photos are marked for storage cleanup after successful save
+- New photos upload on save
+- Final persisted `photos[]` order matches user’s edited order
+
+**User Sees:**
+- Thumbnail remove controls
+- Reorder controls (`←` / `→`) on mobile + web
+- Drag-and-drop reorder on web
+
+---
+
+### Step E5: Save Changes
+**User Action:** Author taps **Save**.
+
+**System Response:**
+- Update post record (title/body/tags/global/photos)
+- Delete removed photo assets from storage (best effort)
+- Return to previous context (feed/detail)
+
+**User Sees:** Success confirmation and updated post content.
+
+---
+
 ## Edge Cases
 
 | Scenario | Expected Behavior |
@@ -317,6 +385,9 @@
 | Photo upload fails | Red border on failed thumbnail, retry icon, other photos keep uploading |
 | User selects 3 tags, tries to select 4th | Remaining chips become 50% opacity (disabled), no error toast |
 | User removes all tags after selecting | Post button becomes disabled again |
+| Edit mode: user reorders photos then saves | Persisted photo order matches edited sequence |
+| Edit mode: update fails after uploading new photos | Newly uploaded files cleaned up to avoid orphan storage |
+| Edit mode: remove existing photo then cancel | No storage deletion occurs until successful save |
 | Title exceeds 150 chars | Character counter shown, input stops at 150 |
 | Body exceeds 5000 chars | Character counter shown, input stops at 5000 |
 | Session expires during creation | Error on submit, redirect to login, content lost (acceptable) |

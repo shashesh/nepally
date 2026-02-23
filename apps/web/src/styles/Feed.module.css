@@ -163,6 +163,63 @@
   color: #1565C0;
 }
 
+.postHeaderRight {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.postMoreWrapper {
+  position: relative;
+}
+
+.postMoreButton {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.postMoreMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 140px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+}
+
+.postMoreItem {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.postMoreItem:hover {
+  background: var(--color-bg);
+}
+
+.postMoreItemDanger {
+  color: var(--color-error);
+}
+
 .categoryHousing { background: #E3F2FD; color: #1565C0; }
 .categoryJobs { background: #E8F5E9; color: #2E7D32; }
 .categoryEmergency { background: #FFEBEE; color: #C62828; }

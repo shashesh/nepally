@@ -301,7 +301,12 @@ export default function HomeScreen() {
   };
 
   const handleMoreEdit = () => {
-    Alert.alert('Coming Soon', 'Post editing will be available in a future update.');
+    if (!morePost) return;
+    setMorePost(null);
+    navigation.navigate('Post' as any, {
+      screen: 'CreatePost',
+      params: { editPostId: morePost.id },
+    });
   };
 
   const handleMoreDelete = async () => {

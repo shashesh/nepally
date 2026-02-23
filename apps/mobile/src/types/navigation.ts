@@ -29,7 +29,9 @@ export type OnboardingStackParamList = {
  * Post creation stack parameter list
  */
 export type PostStackParamList = {
-  CreatePost: undefined;
+  CreatePost: {
+    editPostId?: string;
+  } | undefined;
 };
 
 /**

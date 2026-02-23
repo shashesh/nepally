@@ -7,6 +7,7 @@ import { useLocation } from '../hooks/useLocation';
 import { supabase } from '../lib/supabase';
 import {
   getPostsByMetroArea,
+  deletePost,
   getTags,
   getUserLikedPostIds,
   getOrCreateConversation,
@@ -309,6 +310,44 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     }
   }
 
+  async function handleSharePost(post: Post) {
+    const sharePath = `/posts/${post.id}`;
+    const shareUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}${sharePath}`
+      : sharePath;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      await navigator.share({
+        title: post.title,
+        text: post.description,
+        url: shareUrl,
+      });
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Link copied to clipboard');
+    }
+  }
+
+  async function handleDeletePost(post: Post) {
+    const shouldDelete = confirm('Are you sure you want to delete this post? This cannot be undone.');
+    if (!shouldDelete) return;
+
+    const result = await deletePost(supabase, post.id);
+    if (result.error) {
+      alert('Failed to delete post. Please try again.');
+      return;
+    }
+
+    setPosts((prev) => prev.filter((item) => item.id !== post.id));
+  }
+
+  function handleEditPost(post: Post) {
+    router.push(`/posts/create?edit=${post.id}`);
+  }
+
   if (!user) return null;
 
   return (
@@ -415,6 +454,9 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               currentUserId={user?.id}
               onAvatarChat={handleAvatarChat}
               onOpenLightbox={openLightbox}
+              onSharePost={handleSharePost}
+              onDeletePost={handleDeletePost}
+              onEditPost={handleEditPost}
             />
           ))
         )}
@@ -527,6 +569,9 @@ function PostCard({
   currentUserId,
   onAvatarChat,
   onOpenLightbox,
+  onSharePost,
+  onDeletePost,
+  onEditPost,
 }: {
   post: Post;
   liked: boolean;
@@ -534,10 +579,15 @@ function PostCard({
   currentUserId?: string;
   onAvatarChat?: (authorId: string, authorName: string) => void;
   onOpenLightbox: (photos: string[], startIndex: number) => void;
+  onSharePost: (post: Post) => Promise<void>;
+  onDeletePost: (post: Post) => Promise<void>;
+  onEditPost: (post: Post) => void;
 }) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [mediaIndex, setMediaIndex] = useState(0);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const postMenuRef = useRef<HTMLDivElement>(null);
   const mediaTouchStartXRef = useRef<number | null>(null);
   const isOwnPost = currentUserId === post.author_id;
   const photoUrls = (post.photos || []).filter(Boolean).slice(0, 3);
@@ -547,20 +597,44 @@ function PostCard({
       if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
         setAvatarMenuOpen(false);
       }
+      if (postMenuRef.current && !postMenuRef.current.contains(event.target as Node)) {
+        setPostMenuOpen(false);
+      }
     }
 
-    if (avatarMenuOpen) {
+    if (avatarMenuOpen || postMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [avatarMenuOpen]);
+  }, [avatarMenuOpen, postMenuOpen]);
 
   useEffect(() => {
     setMediaIndex(0);
   }, [post.id]);
+
+  function handleEditPost(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setPostMenuOpen(false);
+    onEditPost(post);
+  }
+
+  async function handleShareMenuClick(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setPostMenuOpen(false);
+    await onSharePost(post);
+  }
+
+  async function handleDeleteMenuClick(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setPostMenuOpen(false);
+    await onDeletePost(post);
+  }
 
   function handleMediaKeyDown(event: React.KeyboardEvent<HTMLDivElement>, startIndex: number) {
     if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -657,14 +731,58 @@ function PostCard({
             {formatRelativeTime(new Date(post.created_at))}
           </div>
         </div>
-        {/* Local / Global badge */}
-        <span
-          className={`${styles.postCategoryBadge} ${
-            post.is_global ? styles.postCategoryBadgeGlobal : styles.postCategoryBadgeLocal
-          }`}
-        >
-          {post.is_global ? '🌐 Global' : '📍 Local'}
-        </span>
+        <div className={styles.postHeaderRight}>
+          <span
+            className={`${styles.postCategoryBadge} ${
+              post.is_global ? styles.postCategoryBadgeGlobal : styles.postCategoryBadgeLocal
+            }`}
+          >
+            {post.is_global ? '🌐 Global' : '📍 Local'}
+          </span>
+
+          <div className={styles.postMoreWrapper} ref={postMenuRef}>
+            <button
+              className={styles.postMoreButton}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setPostMenuOpen((prev) => !prev);
+              }}
+              aria-label="Post options"
+            >
+              ⋯
+            </button>
+
+            {postMenuOpen && (
+              <div className={styles.postMoreMenu}>
+                {isOwnPost ? (
+                  <>
+                    <button className={styles.postMoreItem} onClick={handleEditPost}>Edit Post</button>
+                    <button className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</button>
+                    <button className={`${styles.postMoreItem} ${styles.postMoreItemDanger}`} onClick={handleDeleteMenuClick}>
+                      Delete Post
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</button>
+                    <button
+                      className={`${styles.postMoreItem} ${styles.postMoreItemDanger}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setPostMenuOpen(false);
+                        alert('Post reported. Our moderation team will review this post.');
+                      }}
+                    >
+                      Report Post
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className={styles.postTitle}>{post.title}</div>

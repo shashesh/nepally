@@ -149,6 +149,29 @@ export async function deletePostPhotos(
 }
 
 /**
+ * Convert a Supabase public URL for `post-photos` into a storage path.
+ * Returns null if the URL does not belong to the post photos bucket.
+ */
+export function getPostPhotoPathFromUrl(url: string): string | null {
+  if (!url) return null;
+
+  const marker = `/${POST_PHOTOS_BUCKET}/`;
+  const markerIndex = url.indexOf(marker);
+  if (markerIndex === -1) return null;
+
+  const startIndex = markerIndex + marker.length;
+  const rawPath = url.slice(startIndex);
+  const pathWithoutQuery = rawPath.split('?')[0];
+  if (!pathWithoutQuery) return null;
+
+  try {
+    return decodeURIComponent(pathWithoutQuery);
+  } catch {
+    return pathWithoutQuery;
+  }
+}
+
+/**
  * Upload a profile photo to Supabase Storage.
  * Uses upsert to overwrite any existing avatar.
  * Accepts raw binary data (ArrayBuffer or Uint8Array) — callers handle file reading.

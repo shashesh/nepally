@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import {
   getPostById,
+  deletePost,
   getPostComments,
   createComment,
   deleteComment,
@@ -40,6 +41,7 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [carouselChromeVisible, setCarouselChromeVisible] = useState(true);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
@@ -48,6 +50,7 @@ export default function PostDetailPage() {
   const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
   const touchStartXRef = useRef<number | null>(null);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const postMenuRef = useRef<HTMLDivElement>(null);
   const carouselChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -87,16 +90,19 @@ export default function PostDetailPage() {
       if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
         setAvatarMenuOpen(false);
       }
+      if (postMenuRef.current && !postMenuRef.current.contains(event.target as Node)) {
+        setPostMenuOpen(false);
+      }
     }
 
-    if (avatarMenuOpen) {
+    if (avatarMenuOpen || postMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [avatarMenuOpen]);
+  }, [avatarMenuOpen, postMenuOpen]);
 
   async function loadPost(postId: string) {
     setLoading(true);
@@ -186,6 +192,27 @@ export default function PostDetailPage() {
       await navigator.clipboard.writeText(shareUrl);
       alert('Link copied to clipboard');
     }
+  }
+
+  function handleEditPost() {
+    if (!post) return;
+    setPostMenuOpen(false);
+    router.push(`/posts/create?edit=${post.id}`);
+  }
+
+  async function handleDeletePost() {
+    if (!post) return;
+    const shouldDelete = confirm('Are you sure you want to delete this post? This cannot be undone.');
+    if (!shouldDelete) return;
+
+    setPostMenuOpen(false);
+    const result = await deletePost(supabase, post.id);
+    if (result.error) {
+      alert('Failed to delete post. Please try again.');
+      return;
+    }
+
+    router.push('/feed');
   }
 
   const commentThreads = buildSingleLevelCommentThreads(comments);
@@ -407,6 +434,57 @@ export default function PostDetailPage() {
               </div>
               <div className={styles.postMeta}>{formatRelativeTime(new Date(post.created_at))}</div>
             </div>
+
+            <div className={styles.postHeaderActions}>
+              <span
+                className={`${styles.categoryBadge} ${post.is_global ? styles.globalBadge : styles.localBadge}`}
+              >
+                {post.is_global ? '🌐 Global' : '📍 Local'}
+              </span>
+
+              <div className={styles.postMenuWrapper} ref={postMenuRef}>
+                <button
+                  type="button"
+                  className={styles.postMenuButton}
+                  onClick={() => setPostMenuOpen((prev) => !prev)}
+                  aria-label="Post options"
+                >
+                  ⋯
+                </button>
+
+                {postMenuOpen && (
+                  <div className={styles.postMenuDropdown}>
+                    {post.author_id === user?.id ? (
+                      <>
+                        <button type="button" className={styles.postMenuItem} onClick={handleEditPost}>Edit Post</button>
+                        <button type="button" className={styles.postMenuItem} onClick={handleShare}>Share Post</button>
+                        <button
+                          type="button"
+                          className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
+                          onClick={handleDeletePost}
+                        >
+                          Delete Post
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" className={styles.postMenuItem} onClick={handleShare}>Share Post</button>
+                        <button
+                          type="button"
+                          className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
+                          onClick={() => {
+                            setPostMenuOpen(false);
+                            alert('Post reported. Our moderation team will review this post.');
+                          }}
+                        >
+                          Report Post
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <h1 className={styles.postTitle}>{post.title}</h1>
@@ -490,12 +568,6 @@ export default function PostDetailPage() {
           </div>
 
           <div className={styles.metaRow}>
-            <span
-              className={`${styles.categoryBadge} ${post.is_global ? styles.globalBadge : styles.localBadge}`}
-            >
-              {post.is_global ? '🌐 Global' : '📍 Local'}
-            </span>
-
             {post.tags?.map((tag) => {
               const emoji = TAG_EMOJI[tag.slug] || '';
               return (

@@ -6,7 +6,10 @@ import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
 import {
   createPost,
+  getPostById,
+  updatePost,
   deletePostPhotos,
+  getPostPhotoPathFromUrl,
   getTags,
   TAG_EMOJI,
   MAX_TAGS_PER_POST,
@@ -29,14 +32,23 @@ type SelectedPhoto = {
   preview_url: string;
 };
 
+type EditablePhoto =
+  | { kind: 'existing'; existing_url: string }
+  | { kind: 'new'; photo: SelectedPhoto };
+
 export default function CreatePostPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { activeLocation } = useLocation();
+  const editQueryParam = router.query.edit;
+  const editPostId = typeof editQueryParam === 'string' ? editQueryParam : null;
+  const isEditing = Boolean(editPostId);
 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [removedExistingPhotoPaths, setRemovedExistingPhotoPaths] = useState<string[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
@@ -44,18 +56,51 @@ export default function CreatePostPage() {
   const [tagsLoading, setTagsLoading] = useState(false);
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [loadingExistingPost, setLoadingExistingPost] = useState(false);
+  const [initialForm, setInitialForm] = useState<{
+    title: string;
+    body: string;
+    selectedTagIds: string[];
+    isGlobal: boolean;
+    existingPhotos: string[];
+  }>({
+    title: '',
+    body: '',
+    selectedTagIds: [],
+    isGlobal: false,
+    existingPhotos: [],
+  });
 
+  const initialTagSet = new Set(initialForm.selectedTagIds);
+  const currentTagSet = new Set(selectedTagIds);
+  const tagsChanged =
+    initialForm.selectedTagIds.length !== selectedTagIds.length ||
+    selectedTagIds.some((id) => !initialTagSet.has(id)) ||
+    initialForm.selectedTagIds.some((id) => !currentTagSet.has(id));
+  const existingPhotosChanged =
+    initialForm.existingPhotos.length !== existingPhotos.length ||
+    initialForm.existingPhotos.some((url, index) => existingPhotos[index] !== url);
   const isDirty =
-    title.trim().length > 0 ||
-    body.trim().length > 0 ||
-    selectedTagIds.length > 0 ||
+    title.trim() !== initialForm.title.trim() ||
+    body.trim() !== initialForm.body.trim() ||
+    tagsChanged ||
+    isGlobal !== initialForm.isGlobal ||
+    existingPhotosChanged ||
     selectedPhotos.length > 0;
   const titleLength = title.trim().length;
   const bodyLength = body.trim().length;
   const titleValid = titleLength >= 5;
   const bodyValid = bodyLength >= 10;
   const tagsValid = selectedTagIds.length >= 1 && selectedTagIds.length <= MAX_TAGS_PER_POST;
-  const canSubmit = titleValid && bodyValid && tagsValid && !submitting && !tagsLoading;
+  const canSubmit =
+    titleValid &&
+    bodyValid &&
+    tagsValid &&
+    !submitting &&
+    !tagsLoading &&
+    !loadingExistingPost;
 
   const hasEmergencyTag = availableTags.some(
     (t) => t.slug === 'emergency' && selectedTagIds.includes(t.id)
@@ -70,6 +115,8 @@ export default function CreatePostPage() {
 
   const postButtonHint = tagsLoading
     ? 'Loading tags...'
+    : loadingExistingPost
+      ? 'Loading post...'
     : !titleValid
       ? 'Title must be at least 5 characters'
       : !bodyValid
@@ -99,6 +146,42 @@ export default function CreatePostPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!isEditing || !editPostId || !user || availableTags.length === 0) return;
+
+    setLoadingExistingPost(true);
+    getPostById(supabase, editPostId)
+      .then((result) => {
+        if (!result.data) {
+          setError(result.error?.message || 'Unable to load post for editing.');
+          return;
+        }
+
+        if (result.data.author_id !== user.id) {
+          setError('You can only edit your own posts.');
+          return;
+        }
+
+        const existingTagIds = (result.data.tags || []).map((tag) => tag.id);
+        setTitle(result.data.title || '');
+        setBody(result.data.description || '');
+        setSelectedTagIds(existingTagIds);
+        setIsGlobal(Boolean(result.data.is_global));
+        setExistingPhotos(result.data.photos || []);
+        setRemovedExistingPhotoPaths([]);
+        setInitialForm({
+          title: result.data.title || '',
+          body: result.data.description || '',
+          selectedTagIds: existingTagIds,
+          isGlobal: Boolean(result.data.is_global),
+          existingPhotos: result.data.photos || [],
+        });
+      })
+      .finally(() => {
+        setLoadingExistingPost(false);
+      });
+  }, [isEditing, editPostId, user, availableTags.length]);
+
   function toggleTag(tagId: string) {
     setSelectedTagIds((prev) => {
       if (prev.includes(tagId)) {
@@ -125,7 +208,7 @@ export default function CreatePostPage() {
 
     if (files.length === 0) return;
 
-    if (selectedPhotos.length + files.length > MAX_PHOTOS_PER_POST) {
+    if (existingPhotos.length + selectedPhotos.length + files.length > MAX_PHOTOS_PER_POST) {
       setError(`You can upload up to ${MAX_PHOTOS_PER_POST} photos per post.`);
       return;
     }
@@ -161,6 +244,104 @@ export default function CreatePostPage() {
       return prev.filter((item) => item.id !== photoId);
     });
   }
+
+  function removeExistingPhoto(photoUrl: string) {
+    setExistingPhotos((prev) => prev.filter((url) => url !== photoUrl));
+    const path = getPostPhotoPathFromUrl(photoUrl);
+    if (path) {
+      setRemovedExistingPhotoPaths((prev) => {
+        if (prev.includes(path)) return prev;
+        return [...prev, path];
+      });
+    }
+  }
+
+  function getCombinedEditablePhotos(): EditablePhoto[] {
+    return [
+      ...existingPhotos.map((url) => ({ kind: 'existing' as const, existing_url: url })),
+      ...selectedPhotos.map((photo) => ({ kind: 'new' as const, photo })),
+    ];
+  }
+
+  function applyCombinedEditablePhotos(photos: EditablePhoto[]) {
+    setExistingPhotos(
+      photos
+        .filter((item): item is { kind: 'existing'; existing_url: string } => item.kind === 'existing')
+        .map((item) => item.existing_url)
+    );
+    setSelectedPhotos(
+      photos
+        .filter((item): item is { kind: 'new'; photo: SelectedPhoto } => item.kind === 'new')
+        .map((item) => item.photo)
+    );
+  }
+
+  function movePhotoAtIndex(photoIndex: number, direction: -1 | 1) {
+    const combined = getCombinedEditablePhotos();
+    const targetIndex = photoIndex + direction;
+    if (targetIndex < 0 || targetIndex >= combined.length) return;
+
+    const reordered = [...combined];
+    [reordered[photoIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[photoIndex]];
+    applyCombinedEditablePhotos(reordered);
+  }
+
+  function movePhotoToIndex(fromIndex: number, toIndex: number) {
+    const combined = getCombinedEditablePhotos();
+    if (
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= combined.length ||
+      toIndex >= combined.length ||
+      fromIndex === toIndex
+    ) {
+      return;
+    }
+
+    const reordered = [...combined];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    applyCombinedEditablePhotos(reordered);
+  }
+
+  function handlePhotoDragStart(index: number, event: React.DragEvent<HTMLDivElement>) {
+    if (!isEditing) return;
+    setDragFromIndex(index);
+    setDragOverIndex(index);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(index));
+  }
+
+  function handlePhotoDragOver(index: number, event: React.DragEvent<HTMLDivElement>) {
+    if (!isEditing) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  }
+
+  function handlePhotoDrop(dropIndex: number, event: React.DragEvent<HTMLDivElement>) {
+    if (!isEditing) return;
+    event.preventDefault();
+
+    const fallbackFrom = Number(event.dataTransfer.getData('text/plain'));
+    const fromIndex = dragFromIndex ?? (Number.isNaN(fallbackFrom) ? null : fallbackFrom);
+
+    if (fromIndex === null) {
+      setDragFromIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    movePhotoToIndex(fromIndex, dropIndex);
+    setDragFromIndex(null);
+    setDragOverIndex(null);
+  }
+
+  function handlePhotoDragEnd() {
+    setDragFromIndex(null);
+    setDragOverIndex(null);
+  }
+
   function clearSelectedPhotos() {
     selectedPhotos.forEach((photo) => {
       URL.revokeObjectURL(photo.preview_url);
@@ -171,6 +352,78 @@ export default function CreatePostPage() {
   async function handleSubmit() {
     if (!canSubmit || !user) return;
     setError('');
+
+    if (isEditing && editPostId) {
+      setSubmitting(true);
+      let uploadedPhotoPaths: string[] = [];
+      try {
+        const combinedPhotos = getCombinedEditablePhotos();
+        let newPhotoUrls: string[] = [];
+        const uploadedUrlByPhotoId = new Map<string, string>();
+        if (selectedPhotos.length > 0) {
+          const uploadInputs = await Promise.all(
+            selectedPhotos.map(async (photo) => ({
+              user_id: user.id,
+              file_data: await photo.file.arrayBuffer(),
+              mime_type: photo.file.type || 'image/jpeg',
+              size_bytes: photo.file.size,
+              file_name: photo.file.name,
+            }))
+          );
+
+          const uploadResult = await uploadPostPhotos(supabase, uploadInputs);
+          if (uploadResult.error || !uploadResult.urls) {
+            setError(uploadResult.error?.message || 'Failed to upload photos');
+            return;
+          }
+
+          newPhotoUrls = uploadResult.urls;
+          uploadedPhotoPaths = uploadResult.paths || [];
+          selectedPhotos.forEach((photo, index) => {
+            const uploadedUrl = newPhotoUrls[index];
+            if (uploadedUrl) {
+              uploadedUrlByPhotoId.set(photo.id, uploadedUrl);
+            }
+          });
+        }
+
+        const orderedPhotoUrls = combinedPhotos
+          .map((photo) => {
+            if (photo.kind === 'existing') return photo.existing_url;
+            return uploadedUrlByPhotoId.get(photo.photo.id) || null;
+          })
+          .filter((url): url is string => Boolean(url));
+
+        const result = await updatePost(supabase, {
+          post_id: editPostId,
+          title: title.trim(),
+          description: body.trim(),
+          tag_ids: selectedTagIds,
+          is_global: user.is_premium ? isGlobal : false,
+          photos: orderedPhotoUrls,
+        });
+
+        if (result.error) {
+          if (uploadedPhotoPaths.length > 0) {
+            await deletePostPhotos(supabase, uploadedPhotoPaths);
+          }
+          setError(result.error.message);
+          return;
+        }
+
+        if (removedExistingPhotoPaths.length > 0) {
+          await deletePostPhotos(supabase, removedExistingPhotoPaths);
+        }
+
+        clearSelectedPhotos();
+        router.push(`/posts/${editPostId}`);
+      } catch {
+        setError('Could not update post. Please check your connection and try again.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     const metroAreaId = activeLocation?.metro_area_id ?? user.metro_area_id;
     if (!metroAreaId || !user.zip_code) {
@@ -241,7 +494,7 @@ export default function CreatePostPage() {
   return (
     <>
       <Head>
-        <title>Create Post - NUSA</title>
+        <title>{isEditing ? 'Edit Post - NUSA' : 'Create Post - NUSA'}</title>
       </Head>
       <div className={styles.container}>
         {/* Header */}
@@ -249,13 +502,13 @@ export default function CreatePostPage() {
           <button className={styles.cancelBtn} onClick={handleCancel}>
             Cancel
           </button>
-          <h2 className={styles.headerTitle}>Create Post</h2>
+          <h2 className={styles.headerTitle}>{isEditing ? 'Edit Post' : 'Create Post'}</h2>
           <button
             className={`${styles.postBtn} ${!canSubmit ? styles.postBtnDisabled : ''}`}
             onClick={handleSubmit}
             disabled={!canSubmit}
           >
-            {submitting ? 'Posting...' : 'Post'}
+            {submitting ? (isEditing ? 'Saving...' : 'Posting...') : (isEditing ? 'Save' : 'Post')}
           </button>
         </div>
 
@@ -349,33 +602,80 @@ export default function CreatePostPage() {
               aria-label="Add post photos"
               className={styles.hiddenFileInput}
               onChange={handlePhotoInputChange}
-              disabled={selectedPhotos.length >= MAX_PHOTOS_PER_POST || submitting}
+              disabled={existingPhotos.length + selectedPhotos.length >= MAX_PHOTOS_PER_POST || submitting}
             />
             <span className={styles.photoRow}>
               <span className={styles.photoIcon}>📷</span>
               <span className={styles.photoLabel}>Add Photos (optional)</span>
-              <span className={styles.photoCount}>{selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</span>
+              <span className={styles.photoCount}>{existingPhotos.length + selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</span>
             </span>
           </label>
           <div className={styles.sectionHint}>Photos are optional and not required to publish.</div>
           <div className={styles.sectionHint}>Allowed: JPG, PNG, WEBP up to {Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each.</div>
 
-          {selectedPhotos.length > 0 && (
+          {(existingPhotos.length > 0 || selectedPhotos.length > 0) && (
             <div className={styles.photoPreviewRow}>
-              {selectedPhotos.map((photo, index) => (
-                <div key={photo.id} className={styles.photoPreviewItem}>
-                  <img src={photo.preview_url} alt={`Selected photo ${index + 1}`} className={styles.photoPreviewImage} />
-                  <button
-                    type="button"
-                    className={styles.photoRemoveBtn}
-                    onClick={() => removeSelectedPhoto(photo.id)}
-                    aria-label={`Remove photo ${index + 1}`}
+              {getCombinedEditablePhotos().map((photo, index, arr) => {
+                const isExisting = photo.kind === 'existing';
+                const photoUrl = isExisting ? photo.existing_url : photo.photo.preview_url;
+                const altText = isExisting ? `Existing photo ${index + 1}` : `Selected photo ${index + 1}`;
+
+                return (
+                  <div
+                    key={`${isExisting ? 'existing' : 'new'}-${photoUrl}-${index}`}
+                    className={`${styles.photoPreviewItem} ${isEditing ? styles.photoPreviewItemDraggable : ''} ${dragOverIndex === index ? styles.photoPreviewItemDragOver : ''} ${dragFromIndex === index ? styles.photoPreviewItemDragging : ''}`}
+                    draggable={isEditing}
+                    onDragStart={(event) => handlePhotoDragStart(index, event)}
+                    onDragOver={(event) => handlePhotoDragOver(index, event)}
+                    onDrop={(event) => handlePhotoDrop(index, event)}
+                    onDragEnd={handlePhotoDragEnd}
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                    <img src={photoUrl} alt={altText} className={styles.photoPreviewImage} />
+                    <button
+                      type="button"
+                      className={styles.photoRemoveBtn}
+                      onClick={() => {
+                        if (isExisting) {
+                          removeExistingPhoto(photo.existing_url);
+                        } else {
+                          removeSelectedPhoto(photo.photo.id);
+                        }
+                      }}
+                      aria-label={`Remove photo ${index + 1}`}
+                    >
+                      ✕
+                    </button>
+
+                    {isEditing && arr.length > 1 && (
+                      <div className={styles.photoReorderControls}>
+                        <button
+                          type="button"
+                          className={styles.photoReorderBtn}
+                          onClick={() => movePhotoAtIndex(index, -1)}
+                          disabled={index === 0}
+                          aria-label={`Move photo ${index + 1} left`}
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.photoReorderBtn}
+                          onClick={() => movePhotoAtIndex(index, 1)}
+                          disabled={index === arr.length - 1}
+                          aria-label={`Move photo ${index + 1} right`}
+                        >
+                          →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+          )}
+
+          {isEditing && existingPhotos.length + selectedPhotos.length > 1 && (
+            <div className={styles.sectionHint}>Reorder photos by drag-and-drop, or use ← and → controls on each thumbnail.</div>
           )}
         </div>
 

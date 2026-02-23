@@ -1,8 +1,34 @@
 # Post Likes and Comments
 
-**Status:** Planned
+**Status:** Partially Implemented (core shipped)
 **Phase:** 1 (Utility Core & Trust Foundation)
-**Last Updated:** 2026-02-16
+**Last Updated:** 2026-02-23
+
+---
+
+## Implementation Snapshot (2026-02-23)
+
+Implemented now:
+
+- ✅ Enhanced post card presentation is live on feed surfaces.
+- ✅ Like and comment interaction paths are implemented and surfaced in card/detail views.
+- ✅ Web now includes missing post action options to match mobile owner flows:
+  - `Edit Post`
+  - `Delete Post`
+  - `Share Post`
+- ✅ Post detail and feed both expose author action menus on web (ownership-aware).
+- ✅ Edit post flow is fully implemented on web + mobile using shared API.
+- ✅ Edit-mode photo management shipped:
+  - remove existing photos
+  - add new photos
+  - explicit reorder controls (`←/→`) on web + mobile
+  - drag-and-drop reorder on web
+
+Still pending in this feature area:
+
+- ⏳ Nested comment depth beyond the current supported level
+- ⏳ Comment edit/history UX
+- ⏳ Comment-like/upvote model (separate table and ranking)
 
 ---
 

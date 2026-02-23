@@ -198,3 +198,83 @@ export async function deletePost(
   return { error: null };
 }
 
+/**
+ * Update an existing post by ID.
+ * RLS enforces that only the author can update their own post.
+ */
+export async function updatePost(
+  supabase: SupabaseClient,
+  params: {
+    post_id: string;
+    title: string;
+    description: string;
+    tag_ids: string[];
+    is_global?: boolean;
+    photos?: string[];
+  }
+): Promise<PostResult> {
+  try {
+    const updatePayload: {
+      title: string;
+      description: string;
+      is_global?: boolean;
+      photos?: string[];
+      updated_at: string;
+    } = {
+      title: params.title,
+      description: params.description,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof params.is_global === 'boolean') {
+      updatePayload.is_global = params.is_global;
+    }
+
+    if (params.photos) {
+      updatePayload.photos = params.photos;
+    }
+
+    const { data: postData, error: postError } = await supabase
+      .from('posts')
+      .update(updatePayload)
+      .eq('id', params.post_id)
+      .select()
+      .single();
+
+    if (postError) {
+      return { error: new Error(postError.message) };
+    }
+
+    // Replace post_tags rows with the new selection.
+    const { error: deleteTagsError } = await supabase
+      .from('post_tags')
+      .delete()
+      .eq('post_id', params.post_id);
+
+    if (deleteTagsError) {
+      return { error: new Error(deleteTagsError.message) };
+    }
+
+    if (params.tag_ids.length > 0) {
+      const tagRows = params.tag_ids.map((tagId) => ({
+        post_id: params.post_id,
+        tag_id: tagId,
+      }));
+
+      const { error: insertTagsError } = await supabase
+        .from('post_tags')
+        .insert(tagRows);
+
+      if (insertTagsError) {
+        return { error: new Error(insertTagsError.message) };
+      }
+    }
+
+    return { data: postData as Post };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to update post'),
+    };
+  }
+}
+
