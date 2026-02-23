@@ -70,8 +70,12 @@ Everything else → packages/shared/
 
 #### What stays platform-specific
 - `apps/mobile/`: React Native components, screens, navigation, AsyncStorage config, RN StyleSheet
-- `apps/web/`: Next.js pages, React components, CSS/Tailwind styling, localStorage config
+- `apps/web/`: Next.js pages, React components, CSS Modules styling, localStorage config
 - Platform-specific Supabase client initialization (each app creates its own client and passes it to shared API functions)
+
+#### Styling Rules
+- **Web (`apps/web/`)**: NEVER use inline `style={{}}` on JSX elements. Always use CSS Modules (`.module.css` files). Each page/component should have a corresponding CSS Module file and reference styles via `className={styles.myClass}`.
+- **Mobile (`apps/mobile/`)**: Use React Native `StyleSheet.create()` at the bottom of each file. Never use inline `style={{}}` objects directly on components — define all styles in the StyleSheet.
 
 #### Import Rules
 - `apps/mobile/` and `apps/web/` MUST import from `@nusa/shared` — NEVER redefine types, validation, API calls, or constants locally

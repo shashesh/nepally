@@ -45,5 +45,12 @@
 ## Project-Specific Conventions
 - Web route logic lives in `apps/web/src/pages/*` with providers in `apps/web/src/pages/_app.tsx`.
 - Web styling uses CSS Modules; avoid introducing alternative styling systems.
+- **Hard rule for web (`apps/web/src`)**: never use JSX inline styles (`style={{ ... }}` or `style={...}`).
+- For every visual/style change on web:
+  - Add or update a `.module.css` file.
+  - Use `className={styles.someClass}` only.
+  - Reuse existing design tokens/variables; do not hardcode one-off inline style values in TSX.
+- Before completing any web task, run a quick check to ensure no inline styles were added in web source.
+  - Example search: `style=` in `apps/web/src/**`
 - Preserve trust-level gating and metro-scoped behavior when changing feed/post flows.
 - If a concern is used by both apps and does not depend on platform APIs, move it to `packages/shared`.
