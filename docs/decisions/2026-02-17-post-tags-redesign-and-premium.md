@@ -107,7 +107,7 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 ## Files Affected
 
 ### Database
-- New migration: `005_tags_and_premium.sql`
+- Migration: `001_schema.sql` (consolidated; originally `005_tags_and_premium.sql`)
 
 ### Shared Package (`packages/shared/`)
 - `src/types/post.ts` — Remove PostCategory, add Tag/PostTag types, update Post interface
@@ -167,7 +167,7 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 ## Implementation Order
 
 ### Phase A: Database & Shared Layer (Foundation)
-1. Write migration `005_tags_and_premium.sql`
+1. Tags and premium are now part of consolidated `001_schema.sql`
 2. Update shared types (Post, User, Tag, PostTag)
 3. Update shared constants (tags config, remove post expiry)
 4. Write new shared API functions (tags CRUD, updated post CRUD)

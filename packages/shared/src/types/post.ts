@@ -1,7 +1,6 @@
 /**
  * Post data types — snake_case matching Supabase database columns
- * See: supabase/migrations/001_initial_schema.sql, 003_post_interactions.sql,
- *      005_tags_and_premium.sql
+ * See: supabase/migrations/001_schema.sql
  */
 
 import type { UserSummary } from './user';

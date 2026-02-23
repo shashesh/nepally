@@ -60,8 +60,9 @@ npm install
 1. **Create project** at https://supabase.com
 2. **Run database migrations**:
    ```bash
-   # The schema is in supabase/migrations/001_initial_schema.sql
+   # The schema is in supabase/migrations/001_schema.sql
    # Copy and paste it into Supabase SQL Editor
+   # Then run 002_seed_data.sql and 003_storage.sql
    ```
 3. **Get credentials** (same as Option A)
 

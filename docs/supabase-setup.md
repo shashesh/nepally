@@ -136,7 +136,7 @@ supabase db push
 Or manually via SQL Editor:
 
 1. Go to **SQL Editor** in Supabase Dashboard
-2. Open `supabase/migrations/001_initial_schema.sql`
+2. Open `supabase/migrations/001_schema.sql`
 3. Copy entire content
 4. Paste into SQL Editor
 5. Click **Run**

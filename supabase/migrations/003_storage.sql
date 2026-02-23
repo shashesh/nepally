@@ -1,8 +1,13 @@
--- 006: Avatars Storage Bucket
+-- NUSA Storage Configuration
+-- Supabase Storage buckets and RLS policies.
+-- Separate from schema because it targets the storage subsystem.
+
+-- =====================================================
+-- Avatars Bucket
+-- =====================================================
+
 -- Public bucket for user profile photos
 -- Naming convention: avatars/{userId}.jpg (upsert overwrites previous)
-
--- Create the avatars bucket (public so images can be loaded without auth)
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO NOTHING;
@@ -13,7 +18,6 @@ CREATE POLICY "Anyone can view avatars"
   USING (bucket_id = 'avatars');
 
 -- RLS: Authenticated users can upload their own avatar
--- File path must be {userId}.jpg
 CREATE POLICY "Users can upload own avatar"
   ON storage.objects FOR INSERT
   WITH CHECK (

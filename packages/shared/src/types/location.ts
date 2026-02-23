@@ -1,6 +1,6 @@
 /**
  * Location types — snake_case matching Supabase database columns
- * See: supabase/migrations/004_user_saved_locations.sql
+ * See: supabase/migrations/001_schema.sql
  */
 
 /** Saved location from the user_saved_locations table */

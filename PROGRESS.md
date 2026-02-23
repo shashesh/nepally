@@ -36,7 +36,7 @@
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Schema migration (001_initial_schema.sql) | Done | All tables, indexes, RLS, triggers |
+| Schema migration (001_schema.sql) | Done | All tables, indexes, RLS, triggers (consolidated from 7 files) |
 | `full_name` column fix | Done | Was `name`, fixed to match app code |
 | Teardown block for re-runnable migrations | Done | DROP IF EXISTS at top |
 | Metro areas + ZIP codes tables | Done | Static data, user must seed manually |
@@ -210,13 +210,13 @@
 | Issue | Tables Affected | Details | Priority |
 |-------|----------------|---------|----------|
 | **Chat RLS disabled** | `conversations`, `messages`, `conversation_participants` | RLS was disabled during development because policies were not being enforced despite correct definitions. Supabase PostgREST schema cache (`NOTIFY pgrst, 'reload schema'`) did not resolve it. Policies exist in migration files but are not active. **Any authenticated user can currently read/write all chat data.** | Critical |
-| **blocked_users RLS** | `blocked_users` | RLS is enabled and policies are defined in `002_blocked_users.sql`, but not tested end-to-end. Verify after fixing chat RLS. | High |
+| **blocked_users RLS** | `blocked_users` | RLS is enabled and policies are defined in `001_schema.sql`, but not tested end-to-end. Verify after fixing chat RLS. | High |
 
 **To re-enable chat RLS:**
 1. `ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;`
 2. `ALTER TABLE messages ENABLE ROW LEVEL SECURITY;`
 3. `ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;`
 4. Verify policies exist: `SELECT * FROM pg_policies WHERE tablename IN ('conversations', 'messages', 'conversation_participants');`
-5. If policies were dropped, re-run the relevant sections from `001_initial_schema.sql` and `002_blocked_users.sql`
+5. If policies were dropped, re-run the relevant RLS sections from `001_schema.sql`
 6. Run `NOTIFY pgrst, 'reload schema';` and test
 7. If still failing, investigate Supabase project-level RLS settings or recreate policies via Dashboard UI

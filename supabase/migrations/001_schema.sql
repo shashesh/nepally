@@ -1,11 +1,18 @@
--- NUSA Initial Database Schema Migration
--- This migration creates all tables, indexes, RLS policies, and functions
--- Safe to re-run: drops all objects first (dev only — no production data)
+-- NUSA Complete Database Schema
+-- Consolidated from 7 incremental migrations into a single clean file
+-- representing the final correct state of the database.
+-- Safe to re-run on a fresh database (drops all objects first).
 
 -- =====================================================
 -- TEARDOWN (drop in reverse dependency order)
 -- =====================================================
 
+DROP TABLE IF EXISTS post_tags CASCADE;
+DROP TABLE IF EXISTS tags CASCADE;
+DROP TABLE IF EXISTS user_saved_locations CASCADE;
+DROP TABLE IF EXISTS post_comments CASCADE;
+DROP TABLE IF EXISTS post_likes CASCADE;
+DROP TABLE IF EXISTS blocked_users CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS reports CASCADE;
 DROP TABLE IF EXISTS messages CASCADE;
@@ -22,8 +29,16 @@ DROP TYPE IF EXISTS report_status;
 DROP TYPE IF EXISTS report_target_type;
 DROP TYPE IF EXISTS message_type;
 DROP TYPE IF EXISTS post_status;
-DROP TYPE IF EXISTS post_category;
 
+DROP FUNCTION IF EXISTS check_max_post_tags() CASCADE;
+DROP FUNCTION IF EXISTS check_max_saved_locations() CASCADE;
+DROP FUNCTION IF EXISTS get_post_comment_count(UUID) CASCADE;
+DROP FUNCTION IF EXISTS has_user_liked_post(UUID, UUID) CASCADE;
+DROP FUNCTION IF EXISTS get_post_like_count(UUID) CASCADE;
+DROP FUNCTION IF EXISTS decrement_post_comments_count() CASCADE;
+DROP FUNCTION IF EXISTS increment_post_comments_count() CASCADE;
+DROP FUNCTION IF EXISTS decrement_post_likes_count() CASCADE;
+DROP FUNCTION IF EXISTS increment_post_likes_count() CASCADE;
 DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
 DROP FUNCTION IF EXISTS get_metro_by_zip(TEXT) CASCADE;
 
@@ -31,7 +46,6 @@ DROP FUNCTION IF EXISTS get_metro_by_zip(TEXT) CASCADE;
 -- EXTENSIONS
 -- =====================================================
 
--- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_cron";
 
@@ -39,8 +53,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_cron";
 -- CUSTOM TYPES
 -- =====================================================
 
-CREATE TYPE post_category AS ENUM ('housing', 'jobs', 'emergency', 'travel');
-CREATE TYPE post_status AS ENUM ('active', 'expired', 'removed', 'pending');
+CREATE TYPE post_status AS ENUM ('active', 'removed', 'pending');
 CREATE TYPE message_type AS ENUM ('text', 'image', 'system');
 CREATE TYPE report_target_type AS ENUM ('post', 'user', 'message');
 CREATE TYPE report_status AS ENUM ('pending', 'reviewed', 'dismissed', 'actioned');
@@ -98,6 +111,9 @@ CREATE TABLE users (
   ban_reason TEXT,
   is_moderator BOOLEAN NOT NULL DEFAULT false,
 
+  -- Premium
+  is_premium BOOLEAN NOT NULL DEFAULT false,
+
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -110,7 +126,6 @@ CREATE TABLE posts (
 
   -- Identity
   author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  category post_category NOT NULL,
 
   -- Location
   metro_area_id TEXT NOT NULL REFERENCES metro_areas(id),
@@ -125,17 +140,18 @@ CREATE TABLE posts (
   description TEXT NOT NULL,
   photos TEXT[] DEFAULT '{}',
 
-  -- Category-specific fields (JSONB for flexibility)
-  fields JSONB NOT NULL DEFAULT '{}',
-
   -- Status
   status post_status NOT NULL DEFAULT 'active',
-  expiry_date TIMESTAMPTZ NOT NULL,
+
+  -- Global visibility (premium feature)
+  is_global BOOLEAN NOT NULL DEFAULT false,
 
   -- Engagement
   views_count INTEGER NOT NULL DEFAULT 0,
   responses_count INTEGER NOT NULL DEFAULT 0,
   reports_count INTEGER NOT NULL DEFAULT 0,
+  likes_count INTEGER NOT NULL DEFAULT 0,
+  comments_count INTEGER NOT NULL DEFAULT 0,
 
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -206,6 +222,73 @@ CREATE TABLE notifications (
   sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Blocked Users
+CREATE TABLE blocked_users (
+  id BIGSERIAL PRIMARY KEY,
+  blocker_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  blocked_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(blocker_id, blocked_id)
+);
+
+-- Post Likes
+CREATE TABLE post_likes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
+);
+
+-- Post Comments
+CREATE TABLE post_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL CHECK (LENGTH(content) >= 1 AND LENGTH(content) <= 1000),
+  parent_comment_id UUID REFERENCES post_comments(id) ON DELETE CASCADE,
+  is_deleted BOOLEAN NOT NULL DEFAULT false,
+  is_flagged BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- User Saved Locations
+CREATE TABLE user_saved_locations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  metro_area_id TEXT NOT NULL REFERENCES metro_areas(id),
+  label TEXT NOT NULL CHECK (LENGTH(label) BETWEEN 1 AND 50),
+  zip_code TEXT,
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, label)
+);
+
+-- Tags
+CREATE TABLE tags (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE,
+  icon TEXT,
+  color TEXT,
+  description TEXT,
+  is_system BOOLEAN NOT NULL DEFAULT true,
+  requires_moderation BOOLEAN NOT NULL DEFAULT false,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Post Tags (many-to-many junction)
+CREATE TABLE post_tags (
+  id BIGSERIAL PRIMARY KEY,
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  UNIQUE(post_id, tag_id)
+);
+
 -- =====================================================
 -- INDEXES
 -- =====================================================
@@ -224,16 +307,12 @@ CREATE INDEX idx_users_trust_level ON users(trust_level);
 CREATE INDEX idx_users_email ON users(email);
 
 -- Posts
-CREATE INDEX idx_posts_metro_category_status_created
-  ON posts(metro_area_id, category, status, created_at DESC);
-CREATE INDEX idx_posts_metro_status_expiry
-  ON posts(metro_area_id, status, expiry_date);
+CREATE INDEX idx_posts_metro_status_created
+  ON posts(metro_area_id, status, created_at DESC);
 CREATE INDEX idx_posts_author_created
   ON posts(author_id, created_at DESC);
-CREATE INDEX idx_posts_category ON posts(category);
 CREATE INDEX idx_posts_status ON posts(status);
-CREATE INDEX idx_posts_expiry ON posts(expiry_date) WHERE status = 'active';
-CREATE INDEX idx_posts_fields ON posts USING GIN(fields);
+CREATE INDEX idx_posts_is_global ON posts(is_global) WHERE is_global = true;
 
 -- Conversations
 CREATE INDEX idx_conversations_post ON conversations(post_id);
@@ -263,11 +342,38 @@ CREATE INDEX idx_notifications_user_sent ON notifications(user_id, sent_at DESC)
 CREATE INDEX idx_notifications_user_unread
   ON notifications(user_id, read) WHERE read = false;
 
+-- Blocked Users
+CREATE INDEX idx_blocked_users_blocker ON blocked_users(blocker_id);
+CREATE INDEX idx_blocked_users_blocked ON blocked_users(blocked_id);
+
+-- Post Likes
+CREATE INDEX idx_post_likes_post_id ON post_likes(post_id);
+CREATE INDEX idx_post_likes_user_id ON post_likes(user_id);
+CREATE INDEX idx_post_likes_created_at ON post_likes(created_at);
+
+-- Post Comments
+CREATE INDEX idx_post_comments_post_id ON post_comments(post_id);
+CREATE INDEX idx_post_comments_author_id ON post_comments(author_id);
+CREATE INDEX idx_post_comments_parent_id ON post_comments(parent_comment_id) WHERE parent_comment_id IS NOT NULL;
+CREATE INDEX idx_post_comments_is_deleted ON post_comments(is_deleted) WHERE is_deleted = false;
+CREATE INDEX idx_post_comments_created_at ON post_comments(created_at);
+
+-- User Saved Locations
+CREATE INDEX idx_user_saved_locations_user ON user_saved_locations(user_id);
+
+-- Tags
+CREATE INDEX idx_tags_slug ON tags(slug);
+CREATE INDEX idx_tags_sort ON tags(sort_order);
+
+-- Post Tags
+CREATE INDEX idx_post_tags_post ON post_tags(post_id);
+CREATE INDEX idx_post_tags_tag ON post_tags(tag_id);
+
 -- =====================================================
 -- FUNCTIONS
 -- =====================================================
 
--- Auto-update updated_at timestamp
+-- Auto-update updated_at timestamp (shared by multiple tables)
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -294,24 +400,146 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Enforce max 5 saved locations per user
+CREATE OR REPLACE FUNCTION check_max_saved_locations()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (SELECT COUNT(*) FROM user_saved_locations WHERE user_id = NEW.user_id) >= 5 THEN
+    RAISE EXCEPTION 'Maximum of 5 saved locations per user';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Enforce max 3 tags per post
+CREATE OR REPLACE FUNCTION check_max_post_tags()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (SELECT COUNT(*) FROM post_tags WHERE post_id = NEW.post_id) >= 3 THEN
+    RAISE EXCEPTION 'Maximum of 3 tags per post';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Post likes counter triggers
+CREATE OR REPLACE FUNCTION increment_post_likes_count()
+RETURNS TRIGGER
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION decrement_post_likes_count()
+RETURNS TRIGGER
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = OLD.post_id;
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Post comments counter triggers
+CREATE OR REPLACE FUNCTION increment_post_comments_count()
+RETURNS TRIGGER
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NEW.is_deleted = false THEN
+    UPDATE posts SET comments_count = comments_count + 1 WHERE id = NEW.post_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION decrement_post_comments_count()
+RETURNS TRIGGER
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NEW.is_deleted = true AND OLD.is_deleted = false THEN
+    UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = NEW.post_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Helper: get like count for a post
+CREATE OR REPLACE FUNCTION get_post_like_count(p_post_id UUID)
+RETURNS INTEGER AS $$
+BEGIN
+  RETURN (SELECT COUNT(*) FROM post_likes WHERE post_id = p_post_id);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Helper: check if user has liked a post
+CREATE OR REPLACE FUNCTION has_user_liked_post(p_post_id UUID, p_user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (SELECT 1 FROM post_likes WHERE post_id = p_post_id AND user_id = p_user_id);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Helper: get comment count for a post
+CREATE OR REPLACE FUNCTION get_post_comment_count(p_post_id UUID)
+RETURNS INTEGER AS $$
+BEGIN
+  RETURN (SELECT COUNT(*) FROM post_comments WHERE post_id = p_post_id AND is_deleted = false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- =====================================================
 -- TRIGGERS
 -- =====================================================
 
--- Users updated_at trigger
+-- updated_at triggers
 CREATE TRIGGER update_users_updated_at
   BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Posts updated_at trigger
 CREATE TRIGGER update_posts_updated_at
   BEFORE UPDATE ON posts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Conversations updated_at trigger
 CREATE TRIGGER update_conversations_updated_at
   BEFORE UPDATE ON conversations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER set_saved_location_updated_at
+  BEFORE UPDATE ON user_saved_locations
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Saved locations max enforcement
+CREATE TRIGGER enforce_max_saved_locations
+  BEFORE INSERT ON user_saved_locations
+  FOR EACH ROW EXECUTE FUNCTION check_max_saved_locations();
+
+-- Post tags max enforcement
+CREATE TRIGGER enforce_max_post_tags
+  BEFORE INSERT ON post_tags
+  FOR EACH ROW EXECUTE FUNCTION check_max_post_tags();
+
+-- Post likes counters
+CREATE TRIGGER trigger_increment_post_likes_count
+  AFTER INSERT ON post_likes
+  FOR EACH ROW EXECUTE FUNCTION increment_post_likes_count();
+
+CREATE TRIGGER trigger_decrement_post_likes_count
+  AFTER DELETE ON post_likes
+  FOR EACH ROW EXECUTE FUNCTION decrement_post_likes_count();
+
+-- Post comments counters
+CREATE TRIGGER trigger_increment_post_comments_count
+  AFTER INSERT ON post_comments
+  FOR EACH ROW EXECUTE FUNCTION increment_post_comments_count();
+
+CREATE TRIGGER trigger_decrement_post_comments_count
+  AFTER UPDATE ON post_comments
+  FOR EACH ROW EXECUTE FUNCTION decrement_post_comments_count();
 
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS)
@@ -327,8 +555,15 @@ ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE blocked_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_saved_locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE post_tags ENABLE ROW LEVEL SECURITY;
 
--- Metro Areas Policies
+-- ----- Metro Areas -----
+
 CREATE POLICY "Metro areas are viewable by everyone"
   ON metro_areas FOR SELECT
   USING (true);
@@ -337,7 +572,8 @@ CREATE POLICY "Only service role can modify metro areas"
   ON metro_areas FOR ALL
   USING (auth.role() = 'service_role');
 
--- Metro ZIP Codes Policies
+-- ----- Metro ZIP Codes -----
+
 CREATE POLICY "Metro ZIP codes are viewable by everyone"
   ON metro_area_zipcodes FOR SELECT
   USING (true);
@@ -346,7 +582,8 @@ CREATE POLICY "Only service role can modify metro ZIP codes"
   ON metro_area_zipcodes FOR ALL
   USING (auth.role() = 'service_role');
 
--- Users Policies
+-- ----- Users -----
+
 CREATE POLICY "Users are viewable by everyone"
   ON users FOR SELECT
   USING (true);
@@ -367,7 +604,8 @@ CREATE POLICY "Moderators can delete users"
     )
   );
 
--- Posts Policies
+-- ----- Posts -----
+
 CREATE POLICY "Active posts are viewable by everyone"
   ON posts FOR SELECT
   USING (status = 'active');
@@ -402,7 +640,8 @@ CREATE POLICY "Authors and moderators can delete posts"
     )
   );
 
--- Conversations Policies
+-- ----- Conversations -----
+
 CREATE POLICY "Participants can view conversations"
   ON conversations FOR SELECT
   USING (
@@ -429,20 +668,38 @@ CREATE POLICY "Participants can update conversations"
     )
   );
 
--- Conversation Participants Policies
-CREATE POLICY "Users can view own participation"
-  ON conversation_participants FOR SELECT
-  USING (user_id = auth.uid());
+-- ----- Conversation Participants -----
 
-CREATE POLICY "Users can add themselves to conversations"
+-- SELECT: participants can see all members in their conversations (fixed in 007)
+CREATE POLICY "Participants can view conversation members"
+  ON conversation_participants FOR SELECT
+  USING (
+    user_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM conversation_participants cp
+      WHERE cp.conversation_id = conversation_participants.conversation_id
+        AND cp.user_id = auth.uid()
+    )
+  );
+
+-- INSERT: users can add themselves or add others if already a participant (fixed in 002)
+CREATE POLICY "Users can add participants to conversations"
   ON conversation_participants FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (
+    user_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM conversation_participants cp
+      WHERE cp.conversation_id = conversation_participants.conversation_id
+        AND cp.user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Users can update own participation"
   ON conversation_participants FOR UPDATE
   USING (user_id = auth.uid());
 
--- Messages Policies
+-- ----- Messages -----
+
 CREATE POLICY "Participants can view messages"
   ON messages FOR SELECT
   USING (
@@ -453,15 +710,25 @@ CREATE POLICY "Participants can view messages"
     )
   );
 
+-- INSERT: includes block check to prevent messaging blocked users (from 002)
 CREATE POLICY "Participants can send messages"
   ON messages FOR INSERT
   WITH CHECK (
-    EXISTS (
+    sender_id = auth.uid()
+    AND EXISTS (
       SELECT 1 FROM conversation_participants
       WHERE conversation_id = messages.conversation_id
-      AND user_id = auth.uid()
+        AND user_id = auth.uid()
     )
-    AND sender_id = auth.uid()
+    AND NOT EXISTS (
+      SELECT 1 FROM blocked_users bu
+      JOIN conversation_participants cp ON cp.conversation_id = messages.conversation_id
+      WHERE cp.user_id != auth.uid()
+        AND (
+          (bu.blocker_id = cp.user_id AND bu.blocked_id = auth.uid())
+          OR (bu.blocker_id = auth.uid() AND bu.blocked_id = cp.user_id)
+        )
+    )
   );
 
 CREATE POLICY "Senders can update own messages"
@@ -472,7 +739,8 @@ CREATE POLICY "Senders can delete own messages"
   ON messages FOR DELETE
   USING (sender_id = auth.uid());
 
--- Reports Policies
+-- ----- Reports -----
+
 CREATE POLICY "Moderators can view reports"
   ON reports FOR SELECT
   USING (
@@ -506,7 +774,8 @@ CREATE POLICY "Moderators can delete reports"
     )
   );
 
--- Notifications Policies
+-- ----- Notifications -----
+
 CREATE POLICY "Users can view own notifications"
   ON notifications FOR SELECT
   USING (user_id = auth.uid());
@@ -515,26 +784,152 @@ CREATE POLICY "Users can update own notifications"
   ON notifications FOR UPDATE
   USING (user_id = auth.uid());
 
+-- ----- Blocked Users -----
+
+-- SELECT: see blocks in either direction involving you (fixed in 007)
+CREATE POLICY "Users can view blocks involving them"
+  ON blocked_users FOR SELECT
+  USING (blocker_id = auth.uid() OR blocked_id = auth.uid());
+
+CREATE POLICY "Users can block others"
+  ON blocked_users FOR INSERT
+  WITH CHECK (blocker_id = auth.uid());
+
+CREATE POLICY "Users can unblock"
+  ON blocked_users FOR DELETE
+  USING (blocker_id = auth.uid());
+
+-- ----- Post Likes -----
+
+CREATE POLICY "Anyone can view likes"
+  ON post_likes FOR SELECT
+  USING (true);
+
+CREATE POLICY "Level 1+ users can like posts"
+  ON post_likes FOR INSERT
+  WITH CHECK (
+    auth.uid() = user_id AND
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1 AND is_banned = false)
+  );
+
+CREATE POLICY "Users can unlike their own likes"
+  ON post_likes FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ----- Post Comments -----
+
+CREATE POLICY "Anyone can view non-deleted comments"
+  ON post_comments FOR SELECT
+  USING (is_deleted = false);
+
+CREATE POLICY "Level 1+ users can comment"
+  ON post_comments FOR INSERT
+  WITH CHECK (
+    auth.uid() = author_id AND
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1 AND is_banned = false)
+  );
+
+CREATE POLICY "Users can update own comments"
+  ON post_comments FOR UPDATE
+  USING (auth.uid() = author_id)
+  WITH CHECK (auth.uid() = author_id);
+
+CREATE POLICY "Moderators can update any comment"
+  ON post_comments FOR UPDATE
+  USING (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true)
+  )
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true)
+  );
+
+CREATE POLICY "Moderators can delete comments"
+  ON post_comments FOR DELETE
+  USING (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true)
+  );
+
+-- ----- User Saved Locations -----
+
+CREATE POLICY "Users can view own saved locations"
+  ON user_saved_locations FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own saved locations"
+  ON user_saved_locations FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own saved locations"
+  ON user_saved_locations FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own saved locations"
+  ON user_saved_locations FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ----- Tags -----
+
+CREATE POLICY "Tags are viewable by everyone"
+  ON tags FOR SELECT
+  USING (true);
+
+CREATE POLICY "Only moderators can modify tags"
+  ON tags FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+    )
+  );
+
+-- ----- Post Tags -----
+
+CREATE POLICY "Post tags are viewable by everyone"
+  ON post_tags FOR SELECT
+  USING (true);
+
+CREATE POLICY "Post authors can manage tags"
+  ON post_tags FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM posts WHERE id = post_id AND author_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Post authors can delete tags"
+  ON post_tags FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM posts WHERE id = post_id AND author_id = auth.uid()
+    )
+  );
+
 -- =====================================================
 -- REALTIME
 -- =====================================================
 
--- Enable realtime for relevant tables
 ALTER PUBLICATION supabase_realtime ADD TABLE posts;
 ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+ALTER PUBLICATION supabase_realtime ADD TABLE tags;
+ALTER PUBLICATION supabase_realtime ADD TABLE post_tags;
 
 -- =====================================================
 -- COMMENTS
 -- =====================================================
 
-COMMENT ON TABLE users IS 'User profiles and account data';
 COMMENT ON TABLE metro_areas IS 'US Census metro areas';
 COMMENT ON TABLE metro_area_zipcodes IS 'ZIP codes for metro areas';
-COMMENT ON TABLE posts IS 'Housing, jobs, emergency, travel posts';
+COMMENT ON TABLE users IS 'User profiles and account data';
+COMMENT ON TABLE posts IS 'Community posts with tag-based categorization';
 COMMENT ON TABLE conversations IS 'Chat conversations';
 COMMENT ON TABLE conversation_participants IS 'Conversation participant junction table';
 COMMENT ON TABLE messages IS 'Chat messages';
 COMMENT ON TABLE reports IS 'Content reports from users';
 COMMENT ON TABLE notifications IS 'Push notification records';
+COMMENT ON TABLE blocked_users IS 'User block list for chat safety';
+COMMENT ON TABLE post_likes IS 'Tracks individual likes on posts for social engagement';
+COMMENT ON TABLE post_comments IS 'Public comment threads on posts';
+COMMENT ON TABLE user_saved_locations IS 'User saved metro locations (max 5 per user)';
+COMMENT ON TABLE tags IS 'System and user-defined tags for post categorization';
+COMMENT ON TABLE post_tags IS 'Many-to-many junction between posts and tags (max 3 per post)';
