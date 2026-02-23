@@ -11,6 +11,10 @@ const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   jobs: 'briefcase',
   emergency: 'warning',
   travel: 'airplane',
+  help: 'hand-left',
+  question: 'help-circle',
+  politics: 'business',
+  discussion: 'chatbubbles',
 };
 
 interface ConversationItemProps {

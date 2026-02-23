@@ -37,8 +37,7 @@ export async function getConversations(
         last_message_time,
         created_at,
         post:posts!conversations_post_id_fkey (
-          title,
-          category
+          title
         )
       `)
       .in('id', conversationIds)
@@ -105,6 +104,27 @@ export async function getConversations(
       }
     }
 
+    // Fetch first tag for posts linked to conversations (replaces old category column)
+    const postIds = (conversations || [])
+      .map((c) => c.post_id)
+      .filter((pid): pid is string => pid != null);
+    const postTagMap = new Map<string, string>();
+    if (postIds.length > 0) {
+      const { data: postTags } = await supabase
+        .from('post_tags')
+        .select('post_id, tag:tags!post_tags_tag_id_fkey ( slug )')
+        .in('post_id', postIds);
+      if (postTags) {
+        for (const pt of postTags) {
+          // Keep only the first tag per post (for the context icon)
+          if (!postTagMap.has(pt.post_id)) {
+            const tag = pt.tag as any;
+            postTagMap.set(pt.post_id, tag?.slug ?? '');
+          }
+        }
+      }
+    }
+
     // Assemble results
     const result: ConversationWithParticipant[] = [];
     for (const conv of conversations || []) {
@@ -126,7 +146,7 @@ export async function getConversations(
         other_user_trust_level: userInfo?.trust_level ?? 0,
         unread_count: unreadMap.get(conv.id) || 0,
         post_title: post?.title,
-        post_category: post?.category,
+        post_category: conv.post_id ? postTagMap.get(conv.post_id) : undefined,
       });
     }
 

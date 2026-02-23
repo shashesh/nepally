@@ -40,7 +40,10 @@ export default function MessageThreadPage() {
       supabase,
       conversationId,
       (newMsg) => {
-        setMessages((prev) => [...prev, newMsg]);
+        setMessages((prev) => {
+          if (prev.find((m) => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
         // Mark as read if we're viewing the conversation
         if (newMsg.sender_id !== user.id) {
           markAsRead(supabase, conversationId, user.id);
