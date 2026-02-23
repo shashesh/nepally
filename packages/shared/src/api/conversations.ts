@@ -27,19 +27,10 @@ export async function getConversations(
 
     const conversationIds = myParticipations.map((p) => p.conversation_id);
 
-    // Get conversations with post info
+    // Get conversations
     const { data: conversations, error: convError } = await supabase
       .from('conversations')
-      .select(`
-        id,
-        post_id,
-        last_message,
-        last_message_time,
-        created_at,
-        post:posts!conversations_post_id_fkey (
-          title
-        )
-      `)
+      .select('id, last_message, last_message_time, created_at')
       .in('id', conversationIds)
       .order('last_message_time', { ascending: false, nullsFirst: false });
 
@@ -104,27 +95,6 @@ export async function getConversations(
       }
     }
 
-    // Fetch first tag for posts linked to conversations (replaces old category column)
-    const postIds = (conversations || [])
-      .map((c) => c.post_id)
-      .filter((pid): pid is string => pid != null);
-    const postTagMap = new Map<string, string>();
-    if (postIds.length > 0) {
-      const { data: postTags } = await supabase
-        .from('post_tags')
-        .select('post_id, tag:tags!post_tags_tag_id_fkey ( slug )')
-        .in('post_id', postIds);
-      if (postTags) {
-        for (const pt of postTags) {
-          // Keep only the first tag per post (for the context icon)
-          if (!postTagMap.has(pt.post_id)) {
-            const tag = pt.tag as any;
-            postTagMap.set(pt.post_id, tag?.slug ?? '');
-          }
-        }
-      }
-    }
-
     // Assemble results
     const result: ConversationWithParticipant[] = [];
     for (const conv of conversations || []) {
@@ -132,11 +102,9 @@ export async function getConversations(
       if (!other) continue;
       if (blockedUserIds.has(other.user_id)) continue;
 
-      const post = conv.post as any;
       const userInfo = userInfoMap.get(other.user_id);
       result.push({
         id: conv.id,
-        post_id: conv.post_id,
         last_message: conv.last_message,
         last_message_time: conv.last_message_time,
         created_at: conv.created_at,
@@ -145,8 +113,6 @@ export async function getConversations(
         other_user_photo: userInfo?.profile_photo ?? null,
         other_user_trust_level: userInfo?.trust_level ?? 0,
         unread_count: unreadMap.get(conv.id) || 0,
-        post_title: post?.title,
-        post_category: conv.post_id ? postTagMap.get(conv.post_id) : undefined,
       });
     }
 
@@ -161,15 +127,14 @@ export async function getConversations(
 }
 
 /**
- * Get or create a conversation between two users (optionally about a post)
+ * Get or create a 1:1 conversation between two users
  */
 export async function getOrCreateConversation(
   supabase: SupabaseClient,
   currentUserId: string,
   currentUserName: string,
   otherUserId: string,
-  otherUserName: string,
-  postId?: string
+  otherUserName: string
 ): Promise<{ data?: { conversationId: string }; error?: Error }> {
   try {
     // Find conversations the current user participates in
@@ -189,42 +154,15 @@ export async function getOrCreateConversation(
         .in('conversation_id', myConvIds);
 
       if (sharedConversations && sharedConversations.length > 0) {
-        const sharedConvIds = sharedConversations.map((c) => c.conversation_id);
-
-        if (postId) {
-          // Find conversation for this specific post
-          const { data: postConv } = await supabase
-            .from('conversations')
-            .select('id')
-            .in('id', sharedConvIds)
-            .eq('post_id', postId)
-            .limit(1)
-            .single();
-
-          if (postConv) {
-            return { data: { conversationId: postConv.id } };
-          }
-        } else {
-          // Find any conversation without a post
-          const { data: genericConv } = await supabase
-            .from('conversations')
-            .select('id')
-            .in('id', sharedConvIds)
-            .is('post_id', null)
-            .limit(1)
-            .single();
-
-          if (genericConv) {
-            return { data: { conversationId: genericConv.id } };
-          }
-        }
+        // Return the existing conversation between this user pair
+        return { data: { conversationId: sharedConversations[0].conversation_id } };
       }
     }
 
     // No existing conversation found — create new one
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
-      .insert({ post_id: postId || null })
+      .insert({})
       .select()
       .single();
 

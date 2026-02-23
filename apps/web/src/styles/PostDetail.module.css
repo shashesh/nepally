@@ -124,25 +124,6 @@
   color: var(--color-text-tertiary);
 }
 
-.messageBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: var(--space-xs) var(--space-s);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: background var(--transition-fast);
-}
-
-.messageBtn:hover {
-  background: var(--color-primary-dark);
-}
-
 .metaRow {
   display: flex;
   flex-wrap: wrap;
@@ -320,6 +301,38 @@
   padding: var(--space-m);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-small);
+}
+
+/* ── Avatar Dropdown Menu ────────────────── */
+.avatarDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 4px 0;
+  min-width: 140px;
+  margin-top: 4px;
+}
+
+.avatarDropdownItem {
+  display: block;
+  width: 100%;
+  padding: var(--space-xs) var(--space-s);
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: var(--font-size-small);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.avatarDropdownItem:hover {
+  background: var(--color-background);
 }
 
 .loading {

@@ -2,18 +2,17 @@
 
 > **Screen:** 07 | **Status:** Draft | **Updated:** 2026-02-19
 > **Journey:** [in-app-chat](../features/in-app-chat.md) - Feature 8.3
-> **Story:** As a verified user, I want to see all my conversations in one place so I can track ongoing discussions about posts.
+> **Story:** As a verified user, I want to see all my conversations in one place so I can track ongoing conversations with other members.
 
 ---
 
 ## Screen Purpose
 
-The Messages tab content. Shows all active conversations sorted by most recent message. Each row displays the other participant's name, last message preview, timestamp, unread badge, and linked post context. This is the hub for all in-app communication.
+The Messages tab content. Shows all active conversations sorted by most recent message. Each row displays the other participant's name, last message preview, timestamp, and unread badge. This is the hub for all in-app communication.
 
 **Key Goals:**
 - Quick overview of all ongoing conversations
 - Easy identification of unread messages
-- Post context visible so user remembers what the conversation is about
 - One-tap access to any conversation thread
 
 ---
@@ -28,31 +27,26 @@ The Messages tab content. Shows all active conversations sorted by most recent m
 
 ::: card {state:unread}
 [RK] **Ram K.** `2m ago`
-🏠 Private Room in Rich...
 **Is the room still avail...** (2)
 :::
 
 ::: card {state:unread}
 [PS] **Priya S.** `1h ago`
-💼 Part-Time at Nep...
 **What hours are you lo...** (1)
 :::
 
 ::: card
 [AJ] Anuj J. `Yesterday`
-✈️ Travel: DFW → KTM
 Sounds good, let's mee...
 :::
 
 ::: card
 [SM] Sita M. `Feb 12`
-🏠 2BR Apartment in Pl...
 Thank you for the info!
 :::
 
 ::: card
 [BT] Bikash T. `Feb 10`
-🚨 Medical: Irving Ho...
 He's doing much better...
 :::
 
@@ -67,7 +61,7 @@ He's doing much better...
 
 # No messages yet
 
-Browse posts and tap the message icon to start a conversation.
+Tap any user's avatar on a post to start chatting.
 
 [Browse Posts]{.outline}
 :::
@@ -105,7 +99,7 @@ Browse posts and tap the message icon to start a conversation.
 | Property | iOS | Android |
 |----------|-----|---------|
 | **Type** | Tappable list item | Tappable list item |
-| **Height** | 88px | 88dp |
+| **Height** | 72px | 72dp |
 | **Background** | #FFFFFF (White) | #FFFFFF |
 | **Padding** | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
 | **Divider** | 1px #E0E0E0, inset 72px from left | 1px #E0E0E0, inset 72dp from left |
@@ -133,17 +127,7 @@ Browse posts and tap the message icon to start a conversation.
 | **Timestamp Color** | #757575 | #757575 |
 | **Layout** | Name left-aligned, timestamp right-aligned | Same |
 
-#### Line 2: Post Context
-
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Content** | Category icon + post title (truncated) | Same |
-| **Example** | "🏠 Private Room in Rich..." | Same |
-| **Font** | 13pt Regular, San Francisco | 12sp Regular, Roboto |
-| **Color** | #757575 | #757575 |
-| **Max Chars** | 30 (truncate with "...") | 30 |
-
-#### Line 3: Last Message + Unread Badge
+#### Line 2: Last Message + Unread Badge
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -172,7 +156,7 @@ Browse posts and tap the message icon to start a conversation.
 - **Pressed:** Background #F5F5F5
 - **Swiped left (future):** Reveal "Delete" action
 
-**a11y:** "Conversation with Ram K. about Housing post: Private Room in Richardson. Last message: Is the room still available? 2 minutes ago. 2 unread messages. Button."
+**a11y:** "Conversation with Ram K. Last message: Is the room still available? 2 minutes ago. 2 unread messages. Button."
 
 ---
 
@@ -213,7 +197,7 @@ Browse posts and tap the message icon to start a conversation.
 |---|---------|--------|---------------|
 | 1 | Safe area / Status bar | Auto | — |
 | 2 | Header ("Messages") | 44px / 56dp | 0 |
-| 3 | Conversation Row × N | 88px/dp each | 0 (dividers only) |
+| 3 | Conversation Row × N | 72px/dp each | 0 (dividers only) |
 | 4 | Bottom safe area (iOS) | Auto | — |
 
 ### Empty State Layout
@@ -271,7 +255,6 @@ Browse posts and tap the message icon to start a conversation.
 | Scenario | Expected Behavior |
 |----------|------------------|
 | No conversations | Show empty state with "Browse Posts" CTA |
-| Post was deleted | Show "Post no longer available" in post context line |
 | Other user deleted account | Show "[Deleted User]" as name, gray avatar |
 | Network error on load | Show error banner: "Could not load messages. Pull to retry." |
 | 50+ conversations | Paginate: load 20 at a time, infinite scroll |
@@ -288,7 +271,7 @@ Browse posts and tap the message icon to start a conversation.
 3. Empty state text (when applicable)
 
 ### Touch Targets
-- Full row height (88px/dp) exceeds 44pt/48dp minimum
+- Full row height (72px/dp) exceeds 44pt/48dp minimum
 
 ### Color Contrast (WCAG)
 | Element | Ratio | Level |
@@ -303,7 +286,7 @@ Browse posts and tap the message icon to start a conversation.
 - [ ] Each conversation row is a single tappable element
 - [ ] Unread count announced with each row
 - [ ] Empty state text readable by screen reader
-- [ ] Touch targets: full row height (88px) exceeds 44pt minimum
+- [ ] Touch targets: full row height (72px) exceeds 44pt minimum
 - [ ] Color contrast: all text meets WCAG AA
 
 ---
@@ -334,10 +317,9 @@ Browse posts and tap the message icon to start a conversation.
 |-----|-------|
 | `messages_title` | Messages |
 | `messages_empty_title` | No messages yet |
-| `messages_empty_subtitle` | Browse posts and tap the message icon to start a conversation. |
+| `messages_empty_subtitle` | Tap any user's avatar on a post to start chatting. |
 | `messages_empty_cta` | Browse Posts |
 | `messages_error_load` | Could not load messages. Pull to retry. |
-| `messages_deleted_post` | Post no longer available |
 | `messages_deleted_user` | [Deleted User] |
 | `messages_you_prefix` | You: |
 
@@ -369,7 +351,6 @@ LIMIT 20;
 - `conversation_id` — for navigation
 - `other_user_name` — display name
 - `other_user_id` — for avatar initials
-- `post_id`, `post_category`, `post_title` — post context
 - `last_message` — preview text
 - `last_message_time` — timestamp
 - `unread_count` — badge number
@@ -406,21 +387,19 @@ LIMIT 20;
 - [ ] Unread rows render bold name + bold message
 - [ ] Read rows render regular weight + gray text
 - [ ] Avatar initials display correctly
-- [ ] Post context icons match post category
 - [ ] Tab bar badge shows total unread count
 - [ ] Empty state centered with icon, text, and CTA
 - [ ] Dividers inset correctly after avatar
 
 ### Accessibility Tests
 - [ ] VoiceOver/TalkBack reads full conversation context per row
-- [ ] Touch targets: full row height (88px) meets minimum
+- [ ] Touch targets: full row height (72px) meets minimum
 - [ ] Color contrast meets WCAG AA
 - [ ] Empty state readable by screen reader
 - [ ] Screen title announced on tab switch
 
 ### Edge Case Tests
 - [ ] Zero conversations shows empty state
-- [ ] Deleted post shows "Post no longer available"
 - [ ] Deleted user shows "[Deleted User]" with gray avatar
 - [ ] Network error shows error banner
 - [ ] 99+ unread shows "99+" badge

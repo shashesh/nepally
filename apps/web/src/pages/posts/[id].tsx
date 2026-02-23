@@ -1,4 +1,4 @@
-import React, { useEffect, useState, FormEvent } from 'react';
+import React, { useEffect, useState, useRef, FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -35,6 +35,8 @@ export default function PostDetailPage() {
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
@@ -105,17 +107,16 @@ export default function PostDetailPage() {
     }
   }
 
-  async function handleMessage() {
+  async function handleAvatarChat() {
     if (!user || !post || !post.author) return;
-    if (post.author_id === user.id) return; // Can't message yourself
+    if (post.author_id === user.id) return;
 
     const result = await getOrCreateConversation(
       supabase,
       user.id,
       user.full_name,
       post.author_id,
-      post.author.full_name,
-      post.id
+      post.author.full_name
     );
 
     if (result.data) {
@@ -170,12 +171,37 @@ export default function PostDetailPage() {
 
         <div className={styles.postDetail}>
           <div className={styles.postHeader}>
-            <Avatar
-              name={post.author?.full_name || '?'}
-              photoUrl={post.author?.profile_photo}
-              trustLevel={post.author?.trust_level}
-              size="medium"
-            />
+            <div style={{ position: 'relative' }} ref={avatarMenuRef}>
+              <div
+                style={{ cursor: post.author_id !== user?.id ? 'pointer' : 'default' }}
+                onClick={() => {
+                  if (post.author_id !== user?.id) setAvatarMenuOpen(!avatarMenuOpen);
+                }}
+              >
+                <Avatar
+                  name={post.author?.full_name || '?'}
+                  photoUrl={post.author?.profile_photo}
+                  trustLevel={post.author?.trust_level}
+                  size="medium"
+                />
+              </div>
+              {avatarMenuOpen && (
+                <div className={styles.avatarDropdown}>
+                  <button
+                    className={styles.avatarDropdownItem}
+                    onClick={() => { setAvatarMenuOpen(false); alert('User profiles coming soon'); }}
+                  >
+                    View Profile
+                  </button>
+                  <button
+                    className={styles.avatarDropdownItem}
+                    onClick={() => { setAvatarMenuOpen(false); handleAvatarChat(); }}
+                  >
+                    Chat
+                  </button>
+                </div>
+              )}
+            </div>
             <div className={styles.authorInfo}>
               <div className={styles.authorName}>
                 {post.author?.full_name || 'Anonymous'}
@@ -226,11 +252,6 @@ export default function PostDetailPage() {
             )}
           </div>
 
-          {user && post.author_id !== user.id && (
-            <button onClick={handleMessage} className={styles.messageBtn}>
-              ✉️ Contact Author
-            </button>
-          )}
         </div>
 
         <div className={styles.commentsSection} id="comments">

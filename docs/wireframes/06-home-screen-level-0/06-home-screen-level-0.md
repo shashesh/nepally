@@ -53,7 +53,7 @@ Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet
 
 ---
 
-❤️ 24 &emsp;&emsp; 💬 5 &emsp;&emsp; ✉️ Message
+❤️ 24 &emsp;&emsp; 💬 5
 :::
 
 ::: card
@@ -68,7 +68,7 @@ We're hiring experienced line cooks for our new Nepali restaurant...
 
 ---
 
-❤️ 8 &emsp;&emsp; 💬 2 &emsp;&emsp; ✉️ Message
+❤️ 8 &emsp;&emsp; 💬 2
 :::
 
 [+]*{.fab state:semi-disabled}
@@ -424,7 +424,7 @@ You need to verify your phone number to create posts and message others.
 | **Background** | Transparent (part of card) | Transparent (part of card) |
 | **Border** | 1px top border #E0E0E0 | 1px top border #E0E0E0 |
 | **Padding** | 8px vertical | 8dp vertical |
-| **Layout** | Horizontal row, 3 actions, evenly spaced | Horizontal row, 3 actions, evenly spaced |
+| **Layout** | Horizontal row, 2 actions, evenly spaced | Horizontal row, 2 actions, evenly spaced |
 
 **Action 1: Like Button**
 - **Icon:** Heart outline (not liked) or Heart filled (liked)
@@ -464,23 +464,8 @@ You need to verify your phone number to create posts and message others.
   - User can read and write comments
 - **a11y:** "Comment button, 5 comments"
 
-**Action 3: Message Button**
-- **Icon:** Direct message (paper plane or chat dots)
-  - Size: 20x20px/dp
-  - Color: #757575
-- **Label:** "Message" (optional, or icon-only)
-  - Typography: 14pt/13sp Regular, #757575 (if shown)
-- **Touch Target:** 44x44pt / 48x48dp minimum
-- **Level 0 Behavior:**
-  - Icon grayed out (#BDBDBD)
-  - Tap shows toast: "Verify your account to message"
-- **Level 1+ Behavior:**
-  - Tap opens/creates conversation with post author (existing chat feature)
-  - Hidden if viewing own post
-- **a11y:** "Message author button"
-
 **Action Bar Layout:**
-- [❤️ 24] ............ [💬 5] ............ [✉️ Message]
+- [❤️ 24] ............ [💬 5]
 - Equal spacing between actions
 - Left-aligned within card padding
 
@@ -488,15 +473,14 @@ You need to verify your phone number to create posts and message others.
 - Default: All icons outline, light gray
 - Like Active: Heart filled, red color
 - Pressed (Like): Scale animation, instant feedback
-- Pressed (Comment/Message): Ripple effect (Android) or highlight (iOS)
-- Disabled (Level 0): Like and Message icons grayed out, tooltips on tap
+- Pressed (Comment): Ripple effect (Android) or highlight (iOS)
+- Disabled (Level 0): Like icon grayed out, tooltip on tap
 
 **Interaction:**
 - **Tap card body:** Open post detail screen
-- **Tap author avatar/name:** Show toast "Coming soon" (future: navigate to user profile)
+- **Tap author avatar/name:** Show popup menu with "View Profile" / "Chat" (hidden on own posts)
 - **Tap like button:** Toggle like (Level 1+), show verification toast (Level 0)
 - **Tap comment button:** Navigate to post detail, scroll to comments
-- **Tap message button:** Open chat conversation (Level 1+), show verification toast (Level 0)
 - **Tap "View More":** Navigate to post detail screen
 
 **a11y:**
@@ -505,9 +489,44 @@ You need to verify your phone number to create posts and message others.
   - "Looking for Nepali Roommate. Local post."
   - "Description: Looking for Nepali roommate to share 2BR apartment..."
   - "Tags: Housing, Question."
-  - "24 likes, 5 comments. Like button. Comment button. Message button."
+  - "24 likes, 5 comments. Like button. Comment button."
 - Each action is individually focusable for screen readers
 - VoiceOver/TalkBack can navigate through avatar, title, actions separately
+
+---
+
+### 5a. Avatar Tap Menu
+
+| Property | iOS | Android |
+|----------|-----|---------|
+| **Type** | Popup menu anchored to avatar | Popup menu anchored to avatar |
+| **Background** | #FFFFFF (White) | #FFFFFF (White) |
+| **Corner Radius** | 8px | 8dp |
+| **Shadow** | 0 2px 8px rgba(0,0,0,0.15) | elevation 4dp |
+| **Padding** | 8px vertical | 8dp vertical |
+
+**Menu Options:**
+
+| Option | Icon | Action |
+|--------|------|--------|
+| View Profile | person-outline, 20px/dp, #212121 | Navigate to user profile screen |
+| Chat | chat-bubble-outline, 20px/dp, #212121 | Open/create 1:1 conversation |
+
+**Option Row Styling:**
+- Height: 44px / 48dp
+- Padding: 16px/dp horizontal
+- Font: 15pt/14sp Regular, #212121
+- Icon: 20px/dp, left of label, 12px/dp gap
+- Touch target: Full row width, 44px/48dp height
+
+**Visibility Rules:**
+- Chat option hidden on own posts
+- Chat requires Level 1+; Level 0 users see "Verify to Message" prompt on tap
+- Menu not shown when tapping own avatar (no Chat option means only "View Profile")
+
+**Dismiss:** Tap outside the menu or tap a menu option
+
+**a11y:** "User menu. View Profile, button. Chat, button."
 
 ---
 

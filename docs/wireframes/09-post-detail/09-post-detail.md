@@ -14,7 +14,6 @@ Full-detail view of a single post with an interaction-first hierarchy (similar t
 - Prioritize author + content + discussion over metadata clutter
 - Keep engagement actions immediately under content (Like, Comments, Save, Share)
 - Move metadata into a compact row so it does not overshadow conversation
-- Keep "Contact Author" available without dominating the layout
 - Support single-level replies with show/hide controls
 
 ---
@@ -43,8 +42,6 @@ Clean, furnished room in 2BR apartment. Close to DART rail. $800/month including
 ![Photo 1 of 3](photo-placeholder)
 1 / 3
 :::
-
-[💬 Contact Author]*
 :::
 
 ::: section
@@ -106,8 +103,6 @@ Posted Feb 1, 2026 • Dallas-Fort Worth
 *(same post details as above)*
 
 ❤️ 12 · 💬 3
-
-[💬 Verify to Message]{state:disabled}
 :::
 
 ::: alert warning
@@ -272,53 +267,24 @@ Are you sure you want to delete this comment? This cannot be undone.
 
 **Trust badge:** ✓ Verified (16px, #2E7D32) or ✓✓ Contributor (#1565C0)
 
-**Interaction:** Tap row → navigate to public profile (future)
+**Interaction:** Tap author avatar → show popup menu with "View Profile" / "Chat"
+
+**Avatar Tap Menu:**
+- Position: Popup anchored to avatar
+- Options: "View Profile" and "Chat"
+- Chat option hidden on own posts
+- Chat requires Level 1+; Level 0 users see "Verify to Message" prompt
+- Dismiss: Tap outside the menu
 
 **Placement:** First content block in post detail card, above title and description.
 
 ---
 
-### 8. Contact Author Button (Primary CTA)
+### 8. Comments Section
 
 | Property | iOS | Android |
 |----------|-----|---------|
-| **Type** | Full-width primary button | Full-width primary button |
-| **Height** | 48px | 56dp |
-| **Background** | #1565C0 (Primary Blue) | #1565C0 |
-| **Corner Radius** | 8px | 8dp |
-| **Margin** | 24px top, 16px H | 24dp top, 16dp H |
-| **Icon** | 💬, 20px, white | 💬, 20dp, white |
-| **Font** | 17pt Semibold, White | 14sp Medium, White |
-
-**States:**
-
-| State | Background | Text | Condition |
-|-------|-----------|------|-----------|
-| Default | #1565C0 | White | Level 1+ user, not own post |
-| Pressed | #104D99 | White | Tap feedback |
-| Disabled (Level 0) | #BDBDBD | White | Level 0 user |
-| Disabled (Own Post) | Hidden | — | Author viewing own post |
-| Loading | #1565C0 + spinner | Hidden | Creating conversation |
-
-- **Level 0 text:** "Verify to Message" (instead of "Contact Author")
-- **Level 0 action:** Tap → show verification prompt alert
-
-**Level 1+ action:**
-1. Tap button
-2. Show loading spinner in button
-3. Check if conversation exists (user pair + post)
-4. If exists: navigate to MessageThreadScreen
-5. If new: create conversation + participants → navigate to MessageThreadScreen
-
-**a11y:** "Contact Author, button" / "Verify to Message, button, disabled"
-
----
-
-### 9. Comments Section
-
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Position** | Below CTA button | Below CTA button |
+| **Position** | Below photo carousel (or metadata row) | Below photo carousel (or metadata row) |
 | **Margin Top** | 24px | 24dp |
 | **Background** | #FFFFFF | #FFFFFF |
 | **Header Font** | 17pt Semibold | 16sp Medium |
@@ -384,7 +350,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 
 ---
 
-### 9a. Comment Input (Level 1+ Only)
+### 8a. Comment Input (Level 1+ Only)
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -452,7 +418,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 
 ---
 
-### 10. Footer Metadata
+### 9. Footer Metadata
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -478,31 +444,24 @@ Are you sure you want to delete this comment? This cannot be undone.
 | 6 | Engagement row | 24px/dp | 10px/dp |
 | 7 | Compact metadata row (badge + tags + location) | Auto | 16px/dp |
 | 8 | Photo carousel (if exists) | 200px/dp | 16px/dp |
-| 9 | Contact Author CTA | 48px / 56dp | 24px/dp |
-| 10 | Comments section | Auto | 16px/dp |
-| 11 | Comment input | 48–120px/dp | 16px/dp |
-| 12 | Footer metadata | ~20px/dp | 32px/dp bottom |
+| 9 | Comments section | Auto | 16px/dp |
+| 10 | Comment input | 48–120px/dp | 16px/dp |
+| 11 | Footer metadata | ~20px/dp | 32px/dp bottom |
 
-**Horizontal:** 16px/dp margins both sides. CTA full width minus 32px/dp. Photos full width minus 32px/dp.
+**Horizontal:** 16px/dp margins both sides. Photos full width minus 32px/dp.
 
 ---
 
 ## User Interactions
 
-### Primary Flow (Contact Author)
+### Primary Flow (Chat via Avatar Menu)
 1. User taps PostCard on HomeScreen → navigates here
 2. User reviews post details (scrolls through fields, photos)
-3. User taps "Contact Author"
-4. Button shows loading spinner
-5. System checks for existing conversation
+3. User taps author avatar → popup menu appears
+4. User selects "Chat"
+5. System checks for existing conversation between user pair
 6. Conversation created (or existing found)
 7. Navigate to MessageThreadScreen
-
-### PostCard Message Icon Flow
-When user taps the message icon directly on PostCard (bypasses this screen):
-1. Same logic as step 5–7 above
-2. Navigate directly to MessageThreadScreen
-3. Post context bar in thread shows post info
 
 ### Comment Flow (Level 1+)
 1. User scrolls to comments section
@@ -515,9 +474,7 @@ When user taps the message icon directly on PostCard (bypasses this screen):
 
 ### Scroll Behavior
 - Full page scroll (not nested scroll views)
-- CTA button scrolls with content (not fixed at bottom)
 - Comment input sticky at bottom of comments section
-- Bottom padding ensures CTA is visible when scrolled to bottom
 
 ---
 
@@ -525,8 +482,8 @@ When user taps the message icon directly on PostCard (bypasses this screen):
 
 | Scenario | Expected Behavior |
 |----------|------------------|
-| Own post | "Contact Author" button hidden, show "Edit Post" instead (future) |
-| Level 0 user | Banner at top, CTA says "Verify to Message" (gray), comment input replaced with verify prompt |
+| Own post | Chat option hidden in avatar menu, show "Edit Post" instead (future) |
+| Level 0 user | Banner at top, avatar menu Chat shows "Verify to Message" prompt, comment input replaced with verify prompt |
 | Post removed by moderator | Show "This post has been removed" message, no CTA |
 | Author account deleted | Author shows "[Deleted User]", CTA hidden |
 | No photos | Photo carousel section hidden entirely |
@@ -546,7 +503,7 @@ When user taps the message icon directly on PostCard (bypasses this screen):
 - [ ] Tag pills announced with names (e.g., "Housing tag")
 - [ ] Local/Global badge announced (e.g., "Local post badge")
 - [ ] Photos carousel announces "Photo 1 of 3"
-- [ ] CTA button state clearly announced (enabled/disabled)
+- [ ] Avatar menu options clearly announced
 - [ ] Level 0 banner text readable by screen reader
 - [ ] Comment items: name, badge, text, timestamp read as group
 - [ ] Comment input: placeholder announced, character count available
@@ -591,13 +548,13 @@ const { data } = await supabase
   .order('created_at', { ascending: true });
 ```
 
-**Check existing conversation:**
+**Check existing conversation between user pair:**
 ```typescript
 const { data } = await supabase
-  .from('conversations')
-  .select(`*, participants:conversation_participants(user_id)`)
-  .eq('post_id', postId)
-  .contains('participants', [{ user_id: currentUserId }, { user_id: authorId }]);
+  .rpc('find_conversation_between_users', {
+    user_a: currentUserId,
+    user_b: authorId
+  });
 ```
 
 **Post a comment:**
@@ -617,8 +574,8 @@ const { data } = await supabase
 | Entry | Tap post context bar in MessageThreadScreen | This screen |
 | Entry | Deep link `nusa://post/{postId}` | This screen |
 | Exit | Back button | Previous screen (HomeScreen or MessageThreadScreen) |
-| Exit | "Contact Author" tap | MessageThreadScreen |
-| Exit | Author name tap | Public ProfileScreen (future) |
+| Exit | Avatar menu "Chat" tap | MessageThreadScreen |
+| Exit | Avatar menu "View Profile" tap | Public ProfileScreen (future) |
 | Exit | Tag pill tap | HomeScreen filtered by tag |
 
 ---
@@ -628,11 +585,11 @@ const { data } = await supabase
 ### Functional Tests
 - [ ] Post title, description, tags, badge display correctly
 - [ ] Photo carousel swipes and shows correct count
-- [ ] Contact Author button navigates to MessageThreadScreen
+- [ ] Avatar menu "Chat" option navigates to MessageThreadScreen
 - [ ] Existing conversation is reused (no duplicates)
-- [ ] Level 0 user sees "Verify to Message" (disabled)
+- [ ] Level 0 user sees "Verify to Message" prompt when tapping Chat
 - [ ] Level 0 user sees verification banner at top
-- [ ] Author's own post hides "Contact Author" button
+- [ ] Author's own post hides "Chat" option in avatar menu
 - [ ] Tag pill tap navigates to filtered home feed
 - [ ] Like button toggles for Level 1+, shows toast for Level 0
 - [ ] Comment list displays correctly with author badges
@@ -645,7 +602,6 @@ const { data } = await supabase
 - [ ] Layout matches wireframe on all screen sizes
 - [ ] Tag pills wrap to next line if many tags
 - [ ] Photo carousel has correct height and radius
-- [ ] CTA button has correct height (48px / 56dp)
 - [ ] Comment avatars show correct trust-level colors
 - [ ] Character counter turns red at 950+ characters
 
@@ -670,7 +626,7 @@ const { data } = await supabase
 | Relation | Screen |
 |----------|--------|
 | Previous | [06-home-screen-level-0.md](./06-home-screen-level-0.md) (tap PostCard) |
-| Next | [08-message-thread.md](./08-message-thread.md) (Contact Author) |
+| Next | [08-message-thread.md](./08-message-thread.md) (Avatar menu Chat) |
 | Feature | [in-app-chat.md](../features/in-app-chat.md) |
 | Feature | [phase1-feature-breakdown.md](../features/phase1-feature-breakdown.md) |
 

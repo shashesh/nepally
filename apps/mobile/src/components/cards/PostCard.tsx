@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Image,
   StyleSheet,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../Avatar';
@@ -32,15 +34,21 @@ interface PostCardProps {
   likesCount?: number;
   commentsCount?: number;
   isLiked?: boolean;
+  // Author identity (for avatar menu)
+  authorId?: string;
+  currentUserId?: string;
   // Callbacks
   onPress: () => void;
-  onMessagePress?: () => void;
   onLikePress?: () => void;
   onCommentPress?: () => void;
   /** Called when user taps a tag pill — parent can activate the filter */
   onTagPress?: (slug: string) => void;
   /** Called when user taps the ⋯ more button */
   onMorePress?: () => void;
+  /** Called when user selects "View Profile" from avatar menu */
+  onAvatarViewProfile?: () => void;
+  /** Called when user selects "Chat" from avatar menu */
+  onAvatarChat?: () => void;
 }
 
 /**
@@ -107,17 +115,22 @@ export const PostCard: React.FC<PostCardProps> = ({
   authorName,
   authorPhotoUrl,
   authorTrustLevel = 0,
+  authorId,
+  currentUserId,
   likesCount = 0,
   commentsCount = 0,
   isLiked = false,
   onPress,
-  onMessagePress,
   onLikePress,
   onCommentPress,
   onTagPress,
   onMorePress,
+  onAvatarViewProfile,
+  onAvatarChat,
 }) => {
   const descPreview = description ? truncateDescription(description) : null;
+  const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
+  const isOwnPost = authorId && currentUserId && authorId === currentUserId;
 
   return (
     <TouchableOpacity
@@ -128,12 +141,20 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Author Row */}
       {authorName && (
         <View style={styles.authorRow}>
-          <Avatar
-            name={authorName}
-            photoUrl={authorPhotoUrl}
-            trustLevel={authorTrustLevel}
-            size="medium"
-          />
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation?.();
+              if (!isOwnPost) setAvatarMenuVisible(true);
+            }}
+            activeOpacity={isOwnPost ? 1 : 0.7}
+          >
+            <Avatar
+              name={authorName}
+              photoUrl={authorPhotoUrl}
+              trustLevel={authorTrustLevel}
+              size="medium"
+            />
+          </TouchableOpacity>
           <View style={styles.authorInfo}>
             <View style={styles.authorNameRow}>
               <Text style={styles.authorName} numberOfLines={1}>
@@ -257,20 +278,40 @@ export const PostCard: React.FC<PostCardProps> = ({
           <Text style={styles.actionCount}>{formatCount(commentsCount)}</Text>
         </TouchableOpacity>
 
-        {onMessagePress && (
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              onMessagePress();
-            }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="mail-outline" size={20} color={colors.primary.main} />
-            <Text style={[styles.actionCount, { color: colors.primary.main }]}>Message</Text>
-          </TouchableOpacity>
-        )}
       </View>
+
+      {/* Avatar Tap Menu */}
+      <Modal
+        visible={avatarMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAvatarMenuVisible(false)}
+      >
+        <Pressable style={styles.menuOverlay} onPress={() => setAvatarMenuVisible(false)}>
+          <View style={styles.avatarMenu}>
+            <TouchableOpacity
+              style={styles.avatarMenuItem}
+              onPress={() => {
+                setAvatarMenuVisible(false);
+                onAvatarViewProfile?.();
+              }}
+            >
+              <Ionicons name="person-outline" size={20} color={colors.text.primary} />
+              <Text style={styles.avatarMenuText}>View Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.avatarMenuItem}
+              onPress={() => {
+                setAvatarMenuVisible(false);
+                onAvatarChat?.();
+              }}
+            >
+              <Ionicons name="chatbubble-outline" size={20} color={colors.primary.main} />
+              <Text style={[styles.avatarMenuText, { color: colors.primary.main }]}>Chat</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </TouchableOpacity>
   );
 };
@@ -401,5 +442,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text.secondary,
     fontWeight: '500',
+  },
+  // Avatar menu
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarMenu: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 180,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  avatarMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  avatarMenuText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
 });

@@ -488,7 +488,6 @@ CREATE POLICY "Post authors can delete tags"
 ```sql
 CREATE TABLE conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID REFERENCES posts(id) ON DELETE SET NULL,
   last_message TEXT,
   last_message_time TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -496,7 +495,6 @@ CREATE TABLE conversations (
 );
 
 -- Indexes
-CREATE INDEX idx_conversations_post ON conversations(post_id);
 CREATE INDEX idx_conversations_last_message ON conversations(last_message_time DESC);
 
 -- Row Level Security
@@ -648,7 +646,6 @@ CREATE POLICY "Senders can delete own messages"
 // Conversation
 {
   "id": "550e8400-e29b-41d4-a716-446655440002",
-  "post_id": "550e8400-e29b-41d4-a716-446655440001",
   "last_message": "Is the room still available?",
   "last_message_time": "2024-02-06T14:30:00Z",
   "created_at": "2024-02-06T14:20:00Z",
@@ -822,7 +819,6 @@ All relationships are enforced via foreign keys:
 - `posts.metro_area_id` → `metro_areas.id`
 - `post_tags.post_id` → `posts.id`
 - `post_tags.tag_id` → `tags.id`
-- `conversations.post_id` → `posts.id`
 - `conversation_participants.conversation_id` → `conversations.id`
 - `conversation_participants.user_id` → `users.id`
 - `messages.conversation_id` → `conversations.id`

@@ -60,8 +60,6 @@ export default function ConversationListScreen() {
       otherUserName: conv.other_user_name,
       otherUserTrustLevel: conv.other_user_trust_level ?? 0,
       otherUserPhotoUrl: conv.other_user_photo,
-      postId: conv.post_id || undefined,
-      postTitle: conv.post_title,
     });
   };
 
@@ -76,7 +74,7 @@ export default function ConversationListScreen() {
       <Ionicons name="chatbubbles-outline" size={64} color={colors.text.disabled} />
       <Text style={styles.emptyTitle}>No messages yet</Text>
       <Text style={styles.emptySubtitle}>
-        Browse posts and tap the message icon to start a conversation.
+        Tap any user's avatar on a post to start chatting.
       </Text>
       <TouchableOpacity
         style={styles.browseCta}
@@ -107,8 +105,6 @@ export default function ConversationListScreen() {
             lastMessage={item.last_message}
             lastMessageTime={item.last_message_time}
             unreadCount={item.unread_count}
-            postTitle={item.post_title}
-            postCategory={item.post_category}
             onPress={() => handleConversationPress(item)}
           />
         )}

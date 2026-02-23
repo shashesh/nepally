@@ -62,8 +62,6 @@ export type ChatStackParamList = {
     otherUserName: string;
     otherUserTrustLevel: number;
     otherUserPhotoUrl?: string | null;
-    postId?: string;
-    postTitle?: string;
   };
 };
 

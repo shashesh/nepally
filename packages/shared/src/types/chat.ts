@@ -6,7 +6,6 @@
 /** Raw conversation row from conversations table */
 export interface Conversation {
   id: string;
-  post_id: string | null;
   last_message: string | null;
   last_message_time: string | null;
   created_at: string;
@@ -16,7 +15,6 @@ export interface Conversation {
 /** Denormalized conversation for list display (joined from multiple tables) */
 export interface ConversationWithParticipant {
   id: string;
-  post_id: string | null;
   last_message: string | null;
   last_message_time: string | null;
   created_at: string;
@@ -25,8 +23,6 @@ export interface ConversationWithParticipant {
   other_user_photo?: string | null;
   other_user_trust_level?: number;
   unread_count: number;
-  post_title?: string;
-  post_category?: string;
 }
 
 /** Message row from messages table */

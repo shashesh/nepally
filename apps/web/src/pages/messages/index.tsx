@@ -52,7 +52,7 @@ export default function MessagesPage() {
             <div className={styles.emptyIcon}>💬</div>
             <h3>No messages yet</h3>
             <p>
-              Start a conversation by messaging a post author from the feed.
+              Tap any user's avatar on a post to start chatting.
             </p>
           </div>
         ) : (
@@ -87,11 +87,6 @@ export default function MessagesPage() {
                   >
                     {conv.last_message || 'No messages yet'}
                   </div>
-                  {conv.post_title && (
-                    <div className={styles.convPostContext}>
-                      Re: {conv.post_title}
-                    </div>
-                  )}
                 </div>
                 {conv.unread_count > 0 && (
                   <span className={styles.unreadBadge}>

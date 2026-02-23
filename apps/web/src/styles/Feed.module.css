@@ -200,3 +200,35 @@
   cursor: pointer;
   padding: 4px;
 }
+
+/* ── Avatar Dropdown Menu ────────────────── */
+.avatarDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 4px 0;
+  min-width: 140px;
+  margin-top: 4px;
+}
+
+.avatarDropdownItem {
+  display: block;
+  width: 100%;
+  padding: var(--space-xs) var(--space-s);
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: var(--font-size-small);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.avatarDropdownItem:hover {
+  background: var(--color-background);
+}

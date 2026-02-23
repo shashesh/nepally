@@ -46,7 +46,6 @@ export default function MessageThreadScreen() {
     otherUserName,
     otherUserTrustLevel,
     otherUserPhotoUrl,
-    postTitle,
   } = route.params;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -256,21 +255,6 @@ export default function MessageThreadScreen() {
         </View>
       )}
 
-      {/* Post Context Bar */}
-      {postTitle && (
-        <View style={styles.postBar}>
-          <Ionicons
-            name="document-text-outline"
-            size={16}
-            color={colors.text.secondary}
-          />
-          <Text style={styles.postBarTitle} numberOfLines={1}>
-            {postTitle}
-          </Text>
-          <Ionicons name="chevron-forward" size={16} color={colors.text.secondary} />
-        </View>
-      )}
-
       {/* Messages */}
       <KeyboardAvoidingView
         style={styles.flex}
@@ -376,21 +360,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontSize: 15,
     color: colors.error,
-  },
-  postBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.s,
-    paddingVertical: 12,
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.xs,
-  },
-  postBarTitle: {
-    fontSize: 15,
-    color: colors.text.primary,
-    flex: 1,
   },
   messagesList: {
     paddingVertical: spacing.xs,

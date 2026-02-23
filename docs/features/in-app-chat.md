@@ -8,17 +8,17 @@
 
 ## Overview
 
-Real-time one-on-one messaging between users, initiated from post listings. All post inquiries flow through in-app chat rather than exposing phone numbers or email addresses. Built on Supabase Realtime for instant message delivery.
+Real-time one-on-one messaging between users, initiated by tapping another user's avatar. All private communication flows through in-app chat rather than exposing phone numbers or email addresses. Built on Supabase Realtime for instant message delivery.
 
 ## Problem Statement
 
-Users who find relevant housing, job, travel, or emergency posts need a private, secure way to contact the post author. Without in-app messaging, users would need to share personal contact info publicly, creating privacy and safety risks. Chat completes the core utility loop: **discover post → contact author → coordinate**.
+Users who find relevant housing, job, travel, or emergency posts need a private, secure way to contact the post author. Without in-app messaging, users would need to share personal contact info publicly, creating privacy and safety risks. Chat completes the core utility loop: **discover user → tap avatar → chat**.
 
 ## User Stories
 
 **Primary:**
-- As a verified user, I want to message a post author so that I can inquire about their listing privately.
-- As a post author, I want to receive and respond to inquiries so that I can connect with interested people.
+- As a verified user, I want to message another community member so that I can communicate with them privately.
+- As a user, I want to receive and respond to messages so that I can connect with interested people.
 
 **Secondary:**
 - As a user, I want to see all my conversations in one place so that I can track ongoing discussions.
@@ -32,7 +32,7 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 | Feature | Description | Priority |
 |---------|-------------|----------|
 | 8.1 Chat Data Model | DB tables for conversations and messages | Must-have |
-| 8.2 Initiate Chat from Post | "Contact Author" button → opens/creates conversation | Must-have |
+| 8.2 Initiate Chat from Avatar | Avatar tap menu → Chat option → opens/creates conversation | Must-have |
 | 8.3 Conversation List | Messages tab showing all active chats | Must-have |
 | 8.4 Message Thread View | Chronological message display with real-time updates | Must-have |
 | 8.5 Send Message | Text input, send, real-time delivery | Must-have |
@@ -52,14 +52,13 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 ### Functional Requirements
 
 **Chat Initiation (8.2):**
-- [ ] "Message" icon on PostCard in home feed (quick action)
-- [ ] "Contact Author" button on PostDetailScreen (full action)
-- [ ] Check if conversation already exists between these two users for this post
+- [ ] Avatar tap menu on post cards and post detail (tap avatar → popup with "View Profile" / "Chat")
+- [ ] Check if conversation already exists between these two users
 - [ ] If exists → navigate to existing conversation
 - [ ] If new → create conversation record + navigate to thread
 - [ ] Only Level 1+ users can initiate conversations
 - [ ] Level 0 users see "Verify to Message" prompt
-- [ ] Cannot message yourself (hide button on own posts)
+- [ ] Cannot message yourself (hide Chat option on own posts)
 
 **Conversation List (8.3):**
 - [ ] List all conversations sorted by most recent message (newest first)
@@ -67,7 +66,6 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 - [ ] Display last message preview (first 50 chars, truncated)
 - [ ] Display timestamp of last message (relative: "2m ago", "3h ago", "Yesterday")
 - [ ] Display unread count badge per conversation
-- [ ] Display post context (category icon + title snippet)
 - [ ] Empty state when no conversations
 - [ ] Tap conversation → navigate to message thread
 - [ ] Total unread count on Messages tab badge
@@ -78,7 +76,6 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 - [ ] Show message timestamp (group by day: "Today", "Yesterday", "Feb 14")
 - [ ] Auto-scroll to bottom on load and when new messages arrive
 - [ ] Header shows other user's name + trust badge
-- [ ] Header shows linked post context (category + title, tappable)
 - [ ] Real-time updates: new messages appear instantly via Supabase Realtime subscription
 
 **Send Message (8.5):**
@@ -119,9 +116,8 @@ The schema is already defined in `docs/database-schema.md` and `supabase/migrati
 
 ### Existing Tables (verify they exist in migration)
 
-**`conversations`** — One per user-pair-per-post
+**`conversations`** — One per user pair
 - `id` UUID PK
-- `post_id` UUID FK → posts (nullable, SET NULL on delete)
 - `last_message` TEXT
 - `last_message_time` TIMESTAMPTZ
 - `created_at`, `updated_at`
@@ -170,22 +166,22 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ## User Flow
 
-### Flow 1: Initiate Chat from Post Card
+### Flow 1: Initiate Chat from Avatar
 
 ```
-1. User browses home feed
-2. User taps message icon on PostCard
-   → OR taps post card → PostDetailScreen → "Contact Author" button
-3. System checks: conversation exists between these users for this post?
+1. User browses home feed or post detail
+2. User taps another user's avatar on a post card or post detail
+3. User selects "Chat" from avatar menu
+4. System checks: conversation exists between these users?
    → YES: Navigate to existing MessageThread
    → NO: Create conversation + 2 participant records → Navigate to MessageThread
-4. User types message in input
-5. User taps Send
-6. Message appears in thread instantly (optimistic)
-7. Message stored in database
-8. Conversation list_message + last_message_time updated
-9. Recipient's unread_count incremented
-10. If recipient has thread open: message appears in real-time
+5. User types message in input
+6. User taps Send
+7. Message appears in thread instantly (optimistic)
+8. Message stored in database
+9. Conversation last_message + last_message_time updated
+10. Recipient's unread_count incremented
+11. If recipient has thread open: message appears in real-time
 ```
 
 ### Flow 2: View Conversations
@@ -218,10 +214,10 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 | Scenario | Expected Behavior |
 |----------|------------------|
 | No internet during send | Show error toast, keep message in input, retry on reconnect |
-| Post deleted while chatting | Conversation persists, post context shows "Post no longer available" |
+| Post deleted while chatting | Conversation persists (no post association) |
 | Other user blocked you | Cannot send message, show "Unable to send message" |
-| Conversation with yourself | "Contact Author" hidden on own posts |
-| Level 0 user taps message icon | Show "Verify to Message" alert with verify CTA |
+| Conversation with yourself | Chat option hidden on own posts |
+| Level 0 user taps Chat in avatar menu | Show "Verify to Message" alert with verify CTA |
 | Empty conversation list | Show empty state illustration + "No messages yet" |
 | Very long message (>1000 chars) | Truncate at 1000, show character counter |
 | Rapid message sending | Rate limit: max 30 messages/minute |
@@ -234,7 +230,6 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 - **Level 1+ requirement**: Only verified users can initiate chats, preventing spam from unverified accounts
 - **Block functionality**: Users can immediately stop unwanted contact
 - **No PII exposure**: Phone numbers and emails never shared; all contact through in-app messaging
-- **Post context**: Every conversation links to a post, providing context for moderation
 - **Future: Report**: Feature 8.8 (separate scope) will allow flagging conversations for moderator review
 - **Message retention**: 90-day retention after last message aligns with privacy expectations
 
@@ -244,14 +239,10 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ### New Files to Create
 
-**Services:**
-- `apps/mobile/src/services/api/conversations.ts` — CRUD for conversations, participants
-- `apps/mobile/src/services/api/messages.ts` — Send, fetch, mark read, realtime subscription
-
 **Screens:**
 - `apps/mobile/src/screens/chat/ConversationListScreen.tsx` — Messages tab content
 - `apps/mobile/src/screens/chat/MessageThreadScreen.tsx` — Individual chat thread
-- `apps/mobile/src/screens/PostDetailScreen.tsx` — Full post view with "Contact Author" button
+- `apps/mobile/src/screens/PostDetailScreen.tsx` — Full post view with avatar menu chat option
 
 **Navigation:**
 - `apps/mobile/src/navigation/ChatNavigator.tsx` — Stack: ConversationList → MessageThread
@@ -266,8 +257,7 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 - `apps/mobile/src/types/navigation.ts` — Add ChatStackParamList, update MainTabParamList
 - `apps/mobile/src/navigation/MainTabNavigator.tsx` — Replace Messages stub with ChatNavigator
-- `apps/mobile/src/components/cards/PostCard.tsx` — Add message icon button
-- `apps/mobile/src/screens/HomeScreen.tsx` — Handle message icon press, navigate to chat
+- `apps/mobile/src/screens/HomeScreen.tsx` — Handle avatar menu chat action, navigate to chat
 - `supabase/migrations/002_chat_and_blocks.sql` — Verify chat tables exist, add blocked_users table
 
 ### Implementation Order
@@ -278,12 +268,11 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 4. **ConversationListScreen** — Messages tab (replace stub)
 5. **MessageThreadScreen** — Chat thread with send + realtime
 6. **ChatNavigator** — Wire up stack navigation
-7. **PostDetailScreen** — Full post view with "Contact Author"
-8. **PostCard update** — Add message icon to card
-9. **HomeScreen update** — Handle navigation to chat from post card/detail
-10. **Read receipts** — Mark read on open, display status
-11. **Block user** — Block flow + RLS updates
-12. **Tab badge** — Unread count on Messages tab icon
+7. **PostDetailScreen** — Full post view with avatar menu chat option
+8. **HomeScreen update** — Handle avatar menu chat action, navigate to chat
+9. **Read receipts** — Mark read on open, display status
+10. **Block user** — Block flow + RLS updates
+11. **Tab badge** — Unread count on Messages tab icon
 
 ---
 
@@ -301,15 +290,15 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 - [x] Scope: Core + Safety (8.1-8.7) — decided
 - [x] Entry points: Post Card + Detail — decided
-- [ ] Should we auto-generate a first system message? (e.g., "John is interested in your post: 1BR in Richardson")
-- [ ] Should conversation list show post thumbnail/photo if available?
+- [ ] Should we auto-generate a first system message? (e.g., "John started a conversation with you")
+- [ ] Should conversation list show user profile photo/avatar?
 - [ ] Keyboard behavior: should we use KeyboardAvoidingView or react-native-keyboard-aware-scroll-view?
 
 ---
 
 ## Related Features
 
-- **Post Detail Screen** (5.4) — Needs to be built as part of this feature for "Contact Author" CTA
+- **Post Detail Screen** (5.4) — Avatar menu "Chat" option serves as entry point to messaging
 - **Photo Upload** (7.x) — Image messages are out of scope but schema supports `type: 'image'`
 - **Reporting System** (9.x) — Feature 8.8 (Report Conversation) deferred to that scope
 - **Push Notifications** (12.2) — Chat message notifications deferred to Notifications feature

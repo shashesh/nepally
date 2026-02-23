@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -9,6 +9,7 @@ import {
   getPostsByMetroArea,
   getTags,
   getUserLikedPostIds,
+  getOrCreateConversation,
   formatRelativeTime,
   TAG_EMOJI,
   TAG_COLORS,
@@ -127,6 +128,20 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     router.replace({ pathname: routeBasePath }, undefined, { shallow: true });
   }
 
+  async function handleAvatarChat(authorId: string, authorName: string) {
+    if (!user) return;
+    const result = await getOrCreateConversation(
+      supabase,
+      user.id,
+      user.full_name,
+      authorId,
+      authorName
+    );
+    if (result.data) {
+      router.push(`/messages/${result.data.conversationId}`);
+    }
+  }
+
   if (!user) return null;
 
   return (
@@ -216,6 +231,8 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               post={post}
               liked={likedIds.has(post.id)}
               onTagClick={handleTagChipToggle}
+              currentUserId={user?.id}
+              onAvatarChat={handleAvatarChat}
             />
           ))
         )}
@@ -232,20 +249,67 @@ function PostCard({
   post,
   liked,
   onTagClick,
+  currentUserId,
+  onAvatarChat,
 }: {
   post: Post;
   liked: boolean;
   onTagClick: (slug: string) => void;
+  currentUserId?: string;
+  onAvatarChat?: (authorId: string, authorName: string) => void;
 }) {
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const isOwnPost = currentUserId === post.author_id;
+
   return (
     <Link href={`/posts/${post.id}`} className={styles.postCard}>
       <div className={styles.postCardHeader}>
-        <Avatar
-          name={post.author?.full_name || '?'}
-          photoUrl={post.author?.profile_photo}
-          trustLevel={post.author?.trust_level}
-          size="medium"
-        />
+        <div style={{ position: 'relative' }} ref={avatarMenuRef}>
+          <div
+            style={{ cursor: !isOwnPost ? 'pointer' : 'default' }}
+            onClick={(e) => {
+              if (!isOwnPost) {
+                e.preventDefault();
+                e.stopPropagation();
+                setAvatarMenuOpen(!avatarMenuOpen);
+              }
+            }}
+          >
+            <Avatar
+              name={post.author?.full_name || '?'}
+              photoUrl={post.author?.profile_photo}
+              trustLevel={post.author?.trust_level}
+              size="medium"
+            />
+          </div>
+          {avatarMenuOpen && (
+            <div className={styles.avatarDropdown}>
+              <button
+                className={styles.avatarDropdownItem}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setAvatarMenuOpen(false);
+                  alert('User profiles coming soon');
+                }}
+              >
+                View Profile
+              </button>
+              <button
+                className={styles.avatarDropdownItem}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setAvatarMenuOpen(false);
+                  onAvatarChat?.(post.author_id, post.author?.full_name || 'User');
+                }}
+              >
+                Chat
+              </button>
+            </div>
+          )}
+        </div>
         <div className={styles.postAuthorInfo}>
           <div className={styles.postAuthorName}>
             {post.author?.full_name || 'Anonymous'}

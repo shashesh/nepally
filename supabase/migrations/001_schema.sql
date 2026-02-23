@@ -158,10 +158,9 @@ CREATE TABLE posts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Conversations
+-- Conversations (1:1 DMs between user pairs)
 CREATE TABLE conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID REFERENCES posts(id) ON DELETE SET NULL,
   last_message TEXT,
   last_message_time TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -315,7 +314,6 @@ CREATE INDEX idx_posts_status ON posts(status);
 CREATE INDEX idx_posts_is_global ON posts(is_global) WHERE is_global = true;
 
 -- Conversations
-CREATE INDEX idx_conversations_post ON conversations(post_id);
 CREATE INDEX idx_conversations_last_message ON conversations(last_message_time DESC);
 
 -- Conversation Participants

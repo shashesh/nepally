@@ -2,18 +2,17 @@
 
 > **Screen:** 08 | **Status:** Draft | **Updated:** 2026-02-19
 > **Journey:** [in-app-chat.md](../features/in-app-chat.md) - Features 8.4, 8.5, 8.6, 8.7
-> **Story:** As a verified user, I want to send and receive messages in a conversation so I can coordinate with other community members about posts.
+> **Story:** As a verified user, I want to send and receive messages in a conversation so I can coordinate with other community members.
 
 ---
 
 ## Screen Purpose
 
-Full chat thread between two users, linked to a specific post. Displays messages chronologically with real-time updates via Supabase Realtime. WhatsApp-inspired design with sent messages on the right (blue) and received on the left (gray).
+Full chat thread between two users (1:1 DM). Displays messages chronologically with real-time updates via Supabase Realtime. WhatsApp-inspired design with sent messages on the right (blue) and received on the left (gray).
 
 **Key Goals:**
 - Clear, familiar chat interface (WhatsApp-like)
 - Real-time message delivery
-- Post context always visible so users remember what they're discussing
 - Easy send flow with keyboard management
 - Read receipts for message status
 - Block option for safety
@@ -24,10 +23,6 @@ Full chat thread between two users, linked to a specific post. Displays messages
 
 ::: navbar
 [←] **Ram K.** ✓ [⋮]
-:::
-
-::: card {.post-context}
-🏠 Private Room in Richardson [→]
 :::
 
 ::: card {.date-separator}
@@ -97,15 +92,7 @@ New message ↓
 ### Empty Thread State
 
 ::: card {.system-message}
-You started a conversation about **Private Room in Richardson**
-:::
-
----
-
-### Post Deleted State
-
-::: card {.post-context-deleted}
-Post no longer available
+Send a message to start the conversation
 :::
 
 ---
@@ -186,32 +173,7 @@ You can't message this user.
 
 ---
 
-### 2. Post Context Bar
-
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Tappable info bar | Tappable info bar |
-| **Height** | 48px | 48dp |
-| **Background** | #F5F5F5 (Light Gray) | #F5F5F5 |
-| **Padding** | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
-| **Border** | 1px bottom #E0E0E0 | 1px bottom #E0E0E0 |
-
-**Components:**
-- **Category Icon:** 🏠/💼/🚨/✈️ (16px)
-- **Post Title:** "Private Room in Richardson" (15pt Regular, #212121)
-- **Chevron:** → (16px, #757575) — indicates tappable
-- **Truncation:** Max 30 chars, "..."
-- **Action:** Tap → navigate to PostDetailScreen
-
-**States:**
-- **Post exists:** Category icon + title + chevron
-- **Post deleted:** "Post no longer available" in #757575, no chevron, not tappable
-
-**a11y:** "Related post: Housing, Private Room in Richardson. Button."
-
----
-
-### 3. Date Separator
+### 2. Date Separator
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -233,7 +195,7 @@ You can't message this user.
 
 ---
 
-### 4. Message Bubble — Received
+### 3. Message Bubble — Received
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -254,7 +216,7 @@ You can't message this user.
 
 ---
 
-### 5. Message Bubble — Sent
+### 4. Message Bubble — Sent
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -278,7 +240,7 @@ You can't message this user.
 
 ---
 
-### 6. Message Input Bar
+### 5. Message Input Bar
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -332,7 +294,7 @@ You can't message this user.
 
 ---
 
-### 7. New Message Floating Pill
+### 6. New Message Floating Pill
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -354,10 +316,9 @@ You can't message this user.
 |---|---------|--------|---------------|
 | 1 | Safe area / Status bar | Auto | — |
 | 2 | Header bar | 44px / 56dp | 0 |
-| 3 | Post context bar | 48px / 48dp | 0 |
-| 4 | Message list (scrollable) | Flex | 0 |
-| 5 | Input bar | 56px min / 56dp min | 0 |
-| 6 | Bottom safe area (iOS) | Auto | — |
+| 3 | Message list (scrollable) | Flex | 0 |
+| 4 | Input bar | 56px min / 56dp min | 0 |
+| 5 | Bottom safe area (iOS) | Auto | — |
 
 **Horizontal:** Messages have 16px/dp edge margin. Bubbles max 75% screen width. Input bar has 8px/dp padding.
 
@@ -405,10 +366,9 @@ You can't message this user.
 | Scenario | Expected Behavior |
 |----------|------------------|
 | Message send fails (network) | Show red ⚠️ icon on bubble, "Tap to retry" tooltip |
-| Post deleted | Post context bar: "Post no longer available" (gray, not tappable) |
 | Other user blocked you | Input bar replaced with: "You can't message this user." |
 | Very long message (>1000 chars) | Character counter appears at 900+, input stops at 1000 |
-| Empty thread (just created) | Show system message: "You started a conversation about [post title]" |
+| Empty thread (just created) | Show system message: "Send a message to start the conversation" |
 | 500+ messages in thread | Paginate: load latest 50, "Load earlier messages" at top |
 | Rapid send (spam) | Rate limit: 30 msgs/min, show "Slow down" toast if exceeded |
 | Other user offline | Messages still sent (they'll see them when online). No presence indicator in V1 |
@@ -474,21 +434,16 @@ await supabase.from('conversation_participants')
 
 **Entry Points:**
 - Tap conversation row in ConversationListScreen
-- Tap "Contact Author" on PostDetailScreen (creates conversation first)
-- Tap message icon on PostCard (creates conversation first)
+- Tap "Chat" on avatar menu (creates conversation first)
 
 **Exit Points:**
 - Back button → ConversationListScreen
-- Tap post context bar → PostDetailScreen
 - Block user → ConversationListScreen (conversation removed)
 
 **Params received:**
 - `conversationId: string` — which conversation to display
 - `otherUserName: string` — for header display
 - `otherUserTrustLevel: number` — for trust badge
-- `postId?: string` — linked post (for context bar)
-- `postTitle?: string` — for display
-- `postCategory?: string` — for icon
 
 ---
 
@@ -498,7 +453,6 @@ await supabase.from('conversation_participants')
 - [ ] Messages read in chronological order
 - [ ] Each bubble announces sender, text, time, and read status
 - [ ] Send button state (enabled/disabled) announced
-- [ ] Post context bar announced as button
 - [ ] Block confirmation dialog traps focus
 - [ ] Keyboard navigation: Tab through input → send
 - [ ] Color contrast: white text on blue (#1565C0) = 7.2:1 (passes AA)
@@ -511,7 +465,7 @@ await supabase.from('conversation_participants')
 | Relation | Screen |
 |----------|--------|
 | Previous | [07-conversation-list.md](./07-conversation-list.md) |
-| Related | [09-post-detail.md](./09-post-detail.md) (post context tap, Contact Author entry) |
+| Related | [09-post-detail.md](./09-post-detail.md) (avatar menu Chat entry) |
 | Feature | [in-app-chat.md](../features/in-app-chat.md) |
 
 ---

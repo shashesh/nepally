@@ -1,21 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
-
-const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  housing: 'home',
-  jobs: 'briefcase',
-  emergency: 'warning',
-  travel: 'airplane',
-  help: 'hand-left',
-  question: 'help-circle',
-  politics: 'business',
-  discussion: 'chatbubbles',
-};
 
 interface ConversationItemProps {
   otherUserName: string;
@@ -24,8 +12,6 @@ interface ConversationItemProps {
   lastMessage: string | null;
   lastMessageTime: string | null;
   unreadCount: number;
-  postTitle?: string;
-  postCategory?: string;
   onPress: () => void;
 }
 
@@ -52,8 +38,6 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
   lastMessage,
   lastMessageTime,
   unreadCount,
-  postTitle,
-  postCategory,
   onPress,
 }) => {
   const isUnread = unreadCount > 0;
@@ -91,21 +75,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
           )}
         </View>
 
-        {/* Line 2: Post context */}
-        {postCategory && postTitle && (
-          <View style={styles.postRow}>
-            <Ionicons
-              name={categoryIcons[postCategory] || 'document'}
-              size={12}
-              color={colors.text.secondary}
-            />
-            <Text style={styles.postTitle} numberOfLines={1}>
-              {postTitle}
-            </Text>
-          </View>
-        )}
-
-        {/* Line 3: Last message + unread badge */}
+        {/* Line 2: Last message + unread badge */}
         <View style={styles.bottomRow}>
           <Text
             style={[styles.lastMessage, isUnread && styles.lastMessageUnread]}
@@ -161,17 +131,6 @@ const styles = StyleSheet.create({
   timestamp: {
     ...typography.caption,
     color: colors.text.secondary,
-  },
-  postRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 2,
-  },
-  postTitle: {
-    ...typography.caption,
-    color: colors.text.secondary,
-    flex: 1,
   },
   bottomRow: {
     flexDirection: 'row',

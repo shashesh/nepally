@@ -233,13 +233,17 @@ export default function HomeScreen() {
     navigation.navigate('PostDetail', { postId: post.id });
   };
 
-  const handleMessagePress = async (post: Post) => {
+  const handleAvatarViewProfile = (post: Post) => {
+    Alert.alert('Coming Soon', 'User profiles will be available in a future update.');
+  };
+
+  const handleAvatarChat = async (post: Post) => {
     if (!user || !post.author) return;
 
     if (isLevel0) {
       Alert.alert(
         'Verify to Message',
-        'Please verify your phone number to message post authors.',
+        'Please verify your phone number to message others.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Verify Now', onPress: handleVerifyPress },
@@ -253,8 +257,7 @@ export default function HomeScreen() {
       user.id,
       user.full_name,
       post.author.id,
-      post.author.full_name,
-      post.id
+      post.author.full_name
     );
 
     if (result.data) {
@@ -265,8 +268,6 @@ export default function HomeScreen() {
           otherUserId: post.author.id,
           otherUserName: post.author.full_name,
           otherUserTrustLevel: post.author.trust_level,
-          postId: post.id,
-          postTitle: post.title,
         },
       });
     } else if (result.error) {
@@ -445,12 +446,11 @@ export default function HomeScreen() {
             onPress={() => handlePostPress(item)}
             onLikePress={() => handleLikePress(item)}
             onCommentPress={() => handleCommentPress(item)}
+            authorId={item.author_id}
+            currentUserId={user?.id}
             onTagPress={handleTagChipPress}
-            onMessagePress={
-              item.author_id !== user?.id
-                ? () => handleMessagePress(item)
-                : undefined
-            }
+            onAvatarViewProfile={() => handleAvatarViewProfile(item)}
+            onAvatarChat={() => handleAvatarChat(item)}
             onMorePress={() => handleMorePress(item)}
           />
         )}

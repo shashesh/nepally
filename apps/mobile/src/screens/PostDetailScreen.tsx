@@ -12,6 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Share,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -62,7 +64,7 @@ export default function PostDetailScreen() {
 
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
-  const [contactLoading, setContactLoading] = useState(false);
+  const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
 
   // Like state
   const [isLiked, setIsLiked] = useState(false);
@@ -197,42 +199,36 @@ export default function PostDetailScreen() {
     return `${Math.floor(days / 7)}w ago`;
   };
 
-  const handleContactAuthor = async () => {
+  const handleAvatarChat = async () => {
     if (!user || !post?.author) return;
 
     if (isLevel0) {
       Alert.alert(
         'Verify to Message',
-        'Please verify your phone number to message post authors.',
+        'Please verify your phone number to message others.',
         [{ text: 'OK' }]
       );
       return;
     }
 
-    setContactLoading(true);
     const result = await getOrCreateConversation(
       supabase,
       user.id,
       user.full_name,
       post.author.id,
-      post.author.full_name,
-      post.id
+      post.author.full_name
     );
-    setContactLoading(false);
 
     if (result.data) {
-      // Navigate to Messages tab → MessageThread
       const tabNav = navigation.getParent();
       if (tabNav) {
-        tabNav.navigate('Messages', {
+        tabNav.navigate('Chat', {
           screen: 'MessageThread',
           params: {
             conversationId: result.data.conversationId,
             otherUserId: post.author.id,
             otherUserName: post.author.full_name,
             otherUserTrustLevel: post.author.trust_level,
-            postId: post.id,
-            postTitle: post.title,
           },
         });
       }
@@ -290,12 +286,17 @@ export default function PostDetailScreen() {
         <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
           {post.author && (
             <View style={styles.authorRowTop}>
-              <Avatar
-                name={post.author.full_name}
-                photoUrl={post.author.profile_photo}
-                trustLevel={post.author.trust_level}
-                size="medium"
-              />
+              <TouchableOpacity
+                onPress={() => { if (!isOwnPost) setAvatarMenuVisible(true); }}
+                activeOpacity={isOwnPost ? 1 : 0.7}
+              >
+                <Avatar
+                  name={post.author.full_name}
+                  photoUrl={post.author.profile_photo}
+                  trustLevel={post.author.trust_level}
+                  size="medium"
+                />
+              </TouchableOpacity>
               <View style={styles.authorInfo}>
                 <View style={styles.authorNameRow}>
                   <Text style={styles.authorName}>{post.author.full_name}</Text>
@@ -390,24 +391,6 @@ export default function PostDetailScreen() {
               <Text style={styles.locationText}>{post.location_city}, {post.location_state}</Text>
             ) : null}
           </View>
-
-          {!isOwnPost && (
-            <TouchableOpacity
-              style={[styles.contactButton, isLevel0 && styles.contactButtonDisabled]}
-              onPress={handleContactAuthor}
-              disabled={contactLoading}
-              activeOpacity={0.8}
-            >
-              {contactLoading ? (
-                <ActivityIndicator size="small" color={colors.white} />
-              ) : (
-                <>
-                  <Ionicons name="chatbubble" size={20} color={colors.white} style={{ marginRight: 8 }} />
-                  <Text style={styles.contactButtonText}>{isLevel0 ? 'Verify to Message' : 'Contact Author'}</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
 
           <View ref={commentsRef} style={styles.commentsSection}>
             <Text style={styles.commentsTitle}>Comments ({comments.length})</Text>
@@ -505,6 +488,39 @@ export default function PostDetailScreen() {
             {post.location_city ? ` • ${post.location_city}, ${post.location_state}` : ''}
           </Text>
         </ScrollView>
+
+        {/* Avatar Tap Menu */}
+        <Modal
+          visible={avatarMenuVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setAvatarMenuVisible(false)}
+        >
+          <Pressable style={styles.menuOverlay} onPress={() => setAvatarMenuVisible(false)}>
+            <View style={styles.avatarMenu}>
+              <TouchableOpacity
+                style={styles.avatarMenuItem}
+                onPress={() => {
+                  setAvatarMenuVisible(false);
+                  Alert.alert('Coming Soon', 'User profiles will be available in a future update.');
+                }}
+              >
+                <Ionicons name="person-outline" size={20} color={colors.text.primary} />
+                <Text style={styles.avatarMenuText}>View Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.avatarMenuItem}
+                onPress={() => {
+                  setAvatarMenuVisible(false);
+                  handleAvatarChat();
+                }}
+              >
+                <Ionicons name="chatbubble-outline" size={20} color={colors.primary.main} />
+                <Text style={[styles.avatarMenuText, { color: colors.primary.main }]}>Chat</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
 
         {!isLevel0 ? (
           <View style={styles.commentInputContainer}>
@@ -655,21 +671,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text.secondary,
   },
-  contactButton: {
-    flexDirection: 'row',
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.primary.main,
-    paddingVertical: 14,
-    borderRadius: borderRadius.button,
-    marginBottom: spacing.s,
   },
-  contactButtonDisabled: {
-    backgroundColor: colors.text.disabled,
+  avatarMenu: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 180,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  contactButtonText: {
-    ...typography.button,
-    color: colors.white,
+  avatarMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  avatarMenuText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   footer: {
     ...typography.caption,
