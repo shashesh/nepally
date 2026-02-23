@@ -24,18 +24,20 @@ interface FeedPageProps {
 
 export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { activeLocation } = useLocation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const latestLoadRequestId = useRef(0);
 
   // Tag-based filtering (multi-select)
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
   const pageTitle = routeBasePath === '/' ? 'Home - NUSA' : 'Feed - NUSA';
+  const queryTags = router.query.tags;
 
   // Load tags on mount
   useEffect(() => {
@@ -46,28 +48,51 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
   // Parse tag filters from URL query
   useEffect(() => {
-    const { tags } = router.query;
-    if (tags && typeof tags === 'string') {
-      setSelectedTagSlugs(tags.split(',').filter(Boolean));
-    } else {
-      setSelectedTagSlugs([]);
-    }
-  }, [router.query]);
+    if (!router.isReady) return;
+
+    const nextTags = queryTags && typeof queryTags === 'string'
+      ? queryTags.split(',').filter(Boolean)
+      : [];
+
+    setSelectedTagSlugs((prev) => {
+      if (
+        prev.length === nextTags.length &&
+        prev.every((slug, index) => slug === nextTags[index])
+      ) {
+        return prev;
+      }
+      return nextTags;
+    });
+  }, [router.isReady, queryTags]);
 
   // Redirect if not logged in or no metro area set
   useEffect(() => {
+    if (authLoading) return;
+
     if (!user) {
       router.replace('/login');
     } else if (!user.metro_area_id) {
       router.replace('/onboarding/zip');
     }
-  }, [user, router]);
+  }, [authLoading, user, router]);
 
   const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
 
   const loadPosts = useCallback(async () => {
+    if (authLoading) return;
+
+    const requestId = ++latestLoadRequestId.current;
+
+    if (!user) {
+      setPosts([]);
+      setLoadError(null);
+      setLoading(false);
+      return;
+    }
+
     if (!metroAreaId) {
       setPosts([]);
+      setLoadError(null);
       setLoading(false);
       return;
     }
@@ -76,12 +101,24 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     setLoadError(null);
     try {
       const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
-      const result = await getPostsByMetroArea(
+      const requestPromise = getPostsByMetroArea(
         supabase,
         metroAreaId,
         slugs,
         50
       );
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timed out while loading posts')), 12000);
+      });
+      const result = await Promise.race([requestPromise, timeoutPromise]);
+
+      if (requestId !== latestLoadRequestId.current) return;
+
+      if (result.error) {
+        setPosts([]);
+        setLoadError('Could not load posts. Please check your connection and try again.');
+        return;
+      }
 
       if (result.data) {
         setPosts(result.data);
@@ -89,13 +126,16 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
         setPosts([]);
       }
     } catch (error) {
+      if (requestId !== latestLoadRequestId.current) return;
       console.error('Failed to load posts:', error);
       setPosts([]);
       setLoadError('Could not load posts. Please check your connection and try again.');
     } finally {
-      setLoading(false);
+      if (requestId === latestLoadRequestId.current) {
+        setLoading(false);
+      }
     }
-  }, [metroAreaId, selectedTagSlugs]);
+  }, [authLoading, user, metroAreaId, selectedTagSlugs]);
 
   // Load liked post IDs
   useEffect(() => {
