@@ -39,6 +39,8 @@ interface PostCardProps {
   onCommentPress?: () => void;
   /** Called when user taps a tag pill — parent can activate the filter */
   onTagPress?: (slug: string) => void;
+  /** Called when user taps the ⋯ more button */
+  onMorePress?: () => void;
 }
 
 /**
@@ -113,6 +115,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onLikePress,
   onCommentPress,
   onTagPress,
+  onMorePress,
 }) => {
   const descPreview = description ? truncateDescription(description) : null;
 
@@ -149,6 +152,18 @@ export const PostCard: React.FC<PostCardProps> = ({
           <Text style={styles.relativeTime}>
             {getRelativeTime(timestamp)}
           </Text>
+          {onMorePress && (
+            <TouchableOpacity
+              style={styles.moreButton}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onMorePress();
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={18} color={colors.text.secondary} />
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -293,6 +308,10 @@ const styles = StyleSheet.create({
   relativeTime: {
     fontSize: 12,
     color: colors.text.secondary,
+  },
+  moreButton: {
+    padding: 4,
+    marginLeft: 4,
   },
   // Title row
   title: {

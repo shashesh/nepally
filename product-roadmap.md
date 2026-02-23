@@ -438,15 +438,11 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 ## Next Steps
 
 ### Immediate Actions
-1. Define the User Journey for emergency posting
-2. Design the Admin Dashboard features and permissions
-3. Create wireframes for the structured post forms
-4. Document in-app chat system architecture and message flow
-5. Define photo upload UI/UX and compression workflow
-6. Create emergency post disclaimer copy and placement
+1. Implement post photo upload (DB field and placeholder UI exist, needs file picker, upload, and compression logic)
+2. Build reporting system (DB schema exists, needs API functions and UI for report button, report categories, auto-hide threshold)
+3. Design and build Admin Dashboard (moderator tools: flagged content queue, trust level management, ban/unban, platform stats)
+4. Define the User Journey for emergency posting (Red Alert verification flow)
 
 ### Research Needed
 - Legal review of liability disclaimers
-- Supabase Realtime capabilities for push notifications
-- ZIP Code to Metro Area mapping data sources
-- Supabase Storage cost modeling for photo uploads at scale
+- Push notification strategy (Supabase Realtime for in-app, Expo Push for mobile background notifications)

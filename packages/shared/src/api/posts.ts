@@ -180,3 +180,15 @@ export async function createPost(
   }
 }
 
+/**
+ * Delete a post by ID. RLS enforces that only the author can delete their own post.
+ */
+export async function deletePost(
+  supabase: SupabaseClient,
+  postId: string
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase.from('posts').delete().eq('id', postId);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+

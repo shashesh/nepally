@@ -8,6 +8,7 @@ import {
   RefreshControl,
   StatusBar,
   Alert,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,12 +24,14 @@ import { LocationChangeSheet } from '../components/location/LocationChangeSheet'
 import { LocationSwitcherSheet } from '../components/location/LocationSwitcherSheet';
 import { PostCard } from '../components/cards/PostCard';
 import { TagFilterBar } from '../components/filters/TagFilterBar';
+import { PostMoreSheet } from '../components/sheets/PostMoreSheet';
 import {
   getPostsByMetroArea,
   getTags,
   getUserLikedPostIds,
   likePost,
   unlikePost,
+  deletePost,
   getOrCreateConversation,
   getTotalUnreadCount,
   TrustLevel,
@@ -71,6 +74,7 @@ export default function HomeScreen() {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
   const [unreadCount, setUnreadCount] = useState(0);
+  const [morePost, setMorePost] = useState<Post | null>(null);
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
@@ -260,6 +264,46 @@ export default function HomeScreen() {
     }
   };
 
+  const handleMorePress = (post: Post) => {
+    setMorePost(post);
+  };
+
+  const handleMoreEdit = () => {
+    Alert.alert('Coming Soon', 'Post editing will be available in a future update.');
+  };
+
+  const handleMoreDelete = async () => {
+    if (!morePost) return;
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deletePost(supabase, morePost.id);
+            if (result.error) {
+              Alert.alert('Error', 'Failed to delete post. Please try again.');
+            } else {
+              setPosts((prev) => prev.filter((p) => p.id !== morePost.id));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleMoreReport = () => {
+    Alert.alert('Post Reported', 'Thank you. Our moderation team will review this post.');
+  };
+
+  const handleMoreShare = async () => {
+    if (!morePost) return;
+    await Share.share({ message: morePost.title });
+  };
+
   const handleCreatePost = () => {
     if (isLevel0) {
       Alert.alert(
@@ -394,6 +438,7 @@ export default function HomeScreen() {
                 ? () => handleMessagePress(item)
                 : undefined
             }
+            onMorePress={() => handleMorePress(item)}
           />
         )}
         keyExtractor={(item) => item.id}
@@ -469,6 +514,17 @@ export default function HomeScreen() {
         }}
         onKeep={dismissChangePrompt}
         onSnooze={snoozeMetro}
+      />
+
+      {/* Post More Sheet */}
+      <PostMoreSheet
+        visible={morePost !== null}
+        isOwnPost={morePost?.author_id === user?.id}
+        onClose={() => setMorePost(null)}
+        onEdit={handleMoreEdit}
+        onDelete={handleMoreDelete}
+        onReport={handleMoreReport}
+        onShare={handleMoreShare}
       />
 
       {/* Floating Action Button */}
