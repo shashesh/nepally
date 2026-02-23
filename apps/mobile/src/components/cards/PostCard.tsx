@@ -370,20 +370,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   badgeLocal: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.badge.localBg,
   },
   badgeGlobal: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: colors.badge.globalBg,
   },
   badgeText: {
     fontSize: 12,
     fontWeight: '500',
   },
   badgeTextLocal: {
-    color: '#388E3C',
+    color: colors.badge.localText,
   },
   badgeTextGlobal: {
-    color: '#1565C0',
+    color: colors.badge.globalText,
   },
   // Description
   descriptionRow: {
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 14,
-    color: '#424242',
+    color: colors.text.primary,
     lineHeight: 20,
   },
   viewMore: {
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   // Avatar menu
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
   },

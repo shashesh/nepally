@@ -82,7 +82,7 @@
 }
 
 .locationItem:hover {
-  background: var(--color-background);
+  background: var(--color-bg);
 }
 
 .locationItem:last-child {

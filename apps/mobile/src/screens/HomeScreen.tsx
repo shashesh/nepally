@@ -9,6 +9,7 @@ import {
   StatusBar,
   Alert,
   Share,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -70,6 +71,8 @@ export default function HomeScreen() {
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
 
   const [posts, setPosts] = useState<Post[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
@@ -132,24 +135,42 @@ export default function HomeScreen() {
   };
 
   const loadPosts = async () => {
-    if (!metroAreaId) return;
+    if (!metroAreaId) {
+      setPosts([]);
+      setLoadError(null);
+      setInitialLoading(false);
+      return;
+    }
 
     try {
+      setLoadError(null);
       const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
       const result = await getPostsByMetroArea(supabase, metroAreaId!, slugs);
 
       if (result.data) {
         setPosts(result.data);
+      } else {
+        setPosts([]);
       }
     } catch (error) {
       console.error('Failed to load posts:', error);
+      setPosts([]);
+      setLoadError('Could not load posts. Please check your connection and try again.');
     } finally {
+      setInitialLoading(false);
       setRefreshing(false);
     }
   };
 
   const handleRefresh = () => {
     setRefreshing(true);
+    setLoadError(null);
+    loadPosts();
+  };
+
+  const handleRetryLoad = () => {
+    setInitialLoading(true);
+    setLoadError(null);
     loadPosts();
   };
 
@@ -350,6 +371,14 @@ export default function HomeScreen() {
     });
   };
 
+  const handleSearchPress = () => {
+    Alert.alert('Coming Soon', 'Search will be available in a future update.');
+  };
+
+  const handleNotificationsPress = () => {
+    Alert.alert('Coming Soon', 'Notifications will be available in a future update.');
+  };
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="document-text-outline" size={64} color={colors.text.disabled} />
@@ -359,6 +388,24 @@ export default function HomeScreen() {
           ? 'No posts matching your filters in this area. Try different tags!'
           : 'Be the first to post in your community!'}
       </Text>
+    </View>
+  );
+
+  const renderLoadingState = () => (
+    <View style={styles.loadingState}>
+      <ActivityIndicator size="large" color={colors.primary.main} />
+      <Text style={styles.loadingText}>Loading posts…</Text>
+    </View>
+  );
+
+  const renderErrorState = () => (
+    <View style={styles.errorState}>
+      <Ionicons name="warning-outline" size={48} color={colors.warning} />
+      <Text style={styles.errorTitle}>Couldn't load posts</Text>
+      <Text style={styles.errorMessage}>{loadError || 'Please try again.'}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={handleRetryLoad} activeOpacity={0.8}>
+        <Text style={styles.retryButtonText}>Retry</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -388,7 +435,7 @@ export default function HomeScreen() {
           <Ionicons name="chevron-down" size={14} color={colors.text.secondary} />
         </TouchableOpacity>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={handleSearchPress}>
             <Ionicons name="search" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={handleMessagesPress}>
@@ -401,7 +448,7 @@ export default function HomeScreen() {
               </View>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={handleNotificationsPress}>
             <Ionicons name="notifications-outline" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
@@ -463,7 +510,7 @@ export default function HomeScreen() {
             tintColor={colors.primary.main}
           />
         }
-        ListEmptyComponent={renderEmptyState}
+        ListEmptyComponent={initialLoading ? renderLoadingState : loadError ? renderErrorState : renderEmptyState}
       />
 
       {/* Location Switcher */}
@@ -638,6 +685,47 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.secondary,
     marginTop: spacing.xs,
+    textAlign: 'center',
+  },
+  loadingState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
+    gap: spacing.s,
+  },
+  loadingText: {
+    ...typography.body,
+    color: colors.text.secondary,
+  },
+  errorState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
+    paddingHorizontal: spacing.m,
+  },
+  errorTitle: {
+    ...typography.h3,
+    color: colors.text.primary,
+    marginTop: spacing.s,
+  },
+  errorMessage: {
+    ...typography.body,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: spacing.s,
+    height: 44,
+    paddingHorizontal: spacing.m,
+    borderRadius: 10,
+    backgroundColor: colors.primary.main,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryButtonText: {
+    ...typography.button,
+    color: colors.white,
   },
   fab: {
     position: 'absolute',
