@@ -27,6 +27,18 @@
   margin-bottom: var(--space-s);
 }
 
+.avatarWrapper {
+  position: relative;
+}
+
+.avatarTrigger {
+  cursor: pointer;
+}
+
+.avatarTriggerDisabled {
+  cursor: default;
+}
+
 .authorAvatar {
   width: 44px;
   height: 44px;
@@ -101,7 +113,7 @@
   align-items: center;
   gap: 6px;
   padding: var(--space-xs) var(--space-s);
-  background: var(--color-background);
+  background: var(--color-bg);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
@@ -145,7 +157,7 @@
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-  background: var(--color-background);
+  background: var(--color-bg);
 }
 
 .commentsSection {
@@ -174,7 +186,7 @@
   align-items: center;
   font-size: var(--font-size-small);
   color: var(--color-text-secondary);
-  background: var(--color-background);
+  background: var(--color-bg);
   border-radius: var(--radius-md);
   padding: var(--space-xs) var(--space-s);
 }
@@ -332,7 +344,7 @@
 }
 
 .avatarDropdownItem:hover {
-  background: var(--color-background);
+  background: var(--color-bg);
 }
 
 .loading {

@@ -23,6 +23,7 @@ export default function MessageThreadPage() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,11 +69,50 @@ export default function MessageThreadPage() {
 
   async function loadMessages(convId: string) {
     setLoading(true);
+    setLoadError(null);
     const result = await getMessages(supabase, convId, 100);
     if (result.data) {
       setMessages(result.data);
+    } else {
+      setLoadError('Could not load messages. Please try again.');
     }
     setLoading(false);
+  }
+
+  function handleRetryLoad() {
+    if (!conversationId || typeof conversationId !== 'string') return;
+    loadMessages(conversationId);
+  }
+
+  function formatDateLabel(dateStr: string): string {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  const threadItems: Array<
+    | { type: 'date'; id: string; timestamp: string }
+    | { type: 'message'; id: string; message: ChatMessage }
+  > = [];
+  let lastDateKey = '';
+
+  for (const message of messages) {
+    const dateKey = new Date(message.timestamp).toDateString();
+    if (dateKey !== lastDateKey) {
+      threadItems.push({
+        type: 'date',
+        id: `date-${dateKey}`,
+        timestamp: message.timestamp,
+      });
+      lastDateKey = dateKey;
+    }
+
+    threadItems.push({ type: 'message', id: message.id, message });
   }
 
   async function handleSend(e: FormEvent) {
@@ -122,12 +162,29 @@ export default function MessageThreadPage() {
         <div className={styles.messageList}>
           {loading ? (
             <div className={styles.loading}>Loading messages...</div>
+          ) : loadError ? (
+            <div className={styles.threadErrorState}>
+              <div className={styles.threadErrorIcon}>⚠️</div>
+              <p>{loadError}</p>
+              <button type="button" className={styles.retryBtn} onClick={handleRetryLoad}>
+                Retry
+              </button>
+            </div>
           ) : messages.length === 0 ? (
             <div className={styles.emptyState}>
               <p>No messages yet. Say hello!</p>
             </div>
           ) : (
-            messages.map((msg) => {
+            threadItems.map((item) => {
+              if (item.type === 'date') {
+                return (
+                  <div key={item.id} className={styles.dateSeparator}>
+                    <span>{formatDateLabel(item.timestamp)}</span>
+                  </div>
+                );
+              }
+
+              const msg = item.message;
               const isSent = msg.sender_id === user.id;
               return (
                 <div
@@ -137,8 +194,13 @@ export default function MessageThreadPage() {
                   }`}
                 >
                   <div>{msg.text}</div>
-                  <div className={styles.messageTime}>
-                    {formatRelativeTime(new Date(msg.timestamp))}
+                  <div className={styles.messageMeta}>
+                    <span className={styles.messageTime}>
+                      {formatRelativeTime(new Date(msg.timestamp))}
+                    </span>
+                    {isSent && (
+                      <span className={styles.readReceipt}>{msg.read ? '✓✓' : '✓'}</span>
+                    )}
                   </div>
                 </div>
               );

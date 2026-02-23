@@ -39,7 +39,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             <Ionicons
               name={isRead ? 'checkmark-done' : 'checkmark'}
               size={14}
-              color={isRead ? colors.white : 'rgba(255,255,255,0.7)'}
+              color={isRead ? colors.white : 'rgba(255, 255, 255, 0.7)'}
               style={styles.checkIcon}
             />
           )}
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 4,
   },
   bubbleReceived: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.surfaceMuted,
     borderTopLeftRadius: 4,
   },
   text: {
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   timeSent: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   timeReceived: {
     color: colors.text.secondary,

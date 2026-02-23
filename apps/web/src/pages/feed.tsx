@@ -12,8 +12,6 @@ import {
   getOrCreateConversation,
   formatRelativeTime,
   TAG_EMOJI,
-  TAG_COLORS,
-  DEFAULT_TAG_COLOR,
 } from '@nusa/shared';
 import type { Post, Tag } from '@nusa/shared';
 import TagFilterBar from '../components/TagFilterBar';
@@ -31,6 +29,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Tag-based filtering (multi-select)
@@ -74,6 +73,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     }
 
     setLoading(true);
+    setLoadError(null);
     try {
       const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
       const result = await getPostsByMetroArea(
@@ -91,6 +91,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     } catch (error) {
       console.error('Failed to load posts:', error);
       setPosts([]);
+      setLoadError('Could not load posts. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -126,6 +127,10 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   function handleAllChip() {
     setSelectedTagSlugs([]);
     router.replace({ pathname: routeBasePath }, undefined, { shallow: true });
+  }
+
+  function handleRetryLoad() {
+    loadPosts();
   }
 
   async function handleAvatarChat(authorId: string, authorName: string) {
@@ -182,22 +187,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
             </p>
           </div>
           {user.trust_level >= 1 && (
-            <Link
-              href="/posts/create"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                backgroundColor: 'var(--color-primary)',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: 8,
-                padding: '8px 16px',
-                fontSize: 14,
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
-            >
+            <Link href="/posts/create" className={styles.createPostBtn}>
               + Create Post
             </Link>
           )}
@@ -213,7 +203,27 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
         {/* Post List */}
         {loading ? (
-          <div className={styles.loading}>Loading posts...</div>
+          <div className={styles.loadingState}>
+            <div className={styles.skeletonCard}>
+              <div className={styles.skeletonLineLg} />
+              <div className={styles.skeletonLineMd} />
+              <div className={styles.skeletonLineSm} />
+            </div>
+            <div className={styles.skeletonCard}>
+              <div className={styles.skeletonLineLg} />
+              <div className={styles.skeletonLineMd} />
+              <div className={styles.skeletonLineSm} />
+            </div>
+          </div>
+        ) : loadError ? (
+          <div className={styles.errorState}>
+            <div className={styles.errorIcon}>⚠️</div>
+            <h3>Couldn&apos;t load posts</h3>
+            <p>{loadError}</p>
+            <button className={styles.retryBtn} onClick={handleRetryLoad}>
+              Retry
+            </button>
+          </div>
         ) : posts.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🏔️</div>
@@ -223,6 +233,15 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 ? 'No posts matching your filters in this area. Try different tags!'
                 : 'Be the first to share something with your community!'}
             </p>
+            {user.trust_level >= 1 ? (
+              <Link href="/posts/create" className={styles.emptyActionBtn}>
+                Create First Post
+              </Link>
+            ) : (
+              <Link href="/profile" className={styles.emptyActionBtnSecondary}>
+                Verify Account to Post
+              </Link>
+            )}
           </div>
         ) : (
           posts.map((post) => (
@@ -262,12 +281,28 @@ function PostCard({
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   const isOwnPost = currentUserId === post.author_id;
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
+        setAvatarMenuOpen(false);
+      }
+    }
+
+    if (avatarMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [avatarMenuOpen]);
+
   return (
     <Link href={`/posts/${post.id}`} className={styles.postCard}>
       <div className={styles.postCardHeader}>
-        <div style={{ position: 'relative' }} ref={avatarMenuRef}>
+        <div className={styles.avatarWrapper} ref={avatarMenuRef}>
           <div
-            style={{ cursor: !isOwnPost ? 'pointer' : 'default' }}
+            className={!isOwnPost ? styles.avatarTrigger : styles.avatarTriggerDisabled}
             onClick={(e) => {
               if (!isOwnPost) {
                 e.preventDefault();
@@ -320,11 +355,9 @@ function PostCard({
         </div>
         {/* Local / Global badge */}
         <span
-          className={styles.postCategoryBadge}
-          style={{
-            backgroundColor: post.is_global ? '#E3F2FD' : '#E8F5E9',
-            color: post.is_global ? '#1565C0' : '#388E3C',
-          }}
+          className={`${styles.postCategoryBadge} ${
+            post.is_global ? styles.postCategoryBadgeGlobal : styles.postCategoryBadgeLocal
+          }`}
         >
           {post.is_global ? '🌐 Global' : '📍 Local'}
         </span>
@@ -335,9 +368,8 @@ function PostCard({
 
       {/* Tag pills */}
       {post.tags && post.tags.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0' }}>
+        <div className={styles.tagRow}>
           {post.tags.map((tag) => {
-            const tagColor = TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
             const emoji = TAG_EMOJI[tag.slug] || '';
             return (
               <span
@@ -347,17 +379,7 @@ function PostCard({
                   e.stopPropagation();
                   onTagClick(tag.slug);
                 }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: tagColor,
-                  backgroundColor: `${tagColor}26`, // 15% opacity
-                  cursor: 'pointer',
-                }}
+                className={styles.tagPill}
               >
                 {emoji ? `${emoji} ${tag.name}` : tag.name}
               </span>

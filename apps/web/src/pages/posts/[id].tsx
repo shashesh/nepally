@@ -54,6 +54,22 @@ export default function PostDetailPage() {
     }
   }, [user, post?.id]);
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
+        setAvatarMenuOpen(false);
+      }
+    }
+
+    if (avatarMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [avatarMenuOpen]);
+
   async function loadPost(postId: string) {
     setLoading(true);
     const result = await getPostById(supabase, postId);
@@ -171,9 +187,9 @@ export default function PostDetailPage() {
 
         <div className={styles.postDetail}>
           <div className={styles.postHeader}>
-            <div style={{ position: 'relative' }} ref={avatarMenuRef}>
+            <div className={styles.avatarWrapper} ref={avatarMenuRef}>
               <div
-                style={{ cursor: post.author_id !== user?.id ? 'pointer' : 'default' }}
+                className={post.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
                 onClick={() => {
                   if (post.author_id !== user?.id) setAvatarMenuOpen(!avatarMenuOpen);
                 }}

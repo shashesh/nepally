@@ -8,12 +8,11 @@ import {
   createPost,
   getTags,
   TAG_EMOJI,
-  TAG_COLORS,
-  DEFAULT_TAG_COLOR,
   MAX_TAGS_PER_POST,
   MAX_PHOTOS_PER_POST,
 } from '@nusa/shared';
 import type { Tag } from '@nusa/shared';
+import styles from '../../styles/CreatePost.module.css';
 
 const TITLE_MAX = 150;
 const TITLE_COUNTER_THRESHOLD = 120;
@@ -151,18 +150,15 @@ export default function CreatePostPage() {
       <Head>
         <title>Create Post - NUSA</title>
       </Head>
-      <div style={pageStyles.container}>
+      <div className={styles.container}>
         {/* Header */}
-        <div style={pageStyles.header}>
-          <button style={pageStyles.cancelBtn} onClick={handleCancel}>
+        <div className={styles.header}>
+          <button className={styles.cancelBtn} onClick={handleCancel}>
             Cancel
           </button>
-          <h2 style={pageStyles.headerTitle}>Create Post</h2>
+          <h2 className={styles.headerTitle}>Create Post</h2>
           <button
-            style={{
-              ...pageStyles.postBtn,
-              ...(canSubmit ? {} : pageStyles.postBtnDisabled),
-            }}
+            className={`${styles.postBtn} ${!canSubmit ? styles.postBtnDisabled : ''}`}
             onClick={handleSubmit}
             disabled={!canSubmit}
           >
@@ -170,12 +166,12 @@ export default function CreatePostPage() {
           </button>
         </div>
 
-        {error && <div style={pageStyles.error}>{error}</div>}
+        {error && <div className={styles.error}>{error}</div>}
 
         {/* Title */}
-        <div style={pageStyles.titleSection}>
+        <div className={styles.titleSection}>
           <input
-            style={pageStyles.titleInput}
+            className={styles.titleInput}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="What's this about?"
@@ -183,24 +179,19 @@ export default function CreatePostPage() {
             aria-label="Post title, required"
           />
           {title.length >= TITLE_COUNTER_THRESHOLD && (
-            <span
-              style={{
-                ...pageStyles.charCounter,
-                ...(title.length >= 140 ? { color: 'var(--color-error)' } : {}),
-              }}
-            >
+            <span className={`${styles.charCounter} ${title.length >= 140 ? styles.charCounterError : ''}`}>
               {title.length}/{TITLE_MAX}
             </span>
           )}
           {!titleValid && title.length > 0 && (
-            <div style={pageStyles.inlineError}>Title must be at least 5 characters</div>
+            <div className={styles.inlineError}>Title must be at least 5 characters</div>
           )}
         </div>
 
         {/* Body */}
-        <div style={pageStyles.bodySection}>
+        <div className={styles.bodySection}>
           <textarea
-            style={pageStyles.bodyInput}
+            className={styles.bodyInput}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write your post details here..."
@@ -208,50 +199,32 @@ export default function CreatePostPage() {
             aria-label="Post body, required"
           />
           {body.length >= BODY_COUNTER_THRESHOLD && (
-            <span
-              style={{
-                ...pageStyles.charCounter,
-                ...(body.length >= 4800 ? { color: 'var(--color-error)' } : {}),
-              }}
-            >
+            <span className={`${styles.charCounter} ${body.length >= 4800 ? styles.charCounterError : ''}`}>
               {body.length}/{BODY_MAX}
             </span>
           )}
           {!bodyValid && body.length > 0 && (
-            <div style={pageStyles.inlineError}>Body must be at least 10 characters</div>
+            <div className={styles.inlineError}>Body must be at least 10 characters</div>
           )}
         </div>
 
         {/* Tags */}
-        <div style={pageStyles.section}>
-          <div style={pageStyles.sectionLabelRow}>
-            <div style={pageStyles.sectionLabel}>Tags (1-3 required)</div>
-            <div style={pageStyles.sectionHint}>{selectedTagIds.length}/{MAX_TAGS_PER_POST}</div>
+        <div className={styles.section}>
+          <div className={styles.sectionLabelRow}>
+            <div className={styles.sectionLabel}>Tags (1-3 required)</div>
+            <div className={styles.sectionHint}>{selectedTagIds.length}/{MAX_TAGS_PER_POST}</div>
           </div>
-          {tagsError && <div style={pageStyles.inlineError}>{tagsError}</div>}
-          <div style={pageStyles.tagGrid}>
+          {tagsError && <div className={styles.inlineError}>{tagsError}</div>}
+          <div className={styles.tagGrid}>
             {availableTags.map((tag) => {
               const isSelected = selectedTagIds.includes(tag.id);
-              const tagColor = tag.color || TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
               const emoji = TAG_EMOJI[tag.slug] || '';
               const isDisabled = !isSelected && selectedTagIds.length >= MAX_TAGS_PER_POST;
 
               return (
                 <button
                   key={tag.id}
-                  style={{
-                    ...pageStyles.tagChip,
-                    ...(isSelected
-                      ? {
-                          backgroundColor: `${tagColor}26`,
-                          borderColor: tagColor,
-                          borderWidth: 2,
-                          color: tagColor,
-                          fontWeight: 600,
-                        }
-                      : {}),
-                    ...(isDisabled ? { opacity: 0.5, cursor: 'default' } : {}),
-                  }}
+                  className={`${styles.tagChip} ${isSelected ? styles.tagChipSelected : ''} ${isDisabled ? styles.tagChipDisabled : ''}`}
                   onClick={() => toggleTag(tag.id)}
                   disabled={isDisabled}
                   aria-label={`${tag.name} tag, ${isSelected ? 'selected' : 'not selected'}`}
@@ -263,240 +236,54 @@ export default function CreatePostPage() {
           </div>
 
           {!tagsValid && !tagsLoading && (
-            <div style={pageStyles.inlineError}>Please select at least 1 tag</div>
+            <div className={styles.inlineError}>Please select at least 1 tag</div>
           )}
 
           {hasEmergencyTag && (
-            <div style={pageStyles.emergencyWarning}>
+            <div className={styles.emergencyWarning}>
               Emergency posts require moderator approval before becoming visible. This is NOT a replacement for 911.
             </div>
           )}
         </div>
 
         {/* Photo Attachment */}
-        <div style={pageStyles.section}>
-          <div style={pageStyles.photoRow}>
-            <span style={{ fontSize: 20 }}>📷</span>
-            <span style={pageStyles.photoLabel}>Add Photos (optional)</span>
-            <span style={pageStyles.photoCount}>0/{MAX_PHOTOS_PER_POST}</span>
+        <div className={styles.section}>
+          <div className={styles.photoRow}>
+            <span className={styles.photoIcon}>📷</span>
+            <span className={styles.photoLabel}>Add Photos (optional)</span>
+            <span className={styles.photoCount}>0/{MAX_PHOTOS_PER_POST}</span>
           </div>
-          <div style={pageStyles.sectionHint}>Photos are optional and not required to publish.</div>
+          <div className={styles.sectionHint}>Photos are optional and not required to publish.</div>
         </div>
 
         {/* Location Info */}
         {metroName && (
-          <div style={pageStyles.locationRow}>
+          <div className={styles.locationRow}>
             📍 Posting to: {metroName}
           </div>
         )}
 
         {/* Global Toggle (Premium Only) */}
         {user.is_premium && (
-          <div style={pageStyles.globalRow}>
+          <div className={styles.globalRow}>
             <div>
-              <div style={pageStyles.globalLabel}>🌐 Post Globally</div>
-              <div style={pageStyles.globalSublabel}>Visible in all metro areas</div>
+              <div className={styles.globalLabel}>🌐 Post Globally</div>
+              <div className={styles.globalSublabel}>Visible in all metro areas</div>
             </div>
-            <label style={pageStyles.toggleLabel}>
+            <label className={styles.toggleLabel}>
               <input
                 type="checkbox"
                 checked={isGlobal}
                 onChange={(e) => setIsGlobal(e.target.checked)}
-                style={{ width: 20, height: 20, accentColor: 'var(--color-primary)' }}
+                className={styles.toggleInput}
                 aria-label="Post globally toggle"
               />
             </label>
           </div>
         )}
 
-        {postButtonHint && <div style={pageStyles.submitHint}>{postButtonHint}</div>}
+        {postButtonHint && <div className={styles.submitHint}>{postButtonHint}</div>}
       </div>
     </>
   );
 }
-
-const pageStyles: Record<string, React.CSSProperties> = {
-  container: {
-    maxWidth: 640,
-    margin: '0 auto',
-    background: '#FFFFFF',
-    borderRadius: 12,
-    border: '1px solid var(--color-border)',
-    overflow: 'hidden',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '12px 16px',
-    borderBottom: '1px solid var(--color-border)',
-  },
-  cancelBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: 16,
-    color: 'var(--color-primary)',
-    cursor: 'pointer',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 600,
-    margin: 0,
-  },
-  postBtn: {
-    backgroundColor: 'var(--color-primary)',
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: 16,
-    padding: '6px 20px',
-    fontSize: 15,
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  postBtnDisabled: {
-    backgroundColor: '#F5F5F5',
-    color: '#BDBDBD',
-    cursor: 'not-allowed',
-  },
-  error: {
-    background: '#FFEBEE',
-    color: 'var(--color-error)',
-    padding: '12px 16px',
-    fontSize: 14,
-  },
-  titleSection: {
-    padding: '16px',
-  },
-  titleInput: {
-    width: '100%',
-    border: 'none',
-    outline: 'none',
-    fontSize: 20,
-    fontWeight: 600,
-    color: '#212121',
-    background: 'transparent',
-  },
-  bodySection: {
-    padding: '16px',
-    borderTop: '1px solid #E0E0E0',
-  },
-  bodyInput: {
-    width: '100%',
-    border: 'none',
-    outline: 'none',
-    fontSize: 16,
-    color: '#212121',
-    background: 'transparent',
-    minHeight: 150,
-    resize: 'vertical' as const,
-    fontFamily: 'inherit',
-    lineHeight: 1.5,
-  },
-  charCounter: {
-    display: 'block',
-    textAlign: 'right' as const,
-    fontSize: 12,
-    color: '#757575',
-    marginTop: 4,
-  },
-  section: {
-    padding: 16,
-    borderTop: '1px solid #E0E0E0',
-  },
-  sectionLabelRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: '#757575',
-    marginBottom: 12,
-  },
-  sectionHint: {
-    fontSize: 12,
-    color: '#757575',
-    marginTop: 6,
-  },
-  inlineError: {
-    marginTop: 6,
-    fontSize: 12,
-    color: 'var(--color-error)',
-  },
-  tagGrid: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: 8,
-  },
-  tagChip: {
-    height: 36,
-    padding: '0 14px',
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
-    border: '1px solid #E0E0E0',
-    cursor: 'pointer',
-    fontSize: 14,
-    color: '#757575',
-    display: 'inline-flex',
-    alignItems: 'center',
-  },
-  emergencyWarning: {
-    backgroundColor: '#FFEBEE',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
-    fontSize: 12,
-    color: 'var(--color-error)',
-    lineHeight: 1.5,
-  },
-  photoRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    height: 48,
-  },
-  photoLabel: {
-    fontSize: 15,
-    color: '#757575',
-    flex: 1,
-  },
-  photoCount: {
-    fontSize: 14,
-    color: '#757575',
-  },
-  locationRow: {
-    padding: '12px 16px',
-    backgroundColor: '#F5F5F5',
-    borderTop: '1px solid #E0E0E0',
-    fontSize: 14,
-    color: '#757575',
-  },
-  globalRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '12px 16px',
-    borderTop: '1px solid #E0E0E0',
-  },
-  globalLabel: {
-    fontSize: 15,
-    fontWeight: 500,
-    color: '#212121',
-  },
-  globalSublabel: {
-    fontSize: 12,
-    color: '#757575',
-    marginTop: 2,
-  },
-  toggleLabel: {
-    cursor: 'pointer',
-  },
-  submitHint: {
-    padding: '0 16px 16px',
-    textAlign: 'center',
-    fontSize: 12,
-    color: '#757575',
-  },
-};

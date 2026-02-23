@@ -9,6 +9,8 @@ import {
   Platform,
   Alert,
   StatusBar,
+  ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,6 +52,7 @@ export default function MessageThreadScreen() {
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
@@ -101,11 +104,20 @@ export default function MessageThreadScreen() {
   }, [conversationId, user?.id]);
 
   const loadMessages = async () => {
+    setLoadError(null);
     const result = await getMessages(supabase, conversationId);
     if (result.data) {
       setMessages(result.data);
+    } else {
+      setLoadError('Could not load messages. Please try again.');
     }
     setLoading(false);
+  };
+
+  const handleRetryLoad = () => {
+    setLoading(true);
+    setLoadError(null);
+    loadMessages();
   };
 
   const handleSend = useCallback(
@@ -247,12 +259,14 @@ export default function MessageThreadScreen() {
 
       {/* Kebab Menu */}
       {menuVisible && (
-        <View style={styles.menu}>
-          <TouchableOpacity style={styles.menuItem} onPress={handleBlock}>
-            <Ionicons name="close-circle" size={18} color={colors.error} />
-            <Text style={styles.menuItemTextDanger}>Block User</Text>
-          </TouchableOpacity>
-        </View>
+        <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
+          <View style={styles.menu}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleBlock}>
+              <Ionicons name="close-circle" size={18} color={colors.error} />
+              <Text style={styles.menuItemTextDanger}>Block User</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
       )}
 
       {/* Messages */}
@@ -261,36 +275,56 @@ export default function MessageThreadScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
-        <FlatList
-          ref={flatListRef}
-          data={flatData}
-          renderItem={({ item }) => {
-            if (item.type === 'date') {
-              return renderDateSeparator(formatDateLabel(item.data));
+        {loading ? (
+          <View style={styles.threadStateContainer}>
+            <ActivityIndicator size="large" color={colors.primary.main} />
+            <Text style={styles.threadStateText}>Loading messages…</Text>
+          </View>
+        ) : loadError ? (
+          <View style={styles.threadStateContainer}>
+            <Ionicons name="warning-outline" size={44} color={colors.warning} />
+            <Text style={styles.threadStateText}>{loadError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetryLoad}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={flatData}
+            renderItem={({ item }) => {
+              if (item.type === 'date') {
+                return renderDateSeparator(formatDateLabel(item.data));
+              }
+              const msg = item.data as ChatMessage;
+              return (
+                <MessageBubble
+                  text={msg.text}
+                  timestamp={msg.timestamp}
+                  isSent={msg.sender_id === user?.id}
+                  isRead={msg.read}
+                />
+              );
+            }}
+            keyExtractor={(item, index) =>
+              item.type === 'date' ? `date-${index}` : item.data.id
             }
-            const msg = item.data as ChatMessage;
-            return (
-              <MessageBubble
-                text={msg.text}
-                timestamp={msg.timestamp}
-                isSent={msg.sender_id === user?.id}
-                isRead={msg.read}
-              />
-            );
-          }}
-          keyExtractor={(item, index) =>
-            item.type === 'date' ? `date-${index}` : item.data.id
-          }
-          contentContainerStyle={styles.messagesList}
-          onContentSizeChange={() => {
-            if (!loading) {
+            contentContainerStyle={styles.messagesList}
+            onContentSizeChange={() => {
+              if (!loading) {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }
+            }}
+            onLayout={() => {
               flatListRef.current?.scrollToEnd({ animated: false });
+            }}
+            ListEmptyComponent={
+              <View style={styles.threadStateContainer}>
+                <Text style={styles.threadStateText}>No messages yet. Say hello!</Text>
+              </View>
             }
-          }}
-          onLayout={() => {
-            flatListRef.current?.scrollToEnd({ animated: false });
-          }}
-        />
+          />
+        )}
 
         <ChatInput onSend={handleSend} />
       </KeyboardAvoidingView>
@@ -349,6 +383,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 90,
+  },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -363,6 +401,7 @@ const styles = StyleSheet.create({
   },
   messagesList: {
     paddingVertical: spacing.xs,
+    flexGrow: 1,
   },
   dateSeparator: {
     flexDirection: 'row',
@@ -384,5 +423,30 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 10,
     paddingVertical: 2,
+  },
+  threadStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.m,
+    gap: spacing.s,
+  },
+  threadStateText: {
+    ...typography.body,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: spacing.xs,
+    backgroundColor: colors.primary.main,
+    borderRadius: 10,
+    paddingHorizontal: spacing.m,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryButtonText: {
+    ...typography.button,
+    color: colors.white,
   },
 });

@@ -61,39 +61,42 @@ export default function Layout({ children }: LayoutProps) {
     <div className={styles.layout}>
       <nav className={styles.nav}>
         <div className={styles.navInner}>
-          <Link href="/" className={styles.logo}>
-            NUSA
-          </Link>
-
-          {user && <LocationSwitcher />}
+          <div className={styles.navBrand}>
+            <Link href="/" className={styles.logo}>
+              NUSA
+            </Link>
+          </div>
 
           {user && (
-            <ul className={styles.navLinks}>
-              <li>
-                <Link
-                  href="/feed"
-                  className={`${styles.navLink} ${isActive('/feed') ? styles.navLinkActive : ''}`}
-                >
-                  Feed
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/events"
-                  className={`${styles.navLink} ${isActive('/events') ? styles.navLinkActive : ''}`}
-                >
-                  Events
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/marketplace"
-                  className={`${styles.navLink} ${isActive('/marketplace') ? styles.navLinkActive : ''}`}
-                >
-                  Marketplace
-                </Link>
-              </li>
-            </ul>
+            <div className={styles.navCenter}>
+              <LocationSwitcher />
+              <ul className={styles.navLinks}>
+                <li>
+                  <Link
+                    href="/feed"
+                    className={`${styles.navLink} ${isActive('/feed') ? styles.navLinkActive : ''}`}
+                  >
+                    Feed
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/events"
+                    className={`${styles.navLink} ${isActive('/events') ? styles.navLinkActive : ''}`}
+                  >
+                    Events
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/marketplace"
+                    className={`${styles.navLink} ${isActive('/marketplace') ? styles.navLinkActive : ''}`}
+                  >
+                    Marketplace
+                  </Link>
+                </li>
+              </ul>
+            </div>
           )}
 
           <div className={styles.navAuth}>
@@ -128,7 +131,7 @@ export default function Layout({ children }: LayoutProps) {
                     className={styles.avatarButton}
                     type="button"
                     onClick={() => setDropdownOpen((prev) => !prev)}
-                    aria-expanded={dropdownOpen}
+                    aria-label="Open account menu"
                     aria-haspopup="true"
                   >
                     <Avatar

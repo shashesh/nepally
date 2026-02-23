@@ -27,9 +27,11 @@ export const colors = {
   text: {
     primary: '#212121', // Almost Black
     secondary: '#757575', // Medium Gray
+    tertiary: '#9E9E9E',
     disabled: '#BDBDBD', // Light Gray for disabled
   },
   border: '#E0E0E0', // Light Gray
+  surfaceMuted: '#F5F5F5',
 
   // Component-Specific Colors
   banner: {
@@ -44,6 +46,10 @@ export const colors = {
     level0: '#757575', // Gray
     level1: '#2E7D32', // Green
     level2: '#1565C0', // Blue
+    localBg: '#E8F5E9',
+    localText: '#388E3C',
+    globalBg: '#E3F2FD',
+    globalText: '#1565C0',
     active: '#4CAF50', // Bright Green
     expired: '#F44336', // Bright Red
   },
@@ -55,6 +61,8 @@ export const colors = {
 
   // Overlays
   overlay: 'rgba(0, 0, 0, 0.5)',
+  overlayLight: 'rgba(0, 0, 0, 0.3)',
+  overlayMedium: 'rgba(0, 0, 0, 0.4)',
   shadow: 'rgba(0, 0, 0, 0.1)',
 } as const;
 

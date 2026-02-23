@@ -1,0 +1,236 @@
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cancelBtn {
+  background: none;
+  border: none;
+  font-size: var(--font-size-body);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.headerTitle {
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.postBtn {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 6px 20px;
+  font-size: 15px;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.postBtnDisabled {
+  background: var(--color-bg);
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}
+
+.error {
+  background: #FFEBEE;
+  color: var(--color-error);
+  padding: 12px 16px;
+  font-size: var(--font-size-small);
+}
+
+.titleSection {
+  padding: var(--space-s);
+}
+
+.titleInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 20px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+.bodySection {
+  padding: var(--space-s);
+  border-top: 1px solid var(--color-border);
+}
+
+.bodyInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  background: transparent;
+  min-height: 150px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: var(--line-height-normal);
+}
+
+.charCounter {
+  display: block;
+  text-align: right;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+.charCounterError {
+  color: var(--color-error);
+}
+
+.section {
+  padding: var(--space-s);
+  border-top: 1px solid var(--color-border);
+}
+
+.sectionLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xs);
+}
+
+.sectionLabel {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.sectionHint {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+  margin-top: 6px;
+}
+
+.inlineError {
+  margin-top: 6px;
+  font-size: var(--font-size-caption);
+  color: var(--color-error);
+}
+
+.tagGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tagChip {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 20px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+}
+
+.tagChipSelected {
+  background: rgba(21, 101, 192, 0.08);
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tagChipDisabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.emergencyWarning {
+  background: #FFEBEE;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  margin-top: 10px;
+  font-size: var(--font-size-caption);
+  color: var(--color-error);
+  line-height: var(--line-height-normal);
+}
+
+.photoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 48px;
+}
+
+.photoIcon {
+  font-size: 20px;
+}
+
+.photoLabel {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  flex: 1;
+}
+
+.photoCount {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
+.locationRow {
+  padding: 12px 16px;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
+.globalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.globalLabel {
+  font-size: 15px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.globalSublabel {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.toggleLabel {
+  cursor: pointer;
+}
+
+.toggleInput {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-primary);
+}
+
+.submitHint {
+  padding: 0 16px 16px;
+  text-align: center;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}

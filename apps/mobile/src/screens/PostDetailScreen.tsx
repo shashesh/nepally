@@ -361,8 +361,8 @@ export default function PostDetailScreen() {
           </View>
 
           <View style={styles.metaRow}>
-            <View style={[styles.metaBadge, { backgroundColor: post.is_global ? '#E3F2FD' : '#E8F5E9' }]}> 
-              <Text style={{ fontSize: 12, color: post.is_global ? '#1565C0' : '#388E3C', fontWeight: '500' }}>
+            <View style={[styles.metaBadge, post.is_global ? styles.metaBadgeGlobal : styles.metaBadgeLocal]}> 
+              <Text style={[styles.metaBadgeText, post.is_global ? styles.metaBadgeTextGlobal : styles.metaBadgeTextLocal]}>
                 {post.is_global ? '🌐 Global' : '📍 Local'}
               </Text>
             </View>
@@ -662,6 +662,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
+  metaBadgeLocal: {
+    backgroundColor: colors.badge.localBg,
+  },
+  metaBadgeGlobal: {
+    backgroundColor: colors.badge.globalBg,
+  },
+  metaBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  metaBadgeTextLocal: {
+    color: colors.badge.localText,
+  },
+  metaBadgeTextGlobal: {
+    color: colors.badge.globalText,
+  },
   metaTag: {
     borderRadius: 12,
     paddingHorizontal: 8,
@@ -673,7 +689,7 @@ const styles = StyleSheet.create({
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
