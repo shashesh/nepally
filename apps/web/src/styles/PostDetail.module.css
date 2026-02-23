@@ -59,13 +59,17 @@
   border-radius: var(--radius-full);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
 }
 
-.catHousing { background: #E3F2FD; color: #1565C0; }
-.catJobs { background: #E8F5E9; color: #2E7D32; }
-.catEmergency { background: #FFEBEE; color: #C62828; }
-.catTravel { background: #FFF3E0; color: #E65100; }
+.localBadge {
+  background: #E8F5E9;
+  color: #388E3C;
+}
+
+.globalBadge {
+  background: #E3F2FD;
+  color: #1565C0;
+}
 
 .postTitle {
   font-size: var(--font-size-h2);
@@ -78,14 +82,18 @@
   line-height: var(--line-height-relaxed);
   color: var(--color-text-primary);
   white-space: pre-wrap;
-  margin-bottom: var(--space-m);
+  margin-bottom: var(--space-s);
 }
 
 .postActions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-s);
   padding-top: var(--space-s);
+  padding-bottom: var(--space-s);
   border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .actionBtn {
@@ -93,8 +101,8 @@
   align-items: center;
   gap: 6px;
   padding: var(--space-xs) var(--space-s);
-  background: none;
-  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   font-size: var(--font-size-small);
@@ -109,7 +117,11 @@
 
 .actionBtnActive {
   color: var(--color-accent-red);
-  border-color: var(--color-accent-red);
+  background: #FDEBEC;
+}
+
+.actionBtnDisabled {
+  color: var(--color-text-tertiary);
 }
 
 .messageBtn {
@@ -131,37 +143,30 @@
   background: var(--color-primary-dark);
 }
 
-/* ── Fields (category-specific) ──────────── */
-.fieldsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-s);
-  margin-bottom: var(--space-m);
-  padding: var(--space-s);
-  background: #FAFAFA;
-  border-radius: var(--radius-md);
-}
-
-.fieldItem {
+.metaRow {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: var(--space-s);
 }
 
-.fieldLabel {
+.metaLocation {
   font-size: var(--font-size-caption);
   color: var(--color-text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-.fieldValue {
-  font-size: var(--font-size-small);
+.metaTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
+  background: var(--color-background);
 }
 
-/* ── Comments Section ────────────────────── */
 .commentsSection {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -177,8 +182,42 @@
 
 .commentForm {
   display: flex;
+  flex-direction: column;
   gap: var(--space-xs);
   margin-bottom: var(--space-m);
+}
+
+.replyBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-s);
+}
+
+.replyCancel {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.commentForm input,
+.commentForm .commentInput {
+  flex: 1;
+}
+
+.commentForm :global(input) {
+  flex: 1;
+}
+
+.commentFormRow {
+  display: flex;
+  gap: var(--space-xs);
 }
 
 .commentInput {
@@ -212,29 +251,22 @@
   cursor: not-allowed;
 }
 
+.commentThread {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
 .comment {
   display: flex;
   gap: var(--space-xs);
-  padding: var(--space-s) 0;
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-xs) 0;
 }
 
-.comment:last-child {
-  border-bottom: none;
-}
-
-.commentAvatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background: var(--color-primary-light);
-  color: white;
+.replyRow {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: var(--font-weight-bold);
-  flex-shrink: 0;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0 var(--space-xs) var(--space-l);
 }
 
 .commentContent {
@@ -257,6 +289,30 @@
   color: var(--color-text-primary);
   margin-top: 2px;
   line-height: var(--line-height-normal);
+}
+
+.commentActionsRow {
+  display: flex;
+  gap: var(--space-s);
+  margin-top: 6px;
+}
+
+.inlineLink {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-caption);
+  cursor: pointer;
+}
+
+.inlineLinkDanger {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-accent-red);
+  font-size: var(--font-size-caption);
+  cursor: pointer;
 }
 
 .noComments {

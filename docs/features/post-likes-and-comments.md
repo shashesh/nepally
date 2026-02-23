@@ -47,9 +47,9 @@ This creates friction in discovery and reduces community trust signals.
 | **3.5** Profile Photo Display | Show user avatars throughout app (already in roadmap, now prioritized) | Must-have |
 
 **Out of scope (this iteration):**
-- Nested comment replies (flat list only for Phase 1)
+- Multi-level nested replies (single-level replies only)
 - Comment likes/upvotes
-- Comment sorting (chronological only)
+- True "most liked" comment sorting (comment likes table not implemented yet)
 - Comment editing (delete only)
 - Likes on comments
 
@@ -128,13 +128,21 @@ This creates friction in discovery and reduces community trust signals.
 #### Post Comments (5.11)
 
 **Comment Display (PostDetailScreen):**
-- [ ] "Comments" section below post details and "Contact Author" button
+- [ ] Post detail layout prioritizes conversation:
+  1. Author row (avatar, name, trust, subtle timestamp)
+  2. Title + full description
+  3. Interaction row (Like count, Comments count, Save, Share)
+  4. Compact metadata row (local/global badge, tags, location)
+  5. Comments section
 - [ ] Section header: "Comments (5)" with count
 - [ ] Empty state: "No comments yet. Be the first to comment!"
-- [ ] Comment list (flat, chronological, newest on top):
+- [ ] Comment list (single-level threaded):
+  - Top-level comments sorted by most recent activity (latest comment/reply first)
   - Author avatar (32x32px) + name + trust badge
   - Comment text (14px, wraps)
   - Timestamp (relative, e.g., "2h ago")
+  - Reply action on top-level comments
+  - Replies are one level deep with "Show replies / Hide replies"
   - Delete button (trash icon, only visible to comment author)
 - [ ] Comment input at bottom (sticky):
   - Multi-line text input (max 1000 chars)
@@ -145,7 +153,7 @@ This creates friction in discovery and reduces community trust signals.
   - Level 0 users see: "Verify your account to comment"
 
 **Comment Creation:**
-- [ ] User types comment (1-1000 chars)
+- [ ] User types top-level comment or reply (1-1000 chars)
 - [ ] Tap send → comment posted, appears in list immediately (optimistic)
 - [ ] Comment saved to DB
 - [ ] Post's `comments_count` increments
@@ -173,7 +181,7 @@ This creates friction in discovery and reduces community trust signals.
 
 **API Endpoints:**
 - [ ] `getPostComments(postId)` - Get all comments for a post
-- [ ] `createComment(postId, authorId, content)` - Create new comment
+- [ ] `createComment(postId, authorId, content, parentCommentId?)` - Create top-level comment or single-level reply
 - [ ] `deleteComment(commentId, userId)` - Soft-delete comment (checks ownership)
 
 #### Profile Photo Display (3.5)

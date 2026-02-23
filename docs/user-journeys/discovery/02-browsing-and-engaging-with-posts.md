@@ -184,28 +184,22 @@
 
 **User Sees:**
 - **Header:** Post title + back button
-- **Author section:** 
-  - Avatar (larger, 64px)
-  - Full name "Sita Gurung"
-  - Trust badge (Level 1, verified checkmark)
-  - "View Profile" link (tappable, currently shows "Coming soon")
-- **Post details:**
-  - Category icon + "Housing"
+- **Top section (interaction-first):**
+  - Author avatar + full name "Sita Gurung" + verified badge + subtle "Posted 2h ago"
+  - **Title** immediately under author row
   - **Full description** (no truncation):
     "Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet environment. Rent is $800/month including utilities. Move-in date flexible (March 1 or later). I'm a grad student at UTD studying Computer Science. Prefer someone who speaks Nepali and respects cultural values. Apartment has in-unit washer/dryer, gym, pool. Close to Indian grocery stores."
-  - **Tag pills:** [🏠 Housing] [❓ Question]
-  - **Local/Global badge:** 📍 Local
-  - **Location:** Dallas, TX 75080
-  - Timestamp: "Posted 2h ago"
-- **Action bar:**
-  - Like button (heart icon) + count "12" (inline, prominent)
-  - Message button: "Contact Author" (primary button, blue)
+  - **Action row:** Like count, comment count, Save (coming soon), Share
+  - **Compact metadata row:** 📍 Local, [🏠 Housing] [❓ Question], Dallas, TX 75080
 - **Comments section:**
   - Section header: "Comments (3)"
-  - List of 3 comments:
+  - List of 3 top-level comments sorted by most recent activity:
     1. Avatar + "Priya Sharma" + verified badge + "Is parking included?" + "1h ago" + delete icon (hidden - not her comment)
     2. Avatar + "Sita Gurung" (author) + verified badge + "Yes, one covered parking spot is included!" + "50m ago"
     3. Avatar + "Ram Poudel" + verified badge + "Interested! Sending you a message." + "30m ago"
+  - Reply controls on each top-level comment with single-level thread reveal:
+    - "Reply" action
+    - "Show replies (N) / Hide replies"
   - **Comment input:** (at bottom, sticky)
     - Multi-line text input with placeholder: "Add a comment..."
     - Character counter: "0/1000"
@@ -230,7 +224,7 @@
 **System Response:** Comments list is already loaded and visible.
 
 **User Sees:**
-- Chronological list of 3 comments
+- Top-level comments ordered by most recent activity (new replies bump parent threads)
 - Helpful context: Priya asked about parking, Sita (author) replied
 - Ram expressed interest
 
@@ -310,6 +304,7 @@
 - User must be Level 1+ (enforced by RLS policy)
 
 **API Call:** `POST /api/comments { post_id, author_id, content }`
+**API Call (reply):** `POST /api/comments { post_id, author_id, content, parent_comment_id }`
 
 ---
 

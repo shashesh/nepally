@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,7 @@ import {
   getPostComments,
   createComment,
   deleteComment,
+  buildSingleLevelCommentThreads,
   TrustLevel,
   TAG_EMOJI,
   TAG_COLORS,
@@ -71,9 +73,12 @@ export default function PostDetailScreen() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<PostComment | null>(null);
+  const [expandedReplyParents, setExpandedReplyParents] = useState<Record<string, boolean>>({});
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
   const isOwnPost = post?.author_id === user?.id;
+  const commentThreads = useMemo(() => buildSingleLevelCommentThreads(comments), [comments]);
 
   useEffect(() => {
     loadPost();
@@ -143,12 +148,13 @@ export default function PostDetailScreen() {
     }
 
     setSubmittingComment(true);
-    const result = await createComment(supabase, postId, commentText);
+    const result = await createComment(supabase, postId, commentText, replyTarget?.id);
     setSubmittingComment(false);
 
     if (result.data) {
       setComments((prev) => [...prev, result.data!]);
       setCommentText('');
+      setReplyTarget(null);
     } else {
       Alert.alert('Error', 'Failed to post comment. Please try again.');
     }
@@ -165,7 +171,7 @@ export default function PostDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             // Optimistic
-            setComments((prev) => prev.filter((c) => c.id !== comment.id));
+            setComments((prev) => prev.filter((c) => c.id !== comment.id && c.parent_comment_id !== comment.id));
             const result = await deleteComment(supabase, comment.id);
             if (result.error) {
               setComments((prev) => [...prev, comment].sort(
@@ -235,6 +241,23 @@ export default function PostDetailScreen() {
     }
   };
 
+  const handleSharePost = async () => {
+    if (!post) return;
+
+    const locationLabel = post.location_city ? ` (${post.location_city}, ${post.location_state})` : '';
+    await Share.share({
+      message: `${post.title}${locationLabel}\n\n${post.description}`,
+      title: post.title,
+    });
+  };
+
+  const toggleReplies = (parentId: string) => {
+    setExpandedReplyParents((prev) => ({
+      ...prev,
+      [parentId]: !prev[parentId],
+    }));
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -265,66 +288,8 @@ export default function PostDetailScreen() {
         <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
 
         <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
-        {/* Local / Global Badge */}
-        <View style={[styles.categoryBadge, { backgroundColor: post.is_global ? '#E3F2FD' : '#E8F5E9' }]}>
-          <Text style={{ fontSize: 14, color: post.is_global ? '#1565C0' : '#388E3C', fontWeight: '500' }}>
-            {post.is_global ? '🌐 Global' : '📍 Local'}
-          </Text>
-        </View>
-
-        {/* Title */}
-        <Text style={styles.title}>{post.title}</Text>
-
-        {/* Tag Pills */}
-        {post.tags && post.tags.length > 0 && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-            {post.tags.map((tag) => {
-              const tagColor = TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
-              const emoji = TAG_EMOJI[tag.slug] || '';
-              return (
-                <View
-                  key={tag.id}
-                  style={{
-                    borderRadius: 12,
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    backgroundColor: hexToRgba(tagColor, 0.15),
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: tagColor }}>
-                    {emoji ? `${emoji} ${tag.name}` : tag.name}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Details Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>DETAILS</Text>
-          {post.location_city && (
-            <View style={styles.fieldRow}>
-              <Ionicons name="location" size={18} color={colors.text.secondary} style={styles.fieldIcon} />
-              <Text style={styles.fieldLabel}>Location</Text>
-              <Text style={styles.fieldValue}>{post.location_city}, {post.location_state}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Description Section */}
-        {post.description && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>DESCRIPTION</Text>
-            <Text style={styles.description}>{post.description}</Text>
-          </View>
-        )}
-
-        {/* Author Section */}
-        {post.author && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>POSTED BY</Text>
-            <View style={styles.authorRow}>
+          {post.author && (
+            <View style={styles.authorRowTop}>
               <Avatar
                 name={post.author.full_name}
                 photoUrl={post.author.profile_photo}
@@ -342,157 +307,246 @@ export default function PostDetailScreen() {
                       style={{ marginLeft: 4 }}
                     />
                   )}
-                  {post.author.trust_level >= TrustLevel.VERIFIED && (
-                    <Text style={styles.trustLabel}>
-                      {post.author.trust_level >= TrustLevel.CONTRIBUTOR ? 'Contributor' : 'Verified'}
-                    </Text>
-                  )}
                 </View>
+                <Text style={styles.authorMeta}>{getRelativeTime(post.created_at)}</Text>
               </View>
             </View>
+          )}
+
+          <Text style={styles.title}>{post.title}</Text>
+
+          {post.description ? <Text style={styles.description}>{post.description}</Text> : null}
+
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleLikePress} activeOpacity={0.7}>
+              <Ionicons
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isLiked ? colors.accent.red : colors.text.secondary}
+              />
+              <Text style={[styles.actionText, isLiked && { color: colors.accent.red }]}> {localLikesCount}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                commentsRef.current?.measureLayout(
+                  scrollViewRef.current as any,
+                  (_x: number, y: number) => {
+                    scrollViewRef.current?.scrollTo({ y, animated: true });
+                  },
+                  () => undefined
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chatbubble-outline" size={20} color={colors.text.secondary} />
+              <Text style={styles.actionText}> {comments.length}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonDisabled]}
+              onPress={() => Alert.alert('Coming soon', 'Saved posts will be available soon.')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="bookmark-outline" size={20} color={colors.text.disabled} />
+              <Text style={[styles.actionText, styles.actionTextDisabled]}> Save</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionButton} onPress={handleSharePost} activeOpacity={0.7}>
+              <Ionicons name="share-social-outline" size={20} color={colors.text.secondary} />
+              <Text style={styles.actionText}> Share</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.metaRow}>
+            <View style={[styles.metaBadge, { backgroundColor: post.is_global ? '#E3F2FD' : '#E8F5E9' }]}> 
+              <Text style={{ fontSize: 12, color: post.is_global ? '#1565C0' : '#388E3C', fontWeight: '500' }}>
+                {post.is_global ? '🌐 Global' : '📍 Local'}
+              </Text>
+            </View>
+
+            {post.tags?.map((tag) => {
+              const tagColor = TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
+              const emoji = TAG_EMOJI[tag.slug] || '';
+              return (
+                <View
+                  key={tag.id}
+                  style={[
+                    styles.metaTag,
+                    {
+                      backgroundColor: hexToRgba(tagColor, 0.15),
+                    },
+                  ]}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: tagColor }}>
+                    {emoji ? `${emoji} ${tag.name}` : tag.name}
+                  </Text>
+                </View>
+              );
+            })}
+
+            {post.location_city ? (
+              <Text style={styles.locationText}>{post.location_city}, {post.location_state}</Text>
+            ) : null}
+          </View>
+
+          {!isOwnPost && (
+            <TouchableOpacity
+              style={[styles.contactButton, isLevel0 && styles.contactButtonDisabled]}
+              onPress={handleContactAuthor}
+              disabled={contactLoading}
+              activeOpacity={0.8}
+            >
+              {contactLoading ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <>
+                  <Ionicons name="chatbubble" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                  <Text style={styles.contactButtonText}>{isLevel0 ? 'Verify to Message' : 'Contact Author'}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          <View ref={commentsRef} style={styles.commentsSection}>
+            <Text style={styles.commentsTitle}>Comments ({comments.length})</Text>
+
+            {commentsLoading ? (
+              <ActivityIndicator size="small" color={colors.primary.main} style={{ marginVertical: 16 }} />
+            ) : commentThreads.length === 0 ? (
+              <Text style={styles.emptyComments}>No comments yet. Be the first to comment!</Text>
+            ) : (
+              commentThreads.map((thread) => {
+                const showReplies = expandedReplyParents[thread.parent.id] ?? false;
+
+                return (
+                  <View key={thread.parent.id} style={styles.commentThread}>
+                    <View style={styles.commentItem}>
+                      <Avatar
+                        name={thread.parent.author?.full_name || 'User'}
+                        photoUrl={thread.parent.author?.profile_photo}
+                        trustLevel={thread.parent.author?.trust_level ?? 0}
+                        size="small"
+                      />
+                      <View style={styles.commentContent}>
+                        <View style={styles.commentHeader}>
+                          <Text style={styles.commentAuthorName}>{thread.parent.author?.full_name || 'User'}</Text>
+                          {(thread.parent.author?.trust_level ?? 0) >= TrustLevel.VERIFIED && (
+                            <Ionicons name="checkmark-circle" size={14} color={colors.success} style={{ marginLeft: 3 }} />
+                          )}
+                          {thread.parent.author_id === post.author_id && (
+                            <View style={styles.authorBadge}>
+                              <Text style={styles.authorBadgeText}>Author</Text>
+                            </View>
+                          )}
+                          <Text style={styles.commentTime}>{getRelativeTime(thread.parent.created_at)}</Text>
+                        </View>
+                        <Text style={styles.commentText}>{thread.parent.content}</Text>
+                        <View style={styles.commentActionsInline}>
+                          <TouchableOpacity onPress={() => setReplyTarget(thread.parent)}>
+                            <Text style={styles.replyActionText}>Reply</Text>
+                          </TouchableOpacity>
+                          {thread.replies.length > 0 && (
+                            <TouchableOpacity onPress={() => toggleReplies(thread.parent.id)}>
+                              <Text style={styles.replyActionText}>
+                                {showReplies ? 'Hide replies' : `Show replies (${thread.replies.length})`}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                      {thread.parent.author_id === user?.id && (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteComment(thread.parent)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          style={styles.deleteButton}
+                        >
+                          <Ionicons name="trash-outline" size={16} color={colors.text.disabled} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {showReplies &&
+                      thread.replies.map((reply) => (
+                        <View key={reply.id} style={styles.replyItem}>
+                          <Avatar
+                            name={reply.author?.full_name || 'User'}
+                            photoUrl={reply.author?.profile_photo}
+                            trustLevel={reply.author?.trust_level ?? 0}
+                            size="small"
+                          />
+                          <View style={styles.commentContent}>
+                            <View style={styles.commentHeader}>
+                              <Text style={styles.commentAuthorName}>{reply.author?.full_name || 'User'}</Text>
+                              <Text style={styles.commentTime}>{getRelativeTime(reply.created_at)}</Text>
+                            </View>
+                            <Text style={styles.commentText}>{reply.content}</Text>
+                          </View>
+                          {reply.author_id === user?.id && (
+                            <TouchableOpacity
+                              onPress={() => handleDeleteComment(reply)}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                              style={styles.deleteButton}
+                            >
+                              <Ionicons name="trash-outline" size={16} color={colors.text.disabled} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ))}
+                  </View>
+                );
+              })
+            )}
+          </View>
+
+          <Text style={styles.footer}>
+            Posted {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            {post.location_city ? ` • ${post.location_city}, ${post.location_state}` : ''}
+          </Text>
+        </ScrollView>
+
+        {!isLevel0 ? (
+          <View style={styles.commentInputContainer}>
+            {replyTarget && (
+              <View style={styles.replyTargetBar}>
+                <Text style={styles.replyTargetText}>Replying to {replyTarget.author?.full_name || 'user'}</Text>
+                <TouchableOpacity onPress={() => setReplyTarget(null)}>
+                  <Text style={styles.replyCancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={styles.commentComposerRow}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder={replyTarget ? 'Write a reply...' : 'Add a comment...'}
+                placeholderTextColor={colors.text.disabled}
+                value={commentText}
+                onChangeText={(text) => setCommentText(text.slice(0, 1000))}
+                multiline
+                maxLength={1000}
+              />
+              <TouchableOpacity
+                onPress={handleSubmitComment}
+                disabled={!commentText.trim() || submittingComment}
+                style={[
+                  styles.sendButton,
+                  (!commentText.trim() || submittingComment) && styles.sendButtonDisabled,
+                ]}
+              >
+                {submittingComment ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Ionicons name="send" size={18} color={colors.white} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.commentInputContainer}>
+            <Text style={styles.verifyPrompt}>Verify your account to comment</Text>
           </View>
         )}
-
-        {/* Like Button */}
-        <TouchableOpacity
-          style={styles.likeRow}
-          onPress={handleLikePress}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={isLiked ? 'heart' : 'heart-outline'}
-            size={24}
-            color={isLiked ? colors.accent.red : colors.text.secondary}
-          />
-          <Text style={[styles.likeCount, isLiked && { color: colors.accent.red }]}>
-            {localLikesCount} {localLikesCount === 1 ? 'like' : 'likes'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Contact Author Button */}
-        {!isOwnPost && (
-          <TouchableOpacity
-            style={[
-              styles.contactButton,
-              isLevel0 && styles.contactButtonDisabled,
-            ]}
-            onPress={handleContactAuthor}
-            disabled={contactLoading}
-            activeOpacity={0.8}
-          >
-            {contactLoading ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <>
-                <Ionicons
-                  name="chatbubble"
-                  size={20}
-                  color={colors.white}
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={styles.contactButtonText}>
-                  {isLevel0 ? 'Verify to Message' : 'Contact Author'}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {/* Comments Section */}
-        <View ref={commentsRef} style={styles.section}>
-          <Text style={styles.sectionHeader}>
-            COMMENTS ({comments.length})
-          </Text>
-
-          {commentsLoading ? (
-            <ActivityIndicator size="small" color={colors.primary.main} style={{ marginVertical: 16 }} />
-          ) : comments.length === 0 ? (
-            <Text style={styles.emptyComments}>
-              No comments yet. Be the first to comment!
-            </Text>
-          ) : (
-            comments.map((comment) => (
-              <View key={comment.id} style={styles.commentItem}>
-                <Avatar
-                  name={comment.author?.full_name || 'User'}
-                  photoUrl={comment.author?.profile_photo}
-                  trustLevel={comment.author?.trust_level ?? 0}
-                  size="small"
-                />
-                <View style={styles.commentContent}>
-                  <View style={styles.commentHeader}>
-                    <Text style={styles.commentAuthorName}>
-                      {comment.author?.full_name || 'User'}
-                    </Text>
-                    {(comment.author?.trust_level ?? 0) >= TrustLevel.VERIFIED && (
-                      <Ionicons name="checkmark-circle" size={14} color={colors.success} style={{ marginLeft: 3 }} />
-                    )}
-                    {comment.author_id === post?.author_id && (
-                      <View style={styles.authorBadge}>
-                        <Text style={styles.authorBadgeText}>Author</Text>
-                      </View>
-                    )}
-                    <Text style={styles.commentTime}>
-                      {getRelativeTime(comment.created_at)}
-                    </Text>
-                  </View>
-                  <Text style={styles.commentText}>{comment.content}</Text>
-                </View>
-                {comment.author_id === user?.id && (
-                  <TouchableOpacity
-                    onPress={() => handleDeleteComment(comment)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    style={styles.deleteButton}
-                  >
-                    <Ionicons name="trash-outline" size={16} color={colors.text.disabled} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))
-          )}
-        </View>
-
-        {/* Footer */}
-        <Text style={styles.footer}>
-          Posted {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          {post.location_city ? ` \u2022 ${post.location_city}, ${post.location_state}` : ''}
-        </Text>
-      </ScrollView>
-
-      {/* Comment Input (sticky bottom) */}
-      {!isLevel0 ? (
-        <View style={styles.commentInputContainer}>
-          <TextInput
-            style={styles.commentInput}
-            placeholder="Add a comment..."
-            placeholderTextColor={colors.text.disabled}
-            value={commentText}
-            onChangeText={(text) => setCommentText(text.slice(0, 1000))}
-            multiline
-            maxLength={1000}
-          />
-          <TouchableOpacity
-            onPress={handleSubmitComment}
-            disabled={!commentText.trim() || submittingComment}
-            style={[
-              styles.sendButton,
-              (!commentText.trim() || submittingComment) && styles.sendButtonDisabled,
-            ]}
-          >
-            {submittingComment ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Ionicons name="send" size={18} color={colors.white} />
-            )}
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.commentInputContainer}>
-          <Text style={styles.verifyPrompt}>
-            Verify your account to comment
-          </Text>
-        </View>
-      )}
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -516,71 +570,23 @@ const styles = StyleSheet.create({
     padding: spacing.s,
     paddingBottom: spacing.l,
   },
-  categoryBadge: {
+  authorRowTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: borderRadius.badge,
-    gap: 4,
-    marginBottom: spacing.xs,
-  },
-  categoryText: {
-    ...typography.caption,
-    fontWeight: '600',
+    gap: 12,
+    marginBottom: spacing.s,
   },
   title: {
     ...typography.h2,
     color: colors.text.primary,
     marginBottom: spacing.s,
   },
-  section: {
-    marginBottom: spacing.m,
-  },
-  sectionHeader: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    letterSpacing: 1,
-    marginBottom: spacing.xs,
-    paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.background,
-  },
-  fieldIcon: {
-    width: 24,
-    marginRight: spacing.xs,
-  },
-  fieldLabel: {
-    fontSize: 15,
-    color: colors.text.secondary,
-    width: 100,
-  },
-  fieldValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text.primary,
-    flex: 1,
-  },
   description: {
     fontSize: 16,
     color: colors.text.primary,
     lineHeight: 24,
+    marginBottom: spacing.s,
   },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-
   authorInfo: {
     flex: 1,
   },
@@ -593,10 +599,61 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
   },
-  trustLabel: {
+  authorMeta: {
     ...typography.caption,
-    color: colors.success,
-    marginLeft: 4,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 10,
+    marginBottom: spacing.s,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: colors.background,
+  },
+  actionButtonDisabled: {
+    opacity: 0.85,
+  },
+  actionText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  actionTextDisabled: {
+    color: colors.text.disabled,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: spacing.m,
+  },
+  metaBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  metaTag: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  locationText: {
+    fontSize: 12,
+    color: colors.text.secondary,
   },
   contactButton: {
     flexDirection: 'row',
@@ -618,36 +675,38 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.text.secondary,
     textAlign: 'center',
+    marginTop: spacing.s,
   },
-  // Like row
-  likeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
+  commentsSection: {
     marginBottom: spacing.s,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
-  likeCount: {
-    fontSize: 15,
-    color: colors.text.secondary,
-    fontWeight: '500',
+  commentsTitle: {
+    ...typography.body,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: spacing.s,
   },
-  // Comments
   emptyComments: {
     ...typography.body,
     color: colors.text.secondary,
     textAlign: 'center',
     paddingVertical: spacing.m,
   },
-  commentItem: {
-    flexDirection: 'row',
-    paddingVertical: 12,
+  commentThread: {
     borderBottomWidth: 1,
     borderBottomColor: colors.background,
+    paddingBottom: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  commentItem: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    gap: 10,
+  },
+  replyItem: {
+    flexDirection: 'row',
+    marginLeft: 20,
+    paddingVertical: 6,
     gap: 10,
   },
   commentContent: {
@@ -675,6 +734,16 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: 20,
   },
+  commentActionsInline: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 6,
+  },
+  replyActionText: {
+    fontSize: 12,
+    color: colors.primary.main,
+    fontWeight: '500',
+  },
   authorBadge: {
     backgroundColor: colors.primary.light,
     paddingHorizontal: 6,
@@ -692,12 +761,33 @@ const styles = StyleSheet.create({
   },
   // Comment input
   commentInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.white,
+  },
+  replyTargetBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: colors.background,
+    marginBottom: 8,
+  },
+  replyTargetText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+  replyCancelText: {
+    fontSize: 13,
+    color: colors.primary.main,
+    fontWeight: '600',
+  },
+  commentComposerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   commentInput: {
@@ -726,6 +816,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     color: colors.text.secondary,
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
 });

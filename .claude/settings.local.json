@@ -36,7 +36,13 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:akonan.github.io)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(npx expo install expo-image-picker expo-image-manipulator expo-file-system)"
+      "Bash(npx expo install expo-image-picker expo-image-manipulator expo-file-system)",
+      "Bash(npx expo install:*)",
+      "Bash(grep:*)",
+      "mcp__plugin_supabase_supabase__list_projects",
+      "mcp__plugin_supabase_supabase__execute_sql",
+      "mcp__plugin_supabase_supabase__list_tables",
+      "mcp__plugin_supabase_supabase__get_advisors"
     ]
   }
 }

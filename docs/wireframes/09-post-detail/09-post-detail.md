@@ -1,6 +1,6 @@
 # Wireframe: Post Detail Screen
 
-> **Screen:** 09 | **Status:** Draft | **Updated:** 2026-02-19
+> **Screen:** 09 | **Status:** Draft | **Updated:** 2026-02-22
 > **Journey:** [phase1-feature-breakdown.md](../features/phase1-feature-breakdown.md) - Feature 5.4, [in-app-chat.md](../features/in-app-chat.md) - Feature 8.2 (entry point)
 > **Story:** As a user, I want to see the full details of a post so I can decide whether to contact the author.
 
@@ -8,14 +8,14 @@
 
 ## Screen Purpose
 
-Full-detail view of a single post. Shows title, full description, tags, author info, Local/Global badge, and provides the "Contact Author" CTA that initiates the chat flow. This screen bridges browsing (home feed) to communication (chat).
+Full-detail view of a single post with an interaction-first hierarchy (similar to Reddit/Facebook). The screen prioritizes conversation context first, then engagement actions, then metadata. It bridges browsing (home feed) to public discussion and private chat.
 
 **Key Goals:**
-- Display all post information clearly
-- Show tags and Local/Global badge
-- Prominent "Contact Author" button (primary CTA)
-- Show author trust level for safety
-- Link to chat with post author
+- Prioritize author + content + discussion over metadata clutter
+- Keep engagement actions immediately under content (Like, Comments, Save, Share)
+- Move metadata into a compact row so it does not overshadow conversation
+- Keep "Contact Author" available without dominating the layout
+- Support single-level replies with show/hide controls
 
 ---
 
@@ -26,31 +26,23 @@ Full-detail view of a single post. Shows title, full description, tags, author i
 [[ ← Post Detail | ⋮ ]]
 
 ::: card
+::: row
+![RK]{.avatar} **Ram K.** ✓ Verified
+*2h ago*
+:::
+
 # Looking for Nepali Roommate near UTD
 
-`📍 Local`{.badge .green}
+Clean, furnished room in 2BR apartment. Close to DART rail. $800/month including utilities. Move-in date flexible. No smoking.
 
-`🏠 Housing`{.pill} `❓ Question`{.pill}
+❤️ 12 · 💬 3 · 🔖 Save (Coming soon) · ↗️ Share
+
+`📍 Local`{.badge .green} `🏠 Housing`{.pill} `❓ Question`{.pill} `Richardson, TX`{.subtle}
 
 ::: carousel
 ![Photo 1 of 3](photo-placeholder)
 1 / 3
 :::
-
-**Description**
----
-Clean, furnished room in 2BR apartment. Close to DART rail. $800/month including utilities. Move-in date flexible. No smoking.
-
-📍 Richardson, TX
-
-**Posted By**
----
-::: row
-![RK]{.avatar} **Ram K.** ✓ Verified
-Member since Jan 2026
-:::
-
-❤️ 12 · 💬 3
 
 [💬 Contact Author]*
 :::
@@ -69,6 +61,14 @@ Is parking included?
 ![SG]{.avatar} **Sita G.** ✓ `Author`{.badge}
 Yes, one spot included!
 *50m ago*
+:::
+
+[Reply]{.link} [Show replies (2)]{.link}
+
+::: reply
+![RK]{.avatar .small} **Ram K.** ✓
+Thanks! Is visitor parking available?
+*20m ago*
 :::
 
 ::: comment
@@ -162,8 +162,8 @@ Are you sure you want to delete this comment? This cannot be undone.
 | **Color** | Tag-specific color | Tag-specific color |
 | **Spacing** | 6px between pills | 6dp between pills |
 
-- Position: Below Local/Global badge
-- Margin: 8px below badge, 16px above photos
+- Position: In compact metadata row below engagement actions
+- Margin: 0 (row-level spacing controls)
 - Content: Tag icon + name (e.g., "🏠 Housing")
 
 **Interaction:** Tap tag pill → Navigate to home screen filtered by that tag
@@ -250,6 +250,11 @@ Are you sure you want to delete this comment? This cannot be undone.
   - Level 0: grayed out, tap shows verification toast
 - **Comment Count:** 💬 Bubble + count (e.g., "3")
   - Tappable to scroll to comments section
+- **Save Button:** 🔖 Save
+  - Disabled state in this iteration with text "Coming soon"
+- **Share Button:** ↗️ Share
+  - Opens native share sheet on mobile
+  - Uses Web Share API (fallback: copy link) on web
 
 ---
 
@@ -257,7 +262,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 
 | Property | iOS | Android |
 |----------|-----|---------|
-| **Header** | "Posted By" with horizontal rule | "Posted By" with horizontal rule |
+| **Header** | None (author row appears at top of post card) | None (author row appears at top of post card) |
 | **Avatar** | 40×40px circle, initials | 40×40dp circle, initials |
 | **Avatar BG** | #1565C0 at 15% opacity | #1565C0 at 15% opacity |
 | **Name Font** | 17pt Semibold | 16sp Medium |
@@ -268,6 +273,8 @@ Are you sure you want to delete this comment? This cannot be undone.
 **Trust badge:** ✓ Verified (16px, #2E7D32) or ✓✓ Contributor (#1565C0)
 
 **Interaction:** Tap row → navigate to public profile (future)
+
+**Placement:** First content block in post detail card, above title and description.
 
 ---
 
@@ -330,8 +337,8 @@ Are you sure you want to delete this comment? This cannot be undone.
 
 #### Comment List
 
-- Max initial display: 3 most recent comments
-- "Show all comments" link if > 3 comments, expands to full list
+- Display full list by default
+- Top-level comments sorted by most recent activity (latest comment or reply first)
 - Spacing: 16px/dp between comment items
 
 #### Comment Item
@@ -365,6 +372,15 @@ Are you sure you want to delete this comment? This cannot be undone.
 
 - Tap action: Confirmation dialog → delete comment
 - Deleted state: Removed from list immediately with fade-out (300ms)
+
+#### Replies (Single-Level)
+
+- One reply level only (`parent_comment_id` references a top-level comment)
+- Each top-level comment supports:
+  - "Reply" action
+  - "Show replies (N)" / "Hide replies"
+- Replies use compact visual indentation and 28×28 avatar
+- No nested replies inside replies in this iteration
 
 ---
 
@@ -456,18 +472,16 @@ Are you sure you want to delete this comment? This cannot be undone.
 |---|---------|--------|---------------|
 | 1 | Status bar / Safe area | Auto | — |
 | 2 | Header bar | 44px / 56dp | 0 |
-| 3 | Post title | Auto (~60px) | 4px/dp |
-| 4 | Local/Global badge | 20px/dp | 8px/dp |
-| 5 | Tag pills | 24px/dp | 16px/dp |
-| 6 | Photo carousel (if exists) | 200px/dp | 16px/dp |
-| 7 | Description section | Auto | 16px/dp |
-| 8 | Location row | 20px/dp | 16px/dp |
-| 9 | Author section | ~60px/dp | 16px/dp |
-| 10 | Engagement row | 24px/dp | 24px/dp |
-| 11 | Contact Author CTA | 48px / 56dp | 24px/dp |
-| 12 | Comments section | Auto | 16px/dp |
-| 13 | Comment input | 48–120px/dp | 16px/dp |
-| 14 | Footer metadata | ~20px/dp | 32px/dp bottom |
+| 3 | Author row | ~52px/dp | 8px/dp |
+| 4 | Post title | Auto (~60px) | 8px/dp |
+| 5 | Description section | Auto | 12px/dp |
+| 6 | Engagement row | 24px/dp | 10px/dp |
+| 7 | Compact metadata row (badge + tags + location) | Auto | 16px/dp |
+| 8 | Photo carousel (if exists) | 200px/dp | 16px/dp |
+| 9 | Contact Author CTA | 48px / 56dp | 24px/dp |
+| 10 | Comments section | Auto | 16px/dp |
+| 11 | Comment input | 48–120px/dp | 16px/dp |
+| 12 | Footer metadata | ~20px/dp | 32px/dp bottom |
 
 **Horizontal:** 16px/dp margins both sides. CTA full width minus 32px/dp. Photos full width minus 32px/dp.
 
@@ -495,7 +509,9 @@ When user taps the message icon directly on PostCard (bypasses this screen):
 2. User taps comment input → keyboard opens
 3. User types comment → send button enables
 4. User taps send → optimistic UI adds comment
-5. Comment count updates in header and engagement row
+5. User can tap "Reply" on a top-level comment to open inline reply input
+6. User can toggle "Show replies / Hide replies"
+7. Comment count updates in header and engagement row
 
 ### Scroll Behavior
 - Full page scroll (not nested scroll views)

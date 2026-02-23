@@ -7,3 +7,4 @@ export * from './phone';
 export * from './zip';
 export * from './validators';
 export * from './location';
+export * from './comments';

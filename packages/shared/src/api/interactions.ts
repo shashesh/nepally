@@ -119,7 +119,8 @@ export async function getPostComments(
 export async function createComment(
   supabase: SupabaseClient,
   postId: string,
-  content: string
+  content: string,
+  parentCommentId?: string
 ): Promise<{ data?: PostComment; error?: Error }> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -131,6 +132,7 @@ export async function createComment(
         post_id: postId,
         author_id: user.id,
         content: content.trim(),
+        parent_comment_id: parentCommentId ?? null,
       })
       .select(`
         *,

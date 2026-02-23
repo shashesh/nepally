@@ -95,6 +95,13 @@ export interface PostComment {
   author?: UserSummary;
 }
 
+/** Single-level thread for post detail rendering */
+export interface PostCommentThread {
+  parent: PostComment;
+  replies: PostComment[];
+  latest_activity_at: string;
+}
+
 /** API result wrappers */
 export interface PostsResult {
   data?: Post[];
