@@ -80,9 +80,19 @@ export default function HomeScreen() {
 
   // Derive metroName from activeLocation (or fall back to user's metro)
   const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
+  const matchedSavedLocation = savedLocations.find(
+    (location) => location.metro_area_id === metroAreaId && location.metro_area
+  );
   const metroName = activeLocation
     ? `${activeLocation.metro_name}, ${activeLocation.metro_state}`
-    : null;
+    : matchedSavedLocation?.metro_area
+      ? `${matchedSavedLocation.metro_area.name}, ${matchedSavedLocation.metro_area.state}`
+      : metroAreaId
+        ? 'Your Metro Area'
+        : null;
+  const locationLabel = activeLocation?.is_temporary
+    ? 'Visiting'
+    : matchedSavedLocation?.label || 'Home';
 
   useEffect(() => {
     loadBannerState();
@@ -365,11 +375,14 @@ export default function HomeScreen() {
           <Ionicons name="location" size={20} color={colors.primary.main} />
           <View style={styles.locationTextContainer}>
             <Text style={styles.metroName} numberOfLines={2}>
-              {metroName || (metroAreaId ? 'Loading...' : 'No Location Set')}
+              {metroName || 'No Location Set'}
             </Text>
-            {activeLocation?.is_temporary && (
-              <Text style={styles.visitingLabel}>(Visiting)</Text>
-            )}
+            <Text
+              style={activeLocation?.is_temporary ? styles.visitingLabel : styles.locationLabel}
+              numberOfLines={1}
+            >
+              {locationLabel}
+            </Text>
           </View>
           <Ionicons name="chevron-down" size={14} color={colors.text.secondary} />
         </TouchableOpacity>
@@ -572,9 +585,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flexShrink: 1,
   },
+  locationLabel: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
   visitingLabel: {
     ...typography.caption,
-    color: colors.primary.main,
+    color: colors.warning,
+    fontStyle: 'italic',
     fontWeight: '500',
   },
   headerRight: {

@@ -104,6 +104,7 @@ export type RootStackParamList = {
   Chat: NavigatorScreenParams<ChatStackParamList>;
 };
 
+/* eslint-disable @typescript-eslint/no-namespace */
 declare global {
   namespace ReactNavigation {
     interface RootParamList extends RootStackParamList {}

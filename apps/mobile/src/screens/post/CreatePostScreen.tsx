@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useLayoutEffect, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import type { Tag } from '@nusa/shared';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
+import { typography } from '../../styles/typography';
 
 type Props = NativeStackScreenProps<PostStackParamList, 'CreatePost'>;
 
@@ -48,13 +49,16 @@ export default function CreatePostScreen({ navigation }: Props) {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const [tagsError, setTagsError] = useState<string | null>(null);
 
   const isDirty = title.trim().length > 0 || body.trim().length > 0 || selectedTagIds.length > 0;
-  const isFormValid =
-    title.trim().length >= 5 &&
-    body.trim().length >= 10 &&
-    selectedTagIds.length >= 1 &&
-    !submitting;
+  const titleLength = title.trim().length;
+  const bodyLength = body.trim().length;
+  const titleValid = titleLength >= 5;
+  const bodyValid = bodyLength >= 10;
+  const tagsValid = selectedTagIds.length >= 1 && selectedTagIds.length <= MAX_TAGS_PER_POST;
+  const canSubmit = titleValid && bodyValid && tagsValid && !submitting && !tagsLoading;
 
   const hasEmergencyTag = availableTags.some(
     (t) => t.slug === 'emergency' && selectedTagIds.includes(t.id)
@@ -73,39 +77,65 @@ export default function CreatePostScreen({ navigation }: Props) {
     loadTags();
   }, []);
 
+  const postButtonHint = tagsLoading
+    ? 'Loading tags...'
+    : !titleValid
+      ? 'Title must be at least 5 characters'
+      : !bodyValid
+        ? 'Body must be at least 10 characters'
+        : !tagsValid
+          ? 'Select at least 1 tag'
+          : null;
+
   // Custom header
-  useEffect(() => {
+  useLayoutEffect(() => {
     navigation.setOptions({
+      headerTitleAlign: 'center',
+      headerTitleStyle: {
+        fontSize: 16,
+        fontWeight: '600',
+      },
       headerLeft: () => (
-        <TouchableOpacity onPress={handleCancel} hitSlop={8}>
-          <Text style={headerStyles.cancel}>Cancel</Text>
-        </TouchableOpacity>
+        <View style={headerStyles.sideContainer}>
+          <TouchableOpacity onPress={handleCancel} hitSlop={8}>
+            <Text style={headerStyles.cancel}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
       ),
       headerRight: () => (
-        <TouchableOpacity
-          onPress={handleSubmit}
-          disabled={!isFormValid}
-          style={[headerStyles.postBtn, !isFormValid && headerStyles.postBtnDisabled]}
-          hitSlop={8}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color={colors.white} />
-          ) : (
-            <Text
-              style={[headerStyles.postBtnText, !isFormValid && headerStyles.postBtnTextDisabled]}
-            >
-              Post
-            </Text>
-          )}
-        </TouchableOpacity>
+        <View style={[headerStyles.sideContainer, headerStyles.sideContainerRight]}>
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+            style={[headerStyles.postBtn, !canSubmit && headerStyles.postBtnDisabled]}
+            hitSlop={8}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text
+                style={[headerStyles.postBtnText, !canSubmit && headerStyles.postBtnTextDisabled]}
+              >
+                Post
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       ),
       title: 'Create Post',
     });
-  }, [isFormValid, submitting, isDirty, title, body, selectedTagIds]);
+  }, [canSubmit, submitting, isDirty, title, body, selectedTagIds, tagsLoading]);
 
   async function loadTags() {
+    setTagsLoading(true);
+    setTagsError(null);
     const result = await getTags(supabase);
-    if (result.data) setAvailableTags(result.data);
+    if (result.data) {
+      setAvailableTags(result.data);
+    } else {
+      setTagsError('Unable to load tags. Pull to refresh or reopen this screen.');
+    }
+    setTagsLoading(false);
   }
 
   function handleCancel() {
@@ -130,7 +160,7 @@ export default function CreatePostScreen({ navigation }: Props) {
   }
 
   async function handleSubmit() {
-    if (!isFormValid || !user) return;
+    if (!canSubmit || !user) return;
 
     const metroAreaId = activeLocation?.metro_area_id ?? user.metro_area_id;
     if (!metroAreaId || !user.zip_code) {
@@ -192,10 +222,11 @@ export default function CreatePostScreen({ navigation }: Props) {
       >
         <ScrollView
           contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
         >
           {/* Title Input */}
-          <View style={styles.titleSection}>
+          <View style={styles.formCard}>
+            <View style={styles.titleSection}>
             <TextInput
               style={styles.titleInput}
               value={title}
@@ -216,11 +247,14 @@ export default function CreatePostScreen({ navigation }: Props) {
                 {title.length}/{TITLE_MAX}
               </Text>
             )}
-          </View>
+            {!titleValid && title.length > 0 && (
+              <Text style={styles.inlineError}>Title must be at least 5 characters</Text>
+            )}
+            </View>
 
-          {/* Body Textarea */}
-          <View style={styles.bodySection}>
-            <TextInput
+            {/* Body Textarea */}
+            <View style={styles.bodySection}>
+              <TextInput
               style={styles.bodyInput}
               value={body}
               onChangeText={setBody}
@@ -242,11 +276,21 @@ export default function CreatePostScreen({ navigation }: Props) {
                 {body.length}/{BODY_MAX}
               </Text>
             )}
+              {!bodyValid && body.length > 0 && (
+                <Text style={styles.inlineError}>Body must be at least 10 characters</Text>
+              )}
+            </View>
           </View>
 
           {/* Tag Selection */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Tags (1-3 required)</Text>
+            <View style={styles.sectionLabelRow}>
+              <Text style={styles.sectionLabel}>Tags (1-3 required)</Text>
+              <Text style={styles.sectionHint}>{selectedTagIds.length}/{MAX_TAGS_PER_POST}</Text>
+            </View>
+
+            {tagsError && <Text style={styles.inlineError}>{tagsError}</Text>}
+
             <View style={styles.tagGrid}>
               {availableTags.map((tag) => {
                 const isSelected = selectedTagIds.includes(tag.id);
@@ -286,6 +330,10 @@ export default function CreatePostScreen({ navigation }: Props) {
               })}
             </View>
 
+            {!tagsValid && !tagsLoading && (
+              <Text style={styles.inlineError}>Please select at least 1 tag</Text>
+            )}
+
             {/* Emergency Warning */}
             {hasEmergencyTag && (
               <View style={styles.emergencyWarning}>
@@ -307,6 +355,7 @@ export default function CreatePostScreen({ navigation }: Props) {
               <Text style={styles.photoLabel}>Add Photos (optional)</Text>
               <Text style={styles.photoCount}>0/{MAX_PHOTOS_PER_POST}</Text>
             </TouchableOpacity>
+            <Text style={styles.optionalHint}>Photos are optional and not required to publish.</Text>
           </View>
 
           {/* Location Info */}
@@ -333,6 +382,10 @@ export default function CreatePostScreen({ navigation }: Props) {
               />
             </View>
           )}
+
+          {postButtonHint && (
+            <Text style={styles.submitHint}>{postButtonHint}</Text>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -340,9 +393,17 @@ export default function CreatePostScreen({ navigation }: Props) {
 }
 
 const headerStyles = StyleSheet.create({
+  sideContainer: {
+    minWidth: 84,
+    justifyContent: 'center',
+  },
+  sideContainerRight: {
+    alignItems: 'flex-end',
+  },
   cancel: {
     fontSize: 17,
     color: colors.primary.main,
+    paddingHorizontal: spacing.xs,
   },
   postBtn: {
     backgroundColor: colors.primary.main,
@@ -372,27 +433,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    paddingHorizontal: spacing.s,
+    paddingTop: spacing.s,
     paddingBottom: spacing.xl,
+    gap: spacing.s,
+  },
+  formCard: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
+    overflow: 'hidden',
   },
   titleSection: {
     paddingHorizontal: spacing.s,
     paddingVertical: spacing.s,
   },
   titleInput: {
-    fontSize: 20,
+    ...typography.h3,
     fontWeight: '600',
-    color: '#212121',
+    color: colors.text.primary,
   },
   bodySection: {
     paddingHorizontal: spacing.s,
     paddingVertical: spacing.s,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: colors.border,
     minHeight: 120,
   },
   bodyInput: {
-    fontSize: 16,
-    color: '#212121',
+    ...typography.body,
+    color: colors.text.primary,
     minHeight: 100,
   },
   charCounter: {
@@ -405,16 +476,32 @@ const styles = StyleSheet.create({
     color: colors.error,
   },
   section: {
+    backgroundColor: colors.white,
     paddingHorizontal: spacing.s,
     paddingVertical: spacing.s,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
+  },
+  sectionLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#757575',
+    color: colors.text.secondary,
     marginBottom: spacing.s,
+  },
+  sectionHint: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  inlineError: {
+    ...typography.caption,
+    color: colors.error,
+    marginTop: spacing.xxs,
   },
   tagGrid: {
     flexDirection: 'row',
@@ -425,9 +512,9 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: 12,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -436,7 +523,7 @@ const styles = StyleSheet.create({
   },
   tagChipText: {
     fontSize: 14,
-    color: '#757575',
+    color: colors.text.secondary,
   },
   tagChipTextDisabled: {
     color: '#BDBDBD',
@@ -463,31 +550,38 @@ const styles = StyleSheet.create({
   },
   photoLabel: {
     fontSize: 15,
-    color: '#757575',
+    color: colors.text.secondary,
     flex: 1,
   },
   photoCount: {
     fontSize: 14,
-    color: '#757575',
+    color: colors.text.secondary,
+  },
+  optionalHint: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    marginTop: spacing.xxs,
   },
   locationRow: {
     paddingHorizontal: spacing.s,
     paddingVertical: spacing.s,
-    backgroundColor: '#F5F5F5',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
   },
   locationText: {
-    fontSize: 14,
-    color: '#757575',
+    ...typography.caption,
+    color: colors.text.secondary,
   },
   globalRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.s,
     paddingVertical: spacing.s,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
   },
   globalInfo: {
     flex: 1,
@@ -495,11 +589,17 @@ const styles = StyleSheet.create({
   globalLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#212121',
+    color: colors.text.primary,
   },
   globalSublabel: {
     fontSize: 12,
-    color: '#757575',
+    color: colors.text.secondary,
     marginTop: 2,
+  },
+  submitHint: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
 });

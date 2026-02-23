@@ -88,7 +88,7 @@ export function MetroConfirmationScreen() {
 
         {/* Subtext */}
         <Text style={styles.subtext}>
-          You'll see posts from verified community members in your area
+          You&apos;ll see posts from verified community members in your area
         </Text>
 
         {/* Spacer */}

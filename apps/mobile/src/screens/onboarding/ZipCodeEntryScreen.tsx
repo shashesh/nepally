@@ -57,7 +57,7 @@ export function ZipCodeEntryScreen() {
           {/* Header */}
           <Text style={styles.title}>Where are you located?</Text>
           <Text style={styles.subtitle}>
-            We'll show you posts from your metro area
+            We&apos;ll show you posts from your metro area
           </Text>
 
           {/* ZIP Code Input */}

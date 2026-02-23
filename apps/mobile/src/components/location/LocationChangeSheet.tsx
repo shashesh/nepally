@@ -83,7 +83,7 @@ export function LocationChangeSheet({
         <Ionicons name="location-sharp" size={48} color={colors.primary.main} style={styles.icon} />
 
         {/* Headline */}
-        <Text style={styles.headlineText}>It looks like you're in</Text>
+        <Text style={styles.headlineText}>It looks like you&apos;re in</Text>
         <Text style={styles.metroName}>{detectedShortName}</Text>
 
         {/* Body */}
@@ -126,7 +126,7 @@ export function LocationChangeSheet({
             size={20}
             color={snoozeChecked ? colors.primary.main : colors.text.secondary}
           />
-          <Text style={styles.snoozeText}>Don't ask again for 24 hours</Text>
+          <Text style={styles.snoozeText}>Don&apos;t ask again for 24 hours</Text>
         </TouchableOpacity>
       </View>
     </Modal>

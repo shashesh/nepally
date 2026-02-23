@@ -29,7 +29,7 @@ export const Level0Banner: React.FC<Level0BannerProps> = ({
       />
       <View style={styles.content}>
         <Text style={styles.text} numberOfLines={2}>
-          You're viewing only. Verify phone to post and message.
+          You&apos;re viewing only. Verify phone to post and message.
         </Text>
         <TouchableOpacity onPress={onVerifyPress} style={styles.button}>
           <Text style={styles.buttonText}>Verify Now</Text>

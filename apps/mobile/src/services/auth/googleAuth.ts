@@ -18,7 +18,7 @@ export async function signInWithGoogle(): Promise<GoogleAuthResult> {
     });
 
     // Start OAuth flow with Supabase
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: redirectUrl,
@@ -45,11 +45,16 @@ export async function signInWithGoogle(): Promise<GoogleAuthResult> {
  */
 export async function handleGoogleAuthCallback(url: string): Promise<GoogleAuthResult> {
   try {
-    // Extract session from URL
-    const { data, error } = await supabase.auth.getSessionFromUrl({
-      url,
-      storeSession: true,
-    });
+    // Extract authorization code from callback URL
+    const callbackUrl = new URL(url);
+    const code = callbackUrl.searchParams.get('code');
+
+    if (!code) {
+      throw new Error('No auth code found in callback URL');
+    }
+
+    // Exchange auth code for session
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) throw error;
     if (!data.session) throw new Error('No session found');

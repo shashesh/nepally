@@ -19,7 +19,11 @@ import TagFilterBar from '../components/TagFilterBar';
 import Avatar from '../components/Avatar';
 import styles from '../styles/Feed.module.css';
 
-export default function FeedPage() {
+interface FeedPageProps {
+  routeBasePath?: string;
+}
+
+export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { activeLocation } = useLocation();
@@ -31,6 +35,7 @@ export default function FeedPage() {
   // Tag-based filtering (multi-select)
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
+  const pageTitle = routeBasePath === '/' ? 'Home - NUSA' : 'Feed - NUSA';
 
   // Load tags on mount
   useEffect(() => {
@@ -44,6 +49,8 @@ export default function FeedPage() {
     const { tags } = router.query;
     if (tags && typeof tags === 'string') {
       setSelectedTagSlugs(tags.split(',').filter(Boolean));
+    } else {
+      setSelectedTagSlugs([]);
     }
   }, [router.query]);
 
@@ -59,21 +66,33 @@ export default function FeedPage() {
   const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
 
   const loadPosts = useCallback(async () => {
-    if (!metroAreaId) return;
+    if (!metroAreaId) {
+      setPosts([]);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
-    const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
-    const result = await getPostsByMetroArea(
-      supabase,
-      metroAreaId,
-      slugs,
-      50
-    );
+    try {
+      const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
+      const result = await getPostsByMetroArea(
+        supabase,
+        metroAreaId,
+        slugs,
+        50
+      );
 
-    if (result.data) {
-      setPosts(result.data);
+      if (result.data) {
+        setPosts(result.data);
+      } else {
+        setPosts([]);
+      }
+    } catch (error) {
+      console.error('Failed to load posts:', error);
+      setPosts([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [metroAreaId, selectedTagSlugs]);
 
   // Load liked post IDs
@@ -98,14 +117,14 @@ export default function FeedPage() {
         : [...prev, slug];
       // Update URL without navigation
       const query = next.length > 0 ? { tags: next.join(',') } : {};
-      router.replace({ pathname: '/feed', query }, undefined, { shallow: true });
+      router.replace({ pathname: routeBasePath, query }, undefined, { shallow: true });
       return next;
     });
   }
 
   function handleAllChip() {
     setSelectedTagSlugs([]);
-    router.replace({ pathname: '/feed' }, undefined, { shallow: true });
+    router.replace({ pathname: routeBasePath }, undefined, { shallow: true });
   }
 
   if (!user) return null;
@@ -113,7 +132,7 @@ export default function FeedPage() {
   return (
     <>
       <Head>
-        <title>Feed - NUSA</title>
+        <title>{pageTitle}</title>
       </Head>
       <div className={styles.feedPage}>
         {/* Level 0 Banner */}
@@ -203,6 +222,10 @@ export default function FeedPage() {
       </div>
     </>
   );
+}
+
+export default function FeedRoutePage() {
+  return <FeedPage routeBasePath="/feed" />;
 }
 
 function PostCard({

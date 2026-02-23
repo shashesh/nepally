@@ -1,10 +1,19 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../hooks/useAuth';
+import { FeedPage } from './feed';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (user) {
+    return <FeedPage routeBasePath="/" />;
+  }
 
   return (
     <>
@@ -23,14 +32,6 @@ export default function Home() {
         <p className={styles.description}>
           Your community platform for housing, jobs, emergencies, and travel coordination.
         </p>
-
-        {user && (
-          <div className={styles.ctaContainer}>
-            <Link href="/feed" className={styles.ctaLink}>
-              Go to Your Feed &rarr;
-            </Link>
-          </div>
-        )}
 
         <div className={styles.categories}>
           <h2>Explore Tags</h2>

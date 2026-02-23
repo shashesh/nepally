@@ -161,7 +161,7 @@ export default function AddLocationScreen() {
             ListEmptyComponent={
               query.length >= 2 && !searching ? (
                 <Text style={styles.emptyText}>
-                  No metro areas found for "{query}"
+                  No metro areas found for &quot;{query}&quot;
                 </Text>
               ) : null
             }

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '../config/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { getUserData, saveUserData, clearAllData } from '../utils/storage';
+import { saveUserData, clearAllData } from '../utils/storage';
 
 interface User {
   id: string;
@@ -81,11 +81,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSupabaseUser(session.user);
         await refreshUser();
       } else {
-        // Try to load cached user data
-        const cachedUser = await getUserData();
-        if (cachedUser) {
-          setUser(cachedUser);
-        }
+        // No valid Supabase session: keep auth state signed out.
+        setSupabaseUser(null);
+        setUser(null);
       }
     } catch (error) {
       console.error('Failed to load user:', error);

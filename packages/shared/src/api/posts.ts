@@ -124,9 +124,15 @@ export async function createPost(
 ): Promise<PostResult> {
   try {
     const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
-    if (!authUser) {
+
+    const currentUserId = authUser?.id ?? session?.user?.id;
+    if (!currentUserId) {
       return { error: new Error('You must be logged in to create a post') };
     }
 
@@ -134,7 +140,7 @@ export async function createPost(
     const { data: postData, error: postError } = await supabase
       .from('posts')
       .insert({
-        author_id: authUser.id,
+        author_id: currentUserId,
         metro_area_id: params.metroAreaId,
         title: params.title,
         description: params.description,

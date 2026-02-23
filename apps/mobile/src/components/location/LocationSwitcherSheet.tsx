@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   Modal,
+  Pressable,
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
@@ -11,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getShortMetroName, MAX_SAVED_LOCATIONS_PREMIUM, hasMetroChanged } from '@nusa/shared';
 import type { SavedLocation, ActiveLocation, LocationDetectionResult } from '@nusa/shared';
 import { colors } from '../../styles/colors';
@@ -37,6 +39,7 @@ export function LocationSwitcherSheet({
   onSelectDetected,
 }: LocationSwitcherSheetProps) {
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+  const insets = useSafeAreaInsets();
 
   const showDetected =
     detectedLocation &&
@@ -58,18 +61,28 @@ export function LocationSwitcherSheet({
       visible={visible}
       transparent
       animationType="slide"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay} />
-      </TouchableWithoutFeedback>
+      <View style={styles.modalRoot}>
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.overlay} />
+        </TouchableWithoutFeedback>
 
-      <View style={styles.sheetContainer}>
-        <View style={styles.handleBar} />
+        <View style={[styles.sheetContainer, { paddingBottom: spacing.l + insets.bottom }]}> 
+          <View style={styles.handleBar} />
 
-        <ScrollView bounces={false} style={styles.scrollView}>
+          <ScrollView bounces={false} style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           {/* Your Locations */}
           <Text style={styles.sectionHeader}>YOUR LOCATIONS</Text>
+
+          {savedLocations.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No saved locations yet.</Text>
+            </View>
+          )}
 
           {savedLocations.map((loc) => {
             const isActive =
@@ -81,7 +94,7 @@ export function LocationSwitcherSheet({
             return (
               <TouchableOpacity
                 key={loc.id}
-                style={styles.locationItem}
+                style={[styles.locationItem, isActive && styles.locationItemActive]}
                 onPress={() => onSelectSaved(loc)}
                 activeOpacity={0.7}
               >
@@ -120,7 +133,7 @@ export function LocationSwitcherSheet({
                 <View style={styles.detectedLeft}>
                   <Ionicons name="navigate" size={18} color={colors.primary.main} />
                   <View>
-                    <Text style={styles.detectedSubtext}>You're currently near</Text>
+                    <Text style={styles.detectedSubtext}>You&apos;re currently near</Text>
                     <Text style={styles.detectedMetro}>
                       {getShortMetroName(detectedLocation!.metro_name)}, {detectedLocation!.metro_state}
                     </Text>
@@ -146,31 +159,43 @@ export function LocationSwitcherSheet({
           )}
 
           {/* Manage Locations */}
-          <TouchableOpacity
-            style={styles.manageLink}
+          <Pressable
+            style={styles.manageButton}
             onPress={handleManageLocations}
-            activeOpacity={0.7}
           >
-            <Text style={styles.manageLinkText}>Manage Locations</Text>
-          </TouchableOpacity>
-        </ScrollView>
+            {({ pressed }) => (
+              <Text style={[styles.manageButtonText, pressed && styles.manageButtonTextPressed]}>
+                Manage Locations
+              </Text>
+            )}
+          </Pressable>
+          </ScrollView>
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  modalRoot: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheetContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
     backgroundColor: colors.white,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     paddingTop: 12,
-    paddingBottom: spacing.l,
-    maxHeight: '60%',
+    maxHeight: '72%',
   },
   handleBar: {
     width: 40,
@@ -183,6 +208,9 @@ const styles = StyleSheet.create({
   scrollView: {
     paddingHorizontal: spacing.s,
   },
+  scrollContent: {
+    paddingBottom: spacing.m,
+  },
   sectionHeader: {
     fontSize: 12,
     fontWeight: '600',
@@ -191,15 +219,30 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     marginLeft: spacing.xs,
   },
+  emptyState: {
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.m,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
   locationItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.s,
+    paddingHorizontal: spacing.m,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.white,
+    marginBottom: spacing.xs,
     minHeight: 60,
+  },
+  locationItemActive: {
+    borderColor: colors.primary.main,
+    backgroundColor: colors.primary.light,
   },
   locationItemLeft: {
     flexDirection: 'row',
@@ -223,16 +266,18 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: spacing.s,
+    marginVertical: spacing.m,
   },
   detectedItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.s,
+    paddingHorizontal: spacing.m,
     paddingVertical: 12,
-    backgroundColor: '#E8F0FE',
-    borderRadius: 8,
+    backgroundColor: colors.primary.light,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary.main,
     minHeight: 60,
   },
   detectedLeft: {
@@ -255,21 +300,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.s,
+    paddingHorizontal: spacing.m,
     paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: spacing.s,
     minHeight: 48,
   },
   addButtonText: {
     fontSize: 15,
+    fontWeight: '600',
     color: colors.primary.main,
   },
-  manageLink: {
+  manageButton: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: spacing.xs,
     marginTop: spacing.xs,
+    marginBottom: spacing.s,
   },
-  manageLinkText: {
+  manageButtonText: {
     fontSize: 14,
     color: colors.text.secondary,
+  },
+  manageButtonTextPressed: {
+    textDecorationLine: 'underline',
   },
 });

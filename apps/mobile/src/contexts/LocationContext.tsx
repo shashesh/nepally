@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../config/supabase';
 import {
   getSavedLocations,
+  addSavedLocation,
   isMetroSnoozed,
   hasMetroChanged,
   createSnoozeEntry,
@@ -148,11 +149,138 @@ export function LocationProvider({ children }: LocationProviderProps) {
 
   const refreshSavedLocations = useCallback(async () => {
     if (!user) return;
-    const result = await getSavedLocations(supabase, user.id);
-    if (result.data) {
-      setSavedLocations(result.data);
+
+    let locationsResult = await getSavedLocations(supabase, user.id);
+
+    if (locationsResult.error) {
+      console.error('Failed to fetch saved locations:', locationsResult.error.message);
     }
-  }, [user?.id]);
+
+    let locations = locationsResult.data ?? [];
+
+    if (locations.length === 0 && user.metro_area_id) {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+
+      const canWriteSavedLocations = authUser?.id === user.id;
+
+      if (canWriteSavedLocations) {
+        const bootstrapResult = await addSavedLocation(
+          supabase,
+          user.id,
+          user.metro_area_id,
+          'Home',
+          user.zip_code,
+          true
+        );
+
+        if (bootstrapResult.error) {
+          console.error('Failed to bootstrap default saved location:', bootstrapResult.error.message);
+        }
+
+        locationsResult = await getSavedLocations(supabase, user.id);
+        if (locationsResult.error) {
+          console.error('Failed to refetch saved locations:', locationsResult.error.message);
+        }
+        locations = locationsResult.data ?? [];
+      }
+    }
+
+    if (locations.length > 0) {
+      setSavedLocations(locations);
+    } else if (user.metro_area_id) {
+      const { data: metroData } = await supabase
+        .from('metro_areas')
+        .select('id, name, state')
+        .eq('id', user.metro_area_id)
+        .single();
+
+      if (metroData) {
+        const fallbackSavedLocation: SavedLocation = {
+          id: `fallback-${user.id}-${metroData.id}`,
+          user_id: user.id,
+          metro_area_id: metroData.id,
+          label: 'Home',
+          zip_code: user.zip_code ?? null,
+          is_default: true,
+          sort_order: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          metro_area: {
+            id: metroData.id,
+            name: metroData.name,
+            state: metroData.state,
+          },
+        };
+
+        setSavedLocations([fallbackSavedLocation]);
+      } else if (activeLocation) {
+        setSavedLocations([
+          {
+            id: `fallback-${user.id}-${activeLocation.metro_area_id}`,
+            user_id: user.id,
+            metro_area_id: activeLocation.metro_area_id,
+            label: activeLocation.is_temporary ? 'Visiting' : 'Home',
+            zip_code: user.zip_code ?? null,
+            is_default: true,
+            sort_order: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            metro_area: {
+              id: activeLocation.metro_area_id,
+              name: activeLocation.metro_name,
+              state: activeLocation.metro_state,
+            },
+          },
+        ]);
+      } else {
+        setSavedLocations([]);
+      }
+    } else {
+      setSavedLocations([]);
+    }
+
+    if (!activeLocation) {
+      const preferred =
+        locations.find(
+          (location) =>
+            location.metro_area_id === user.metro_area_id && location.metro_area
+        ) ??
+        locations.find((location) => location.is_default && location.metro_area) ??
+        locations.find((location) => location.metro_area);
+
+      if (preferred?.metro_area) {
+        const locationFromSaved: ActiveLocation = {
+          metro_area_id: preferred.metro_area_id,
+          metro_name: preferred.metro_area.name,
+          metro_state: preferred.metro_area.state,
+          source: 'saved',
+          is_temporary: false,
+        };
+        setActiveLocation(locationFromSaved);
+        await saveActiveLocation(locationFromSaved);
+      } else if (user.metro_area_id) {
+        const { data: metroData } = await supabase
+          .from('metro_areas')
+          .select('id, name, state')
+          .eq('id', user.metro_area_id)
+          .single();
+
+        if (metroData) {
+          const fallbackLocation: ActiveLocation = {
+            metro_area_id: metroData.id,
+            metro_name: metroData.name,
+            metro_state: metroData.state,
+            source: 'saved',
+            is_temporary: false,
+          };
+          setActiveLocation(fallbackLocation);
+          await saveActiveLocation(fallbackLocation);
+        }
+      }
+    }
+  }, [user?.id, user?.metro_area_id, activeLocation]);
 
   const checkLocationChange = useCallback(async () => {
     if (!activeLocation) return;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import type { SavedLocation } from '@nusa/shared';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
+import { typography } from '../../styles/typography';
 import { HomeStackParamList } from '../../types/navigation';
 
 export default function ManageLocationsScreen() {
@@ -33,6 +34,14 @@ export default function ManageLocationsScreen() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Text style={styles.headerCount}>{savedLocations.length} of {MAX_SAVED_LOCATIONS_PREMIUM}</Text>
+      ),
+    });
+  }, [navigation, savedLocations.length]);
 
   const handleStartEdit = (location: SavedLocation) => {
     setEditingId(location.id);
@@ -139,6 +148,7 @@ export default function ManageLocationsScreen() {
           <View style={styles.actionIcons}>
             {!isEditing && (
               <TouchableOpacity
+                style={styles.iconButton}
                 onPress={() => handleStartEdit(item)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
@@ -147,6 +157,7 @@ export default function ManageLocationsScreen() {
             )}
             {!item.is_default && savedLocations.length > 1 && (
               <TouchableOpacity
+                style={styles.iconButton}
                 onPress={() => handleDelete(item)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
@@ -197,17 +208,25 @@ export default function ManageLocationsScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerCount: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
   container: {
     flex: 1,
     backgroundColor: colors.white,
   },
   listContent: {
-    padding: spacing.s,
+    paddingHorizontal: spacing.s,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.l,
   },
   locationItem: {
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    paddingVertical: 12,
+    paddingVertical: spacing.s - 2,
+    minHeight: 56,
   },
   locationRow: {
     flexDirection: 'row',
@@ -222,12 +241,12 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
   locationLabel: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '600',
     color: colors.text.primary,
   },
   locationMetro: {
-    fontSize: 13,
+    ...typography.caption,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -242,26 +261,36 @@ const styles = StyleSheet.create({
   actionIcons: {
     flexDirection: 'row',
     gap: spacing.s,
+    marginLeft: spacing.s,
+  },
+  iconButton: {
+    padding: spacing.xxs,
   },
   setDefaultLink: {
     marginLeft: 32,
     marginTop: 4,
+    paddingVertical: 2,
   },
   setDefaultText: {
-    fontSize: 12,
+    ...typography.caption,
     color: colors.primary.main,
   },
   footer: {
-    marginTop: spacing.s,
+    marginTop: spacing.m,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary.main,
+    borderRadius: 10,
     paddingVertical: 12,
   },
   addButtonText: {
     fontSize: 15,
+    fontWeight: '600',
     color: colors.primary.main,
   },
 });

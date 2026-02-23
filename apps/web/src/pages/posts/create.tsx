@@ -31,14 +31,17 @@ export default function CreatePostPage() {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const [tagsError, setTagsError] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const isDirty = title.trim().length > 0 || body.trim().length > 0 || selectedTagIds.length > 0;
-  const isFormValid =
-    title.trim().length >= 5 &&
-    body.trim().length >= 10 &&
-    selectedTagIds.length >= 1 &&
-    !submitting;
+  const titleLength = title.trim().length;
+  const bodyLength = body.trim().length;
+  const titleValid = titleLength >= 5;
+  const bodyValid = bodyLength >= 10;
+  const tagsValid = selectedTagIds.length >= 1 && selectedTagIds.length <= MAX_TAGS_PER_POST;
+  const canSubmit = titleValid && bodyValid && tagsValid && !submitting && !tagsLoading;
 
   const hasEmergencyTag = availableTags.some(
     (t) => t.slug === 'emergency' && selectedTagIds.includes(t.id)
@@ -51,6 +54,16 @@ export default function CreatePostPage() {
     ? `${activeLocation.metro_name}, ${activeLocation.metro_state}`
     : null;
 
+  const postButtonHint = tagsLoading
+    ? 'Loading tags...'
+    : !titleValid
+      ? 'Title must be at least 5 characters'
+      : !bodyValid
+        ? 'Body must be at least 10 characters'
+        : !tagsValid
+          ? 'Select at least 1 tag'
+          : null;
+
   useEffect(() => {
     if (!user) {
       router.replace('/login');
@@ -60,8 +73,15 @@ export default function CreatePostPage() {
   }, [user, router]);
 
   useEffect(() => {
+    setTagsLoading(true);
+    setTagsError(null);
     getTags(supabase).then((result) => {
-      if (result.data) setAvailableTags(result.data);
+      if (result.data) {
+        setAvailableTags(result.data);
+      } else {
+        setTagsError('Unable to load tags. Refresh the page and try again.');
+      }
+      setTagsLoading(false);
     });
   }, []);
 
@@ -85,7 +105,7 @@ export default function CreatePostPage() {
   }
 
   async function handleSubmit() {
-    if (!isFormValid || !user) return;
+    if (!canSubmit || !user) return;
     setError('');
 
     const metroAreaId = activeLocation?.metro_area_id ?? user.metro_area_id;
@@ -141,10 +161,10 @@ export default function CreatePostPage() {
           <button
             style={{
               ...pageStyles.postBtn,
-              ...(isFormValid ? {} : pageStyles.postBtnDisabled),
+              ...(canSubmit ? {} : pageStyles.postBtnDisabled),
             }}
             onClick={handleSubmit}
-            disabled={!isFormValid}
+            disabled={!canSubmit}
           >
             {submitting ? 'Posting...' : 'Post'}
           </button>
@@ -172,6 +192,9 @@ export default function CreatePostPage() {
               {title.length}/{TITLE_MAX}
             </span>
           )}
+          {!titleValid && title.length > 0 && (
+            <div style={pageStyles.inlineError}>Title must be at least 5 characters</div>
+          )}
         </div>
 
         {/* Body */}
@@ -194,11 +217,18 @@ export default function CreatePostPage() {
               {body.length}/{BODY_MAX}
             </span>
           )}
+          {!bodyValid && body.length > 0 && (
+            <div style={pageStyles.inlineError}>Body must be at least 10 characters</div>
+          )}
         </div>
 
         {/* Tags */}
         <div style={pageStyles.section}>
-          <div style={pageStyles.sectionLabel}>Tags (1-3 required)</div>
+          <div style={pageStyles.sectionLabelRow}>
+            <div style={pageStyles.sectionLabel}>Tags (1-3 required)</div>
+            <div style={pageStyles.sectionHint}>{selectedTagIds.length}/{MAX_TAGS_PER_POST}</div>
+          </div>
+          {tagsError && <div style={pageStyles.inlineError}>{tagsError}</div>}
           <div style={pageStyles.tagGrid}>
             {availableTags.map((tag) => {
               const isSelected = selectedTagIds.includes(tag.id);
@@ -232,6 +262,10 @@ export default function CreatePostPage() {
             })}
           </div>
 
+          {!tagsValid && !tagsLoading && (
+            <div style={pageStyles.inlineError}>Please select at least 1 tag</div>
+          )}
+
           {hasEmergencyTag && (
             <div style={pageStyles.emergencyWarning}>
               Emergency posts require moderator approval before becoming visible. This is NOT a replacement for 911.
@@ -246,6 +280,7 @@ export default function CreatePostPage() {
             <span style={pageStyles.photoLabel}>Add Photos (optional)</span>
             <span style={pageStyles.photoCount}>0/{MAX_PHOTOS_PER_POST}</span>
           </div>
+          <div style={pageStyles.sectionHint}>Photos are optional and not required to publish.</div>
         </div>
 
         {/* Location Info */}
@@ -273,6 +308,8 @@ export default function CreatePostPage() {
             </label>
           </div>
         )}
+
+        {postButtonHint && <div style={pageStyles.submitHint}>{postButtonHint}</div>}
       </div>
     </>
   );
@@ -366,11 +403,27 @@ const pageStyles: Record<string, React.CSSProperties> = {
     padding: 16,
     borderTop: '1px solid #E0E0E0',
   },
+  sectionLabelRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   sectionLabel: {
     fontSize: 14,
     fontWeight: 600,
     color: '#757575',
     marginBottom: 12,
+  },
+  sectionHint: {
+    fontSize: 12,
+    color: '#757575',
+    marginTop: 6,
+  },
+  inlineError: {
+    marginTop: 6,
+    fontSize: 12,
+    color: 'var(--color-error)',
   },
   tagGrid: {
     display: 'flex',
@@ -439,5 +492,11 @@ const pageStyles: Record<string, React.CSSProperties> = {
   },
   toggleLabel: {
     cursor: 'pointer',
+  },
+  submitHint: {
+    padding: '0 16px 16px',
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#757575',
   },
 };
