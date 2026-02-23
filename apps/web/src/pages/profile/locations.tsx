@@ -16,6 +16,7 @@ import {
   SUGGESTED_LOCATION_LABELS,
 } from '@nusa/shared';
 import type { SavedLocation, MetroArea } from '@nusa/shared';
+import styles from '../../styles/ManageLocations.module.css';
 
 export default function ManageLocationsPage() {
   const router = useRouter();
@@ -122,31 +123,34 @@ export default function ManageLocationsPage() {
       <Head>
         <title>Manage Locations - NUSA</title>
       </Head>
-      <div style={pageStyles.container}>
-        <div style={pageStyles.header}>
-          <h1 style={pageStyles.title}>Manage Locations</h1>
-          <span style={pageStyles.count}>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Manage Locations</h1>
+          <span className={styles.count}>
             {savedLocations.length} of {MAX_SAVED_LOCATIONS_PREMIUM}
           </span>
         </div>
 
         {/* Location list */}
-        <div style={pageStyles.list}>
+        <div className={styles.list}>
           {savedLocations.map((loc) => {
             const metroDisplay = loc.metro_area
               ? `${loc.metro_area.name}, ${loc.metro_area.state}`
               : loc.metro_area_id;
 
             return (
-              <div key={loc.id} style={pageStyles.item}>
-                <div style={pageStyles.itemRow}>
-                  <div style={pageStyles.starCol}>
+              <div key={loc.id} className={styles.item}>
+                <div className={styles.itemRow}>
+                  <div className={styles.starCol}>
                     {loc.is_default && <span>⭐</span>}
                   </div>
-                  <div style={pageStyles.itemInfo}>
+                  <div className={styles.itemInfo}>
                     {editingId === loc.id ? (
                       <input
-                        style={pageStyles.editInput}
+                        type="text"
+                        className={styles.editInput}
+                        aria-label={`Rename location ${loc.label}`}
+                        title={`Rename location ${loc.label}`}
                         value={editingLabel}
                         onChange={(e) => setEditingLabel(e.target.value)}
                         onBlur={handleSaveEdit}
@@ -155,14 +159,14 @@ export default function ManageLocationsPage() {
                         maxLength={30}
                       />
                     ) : (
-                      <div style={pageStyles.itemLabel}>{loc.label}</div>
+                      <div className={styles.itemLabel}>{loc.label}</div>
                     )}
-                    <div style={pageStyles.itemMetro}>{metroDisplay}</div>
+                    <div className={styles.itemMetro}>{metroDisplay}</div>
                   </div>
-                  <div style={pageStyles.actions}>
+                  <div className={styles.actions}>
                     {editingId !== loc.id && (
                       <button
-                        style={pageStyles.iconBtn}
+                        className={styles.iconBtn}
                         onClick={() => {
                           setEditingId(loc.id);
                           setEditingLabel(loc.label);
@@ -174,7 +178,7 @@ export default function ManageLocationsPage() {
                     )}
                     {!loc.is_default && savedLocations.length > 1 && (
                       <button
-                        style={{ ...pageStyles.iconBtn, color: 'var(--color-error)' }}
+                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                         onClick={() => handleDelete(loc)}
                         title="Remove"
                       >
@@ -185,7 +189,7 @@ export default function ManageLocationsPage() {
                 </div>
                 {!loc.is_default && (
                   <button
-                    style={pageStyles.setDefaultBtn}
+                    className={styles.setDefaultBtn}
                     onClick={() => handleSetDefault(loc)}
                   >
                     Set as default
@@ -199,7 +203,7 @@ export default function ManageLocationsPage() {
         {/* Add location */}
         {!showAdd && savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
           <button
-            style={pageStyles.addBtn}
+            className={styles.addBtn}
             onClick={() => setShowAdd(true)}
           >
             ＋ Add a Location
@@ -207,22 +211,26 @@ export default function ManageLocationsPage() {
         )}
 
         {showAdd && (
-          <div style={pageStyles.addSection}>
-            <h3 style={{ marginBottom: 12 }}>Add a Location</h3>
+          <div className={styles.addSection}>
+            <h3 className={styles.addSectionTitle}>Add a Location</h3>
 
             {!selectedMetro ? (
               <>
                 <input
-                  style={pageStyles.input}
+                  type="text"
+                  className={styles.input}
+                  aria-label="Search by metro name or ZIP code"
+                  title="Search by metro name or ZIP code"
                   placeholder="Search by metro name or ZIP code"
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   autoFocus
                 />
                 {searchResults.map((m) => (
-                  <div
+                  <button
+                    type="button"
                     key={m.id}
-                    style={pageStyles.searchResult}
+                    className={styles.searchResult}
                     onClick={() => {
                       setSelectedMetro(m);
                       const next = SUGGESTED_LOCATION_LABELS.find(
@@ -232,48 +240,48 @@ export default function ManageLocationsPage() {
                     }}
                   >
                     {m.name}, {m.state}
-                  </div>
+                  </button>
                 ))}
               </>
             ) : (
               <>
-                <div style={pageStyles.selectedMetro}>
+                <div className={styles.selectedMetro}>
                   📍 {selectedMetro.name}, {selectedMetro.state}
                 </div>
-                <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 4, display: 'block' }}>
+                <label htmlFor="new-location-label" className={styles.label}>
                   Name this location
                 </label>
                 <input
-                  style={pageStyles.input}
+                  id="new-location-label"
+                  type="text"
+                  className={styles.input}
                   value={newLabel}
                   onChange={(e) => { setNewLabel(e.target.value); setAddError(''); }}
                   maxLength={30}
                   autoFocus
                 />
                 {addError && (
-                  <div style={{ color: 'var(--color-error)', fontSize: 13, marginTop: 4 }}>
+                  <div className={styles.addError}>
                     {addError}
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '8px 0' }}>
+                <div className={styles.chips}>
                   {SUGGESTED_LOCATION_LABELS.filter(
                     (l) => !usedLabels.includes(l.toLowerCase())
                   ).map((chip) => (
                     <button
                       key={chip}
-                      style={{
-                        ...pageStyles.chip,
-                        ...(newLabel === chip ? { background: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' } : {}),
-                      }}
+                      type="button"
+                      className={`${styles.chip} ${newLabel === chip ? styles.chipSelected : ''}`}
                       onClick={() => setNewLabel(chip)}
                     >
                       {chip}
                     </button>
                   ))}
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <div className={styles.actionsRow}>
                   <button
-                    style={pageStyles.cancelBtn}
+                    className={styles.cancelBtn}
                     onClick={() => {
                       setShowAdd(false);
                       setSelectedMetro(null);
@@ -283,10 +291,7 @@ export default function ManageLocationsPage() {
                     Cancel
                   </button>
                   <button
-                    style={{
-                      ...pageStyles.saveBtn,
-                      opacity: !newLabel.trim() || saving ? 0.5 : 1,
-                    }}
+                    className={styles.saveBtn}
                     onClick={handleSaveNew}
                     disabled={!newLabel.trim() || saving}
                   >
@@ -301,152 +306,3 @@ export default function ManageLocationsPage() {
     </>
   );
 }
-
-const pageStyles: Record<string, React.CSSProperties> = {
-  container: {
-    maxWidth: 520,
-    margin: '0 auto',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: '1.5rem',
-    fontWeight: 700,
-  },
-  count: {
-    fontSize: 14,
-    color: 'var(--color-text-secondary)',
-  },
-  list: {
-    borderTop: '1px solid var(--color-border)',
-  },
-  item: {
-    borderBottom: '1px solid var(--color-border)',
-    padding: '12px 0',
-  },
-  itemRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
-  starCol: {
-    width: 24,
-    textAlign: 'center' as const,
-    fontSize: 14,
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  itemLabel: {
-    fontSize: 16,
-    fontWeight: 600,
-  },
-  itemMetro: {
-    fontSize: 13,
-    color: 'var(--color-text-secondary)',
-    marginTop: 2,
-  },
-  editInput: {
-    fontSize: 16,
-    fontWeight: 600,
-    border: 'none',
-    borderBottom: '2px solid var(--color-primary)',
-    outline: 'none',
-    padding: '2px 0',
-    width: '100%',
-  },
-  actions: {
-    display: 'flex',
-    gap: 8,
-  },
-  iconBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 16,
-    padding: 4,
-  },
-  setDefaultBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 12,
-    color: 'var(--color-primary)',
-    marginLeft: 32,
-    marginTop: 4,
-    padding: 0,
-  },
-  addBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 15,
-    color: 'var(--color-primary)',
-    padding: '12px 0',
-  },
-  addSection: {
-    marginTop: 16,
-    padding: 16,
-    border: '1px solid var(--color-border)',
-    borderRadius: 8,
-  },
-  input: {
-    width: '100%',
-    height: 44,
-    border: '1px solid var(--color-border)',
-    borderRadius: 8,
-    padding: '0 12px',
-    fontSize: 15,
-    marginBottom: 8,
-    outline: 'none',
-  },
-  searchResult: {
-    padding: '10px 4px',
-    borderBottom: '1px solid var(--color-border)',
-    cursor: 'pointer',
-    fontSize: 15,
-  },
-  selectedMetro: {
-    padding: '8px 0',
-    fontSize: 15,
-    fontWeight: 600,
-    borderBottom: '1px solid var(--color-border)',
-    marginBottom: 12,
-  },
-  chip: {
-    height: 30,
-    padding: '0 12px',
-    borderRadius: 15,
-    border: '1px solid var(--color-border)',
-    background: 'transparent',
-    cursor: 'pointer',
-    fontSize: 13,
-  },
-  cancelBtn: {
-    flex: 1,
-    height: 40,
-    border: '1px solid var(--color-border)',
-    borderRadius: 8,
-    background: 'transparent',
-    cursor: 'pointer',
-    fontSize: 14,
-  },
-  saveBtn: {
-    flex: 2,
-    height: 40,
-    border: 'none',
-    borderRadius: 8,
-    background: 'var(--color-primary)',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 600,
-  },
-};

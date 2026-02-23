@@ -49,7 +49,7 @@ export default function LocationSwitcher() {
   };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className={styles.container}>
       <button
         className={styles.locationTrigger}
         onClick={() => setOpen(!open)}

@@ -132,16 +132,15 @@ export default function ZipCodePage() {
                 </button>
               </form>
 
-              <div style={{ textAlign: 'center', margin: 'var(--space-s) 0' }}>
-                <span style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>or</span>
+                <div className={styles.dividerRow}>
+                  <span className={styles.dividerText}>or</span>
               </div>
 
               <button
                 type="button"
-                className={styles.submitBtn}
+                  className={`${styles.submitBtn} ${styles.secondaryBtn}`}
                 onClick={handleDetectLocation}
                 disabled={detecting}
-                style={{ background: 'transparent', color: 'var(--color-primary)', border: '2px solid var(--color-primary)' }}
               >
                 {detecting ? 'Detecting...' : '📍 Detect My Location'}
               </button>
@@ -155,35 +154,25 @@ export default function ZipCodePage() {
                 We found your metro area:
               </p>
 
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: 'var(--space-m)',
-                  margin: 'var(--space-s) 0',
-                  background: '#F5F5F5',
-                  borderRadius: 'var(--radius-md)',
-                }}
-              >
-                <p style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+              <div className={styles.confirmAreaCard}>
+                <p className={styles.confirmAreaTitle}>
                   {metro.name}, {metro.state}
                 </p>
               </div>
 
               {error && <div className={styles.error}>{error}</div>}
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+              <div className={styles.confirmActions}>
                 <button
                   onClick={() => { setStep('zip'); setMetro(null); }}
-                  className={styles.submitBtn}
-                  style={{ background: 'transparent', color: 'var(--color-primary)', border: '2px solid var(--color-primary)' }}
+                  className={`${styles.submitBtn} ${styles.secondaryBtn}`}
                 >
                   Change ZIP
                 </button>
                 <button
                   onClick={handleConfirm}
-                  className={styles.submitBtn}
+                  className={`${styles.submitBtn} ${styles.flexOne}`}
                   disabled={loading}
-                  style={{ flex: 1 }}
                 >
                   {loading ? 'Saving...' : 'Confirm & Continue'}
                 </button>

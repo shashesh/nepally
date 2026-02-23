@@ -145,3 +145,52 @@
 .passwordErrors li::before {
   content: '• ';
 }
+
+.dividerRow {
+  text-align: center;
+  margin: var(--space-s) 0;
+}
+
+.dividerText {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.secondaryBtn {
+  background: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+}
+
+.secondaryBtn:hover {
+  background: rgba(21, 101, 192, 0.08);
+}
+
+.secondaryBtn:disabled {
+  color: var(--color-disabled);
+  border-color: var(--color-disabled);
+  background: transparent;
+}
+
+.confirmAreaCard {
+  text-align: center;
+  padding: var(--space-m);
+  margin: var(--space-s) 0;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.confirmAreaTitle {
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.confirmActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.flexOne {
+  flex: 1;
+}

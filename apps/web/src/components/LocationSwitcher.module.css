@@ -1,4 +1,8 @@
 /* Location Switcher Dropdown */
+.container {
+  position: relative;
+}
+
 .locationTrigger {
   display: flex;
   align-items: center;
