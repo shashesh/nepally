@@ -165,7 +165,7 @@ export default function Layout({ children }: LayoutProps) {
                         className={styles.dropdownItem}
                         onClick={() => setDropdownOpen(false)}
                       >
-                        Edit Profile
+                        View Profile
                       </Link>
                       <Link
                         href="/profile/locations"

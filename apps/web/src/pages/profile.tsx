@@ -1,30 +1,117 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import {
   TRUST_LEVELS,
+  getPostsByAuthorId,
+  getSavedPostsByUserId,
+  formatRelativeTime,
   uploadProfilePhoto,
   deleteProfilePhoto,
   updateUserProfile,
 } from '@nusa/shared';
-import type { TrustLevel } from '@nusa/shared';
+import type { Post, TrustLevel } from '@nusa/shared';
 import Avatar from '../components/Avatar';
 import styles from '../styles/Profile.module.css';
+
+type ProfileTab = 'posts' | 'saved' | 'about';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, signOut, refreshUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoStatus, setPhotoStatus] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [menuStatus, setMenuStatus] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [postsError, setPostsError] = useState<string | null>(null);
+  const [savedError, setSavedError] = useState<string | null>(null);
+  const userId = user?.id ?? null;
+
+  useEffect(() => {
+    if (!user && typeof window !== 'undefined') {
+      router.replace('/login');
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    const currentUserId = userId;
+
+    let isMounted = true;
+
+    async function loadUserPosts() {
+      setPostsLoading(true);
+      setPostsError(null);
+
+      const result = await getPostsByAuthorId(supabase, currentUserId, 30);
+      if (!isMounted) return;
+
+      if (result.error) {
+        setPostsError(result.error.message || 'Failed to load your posts');
+        setUserPosts([]);
+      } else {
+        setUserPosts(result.data || []);
+      }
+
+      setPostsLoading(false);
+    }
+
+    async function loadSavedPosts() {
+      setSavedLoading(true);
+      setSavedError(null);
+
+      const result = await getSavedPostsByUserId(supabase, currentUserId, 30);
+      if (!isMounted) return;
+
+      if (result.error) {
+        setSavedError(result.error.message || 'Failed to load saved posts');
+        setSavedPosts([]);
+      } else {
+        setSavedPosts(result.data || []);
+      }
+
+      setSavedLoading(false);
+    }
+
+    loadUserPosts();
+    loadSavedPosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
 
   if (!user) {
-    if (typeof window !== 'undefined') router.replace('/login');
     return null;
   }
 
@@ -39,8 +126,67 @@ export default function ProfilePage() {
   const trustLabel = trustConfig?.name || 'Unknown';
 
   async function handleSignOut() {
-    await signOut();
-    router.push('/');
+    try {
+      await signOut();
+      router.push('/');
+    } catch (error: any) {
+      setMenuStatus({
+        type: 'error',
+        message: error?.message || 'Failed to log out. Please try again.',
+      });
+    }
+  }
+
+  async function handleViewProfile() {
+    if (!user) return;
+
+    const nextName = window.prompt('Update your full name', user.full_name || '');
+    if (nextName === null) {
+      setMenuOpen(false);
+      return;
+    }
+
+    const fullName = nextName.trim();
+    if (!fullName) {
+      setMenuStatus({ type: 'error', message: 'Name cannot be empty' });
+      setMenuOpen(false);
+      return;
+    }
+
+    const { error } = await updateUserProfile(supabase, user.id, {
+      full_name: fullName,
+    });
+
+    if (error) {
+      setMenuStatus({ type: 'error', message: error.message || 'Failed to update profile' });
+      setMenuOpen(false);
+      return;
+    }
+
+    await refreshUser();
+    setMenuStatus({ type: 'success', message: 'Profile updated' });
+    setMenuOpen(false);
+  }
+
+  async function handleChangePassword() {
+    if (!user) return;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+
+    if (error) {
+      setMenuStatus({ type: 'error', message: error.message || 'Failed to send password reset email' });
+    } else {
+      setMenuStatus({ type: 'success', message: 'Password reset email sent' });
+    }
+
+    setMenuOpen(false);
+  }
+
+  async function handleMenuLogout() {
+    setMenuOpen(false);
+    await handleSignOut();
   }
 
   async function processAndUpload(file: File) {
@@ -129,12 +275,114 @@ export default function ProfilePage() {
     e.target.value = '';
   }
 
+  function renderPostList(
+    posts: Post[],
+    loading: boolean,
+    error: string | null,
+    emptyText: string
+  ) {
+    if (loading) {
+      return <div className={styles.tabMessage}>Loading...</div>;
+    }
+
+    if (error) {
+      return <div className={styles.tabError}>{error}</div>;
+    }
+
+    if (posts.length === 0) {
+      return <div className={styles.tabMessage}>{emptyText}</div>;
+    }
+
+    return (
+      <div className={styles.postList}>
+        {posts.map((post) => (
+          <Link key={post.id} href={`/posts/${post.id}`} className={styles.postItem}>
+            <div className={styles.postItemTop}>
+              <span className={styles.postItemTitle}>{post.title}</span>
+              <span
+                className={`${styles.postScopeBadge} ${
+                  post.is_global ? styles.postScopeGlobal : styles.postScopeLocal
+                }`}
+              >
+                {post.is_global ? '🌐 Global' : '📍 Local'}
+              </span>
+            </div>
+            <p className={styles.postItemDescription}>{post.description}</p>
+            <div className={styles.postItemMeta}>
+              <span>{formatRelativeTime(new Date(post.created_at))}</span>
+              <span>❤️ {post.likes_count || 0}</span>
+              <span>💬 {post.comments_count || 0}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <>
       <Head>
         <title>Profile - NUSA</title>
       </Head>
       <div className={styles.profilePage}>
+        <div className={styles.topBar}>
+          <h1 className={styles.pageTitle}>Profile</h1>
+          <div className={styles.menuWrap} ref={menuRef}>
+            <button
+              className={styles.hamburgerBtn}
+              type="button"
+              aria-label="Open profile menu"
+              onClick={() => setMenuOpen((prev) => !prev)}
+            >
+              ☰
+            </button>
+
+            {menuOpen && (
+              <div className={styles.hamburgerMenu}>
+                <button
+                  className={styles.hamburgerItem}
+                  type="button"
+                  onClick={() => {
+                    handleViewProfile();
+                  }}
+                >
+                  View Profile
+                </button>
+                <button
+                  className={styles.hamburgerItem}
+                  type="button"
+                  onClick={() => {
+                    handleChangePassword();
+                  }}
+                >
+                  Change Password
+                </button>
+                <button
+                  className={`${styles.hamburgerItem} ${styles.hamburgerItemDanger}`}
+                  type="button"
+                  onClick={() => {
+                    handleMenuLogout();
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {menuStatus && (
+          <div
+            className={
+              menuStatus.type === 'success'
+                ? styles.menuStatusSuccess
+                : styles.menuStatusError
+            }
+          >
+            {menuStatus.message}
+          </div>
+        )}
+
         <div className={styles.profileCard}>
           <div className={styles.profileHeader}>
             <div className={styles.avatarSection}>
@@ -195,58 +443,84 @@ export default function ProfilePage() {
               </span>
             </div>
           </div>
-
-          <div className={styles.infoSection}>
-            <h2 className={styles.sectionTitle}>Account Info</h2>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Email</span>
-              <span className={styles.infoValue}>{user.email}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Phone</span>
-              <span className={styles.infoValue}>
-                {user.phone || 'Not set'}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>ZIP Code</span>
-              <span className={styles.infoValue}>
-                {user.zip_code || 'Not set'}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Member Since</span>
-              <span className={styles.infoValue}>
-                {new Date(user.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
-            </div>
-          </div>
-
-          <div className={styles.infoSection}>
-            <h2 className={styles.sectionTitle}>Activity</h2>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Posts</span>
-              <span className={styles.infoValue}>{user.posts_count || 0}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Helpful Votes</span>
-              <span className={styles.infoValue}>
-                {user.helpful_votes_received || 0}
-              </span>
-            </div>
-          </div>
-
-          <div className={styles.actions}>
+          <div className={styles.menuTabs}>
             <button
-              onClick={handleSignOut}
-              className={styles.signOutBtn}
+              type="button"
+              className={`${styles.menuTab} ${activeTab === 'posts' ? styles.menuTabActive : ''}`}
+              onClick={() => setActiveTab('posts')}
             >
-              Sign Out
+              Posts
             </button>
+            <button
+              type="button"
+              className={`${styles.menuTab} ${activeTab === 'saved' ? styles.menuTabActive : ''}`}
+              onClick={() => setActiveTab('saved')}
+            >
+              Saved Posts
+            </button>
+            <button
+              type="button"
+              className={`${styles.menuTab} ${activeTab === 'about' ? styles.menuTabActive : ''}`}
+              onClick={() => setActiveTab('about')}
+            >
+              About
+            </button>
+          </div>
+
+          <div className={styles.tabContent}>
+            {activeTab === 'posts' &&
+              renderPostList(userPosts, postsLoading, postsError, 'You have not created any posts yet.')}
+
+            {activeTab === 'saved' &&
+              renderPostList(savedPosts, savedLoading, savedError, 'No saved posts yet.')}
+
+            {activeTab === 'about' && (
+              <>
+                <div className={styles.infoSection}>
+                  <h2 className={styles.sectionTitle}>Account Info</h2>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Email</span>
+                    <span className={styles.infoValue}>{user.email}</span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Phone</span>
+                    <span className={styles.infoValue}>
+                      {user.phone || 'Not set'}
+                    </span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>ZIP Code</span>
+                    <span className={styles.infoValue}>
+                      {user.zip_code || 'Not set'}
+                    </span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Member Since</span>
+                    <span className={styles.infoValue}>
+                      {new Date(user.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.infoSection}>
+                  <h2 className={styles.sectionTitle}>Activity</h2>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Posts</span>
+                    <span className={styles.infoValue}>{user.posts_count || 0}</span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Helpful Votes</span>
+                    <span className={styles.infoValue}>
+                      {user.helpful_votes_received || 0}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

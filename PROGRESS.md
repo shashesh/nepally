@@ -28,6 +28,19 @@
 | Explicit reorder controls | Done | `←/→` thumbnail controls on web + mobile in edit mode |
 | Drag-and-drop reorder (web) | Done | Web edit thumbnails support drag/drop with visual target state |
 
+### Profile Experience Refresh (Web + Mobile)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Reddit-style Profile menu tabs | Done | Added `Posts`, `Saved Posts`, `About` tab view on web + mobile profile screens |
+| Profile hamburger account menu | Done | Added top-right menu with Profile/Edit, Change Password, Logout actions |
+| Web account dropdown wording | Done | Updated top nav account dropdown from `Edit Profile` to `View Profile` |
+| Web profile hamburger action reliability | Done | Hardened click handlers + outside-click close behavior + z-index layering |
+| Shared API: user posts query | Done | Added `getPostsByAuthorId(...)` in `packages/shared/src/api/posts.ts` |
+| Shared API: saved posts query | Done | Added `getSavedPostsByUserId(...)` in `packages/shared/src/api/posts.ts` |
+| Profile tabs wired to shared APIs | Done | Web + mobile now fetch tab data through shared post APIs |
+| Web profile naming consistency cleanup | Done | Renamed internal handler `handleEditProfile` → `handleViewProfile` |
+
 ---
 
 ## Phase 1: Utility Core & Trust Foundation
@@ -119,11 +132,13 @@
 
 | Task | Status | Notes |
 |------|--------|-------|
-| ProfileScreen | Done | Avatar with initials, name, email, trust badge, metro area, settings menu |
+| ProfileScreen | Done | Reddit-style tabs (`Posts`, `Saved Posts`, `About`) + top-right hamburger account menu |
 | EditProfileScreen | Done | Edit name, phone, ZIP with auto metro lookup |
 | ChangePasswordScreen | Done | Current password verify, new + confirm, eye toggles |
 | ProfileNavigator | Done | ProfileView → EditProfile / ChangePassword stack |
 | Log out with confirmation | Done | Alert confirmation → signOut → back to Welcome |
+| Profile posts tab data | Done | Uses shared API `getPostsByAuthorId(...)` |
+| Saved posts tab data | Done | Uses shared API `getSavedPostsByUserId(...)` (liked posts) |
 
 ### H. Navigation
 

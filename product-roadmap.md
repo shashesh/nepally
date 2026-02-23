@@ -1,7 +1,7 @@
 # NUSA App: Product Roadmap
 
-**Version:** 1.2
-**Last Updated:** 2026-02-23 (Post Management: Edit/Delete/Share + Photo Reordering)
+**Version:** 1.3
+**Last Updated:** 2026-02-23 (Profile UX Refresh: Reddit-style tabs + hamburger account actions on web/mobile)
 
 ---
 
@@ -254,6 +254,27 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 - Moderators defined by email whitelist
 - Activity logs for all moderator actions
 - Audit trail for accountability
+
+### G2. Profile Experience Refresh (Implemented)
+
+**Goal:** Improve profile usability and account management discoverability with a Reddit-style menu view.
+
+**Implemented UX (Web + Mobile):**
+- Profile menu tabs: **Posts**, **Saved Posts**, **About**
+- Top-right hamburger account menu with: **View Profile/Edit Profile**, **Change Password**, **Logout**
+- Saved Posts tab is backed by user likes (post bookmarks)
+- About tab consolidates account/location/activity details for quick scanning
+
+**Data Layer (Shared-First):**
+- Added shared profile APIs in `packages/shared/src/api/posts.ts`:
+  - `getPostsByAuthorId(...)`
+  - `getSavedPostsByUserId(...)`
+- Both web and mobile profile screens consume the same shared API layer via dependency injection
+
+**Outcome:**
+- Stronger UX parity between web and mobile profile flows
+- Improved content recall via explicit Posts/Saved Posts separation
+- Cleaner account action discoverability via hamburger menu
 
 ### H. Events (Documentation Only)
 

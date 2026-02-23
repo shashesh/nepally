@@ -16,7 +16,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { getMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
 import { ProfileStackParamList } from '../../types/navigation';
-import { TrustLevel } from '@nusa/shared';
+import {
+  TrustLevel,
+  getPostsByAuthorId,
+  getSavedPostsByUserId,
+  formatRelativeTime,
+} from '@nusa/shared';
+import type { Post } from '@nusa/shared';
 import { Avatar } from '../../components/Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
@@ -37,27 +43,71 @@ function getTrustLabel(level: number): string {
   }
 }
 
-function getTrustColor(level: number): string {
-  switch (level) {
-    case TrustLevel.NEW:
-      return colors.badge.level0;
-    case TrustLevel.VERIFIED:
-      return colors.badge.level1;
-    case TrustLevel.CONTRIBUTOR:
-      return colors.badge.level2;
-    default:
-      return colors.badge.level0;
-  }
-}
-
 export function ProfileScreen() {
   const navigation = useNavigation<Navigation>();
   const { user, signOut } = useAuth();
+  const userId = user?.id ?? null;
   const [metroName, setMetroName] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'saved' | 'about'>('posts');
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [postsError, setPostsError] = useState<string | null>(null);
+  const [savedError, setSavedError] = useState<string | null>(null);
 
   useEffect(() => {
     loadMetroArea();
   }, [user?.metro_area_id]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const currentUserId = userId;
+
+    let isMounted = true;
+
+    async function loadUserPosts() {
+      setPostsLoading(true);
+      setPostsError(null);
+      const result = await getPostsByAuthorId(supabase, currentUserId, 30);
+
+      if (!isMounted) return;
+
+      if (result.error) {
+        setPostsError(result.error.message || 'Failed to load posts');
+        setUserPosts([]);
+      } else {
+        setUserPosts(result.data || []);
+      }
+
+      setPostsLoading(false);
+    }
+
+    async function loadSavedPosts() {
+      setSavedLoading(true);
+      setSavedError(null);
+      const result = await getSavedPostsByUserId(supabase, currentUserId, 30);
+
+      if (!isMounted) return;
+
+      if (result.error) {
+        setSavedError(result.error.message || 'Failed to load saved posts');
+        setSavedPosts([]);
+      } else {
+        setSavedPosts(result.data || []);
+      }
+
+      setSavedLoading(false);
+    }
+
+    loadUserPosts();
+    loadSavedPosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
 
   const loadMetroArea = async () => {
     // Try cached first
@@ -87,13 +137,115 @@ export function ProfileScreen() {
     ]);
   };
 
+  const handleViewProfile = () => {
+    navigation.navigate('EditProfile');
+  };
+
+  const handleOpenChangePassword = () => {
+    navigation.navigate('ChangePassword');
+  };
+
   const trustLevel = user?.trust_level ?? 0;
-  const trustColor = getTrustColor(trustLevel);
+
+  const trustBadgeStyle =
+    trustLevel === TrustLevel.NEW
+      ? styles.trustBadgeNew
+      : trustLevel === TrustLevel.VERIFIED
+        ? styles.trustBadgeVerified
+        : styles.trustBadgeContributor;
+
+  function renderPosts(posts: Post[], loading: boolean, error: string | null, emptyMessage: string) {
+    if (loading) {
+      return <Text style={styles.tabMessage}>Loading...</Text>;
+    }
+
+    if (error) {
+      return <Text style={styles.tabError}>{error}</Text>;
+    }
+
+    if (posts.length === 0) {
+      return <Text style={styles.tabMessage}>{emptyMessage}</Text>;
+    }
+
+    return (
+      <View style={styles.postList}>
+        {posts.map((post) => (
+          <View key={post.id} style={styles.postItem}>
+            <View style={styles.postItemHeader}>
+              <Text style={styles.postItemTitle} numberOfLines={1}>
+                {post.title}
+              </Text>
+              <View style={[styles.scopeBadge, post.is_global ? styles.scopeGlobal : styles.scopeLocal]}>
+                <Text style={post.is_global ? styles.scopeTextGlobal : styles.scopeTextLocal}>
+                  {post.is_global ? '🌐 Global' : '📍 Local'}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.postItemDescription} numberOfLines={2}>
+              {post.description}
+            </Text>
+            <View style={styles.postMetaRow}>
+              <Text style={styles.postMetaText}>{formatRelativeTime(new Date(post.created_at))}</Text>
+              <Text style={styles.postMetaText}>❤️ {post.likes_count || 0}</Text>
+              <Text style={styles.postMetaText}>💬 {post.comments_count || 0}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.topBar}>
+          <Text style={styles.pageTitle}>Profile</Text>
+          <View style={styles.menuContainer}>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => setMenuOpen((prev) => !prev)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="menu" size={22} color={colors.text.primary} />
+            </TouchableOpacity>
+
+            {menuOpen && (
+              <View style={styles.menuDropdown}>
+                <TouchableOpacity
+                  style={styles.menuDropdownItem}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    handleViewProfile();
+                  }}
+                >
+                  <Text style={styles.menuDropdownText}>Edit Profile</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuDropdownItem}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    handleOpenChangePassword();
+                  }}
+                >
+                  <Text style={styles.menuDropdownText}>Change Password</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuDropdownItem}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  <Text style={styles.menuDropdownDanger}>Logout</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
         {/* Avatar & Basic Info */}
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
@@ -108,7 +260,7 @@ export function ProfileScreen() {
           <Text style={styles.email}>{user?.email}</Text>
 
           {/* Trust Badge */}
-          <View style={[styles.trustBadge, { backgroundColor: trustColor }]}>
+          <View style={[styles.trustBadge, trustBadgeStyle]}>
             <Ionicons name="shield-checkmark" size={14} color={colors.white} />
             <Text style={styles.trustText}>
               Level {trustLevel} — {getTrustLabel(trustLevel)}
@@ -116,57 +268,65 @@ export function ProfileScreen() {
           </View>
         </View>
 
-        {/* Location */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
-          <View style={styles.infoRow}>
-            <Ionicons name="location" size={20} color={colors.text.secondary} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>
-                {metroName || 'No metro area set'}
+          <View style={styles.tabsRow}>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'posts' ? styles.tabButtonActive : null]}
+              onPress={() => setActiveTab('posts')}
+            >
+              <Text style={[styles.tabButtonText, activeTab === 'posts' ? styles.tabButtonTextActive : null]}>
+                Posts
               </Text>
-              {user?.zip_code && (
-                <Text style={styles.infoSubtext}>ZIP {user.zip_code}</Text>
-              )}
-            </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'saved' ? styles.tabButtonActive : null]}
+              onPress={() => setActiveTab('saved')}
+            >
+              <Text style={[styles.tabButtonText, activeTab === 'saved' ? styles.tabButtonTextActive : null]}>
+                Saved Posts
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'about' ? styles.tabButtonActive : null]}
+              onPress={() => setActiveTab('about')}
+            >
+              <Text style={[styles.tabButtonText, activeTab === 'about' ? styles.tabButtonTextActive : null]}>
+                About
+              </Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Account Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          {activeTab === 'posts' && renderPosts(userPosts, postsLoading, postsError, 'You have not created any posts yet.')}
+          {activeTab === 'saved' && renderPosts(savedPosts, savedLoading, savedError, 'No saved posts yet.')}
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('EditProfile')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="create-outline" size={22} color={colors.text.primary} />
-            <Text style={styles.menuLabel}>Edit Profile</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.text.disabled} />
-          </TouchableOpacity>
+          {activeTab === 'about' && (
+            <View>
+              <Text style={styles.sectionTitle}>Location</Text>
+              <View style={styles.infoRow}>
+                <Ionicons name="location" size={20} color={colors.text.secondary} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>
+                    {metroName || 'No metro area set'}
+                  </Text>
+                  {user?.zip_code && (
+                    <Text style={styles.infoSubtext}>ZIP {user.zip_code}</Text>
+                  )}
+                </View>
+              </View>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('ChangePassword')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="lock-closed-outline" size={22} color={colors.text.primary} />
-            <Text style={styles.menuLabel}>Change Password</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.text.disabled} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Danger Zone */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="log-out-outline" size={20} color={colors.error} />
-            <Text style={styles.logoutText}>Log Out</Text>
-          </TouchableOpacity>
+              <Text style={styles.sectionTitle}>Activity</Text>
+              <View style={styles.aboutRow}>
+                <Text style={styles.aboutLabel}>Posts</Text>
+                <Text style={styles.aboutValue}>{userPosts.length}</Text>
+              </View>
+              <View style={styles.aboutRow}>
+                <Text style={styles.aboutLabel}>Saved Posts</Text>
+                <Text style={styles.aboutValue}>{savedPosts.length}</Text>
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -180,6 +340,57 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: spacing.l,
+    paddingHorizontal: spacing.m,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.s,
+    marginBottom: spacing.s,
+  },
+  pageTitle: {
+    ...typography.h3,
+    color: colors.text.primary,
+    fontWeight: '700',
+  },
+  menuContainer: {
+    position: 'relative',
+  },
+  menuButton: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.button,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuDropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    minWidth: 170,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    zIndex: 10,
+  },
+  menuDropdownItem: {
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.s,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  menuDropdownText: {
+    ...typography.body,
+    color: colors.text.primary,
+  },
+  menuDropdownDanger: {
+    ...typography.body,
+    color: colors.error,
   },
   header: {
     alignItems: 'center',
@@ -209,6 +420,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
     borderRadius: borderRadius.badge,
   },
+  trustBadgeNew: {
+    backgroundColor: colors.badge.level0,
+  },
+  trustBadgeVerified: {
+    backgroundColor: colors.badge.level1,
+  },
+  trustBadgeContributor: {
+    backgroundColor: colors.badge.level2,
+  },
   trustText: {
     ...typography.caption,
     color: colors.white,
@@ -217,8 +437,102 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: colors.white,
     marginTop: spacing.xs,
-    paddingHorizontal: spacing.l,
+    paddingHorizontal: spacing.s,
     paddingVertical: spacing.s,
+    borderRadius: borderRadius.card,
+  },
+  tabsRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    marginBottom: spacing.s,
+  },
+  tabButton: {
+    flex: 1,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabButtonActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary.main,
+  },
+  tabButtonText: {
+    ...typography.body,
+    color: colors.text.secondary,
+    fontWeight: '500',
+    fontSize: 15,
+  },
+  tabButtonTextActive: {
+    color: colors.text.primary,
+    fontWeight: '700',
+  },
+  tabMessage: {
+    ...typography.body,
+    color: colors.text.secondary,
+    paddingVertical: spacing.s,
+  },
+  tabError: {
+    ...typography.body,
+    color: colors.error,
+    paddingVertical: spacing.s,
+  },
+  postList: {
+    gap: spacing.s,
+  },
+  postItem: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
+    padding: spacing.s,
+  },
+  postItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.s,
+  },
+  postItemTitle: {
+    ...typography.body,
+    color: colors.text.primary,
+    fontWeight: '700',
+    flex: 1,
+  },
+  scopeBadge: {
+    borderRadius: borderRadius.badge,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 3,
+  },
+  scopeLocal: {
+    backgroundColor: colors.badge.localBg,
+  },
+  scopeGlobal: {
+    backgroundColor: colors.primary.main,
+  },
+  scopeTextLocal: {
+    ...typography.caption,
+    color: colors.badge.localText,
+    fontWeight: '600',
+  },
+  scopeTextGlobal: {
+    ...typography.caption,
+    color: colors.white,
+    fontWeight: '600',
+  },
+  postItemDescription: {
+    ...typography.body,
+    color: colors.text.secondary,
+    fontSize: 14,
+    marginTop: spacing.xs,
+  },
+  postMetaRow: {
+    flexDirection: 'row',
+    gap: spacing.s,
+    marginTop: spacing.xs,
+  },
+  postMetaText: {
+    ...typography.caption,
+    color: colors.text.secondary,
   },
   sectionTitle: {
     ...typography.caption,
@@ -245,31 +559,21 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: 2,
   },
-  menuItem: {
+  aboutRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.s,
+    paddingVertical: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  menuLabel: {
+  aboutLabel: {
+    ...typography.body,
+    color: colors.text.secondary,
+  },
+  aboutValue: {
     ...typography.body,
     color: colors.text.primary,
-    flex: 1,
-    marginLeft: spacing.s,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.s,
-    borderRadius: borderRadius.button,
-    borderWidth: 1,
-    borderColor: colors.error,
-  },
-  logoutText: {
-    ...typography.button,
-    color: colors.error,
+    fontWeight: '600',
   },
 });

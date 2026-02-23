@@ -104,6 +104,63 @@ export async function getPostById(
 }
 
 /**
+ * Get posts created by a specific author.
+ */
+export async function getPostsByAuthorId(
+  supabase: SupabaseClient,
+  authorId: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<PostsResult> {
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select(POST_SELECT)
+      .eq('author_id', authorId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    return { data: (data || []).map(flattenPostTags) };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to fetch user posts'),
+    };
+  }
+}
+
+/**
+ * Get posts liked by a specific user.
+ * Profile uses this as the Saved Posts list.
+ */
+export async function getSavedPostsByUserId(
+  supabase: SupabaseClient,
+  userId: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<PostsResult> {
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`${POST_SELECT}, post_likes!inner(user_id)`)
+      .eq('status', 'active')
+      .eq('post_likes.user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    return { data: (data || []).map(flattenPostTags) };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to fetch saved posts'),
+    };
+  }
+}
+
+/**
  * Create a new post (Reddit-style: title + body + tag IDs)
  */
 export async function createPost(

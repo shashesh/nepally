@@ -592,7 +592,7 @@ export default function PostDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.main} />
         </View>
@@ -602,7 +602,7 @@ export default function PostDetailScreen() {
 
   if (!post) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <View style={styles.loadingContainer}>
           <Text style={styles.errorText}>Post not found</Text>
         </View>
@@ -616,7 +616,7 @@ export default function PostDetailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
 
         <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
@@ -1094,7 +1094,8 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   scrollContent: {
-    padding: spacing.s,
+    paddingHorizontal: spacing.s,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.l,
   },
   authorRowTop: {

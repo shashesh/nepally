@@ -216,13 +216,6 @@ export const PostCard: React.FC<PostCardProps> = ({
         {title}
       </Text>
 
-      {/* Local / Global Badge */}
-      <View style={[styles.badge, isGlobal ? styles.badgeGlobal : styles.badgeLocal]}>
-        <Text style={[styles.badgeText, isGlobal ? styles.badgeTextGlobal : styles.badgeTextLocal]}>
-          {isGlobal ? '🌐 Global' : '📍 Local'}
-        </Text>
-      </View>
-
       {/* Description Preview */}
       {descPreview && (
         <View style={styles.descriptionRow}>
@@ -285,9 +278,9 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       )}
 
-      {/* Tag Pills */}
-      {tags.length > 0 && (
-        <View style={styles.tagRow}>
+      {/* Tag Pills + Local / Global Badge */}
+      <View style={styles.tagRow}>
+        <View style={styles.tagPillsWrap}>
           {tags.map((tag) => {
             const tagColor = TAG_COLORS[tag.slug] || DEFAULT_TAG_COLOR;
             const emoji = TAG_EMOJI[tag.slug] || '';
@@ -308,7 +301,12 @@ export const PostCard: React.FC<PostCardProps> = ({
             );
           })}
         </View>
-      )}
+        <View style={[styles.badge, isGlobal ? styles.badgeGlobal : styles.badgeLocal]}>
+          <Text style={[styles.badgeText, isGlobal ? styles.badgeTextGlobal : styles.badgeTextLocal]}>
+            {isGlobal ? '🌐 Global' : '📍 Local'}
+          </Text>
+        </View>
+      </View>
 
       {/* Action Bar */}
       <View style={styles.actionBar}>
@@ -427,11 +425,10 @@ const styles = StyleSheet.create({
   },
   // Local / Global badge
   badge: {
-    alignSelf: 'flex-start',
     borderRadius: 12,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    marginBottom: spacing.xs,
+    marginLeft: spacing.xs,
   },
   badgeLocal: {
     backgroundColor: colors.badge.localBg,
@@ -523,9 +520,15 @@ const styles = StyleSheet.create({
   // Tag pills
   tagRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  tagPillsWrap: {
+    flex: 1,
+    flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 12,
   },
   tagPill: {
     borderRadius: 12,
