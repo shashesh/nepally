@@ -346,6 +346,7 @@ export default function CreatePostPage() {
               type="file"
               accept="image/jpeg,image/jpg,image/png,image/webp"
               multiple
+              aria-label="Add post photos"
               className={styles.hiddenFileInput}
               onChange={handlePhotoInputChange}
               disabled={selectedPhotos.length >= MAX_PHOTOS_PER_POST || submitting}

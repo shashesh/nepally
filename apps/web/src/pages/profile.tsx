@@ -151,6 +151,7 @@ export default function ProfilePage() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                aria-label="Upload profile photo"
                 onChange={handleFileChange}
                 className={styles.hiddenInput}
               />
