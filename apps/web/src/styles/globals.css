@@ -14,7 +14,9 @@ body {
 
 body {
   color: var(--color-text-primary);
-  background: var(--color-bg);
+  background: var(--gradient-bg);
+  background-attachment: fixed;
+  min-height: 100vh;
   font-family: var(--font-family);
   font-size: var(--font-size-body);
   line-height: var(--line-height-normal);
@@ -28,15 +30,17 @@ a {
 }
 
 a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
   color: var(--color-text-primary);
   line-height: var(--line-height-tight);
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
-h1 { font-size: var(--font-size-h1); font-weight: var(--font-weight-bold); }
+h1 { font-size: var(--font-size-h1); font-weight: var(--font-weight-extrabold); }
 h2 { font-size: var(--font-size-h2); font-weight: var(--font-weight-bold); }
 h3 { font-size: var(--font-size-h3); font-weight: var(--font-weight-semibold); }
 
@@ -53,5 +57,5 @@ input, textarea, select {
 :where(a, button, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
-

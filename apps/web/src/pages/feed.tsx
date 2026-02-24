@@ -350,116 +350,142 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
   if (!user) return null;
 
+  const firstName = user.full_name?.trim().split(' ')[0] || 'there';
+  const sponsoredItems = [
+    {
+      id: 'biz-1',
+      title: 'Sponsor Spotlight',
+      description: 'Promote a trusted local business to your metro feed.',
+      cta: 'Learn more',
+    },
+    {
+      id: 'event-1',
+      title: 'Community Events',
+      description: 'Highlight upcoming events and community gatherings near you.',
+      cta: 'See opportunities',
+    },
+  ];
+
   return (
     <>
       <Head>
         <title>{pageTitle}</title>
       </Head>
-      <div className={styles.feedPage}>
-        {/* Level 0 Banner */}
-        {user.trust_level === 0 && !bannerDismissed && (
-          <div className={styles.levelBanner}>
-            <span>
-              ⚠️ You are a new member (Level 0). Verify your account to unlock
-              full posting rights.
-            </span>
-            <button
-              onClick={() => setBannerDismissed(true)}
-              className={styles.dismissBtn}
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        <div className={styles.feedHeader}>
-          <div>
-            <h1 className={styles.feedTitle}>Community Feed</h1>
-            <p className={styles.metroName}>
-              {activeLocation
-                ? `${activeLocation.metro_name}, ${activeLocation.metro_state}`
-                : 'Your local area'}
-              {activeLocation?.is_temporary && (
-                <span className={styles.visitingBadge}>
-                  (Visiting)
+      <div className={styles.feedShell}>
+        <section className={styles.feedMain}>
+          <div className={styles.feedPage}>
+            {user.trust_level === 0 && !bannerDismissed && (
+              <div className={styles.levelBanner}>
+                <span>
+                  ⚠️ You are a new member (Level 0). Verify your account to unlock
+                  full posting rights.
                 </span>
+                <button
+                  onClick={() => setBannerDismissed(true)}
+                  className={styles.dismissBtn}
+                  aria-label="Dismiss"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            <div className={styles.feedHeader}>
+              <h1 className={styles.feedTitle}>Community Feed</h1>
+            </div>
+
+            <div className={styles.composerCard}>
+              <p className={styles.composerPrompt}>What&apos;s on your mind, {firstName}?</p>
+              {user.trust_level >= 1 ? (
+                <Link href="/posts/create" className={styles.createPostBtn}>
+                  Create Post
+                </Link>
+              ) : (
+                <Link href="/profile" className={styles.createPostBtnMuted}>
+                  Verify to Post
+                </Link>
               )}
-            </p>
-          </div>
-          {user.trust_level >= 1 && (
-            <Link href="/posts/create" className={styles.createPostBtn}>
-              + Create Post
-            </Link>
-          )}
-        </div>
-
-        {/* Tag Filter Chips */}
-        <TagFilterBar
-          tags={availableTags}
-          selectedSlugs={selectedTagSlugs}
-          onTagToggle={handleTagChipToggle}
-          onAllPress={handleAllChip}
-        />
-
-        {/* Post List */}
-        {loading ? (
-          <div className={styles.loadingState}>
-            <div className={styles.skeletonCard}>
-              <div className={styles.skeletonLineLg} />
-              <div className={styles.skeletonLineMd} />
-              <div className={styles.skeletonLineSm} />
             </div>
-            <div className={styles.skeletonCard}>
-              <div className={styles.skeletonLineLg} />
-              <div className={styles.skeletonLineMd} />
-              <div className={styles.skeletonLineSm} />
-            </div>
-          </div>
-        ) : loadError ? (
-          <div className={styles.errorState}>
-            <div className={styles.errorIcon}>⚠️</div>
-            <h3>Couldn&apos;t load posts</h3>
-            <p>{loadError}</p>
-            <button className={styles.retryBtn} onClick={handleRetryLoad}>
-              Retry
-            </button>
-          </div>
-        ) : posts.length === 0 ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>🏔️</div>
-            <h3>No posts yet</h3>
-            <p>
-              {selectedTagSlugs.length > 0
-                ? 'No posts matching your filters in this area. Try different tags!'
-                : 'Be the first to share something with your community!'}
-            </p>
-            {user.trust_level >= 1 ? (
-              <Link href="/posts/create" className={styles.emptyActionBtn}>
-                Create First Post
-              </Link>
+
+            <TagFilterBar
+              tags={availableTags}
+              selectedSlugs={selectedTagSlugs}
+              onTagToggle={handleTagChipToggle}
+              onAllPress={handleAllChip}
+            />
+
+            {loading ? (
+              <div className={styles.loadingState}>
+                <div className={styles.skeletonCard}>
+                  <div className={styles.skeletonLineLg} />
+                  <div className={styles.skeletonLineMd} />
+                  <div className={styles.skeletonLineSm} />
+                </div>
+                <div className={styles.skeletonCard}>
+                  <div className={styles.skeletonLineLg} />
+                  <div className={styles.skeletonLineMd} />
+                  <div className={styles.skeletonLineSm} />
+                </div>
+              </div>
+            ) : loadError ? (
+              <div className={styles.errorState}>
+                <div className={styles.errorIcon}>⚠️</div>
+                <h3>Couldn&apos;t load posts</h3>
+                <p>{loadError}</p>
+                <button className={styles.retryBtn} onClick={handleRetryLoad}>
+                  Retry
+                </button>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>🏔️</div>
+                <h3>No posts yet</h3>
+                <p>
+                  {selectedTagSlugs.length > 0
+                    ? 'No posts matching your filters in this area. Try different tags!'
+                    : 'Be the first to share something with your community!'}
+                </p>
+                {user.trust_level >= 1 ? (
+                  <Link href="/posts/create" className={styles.emptyActionBtn}>
+                    Create First Post
+                  </Link>
+                ) : (
+                  <Link href="/profile" className={styles.emptyActionBtnSecondary}>
+                    Verify Account to Post
+                  </Link>
+                )}
+              </div>
             ) : (
-              <Link href="/profile" className={styles.emptyActionBtnSecondary}>
-                Verify Account to Post
-              </Link>
+              posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  liked={likedIds.has(post.id)}
+                  onTagClick={handleTagChipToggle}
+                  currentUserId={user?.id}
+                  onAvatarChat={handleAvatarChat}
+                  onOpenLightbox={openLightbox}
+                  onSharePost={handleSharePost}
+                  onDeletePost={handleDeletePost}
+                  onEditPost={handleEditPost}
+                />
+              ))
             )}
           </div>
-        ) : (
-          posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              liked={likedIds.has(post.id)}
-              onTagClick={handleTagChipToggle}
-              currentUserId={user?.id}
-              onAvatarChat={handleAvatarChat}
-              onOpenLightbox={openLightbox}
-              onSharePost={handleSharePost}
-              onDeletePost={handleDeletePost}
-              onEditPost={handleEditPost}
-            />
-          ))
-        )}
+        </section>
+
+        <aside className={styles.sponsoredRail}>
+          <h2 className={styles.sponsoredTitle}>Sponsored</h2>
+          <div className={styles.sponsoredList}>
+            {sponsoredItems.map((item) => (
+              <article key={item.id} className={styles.sponsoredCard}>
+                <h3 className={styles.sponsoredCardTitle}>{item.title}</h3>
+                <p className={styles.sponsoredCardText}>{item.description}</p>
+                <button type="button" className={styles.sponsoredCta}>{item.cta}</button>
+              </article>
+            ))}
+          </div>
+        </aside>
 
         {lightboxPhotos.length > 0 && (
           <div className={styles.lightboxOverlay} onClick={closeLightbox} role="presentation">

@@ -107,6 +107,28 @@ Before implementing ANY feature, read:
 - `docs/code-sharing-guide.md` — Full guide with examples for shared vs platform-specific code
 - `docs/monorepo-structure.md` — Package boundaries, build order, and import rules
 
+## Database Migrations
+
+**CRITICAL: Always prefer existing migration files over creating new ones.**
+
+Local migration files live in `supabase/migrations/` with this naming convention:
+- `001_schema.sql` — Full database schema (tables, indexes, functions, triggers, RLS)
+- `002_seed_data.sql` — Seed/reference data (tags, metro areas, etc.)
+- `003_storage.sql` — Supabase Storage buckets and their RLS policies
+
+### Decision tree before touching migrations
+
+1. **Read the existing files first.** Check whether the change logically belongs to an existing file:
+   - Schema changes (tables, columns, indexes, functions, triggers, RLS policies) → `001_schema.sql`
+   - Seed / reference data inserts → `002_seed_data.sql`
+   - Storage bucket setup or storage RLS → `003_storage.sql`
+2. **If it fits, add it to the existing file.** Update the relevant section in place — do not duplicate content.
+3. **Only create a new file** when the change is genuinely orthogonal to all existing files (e.g., a new subsystem with its own lifecycle). Name it `004_<description>.sql`, continuing the numeric sequence.
+4. **Never create timestamped filenames** (e.g., `20260224_something.sql`). The project uses sequential numeric prefixes.
+
+### Applying migrations via MCP
+When using `apply_migration` (Supabase MCP tool), the SQL runs on the live DB. Always verify afterward that the same SQL is reflected in the appropriate local file — they must stay in sync.
+
 ## Tech Stack
 
 - **Mobile**: React Native + Expo 54 (iOS & Android)

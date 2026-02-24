@@ -40,6 +40,7 @@ DROP FUNCTION IF EXISTS increment_post_comments_count() CASCADE;
 DROP FUNCTION IF EXISTS decrement_post_likes_count() CASCADE;
 DROP FUNCTION IF EXISTS increment_post_likes_count() CASCADE;
 DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+DROP FUNCTION IF EXISTS update_saved_location_timestamp() CASCADE;
 DROP FUNCTION IF EXISTS get_metro_by_zip(TEXT) CASCADE;
 
 -- =====================================================
@@ -371,14 +372,23 @@ CREATE INDEX idx_post_tags_tag ON post_tags(tag_id);
 -- FUNCTIONS
 -- =====================================================
 
--- Auto-update updated_at timestamp (shared by multiple tables)
+-- Auto-update updated_at timestamp (shared by most tables)
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
+
+-- Auto-update updated_at timestamp for user_saved_locations
+CREATE OR REPLACE FUNCTION update_saved_location_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 -- Get metro area by ZIP code
 CREATE OR REPLACE FUNCTION get_metro_by_zip(zip TEXT)
@@ -391,34 +401,34 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT m.id, m.name, m.state, m.population
-  FROM metro_areas m
-  JOIN metro_area_zipcodes z ON m.id = z.metro_area_id
+  FROM public.metro_areas m
+  JOIN public.metro_area_zipcodes z ON m.id = z.metro_area_id
   WHERE z.zip_code = zip
   LIMIT 1;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- Enforce max 5 saved locations per user
 CREATE OR REPLACE FUNCTION check_max_saved_locations()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF (SELECT COUNT(*) FROM user_saved_locations WHERE user_id = NEW.user_id) >= 5 THEN
+  IF (SELECT COUNT(*) FROM public.user_saved_locations WHERE user_id = NEW.user_id) >= 5 THEN
     RAISE EXCEPTION 'Maximum of 5 saved locations per user';
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 -- Enforce max 3 tags per post
 CREATE OR REPLACE FUNCTION check_max_post_tags()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF (SELECT COUNT(*) FROM post_tags WHERE post_id = NEW.post_id) >= 3 THEN
+  IF (SELECT COUNT(*) FROM public.post_tags WHERE post_id = NEW.post_id) >= 3 THEN
     RAISE EXCEPTION 'Maximum of 3 tags per post';
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 -- Post likes counter triggers
 CREATE OR REPLACE FUNCTION increment_post_likes_count()
@@ -426,20 +436,20 @@ RETURNS TRIGGER
 SECURITY DEFINER
 AS $$
 BEGIN
-  UPDATE posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
+  UPDATE public.posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 CREATE OR REPLACE FUNCTION decrement_post_likes_count()
 RETURNS TRIGGER
 SECURITY DEFINER
 AS $$
 BEGIN
-  UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = OLD.post_id;
+  UPDATE public.posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = OLD.post_id;
   RETURN OLD;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 -- Post comments counter triggers
 CREATE OR REPLACE FUNCTION increment_post_comments_count()
@@ -448,11 +458,11 @@ SECURITY DEFINER
 AS $$
 BEGIN
   IF NEW.is_deleted = false THEN
-    UPDATE posts SET comments_count = comments_count + 1 WHERE id = NEW.post_id;
+    UPDATE public.posts SET comments_count = comments_count + 1 WHERE id = NEW.post_id;
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 CREATE OR REPLACE FUNCTION decrement_post_comments_count()
 RETURNS TRIGGER
@@ -460,35 +470,35 @@ SECURITY DEFINER
 AS $$
 BEGIN
   IF NEW.is_deleted = true AND OLD.is_deleted = false THEN
-    UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = NEW.post_id;
+    UPDATE public.posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = NEW.post_id;
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 -- Helper: get like count for a post
 CREATE OR REPLACE FUNCTION get_post_like_count(p_post_id UUID)
 RETURNS INTEGER AS $$
 BEGIN
-  RETURN (SELECT COUNT(*) FROM post_likes WHERE post_id = p_post_id);
+  RETURN (SELECT COUNT(*) FROM public.post_likes WHERE post_id = p_post_id);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- Helper: check if user has liked a post
 CREATE OR REPLACE FUNCTION has_user_liked_post(p_post_id UUID, p_user_id UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN EXISTS (SELECT 1 FROM post_likes WHERE post_id = p_post_id AND user_id = p_user_id);
+  RETURN EXISTS (SELECT 1 FROM public.post_likes WHERE post_id = p_post_id AND user_id = p_user_id);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- Helper: get comment count for a post
 CREATE OR REPLACE FUNCTION get_post_comment_count(p_post_id UUID)
 RETURNS INTEGER AS $$
 BEGIN
-  RETURN (SELECT COUNT(*) FROM post_comments WHERE post_id = p_post_id AND is_deleted = false);
+  RETURN (SELECT COUNT(*) FROM public.post_comments WHERE post_id = p_post_id AND is_deleted = false);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- =====================================================
 -- TRIGGERS
@@ -509,7 +519,7 @@ CREATE TRIGGER update_conversations_updated_at
 
 CREATE TRIGGER set_saved_location_updated_at
   BEFORE UPDATE ON user_saved_locations
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION update_saved_location_timestamp();
 
 -- Saved locations max enforcement
 CREATE TRIGGER enforce_max_saved_locations
@@ -566,9 +576,18 @@ CREATE POLICY "Metro areas are viewable by everyone"
   ON metro_areas FOR SELECT
   USING (true);
 
-CREATE POLICY "Only service role can modify metro areas"
-  ON metro_areas FOR ALL
-  USING (auth.role() = 'service_role');
+CREATE POLICY "Only service role can insert metro areas"
+  ON metro_areas FOR INSERT
+  WITH CHECK ((select auth.role()) = 'service_role');
+
+CREATE POLICY "Only service role can update metro areas"
+  ON metro_areas FOR UPDATE
+  USING ((select auth.role()) = 'service_role')
+  WITH CHECK ((select auth.role()) = 'service_role');
+
+CREATE POLICY "Only service role can delete metro areas"
+  ON metro_areas FOR DELETE
+  USING ((select auth.role()) = 'service_role');
 
 -- ----- Metro ZIP Codes -----
 
@@ -576,9 +595,18 @@ CREATE POLICY "Metro ZIP codes are viewable by everyone"
   ON metro_area_zipcodes FOR SELECT
   USING (true);
 
-CREATE POLICY "Only service role can modify metro ZIP codes"
-  ON metro_area_zipcodes FOR ALL
-  USING (auth.role() = 'service_role');
+CREATE POLICY "Only service role can insert metro ZIP codes"
+  ON metro_area_zipcodes FOR INSERT
+  WITH CHECK ((select auth.role()) = 'service_role');
+
+CREATE POLICY "Only service role can update metro ZIP codes"
+  ON metro_area_zipcodes FOR UPDATE
+  USING ((select auth.role()) = 'service_role')
+  WITH CHECK ((select auth.role()) = 'service_role');
+
+CREATE POLICY "Only service role can delete metro ZIP codes"
+  ON metro_area_zipcodes FOR DELETE
+  USING ((select auth.role()) = 'service_role');
 
 -- ----- Users -----
 
@@ -588,17 +616,17 @@ CREATE POLICY "Users are viewable by everyone"
 
 CREATE POLICY "Users can insert their own profile"
   ON users FOR INSERT
-  WITH CHECK (auth.uid() = id);
+  WITH CHECK ((select auth.uid()) = id);
 
 CREATE POLICY "Users can update own profile"
   ON users FOR UPDATE
-  USING (auth.uid() = id);
+  USING ((select auth.uid()) = id);
 
 CREATE POLICY "Moderators can delete users"
   ON users FOR DELETE
   USING (
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+      SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true
     )
   );
 
@@ -613,28 +641,28 @@ CREATE POLICY "Verified users can create posts"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM users
-      WHERE id = auth.uid()
+      WHERE id = (select auth.uid())
       AND trust_level >= 1
     )
-    AND author_id = auth.uid()
+    AND author_id = (select auth.uid())
     AND status = 'active'
   );
 
 CREATE POLICY "Authors and moderators can update posts"
   ON posts FOR UPDATE
   USING (
-    author_id = auth.uid()
+    author_id = (select auth.uid())
     OR EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+      SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true
     )
   );
 
 CREATE POLICY "Authors and moderators can delete posts"
   ON posts FOR DELETE
   USING (
-    author_id = auth.uid()
+    author_id = (select auth.uid())
     OR EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+      SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true
     )
   );
 
@@ -645,15 +673,15 @@ CREATE POLICY "Participants can view conversations"
   USING (
     EXISTS (
       SELECT 1 FROM conversation_participants
-      WHERE conversation_id = conversations.id AND user_id = auth.uid()
+      WHERE conversation_id = conversations.id AND user_id = (select auth.uid())
     )
   );
 
-CREATE POLICY "Verified users can create conversations"
+CREATE POLICY "Authenticated users can create conversations"
   ON conversations FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1
+      SELECT 1 FROM users WHERE id = (select auth.uid()) AND trust_level >= 1
     )
   );
 
@@ -662,7 +690,7 @@ CREATE POLICY "Participants can update conversations"
   USING (
     EXISTS (
       SELECT 1 FROM conversation_participants
-      WHERE conversation_id = conversations.id AND user_id = auth.uid()
+      WHERE conversation_id = conversations.id AND user_id = (select auth.uid())
     )
   );
 
@@ -672,11 +700,11 @@ CREATE POLICY "Participants can update conversations"
 CREATE POLICY "Participants can view conversation members"
   ON conversation_participants FOR SELECT
   USING (
-    user_id = auth.uid()
+    user_id = (select auth.uid())
     OR EXISTS (
       SELECT 1 FROM conversation_participants cp
       WHERE cp.conversation_id = conversation_participants.conversation_id
-        AND cp.user_id = auth.uid()
+        AND cp.user_id = (select auth.uid())
     )
   );
 
@@ -684,17 +712,17 @@ CREATE POLICY "Participants can view conversation members"
 CREATE POLICY "Users can add participants to conversations"
   ON conversation_participants FOR INSERT
   WITH CHECK (
-    user_id = auth.uid()
+    user_id = (select auth.uid())
     OR EXISTS (
       SELECT 1 FROM conversation_participants cp
       WHERE cp.conversation_id = conversation_participants.conversation_id
-        AND cp.user_id = auth.uid()
+        AND cp.user_id = (select auth.uid())
     )
   );
 
 CREATE POLICY "Users can update own participation"
   ON conversation_participants FOR UPDATE
-  USING (user_id = auth.uid());
+  USING (user_id = (select auth.uid()));
 
 -- ----- Messages -----
 
@@ -704,7 +732,7 @@ CREATE POLICY "Participants can view messages"
     EXISTS (
       SELECT 1 FROM conversation_participants
       WHERE conversation_id = messages.conversation_id
-      AND user_id = auth.uid()
+      AND user_id = (select auth.uid())
     )
   );
 
@@ -712,30 +740,30 @@ CREATE POLICY "Participants can view messages"
 CREATE POLICY "Participants can send messages"
   ON messages FOR INSERT
   WITH CHECK (
-    sender_id = auth.uid()
+    sender_id = (select auth.uid())
     AND EXISTS (
       SELECT 1 FROM conversation_participants
       WHERE conversation_id = messages.conversation_id
-        AND user_id = auth.uid()
+        AND user_id = (select auth.uid())
     )
     AND NOT EXISTS (
       SELECT 1 FROM blocked_users bu
       JOIN conversation_participants cp ON cp.conversation_id = messages.conversation_id
-      WHERE cp.user_id != auth.uid()
+      WHERE cp.user_id != (select auth.uid())
         AND (
-          (bu.blocker_id = cp.user_id AND bu.blocked_id = auth.uid())
-          OR (bu.blocker_id = auth.uid() AND bu.blocked_id = cp.user_id)
+          (bu.blocker_id = cp.user_id AND bu.blocked_id = (select auth.uid()))
+          OR (bu.blocker_id = (select auth.uid()) AND bu.blocked_id = cp.user_id)
         )
     )
   );
 
 CREATE POLICY "Senders can update own messages"
   ON messages FOR UPDATE
-  USING (sender_id = auth.uid());
+  USING (sender_id = (select auth.uid()));
 
 CREATE POLICY "Senders can delete own messages"
   ON messages FOR DELETE
-  USING (sender_id = auth.uid());
+  USING (sender_id = (select auth.uid()));
 
 -- ----- Reports -----
 
@@ -743,7 +771,7 @@ CREATE POLICY "Moderators can view reports"
   ON reports FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+      SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true
     )
   );
 
@@ -751,16 +779,16 @@ CREATE POLICY "Verified users can create reports"
   ON reports FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1
+      SELECT 1 FROM users WHERE id = (select auth.uid()) AND trust_level >= 1
     )
-    AND reported_by = auth.uid()
+    AND reported_by = (select auth.uid())
   );
 
 CREATE POLICY "Moderators can update reports"
   ON reports FOR UPDATE
   USING (
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+      SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true
     )
   );
 
@@ -768,7 +796,7 @@ CREATE POLICY "Moderators can delete reports"
   ON reports FOR DELETE
   USING (
     EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+      SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true
     )
   );
 
@@ -776,26 +804,26 @@ CREATE POLICY "Moderators can delete reports"
 
 CREATE POLICY "Users can view own notifications"
   ON notifications FOR SELECT
-  USING (user_id = auth.uid());
+  USING (user_id = (select auth.uid()));
 
 CREATE POLICY "Users can update own notifications"
   ON notifications FOR UPDATE
-  USING (user_id = auth.uid());
+  USING (user_id = (select auth.uid()));
 
 -- ----- Blocked Users -----
 
 -- SELECT: see blocks in either direction involving you (fixed in 007)
 CREATE POLICY "Users can view blocks involving them"
   ON blocked_users FOR SELECT
-  USING (blocker_id = auth.uid() OR blocked_id = auth.uid());
+  USING (blocker_id = (select auth.uid()) OR blocked_id = (select auth.uid()));
 
 CREATE POLICY "Users can block others"
   ON blocked_users FOR INSERT
-  WITH CHECK (blocker_id = auth.uid());
+  WITH CHECK (blocker_id = (select auth.uid()));
 
 CREATE POLICY "Users can unblock"
   ON blocked_users FOR DELETE
-  USING (blocker_id = auth.uid());
+  USING (blocker_id = (select auth.uid()));
 
 -- ----- Post Likes -----
 
@@ -806,13 +834,13 @@ CREATE POLICY "Anyone can view likes"
 CREATE POLICY "Level 1+ users can like posts"
   ON post_likes FOR INSERT
   WITH CHECK (
-    auth.uid() = user_id AND
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1 AND is_banned = false)
+    (select auth.uid()) = user_id AND
+    EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND trust_level >= 1 AND is_banned = false)
   );
 
 CREATE POLICY "Users can unlike their own likes"
   ON post_likes FOR DELETE
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);
 
 -- ----- Post Comments -----
 
@@ -823,47 +851,44 @@ CREATE POLICY "Anyone can view non-deleted comments"
 CREATE POLICY "Level 1+ users can comment"
   ON post_comments FOR INSERT
   WITH CHECK (
-    auth.uid() = author_id AND
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1 AND is_banned = false)
+    (select auth.uid()) = author_id AND
+    EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND trust_level >= 1 AND is_banned = false)
   );
 
-CREATE POLICY "Users can update own comments"
-  ON post_comments FOR UPDATE
-  USING (auth.uid() = author_id)
-  WITH CHECK (auth.uid() = author_id);
-
-CREATE POLICY "Moderators can update any comment"
+CREATE POLICY "Users and moderators can update comments"
   ON post_comments FOR UPDATE
   USING (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true)
+    (select auth.uid()) = author_id
+    OR EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true)
   )
   WITH CHECK (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true)
+    (select auth.uid()) = author_id
+    OR EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true)
   );
 
 CREATE POLICY "Moderators can delete comments"
   ON post_comments FOR DELETE
   USING (
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true)
+    EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true)
   );
 
 -- ----- User Saved Locations -----
 
 CREATE POLICY "Users can view own saved locations"
   ON user_saved_locations FOR SELECT
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can insert own saved locations"
   ON user_saved_locations FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can update own saved locations"
   ON user_saved_locations FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can delete own saved locations"
   ON user_saved_locations FOR DELETE
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);
 
 -- ----- Tags -----
 
@@ -871,13 +896,18 @@ CREATE POLICY "Tags are viewable by everyone"
   ON tags FOR SELECT
   USING (true);
 
-CREATE POLICY "Only moderators can modify tags"
-  ON tags FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
-    )
-  );
+CREATE POLICY "Only moderators can insert tags"
+  ON tags FOR INSERT
+  WITH CHECK (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true));
+
+CREATE POLICY "Only moderators can update tags"
+  ON tags FOR UPDATE
+  USING (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true))
+  WITH CHECK (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true));
+
+CREATE POLICY "Only moderators can delete tags"
+  ON tags FOR DELETE
+  USING (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND is_moderator = true));
 
 -- ----- Post Tags -----
 
@@ -889,7 +919,7 @@ CREATE POLICY "Post authors can manage tags"
   ON post_tags FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM posts WHERE id = post_id AND author_id = auth.uid()
+      SELECT 1 FROM posts WHERE id = post_id AND author_id = (select auth.uid())
     )
   );
 
@@ -897,7 +927,7 @@ CREATE POLICY "Post authors can delete tags"
   ON post_tags FOR DELETE
   USING (
     EXISTS (
-      SELECT 1 FROM posts WHERE id = post_id AND author_id = auth.uid()
+      SELECT 1 FROM posts WHERE id = post_id AND author_id = (select auth.uid())
     )
   );
 
