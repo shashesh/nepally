@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Alert,
   StatusBar,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -49,6 +52,8 @@ export function ProfileScreen() {
   const userId = user?.id ?? null;
   const [metroName, setMetroName] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const menuButtonRef = useRef<View>(null);
   const [activeTab, setActiveTab] = useState<'posts' | 'saved' | 'about'>('posts');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
@@ -145,6 +150,22 @@ export function ProfileScreen() {
     navigation.navigate('ChangePassword');
   };
 
+  const handleMenuPress = () => {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
+    if (menuButtonRef.current) {
+      menuButtonRef.current.measure((_x, _y, width, height, pageX, pageY) => {
+        const screenWidth = Dimensions.get('window').width;
+        setMenuAnchor({ top: pageY + height + 4, right: screenWidth - pageX - width });
+        setMenuOpen(true);
+      });
+    } else {
+      setMenuOpen(true);
+    }
+  };
+
   const trustLevel = user?.trust_level ?? 0;
 
   const trustBadgeStyle =
@@ -203,46 +224,49 @@ export function ProfileScreen() {
           <Text style={styles.pageTitle}>Profile</Text>
           <View style={styles.menuContainer}>
             <TouchableOpacity
+              ref={menuButtonRef}
               style={styles.menuButton}
-              onPress={() => setMenuOpen((prev) => !prev)}
+              onPress={handleMenuPress}
               activeOpacity={0.7}
             >
               <Ionicons name="menu" size={22} color={colors.text.primary} />
             </TouchableOpacity>
 
-            {menuOpen && (
-              <View style={styles.menuDropdown}>
-                <TouchableOpacity
-                  style={styles.menuDropdownItem}
-                  onPress={() => {
-                    setMenuOpen(false);
-                    handleViewProfile();
-                  }}
-                >
-                  <Text style={styles.menuDropdownText}>Edit Profile</Text>
-                </TouchableOpacity>
+            <Modal
+              visible={menuOpen}
+              transparent
+              animationType="none"
+              onRequestClose={() => setMenuOpen(false)}
+            >
+              <TouchableWithoutFeedback onPress={() => setMenuOpen(false)}>
+                <View style={styles.modalBackdrop}>
+                  <TouchableWithoutFeedback onPress={() => {}}>
+                    <View style={[styles.menuDropdown, { top: menuAnchor.top, right: menuAnchor.right }]}>
+                      <TouchableOpacity
+                        style={styles.menuDropdownItem}
+                        onPress={() => { setMenuOpen(false); handleViewProfile(); }}
+                      >
+                        <Text style={styles.menuDropdownText}>Edit Profile</Text>
+                      </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.menuDropdownItem}
-                  onPress={() => {
-                    setMenuOpen(false);
-                    handleOpenChangePassword();
-                  }}
-                >
-                  <Text style={styles.menuDropdownText}>Change Password</Text>
-                </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.menuDropdownItem}
+                        onPress={() => { setMenuOpen(false); handleOpenChangePassword(); }}
+                      >
+                        <Text style={styles.menuDropdownText}>Change Password</Text>
+                      </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.menuDropdownItem}
-                  onPress={() => {
-                    setMenuOpen(false);
-                    handleLogout();
-                  }}
-                >
-                  <Text style={styles.menuDropdownDanger}>Logout</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+                      <TouchableOpacity
+                        style={styles.menuDropdownItem}
+                        onPress={() => { setMenuOpen(false); handleLogout(); }}
+                      >
+                        <Text style={styles.menuDropdownDanger}>Logout</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableWithoutFeedback>
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
           </View>
         </View>
 
@@ -367,16 +391,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  modalBackdrop: {
+    flex: 1,
+  },
   menuDropdown: {
     position: 'absolute',
-    top: 40,
-    right: 0,
     minWidth: 170,
     backgroundColor: colors.white,
     borderRadius: borderRadius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 6,
   },
   menuDropdownItem: {
     paddingHorizontal: spacing.s,

@@ -696,28 +696,34 @@ CREATE POLICY "Participants can update conversations"
 
 -- ----- Conversation Participants -----
 
--- SELECT: participants can see all members in their conversations (fixed in 007)
+-- Helper: checks participation without triggering RLS (SECURITY DEFINER bypasses RLS,
+-- preventing infinite recursion when policies query the same table).
+CREATE OR REPLACE FUNCTION is_conversation_participant(conv_id UUID, uid UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM conversation_participants
+    WHERE conversation_id = conv_id
+    AND user_id = uid
+  );
+$$;
+
 CREATE POLICY "Participants can view conversation members"
   ON conversation_participants FOR SELECT
   USING (
-    user_id = (select auth.uid())
-    OR EXISTS (
-      SELECT 1 FROM conversation_participants cp
-      WHERE cp.conversation_id = conversation_participants.conversation_id
-        AND cp.user_id = (select auth.uid())
-    )
+    user_id = (SELECT auth.uid())
+    OR is_conversation_participant(conversation_id, (SELECT auth.uid()))
   );
 
--- INSERT: users can add themselves or add others if already a participant (fixed in 002)
 CREATE POLICY "Users can add participants to conversations"
   ON conversation_participants FOR INSERT
   WITH CHECK (
-    user_id = (select auth.uid())
-    OR EXISTS (
-      SELECT 1 FROM conversation_participants cp
-      WHERE cp.conversation_id = conversation_participants.conversation_id
-        AND cp.user_id = (select auth.uid())
-    )
+    user_id = (SELECT auth.uid())
+    OR is_conversation_participant(conversation_id, (SELECT auth.uid()))
   );
 
 CREATE POLICY "Users can update own participation"

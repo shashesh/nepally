@@ -23,7 +23,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, signOut, refreshUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoStatus, setPhotoStatus] = useState<{
     type: 'success' | 'error';
@@ -49,19 +48,6 @@ export default function ProfilePage() {
     }
   }, [user, router]);
 
-  useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
-      const target = event.target as Node;
-      if (menuRef.current && !menuRef.current.contains(target)) {
-        setMenuOpen(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
-  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -325,9 +311,16 @@ export default function ProfilePage() {
         <title>Profile - NUSA</title>
       </Head>
       <div className={styles.profilePage}>
+        {menuOpen && (
+          <div
+            className={styles.menuOverlay}
+            onClick={() => setMenuOpen(false)}
+            onTouchStart={() => setMenuOpen(false)}
+          />
+        )}
         <div className={styles.topBar}>
           <h1 className={styles.pageTitle}>Profile</h1>
-          <div className={styles.menuWrap} ref={menuRef}>
+          <div className={styles.menuWrap}>
             <button
               className={styles.hamburgerBtn}
               type="button"

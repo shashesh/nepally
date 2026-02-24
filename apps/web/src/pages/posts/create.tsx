@@ -199,7 +199,11 @@ export default function CreatePostPage() {
       }
     }
     clearSelectedPhotos();
-    router.back();
+    if (isEditing && editPostId) {
+      router.push(`/posts/${editPostId}`);
+      return;
+    }
+    router.push('/feed');
   }
 
   function handlePhotoInputChange(event: React.ChangeEvent<HTMLInputElement>) {
