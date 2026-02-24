@@ -86,6 +86,16 @@ See [Monorepo Structure](./docs/monorepo-structure.md) for details.
 ### Claude Code
 - [CLAUDE.md](./CLAUDE.md) - Claude Code instructions
 
+## Agent Rules (Testing)
+
+- Every new functionality must include unit tests in the same change.
+- Any behavior change must include corresponding test updates.
+- Test placement:
+	- `packages/shared/src/**` → `packages/shared/src/**/*.test.ts`
+	- `apps/web/src/**` → `apps/web/src/**/*.test.ts(x)`
+	- `apps/mobile/src/**` → `apps/mobile/src/**/*.test.ts(x)`
+- Work is not complete until tests and coverage pass for touched workspaces, then pass at monorepo level.
+
 ## Development Phases
 
 ### Phase 1: Utility Core & Trust Foundation (Current)
@@ -112,6 +122,8 @@ npm run web            # Start web app
 npm run lint           # Lint all code
 npm run format         # Format all code
 npm run type-check     # Type check all packages
+npm run test           # Run all workspace tests
+npm run test:coverage  # Run all workspace coverage checks
 ```
 
 ## License

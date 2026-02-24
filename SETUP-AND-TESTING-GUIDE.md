@@ -276,6 +276,39 @@ The web app doesn't have the full onboarding implemented yet in this phase, but 
 2. **Check console** for errors (F12 → Console tab)
 3. **Verify Supabase connection** (check Network tab)
 
+## Step 8.5: Run Unit Tests & Coverage (Required)
+
+After setup (and before opening PRs), run tests for touched workspaces and then monorepo-level checks.
+
+### Workspace-level tests
+
+```bash
+# Shared package
+npm run test --workspace=packages/shared
+npm run test:coverage --workspace=packages/shared
+
+# Web app
+npm run test --workspace=apps/web
+npm run test:coverage --workspace=apps/web
+
+# Mobile app
+npm run test --workspace=apps/mobile
+npm run test:coverage --workspace=apps/mobile
+```
+
+### Monorepo-level validation
+
+```bash
+npm run test
+npm run test:coverage
+```
+
+### Policy reminder
+
+- Every new functionality must include unit tests in the same change.
+- Any behavior change must include corresponding test updates.
+- Do not mark work complete until relevant workspace and monorepo test commands pass.
+
 ## Step 9: Common Issues & Troubleshooting
 
 ### Issue: "Module not found" errors
@@ -350,6 +383,28 @@ npm run dev
 cd apps/mobile
 npx react-native start --reset-cache
 ```
+
+### Issue: Unit test fails in one workspace
+
+```bash
+# Run one workspace in isolation first
+npm run test --workspace=apps/mobile
+npm run test --workspace=apps/web
+npm run test --workspace=packages/shared
+```
+
+- Fix workspace-level issues first, then rerun `npm run test` at root.
+
+### Issue: Coverage command fails
+
+```bash
+# Run coverage for the failing workspace
+npm run test:coverage --workspace=apps/mobile
+npm run test:coverage --workspace=apps/web
+npm run test:coverage --workspace=packages/shared
+```
+
+- Add/update tests for newly added or changed functionality in that workspace.
 
 ## Step 10: Quick Test Checklist
 
@@ -459,6 +514,18 @@ cd apps/web
 npm run dev
 # Then open http://localhost:3000
 
+# Run tests (workspace or monorepo)
+npm run test --workspace=apps/mobile
+npm run test --workspace=apps/web
+npm run test --workspace=packages/shared
+npm run test
+
+# Run coverage (workspace or monorepo)
+npm run test:coverage --workspace=apps/mobile
+npm run test:coverage --workspace=apps/web
+npm run test:coverage --workspace=packages/shared
+npm run test:coverage
+
 # Test on physical device
 # Install Expo Go → Scan QR code → App loads!
 
@@ -493,6 +560,17 @@ npm start
 # Scan QR code with Expo Go app
 
 # 6. Test with ZIP codes: 75001, 10001, or 90001
+```
+
+## CI-aligned Local Check (Recommended)
+
+Before pushing code, run:
+
+```bash
+npm run lint
+npm run type-check
+npm run test
+npm run test:coverage
 ```
 
 ---

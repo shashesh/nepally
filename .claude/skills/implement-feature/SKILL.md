@@ -35,6 +35,17 @@ Everything else → packages/shared/
 
 **NEVER define types, validation schemas, API query functions, utility functions, or constants inside `apps/mobile/` or `apps/web/`. These ALWAYS go in `packages/shared/`.**
 
+### Tests Are Mandatory (NON-NEGOTIABLE)
+For every new functionality or behavior change, add/update unit tests in the same implementation.
+- Shared logic changes → tests in `packages/shared/src/**/*.test.ts`
+- Web logic changes → tests in `apps/web/src/**/*.test.ts(x)`
+- Mobile logic changes → tests in `apps/mobile/src/**/*.test.ts(x)`
+
+Do not mark a feature complete until:
+1. Relevant workspace tests pass
+2. Workspace coverage command passes
+3. Monorepo test and coverage commands pass
+
 ---
 
 ## Step 0: Identify the Feature
@@ -230,6 +241,9 @@ Create checklist to verify implementation matches docs:
 - [ ] All interactive states working (default, pressed, disabled, error, loading)
 - [ ] All validation rules from journey applied
 - [ ] All error cases from journey handled
+- [ ] Unit tests added/updated for every new or changed functionality
+- [ ] Workspace tests pass (`npm run test --workspace=<workspace>`)
+- [ ] Workspace coverage passes (`npm run test:coverage --workspace=<workspace>`)
 - [ ] Design system colors/typography/spacing used correctly
 - [ ] Platform-specific differences respected (iOS vs Android, desktop vs mobile web)
 - [ ] Accessibility requirements met (WCAG AA)
@@ -321,6 +335,14 @@ export * from './types/post';
 export * from './api/posts';
 export * from './validation/post';
 ```
+
+### 4.0e Add Tests Alongside Implementation
+As each layer is implemented, add or update tests immediately:
+- Shared (`types/api/validation/utils/constants`) → targeted unit tests with mocked dependencies.
+- Web/Mobile hooks and contexts → unit tests for loading, success, and error states.
+- Service modules (auth/location/storage/etc.) → unit tests with platform/API mocks.
+
+Run tests after each meaningful batch to prevent regressions from stacking.
 
 ### 4.1 Design Tokens (Platform-Specific)
 Create design system constants from `00-design-system-foundation.md`:

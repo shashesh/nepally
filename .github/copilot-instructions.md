@@ -29,13 +29,22 @@
   1) shared layer, 2) web/mobile adapters, 3) route/screen wiring.
 - Keep edits surgical; preserve existing UX and file structure unless spec requires change.
 
+## Testing Requirement (Non-Negotiable)
+- Every new functionality MUST include unit tests in the same change.
+- Any changed functionality MUST update existing unit tests if behavior changed.
+- Prefer tests closest to the changed logic:
+  - `packages/shared`: unit tests for utils, validation, and API behavior (mock Supabase client).
+  - `apps/web`: unit tests for hooks/contexts/lib logic.
+  - `apps/mobile`: unit tests for hooks/services/utils and critical reusable components.
+- Do not mark work complete until relevant test commands pass for touched workspaces.
+
 ## Commands and Validation
 - Install all deps: `npm install`
 - Web dev: `npm run web` (or `npm run dev --workspace=apps/web`)
 - Mobile dev: `npm run mobile` (or `npm run start --workspace=apps/mobile`)
-- Monorepo checks: `npm run lint` and `npm run type-check`
+- Monorepo checks: `npm run lint`, `npm run type-check`, `npm run test`, and `npm run test:coverage`
 - Seed metro dataset when needed: `npm run seed:metro`
-- For targeted checks during edits, run workspace-level scripts first (`apps/web` or `packages/shared`) before full monorepo validation.
+- For targeted checks during edits, run workspace-level scripts first (`apps/web`, `apps/mobile`, or `packages/shared`) before full monorepo validation.
 
 ## Environment + Runtime
 - Web requires `apps/web/.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.

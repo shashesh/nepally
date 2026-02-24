@@ -15,6 +15,7 @@ This skill catches violations of the shared-first architecture:
 - Validation schemas duplicated between platforms
 - Constants/enums defined in more than one place
 - `packages/shared/` importing platform-specific packages
+- Missing unit tests for new/changed functionality
 
 **Run this after every `/implement-feature` and before marking any feature complete.**
 
@@ -206,6 +207,39 @@ cat packages/shared/src/index.ts
 
 ---
 
+## Step 8: Check Unit Test Presence and Coverage Commands
+
+Verify that newly added or changed logic has nearby unit tests and that coverage commands exist:
+
+```bash
+# Find test files across workspaces
+find packages/shared/src apps/web/src apps/mobile/src -type f \( -name "*.test.ts" -o -name "*.test.tsx" \)
+
+# Verify coverage scripts exist
+cat package.json
+cat packages/shared/package.json
+cat apps/web/package.json
+cat apps/mobile/package.json
+```
+
+**Violation**:
+- New/changed logic files have no corresponding test files in the same area.
+- Workspace `test:coverage` script missing.
+
+### Report Format
+```
+TESTING COMPLIANCE CHECK:
+✅ PASS | ❌ FAIL
+
+Changed/new logic files without tests:
+  - [file path]
+
+Coverage scripts:
+  - root/package/workspace scripts present: YES/NO
+```
+
+---
+
 ## Final Summary Report
 
 Present a consolidated report:
@@ -222,6 +256,7 @@ Present a consolidated report:
 5. Shared Package Purity:   ✅ PASS | ❌ FAIL ([count] violations)
 6. @nusa/shared Imports:    ✅ PASS | ❌ FAIL
 7. Index.ts Exports:        ✅ PASS | ❌ FAIL ([count] missing)
+8. Testing Compliance:      ✅ PASS | ❌ FAIL ([count] gaps)
 
 OVERALL: ✅ COMPLIANT | ❌ NON-COMPLIANT
 

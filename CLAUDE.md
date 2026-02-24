@@ -107,6 +107,16 @@ Before implementing ANY feature, read:
 - `docs/code-sharing-guide.md` — Full guide with examples for shared vs platform-specific code
 - `docs/monorepo-structure.md` — Package boundaries, build order, and import rules
 
+### Unit Testing Policy (MANDATORY)
+- Every new functionality MUST include unit tests in the same implementation.
+- Any behavior change MUST include corresponding test updates.
+- Test placement rules:
+  - Shared business logic (`packages/shared/src/**`) → tests in `packages/shared/src/**/*.test.ts`.
+  - Web logic (`apps/web/src/**`) → tests in `apps/web/src/**/*.test.ts(x)`.
+  - Mobile logic (`apps/mobile/src/**`) → tests in `apps/mobile/src/**/*.test.ts(x)`.
+- Prefer testing pure logic first (utils, validation, API behavior with mocks), then hooks/contexts, then critical reusable UI.
+- Do not consider a feature complete until relevant workspace tests pass, then full monorepo tests pass.
+
 ## Database Migrations
 
 **CRITICAL: Always prefer existing migration files over creating new ones.**
@@ -187,6 +197,9 @@ When implementing any feature, follow this mandatory sequence:
 - Test all interactive states (default, pressed, disabled, error, loading)
 - Verify all validation rules from wireframes applied
 - Test all edge cases from user journey
+- Add/update unit tests for all new or changed functionality in this scope
+- Run relevant workspace tests and coverage checks (`npm run test --workspace=<workspace>`, `npm run test:coverage --workspace=<workspace>`)
+- Run monorepo verification (`npm run test`, `npm run test:coverage`)
 - **Verify shared-first compliance**: Run `/shared-first-check` to ensure no duplicated types/logic
 - Demo to user and iterate based on feedback
 

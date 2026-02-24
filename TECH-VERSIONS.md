@@ -1,6 +1,6 @@
 # NUSA Technology Versions
 
-**Last Updated:** 2026-02-12
+**Last Updated:** 2026-02-24
 
 This document serves as the single source of truth for all technology versions used in the NUSA project.
 
@@ -52,6 +52,18 @@ This document serves as the single source of truth for all technology versions u
 | **TypeScript** | 5.3.3+ | Type checking |
 | **ESLint** | 8.57.x | Linting |
 | **Prettier** | 3.2.5+ | Code formatting |
+
+## Testing Stack
+
+| Tool | Version | Location | Notes |
+|------|---------|----------|-------|
+| **vitest** | ^3.2.4 | Root / web / shared | Unit test runner for web and shared |
+| **@vitest/coverage-v8** | ^3.2.4 | Root | Coverage provider for Vitest |
+| **jest** | ^29.7.0 | apps/mobile | Unit test runner for mobile |
+| **jest-expo** | ^54.0.14 | apps/mobile | Expo preset for Jest |
+| **@testing-library/react-native** | ^13.3.3 | apps/mobile | Hook/component testing utilities |
+| **@testing-library/react** | ^16.2.0 | apps/web | Hook/component testing utilities |
+| **jsdom** | ^26.1.0 | apps/web | Browser-like test environment for web |
 
 ## Why These Versions?
 
@@ -133,6 +145,56 @@ This ensures React 19.1.4 is used throughout the entire monorepo, overriding any
   "devDependencies": {
     "@types/react": "^19",
     "@types/react-dom": "^19"
+  }
+}
+```
+
+## Test & Coverage Scripts (Current)
+
+### Root (`package.json`)
+
+```json
+{
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "test:watch": "npm run test:watch --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present"
+  }
+}
+```
+
+### Mobile (`apps/mobile/package.json`)
+
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  }
+}
+```
+
+### Web (`apps/web/package.json`)
+
+```json
+{
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  }
+}
+```
+
+### Shared (`packages/shared/package.json`)
+
+```json
+{
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   }
 }
 ```

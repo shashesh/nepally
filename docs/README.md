@@ -12,6 +12,24 @@ This directory contains detailed documentation for the NUSA project.
 | [supabase-setup.md](./supabase-setup.md) | Supabase project configuration |
 | [deployment-guide.md](./deployment-guide.md) | Deploy to Vercel, App Store, Google Play |
 
+## Testing Policy
+
+Use these documents as the source of truth for required testing workflow:
+
+- [../SETUP-AND-TESTING-GUIDE.md](../SETUP-AND-TESTING-GUIDE.md) — setup, workspace tests, coverage commands, and CI-aligned local checks.
+- [../README.md](../README.md) — project-wide agent rules, including mandatory unit tests for new/changed functionality.
+- [../.github/copilot-instructions.md](../.github/copilot-instructions.md) — Copilot coding instructions with non-negotiable testing requirements.
+- [../CLAUDE.md](../CLAUDE.md) — Claude coding workflow and mandatory validation gates.
+
+Minimum pre-PR commands:
+
+```bash
+npm run lint
+npm run type-check
+npm run test
+npm run test:coverage
+```
+
 ## Subdirectories
 
 ### `/features`
