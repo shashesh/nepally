@@ -415,7 +415,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
             />
 
             {loading ? (
-              <div className={styles.loadingState}>
+              <div data-testid="feed-loading" className={styles.loadingState}>
                 <div className={styles.skeletonCard}>
                   <div className={styles.skeletonLineLg} />
                   <div className={styles.skeletonLineMd} />

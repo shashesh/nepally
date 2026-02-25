@@ -11,7 +11,7 @@ jest.mock('../../config/supabase', () => ({
 import { sendPhoneOTP, verifyPhoneOTP } from './phoneAuth';
 import { supabase } from '../../config/supabase';
 
-const mockAuth = supabase.auth as {
+const mockAuth = supabase.auth as unknown as {
   signInWithOtp: jest.Mock;
   verifyOtp: jest.Mock;
 };

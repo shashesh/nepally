@@ -12,7 +12,7 @@ jest.mock('../../config/supabase', () => ({
 import { signInWithEmail, signOut, signUpWithEmail } from './emailAuth';
 import { supabase } from '../../config/supabase';
 
-const mockAuth = supabase.auth as {
+const mockAuth = supabase.auth as unknown as {
   signUp: jest.Mock;
   signInWithPassword: jest.Mock;
   signOut: jest.Mock;

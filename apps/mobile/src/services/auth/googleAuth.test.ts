@@ -21,17 +21,15 @@ jest.mock('../../config/supabase', () => ({
 
 import { handleGoogleAuthCallback, signInWithGoogle } from './googleAuth';
 import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../../config/supabase';
 
-const mockAuth = supabase.auth as {
+const mockAuth = supabase.auth as unknown as {
   signInWithOAuth: jest.Mock;
   exchangeCodeForSession: jest.Mock;
   getUser: jest.Mock;
 };
 
 const mockMakeRedirectUri = AuthSession.makeRedirectUri as jest.Mock;
-const mockMaybeCompleteAuthSession = WebBrowser.maybeCompleteAuthSession as jest.Mock;
 
 describe('googleAuth service', () => {
   beforeEach(() => {
