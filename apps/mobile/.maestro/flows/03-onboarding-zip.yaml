@@ -1,0 +1,40 @@
+appId: com.nusa.app
+---
+# ZIP code entry → metro confirmation flow
+# Prerequisite: user is signed in and arrives at ZipCodeEntryScreen
+- launchApp:
+    clearState: true
+
+# Sign up to reach onboarding
+- tapOn: "Sign Up"
+- tapOn: "Continue with Email"
+- tapOn:
+    text: "Full Name"
+- inputText: "E2E Test User"
+- tapOn:
+    text: "Email"
+- inputText: "e2e-onboarding@nusa.app"
+- tapOn:
+    text: "Password"
+- inputText: "Password123!"
+- tapOn:
+    text: "Confirm Password"
+- inputText: "Password123!"
+- tapOn: "Sign Up"
+
+# ZipCodeEntryScreen
+- assertVisible: "Continue"
+- tapOn:
+    id: "zip-code-input"
+- inputText: "10001"
+
+# Continue button should become active
+- tapOn: "Continue"
+
+# MetroConfirmationScreen — metro name should be visible
+- assertVisible: "New York"
+- tapOn: "Continue"
+
+# Should land on HomeScreen
+- assertVisible:
+    id: "create-post-fab"

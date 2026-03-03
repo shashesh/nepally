@@ -599,6 +599,7 @@ export default function HomeScreen() {
         style={[styles.fab, isLevel0 && styles.fabDisabled]}
         onPress={handleCreatePost}
         activeOpacity={0.8}
+        testID="create-post-fab"
       >
         <Ionicons name="add" size={32} color={colors.white} />
       </TouchableOpacity>

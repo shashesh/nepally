@@ -19,6 +19,7 @@ interface ZipCodeInputProps {
   error?: string;
   containerStyle?: ViewStyle;
   autoFocus?: boolean;
+  testID?: string;
 }
 
 export const ZipCodeInput: React.FC<ZipCodeInputProps> = ({
@@ -29,6 +30,7 @@ export const ZipCodeInput: React.FC<ZipCodeInputProps> = ({
   error,
   containerStyle,
   autoFocus = false,
+  testID,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const isValid = value.length === 5 && /^\d{5}$/.test(value);
@@ -64,6 +66,7 @@ export const ZipCodeInput: React.FC<ZipCodeInputProps> = ({
           maxLength={5}
           autoFocus={autoFocus}
           returnKeyType="done"
+          testID={testID ?? 'zip-code-input'}
         />
         {isValid && !error && (
           <View style={styles.checkmarkContainer}>

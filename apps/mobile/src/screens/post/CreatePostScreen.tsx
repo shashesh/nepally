@@ -589,6 +589,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
               maxLength={TITLE_MAX}
               accessibilityLabel="Post title, required"
               accessibilityHint="Enter a title for your post"
+              testID="post-title-input"
             />
             {title.length >= TITLE_COUNTER_THRESHOLD && (
               <Text
@@ -618,6 +619,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
               maxLength={BODY_MAX}
               accessibilityLabel="Post body, required"
               accessibilityHint="Enter the details of your post"
+              testID="post-body-input"
             />
             {body.length >= BODY_COUNTER_THRESHOLD && (
               <Text

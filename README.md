@@ -124,6 +124,12 @@ npm run format         # Format all code
 npm run type-check     # Type check all packages
 npm run test           # Run all workspace tests
 npm run test:coverage  # Run all workspace coverage checks
+npm run test:e2e       # Run all workspace e2e tests (if present)
+npm run test:e2e:web   # Run web e2e tests only
+npm run test:e2e:web:headed # Run web e2e in headed browser mode
+npm run test:e2e:web:ui # Open Playwright UI for web e2e
+npm run test:e2e:web:report # Run web e2e and open HTML report
+npm run test:e2e:mobile # Run mobile e2e tests only
 ```
 
 ## License

@@ -1,0 +1,13 @@
+appId: com.nusa.app
+---
+# Login → HomeScreen with FAB visible
+- launchApp:
+    clearState: true
+
+# WelcomeScreen
+- assertVisible: "Log In"
+- runFlow: ../helpers/login-helper.yaml
+
+# Verify HomeScreen loaded and FAB is present
+- assertVisible:
+    id: "create-post-fab"

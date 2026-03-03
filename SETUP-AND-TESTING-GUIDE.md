@@ -303,6 +303,28 @@ npm run test
 npm run test:coverage
 ```
 
+### End-to-end (E2E) tests
+
+```bash
+# Run all available workspace E2E tests
+npm run test:e2e
+
+# Run only web E2E tests
+npm run test:e2e:web
+
+# Run web E2E in headed browser mode
+npm run test:e2e:web:headed
+
+# Open Playwright UI for web E2E tests
+npm run test:e2e:web:ui
+
+# Run web E2E and open HTML report
+npm run test:e2e:web:report
+
+# Run only mobile E2E tests
+npm run test:e2e:mobile
+```
+
 ### Policy reminder
 
 - Every new functionality must include unit tests in the same change.
@@ -525,6 +547,14 @@ npm run test:coverage --workspace=apps/mobile
 npm run test:coverage --workspace=apps/web
 npm run test:coverage --workspace=packages/shared
 npm run test:coverage
+
+# Run E2E tests
+npm run test:e2e
+npm run test:e2e:web
+npm run test:e2e:web:headed
+npm run test:e2e:web:ui
+npm run test:e2e:web:report
+npm run test:e2e:mobile
 
 # Test on physical device
 # Install Expo Go → Scan QR code → App loads!

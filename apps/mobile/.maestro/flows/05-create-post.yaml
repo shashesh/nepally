@@ -1,0 +1,41 @@
+appId: com.nusa.app
+---
+# Create post → back to HomeScreen
+- launchApp:
+    clearState: true
+
+# Login
+- tapOn: "Log In"
+- assertVisible: "sign in with your email"
+- tapOn:
+    text: "Email"
+- inputText: "e2e-test@nusa.app"
+- tapOn:
+    text: "Password"
+- inputText: "Password123!"
+- tapOn: "Log In"
+
+# HomeScreen — tap FAB to open CreatePostScreen
+- assertVisible:
+    id: "create-post-fab"
+- tapOn:
+    id: "create-post-fab"
+
+# CreatePostScreen
+- assertVisible: "Create Post"
+- tapOn:
+    id: "post-title-input"
+- inputText: "This is a valid E2E test post title"
+- tapOn:
+    id: "post-body-input"
+- inputText: "This is the body of the post with enough content to pass validation requirements."
+
+# Select at least one tag (Housing)
+- tapOn: "Housing"
+
+# Tap "Post" header button to submit
+- tapOn: "Post"
+
+# Back to HomeScreen
+- assertVisible:
+    id: "create-post-fab"

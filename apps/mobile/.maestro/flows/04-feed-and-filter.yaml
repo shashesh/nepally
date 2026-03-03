@@ -1,0 +1,31 @@
+appId: com.nusa.app
+---
+# Tag filter chips on HomeScreen
+- launchApp:
+    clearState: true
+
+# Login first
+- tapOn: "Log In"
+- assertVisible: "sign in with your email"
+- tapOn:
+    text: "Email"
+- inputText: "e2e-test@nusa.app"
+- tapOn:
+    text: "Password"
+- inputText: "Password123!"
+- tapOn: "Log In"
+
+# HomeScreen — verify feed and filter bar visible
+- assertVisible: "All"
+- assertVisible: "Housing"
+
+# Tap a tag filter chip
+- tapOn: "Housing"
+
+# "All" chip should now show as inactive and "Housing" active
+# (Maestro doesn't check styles but we verify the tap didn't crash the app)
+- assertVisible: "Housing"
+
+# Tap "All" to reset filter
+- tapOn: "All"
+- assertVisible: "All"

@@ -1,0 +1,25 @@
+appId: com.nusa.app
+---
+# Profile tab shows user name
+- launchApp:
+    clearState: true
+
+# Login
+- tapOn: "Log In"
+- assertVisible: "sign in with your email"
+- tapOn:
+    text: "Email"
+- inputText: "e2e-test@nusa.app"
+- tapOn:
+    text: "Password"
+- inputText: "Password123!"
+- tapOn: "Log In"
+
+# From HomeScreen, navigate to Profile tab
+- assertVisible:
+    id: "create-post-fab"
+- tapOn: "Profile"
+
+# ProfileScreen — user name should be visible
+- assertVisible: "Profile"
+- assertVisible: "E2E Test User"

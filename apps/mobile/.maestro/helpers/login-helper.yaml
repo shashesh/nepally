@@ -1,0 +1,17 @@
+# Reusable login subflow — call via runFlow in other flows
+# Prerequisite: app is already at the WelcomeScreen (first launch or signed out)
+# Usage: runFlow: helpers/login-helper.yaml
+
+appId: com.nusa.app
+---
+
+- tapOn: "Log In"
+- assertVisible: "sign in with your email"
+- tapOn:
+    text: "Email"
+- inputText: "e2e-test@nusa.app"
+- tapOn:
+    text: "Password"
+- inputText: "Password123!"
+- tapOn: "Log In"
+- assertVisible: "Feed"
