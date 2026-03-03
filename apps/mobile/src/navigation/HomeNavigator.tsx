@@ -5,6 +5,7 @@ import HomeScreen from '../screens/HomeScreen';
 import PostDetailScreen from '../screens/PostDetailScreen';
 import AddLocationScreen from '../screens/location/AddLocationScreen';
 import ManageLocationsScreen from '../screens/location/ManageLocationsScreen';
+import { NotificationsScreen, NotificationPreferencesScreen } from '../screens/notifications';
 import { colors } from '../styles/colors';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -37,6 +38,16 @@ export function HomeNavigator() {
         name="ManageLocations"
         component={ManageLocationsScreen}
         options={{ title: 'Manage Locations' }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: 'Notifications' }}
+      />
+      <Stack.Screen
+        name="NotificationPreferences"
+        component={NotificationPreferencesScreen}
+        options={{ title: 'Notification Preferences' }}
       />
     </Stack.Navigator>
   );

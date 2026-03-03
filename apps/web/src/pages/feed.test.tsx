@@ -133,6 +133,30 @@ describe('FeedPage', () => {
     });
   });
 
+  it('renders composer text as a link to create post for verified users', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+    render(<FeedPage />);
+
+    await waitFor(() => {
+      const composerTrigger = screen.getByText(/What's on your mind/i).closest('a');
+      expect(composerTrigger.getAttribute('href')).toBe('/posts/create');
+    });
+  });
+
+  it('routes composer text to profile for trust level 0 users', async () => {
+    feedMocks.useAuthMock.mockReturnValue({
+      user: { ...mockUser, trust_level: 0 },
+      loading: false,
+    });
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+    render(<FeedPage />);
+
+    await waitFor(() => {
+      const composerTrigger = screen.getByText(/What's on your mind/i).closest('a');
+      expect(composerTrigger.getAttribute('href')).toBe('/profile');
+    });
+  });
+
   it('renders posts when loaded', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);

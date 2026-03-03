@@ -6,7 +6,16 @@ const layoutMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   useRouterMock: vi.fn(),
   getTotalUnreadCountMock: vi.fn(),
+  getUnreadNotificationCountMock: vi.fn(),
+  getNotificationsMock: vi.fn(),
+  markAllNotificationsReadMock: vi.fn(),
+  markNotificationReadMock: vi.fn(),
   signOutMock: vi.fn(),
+  realtimeSubscriptions: [] as Array<{
+    event: unknown;
+    filter: unknown;
+    callback: (payload: unknown) => void;
+  }>,
 }));
 
 vi.mock('../hooks/useAuth', () => ({
@@ -18,7 +27,30 @@ vi.mock('next/router', () => ({
 }));
 
 vi.mock('../lib/supabase', () => ({
-  supabase: {},
+  supabase: {
+    channel: vi.fn().mockImplementation(() => {
+      const channelRef: {
+        on: ReturnType<typeof vi.fn>;
+        subscribe: ReturnType<typeof vi.fn>;
+      } = {
+        on: vi.fn(),
+        subscribe: vi.fn(),
+      };
+
+      channelRef.on.mockImplementation((_event: unknown, _filter: unknown, callback: (payload: unknown) => void) => {
+        layoutMocks.realtimeSubscriptions.push({
+          event: _event,
+          filter: _filter,
+          callback,
+        });
+        return channelRef;
+      });
+
+      channelRef.subscribe.mockReturnValue(channelRef);
+      return channelRef;
+    }),
+    removeChannel: vi.fn(),
+  },
 }));
 
 vi.mock('@nusa/shared', async () => {
@@ -26,16 +58,21 @@ vi.mock('@nusa/shared', async () => {
   return {
     ...actual,
     getTotalUnreadCount: layoutMocks.getTotalUnreadCountMock,
+    getUnreadNotificationCount: layoutMocks.getUnreadNotificationCountMock,
+    getNotifications: layoutMocks.getNotificationsMock,
+    markAllNotificationsRead: layoutMocks.markAllNotificationsReadMock,
+    markNotificationRead: layoutMocks.markNotificationReadMock,
   };
 });
 
 vi.mock('next/link', () => ({
-  default: ({ href, children, className, 'aria-label': ariaLabel }: {
+  default: ({ href, children, className, 'aria-label': ariaLabel, onClick }: {
     href: string;
     children: React.ReactNode;
     className?: string;
     'aria-label'?: string;
-  }) => React.createElement('a', { href, className, 'aria-label': ariaLabel }, children),
+    onClick?: () => void;
+  }) => React.createElement('a', { href, className, 'aria-label': ariaLabel, onClick }, children),
 }));
 
 vi.mock('./LocationSwitcher', () => ({
@@ -55,12 +92,17 @@ describe('Layout', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    layoutMocks.realtimeSubscriptions.length = 0;
     layoutMocks.useRouterMock.mockReturnValue({
       pathname: '/',
       push: mockPush,
       replace: mockReplace,
     });
     layoutMocks.getTotalUnreadCountMock.mockResolvedValue({ count: 0 });
+    layoutMocks.getUnreadNotificationCountMock.mockResolvedValue({ count: 0 });
+    layoutMocks.getNotificationsMock.mockResolvedValue({ data: [] });
+    layoutMocks.markAllNotificationsReadMock.mockResolvedValue({});
+    layoutMocks.markNotificationReadMock.mockResolvedValue({});
   });
 
   describe('when loading', () => {
@@ -157,7 +199,7 @@ describe('Layout', () => {
       expect(screen.getByText('Main content')).toBeDefined();
     });
 
-    it('shows unread badge when unread count > 0', async () => {
+    it('shows chat unread badge when unread count > 0', async () => {
       layoutMocks.getTotalUnreadCountMock.mockResolvedValue({ count: 5 });
       render(<Layout>Content</Layout>);
       await waitFor(() => {
@@ -165,7 +207,7 @@ describe('Layout', () => {
       });
     });
 
-    it('shows 99+ when unread count exceeds 99', async () => {
+    it('shows 99+ on messages badge when unread count exceeds 99', async () => {
       layoutMocks.getTotalUnreadCountMock.mockResolvedValue({ count: 100 });
       render(<Layout>Content</Layout>);
       await waitFor(() => {
@@ -173,13 +215,119 @@ describe('Layout', () => {
       });
     });
 
-    it('does not show unread badge when count is 0', async () => {
+    it('updates messages badge when realtime unread event arrives', async () => {
+      layoutMocks.getTotalUnreadCountMock
+        .mockResolvedValueOnce({ count: 1 })
+        .mockResolvedValue({ count: 4 });
+
+      render(<Layout>Content</Layout>);
+
+      await waitFor(() => {
+        expect(screen.getByText('1')).toBeDefined();
+      });
+
+      const messageInsertSubscription = layoutMocks.realtimeSubscriptions.find((sub) => {
+        const filter = sub.filter as { table?: string; event?: string };
+        return filter?.table === 'messages' && filter?.event === 'INSERT';
+      });
+
+      expect(messageInsertSubscription).toBeDefined();
+
+      messageInsertSubscription?.callback({ new: { sender_id: 'other-user-id' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('4')).toBeDefined();
+      });
+    });
+
+    it('does not refresh unread count for own message insert event', async () => {
+      layoutMocks.getTotalUnreadCountMock.mockResolvedValue({ count: 2 });
+
+      render(<Layout>Content</Layout>);
+
+      await waitFor(() => {
+        expect(screen.getByText('2')).toBeDefined();
+      });
+
+      const callsBefore = layoutMocks.getTotalUnreadCountMock.mock.calls.length;
+
+      const messageInsertSubscription = layoutMocks.realtimeSubscriptions.find((sub) => {
+        const filter = sub.filter as { table?: string; event?: string };
+        return filter?.table === 'messages' && filter?.event === 'INSERT';
+      });
+
+      expect(messageInsertSubscription).toBeDefined();
+      messageInsertSubscription?.callback({ new: { sender_id: mockUser.id } });
+
+      expect(layoutMocks.getTotalUnreadCountMock.mock.calls.length).toBe(callsBefore);
+    });
+
+    it('refreshes unread count on visibilitychange when page becomes active', async () => {
+      layoutMocks.getTotalUnreadCountMock
+        .mockResolvedValueOnce({ count: 0 })
+        .mockResolvedValueOnce({ count: 6 });
+
+      render(<Layout>Content</Layout>);
+
+      await waitFor(() => {
+        expect(layoutMocks.getTotalUnreadCountMock).toHaveBeenCalled();
+      });
+
+      fireEvent(document, new Event('visibilitychange'));
+
+      await waitFor(() => {
+        expect(screen.getByText('6')).toBeDefined();
+      });
+    });
+
+    it('does not show messages badge when count is 0', async () => {
       layoutMocks.getTotalUnreadCountMock.mockResolvedValue({ count: 0 });
       render(<Layout>Content</Layout>);
       await waitFor(() => {
         expect(layoutMocks.getTotalUnreadCountMock).toHaveBeenCalled();
       });
       expect(screen.queryByText('0')).toBeNull();
+    });
+
+    it('shows notification bell badge when unread notification count > 0', async () => {
+      layoutMocks.getUnreadNotificationCountMock.mockResolvedValue({ count: 3 });
+      render(<Layout>Content</Layout>);
+      await waitFor(() => {
+        expect(screen.getByText('3')).toBeDefined();
+      });
+    });
+
+    it('shows 9+ on notification badge when count exceeds 9', async () => {
+      layoutMocks.getUnreadNotificationCountMock.mockResolvedValue({ count: 12 });
+      render(<Layout>Content</Layout>);
+      await waitFor(() => {
+        expect(screen.getByText('9+')).toBeDefined();
+      });
+    });
+
+    it('opens notification dropdown when bell is clicked', async () => {
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
+      fireEvent.click(screen.getByLabelText(/Notifications/i));
+      expect(screen.getByText('Notifications')).toBeDefined();
+      expect(screen.getByText('See all notifications →')).toBeDefined();
+    });
+
+    it('shows empty state in dropdown when no notifications', async () => {
+      layoutMocks.getNotificationsMock.mockResolvedValue({ data: [] });
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
+      fireEvent.click(screen.getByLabelText(/Notifications/i));
+      expect(screen.getByText('No notifications yet')).toBeDefined();
+    });
+
+    it('shows Mark all as read button when there are unread notifications', async () => {
+      layoutMocks.getUnreadNotificationCountMock.mockResolvedValue({ count: 2 });
+      layoutMocks.getNotificationsMock.mockResolvedValue({ data: [] });
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getUnreadNotificationCountMock).toHaveBeenCalled());
+      fireEvent.click(screen.getByLabelText(/Notifications/i));
+      expect(screen.getByText('Mark all as read')).toBeDefined();
     });
 
     it('opens account dropdown when avatar button is clicked', () => {
@@ -190,7 +338,7 @@ describe('Layout', () => {
       expect(screen.getByText('Sign Out')).toBeDefined();
     });
 
-    it('closes dropdown when avatar button is clicked again', () => {
+    it('closes account dropdown when avatar button is clicked again', () => {
       render(<Layout>Content</Layout>);
       fireEvent.click(screen.getByLabelText('Open account menu'));
       expect(screen.getByText('View Profile')).toBeDefined();

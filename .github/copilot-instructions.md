@@ -51,6 +51,13 @@
 - Mobile requires `apps/mobile/.env` with `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
 - Expected runtime: Node `>=18`, npm `>=9`.
 
+## Database Migration Rules (Non-Negotiable)
+- **Never modify or re-run** `001_schema.sql`, `002_seed_data.sql`, or `003_storage.sql` on a live database. These are destructive reset scripts (they `DROP TABLE ... CASCADE` everything) and exist only for bootstrapping a fresh database.
+- **Every schema change** to an already-deployed database MUST be a new incremental file: `004_<description>.sql`, `005_<description>.sql`, etc.
+- Incremental files must use only additive/non-destructive SQL: `ALTER TABLE`, `CREATE INDEX`, `CREATE POLICY`, `CREATE OR REPLACE FUNCTION`, etc.
+- Never use `DROP TABLE` or `DROP TYPE` in an incremental migration unless explicitly confirmed safe with no live data.
+- Never use timestamped filenames (e.g., `20260224_something.sql`). Use sequential numeric prefixes only.
+
 ## Project-Specific Conventions
 - Web route logic lives in `apps/web/src/pages/*` with providers in `apps/web/src/pages/_app.tsx`.
 - Web styling uses CSS Modules; avoid introducing alternative styling systems.

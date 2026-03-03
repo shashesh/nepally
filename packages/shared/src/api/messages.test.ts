@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getMessages, getTotalUnreadCount } from './messages';
+import { getMessages, getTotalUnreadCount, sendMessage } from './messages';
 
 describe('messages api', () => {
   it('fetches messages for a conversation', async () => {
@@ -52,5 +52,51 @@ describe('messages api', () => {
 
     expect(result.error).toBeUndefined();
     expect(result.count).toBe(7);
+  });
+
+  it('sends message and updates conversation metadata', async () => {
+    const messagesQuery = {
+      insert: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn(),
+    };
+    messagesQuery.insert.mockReturnValue(messagesQuery);
+    messagesQuery.select.mockReturnValue(messagesQuery);
+    messagesQuery.single.mockResolvedValue({
+      data: {
+        id: 'm1',
+        conversation_id: 'c1',
+        sender_id: 'u1',
+        text: 'Hello there',
+        type: 'text',
+        read: false,
+        read_at: null,
+        timestamp: new Date().toISOString(),
+      },
+      error: null,
+    });
+
+    const conversationsQuery = {
+      update: vi.fn(),
+      eq: vi.fn(),
+    };
+    conversationsQuery.update.mockReturnValue(conversationsQuery);
+    conversationsQuery.eq.mockResolvedValue({ error: null });
+
+    const fromMock = vi.fn((table: string) => {
+      if (table === 'messages') return messagesQuery;
+      if (table === 'conversations') return conversationsQuery;
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const supabase = { from: fromMock } as unknown as SupabaseClient;
+
+    const result = await sendMessage(supabase, 'c1', 'u1', 'Hello there');
+
+    expect(result.error).toBeUndefined();
+    expect(result.data?.id).toBe('m1');
+    expect(messagesQuery.insert).toHaveBeenCalled();
+    expect(conversationsQuery.update).toHaveBeenCalled();
+    expect(fromMock).not.toHaveBeenCalledWith('conversation_participants');
   });
 });

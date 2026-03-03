@@ -1,0 +1,209 @@
+.shell {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-l) var(--space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.breadcrumb {
+  margin-bottom: var(--space-xs);
+}
+
+.breadcrumbLink {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.breadcrumbLink:hover {
+  color: var(--color-primary);
+}
+
+.title {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.loadingState {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-xl) 0;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(var(--color-primary-rgb), 0.2);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.sectionDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: -8px 0 0;
+}
+
+/* Pref group */
+
+.prefGroup {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.prefGroupHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prefGroupTitle {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.prefGroupDesc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* Radio group */
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 4px;
+}
+
+.radioRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.radioRow input[type='radio'] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Toggle row */
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+  cursor: pointer;
+}
+
+.toggleRowDisabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.toggleLabel {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.toggle {
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* Actions */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+}
+
+.saveBtn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.saveBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cancelLink {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.cancelLink:hover {
+  color: var(--color-text-primary);
+}
+
+.errorMsg {
+  font-size: 13px;
+  color: var(--color-error, #c62828);
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .shell {
+    padding: var(--space-m) var(--space-s);
+  }
+}

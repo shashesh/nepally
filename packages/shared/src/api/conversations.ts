@@ -159,10 +159,12 @@ export async function getOrCreateConversation(
       }
     }
 
-    // No existing conversation found — create new one
+    // No existing conversation found — create new one.
+    // creator_id is set so the SELECT policy allows the creator to read the
+    // new row back before any conversation_participants rows exist.
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
-      .insert({})
+      .insert({ creator_id: currentUserId })
       .select()
       .single();
 

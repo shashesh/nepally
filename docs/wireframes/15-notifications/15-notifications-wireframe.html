@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* wiremd Wireframe Style - Traditional grayscale wireframes */
+* {
+  box-sizing: border-box;
+}
+
+body.wmd-root {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f0f0f0;
+  color: #000;
+  padding: 30px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Headings */
+.wmd-h1, .wmd-h2, .wmd-h3, .wmd-h4, .wmd-h5, .wmd-h6 {
+  font-weight: bold;
+  margin: 1.2em 0 0.6em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wmd-h1 { font-size: 2em; }
+.wmd-h2 { font-size: 1.75em; }
+.wmd-h3 { font-size: 1.5em; }
+.wmd-h4 { font-size: 1.25em; }
+.wmd-h5 { font-size: 1.1em; }
+.wmd-h6 { font-size: 1em; }
+
+/* Paragraph */
+.wmd-paragraph {
+  margin: 0.6em 0;
+}
+
+/* Buttons */
+.wmd-button {
+  display: inline-block;
+  padding: 8px 16px;
+  margin: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    #ddd,
+    #ddd 10px,
+    #ccc 10px,
+    #ccc 20px
+  );
+  border: 2px solid #000;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.wmd-button-primary, .wmd-button.wmd-primary {
+  background: repeating-linear-gradient(
+    45deg,
+    #888,
+    #888 10px,
+    #777 10px,
+    #777 20px
+  );
+  color: #fff;
+}
+
+.wmd-button-secondary, .wmd-button.wmd-secondary {
+  background: #fff;
+}
+
+.wmd-button-danger, .wmd-button.wmd-danger {
+  background: repeating-linear-gradient(
+    45deg,
+    #666,
+    #666 10px,
+    #555 10px,
+    #555 20px
+  );
+  color: #fff;
+}
+
+.wmd-button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Inputs */
+.wmd-input, .wmd-textarea, .wmd-select {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  padding: 6px 10px;
+  margin: 4px 0;
+  font-family: inherit;
+  font-size: 13px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+.wmd-input::placeholder, .wmd-textarea::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f0f0f0;
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Checkboxes and Radios */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #000;
+  cursor: pointer;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  font-size: 1em;
+  line-height: 1;
+  margin: 0 4px;
+  vertical-align: middle;
+}
+
+/* Containers */
+.wmd-container-hero, .wmd-container-card, .wmd-container-modal {
+  background: #fff;
+  border: 3px solid #000;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.wmd-container-hero {
+  background: repeating-linear-gradient(
+    0deg,
+    #fafafa,
+    #fafafa 2px,
+    #fff 2px,
+    #fff 4px
+  );
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.wmd-container-card {
+  max-width: 400px;
+}
+
+.wmd-container-modal {
+  max-width: 500px;
+  margin: 32px auto;
+  border-width: 4px;
+}
+
+/* Navigation */
+.wmd-nav {
+  background: repeating-linear-gradient(
+    90deg,
+    #e0e0e0,
+    #e0e0e0 2px,
+    #d0d0d0 2px,
+    #d0d0d0 4px
+  );
+  border: 2px solid #000;
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wmd-brand {
+  font-weight: bold;
+  font-size: 1.1em;
+  text-transform: uppercase;
+  margin-right: auto;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: #000;
+  text-decoration: none;
+  font-weight: normal;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #666;
+  border-radius: 3px;
+}
+
+.wmd-nav-item:hover {
+  background: #f5f5f5;
+  border-color: #000;
+}
+
+/* Grid */
+.wmd-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 3), 1fr);
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.wmd-grid-item {
+  background: #fff;
+  border: 2px solid #000;
+  padding: 16px;
+}
+
+/* Lists */
+.wmd-list {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.wmd-list-item {
+  margin: 4px 0;
+}
+
+/* Blockquote */
+.wmd-blockquote {
+  border-left: 4px solid #000;
+  padding-left: 16px;
+  margin: 16px 0;
+  background: #f5f5f5;
+  padding: 12px 16px;
+}
+
+/* Code */
+.wmd-code-inline {
+  background: #e0e0e0;
+  border: 1px solid #000;
+  padding: 2px 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.wmd-code-block {
+  background: #f0f0f0;
+  border: 2px solid #000;
+  padding: 12px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.wmd-code-block code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+/* Separator */
+.wmd-separator {
+  border: none;
+  border-top: 2px solid #000;
+  margin: 24px 0;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: repeating-linear-gradient(
+    0deg,
+    #fff,
+    #fff 2px,
+    #f5f5f5 2px,
+    #f5f5f5 4px
+  );
+  border: 2px solid #000;
+  padding: 40px;
+  margin: 16px 0;
+  text-align: center;
+  position: relative;
+}
+
+.wmd-container-loading-state::before {
+  content: '⟳';
+  display: block;
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  animation: spin 2s linear infinite;
+}
+
+.wmd-container-empty-state {
+  background: #fff;
+  border: 2px dashed #666;
+  padding: 60px 40px;
+  margin: 16px 0;
+  text-align: center;
+  color: #666;
+}
+
+.wmd-container-empty-state::before {
+  content: '[EMPTY]';
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 0.2em;
+  margin-bottom: 16px;
+  color: #999;
+}
+
+.wmd-container-error-state {
+  background: repeating-linear-gradient(
+    45deg,
+    #fff,
+    #fff 10px,
+    #f0f0f0 10px,
+    #f0f0f0 20px
+  );
+  border: 3px solid #000;
+  padding: 40px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.wmd-container-error-state::before {
+  content: '⚠';
+  display: block;
+  font-size: 56px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #000;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-wireframe">
+  <h1 class="wmd-h1">Wireframe: Notifications</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Screen:</strong> 15 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-03-03
+<strong>Feature Spec:</strong> docs/features/phase1-feature-breakdown.md — Features 12.1–12.4
+<strong>Story:</strong> As a user, I want to receive and manage notifications so I can stay informed about activity that matters to me.</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen Purpose</h2>
+<p class="wmd-paragraph">Delivers real-time notifications to users across web and mobile platforms via push delivery (Expo Push on mobile, Web Push API on web) and an in-app notification center. Covers four capabilities: push infrastructure setup (12.1), chat message notifications (12.2), in-app notification list (12.3), and notification preferences (12.4).</p>
+<p class="wmd-paragraph"><strong>Key Goals:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Notify users of chat messages, comments, likes, and emergency alerts in real time</li>
+  <li class="wmd-list-item">Provide a persistent in-app notification list with unread/read state</li>
+  <li class="wmd-list-item">Let users control which notification types they receive</li>
+  <li class="wmd-list-item">Respect push permission state on both platforms</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen A — Web: Bell Icon + Nav Dropdown (State: Unread Notifications)</h2>
+<div class="wmd-container-card">
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-card">
+  <h3 class="wmd-h3 wmd-dropdown"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span> Notifications</h3>
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-card">
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-card">
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-card">
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-card">
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-card">
+  <hr class="wmd-separator" />
+  <div class="wmd-container-button-group">
+  <button class="wmd-button">Mark all as read</button>
+  <button class="wmd-button wmd-button-primary">See all notifications →</button>
+</div>
+</div>
+<div class="wmd-container-section">
+  
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen B — Web: Bell Icon + Nav Dropdown (State: All Read)</h2>
+<div class="wmd-container-card">
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-card">
+  <h3 class="wmd-h3"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span> Notifications</h3>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><em>All caught up! No new notifications.</em></p>
+  <button class="wmd-button wmd-button-primary">See all notifications →</button>
+</div>
+<div class="wmd-container-section">
+  
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen C — Web: Full Notifications List Page (/notifications)</h2>
+<div class="wmd-container-card">
+  <nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item">Home &gt;</a>
+  </div>
+</nav>
+  <h1 class="wmd-h1"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span> Notifications</h1>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button">Mark all as read</button>
+  <button class="wmd-button wmd-outline"><span class="wmd-icon" data-icon="gear" aria-label="gear">●</span> Preferences</button>
+</div>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>Today</strong></p>
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-alert error">
+  <button class="wmd-button wmd-button-primary">View Post →</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">:speech_balloon: <strong>Rajan Thapa</strong> sent you a message · 14 minutes ago
+<em>"Hey, is the room still available? I'm looking to move in next month..."</em></p>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button wmd-button-primary">Open Chat</button>
+  <button class="wmd-button">Dismiss</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">:speech_balloon: <strong>Priya Sharma</strong> commented on your post · 1 hour ago
+<em>"2BR room in Queens, near subway — $950/mo"</em>
+Comment: <em>"Is this still available? Can we schedule a visit?"</em></p>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button wmd-button-primary">View Post</button>
+  <button class="wmd-button">Dismiss</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Yesterday</strong></p>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <button class="wmd-button wmd-button-primary">View Post</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <button class="wmd-button wmd-button-primary">View Post</button>
+</div>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Earlier</strong></p>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <div class="wmd-container-form-group">
+  <span class="wmd-icon" data-icon="envelope" aria-label="envelope">●</span>
+  <strong>System</strong>· 2 days ago
+Your account has been verified (Level 1). You now have full posting rights.
+</div>
+</div>
+<hr class="wmd-separator" />
+<button class="wmd-button">Load more notifications</button>
+<div class="wmd-container-section">
+  
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen D — Web: Full Notifications List Page (Empty State)</h2>
+<div class="wmd-container-card">
+  <h1 class="wmd-h1"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span> Notifications</h1>
+  <hr class="wmd-separator" />
+</div>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph"><strong>No notifications yet</strong>
+When someone messages you, comments on your post, or an emergency alert is issued in your area, it will appear here.</p>
+  <button class="wmd-button wmd-outline"><span class="wmd-icon" data-icon="gear" aria-label="gear">●</span> Manage Preferences</button>
+</div>
+<div class="wmd-container-section">
+  
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen E — Mobile: Notifications Screen (Tab)</h2>
+<nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>Home</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="magnifying-glass" aria-label="magnifying-glass">●</span>Search</a>
+    <a href="#" class="wmd-nav-item">:heavy_plus_sign: Post</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span>Alerts</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="user" aria-label="user">👤</span>Profile</a>
+  </div>
+</nav>
+<hr class="wmd-separator" />
+<div class="wmd-container-form-group">
+  <strong>Notifications</strong>  
+  <button class="wmd-button wmd-outline">:gear:</button>
+</div>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Today</strong></p>
+<hr class="wmd-separator" />
+<div class="wmd-container-alert error">
+  <div class="wmd-container-form-group">
+  <span class="wmd-icon" data-icon="shield" aria-label="shield">🛡️</span>
+   Emergency Alert — Dallas Metro<strong>Gas leak reported near Finney Ave, Dallas TX</strong>Verified by community moderator · 2 min ago
+
+  <button class="wmd-button wmd-button-primary">View →</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">:speech_balloon: <strong>New Message</strong>
+Rajan Thapa · 14 min ago
+<em>"Hey, is the room still availab..."</em></p>
+  <button class="wmd-button wmd-button-primary">Open</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <p class="wmd-paragraph">:speech_balloon: <strong>New Comment</strong>
+Priya Sharma commented on your post
+<em>"2BR room in Queens, near subway — $950/mo"</em>
+<em>"Is this still available?"</em> · 1 hr ago</p>
+  <button class="wmd-button wmd-button-primary">View Post</button>
+</div>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Yesterday</strong></p>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <button class="wmd-button wmd-button-primary">View</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <button class="wmd-button wmd-button-primary">View</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <p class="wmd-paragraph"><span class="wmd-icon" data-icon="envelope" aria-label="envelope">●</span>System · 2 days ago
+Your account is now Level 1 Verified. Full posting rights unlocked.</p>
+</div>
+<hr class="wmd-separator" />
+<nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>Home</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="magnifying-glass" aria-label="magnifying-glass">●</span>Search</a>
+    <a href="#" class="wmd-nav-item">:heavy_plus_sign: Post</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span>Alerts</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="user" aria-label="user">👤</span>Profile</a>
+  </div>
+</nav>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen F — Mobile: Notifications Screen (Empty State)</h2>
+<nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>Home</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="magnifying-glass" aria-label="magnifying-glass">●</span>Search</a>
+    <a href="#" class="wmd-nav-item">:heavy_plus_sign: Post</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span>Alerts</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="user" aria-label="user">👤</span>Profile</a>
+  </div>
+</nav>
+<hr class="wmd-separator" />
+<div class="wmd-container-form-group">
+  <strong>Notifications</strong>  
+  <button class="wmd-button wmd-outline">:gear:</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <p class="wmd-paragraph"><strong>All caught up!</strong></p>
+  <p class="wmd-paragraph">No new notifications. Messages, comments, likes, and local emergency alerts will appear here.</p>
+  <button class="wmd-button wmd-outline"><span class="wmd-icon" data-icon="gear" aria-label="gear">●</span> Manage Preferences</button>
+</div>
+<hr class="wmd-separator" />
+<nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>Home</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="magnifying-glass" aria-label="magnifying-glass">●</span>Search</a>
+    <a href="#" class="wmd-nav-item">:heavy_plus_sign: Post</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span>Alerts</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="user" aria-label="user">👤</span>Profile</a>
+  </div>
+</nav>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen G — Mobile: Push Permission Prompt (First Launch)</h2>
+<div class="wmd-container-modal">
+  <h2 class="wmd-h2"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span> Stay in the Loop</h2>
+  <p class="wmd-paragraph">Get notified when someone messages you, comments on your post, or when there&#039;s an emergency in your local area.</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" checked />
+    <span>Chat messages</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" checked />
+    <span>Comments &amp; likes</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" checked />
+    <span>Local emergency alerts</span>
+  </label></li>
+</ul>
+  <button class="wmd-button wmd-button-primary">Allow Notifications</button>
+  <button class="wmd-button wmd-outline">Not now</button>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen H — Mobile: Push Permission Denied Banner (In-App)</h2>
+<div class="wmd-container-alert error">
+  <div class="wmd-container-button-group">
+  <button class="wmd-button">Open Settings</button>
+  <button class="wmd-button">Dismiss</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen I — Web: Browser Push Permission Prompt (System)</h2>
+<div class="wmd-container-modal">
+  <h2 class="wmd-h2"><span class="wmd-icon" data-icon="bell" aria-label="bell">🔔</span> Enable Push Notifications</h2>
+  <p class="wmd-paragraph">NUSA wants to send you push notifications for:</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item">Chat messages when the app is closed</li>
+  <li class="wmd-list-item">Emergency alerts in your metro area</li>
+</ul>
+  <p class="wmd-paragraph"><em>(Your browser will ask for permission.)</em></p>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button wmd-button-primary">Enable Push</button>
+  <button class="wmd-button wmd-outline">No thanks</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen J — Notification Preferences (Web — Settings Page Section)</h2>
+<div class="wmd-container-card">
+  <h1 class="wmd-h1"><span class="wmd-icon" data-icon="gear" aria-label="gear">●</span> Notification Preferences</h1>
+  <hr class="wmd-separator" />
+  <h2 class="wmd-h2">Push Notifications</h2>
+</div>
+<div class="wmd-container-card">
+  <button class="wmd-button wmd-button-danger">Disable push notifications</button>
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Notification Types</h2>
+<div class="wmd-container-card">
+  <p class="wmd-paragraph"><strong>Chat Messages</strong>
+Get notified when someone sends you a message.</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" checked />
+    <span>Every message</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Batched (every 30 min)</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Off</span>
+  </label></li>
+</ul>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>Comments</strong>
+Get notified when someone comments on your post.</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" checked />
+    <span>On</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Off</span>
+  </label></li>
+</ul>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>Likes</strong>
+Get notified when people like your posts.</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Every like</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" checked />
+    <span>When 5+ likes received</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Off</span>
+  </label></li>
+</ul>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>Emergency Alerts</strong>
+Metro-wide alerts verified by community moderators.
+<em>(Cannot be disabled while push is enabled — for your safety)</em></p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" checked />
+    <span>Emergency alerts (required)</span>
+  </label></li>
+</ul>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-button-group">
+  <button class="wmd-button wmd-button-primary">:floppy_disk: Save Preferences</button>
+  <button class="wmd-button wmd-outline">Cancel</button>
+</div>
+<div class="wmd-container-section">
+  
+</div>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen K — Notification Preferences (Mobile — Settings Screen)</h2>
+<p class="wmd-paragraph"><strong>← Settings</strong></p>
+<p class="wmd-paragraph"><strong>Notification Preferences</strong></p>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <p class="wmd-paragraph"><strong>Push Notifications</strong>
+Receive alerts when app is in background</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" checked />
+    <span>Enabled</span>
+  </label></li>
+</ul>
+  <div class="wmd-container-form-group">
+  <em>(Tap to open device settings if permissions are denied)</em>
+
+  <button class="wmd-button wmd-outline">Open iOS/Android Settings</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-card">
+  <p class="wmd-paragraph"><strong>Notification Types</strong></p>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>:speech_balloon: Chat Messages</strong>
+New messages from conversations</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" checked />
+    <span>Every message</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Batched (every 30 min)</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Off</span>
+  </label></li>
+</ul>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>:speech_balloon: Comments</strong>
+When someone comments on your post</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" checked />
+    <span>On</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Off</span>
+  </label></li>
+</ul>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>:heart: Likes</strong>
+When people like your posts</p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Every like</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" checked />
+    <span>When 5+ likes received</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-radio">
+    <input type="radio" />
+    <span>Off</span>
+  </label></li>
+</ul>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>:shield: Emergency Alerts</strong>
+Verified metro-wide emergency broadcasts
+<em>(Required — cannot be disabled)</em></p>
+  <ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" checked />
+    <span>Emergency alerts</span>
+  </label></li>
+</ul>
+</div>
+<hr class="wmd-separator" />
+<button class="wmd-button wmd-button-primary">Save Preferences</button>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Component Specifications</h2>
+<h3 class="wmd-h3">1. Bell Icon + Unread Badge (Web Nav)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bell (outline → filled when unread)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Badge</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Red circle, 18px diameter, white text</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Badge count</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Shows 1–9, then &quot;9+&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Position</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Top-right corner of bell icon</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Click</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Toggle dropdown open/close</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Dropdown width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">360px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Dropdown max-height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">480px, scrollable</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>States:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">No unread: Outline bell, no badge</li>
+  <li class="wmd-list-item">1–9 unread: Filled bell, red badge with count</li>
+  <li class="wmd-list-item">9+ unread: Filled bell, red &quot;9+&quot; badge</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">2. Bell Tab Icon + Unread Dot (Mobile Tab Bar)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">SF Symbol bell</td>
+    <td class="wmd-table-cell wmd-align-left">Material Icons notifications</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Unread dot</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Red circle 8px, top-right of icon</td>
+    <td class="wmd-table-cell wmd-align-left">Same</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Tab label</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Alerts&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Alerts&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Tab active color</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">3. Notification List Item (Both Platforms)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Web</th>
+    <th class="wmd-table-cell wmd-align-left">Mobile</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Auto (min 72px)</td>
+    <td class="wmd-table-cell wmd-align-left">Auto (min 72dp)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Unread background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#F0F4FF (light blue tint)</td>
+    <td class="wmd-table-cell wmd-align-left">#F0F4FF</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Read background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Unread indicator</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Blue left border (4px)</td>
+    <td class="wmd-table-cell wmd-align-left">Blue dot (8px) left</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Avatar/Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">40px circle or emoji icon</td>
+    <td class="wmd-table-cell wmd-align-left">40dp circle or emoji</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Title font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">14px Semibold</td>
+    <td class="wmd-table-cell wmd-align-left">15sp Medium</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Body font</strong></td>
+    <td class="wmd-table-cell wmd-align-left">14px Regular, max 2 lines</td>
+    <td class="wmd-table-cell wmd-align-left">14sp Regular, max 2 lines</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Timestamp</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px, #757575</td>
+    <td class="wmd-table-cell wmd-align-left">12sp, #757575</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Tap action</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Navigate to source content</td>
+    <td class="wmd-table-cell wmd-align-left">Navigate to source content</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Swipe/dismiss</strong></td>
+    <td class="wmd-table-cell wmd-align-left">— (web: Dismiss button)</td>
+    <td class="wmd-table-cell wmd-align-left">Swipe left → dismiss</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">4. Emergency Alert Item</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#FFEBEE (light red)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Left border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">4px #DC143C (accent red)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Icon</strong></td>
+    <td class="wmd-table-cell wmd-align-left">:shield:</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Title</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bold, #C62828</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Priority</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Always first in list, above &quot;Today&quot; group</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">5. Notification Type Icons</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Type</th>
+    <th class="wmd-table-cell wmd-align-left">Icon</th>
+    <th class="wmd-table-cell wmd-align-left">Color</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Chat message</td>
+    <td class="wmd-table-cell wmd-align-left">:speech_balloon:</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Comment</td>
+    <td class="wmd-table-cell wmd-align-left">:speech_balloon:</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Like</td>
+    <td class="wmd-table-cell wmd-align-left">:heart:</td>
+    <td class="wmd-table-cell wmd-align-left">#DC143C</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Emergency</td>
+    <td class="wmd-table-cell wmd-align-left">:shield:</td>
+    <td class="wmd-table-cell wmd-align-left">#DC143C</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">System</td>
+    <td class="wmd-table-cell wmd-align-left">:envelope:</td>
+    <td class="wmd-table-cell wmd-align-left">#757575</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">6. Web Dropdown Notification Row</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Padding</strong></td>
+    <td class="wmd-table-cell wmd-align-left">12px horizontal, 10px vertical</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Separator</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px #EEEEEE</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Hover state</strong></td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5 background</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max lines body</strong></td>
+    <td class="wmd-table-cell wmd-align-left">2 lines, ellipsis</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Footer row</strong></td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Mark all as read&quot; (left) + &quot;See all →&quot; button (right)</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Spacing &amp; Layout (Mobile Notification Screen)</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">#</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Height</th>
+    <th class="wmd-table-cell wmd-align-left">Spacing After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Status bar (safe area)</td>
+    <td class="wmd-table-cell wmd-align-left">44pt</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Screen title &quot;Notifications&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">28pt</td>
+    <td class="wmd-table-cell wmd-align-left">8pt</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Section header (&quot;Today&quot;)</td>
+    <td class="wmd-table-cell wmd-align-left">16pt</td>
+    <td class="wmd-table-cell wmd-align-left">8pt</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Emergency alert card</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">8pt</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">Notification list item</td>
+    <td class="wmd-table-cell wmd-align-left">Min 72dp</td>
+    <td class="wmd-table-cell wmd-align-left">8pt</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Section header (&quot;Yesterday&quot;)</td>
+    <td class="wmd-table-cell wmd-align-left">16pt</td>
+    <td class="wmd-table-cell wmd-align-left">8pt</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">7</td>
+    <td class="wmd-table-cell wmd-align-left">Notification list items</td>
+    <td class="wmd-table-cell wmd-align-left">Min 72dp each</td>
+    <td class="wmd-table-cell wmd-align-left">8pt</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">8</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom tab bar</td>
+    <td class="wmd-table-cell wmd-align-left">83pt (safe area)</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">User Interactions</h2>
+<h3 class="wmd-h3">Primary Flow — Receiving a Chat Notification (Mobile Push)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User is in background or device locked</li>
+  <li class="wmd-list-item">Expo Push sends notification via APNs/FCM</li>
+  <li class="wmd-list-item">System shows banner: &quot;Rajan Thapa: Hey, is the room still availab...&quot;</li>
+  <li class="wmd-list-item">User taps → app opens → navigates directly to MessageThreadScreen with Rajan</li>
+  <li class="wmd-list-item">Notification marked as read automatically</li>
+</ol>
+<h3 class="wmd-h3">Primary Flow — Receiving a Chat Notification (Web Push)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User has browser open (different tab or minimized)</li>
+  <li class="wmd-list-item">Service worker receives push event via Web Push API</li>
+  <li class="wmd-list-item">Browser shows OS notification: &quot;NUSA — Rajan Thapa: Hey, is the room...&quot;</li>
+  <li class="wmd-list-item">User clicks → browser focuses NUSA tab → navigates to /messages/:conversationId</li>
+  <li class="wmd-list-item">Notification marked as read</li>
+</ol>
+<h3 class="wmd-h3">Primary Flow — In-App Bell Dropdown (Web)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User clicks bell icon in nav</li>
+  <li class="wmd-list-item">Dropdown opens with last 8 notifications, sorted newest first</li>
+  <li class="wmd-list-item">Unread items shown with blue left border + unread background</li>
+  <li class="wmd-list-item">User clicks a notification → navigates to source content → dropdown closes</li>
+  <li class="wmd-list-item">Notification marked as read</li>
+  <li class="wmd-list-item">&quot;Mark all as read&quot; → all items turn read state</li>
+  <li class="wmd-list-item">&quot;See all notifications →&quot; → navigates to /notifications full page</li>
+</ol>
+<h3 class="wmd-h3">Primary Flow — Viewing Notifications List (Mobile)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps &quot;Alerts&quot; tab in bottom tab bar</li>
+  <li class="wmd-list-item">Notifications list loads, grouped by day</li>
+  <li class="wmd-list-item">Emergency alerts pinned at top</li>
+  <li class="wmd-list-item">Unread items shown with blue dot + tinted background</li>
+  <li class="wmd-list-item">User taps item → navigates to source (chat, post, etc.)</li>
+  <li class="wmd-list-item">Notification auto-marked as read on tap</li>
+  <li class="wmd-list-item">Swipe left on item → &quot;Dismiss&quot; red button → removes from list</li>
+</ol>
+<h3 class="wmd-h3">Primary Flow — Enabling Push (Mobile First Launch)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User opens app for first time (or after sign-in)</li>
+  <li class="wmd-list-item">System modal shown: &quot;Stay in the Loop&quot;</li>
+  <li class="wmd-list-item">User taps &quot;Allow Notifications&quot; → OS permission dialog (iOS/Android) shown</li>
+  <li class="wmd-list-item">On allow: device token registered in device_tokens table, linked to user</li>
+  <li class="wmd-list-item">On deny: banner shown in-app for next 3 sessions offering to re-enable</li>
+</ol>
+<h3 class="wmd-h3">Primary Flow — Enabling Browser Push (Web)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User signs in to web app</li>
+  <li class="wmd-list-item">After 30s delay, soft prompt shown: &quot;Enable Push Notifications&quot;</li>
+  <li class="wmd-list-item">User clicks &quot;Enable Push&quot; → browser permission dialog</li>
+  <li class="wmd-list-item">On allow: service worker subscribes, push subscription stored server-side</li>
+  <li class="wmd-list-item">On deny: no repeat prompt for 7 days</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flows</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Chat active (mobile): Supabase Realtime delivers message in-app; push NOT sent if user is currently viewing that conversation (suppress logic)</li>
+  <li class="wmd-list-item">Emergency alert: Always delivered via push regardless of preferences, shown first in list with red styling</li>
+  <li class="wmd-list-item">Preferences change: User disables &quot;Likes&quot; → no new like notifications from that point, existing ones remain in list</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Platform-Specific Differences</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Aspect</th>
+    <th class="wmd-table-cell wmd-align-left">Web</th>
+    <th class="wmd-table-cell wmd-align-left">Mobile</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Push delivery</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Web Push API + Service Worker</td>
+    <td class="wmd-table-cell wmd-align-left">Expo Push (APNs + FCM)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Dismiss gesture</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Dismiss button</td>
+    <td class="wmd-table-cell wmd-align-left">Swipe left</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Badge count</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bell icon badge in nav</td>
+    <td class="wmd-table-cell wmd-align-left">Native app badge on app icon</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Permission prompt</strong></td>
+    <td class="wmd-table-cell wmd-align-left">In-app soft prompt → browser dialog</td>
+    <td class="wmd-table-cell wmd-align-left">In-app modal → OS dialog</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Notification entry</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bell icon in nav bar</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Alerts&quot; tab in bottom tab bar</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Full list route</strong></td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">/notifications</code> page</td>
+    <td class="wmd-table-cell wmd-align-left">Dedicated tab screen</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Error States &amp; Edge Cases</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Scenario</th>
+    <th class="wmd-table-cell wmd-align-left">Behavior</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Push permission denied</td>
+    <td class="wmd-table-cell wmd-align-left">In-app banner with &quot;Open Settings&quot; link</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Push token expired</td>
+    <td class="wmd-table-cell wmd-align-left">Silent re-registration on next app open</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">User views active conversation</td>
+    <td class="wmd-table-cell wmd-align-left">Do NOT send push for new messages in that thread</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Emergency alert</td>
+    <td class="wmd-table-cell wmd-align-left">Always delivered regardless of preferences</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Notification for deleted post</td>
+    <td class="wmd-table-cell wmd-align-left">Show &quot;This post has been removed&quot; on tap</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Notification for deleted message</td>
+    <td class="wmd-table-cell wmd-align-left">Show &quot;Message deleted&quot; in chat thread</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">No internet (mobile)</td>
+    <td class="wmd-table-cell wmd-align-left">Cached list shown, &quot;Offline — notifications may be delayed&quot; banner</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Backend error loading list</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Couldn&#039;t load notifications. Try again.&quot; with retry button</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">9+ unread</td>
+    <td class="wmd-table-cell wmd-align-left">Badge shows &quot;9+&quot; cap</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<h3 class="wmd-h3">Screen Reader Order (Mobile Notifications Screen)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Screen title: &quot;Notifications&quot;</li>
+  <li class="wmd-list-item">Settings gear button: &quot;Notification preferences&quot;</li>
+  <li class="wmd-list-item">Section header: &quot;Today&quot;</li>
+  <li class="wmd-list-item">Each notification: type + sender + preview + time ago + read/unread status</li>
+</ol>
+<h3 class="wmd-h3">Touch Targets</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">All notification items: min 44×44pt (iOS) / 48×48dp (Android)</li>
+  <li class="wmd-list-item">Bell icon: min 44×44pt tap target with padding</li>
+  <li class="wmd-list-item">Dismiss / action buttons: min 44×44pt</li>
+</ul>
+<h3 class="wmd-h3">Color Contrast (WCAG AA)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Ratio</th>
+    <th class="wmd-table-cell wmd-align-left">Level</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Title text on white</td>
+    <td class="wmd-table-cell wmd-align-left">7:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Body text on white</td>
+    <td class="wmd-table-cell wmd-align-left">5.2:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Body text on #F0F4FF</td>
+    <td class="wmd-table-cell wmd-align-left">4.8:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Emergency text on #FFEBEE</td>
+    <td class="wmd-table-cell wmd-align-left">6.2:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Timestamp (#757575) on white</td>
+    <td class="wmd-table-cell wmd-align-left">4.6:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Additional A11y</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Badge count announced by screen reader: &quot;3 unread notifications&quot;</li>
+  <li class="wmd-list-item">Unread items: accessibility label includes &quot;Unread&quot; prefix</li>
+  <li class="wmd-list-item">Emergency items: announced with &quot;Emergency alert&quot; prefix</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Animations &amp; Transitions</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Step</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Delay</th>
+    <th class="wmd-table-cell wmd-align-left">Duration</th>
+    <th class="wmd-table-cell wmd-align-left">Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Web dropdown open</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">150ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in + slide down 8px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Web dropdown close</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">100ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade out</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Mark as read</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">Background color transition to white</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Dismiss item (mobile)</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">250ms</td>
+    <td class="wmd-table-cell wmd-align-left">Slide left + fade out, list collapses</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">New notification arrives (realtime)</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Slide in from top of list</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Badge count update</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Bounce scale animation on badge</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Technical Notes</h2>
+<h3 class="wmd-h3">Routes &amp; Identifiers</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Platform</th>
+    <th class="wmd-table-cell wmd-align-left">Route / Screen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Web list page</td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">/notifications</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Web preferences</td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">/settings/notifications</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Mobile screen</td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">NotificationsScreen</code> (tab)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Mobile preferences</td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">NotificationPreferencesScreen</code> (from Settings)</td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Data Requirements</h3>
+<p class="wmd-paragraph"><strong>Supabase notifications table</strong> (already exists in 001_schema.sql):</p>
+<pre class="wmd-code-block"><code>id, user_id, type (message|post_response|emergency_alert|system),
+title, body, data (JSONB), read, read_at, sent_at</code></pre>
+<p class="wmd-paragraph"><strong>New table needed — device_tokens</strong> (to be added to 001_schema.sql):</p>
+<pre class="wmd-code-block"><code>id, user_id, token (TEXT), platform (expo|web_push),
+endpoint (TEXT, for web push), p256dh (TEXT), auth_key (TEXT),
+created_at, last_used_at</code></pre>
+<p class="wmd-paragraph"><strong>Notification triggers (Supabase Edge Functions or DB triggers):</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">New message inserted in messages → insert into notifications → push delivery</li>
+  <li class="wmd-list-item">New comment inserted in comments → insert into notifications → push delivery</li>
+  <li class="wmd-list-item">New like inserted in likes → batch/check threshold → insert into notifications</li>
+  <li class="wmd-list-item">Emergency post verified → insert into notifications for all metro users → push delivery</li>
+</ul>
+<h3 class="wmd-h3">Navigation</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Direction</th>
+    <th class="wmd-table-cell wmd-align-left">Trigger</th>
+    <th class="wmd-table-cell wmd-align-left">Destination</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry (Web)</td>
+    <td class="wmd-table-cell wmd-align-left">Click bell icon</td>
+    <td class="wmd-table-cell wmd-align-left">Dropdown appears</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry (Web)</td>
+    <td class="wmd-table-cell wmd-align-left">Click &quot;See all&quot;</td>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">/notifications</code></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry (Mobile)</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Alerts&quot; tab</td>
+    <td class="wmd-table-cell wmd-align-left">NotificationsScreen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit — Chat</td>
+    <td class="wmd-table-cell wmd-align-left">Tap message notification</td>
+    <td class="wmd-table-cell wmd-align-left">MessageThreadScreen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit — Post</td>
+    <td class="wmd-table-cell wmd-align-left">Tap comment/like notification</td>
+    <td class="wmd-table-cell wmd-align-left">PostDetailScreen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit — Emergency</td>
+    <td class="wmd-table-cell wmd-align-left">Tap emergency notification</td>
+    <td class="wmd-table-cell wmd-align-left">PostDetailScreen (emergency post)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit — Preferences</td>
+    <td class="wmd-table-cell wmd-align-left">Tap gear icon</td>
+    <td class="wmd-table-cell wmd-align-left">NotificationPreferencesScreen / <code class="wmd-code-inline">/settings/notifications</code></td>
+  </tr>
+  </tbody>
+</table>
+<h3 class="wmd-h3">Push Delivery Architecture</h3>
+<p class="wmd-paragraph"><strong>Mobile (Expo Push):</strong></p>
+<ol class="wmd-list">
+  <li class="wmd-list-item">App registers with Expo → gets ExponentPushToken[xxx]</li>
+  <li class="wmd-list-item">Token stored in device_tokens table</li>
+  <li class="wmd-list-item">Edge Function sends via https://exp.host/--/api/v2/push/send</li>
+  <li class="wmd-list-item">Handles APNs (iOS) + FCM (Android) transparently</li>
+</ol>
+<p class="wmd-paragraph"><strong>Web (Web Push API):</strong></p>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Service worker subscribes → gets PushSubscription (endpoint + keys)</li>
+  <li class="wmd-list-item">Subscription stored in device_tokens (endpoint, p256dh, auth columns)</li>
+  <li class="wmd-list-item">Edge Function sends VAPID-signed push to browser endpoint</li>
+  <li class="wmd-list-item">Service worker push event handler shows notification</li>
+</ol>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Testing Checklist</h2>
+<h3 class="wmd-h3">Functional Tests</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Unread badge count increments on new notification (web + mobile)</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Badge resets to 0 when all notifications marked as read</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tapping notification navigates to correct screen</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Push not sent when user is actively viewing that conversation</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Emergency notifications always delivered (ignores mute prefs)</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>&quot;Mark all as read&quot; marks all items as read</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Dismissing an item removes it from the list</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Preferences save correctly and new notifications respect them</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Realtime: new notification appears at top of list without page refresh</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Device token registered on first push permission grant</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Device token cleaned up / refreshed on token expiry</span>
+  </label></li>
+</ul>
+<h3 class="wmd-h3">Visual Tests</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Unread items show blue left border and tinted background</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Emergency items show red styling and always appear first</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Badge shows &quot;9+&quot; when more than 9 unread</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Web dropdown truncates body to 2 lines</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Empty state shown when no notifications</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Section grouping (Today / Yesterday / Earlier) correct</span>
+  </label></li>
+</ul>
+<h3 class="wmd-h3">Accessibility Tests</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Badge count announced as &quot;X unread notifications&quot;</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Screen reader reads notification type + sender + preview + time</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>All tap targets meet 44×44pt (iOS) / 48×48dp (Android)</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Color contrast AA compliant for all text elements</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Emergency items announced with &quot;Emergency alert&quot; prefix</span>
+  </label></li>
+</ul>
+<h3 class="wmd-h3">Edge Case Tests</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Notification for deleted post shows graceful message</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>0 notifications shows empty state (not blank screen)</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Offline state shows cached list with offline banner</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Push permission denied shows in-app prompt to open settings</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Web push subscription updates if browser endpoint changes</span>
+  </label></li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Open Questions</h2>
+<ul class="wmd-list">
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should likes batch into a single notification (&quot;5 people liked your post&quot;) or show individually? → Rec: Batch when 5+ within 1 hour window</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should there be a &quot;Clear all&quot; / delete-all option or just dismiss-per-item? → Rec: Start with dismiss-per-item only; clear-all in a later iteration</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Emergency notifications: Should web also show a persistent banner on the home feed (not just push)? → Rec: Yes, banner on HomeScreen too (Phase 2 Red Alert)</span>
+  </label></li>
+  <li class="wmd-list-item"><label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Web push: Should service worker prompt appear on every sign-in or only the first? → Rec: First sign-in only, with 7-day cooldown on dismiss</span>
+  </label></li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Related Screens</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Relation</th>
+    <th class="wmd-table-cell wmd-align-left">Screen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry (chat notification)</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../07-conversation-list/07-conversation-list.md" class="wmd-link">07 Conversation List</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry (post notification)</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../09-post-detail/09-post-detail.md" class="wmd-link">09 Post Detail</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Settings entry</td>
+    <td class="wmd-table-cell wmd-align-left">Profile / Settings screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Phase 2 dependency</td>
+    <td class="wmd-table-cell wmd-align-left">Red Alert emergency broadcast system</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Status:</strong> Draft — Ready for Review</p>
+</body>
+</html>
+

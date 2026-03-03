@@ -2,6 +2,7 @@
  * User data types — snake_case matching Supabase database columns
  * See: supabase/migrations/001_schema.sql
  */
+import type { NotifyChatPref, NotifyLikesPref } from './notification';
 
 export interface User {
   id: string;
@@ -47,13 +48,18 @@ export interface UserSummary {
   profile_photo: string | null;
 }
 
-/** User settings */
+/** User settings — matches the user_settings table in DB */
 export interface UserSettings {
   user_id: string;
   email_notifications: boolean;
   push_notifications: boolean;
   emergency_alerts: boolean;
   metro_area_alerts: boolean;
+  notify_chat: NotifyChatPref;
+  notify_comments: boolean;
+  notify_likes: NotifyLikesPref;
+  created_at?: string;
+  updated_at?: string;
 }
 
 /** Auth result types */

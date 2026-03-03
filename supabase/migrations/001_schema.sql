@@ -1,7 +1,17 @@
 -- NUSA Complete Database Schema
 -- Consolidated from 7 incremental migrations into a single clean file
 -- representing the final correct state of the database.
--- Safe to re-run on a fresh database (drops all objects first).
+--
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║  WARNING: DO NOT RUN THIS FILE ON A LIVE DATABASE.                  ║
+-- ║  This script drops ALL tables (CASCADE) before recreating them.     ║
+-- ║  Running it on a live DB will permanently destroy all user data.    ║
+-- ║                                                                      ║
+-- ║  FOR SCHEMA CHANGES: create a new incremental migration file        ║
+-- ║  (e.g., 004_your_change.sql) using ALTER TABLE / CREATE INDEX etc.  ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+--
+-- Safe to run ONLY on a fresh, empty database (new project setup).
 
 -- =====================================================
 -- TEARDOWN (drop in reverse dependency order)
@@ -162,6 +172,7 @@ CREATE TABLE posts (
 -- Conversations (1:1 DMs between user pairs)
 CREATE TABLE conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  creator_id UUID REFERENCES users(id) ON DELETE SET NULL,
   last_message TEXT,
   last_message_time TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -289,6 +300,34 @@ CREATE TABLE post_tags (
   UNIQUE(post_id, tag_id)
 );
 
+-- User Settings (notification and app preferences)
+CREATE TABLE user_settings (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  email_notifications BOOLEAN NOT NULL DEFAULT true,
+  push_notifications BOOLEAN NOT NULL DEFAULT true,
+  emergency_alerts BOOLEAN NOT NULL DEFAULT true,
+  metro_area_alerts BOOLEAN NOT NULL DEFAULT true,
+  notify_chat TEXT NOT NULL DEFAULT 'all' CHECK (notify_chat IN ('all', 'batched', 'off')),
+  notify_comments BOOLEAN NOT NULL DEFAULT true,
+  notify_likes TEXT NOT NULL DEFAULT 'grouped' CHECK (notify_likes IN ('all', 'grouped', 'off')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Device Tokens (push notification delivery)
+CREATE TABLE device_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('expo', 'web_push')),
+  endpoint TEXT,
+  p256dh TEXT,
+  auth_key TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, token)
+);
+
 -- =====================================================
 -- INDEXES
 -- =====================================================
@@ -340,6 +379,9 @@ CREATE INDEX idx_reports_reported_by ON reports(reported_by);
 CREATE INDEX idx_notifications_user_sent ON notifications(user_id, sent_at DESC);
 CREATE INDEX idx_notifications_user_unread
   ON notifications(user_id, read) WHERE read = false;
+
+-- Device Tokens
+CREATE INDEX idx_device_tokens_user ON device_tokens(user_id);
 
 -- Blocked Users
 CREATE INDEX idx_blocked_users_blocker ON blocked_users(blocker_id);
@@ -500,6 +542,136 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
+-- Notification trigger: new chat message received
+CREATE OR REPLACE FUNCTION notify_on_new_message()
+RETURNS TRIGGER
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_recipient_id UUID;
+  v_sender_name TEXT;
+  v_notify_chat TEXT;
+BEGIN
+  -- Get the other participant in this conversation
+  SELECT cp.user_id INTO v_recipient_id
+  FROM public.conversation_participants cp
+  WHERE cp.conversation_id = NEW.conversation_id
+    AND cp.user_id != NEW.sender_id
+  LIMIT 1;
+
+  IF v_recipient_id IS NULL THEN RETURN NEW; END IF;
+
+  -- Check recipient notification preference (default 'all' if no settings row)
+  SELECT COALESCE(us.notify_chat, 'all') INTO v_notify_chat
+  FROM public.user_settings us
+  WHERE us.user_id = v_recipient_id;
+
+  IF v_notify_chat = 'off' THEN RETURN NEW; END IF;
+
+  SELECT full_name INTO v_sender_name FROM public.users WHERE id = NEW.sender_id;
+
+  INSERT INTO public.notifications (user_id, type, title, body, data)
+  VALUES (
+    v_recipient_id,
+    'message',
+    v_sender_name,
+    LEFT(NEW.text, 100),
+    jsonb_build_object(
+      'conversation_id', NEW.conversation_id,
+      'sender_id', NEW.sender_id,
+      'message_id', NEW.id
+    )
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = '';
+
+-- Notification trigger: new comment on a post
+CREATE OR REPLACE FUNCTION notify_on_new_comment()
+RETURNS TRIGGER
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_post_author_id UUID;
+  v_post_title TEXT;
+  v_commenter_name TEXT;
+  v_notify_comments BOOLEAN;
+BEGIN
+  SELECT p.author_id, p.title INTO v_post_author_id, v_post_title
+  FROM public.posts p WHERE p.id = NEW.post_id;
+
+  -- Skip if commenter is the post author
+  IF NEW.author_id = v_post_author_id THEN RETURN NEW; END IF;
+
+  SELECT COALESCE(us.notify_comments, true) INTO v_notify_comments
+  FROM public.user_settings us WHERE us.user_id = v_post_author_id;
+
+  IF v_notify_comments = false THEN RETURN NEW; END IF;
+
+  SELECT full_name INTO v_commenter_name FROM public.users WHERE id = NEW.author_id;
+
+  INSERT INTO public.notifications (user_id, type, title, body, data)
+  VALUES (
+    v_post_author_id,
+    'post_response',
+    v_commenter_name || ' commented on your post',
+    LEFT(NEW.content, 100),
+    jsonb_build_object(
+      'post_id', NEW.post_id,
+      'comment_id', NEW.id,
+      'commenter_id', NEW.author_id
+    )
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = '';
+
+-- Notification trigger: post like
+-- Fires on every like if notify_likes = 'all', or every 5th if 'grouped'.
+-- Note: trigger_increment_post_likes_count fires first (alphabetically), so
+-- posts.likes_count already reflects the new like when this function runs.
+CREATE OR REPLACE FUNCTION notify_on_new_like()
+RETURNS TRIGGER
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_post_author_id UUID;
+  v_post_title TEXT;
+  v_like_count INT;
+  v_notify_likes TEXT;
+BEGIN
+  SELECT p.author_id, p.title, p.likes_count
+  INTO v_post_author_id, v_post_title, v_like_count
+  FROM public.posts p WHERE p.id = NEW.post_id;
+
+  -- Skip if liker is the post author
+  IF NEW.user_id = v_post_author_id THEN RETURN NEW; END IF;
+
+  SELECT COALESCE(us.notify_likes, 'grouped') INTO v_notify_likes
+  FROM public.user_settings us WHERE us.user_id = v_post_author_id;
+
+  IF v_notify_likes = 'off' THEN RETURN NEW; END IF;
+
+  IF v_notify_likes = 'all' OR (v_notify_likes = 'grouped' AND v_like_count % 5 = 0) THEN
+    INSERT INTO public.notifications (user_id, type, title, body, data)
+    VALUES (
+      v_post_author_id,
+      'post_response',
+      CASE WHEN v_notify_likes = 'all'
+        THEN 'Someone liked your post'
+        ELSE v_like_count::TEXT || ' people liked your post'
+      END,
+      LEFT(v_post_title, 100),
+      jsonb_build_object('post_id', NEW.post_id, 'like_count', v_like_count)
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = '';
+
 -- =====================================================
 -- TRIGGERS
 -- =====================================================
@@ -549,6 +721,21 @@ CREATE TRIGGER trigger_decrement_post_comments_count
   AFTER UPDATE ON post_comments
   FOR EACH ROW EXECUTE FUNCTION decrement_post_comments_count();
 
+-- Notification triggers
+CREATE TRIGGER trigger_notify_on_new_message
+  AFTER INSERT ON messages
+  FOR EACH ROW EXECUTE FUNCTION notify_on_new_message();
+
+CREATE TRIGGER trigger_notify_on_new_comment
+  AFTER INSERT ON post_comments
+  FOR EACH ROW EXECUTE FUNCTION notify_on_new_comment();
+
+-- Fires after trigger_increment_post_likes_count (alphabetical order: 'i' < 'n')
+-- so posts.likes_count is already updated when this trigger runs.
+CREATE TRIGGER trigger_notify_on_new_like
+  AFTER INSERT ON post_likes
+  FOR EACH ROW EXECUTE FUNCTION notify_on_new_like();
+
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS)
 -- =====================================================
@@ -569,6 +756,8 @@ ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_saved_locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE post_tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY;
 
 -- ----- Metro Areas -----
 
@@ -668,12 +857,13 @@ CREATE POLICY "Authors and moderators can delete posts"
 
 -- ----- Conversations -----
 
-CREATE POLICY "Participants can view conversations"
+CREATE POLICY "Participants or creator can view conversations"
   ON conversations FOR SELECT
   USING (
-    EXISTS (
+    creator_id = (SELECT auth.uid())
+    OR EXISTS (
       SELECT 1 FROM conversation_participants
-      WHERE conversation_id = conversations.id AND user_id = (select auth.uid())
+      WHERE conversation_id = conversations.id AND user_id = (SELECT auth.uid())
     )
   );
 
@@ -937,6 +1127,22 @@ CREATE POLICY "Post authors can delete tags"
     )
   );
 
+-- ----- User Settings -----
+
+CREATE POLICY "Users can view own settings"
+  ON user_settings FOR SELECT
+  USING (user_id = (select auth.uid()));
+
+CREATE POLICY "Users can manage own settings"
+  ON user_settings FOR ALL
+  USING (user_id = (select auth.uid()));
+
+-- ----- Device Tokens -----
+
+CREATE POLICY "Users can manage own device tokens"
+  ON device_tokens FOR ALL
+  USING (user_id = (select auth.uid()));
+
 -- =====================================================
 -- REALTIME
 -- =====================================================
@@ -947,6 +1153,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE tags;
 ALTER PUBLICATION supabase_realtime ADD TABLE post_tags;
+ALTER PUBLICATION supabase_realtime ADD TABLE user_settings;
+ALTER PUBLICATION supabase_realtime ADD TABLE device_tokens;
 
 -- =====================================================
 -- COMMENTS
@@ -967,3 +1175,5 @@ COMMENT ON TABLE post_comments IS 'Public comment threads on posts';
 COMMENT ON TABLE user_saved_locations IS 'User saved metro locations (max 5 per user)';
 COMMENT ON TABLE tags IS 'System and user-defined tags for post categorization';
 COMMENT ON TABLE post_tags IS 'Many-to-many junction between posts and tags (max 3 per post)';
+COMMENT ON TABLE user_settings IS 'Per-user notification and app settings';
+COMMENT ON TABLE device_tokens IS 'Push notification device tokens (Expo Push and Web Push subscriptions)';

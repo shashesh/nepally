@@ -35,6 +35,7 @@ import {
   deletePost,
   getOrCreateConversation,
   getTotalUnreadCount,
+  getUnreadNotificationCount,
   TrustLevel,
 } from '@nusa/shared';
 import type { Post, Tag } from '@nusa/shared';
@@ -42,7 +43,7 @@ import { isBannerDismissed, saveBannerDismissed } from '../utils/storage';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
-import { spacing } from '../styles/spacing';
+import { spacing, borderRadius, shadows } from '../styles/spacing';
 import { MainTabParamList, HomeStackParamList } from '../types/navigation';
 
 type HomeScreenNavProp = CompositeNavigationProp<
@@ -77,6 +78,7 @@ export default function HomeScreen() {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [morePost, setMorePost] = useState<Post | null>(null);
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
@@ -110,8 +112,12 @@ export default function HomeScreen() {
       }
       loadLikedPosts();
       refreshUnreadCount();
-      // Refresh unread count periodically
-      const interval = setInterval(refreshUnreadCount, 30000);
+      refreshUnreadNotifCount();
+      // Refresh unread counts periodically
+      const interval = setInterval(() => {
+        refreshUnreadCount();
+        refreshUnreadNotifCount();
+      }, 30000);
       return () => clearInterval(interval);
     }, [selectedTagSlugs, metroAreaId])
   );
@@ -121,6 +127,55 @@ export default function HomeScreen() {
     const result = await getTotalUnreadCount(supabase, user.id);
     setUnreadCount(result.count);
   }, [user?.id]);
+
+  const refreshUnreadNotifCount = useCallback(async () => {
+    if (!user?.id) return;
+    const result = await getUnreadNotificationCount(supabase, user.id);
+    setUnreadNotifCount(result.count);
+  }, [user?.id]);
+
+  // Realtime chat unread updates for messages icon badge
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const participantsChannel = supabase
+      .channel(`chat-unread-mobile:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversation_participants',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          refreshUnreadCount();
+        }
+      )
+      .subscribe();
+
+    const messagesChannel = supabase
+      .channel(`chat-messages-unread-mobile:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          const newMessage = payload.new as { sender_id?: string };
+          if (newMessage.sender_id === user.id) return;
+          refreshUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(participantsChannel);
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [user?.id, refreshUnreadCount]);
 
   const loadBannerState = async () => {
     const dismissed = await isBannerDismissed('level0-banner');
@@ -381,7 +436,33 @@ export default function HomeScreen() {
   };
 
   const handleNotificationsPress = () => {
-    Alert.alert('Coming Soon', 'Notifications will be available in a future update.');
+    navigation.navigate('Notifications');
+  };
+
+  const renderCreatePostBanner = () => {
+    const firstName = user?.full_name?.split(' ')[0] || 'there';
+    const initial = user?.full_name?.[0]?.toUpperCase() || 'U';
+    return (
+      <View style={styles.createPostBanner}>
+        <View style={styles.createPostAvatar}>
+          <Text style={styles.createPostAvatarText}>{initial}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.createPostInput}
+          onPress={handleCreatePost}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.createPostPlaceholder}>What's on your mind, {firstName}?</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.createPostButton, isLevel0 && styles.createPostButtonDisabled]}
+          onPress={handleCreatePost}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.createPostButtonText}>Post</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   const renderEmptyState = () => (
@@ -455,6 +536,13 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={handleNotificationsPress}>
             <Ionicons name="notifications-outline" size={24} color={colors.text.primary} />
+            {unreadNotifCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -517,6 +605,7 @@ export default function HomeScreen() {
             tintColor={colors.primary.main}
           />
         }
+        ListHeaderComponent={renderCreatePostBanner}
         ListEmptyComponent={initialLoading ? renderLoadingState : loadError ? renderErrorState : renderEmptyState}
       />
 
@@ -733,6 +822,61 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     ...typography.button,
+    color: colors.white,
+  },
+  createPostBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.xs,
+    marginBottom: spacing.xs,
+    gap: spacing.xs,
+    ...shadows.card,
+  },
+  createPostAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary.light,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  createPostAvatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary.main,
+  },
+  createPostInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceMuted,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.s,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  createPostPlaceholder: {
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
+  createPostButton: {
+    flexShrink: 0,
+    height: 40,
+    paddingHorizontal: spacing.s,
+    borderRadius: 20,
+    backgroundColor: colors.primary.main,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  createPostButtonDisabled: {
+    opacity: 0.5,
+  },
+  createPostButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.white,
   },
   fab: {

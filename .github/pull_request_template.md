@@ -33,6 +33,13 @@
 - [ ] `npm run test`
 - [ ] `npm run test:coverage`
 
+## Database Migrations (if applicable)
+
+- [ ] All schema changes use a **new incremental file** (`004_*.sql`, `005_*.sql`, etc.) — never modifying `001`, `002`, or `003`.
+- [ ] Migration SQL is additive/non-destructive (`ALTER TABLE`, `CREATE INDEX`, `CREATE POLICY`, etc.).
+- [ ] No `DROP TABLE` or `DROP TYPE` without explicit confirmation that no live data is affected.
+- [ ] Filename uses sequential numeric prefix, not a timestamp.
+
 ## Architecture Compliance
 
 - [ ] Shared-first rules followed (no duplicated business logic across apps).

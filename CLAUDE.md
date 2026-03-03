@@ -119,25 +119,38 @@ Before implementing ANY feature, read:
 
 ## Database Migrations
 
-**CRITICAL: Always prefer existing migration files over creating new ones.**
+**CRITICAL: `001_schema.sql`, `002_seed_data.sql`, and `003_storage.sql` are FROZEN. Never modify or re-run them on a live database.**
 
-Local migration files live in `supabase/migrations/` with this naming convention:
-- `001_schema.sql` — Full database schema (tables, indexes, functions, triggers, RLS)
-- `002_seed_data.sql` — Seed/reference data (tags, metro areas, etc.)
-- `003_storage.sql` — Supabase Storage buckets and their RLS policies
+These files contain a destructive TEARDOWN section (`DROP TABLE ... CASCADE`) that wipes all data before recreating tables. They exist solely to bootstrap a fresh, empty database. Re-applying them to a live database **will destroy all user data**.
 
-### Decision tree before touching migrations
+### The only safe rule: always create a new incremental migration file
 
-1. **Read the existing files first.** Check whether the change logically belongs to an existing file:
-   - Schema changes (tables, columns, indexes, functions, triggers, RLS policies) → `001_schema.sql`
-   - Seed / reference data inserts → `002_seed_data.sql`
-   - Storage bucket setup or storage RLS → `003_storage.sql`
-2. **If it fits, add it to the existing file.** Update the relevant section in place — do not duplicate content.
-3. **Only create a new file** when the change is genuinely orthogonal to all existing files (e.g., a new subsystem with its own lifecycle). Name it `004_<description>.sql`, continuing the numeric sequence.
-4. **Never create timestamped filenames** (e.g., `20260224_something.sql`). The project uses sequential numeric prefixes.
+Every schema change to an already-deployed database MUST be a new numbered file:
+
+```
+supabase/migrations/004_<description>.sql   ← next change
+supabase/migrations/005_<description>.sql   ← change after that
+```
+
+Each incremental file must:
+- Use `ALTER TABLE`, `CREATE INDEX`, `CREATE POLICY`, `CREATE OR REPLACE FUNCTION`, etc.
+- **Never** use `DROP TABLE`, `DROP TYPE`, or any statement that destroys existing data unless you are intentionally deleting a table/column and have confirmed no live data will be lost
+- Be safe to apply to the current live schema without destroying anything
+
+### File reference (read-only after initial deploy)
+
+- `001_schema.sql` — Initial full schema (DO NOT MODIFY OR REAPPLY)
+- `002_seed_data.sql` — Initial seed data (DO NOT MODIFY OR REAPPLY)
+- `003_storage.sql` — Initial storage setup (DO NOT MODIFY OR REAPPLY)
+- `004+` — All future incremental changes go here
+
+### Naming convention
+
+- Sequential numeric prefix: `004_add_user_flags.sql`, `005_posts_add_photo_count.sql`
+- **Never** use timestamps (e.g., `20260224_something.sql`)
 
 ### Applying migrations via MCP
-When using `apply_migration` (Supabase MCP tool), the SQL runs on the live DB. Always verify afterward that the same SQL is reflected in the appropriate local file — they must stay in sync.
+When using `apply_migration` (Supabase MCP tool), the SQL runs on the live DB. The `name` parameter should match the filename (e.g., `add_user_flags` for `004_add_user_flags.sql`). Always write additive, non-destructive SQL.
 
 ## Tech Stack
 

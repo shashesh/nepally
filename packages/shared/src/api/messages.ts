@@ -67,20 +67,8 @@ export async function sendMessage(
       })
       .eq('id', conversationId);
 
-    // Increment unread_count for the OTHER participant
-    const { data: participants } = await supabase
-      .from('conversation_participants')
-      .select('id, user_id, unread_count')
-      .eq('conversation_id', conversationId)
-      .neq('user_id', senderId);
-
-    if (participants && participants.length > 0) {
-      const otherPart = participants[0];
-      await supabase
-        .from('conversation_participants')
-        .update({ unread_count: (otherPart.unread_count || 0) + 1 })
-        .eq('id', otherPart.id);
-    }
+    // unread_count increment is handled in DB trigger:
+    // supabase/migrations/006_increment_unread_count_on_new_message.sql
 
     return { data: message as ChatMessage };
   } catch (error) {

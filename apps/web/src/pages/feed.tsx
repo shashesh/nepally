@@ -395,7 +395,13 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
             </div>
 
             <div className={styles.composerCard}>
-              <p className={styles.composerPrompt}>What&apos;s on your mind, {firstName}?</p>
+              <Link
+                href={user.trust_level >= 1 ? '/posts/create' : '/profile'}
+                className={styles.composerInputLink}
+                aria-label="Start a new post"
+              >
+                What&apos;s on your mind, {firstName}?
+              </Link>
               {user.trust_level >= 1 ? (
                 <Link href="/posts/create" className={styles.createPostBtn}>
                   Create Post

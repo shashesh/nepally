@@ -51,6 +51,8 @@ export type HomeStackParamList = {
   PostDetail: { postId: string };
   ManageLocations: undefined;
   AddLocation: undefined;
+  Notifications: undefined;
+  NotificationPreferences: undefined;
 };
 
 /**
