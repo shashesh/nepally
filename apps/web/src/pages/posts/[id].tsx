@@ -13,9 +13,13 @@ import {
   likePost,
   unlikePost,
   getUserLikedPostIds,
+  savePost,
+  unsavePost,
+  getUserSavedPostIds,
   getOrCreateConversation,
   buildSingleLevelCommentThreads,
   formatRelativeTime,
+  logClientEvent,
   TAG_EMOJI,
 } from '@nusa/shared';
 import type { Post, PostComment } from '@nusa/shared';
@@ -35,6 +39,9 @@ export default function PostDetailPage() {
   const [comments, setComments] = useState<PostComment[]>([]);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [saved, setSaved] = useState(false);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [commentText, setCommentText] = useState('');
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
@@ -80,6 +87,16 @@ export default function PostDetailPage() {
       getUserLikedPostIds(supabase, user.id).then((result) => {
         if (result.data) {
           setLiked(result.data.includes(post.id));
+        }
+      });
+    }
+  }, [user, post?.id]);
+
+  useEffect(() => {
+    if (user && post) {
+      getUserSavedPostIds(supabase, user.id).then((result) => {
+        if (result.data) {
+          setSaved(result.data.includes(post.id));
         }
       });
     }
@@ -135,6 +152,27 @@ export default function PostDetailPage() {
     }
   }
 
+  function showSaveToast(message: string) {
+    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    setSaveToast(message);
+    saveToastTimerRef.current = setTimeout(() => setSaveToast(null), 2500);
+  }
+
+  async function handleSave() {
+    if (!user || !post) return;
+    const wasSaved = saved;
+
+    if (wasSaved) {
+      setSaved(false);
+      const { error } = await unsavePost(supabase, post.id);
+      showSaveToast(error ? 'Failed to unsave post.' : 'Post unsaved.');
+    } else {
+      setSaved(true);
+      const { error } = await savePost(supabase, post.id);
+      showSaveToast(error ? 'Failed to save post.' : 'Post saved.');
+    }
+  }
+
   async function handleComment(e: FormEvent) {
     e.preventDefault();
     if (!user || !post || !commentText.trim()) return;
@@ -151,10 +189,25 @@ export default function PostDetailPage() {
   }
 
   async function handleDeleteComment(commentId: string) {
+    const shouldDelete = confirm('Delete this comment?');
+    if (!shouldDelete) return;
+
     const result = await deleteComment(supabase, commentId);
-    if (!result.error) {
-      setComments((prev) => prev.filter((comment) => comment.id !== commentId && comment.parent_comment_id !== commentId));
+    if (result.error) {
+      logClientEvent({
+        event: 'comment_delete_failed',
+        context: {
+          platform: 'web',
+          commentId,
+          userId: user?.id ?? null,
+        },
+        error: result.error,
+      });
+      alert(result.error.message || 'Failed to delete comment. Please try again.');
+      return;
     }
+
+    setComments((prev) => prev.filter((comment) => comment.id !== commentId && comment.parent_comment_id !== commentId));
   }
 
   async function handleAvatarChat() {
@@ -387,6 +440,9 @@ export default function PostDetailPage() {
 
   return (
     <>
+      {saveToast && (
+        <div className={styles.toast}>{saveToast}</div>
+      )}
       <Head>
         <title>{post.title} - NUSA</title>
       </Head>
@@ -468,6 +524,13 @@ export default function PostDetailPage() {
                       </>
                     ) : (
                       <>
+                        <button
+                          type="button"
+                          className={styles.postMenuItem}
+                          onClick={() => { setPostMenuOpen(false); handleSave(); }}
+                        >
+                          {saved ? 'Unsave Post' : 'Save Post'}
+                        </button>
                         <button type="button" className={styles.postMenuItem} onClick={handleShare}>Share Post</button>
                         <button
                           type="button"
@@ -559,9 +622,14 @@ export default function PostDetailPage() {
             <button className={styles.actionBtn} onClick={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}>
               💬 {comments.length}
             </button>
-            <button className={`${styles.actionBtn} ${styles.actionBtnDisabled}`} onClick={() => alert('Saved posts coming soon')}>
-              🔖 Save
-            </button>
+            {post.author_id !== user?.id && (
+              <button
+                className={`${styles.actionBtn} ${saved ? styles.actionBtnActive : ''}`}
+                onClick={handleSave}
+              >
+                {saved ? '🔖' : '🏷️'} Save
+              </button>
+            )}
             <button className={styles.actionBtn} onClick={handleShare}>
               ↗ Share
             </button>

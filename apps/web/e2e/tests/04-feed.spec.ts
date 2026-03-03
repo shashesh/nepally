@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { injectAuthSession } from '../fixtures/auth';
 import { mockSupabaseLoggedIn } from '../helpers/supabase-mock';
-import { MOCK_POSTS, MOCK_TAGS } from '../fixtures/mock-data';
+import { MOCK_POSTS, MOCK_POST_OTHER_AUTHOR, MOCK_TAGS } from '../fixtures/mock-data';
 
 test.describe('Feed page', () => {
   test.beforeEach(async ({ page }) => {
@@ -51,5 +51,38 @@ test.describe('Feed page', () => {
   test('feed page has correct title', async ({ page }) => {
     await page.goto('/feed');
     await expect(page).toHaveTitle(/feed.*nusa|nusa.*feed/i);
+  });
+
+  test('save button is visible for non-own post', async ({ page }) => {
+    await page.goto('/feed');
+
+    // MOCK_POST_OTHER_AUTHOR has a different author_id than the logged-in user
+    await expect(page.getByText(MOCK_POST_OTHER_AUTHOR.title)).toBeVisible({ timeout: 10_000 });
+
+    // The save button (aria-label="Save post") should render for non-own posts
+    await expect(page.getByLabel('Save post').first()).toBeVisible();
+  });
+
+  test('save button is not visible for own post', async ({ page }) => {
+    await page.goto('/feed');
+
+    // MOCK_POSTS[0] has author_id === MOCK_USER_ID (own post)
+    await expect(page.getByText(MOCK_POSTS[0].title)).toBeVisible({ timeout: 10_000 });
+
+    // For own posts, save button should not be rendered
+    // Count save buttons — only the non-own post should have one
+    const saveButtons = page.getByLabel('Save post');
+    await expect(saveButtons).toHaveCount(1); // Only 1: from MOCK_POST_OTHER_AUTHOR
+  });
+
+  test('clicking save shows toast confirmation', async ({ page }) => {
+    await page.goto('/feed');
+    await expect(page.getByText(MOCK_POST_OTHER_AUTHOR.title)).toBeVisible({ timeout: 10_000 });
+
+    // Click the save button on the non-own post
+    await page.getByLabel('Save post').first().click();
+
+    // A toast should appear confirming the action
+    await expect(page.getByText(/Post saved\.|Post unsaved\./)).toBeVisible({ timeout: 5_000 });
   });
 });

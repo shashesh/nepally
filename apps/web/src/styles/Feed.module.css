@@ -677,6 +677,29 @@
   gap: 4px;
 }
 
+.postStatSaveBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+  margin-left: auto;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.postStatSaveBtn:hover {
+  opacity: 1;
+}
+
+.postStatSaved {
+  opacity: 1;
+}
+
 /* ── Empty State ─────────────────────────── */
 .emptyState {
   text-align: center;
@@ -918,4 +941,28 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* ── Save/unsave toast ───────────────────── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: toastIn 200ms ease;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }

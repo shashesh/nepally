@@ -136,6 +136,35 @@ export const MOCK_POSTS: Post[] = [
   },
 ];
 
+/** A post by a different author — used to verify save button is rendered for non-own posts */
+export const MOCK_POST_OTHER_AUTHOR: Post = {
+  id: 'post-003-00000000-0000-0000-0000-000000000003',
+  author_id: 'other-author-0000-0000-0000-000000000002',
+  metro_area_id: MOCK_METRO_ID,
+  location_zip_code: '10001',
+  location_city: 'New York',
+  location_state: 'NY',
+  title: 'Community event at local temple',
+  description: 'Join us for a Dashain celebration at the community center this Saturday.',
+  photos: [],
+  is_global: false,
+  status: 'active',
+  views_count: 20,
+  responses_count: 1,
+  reports_count: 0,
+  likes_count: 3,
+  comments_count: 0,
+  created_at: '2025-06-03T09:00:00Z',
+  updated_at: '2025-06-03T09:00:00Z',
+  author: {
+    id: 'other-author-0000-0000-0000-000000000002',
+    full_name: 'Other Community Member',
+    trust_level: 1,
+    profile_photo: null,
+  },
+  tags: [MOCK_TAGS[2]],
+};
+
 export const MOCK_ZIP_METRO = [
   {
     zip_code: '10001',

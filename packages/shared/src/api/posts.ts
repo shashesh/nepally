@@ -132,7 +132,7 @@ export async function getPostsByAuthorId(
 }
 
 /**
- * Get posts liked by a specific user.
+ * Get posts saved by a specific user (queries saved_posts table).
  * Profile uses this as the Saved Posts list.
  */
 export async function getSavedPostsByUserId(
@@ -144,9 +144,9 @@ export async function getSavedPostsByUserId(
   try {
     const { data, error } = await supabase
       .from('posts')
-      .select(`${POST_SELECT}, post_likes!inner(user_id)`)
+      .select(`${POST_SELECT}, saved_posts!inner(user_id)`)
       .eq('status', 'active')
-      .eq('post_likes.user_id', userId)
+      .eq('saved_posts.user_id', userId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

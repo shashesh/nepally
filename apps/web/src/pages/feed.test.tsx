@@ -9,6 +9,9 @@ const feedMocks = vi.hoisted(() => ({
   getPostsByMetroAreaMock: vi.fn(),
   getTagsMock: vi.fn(),
   getUserLikedPostIdsMock: vi.fn(),
+  getUserSavedPostIdsMock: vi.fn(),
+  savePostMock: vi.fn(),
+  unsavePostMock: vi.fn(),
   deletePostMock: vi.fn(),
   getOrCreateConversationMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
@@ -25,6 +28,9 @@ vi.mock('@nusa/shared', async () => {
     getPostsByMetroArea: feedMocks.getPostsByMetroAreaMock,
     getTags: feedMocks.getTagsMock,
     getUserLikedPostIds: feedMocks.getUserLikedPostIdsMock,
+    getUserSavedPostIds: feedMocks.getUserSavedPostIdsMock,
+    savePost: feedMocks.savePostMock,
+    unsavePost: feedMocks.unsavePostMock,
     deletePost: feedMocks.deletePostMock,
     getOrCreateConversation: feedMocks.getOrCreateConversationMock,
     formatRelativeTime: feedMocks.formatRelativeTimeMock,
@@ -102,6 +108,9 @@ describe('FeedPage', () => {
     feedMocks.useLocationMock.mockReturnValue({ activeLocation: mockActiveLocation });
     feedMocks.getTagsMock.mockResolvedValue({ data: [] });
     feedMocks.getUserLikedPostIdsMock.mockResolvedValue({ data: [] });
+    feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: [] });
+    feedMocks.savePostMock.mockResolvedValue({});
+    feedMocks.unsavePostMock.mockResolvedValue({});
   });
 
   it('redirects to /login when user is not logged in', async () => {
@@ -263,6 +272,127 @@ describe('FeedPage', () => {
     render(<FeedPage />);
     await waitFor(() => {
       expect(screen.getByText('🌐 Global')).toBeDefined();
+    });
+  });
+
+  // ─── Save feature tests ───────────────────────────────────
+
+  it('renders save button for non-own post', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => {
+      // mockPosts[0].author_id = 'user-2', current user = 'user-1' → save button shows
+      expect(screen.getByLabelText('Save post')).toBeDefined();
+    });
+  });
+
+  it('does not render save button for own post', async () => {
+    const ownPost = { ...mockPosts[0], author_id: 'user-1' };
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [ownPost] });
+    render(<FeedPage />);
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Save post')).toBeNull();
+      expect(screen.queryByLabelText('Unsave post')).toBeNull();
+    });
+  });
+
+  it('calls savePost when save button is clicked', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByLabelText('Save post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Save post'));
+
+    await waitFor(() => {
+      expect(feedMocks.savePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
+    });
+  });
+
+  it('shows "Post saved." toast after saving', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByLabelText('Save post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Save post'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Post saved.')).toBeDefined();
+    });
+  });
+
+  it('optimistically toggles save button to unsave after clicking save', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByLabelText('Save post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Save post'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Unsave post')).toBeDefined();
+    });
+  });
+
+  it('calls unsavePost when save toggled off', async () => {
+    // Start with the post already saved
+    feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByLabelText('Unsave post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Unsave post'));
+
+    await waitFor(() => {
+      expect(feedMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
+    });
+  });
+
+  it('shows "Post unsaved." toast after unsaving', async () => {
+    feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByLabelText('Unsave post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Unsave post'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Post unsaved.')).toBeDefined();
+    });
+  });
+
+  it('reverts save state on API error', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    feedMocks.savePostMock.mockResolvedValue({ error: new Error('network error') });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByLabelText('Save post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Save post'));
+
+    await waitFor(() => {
+      // Should revert back to unsaved state
+      expect(screen.getByLabelText('Save post')).toBeDefined();
+    });
+  });
+
+  it('shows "Save Post" option in post menu for non-own post', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => {
+      expect(screen.getByText('Save Post')).toBeDefined();
+    });
+  });
+
+  it('shows "Unsave Post" in post menu when post is already saved', async () => {
+    feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => {
+      expect(screen.getByText('Unsave Post')).toBeDefined();
     });
   });
 });

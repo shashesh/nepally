@@ -20,6 +20,8 @@ interface PostMoreSheetProps {
   onDelete?: () => void;
   onReport?: () => void;
   onShare?: () => void;
+  isSaved?: boolean;
+  onSave?: () => void;
 }
 
 interface ActionItem {
@@ -37,7 +39,17 @@ export function PostMoreSheet({
   onDelete,
   onReport,
   onShare,
+  isSaved,
+  onSave,
 }: PostMoreSheetProps) {
+  const saveAction: ActionItem | null = onSave
+    ? {
+        icon: isSaved ? 'bookmark' : 'bookmark-outline',
+        label: isSaved ? 'Unsave Post' : 'Save Post',
+        onPress: onSave,
+      }
+    : null;
+
   const actions: ActionItem[] = isOwnPost
     ? [
         ...(onEdit ? [{ icon: 'create-outline' as const, label: 'Edit Post', onPress: onEdit }] : []),
@@ -47,6 +59,7 @@ export function PostMoreSheet({
           : []),
       ]
     : [
+        ...(saveAction ? [saveAction] : []),
         ...(onShare ? [{ icon: 'share-outline' as const, label: 'Share Post', onPress: onShare }] : []),
         ...(onReport
           ? [{ icon: 'flag-outline' as const, label: 'Report Post', onPress: onReport, destructive: true }]

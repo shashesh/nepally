@@ -8,6 +8,7 @@ import {
   TRUST_LEVELS,
   getPostsByAuthorId,
   getSavedPostsByUserId,
+  unsavePost,
   formatRelativeTime,
   uploadProfilePhoto,
   deleteProfilePhoto,
@@ -34,6 +35,9 @@ export default function ProfilePage() {
   } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
+  const [unsaveMenuId, setUnsaveMenuId] = useState<string | null>(null);
+  const [unsaveToast, setUnsaveToast] = useState<string | null>(null);
+  const unsaveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -96,6 +100,15 @@ export default function ProfilePage() {
       isMounted = false;
     };
   }, [userId]);
+
+  useEffect(() => {
+    if (!unsaveMenuId) return;
+    function handleClickOutside() {
+      setUnsaveMenuId(null);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [unsaveMenuId]);
 
   if (!user) {
     return null;
@@ -261,6 +274,70 @@ export default function ProfilePage() {
     e.target.value = '';
   }
 
+  async function handleUnsave(postId: string) {
+    setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+    setUnsaveMenuId(null);
+    const { error } = await unsavePost(supabase, postId);
+    if (unsaveToastTimer.current) clearTimeout(unsaveToastTimer.current);
+    setUnsaveToast(error ? 'Failed to unsave post.' : 'Post unsaved.');
+    unsaveToastTimer.current = setTimeout(() => setUnsaveToast(null), 2500);
+  }
+
+  function renderSavedPostList() {
+    if (savedLoading) return <div className={styles.tabMessage}>Loading...</div>;
+    if (savedError) return <div className={styles.tabError}>{savedError}</div>;
+    if (savedPosts.length === 0) return <div className={styles.tabMessage}>No saved posts yet.</div>;
+
+    return (
+      <div className={styles.postList}>
+        {savedPosts.map((post) => (
+          <div key={post.id} className={styles.savedPostItem}>
+            <Link href={`/posts/${post.id}`} className={styles.savedPostLink}>
+              <div className={styles.postItemTop}>
+                <span className={styles.postItemTitle}>{post.title}</span>
+                <span
+                  className={`${styles.postScopeBadge} ${
+                    post.is_global ? styles.postScopeGlobal : styles.postScopeLocal
+                  }`}
+                >
+                  {post.is_global ? '🌐 Global' : '📍 Local'}
+                </span>
+              </div>
+              <p className={styles.postItemDescription}>{post.description}</p>
+              <div className={styles.postItemMeta}>
+                <span>{formatRelativeTime(new Date(post.created_at))}</span>
+                <span>❤️ {post.likes_count || 0}</span>
+                <span>💬 {post.comments_count || 0}</span>
+              </div>
+            </Link>
+            <div className={styles.savedPostMenu}>
+              <button
+                className={styles.savedPostMenuBtn}
+                onClick={() => setUnsaveMenuId(unsaveMenuId === post.id ? null : post.id)}
+                aria-label="Post options"
+              >
+                ⋮
+              </button>
+              {unsaveMenuId === post.id && (
+                <div
+                  className={styles.savedPostMenuDropdown}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    className={styles.savedPostMenuItem}
+                    onClick={() => handleUnsave(post.id)}
+                  >
+                    Unsave Post
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function renderPostList(
     posts: Post[],
     loading: boolean,
@@ -310,6 +387,9 @@ export default function ProfilePage() {
       <Head>
         <title>Profile - NUSA</title>
       </Head>
+      {unsaveToast && (
+        <div className={styles.toast}>{unsaveToast}</div>
+      )}
       <div className={styles.profilePage}>
         {menuOpen && (
           <div
@@ -464,8 +544,7 @@ export default function ProfilePage() {
             {activeTab === 'posts' &&
               renderPostList(userPosts, postsLoading, postsError, 'You have not created any posts yet.')}
 
-            {activeTab === 'saved' &&
-              renderPostList(savedPosts, savedLoading, savedError, 'No saved posts yet.')}
+            {activeTab === 'saved' && renderSavedPostList()}
 
             {activeTab === 'about' && (
               <>

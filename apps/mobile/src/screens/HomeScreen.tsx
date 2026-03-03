@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   Share,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,9 @@ import {
   getOrCreateConversation,
   getTotalUnreadCount,
   getUnreadNotificationCount,
+  getUserSavedPostIds,
+  savePost,
+  unsavePost,
   TrustLevel,
 } from '@nusa/shared';
 import type { Post, Tag } from '@nusa/shared';
@@ -77,9 +81,13 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [morePost, setMorePost] = useState<Post | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const saveToastOpacity = useRef(new Animated.Value(0)).current;
+  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
@@ -111,6 +119,7 @@ export default function HomeScreen() {
         loadPosts();
       }
       loadLikedPosts();
+      loadSavedPosts();
       refreshUnreadCount();
       refreshUnreadNotifCount();
       // Refresh unread counts periodically
@@ -239,6 +248,84 @@ export default function HomeScreen() {
     const result = await getUserLikedPostIds(supabase, user.id);
     if (result.data) {
       setLikedPostIds(new Set(result.data));
+    }
+  };
+
+  const loadSavedPosts = async () => {
+    if (!user?.id) return;
+    const result = await getUserSavedPostIds(supabase, user.id);
+    if (result.data) {
+      setSavedPostIds(new Set(result.data));
+    }
+  };
+
+  const showSaveToast = (message: string) => {
+    setSaveToast(message);
+    saveToastOpacity.setValue(1);
+    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    saveToastTimerRef.current = setTimeout(() => {
+      Animated.timing(saveToastOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setSaveToast(null));
+    }, 2200);
+  };
+
+  const handleSaveFromCard = async (post: Post) => {
+    const wasSaved = savedPostIds.has(post.id);
+
+    setSavedPostIds((prev) => {
+      const next = new Set(prev);
+      if (wasSaved) next.delete(post.id);
+      else next.add(post.id);
+      return next;
+    });
+
+    const result = wasSaved
+      ? await unsavePost(supabase, post.id)
+      : await savePost(supabase, post.id);
+
+    if (result.error) {
+      setSavedPostIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.add(post.id);
+        else next.delete(post.id);
+        return next;
+      });
+      showSaveToast('Failed to update saved post.');
+    } else {
+      showSaveToast(wasSaved ? 'Post unsaved.' : 'Post saved.');
+    }
+  };
+
+  const handleMoreSave = async () => {
+    if (!morePost) return;
+    const wasSaved = savedPostIds.has(morePost.id);
+
+    // Optimistic update
+    setSavedPostIds((prev) => {
+      const next = new Set(prev);
+      if (wasSaved) next.delete(morePost.id);
+      else next.add(morePost.id);
+      return next;
+    });
+
+    const result = wasSaved
+      ? await unsavePost(supabase, morePost.id)
+      : await savePost(supabase, morePost.id);
+
+    if (result.error) {
+      // Revert on error
+      setSavedPostIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.add(morePost.id);
+        else next.delete(morePost.id);
+        return next;
+      });
+      showSaveToast('Failed to update saved post.');
+    } else {
+      showSaveToast(wasSaved ? 'Post unsaved.' : 'Post saved.');
     }
   };
 
@@ -584,9 +671,11 @@ export default function HomeScreen() {
             likesCount={item.likes_count ?? 0}
             commentsCount={item.comments_count ?? 0}
             isLiked={likedPostIds.has(item.id)}
+            isSaved={savedPostIds.has(item.id)}
             onPress={() => handlePostPress(item)}
             onLikePress={() => handleLikePress(item)}
             onCommentPress={() => handleCommentPress(item)}
+            onSavePress={item.author_id !== user?.id ? () => handleSaveFromCard(item) : undefined}
             authorId={item.author_id}
             currentUserId={user?.id}
             onTagPress={handleTagChipPress}
@@ -681,6 +770,8 @@ export default function HomeScreen() {
         onDelete={handleMoreDelete}
         onReport={handleMoreReport}
         onShare={handleMoreShare}
+        isSaved={savedPostIds.has(morePost?.id ?? '')}
+        onSave={handleMoreSave}
       />
 
       {/* Floating Action Button */}
@@ -692,6 +783,12 @@ export default function HomeScreen() {
       >
         <Ionicons name="add" size={32} color={colors.white} />
       </TouchableOpacity>
+
+      {saveToast && (
+        <Animated.View style={[styles.saveToast, { opacity: saveToastOpacity }]} pointerEvents="none">
+          <Text style={styles.saveToastText}>{saveToast}</Text>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -897,5 +994,20 @@ const styles = StyleSheet.create({
   },
   fabDisabled: {
     opacity: 0.5,
+  },
+  saveToast: {
+    position: 'absolute',
+    bottom: 90,
+    alignSelf: 'center',
+    backgroundColor: '#1a1a2e',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    zIndex: 999,
+  },
+  saveToastText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

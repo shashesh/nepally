@@ -7,6 +7,7 @@ const profileMocks = vi.hoisted(() => ({
   useRouterMock: vi.fn(),
   getPostsByAuthorIdMock: vi.fn(),
   getSavedPostsByUserIdMock: vi.fn(),
+  unsavePostMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
   updateUserProfileMock: vi.fn(),
   uploadProfilePhotoMock: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock('@nusa/shared', async () => {
     ...actual,
     getPostsByAuthorId: profileMocks.getPostsByAuthorIdMock,
     getSavedPostsByUserId: profileMocks.getSavedPostsByUserIdMock,
+    unsavePost: profileMocks.unsavePostMock,
     formatRelativeTime: profileMocks.formatRelativeTimeMock,
     updateUserProfile: profileMocks.updateUserProfileMock,
     uploadProfilePhoto: profileMocks.uploadProfilePhotoMock,
@@ -74,6 +76,7 @@ describe('ProfilePage', () => {
     });
     profileMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({ data: [] });
+    profileMocks.unsavePostMock.mockResolvedValue({});
     profileMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
   });
 
@@ -200,6 +203,165 @@ describe('ProfilePage', () => {
     render(<ProfilePage />);
     await waitFor(() => {
       expect(screen.getByText('DB error')).toBeDefined();
+    });
+  });
+
+  // ─── Saved Posts tab tests ────────────────────────────────
+
+  it('shows saved posts when loaded in Saved Posts tab', async () => {
+    profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
+      data: [
+        {
+          id: 'saved-post-1',
+          title: 'Saved Housing Post',
+          description: 'Great deal on housing',
+          is_global: false,
+          likes_count: 7,
+          comments_count: 2,
+          created_at: '2026-02-24T10:00:00Z',
+          author_id: 'other-user',
+        },
+      ],
+    });
+    render(<ProfilePage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved Posts' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Saved Posts' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Saved Housing Post')).toBeDefined();
+    });
+  });
+
+  it('shows unsave menu option for saved posts', async () => {
+    profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
+      data: [
+        {
+          id: 'saved-post-1',
+          title: 'Saved Housing Post',
+          description: '',
+          is_global: false,
+          likes_count: 0,
+          comments_count: 0,
+          created_at: '2026-02-24T10:00:00Z',
+          author_id: 'other-user',
+        },
+      ],
+    });
+    render(<ProfilePage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved Posts' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Saved Posts' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+    fireEvent.click(screen.getByLabelText('Post options'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unsave Post')).toBeDefined();
+    });
+  });
+
+  it('calls unsavePost and removes post from list when Unsave Post is clicked', async () => {
+    profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
+      data: [
+        {
+          id: 'saved-post-1',
+          title: 'Saved Housing Post',
+          description: '',
+          is_global: false,
+          likes_count: 0,
+          comments_count: 0,
+          created_at: '2026-02-24T10:00:00Z',
+          author_id: 'other-user',
+        },
+      ],
+    });
+    render(<ProfilePage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved Posts' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Saved Posts' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+    fireEvent.click(screen.getByLabelText('Post options'));
+
+    await waitFor(() => expect(screen.getByText('Unsave Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Unsave Post'));
+
+    await waitFor(() => {
+      expect(profileMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'saved-post-1');
+    });
+  });
+
+  it('shows "Post unsaved." toast after unsaving', async () => {
+    profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
+      data: [
+        {
+          id: 'saved-post-1',
+          title: 'Saved Housing Post',
+          description: '',
+          is_global: false,
+          likes_count: 0,
+          comments_count: 0,
+          created_at: '2026-02-24T10:00:00Z',
+          author_id: 'other-user',
+        },
+      ],
+    });
+    render(<ProfilePage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved Posts' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Saved Posts' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Unsave Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Unsave Post'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Post unsaved.')).toBeDefined();
+    });
+  });
+
+  it('shows error toast when unsave fails', async () => {
+    profileMocks.unsavePostMock.mockResolvedValue({ error: new Error('network') });
+    profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
+      data: [
+        {
+          id: 'saved-post-1',
+          title: 'Saved Housing Post',
+          description: '',
+          is_global: false,
+          likes_count: 0,
+          comments_count: 0,
+          created_at: '2026-02-24T10:00:00Z',
+          author_id: 'other-user',
+        },
+      ],
+    });
+    render(<ProfilePage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved Posts' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Saved Posts' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Unsave Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Unsave Post'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to unsave post.')).toBeDefined();
+    });
+  });
+
+  it('shows error when saved posts fail to load', async () => {
+    profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
+      error: new Error('Saved posts DB error'),
+      data: null,
+    });
+    render(<ProfilePage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved Posts' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Saved Posts' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Saved posts DB error')).toBeDefined();
     });
   });
 });

@@ -10,6 +10,9 @@ import {
   deletePost,
   getTags,
   getUserLikedPostIds,
+  getUserSavedPostIds,
+  savePost,
+  unsavePost,
   getOrCreateConversation,
   formatRelativeTime,
   TAG_EMOJI,
@@ -32,6 +35,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const { activeLocation } = useLocation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -41,6 +45,8 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
   const latestLoadRequestId = useRef(0);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Tag-based filtering (multi-select)
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
@@ -166,6 +172,51 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       });
     }
   }, [user]);
+
+  // Load saved post IDs
+  useEffect(() => {
+    if (user) {
+      getUserSavedPostIds(supabase, user.id).then((result) => {
+        if (result.data) {
+          setSavedIds(new Set(result.data));
+        }
+      });
+    }
+  }, [user]);
+
+  function showSaveToast(message: string) {
+    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    setSaveToast(message);
+    saveToastTimerRef.current = setTimeout(() => setSaveToast(null), 2500);
+  }
+
+  async function handleSaveToggle(post: Post) {
+    if (!user) return;
+    const wasSaved = savedIds.has(post.id);
+
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (wasSaved) next.delete(post.id);
+      else next.add(post.id);
+      return next;
+    });
+
+    const result = wasSaved
+      ? await unsavePost(supabase, post.id)
+      : await savePost(supabase, post.id);
+
+    if (result.error) {
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.add(post.id);
+        else next.delete(post.id);
+        return next;
+      });
+      showSaveToast('Failed to update saved post.');
+    } else {
+      showSaveToast(wasSaved ? 'Post unsaved.' : 'Post saved.');
+    }
+  }
 
   useEffect(() => {
     loadPosts();
@@ -368,6 +419,9 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
   return (
     <>
+      {saveToast && (
+        <div className={styles.toast}>{saveToast}</div>
+      )}
       <Head>
         <title>{pageTitle}</title>
       </Head>
@@ -467,6 +521,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                   key={post.id}
                   post={post}
                   liked={likedIds.has(post.id)}
+                  saved={savedIds.has(post.id)}
                   onTagClick={handleTagChipToggle}
                   currentUserId={user?.id}
                   onAvatarChat={handleAvatarChat}
@@ -474,6 +529,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                   onSharePost={handleSharePost}
                   onDeletePost={handleDeletePost}
                   onEditPost={handleEditPost}
+                  onSaveToggle={post.author_id !== user?.id ? () => handleSaveToggle(post) : undefined}
                 />
               ))
             )}
@@ -597,6 +653,7 @@ export default function FeedRoutePage() {
 function PostCard({
   post,
   liked,
+  saved,
   onTagClick,
   currentUserId,
   onAvatarChat,
@@ -604,9 +661,11 @@ function PostCard({
   onSharePost,
   onDeletePost,
   onEditPost,
+  onSaveToggle,
 }: {
   post: Post;
   liked: boolean;
+  saved?: boolean;
   onTagClick: (slug: string) => void;
   currentUserId?: string;
   onAvatarChat?: (authorId: string, authorName: string) => void;
@@ -614,6 +673,7 @@ function PostCard({
   onSharePost: (post: Post) => Promise<void>;
   onDeletePost: (post: Post) => Promise<void>;
   onEditPost: (post: Post) => void;
+  onSaveToggle?: () => void;
 }) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [postMenuOpen, setPostMenuOpen] = useState(false);
@@ -797,6 +857,19 @@ function PostCard({
                   </>
                 ) : (
                   <>
+                    {onSaveToggle && (
+                      <button
+                        className={styles.postMoreItem}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setPostMenuOpen(false);
+                          onSaveToggle();
+                        }}
+                      >
+                        {saved ? 'Unsave Post' : 'Save Post'}
+                      </button>
+                    )}
                     <button className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</button>
                     <button
                       className={`${styles.postMoreItem} ${styles.postMoreItemDanger}`}
@@ -911,6 +984,19 @@ function PostCard({
         </span>
         <span className={styles.postStat}>💬 {post.comments_count || 0}</span>
         <span className={styles.postStat}>👁 {post.views_count || 0}</span>
+        {onSaveToggle && (
+          <button
+            className={`${styles.postStatSaveBtn} ${saved ? styles.postStatSaved : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSaveToggle();
+            }}
+            aria-label={saved ? 'Unsave post' : 'Save post'}
+          >
+            {saved ? '🔖' : '🏷️'}
+          </button>
+        )}
       </div>
     </Link>
   );

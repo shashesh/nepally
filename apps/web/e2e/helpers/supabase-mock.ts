@@ -3,6 +3,7 @@ import {
   MOCK_USER_PROFILE,
   MOCK_TAGS,
   MOCK_POSTS,
+  MOCK_POST_OTHER_AUTHOR,
   MOCK_ZIP_METRO,
   makeFakeSession,
   MOCK_USER_ID,
@@ -17,7 +18,7 @@ function expectsSingleObject(route: Parameters<Page['route']>[1] extends (route:
 }
 
 function buildMockPostRows() {
-  return MOCK_POSTS.map((post) => ({
+  return [...MOCK_POSTS, MOCK_POST_OTHER_AUTHOR].map((post) => ({
     ...post,
     post_tags: (post.tags ?? []).map((tag) => ({ tag })),
   }));
@@ -96,6 +97,19 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
   // Likes
   await page.route('**/rest/v1/post_likes**', async (route) => {
     await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify([]) });
+  });
+
+  // Saved posts
+  await page.route('**/rest/v1/saved_posts**', async (route) => {
+    const method = route.request().method();
+    if (method === 'GET') {
+      await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify([]) });
+    } else if (method === 'POST') {
+      await route.fulfill({ status: 201, headers: JSON_HEADERS, body: JSON.stringify({}) });
+    } else {
+      // DELETE
+      await route.fulfill({ status: 204, headers: JSON_HEADERS, body: '' });
+    }
   });
 
   // Message unread counts (Layout top bar)

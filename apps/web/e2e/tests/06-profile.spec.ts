@@ -44,4 +44,30 @@ test.describe('Profile page', () => {
     await expect(page).toHaveURL(/\/profile/);
     await expect(page.getByText(MOCK_USER_PROFILE.full_name)).toBeVisible({ timeout: 10_000 });
   });
+
+  test('Saved Posts tab is visible on the profile page', async ({ page }) => {
+    await page.goto('/profile');
+
+    await expect(page.getByRole('button', { name: 'Saved Posts' })).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('switching to Saved Posts tab shows empty state when no posts saved', async ({ page }) => {
+    await page.goto('/profile');
+
+    await page.getByRole('button', { name: 'Saved Posts' }).click();
+
+    // The mock returns [] for saved_posts, so we should see an empty message
+    await expect(page.getByText(/No saved posts yet\./i)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('About tab is visible and can be activated', async ({ page }) => {
+    await page.goto('/profile');
+
+    const aboutBtn = page.getByRole('button', { name: 'About' });
+    await expect(aboutBtn).toBeVisible({ timeout: 10_000 });
+    await aboutBtn.click();
+
+    // Posts tab content should no longer be visible
+    await expect(page.getByText('You have not created any posts yet.')).not.toBeVisible();
+  });
 });

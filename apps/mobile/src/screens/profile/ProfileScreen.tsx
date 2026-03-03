@@ -10,6 +10,7 @@ import {
   StatusBar,
   Modal,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -23,6 +24,7 @@ import {
   TrustLevel,
   getPostsByAuthorId,
   getSavedPostsByUserId,
+  unsavePost,
   formatRelativeTime,
 } from '@nusa/shared';
 import type { Post } from '@nusa/shared';
@@ -61,6 +63,9 @@ export function ProfileScreen() {
   const [savedLoading, setSavedLoading] = useState(false);
   const [postsError, setPostsError] = useState<string | null>(null);
   const [savedError, setSavedError] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const saveToastOpacity = useRef(new Animated.Value(0)).current;
+  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadMetroArea();
@@ -135,6 +140,34 @@ export function ProfileScreen() {
     }
   };
 
+  const showSaveToast = (message: string) => {
+    setSaveToast(message);
+    saveToastOpacity.setValue(1);
+    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    saveToastTimerRef.current = setTimeout(() => {
+      Animated.timing(saveToastOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setSaveToast(null));
+    }, 2200);
+  };
+
+  const handleUnsave = (postId: string) => {
+    Alert.alert('Unsave Post', 'Remove this post from your saved posts?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Unsave',
+        style: 'destructive',
+        onPress: async () => {
+          setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+          const { error } = await unsavePost(supabase, postId);
+          showSaveToast(error ? 'Failed to unsave post.' : 'Post unsaved.');
+        },
+      },
+    ]);
+  };
+
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -201,6 +234,52 @@ export function ProfileScreen() {
                   {post.is_global ? '🌐 Global' : '📍 Local'}
                 </Text>
               </View>
+            </View>
+            <Text style={styles.postItemDescription} numberOfLines={2}>
+              {post.description}
+            </Text>
+            <View style={styles.postMetaRow}>
+              <Text style={styles.postMetaText}>{formatRelativeTime(new Date(post.created_at))}</Text>
+              <Text style={styles.postMetaText}>❤️ {post.likes_count || 0}</Text>
+              <Text style={styles.postMetaText}>💬 {post.comments_count || 0}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }
+
+  function renderSavedPostsTab() {
+    if (savedLoading) {
+      return <Text style={styles.tabMessage}>Loading...</Text>;
+    }
+    if (savedError) {
+      return <Text style={styles.tabError}>{savedError}</Text>;
+    }
+    if (savedPosts.length === 0) {
+      return <Text style={styles.tabMessage}>No saved posts yet.</Text>;
+    }
+
+    return (
+      <View style={styles.postList}>
+        {savedPosts.map((post) => (
+          <View key={post.id} style={styles.postItem}>
+            <View style={styles.postItemHeader}>
+              <Text style={styles.postItemTitle} numberOfLines={1}>
+                {post.title}
+              </Text>
+              <View style={[styles.scopeBadge, post.is_global ? styles.scopeGlobal : styles.scopeLocal]}>
+                <Text style={post.is_global ? styles.scopeTextGlobal : styles.scopeTextLocal}>
+                  {post.is_global ? '🌐 Global' : '📍 Local'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.savedPostMenuBtn}
+                onPress={() => handleUnsave(post.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="ellipsis-vertical" size={18} color={colors.text.secondary} />
+              </TouchableOpacity>
             </View>
             <Text style={styles.postItemDescription} numberOfLines={2}>
               {post.description}
@@ -323,7 +402,7 @@ export function ProfileScreen() {
           </View>
 
           {activeTab === 'posts' && renderPosts(userPosts, postsLoading, postsError, 'You have not created any posts yet.')}
-          {activeTab === 'saved' && renderPosts(savedPosts, savedLoading, savedError, 'No saved posts yet.')}
+          {activeTab === 'saved' && renderSavedPostsTab()}
 
           {activeTab === 'about' && (
             <View>
@@ -353,6 +432,12 @@ export function ProfileScreen() {
           )}
         </View>
       </ScrollView>
+
+      {saveToast && (
+        <Animated.View style={[styles.saveToast, { opacity: saveToastOpacity }]} pointerEvents="none">
+          <Text style={styles.saveToastText}>{saveToast}</Text>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -527,6 +612,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flex: 1,
   },
+  savedPostMenuBtn: {
+    padding: 4,
+    marginLeft: spacing.xs,
+  },
   scopeBadge: {
     borderRadius: borderRadius.badge,
     paddingHorizontal: spacing.xs,
@@ -604,5 +693,20 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.primary,
     fontWeight: '600',
+  },
+  saveToast: {
+    position: 'absolute',
+    bottom: 90,
+    alignSelf: 'center',
+    backgroundColor: '#1a1a2e',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    zIndex: 999,
+  },
+  saveToastText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

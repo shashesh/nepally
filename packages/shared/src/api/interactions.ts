@@ -79,6 +79,80 @@ export async function getUserLikedPostIds(
   }
 }
 
+// ─── Saves API ──────────────────────────────────────────
+
+/**
+ * Save a post (creates a record in saved_posts)
+ */
+export async function savePost(
+  supabase: SupabaseClient,
+  postId: string
+): Promise<{ error?: Error }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: new Error('Not authenticated') };
+
+    const { error } = await supabase
+      .from('saved_posts')
+      .insert({ post_id: postId, user_id: user.id });
+
+    if (error) throw error;
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to save post'),
+    };
+  }
+}
+
+/**
+ * Unsave a post (deletes the record from saved_posts)
+ */
+export async function unsavePost(
+  supabase: SupabaseClient,
+  postId: string
+): Promise<{ error?: Error }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: new Error('Not authenticated') };
+
+    const { error } = await supabase
+      .from('saved_posts')
+      .delete()
+      .eq('post_id', postId)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to unsave post'),
+    };
+  }
+}
+
+/**
+ * Get list of post IDs saved by a user (for UI state across feed)
+ */
+export async function getUserSavedPostIds(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ data?: string[]; error?: Error }> {
+  try {
+    const { data, error } = await supabase
+      .from('saved_posts')
+      .select('post_id')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return { data: (data || []).map((row) => row.post_id) };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to fetch saved posts'),
+    };
+  }
+}
+
 // ─── Comments API ───────────────────────────────────────
 
 /**
@@ -162,12 +236,18 @@ export async function deleteComment(
   commentId: string
 ): Promise<{ error?: Error }> {
   try {
-    const { error } = await supabase
-      .from('post_comments')
-      .update({ is_deleted: true, updated_at: new Date().toISOString() })
-      .eq('id', commentId);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: new Error('Not authenticated') };
+
+    const { data, error } = await supabase.rpc('soft_delete_own_comment', {
+      p_comment_id: commentId,
+    });
 
     if (error) throw error;
+    if (!data) {
+      return { error: new Error('Comment not found or you do not have permission to delete it') };
+    }
+
     return {};
   } catch (error) {
     return {

@@ -35,6 +35,7 @@ interface PostCardProps {
   likesCount?: number;
   commentsCount?: number;
   isLiked?: boolean;
+  isSaved?: boolean;
   // Author identity (for avatar menu)
   authorId?: string;
   currentUserId?: string;
@@ -42,6 +43,7 @@ interface PostCardProps {
   onPress: () => void;
   onLikePress?: () => void;
   onCommentPress?: () => void;
+  onSavePress?: () => void;
   /** Called when user taps a tag pill — parent can activate the filter */
   onTagPress?: (slug: string) => void;
   /** Called when user taps the ⋯ more button */
@@ -124,9 +126,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   likesCount = 0,
   commentsCount = 0,
   isLiked = false,
+  isSaved = false,
   onPress,
   onLikePress,
   onCommentPress,
+  onSavePress,
   onTagPress,
   onMorePress,
   onAvatarViewProfile,
@@ -338,6 +342,21 @@ export const PostCard: React.FC<PostCardProps> = ({
         >
           <Ionicons name="chatbubble-outline" size={20} color={colors.text.secondary} />
           <Text style={styles.actionCount}>{formatCount(commentsCount)}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={(e) => {
+            e.stopPropagation?.();
+            onSavePress?.();
+          }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name={isSaved ? 'bookmark' : 'bookmark-outline'}
+            size={20}
+            color={isSaved ? colors.primary.main : colors.text.secondary}
+          />
         </TouchableOpacity>
 
       </View>

@@ -12,10 +12,14 @@ const postDetailMocks = vi.hoisted(() => ({
   likePostMock: vi.fn(),
   unlikePostMock: vi.fn(),
   getUserLikedPostIdsMock: vi.fn(),
+  getUserSavedPostIdsMock: vi.fn(),
+  savePostMock: vi.fn(),
+  unsavePostMock: vi.fn(),
   deletePostMock: vi.fn(),
   getOrCreateConversationMock: vi.fn(),
   buildSingleLevelCommentThreadsMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
+  logClientEventMock: vi.fn(),
 }));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: postDetailMocks.useAuthMock }));
@@ -32,10 +36,14 @@ vi.mock('@nusa/shared', async () => {
     likePost: postDetailMocks.likePostMock,
     unlikePost: postDetailMocks.unlikePostMock,
     getUserLikedPostIds: postDetailMocks.getUserLikedPostIdsMock,
+    getUserSavedPostIds: postDetailMocks.getUserSavedPostIdsMock,
+    savePost: postDetailMocks.savePostMock,
+    unsavePost: postDetailMocks.unsavePostMock,
     deletePost: postDetailMocks.deletePostMock,
     getOrCreateConversation: postDetailMocks.getOrCreateConversationMock,
     buildSingleLevelCommentThreads: postDetailMocks.buildSingleLevelCommentThreadsMock,
     formatRelativeTime: postDetailMocks.formatRelativeTimeMock,
+    logClientEvent: postDetailMocks.logClientEventMock,
     TAG_EMOJI: { housing: '🏠', jobs: '💼' },
   };
 });
@@ -82,6 +90,9 @@ describe('PostDetailPage', () => {
     postDetailMocks.useAuthMock.mockReturnValue({ user: mockUser });
     postDetailMocks.getPostCommentsMock.mockResolvedValue({ data: [] });
     postDetailMocks.getUserLikedPostIdsMock.mockResolvedValue({ data: [] });
+    postDetailMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: [] });
+    postDetailMocks.savePostMock.mockResolvedValue({});
+    postDetailMocks.unsavePostMock.mockResolvedValue({});
     postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([]);
     postDetailMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
   });
@@ -178,6 +189,97 @@ describe('PostDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Share Post')).toBeDefined();
       expect(screen.getByText('Report Post')).toBeDefined();
+    });
+  });
+
+  // ─── Save feature tests ───────────────────────────────────
+
+  it('renders Save action button for non-own post', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => {
+      // mockPost.author_id = 'user-2', current user = 'user-1'
+      expect(screen.getByText(/🏷️ Save/)).toBeDefined();
+    });
+  });
+
+  it('does not render Save action button for own post', async () => {
+    postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'user-2', full_name: 'Author' } });
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, author_id: 'user-2' } });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+    expect(screen.queryByText(/🏷️ Save|🔖 Save/)).toBeNull();
+  });
+
+  it('shows "Save Post" option in post menu for non-owner', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => {
+      expect(screen.getByText('Save Post')).toBeDefined();
+    });
+  });
+
+  it('shows "Unsave Post" in menu when post is already saved', async () => {
+    postDetailMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => {
+      expect(screen.getByText('Unsave Post')).toBeDefined();
+    });
+  });
+
+  it('calls savePost when Save button is clicked', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+
+    fireEvent.click(screen.getByText(/🏷️ Save/));
+
+    await waitFor(() => {
+      expect(postDetailMocks.savePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
+    });
+  });
+
+  it('shows "Post saved." toast after clicking Save', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+
+    fireEvent.click(screen.getByText(/🏷️ Save/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Post saved.')).toBeDefined();
+    });
+  });
+
+  it('shows "Post unsaved." toast after clicking unsave', async () => {
+    postDetailMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText(/🔖 Save/)).toBeDefined());
+
+    fireEvent.click(screen.getByText(/🔖 Save/));
+
+    await waitFor(() => {
+      expect(postDetailMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
+      expect(screen.getByText('Post unsaved.')).toBeDefined();
+    });
+  });
+
+  it('shows error toast when save fails', async () => {
+    postDetailMocks.savePostMock.mockResolvedValue({ error: new Error('network') });
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+
+    fireEvent.click(screen.getByText(/🏷️ Save/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to save post.')).toBeDefined();
     });
   });
 

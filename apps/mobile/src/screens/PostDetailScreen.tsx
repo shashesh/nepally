@@ -36,10 +36,14 @@ import {
   likePost,
   unlikePost,
   getUserLikedPostIds,
+  savePost,
+  unsavePost,
+  getUserSavedPostIds,
   getPostComments,
   createComment,
   deleteComment,
   buildSingleLevelCommentThreads,
+  logClientEvent,
   TrustLevel,
   TAG_EMOJI,
   TAG_COLORS,
@@ -308,6 +312,12 @@ export default function PostDetailScreen() {
   const [isLiked, setIsLiked] = useState(false);
   const [localLikesCount, setLocalLikesCount] = useState(0);
 
+  // Save state
+  const [isSaved, setIsSaved] = useState(false);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const saveToastOpacity = useRef(new Animated.Value(0)).current;
+  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Comments state
   const [comments, setComments] = useState<PostComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -335,6 +345,7 @@ export default function PostDetailScreen() {
     loadPost();
     loadComments();
     loadLikeState();
+    loadSaveState();
   }, [postId]);
 
   useEffect(() => {
@@ -450,6 +461,43 @@ export default function PostDetailScreen() {
     }
   };
 
+  const loadSaveState = async () => {
+    if (!user?.id) return;
+    const result = await getUserSavedPostIds(supabase, user.id);
+    if (result.data) {
+      setIsSaved(result.data.includes(postId));
+    }
+  };
+
+  const showSaveToast = (message: string) => {
+    setSaveToast(message);
+    saveToastOpacity.setValue(1);
+    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    saveToastTimerRef.current = setTimeout(() => {
+      Animated.timing(saveToastOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setSaveToast(null));
+    }, 2200);
+  };
+
+  const handleSavePress = async () => {
+    const wasSaved = isSaved;
+    setIsSaved(!wasSaved);
+
+    const result = wasSaved
+      ? await unsavePost(supabase, postId)
+      : await savePost(supabase, postId);
+
+    if (result.error) {
+      setIsSaved(wasSaved);
+      showSaveToast('Failed to update saved post.');
+    } else {
+      showSaveToast(wasSaved ? 'Post unsaved.' : 'Post saved.');
+    }
+  };
+
   const handleLikePress = async () => {
     if (isLevel0) {
       Alert.alert(
@@ -512,6 +560,15 @@ export default function PostDetailScreen() {
             setComments((prev) => prev.filter((c) => c.id !== comment.id && c.parent_comment_id !== comment.id));
             const result = await deleteComment(supabase, comment.id);
             if (result.error) {
+              logClientEvent({
+                event: 'comment_delete_failed',
+                context: {
+                  platform: 'mobile',
+                  commentId: comment.id,
+                  userId: user?.id ?? null,
+                },
+                error: result.error,
+              });
               setComments((prev) => [...prev, comment].sort(
                 (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
               ));
@@ -785,14 +842,20 @@ export default function PostDetailScreen() {
               <Text style={styles.actionText}> {comments.length}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonDisabled]}
-              onPress={() => Alert.alert('Coming soon', 'Saved posts will be available soon.')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="bookmark-outline" size={20} color={colors.text.disabled} />
-              <Text style={[styles.actionText, styles.actionTextDisabled]}> Save</Text>
-            </TouchableOpacity>
+            {!isOwnPost && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleSavePress}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                  size={20}
+                  color={isSaved ? colors.primary.main : colors.text.secondary}
+                />
+                <Text style={[styles.actionText, isSaved && { color: colors.primary.main }]}> Save</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity style={styles.actionButton} onPress={handleSharePost} activeOpacity={0.7}>
               <Ionicons name="share-social-outline" size={20} color={colors.text.secondary} />
@@ -1073,6 +1136,12 @@ export default function PostDetailScreen() {
           <View style={styles.commentInputContainer}>
             <Text style={styles.verifyPrompt}>Verify your account to comment</Text>
           </View>
+        )}
+
+        {saveToast && (
+          <Animated.View style={[styles.saveToast, { opacity: saveToastOpacity }]} pointerEvents="none">
+            <Text style={styles.saveToastText}>{saveToast}</Text>
+          </Animated.View>
         )}
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -1519,5 +1588,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
     paddingVertical: 8,
+  },
+  saveToast: {
+    position: 'absolute',
+    bottom: 90,
+    alignSelf: 'center',
+    backgroundColor: '#1a1a2e',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    zIndex: 999,
+  },
+  saveToastText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
