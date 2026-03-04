@@ -3,7 +3,6 @@ import {
   Alert,
   Linking,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { getUserSettings, upsertUserSettings } from '@nusa/shared';
