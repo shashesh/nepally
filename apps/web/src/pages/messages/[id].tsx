@@ -6,12 +6,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import {
   getMessages,
+  getConversations,
   sendMessage,
   markAsRead,
   subscribeToMessages,
   formatRelativeTime,
 } from '@nusa/shared';
 import type { ChatMessage } from '@nusa/shared';
+import Avatar from '../../components/Avatar';
 import styles from '../../styles/Messages.module.css';
 
 export default function MessageThreadPage() {
@@ -24,6 +26,11 @@ export default function MessageThreadPage() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [otherUser, setOtherUser] = useState<{
+    name: string;
+    photo: string | null;
+    trustLevel: number;
+  } | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,6 +42,18 @@ export default function MessageThreadPage() {
 
     loadMessages(conversationId);
     markAsRead(supabase, conversationId, user.id);
+
+    // Load other user's info for avatar display
+    getConversations(supabase, user.id).then((result) => {
+      const conv = result.data?.find((c) => c.id === conversationId);
+      if (conv) {
+        setOtherUser({
+          name: conv.other_user_name,
+          photo: conv.other_user_photo ?? null,
+          trustLevel: conv.other_user_trust_level ?? 0,
+        });
+      }
+    });
 
     // Subscribe to real-time messages
     const channel = subscribeToMessages(
@@ -156,7 +175,7 @@ export default function MessageThreadPage() {
           <Link href="/messages" className={styles.threadBackLink}>
             ← Back
           </Link>
-          <span className={styles.threadName}>Conversation</span>
+          <span className={styles.threadName}>{otherUser?.name ?? 'Conversation'}</span>
         </div>
 
         <div className={styles.messageList}>
@@ -175,7 +194,7 @@ export default function MessageThreadPage() {
               <p>No messages yet. Say hello!</p>
             </div>
           ) : (
-            threadItems.map((item) => {
+            threadItems.map((item, index) => {
               if (item.type === 'date') {
                 return (
                   <div key={item.id} className={styles.dateSeparator}>
@@ -186,21 +205,46 @@ export default function MessageThreadPage() {
 
               const msg = item.message;
               const isSent = msg.sender_id === user.id;
+              const nextItem = threadItems[index + 1];
+              const isLastInGroup =
+                !isSent &&
+                (!nextItem ||
+                  nextItem.type === 'date' ||
+                  nextItem.message?.sender_id !== msg.sender_id);
+
               return (
                 <div
                   key={msg.id}
-                  className={`${styles.messageBubble} ${
-                    isSent ? styles.messageSent : styles.messageReceived
+                  className={`${styles.messageRow} ${
+                    isSent ? styles.messageRowSent : styles.messageRowReceived
                   }`}
                 >
-                  <div>{msg.text}</div>
-                  <div className={styles.messageMeta}>
-                    <span className={styles.messageTime}>
-                      {formatRelativeTime(new Date(msg.timestamp))}
-                    </span>
-                    {isSent && (
-                      <span className={styles.readReceipt}>{msg.read ? '✓✓' : '✓'}</span>
-                    )}
+                  {!isSent && (
+                    <div className={styles.avatarSlot}>
+                      {isLastInGroup && otherUser ? (
+                        <Avatar
+                          name={otherUser.name}
+                          photoUrl={otherUser.photo}
+                          trustLevel={otherUser.trustLevel}
+                          size="small"
+                        />
+                      ) : null}
+                    </div>
+                  )}
+                  <div
+                    className={`${styles.messageBubble} ${
+                      isSent ? styles.messageSent : styles.messageReceived
+                    }`}
+                  >
+                    <div>{msg.text}</div>
+                    <div className={styles.messageMeta}>
+                      <span className={styles.messageTime}>
+                        {formatRelativeTime(new Date(msg.timestamp))}
+                      </span>
+                      {isSent && (
+                        <span className={styles.readReceipt}>{msg.read ? '✓✓' : '✓'}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

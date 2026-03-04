@@ -2,12 +2,20 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../styles/colors';
+import { Avatar } from '../Avatar';
+
+const AVATAR_SIZE = 32; // matches Avatar size="small"
+const AVATAR_GAP = 8;
 
 interface MessageBubbleProps {
   text: string;
   timestamp: string;
   isSent: boolean;
   isRead: boolean;
+  senderName?: string;
+  senderPhotoUrl?: string | null;
+  senderTrustLevel?: number;
+  showAvatar?: boolean;
 }
 
 function formatTime(dateStr: string): string {
@@ -24,27 +32,55 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   timestamp,
   isSent,
   isRead,
+  senderName,
+  senderPhotoUrl,
+  senderTrustLevel,
+  showAvatar = false,
 }) => {
-  return (
-    <View style={[styles.wrapper, isSent ? styles.wrapperSent : styles.wrapperReceived]}>
-      <View style={[styles.bubble, isSent ? styles.bubbleSent : styles.bubbleReceived]}>
-        <Text style={[styles.text, isSent ? styles.textSent : styles.textReceived]}>
-          {text}
+  const bubble = (
+    <View style={[styles.bubble, isSent ? styles.bubbleSent : styles.bubbleReceived]}>
+      <Text style={[styles.text, isSent ? styles.textSent : styles.textReceived]}>
+        {text}
+      </Text>
+      <View style={styles.meta}>
+        <Text style={[styles.time, isSent ? styles.timeSent : styles.timeReceived]}>
+          {formatTime(timestamp)}
         </Text>
-        <View style={styles.meta}>
-          <Text style={[styles.time, isSent ? styles.timeSent : styles.timeReceived]}>
-            {formatTime(timestamp)}
-          </Text>
-          {isSent && (
-            <Ionicons
-              name={isRead ? 'checkmark-done' : 'checkmark'}
-              size={14}
-              color={isRead ? colors.white : 'rgba(255, 255, 255, 0.7)'}
-              style={styles.checkIcon}
-            />
-          )}
-        </View>
+        {isSent && (
+          <Ionicons
+            name={isRead ? 'checkmark-done' : 'checkmark'}
+            size={14}
+            color={isRead ? colors.white : 'rgba(255, 255, 255, 0.7)'}
+            style={styles.checkIcon}
+          />
+        )}
       </View>
+    </View>
+  );
+
+  if (isSent) {
+    return (
+      <View style={[styles.wrapper, styles.wrapperSent]}>
+        {bubble}
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.wrapper, styles.wrapperReceived]}>
+      {showAvatar && senderName ? (
+        <View style={styles.avatarSlot}>
+          <Avatar
+            name={senderName}
+            photoUrl={senderPhotoUrl}
+            trustLevel={senderTrustLevel}
+            size="small"
+          />
+        </View>
+      ) : (
+        <View style={styles.avatarSlot} />
+      )}
+      {bubble}
     </View>
   );
 };
@@ -52,13 +88,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     marginVertical: 2,
-    paddingHorizontal: 16,
   },
   wrapperSent: {
     alignItems: 'flex-end',
+    paddingHorizontal: 16,
   },
   wrapperReceived: {
-    alignItems: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingLeft: 8,
+    paddingRight: 16,
+  },
+  avatarSlot: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    marginRight: AVATAR_GAP,
+    flexShrink: 0,
   },
   bubble: {
     maxWidth: '75%',

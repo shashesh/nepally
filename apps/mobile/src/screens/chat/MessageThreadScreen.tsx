@@ -292,17 +292,28 @@ export default function MessageThreadScreen() {
           <FlatList
             ref={flatListRef}
             data={flatData}
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               if (item.type === 'date') {
                 return renderDateSeparator(formatDateLabel(item.data));
               }
               const msg = item.data as ChatMessage;
+              const isSent = msg.sender_id === user?.id;
+              const nextItem = flatData[index + 1];
+              const isLastInGroup =
+                !isSent &&
+                (!nextItem ||
+                  nextItem.type === 'date' ||
+                  nextItem.data?.sender_id !== msg.sender_id);
               return (
                 <MessageBubble
                   text={msg.text}
                   timestamp={msg.timestamp}
-                  isSent={msg.sender_id === user?.id}
+                  isSent={isSent}
                   isRead={msg.read}
+                  senderName={otherUserName}
+                  senderPhotoUrl={otherUserPhotoUrl}
+                  senderTrustLevel={otherUserTrustLevel}
+                  showAvatar={isLastInGroup}
                 />
               );
             }}

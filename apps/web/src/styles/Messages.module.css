@@ -151,6 +151,31 @@
   padding: 2px 10px;
 }
 
+.messageRow {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 2px;
+  width: 100%;
+}
+
+.messageRowSent {
+  justify-content: flex-end;
+  padding: 0 16px;
+}
+
+.messageRowReceived {
+  justify-content: flex-start;
+  padding-left: 8px;
+  padding-right: 16px;
+}
+
+.avatarSlot {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
 .messageBubble {
   max-width: 70%;
   padding: var(--space-xs) var(--space-s);
@@ -161,14 +186,12 @@
 }
 
 .messageReceived {
-  align-self: flex-start;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   color: var(--color-text-primary);
 }
 
 .messageSent {
-  align-self: flex-end;
   background: var(--color-primary);
   color: white;
 }
