@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, FormEvent } from 'react';
+import React, { useEffect, useState, useRef, useCallback, FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -31,6 +31,8 @@ export default function MessageThreadPage() {
     photo: string | null;
     trustLevel: number;
   } | null>(null);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -85,6 +87,23 @@ export default function MessageThreadPage() {
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Close avatar dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target as Node)) {
+        setAvatarMenuOpen(false);
+      }
+    }
+    if (avatarMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [avatarMenuOpen]);
+
+  const handleAvatarPress = useCallback(() => {
+    setAvatarMenuOpen((prev) => !prev);
+  }, []);
 
   async function loadMessages(convId: string) {
     setLoading(true);
@@ -175,6 +194,40 @@ export default function MessageThreadPage() {
           <Link href="/messages" className={styles.threadBackLink}>
             ← Back
           </Link>
+          {otherUser && (
+            <div
+              className={styles.avatarMenuWrapper}
+              ref={avatarMenuRef}
+            >
+              <button
+                type="button"
+                className={styles.avatarMenuBtn}
+                onClick={handleAvatarPress}
+                aria-label="User options"
+              >
+                <Avatar
+                  name={otherUser.name}
+                  photoUrl={otherUser.photo}
+                  trustLevel={otherUser.trustLevel}
+                  size="small"
+                />
+              </button>
+              {avatarMenuOpen && (
+                <div className={styles.avatarDropdown}>
+                  <button
+                    type="button"
+                    className={styles.avatarDropdownItem}
+                    onClick={() => {
+                      setAvatarMenuOpen(false);
+                      alert('User profiles will be available in a future update.');
+                    }}
+                  >
+                    👤 View Profile
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <span className={styles.threadName}>{otherUser?.name ?? 'Conversation'}</span>
         </div>
 
@@ -222,12 +275,19 @@ export default function MessageThreadPage() {
                   {!isSent && (
                     <div className={styles.avatarSlot}>
                       {isLastInGroup && otherUser ? (
-                        <Avatar
-                          name={otherUser.name}
-                          photoUrl={otherUser.photo}
-                          trustLevel={otherUser.trustLevel}
-                          size="small"
-                        />
+                        <button
+                          type="button"
+                          className={styles.avatarMenuBtn}
+                          onClick={handleAvatarPress}
+                          aria-label="User options"
+                        >
+                          <Avatar
+                            name={otherUser.name}
+                            photoUrl={otherUser.photo}
+                            trustLevel={otherUser.trustLevel}
+                            size="small"
+                          />
+                        </button>
                       ) : null}
                     </div>
                   )}

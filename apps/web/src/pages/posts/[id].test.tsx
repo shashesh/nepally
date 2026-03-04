@@ -311,6 +311,74 @@ describe('PostDetailPage', () => {
     });
   });
 
+  it('opens avatar menu from a comment avatar and chats with that comment author', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.getOrCreateConversationMock.mockResolvedValue({
+      data: { conversationId: 'conv-1', isNew: true },
+    });
+    postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+      {
+        parent: {
+          id: 'comment-1',
+          content: 'Interested!',
+          author_id: 'comment-user-1',
+          created_at: '2026-02-24T11:00:00Z',
+          author: { full_name: 'Comment User', profile_photo: null, trust_level: 1 },
+        },
+        replies: [],
+      },
+    ]);
+
+    render(<PostDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Comment User').length).toBeGreaterThan(0);
+    });
+
+    const avatarOptionsButtons = screen.getAllByLabelText('User options');
+    fireEvent.click(avatarOptionsButtons[1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('View Profile')).toBeDefined();
+      expect(screen.getByText('Chat')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText('Chat'));
+
+    await waitFor(() => {
+      expect(postDetailMocks.getOrCreateConversationMock).toHaveBeenCalledWith(
+        expect.anything(),
+        'user-1',
+        'Test User',
+        'comment-user-1',
+        'Comment User'
+      );
+    });
+  });
+
+  it('renders anchored avatar dropdown near click position in post detail', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+
+    render(<PostDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Looking for a roommate')).toBeDefined();
+    });
+
+    const avatarOptionsButtons = screen.getAllByLabelText('User options');
+    fireEvent.click(avatarOptionsButtons[0], { clientX: 120, clientY: 180 });
+
+    await waitFor(() => {
+      expect(screen.getByText('View Profile')).toBeDefined();
+      expect(screen.getByText('Chat')).toBeDefined();
+    });
+
+    const anchoredDropdown = document.querySelector('div[class*="avatarDropdownAnchored"]') as HTMLDivElement | null;
+    expect(anchoredDropdown).not.toBeNull();
+    expect(anchoredDropdown?.style.top).toBe('188px');
+    expect(anchoredDropdown?.style.left).toBe('120px');
+  });
+
   it('optimistically toggles like', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     postDetailMocks.likePostMock.mockResolvedValue({});

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../styles/colors';
 import { Avatar } from '../Avatar';
@@ -16,6 +16,7 @@ interface MessageBubbleProps {
   senderPhotoUrl?: string | null;
   senderTrustLevel?: number;
   showAvatar?: boolean;
+  onAvatarPress?: (pageX: number, pageY: number) => void;
 }
 
 function formatTime(dateStr: string): string {
@@ -36,6 +37,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   senderPhotoUrl,
   senderTrustLevel,
   showAvatar = false,
+  onAvatarPress,
 }) => {
   const bubble = (
     <View style={[styles.bubble, isSent ? styles.bubbleSent : styles.bubbleReceived]}>
@@ -69,14 +71,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   return (
     <View style={[styles.wrapper, styles.wrapperReceived]}>
       {showAvatar && senderName ? (
-        <View style={styles.avatarSlot}>
+        <TouchableOpacity
+          style={styles.avatarSlot}
+          onPress={(event) => {
+            onAvatarPress?.(event.nativeEvent.pageX, event.nativeEvent.pageY);
+          }}
+          activeOpacity={onAvatarPress ? 0.7 : 1}
+          disabled={!onAvatarPress}
+        >
           <Avatar
             name={senderName}
             photoUrl={senderPhotoUrl}
             trustLevel={senderTrustLevel}
             size="small"
           />
-        </View>
+        </TouchableOpacity>
       ) : (
         <View style={styles.avatarSlot} />
       )}

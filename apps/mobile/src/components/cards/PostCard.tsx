@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../Avatar';
@@ -137,8 +138,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   onAvatarChat,
   onMediaPress,
 }) => {
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const descPreview = description ? truncateDescription(description) : null;
   const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
+  const [avatarMenuPos, setAvatarMenuPos] = useState({ top: 0, left: 0 });
   const [mediaIndex, setMediaIndex] = useState(0);
   const isOwnPost = authorId && currentUserId && authorId === currentUserId;
   const mediaUrls = (imageUrls && imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [])
@@ -159,6 +162,24 @@ export const PostCard: React.FC<PostCardProps> = ({
     setMediaIndex((prev) => (prev + 1) % mediaUrls.length);
   }
 
+  function getAvatarMenuPosition(pageX: number, pageY: number) {
+    const MENU_WIDTH = 180;
+    const MENU_HEIGHT = 112;
+    const EDGE_GAP = 8;
+    const VERTICAL_OFFSET = 8;
+
+    const maxLeft = Math.max(EDGE_GAP, viewportWidth - MENU_WIDTH - EDGE_GAP);
+    const left = Math.min(Math.max(EDGE_GAP, pageX), maxLeft);
+
+    const belowTop = pageY + VERTICAL_OFFSET;
+    const canOpenBelow = belowTop + MENU_HEIGHT <= viewportHeight - EDGE_GAP;
+    const top = canOpenBelow
+      ? belowTop
+      : Math.max(EDGE_GAP, pageY - MENU_HEIGHT - VERTICAL_OFFSET);
+
+    return { top, left };
+  }
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -171,7 +192,11 @@ export const PostCard: React.FC<PostCardProps> = ({
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation?.();
-              if (!isOwnPost) setAvatarMenuVisible(true);
+              if (!isOwnPost) {
+                const { pageX, pageY } = e.nativeEvent;
+                setAvatarMenuPos(getAvatarMenuPosition(pageX, pageY));
+                setAvatarMenuVisible(true);
+              }
             }}
             activeOpacity={isOwnPost ? 1 : 0.7}
           >
@@ -368,8 +393,9 @@ export const PostCard: React.FC<PostCardProps> = ({
         animationType="fade"
         onRequestClose={() => setAvatarMenuVisible(false)}
       >
-        <Pressable style={styles.menuOverlay} onPress={() => setAvatarMenuVisible(false)}>
-          <View style={styles.avatarMenu}>
+        <View style={styles.menuOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setAvatarMenuVisible(false)} />
+          <View style={[styles.avatarMenu, { top: avatarMenuPos.top, left: avatarMenuPos.left }]}> 
             <TouchableOpacity
               style={styles.avatarMenuItem}
               onPress={() => {
@@ -391,7 +417,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               <Text style={[styles.avatarMenuText, { color: colors.primary.main }]}>Chat</Text>
             </TouchableOpacity>
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </TouchableOpacity>
   );
@@ -582,10 +608,9 @@ const styles = StyleSheet.create({
   menuOverlay: {
     flex: 1,
     backgroundColor: colors.overlayLight,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   avatarMenu: {
+    position: 'absolute',
     backgroundColor: colors.white,
     borderRadius: 12,
     paddingVertical: 8,

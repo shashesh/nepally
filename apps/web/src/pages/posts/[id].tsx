@@ -30,6 +30,11 @@ const DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS = 1500;
 const DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
 const DETAIL_LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
 
+type AvatarMenuUser = {
+  id: string;
+  full_name: string;
+};
+
 export default function PostDetailPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -48,6 +53,8 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [avatarMenuUser, setAvatarMenuUser] = useState<AvatarMenuUser | null>(null);
+  const [avatarMenuPosition, setAvatarMenuPosition] = useState({ top: 0, left: 0 });
   const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [carouselChromeVisible, setCarouselChromeVisible] = useState(true);
@@ -56,7 +63,7 @@ export default function PostDetailPage() {
   const [lightboxZoomLevel, setLightboxZoomLevel] = useState(0);
   const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
   const touchStartXRef = useRef<number | null>(null);
-  const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const avatarDropdownRef = useRef<HTMLDivElement>(null);
   const postMenuRef = useRef<HTMLDivElement>(null);
   const carouselChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -104,7 +111,8 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest('[data-avatar-menu-root="true"]')) {
         setAvatarMenuOpen(false);
       }
       if (postMenuRef.current && !postMenuRef.current.contains(event.target as Node)) {
@@ -120,6 +128,12 @@ export default function PostDetailPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [avatarMenuOpen, postMenuOpen]);
+
+  useEffect(() => {
+    if (!avatarMenuOpen || !avatarDropdownRef.current) return;
+    avatarDropdownRef.current.style.top = `${avatarMenuPosition.top}px`;
+    avatarDropdownRef.current.style.left = `${avatarMenuPosition.left}px`;
+  }, [avatarMenuOpen, avatarMenuPosition]);
 
   async function loadPost(postId: string) {
     setLoading(true);
@@ -210,16 +224,42 @@ export default function PostDetailPage() {
     setComments((prev) => prev.filter((comment) => comment.id !== commentId && comment.parent_comment_id !== commentId));
   }
 
+  function openAvatarMenu(event: React.MouseEvent<HTMLElement>, menuUser: AvatarMenuUser | null) {
+    if (!menuUser) return;
+    if (menuUser.id === user?.id) return;
+
+    if (typeof window !== 'undefined') {
+      const MENU_WIDTH = 144;
+      const MENU_HEIGHT = 90;
+      const EDGE_GAP = 8;
+      const VERTICAL_OFFSET = 8;
+
+      const maxLeft = Math.max(EDGE_GAP, window.innerWidth - MENU_WIDTH - EDGE_GAP);
+      const left = Math.min(Math.max(EDGE_GAP, event.clientX), maxLeft);
+
+      const belowTop = event.clientY + VERTICAL_OFFSET;
+      const canOpenBelow = belowTop + MENU_HEIGHT <= window.innerHeight - EDGE_GAP;
+      const top = canOpenBelow
+        ? belowTop
+        : Math.max(EDGE_GAP, event.clientY - MENU_HEIGHT - VERTICAL_OFFSET);
+
+      setAvatarMenuPosition({ top, left });
+    }
+
+    setAvatarMenuUser(menuUser);
+    setAvatarMenuOpen(true);
+  }
+
   async function handleAvatarChat() {
-    if (!user || !post || !post.author) return;
-    if (post.author_id === user.id) return;
+    if (!user || !avatarMenuUser) return;
+    if (avatarMenuUser.id === user.id) return;
 
     const result = await getOrCreateConversation(
       supabase,
       user.id,
       user.full_name,
-      post.author_id,
-      post.author.full_name
+      avatarMenuUser.id,
+      avatarMenuUser.full_name
     );
 
     if (result.data) {
@@ -453,12 +493,14 @@ export default function PostDetailPage() {
 
         <div className={styles.postDetail}>
           <div className={styles.postHeader}>
-            <div className={styles.avatarWrapper} ref={avatarMenuRef}>
-              <div
+            <div className={styles.avatarWrapper} data-avatar-menu-root="true">
+              <button
+                type="button"
                 className={post.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
-                onClick={() => {
-                  if (post.author_id !== user?.id) setAvatarMenuOpen(!avatarMenuOpen);
+                onClick={(event) => {
+                  openAvatarMenu(event, post.author ? { id: post.author_id, full_name: post.author.full_name } : null);
                 }}
+                aria-label="User options"
               >
                 <Avatar
                   name={post.author?.full_name || '?'}
@@ -466,23 +508,7 @@ export default function PostDetailPage() {
                   trustLevel={post.author?.trust_level}
                   size="medium"
                 />
-              </div>
-              {avatarMenuOpen && (
-                <div className={styles.avatarDropdown}>
-                  <button
-                    className={styles.avatarDropdownItem}
-                    onClick={() => { setAvatarMenuOpen(false); alert('User profiles coming soon'); }}
-                  >
-                    View Profile
-                  </button>
-                  <button
-                    className={styles.avatarDropdownItem}
-                    onClick={() => { setAvatarMenuOpen(false); handleAvatarChat(); }}
-                  >
-                    Chat
-                  </button>
-                </div>
-              )}
+              </button>
             </div>
             <div className={styles.authorInfo}>
               <div className={styles.authorName}>
@@ -694,12 +720,27 @@ export default function PostDetailPage() {
             commentThreads.map((thread) => (
               <div key={thread.parent.id} className={styles.commentThread}>
                 <div className={styles.comment}>
-                  <Avatar
-                    name={thread.parent.author?.full_name || '?'}
-                    photoUrl={thread.parent.author?.profile_photo}
-                    trustLevel={thread.parent.author?.trust_level}
-                    size="small"
-                  />
+                  <div className={styles.avatarWrapper} data-avatar-menu-root="true">
+                    <button
+                      type="button"
+                      className={thread.parent.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
+                      onClick={(event) => {
+                        openAvatarMenu(event,
+                          thread.parent.author
+                            ? { id: thread.parent.author_id, full_name: thread.parent.author.full_name }
+                            : null
+                        );
+                      }}
+                      aria-label="User options"
+                    >
+                      <Avatar
+                        name={thread.parent.author?.full_name || '?'}
+                        photoUrl={thread.parent.author?.profile_photo}
+                        trustLevel={thread.parent.author?.trust_level}
+                        size="small"
+                      />
+                    </button>
+                  </div>
                   <div className={styles.commentContent}>
                     <span className={styles.commentAuthor}>{thread.parent.author?.full_name || 'Anonymous'}</span>
                     <span className={styles.commentTime}>{formatRelativeTime(new Date(thread.parent.created_at))}</span>
@@ -728,12 +769,27 @@ export default function PostDetailPage() {
 
                 {expandedReplies[thread.parent.id] && thread.replies.map((reply) => (
                   <div key={reply.id} className={styles.replyRow}>
-                    <Avatar
-                      name={reply.author?.full_name || '?'}
-                      photoUrl={reply.author?.profile_photo}
-                      trustLevel={reply.author?.trust_level}
-                      size="small"
-                    />
+                    <div className={styles.avatarWrapper} data-avatar-menu-root="true">
+                      <button
+                        type="button"
+                        className={reply.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
+                        onClick={(event) => {
+                          openAvatarMenu(event,
+                            reply.author
+                              ? { id: reply.author_id, full_name: reply.author.full_name }
+                              : null
+                          );
+                        }}
+                        aria-label="User options"
+                      >
+                        <Avatar
+                          name={reply.author?.full_name || '?'}
+                          photoUrl={reply.author?.profile_photo}
+                          trustLevel={reply.author?.trust_level}
+                          size="small"
+                        />
+                      </button>
+                    </div>
                     <div className={styles.commentContent}>
                       <span className={styles.commentAuthor}>{reply.author?.full_name || 'Anonymous'}</span>
                       <span className={styles.commentTime}>{formatRelativeTime(new Date(reply.created_at))}</span>
@@ -752,6 +808,33 @@ export default function PostDetailPage() {
             ))
           )}
         </div>
+
+        {avatarMenuOpen && (
+          <div
+            ref={avatarDropdownRef}
+            className={`${styles.avatarDropdown} ${styles.avatarDropdownAnchored}`}
+            data-avatar-menu-root="true"
+          >
+            <button
+              className={styles.avatarDropdownItem}
+              onClick={() => {
+                setAvatarMenuOpen(false);
+                alert('User profiles coming soon');
+              }}
+            >
+              View Profile
+            </button>
+            <button
+              className={styles.avatarDropdownItem}
+              onClick={() => {
+                setAvatarMenuOpen(false);
+                handleAvatarChat();
+              }}
+            >
+              Chat
+            </button>
+          </div>
+        )}
 
         {lightboxPhotos.length > 0 && (
           <div className={styles.lightboxOverlay} onClick={closeLightbox} role="presentation">

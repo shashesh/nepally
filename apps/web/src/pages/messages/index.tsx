@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -16,6 +16,8 @@ export default function MessagesPage() {
     ConversationWithParticipant[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [openAvatarMenuId, setOpenAvatarMenuId] = useState<string | null>(null);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -24,6 +26,19 @@ export default function MessagesPage() {
     }
     loadConversations();
   }, [user]);
+
+  // Close avatar dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target as Node)) {
+        setOpenAvatarMenuId(null);
+      }
+    }
+    if (openAvatarMenuId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openAvatarMenuId]);
 
   async function loadConversations() {
     if (!user) return;
@@ -58,18 +73,49 @@ export default function MessagesPage() {
         ) : (
           <div className={styles.conversationList}>
             {conversations.map((conv) => (
-              <Link
-                key={conv.id}
-                href={`/messages/${conv.id}`}
-                className={styles.conversationItem}
-              >
-                <Avatar
-                  name={conv.other_user_name || '?'}
-                  photoUrl={conv.other_user_photo}
-                  trustLevel={conv.other_user_trust_level}
-                  size="medium"
-                />
-                <div className={styles.convContent}>
+              <div key={conv.id} className={styles.conversationItem}>
+                {/* Avatar with View Profile dropdown */}
+                <div
+                  className={styles.avatarMenuWrapper}
+                  ref={openAvatarMenuId === conv.id ? avatarMenuRef : undefined}
+                >
+                  <button
+                    type="button"
+                    className={styles.avatarMenuBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenAvatarMenuId(openAvatarMenuId === conv.id ? null : conv.id);
+                    }}
+                    aria-label="User options"
+                  >
+                    <Avatar
+                      name={conv.other_user_name || '?'}
+                      photoUrl={conv.other_user_photo}
+                      trustLevel={conv.other_user_trust_level}
+                      size="medium"
+                    />
+                  </button>
+                  {openAvatarMenuId === conv.id && (
+                    <div className={styles.avatarDropdown}>
+                      <button
+                        type="button"
+                        className={styles.avatarDropdownItem}
+                        onClick={() => {
+                          setOpenAvatarMenuId(null);
+                          alert('User profiles will be available in a future update.');
+                        }}
+                      >
+                        👤 View Profile
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Conversation content (navigates to thread) */}
+                <Link
+                  href={`/messages/${conv.id}`}
+                  className={styles.convContent}
+                >
                   <div className={styles.convHeader}>
                     <span className={styles.convName}>
                       {conv.other_user_name}
@@ -87,13 +133,14 @@ export default function MessagesPage() {
                   >
                     {conv.last_message || 'No messages yet'}
                   </div>
-                </div>
+                </Link>
+
                 {conv.unread_count > 0 && (
                   <span className={styles.unreadBadge}>
                     {conv.unread_count}
                   </span>
                 )}
-              </Link>
+              </div>
             ))}
           </div>
         )}

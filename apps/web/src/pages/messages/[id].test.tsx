@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const threadMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   useRouterMock: vi.fn(),
+  getConversationsMock: vi.fn(),
   getMessagesMock: vi.fn(),
   sendMessageMock: vi.fn(),
   markAsReadMock: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock('@nusa/shared', async () => {
   const actual = await vi.importActual<object>('@nusa/shared');
   return {
     ...actual,
+    getConversations: threadMocks.getConversationsMock,
     getMessages: threadMocks.getMessagesMock,
     sendMessage: threadMocks.sendMessageMock,
     markAsRead: threadMocks.markAsReadMock,
@@ -53,6 +55,7 @@ describe('MessageThreadPage', () => {
       query: { id: 'conv-123' },
     });
     threadMocks.subscribeToMessagesMock.mockReturnValue(mockChannel);
+    threadMocks.getConversationsMock.mockResolvedValue({ data: [] });
     threadMocks.markAsReadMock.mockResolvedValue({});
     threadMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
   });
@@ -180,5 +183,38 @@ describe('MessageThreadPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Today')).toBeDefined();
     });
+  });
+
+  it('shows View Profile only in avatar menu within message thread', async () => {
+    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
+    threadMocks.getMessagesMock.mockResolvedValue({ data: [] });
+    const mockConversations = [
+      {
+        id: 'conv-123',
+        last_message: 'Hi',
+        last_message_time: '2026-02-24T10:00:00Z',
+        created_at: '2026-02-24T09:00:00Z',
+        other_user_id: 'user-2',
+        other_user_name: 'Other User',
+        other_user_photo: null,
+        other_user_trust_level: 1,
+        unread_count: 0,
+      },
+    ];
+
+    threadMocks.getConversationsMock.mockResolvedValue({ data: mockConversations });
+
+    render(<MessageThreadPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('User options')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByLabelText('User options'));
+
+    await waitFor(() => {
+      expect(screen.getByText('👤 View Profile')).toBeDefined();
+    });
+    expect(screen.queryByText(/^Chat$/)).toBeNull();
   });
 });

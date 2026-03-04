@@ -53,10 +53,18 @@
 }
 
 .avatarTrigger {
+  border: none;
+  background: none;
+  padding: 0;
+  display: inline-flex;
   cursor: pointer;
 }
 
 .avatarTriggerDisabled {
+  border: none;
+  background: none;
+  padding: 0;
+  display: inline-flex;
   cursor: default;
 }
 
@@ -705,6 +713,12 @@
   min-width: 140px;
   margin-top: 4px;
   animation: dropdownIn 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.avatarDropdownAnchored {
+  position: fixed;
+  margin-top: 0;
+  z-index: 120;
 }
 
 .avatarDropdownItem {

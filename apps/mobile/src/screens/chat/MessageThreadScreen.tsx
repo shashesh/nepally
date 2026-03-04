@@ -11,6 +11,8 @@ import {
   StatusBar,
   ActivityIndicator,
   Pressable,
+  Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,7 +56,29 @@ export default function MessageThreadScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [profileMenuVisible, setProfileMenuVisible] = useState(false);
+  const [profileMenuPos, setProfileMenuPos] = useState({ top: 0, left: 0 });
   const flatListRef = useRef<FlatList>(null);
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+
+  const openProfileMenuAt = useCallback((pageX: number, pageY: number) => {
+    const MENU_WIDTH = 160;
+    const MENU_HEIGHT = 56;
+    const EDGE_GAP = 8;
+    const VERTICAL_OFFSET = 8;
+
+    const maxLeft = Math.max(EDGE_GAP, viewportWidth - MENU_WIDTH - EDGE_GAP);
+    const left = Math.min(Math.max(EDGE_GAP, pageX), maxLeft);
+
+    const belowTop = pageY + VERTICAL_OFFSET;
+    const canOpenBelow = belowTop + MENU_HEIGHT <= viewportHeight - EDGE_GAP;
+    const top = canOpenBelow
+      ? belowTop
+      : Math.max(EDGE_GAP, pageY - MENU_HEIGHT - VERTICAL_OFFSET);
+
+    setProfileMenuPos({ top, left });
+    setProfileMenuVisible(true);
+  }, [viewportHeight, viewportWidth]);
 
   // Load messages and subscribe to realtime
   useEffect(() => {
@@ -227,12 +251,22 @@ export default function MessageThreadScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
         </TouchableOpacity>
 
-        <Avatar
-          name={otherUserName}
-          photoUrl={otherUserPhotoUrl}
-          trustLevel={otherUserTrustLevel}
-          size="small"
-        />
+        <View>
+          <TouchableOpacity
+            onPress={(event) => {
+              openProfileMenuAt(event.nativeEvent.pageX, event.nativeEvent.pageY);
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Avatar
+              name={otherUserName}
+              photoUrl={otherUserPhotoUrl}
+              trustLevel={otherUserTrustLevel}
+              size="small"
+            />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.headerInfo}>
           <Text style={styles.headerName} numberOfLines={1}>
@@ -268,6 +302,30 @@ export default function MessageThreadScreen() {
           </View>
         </Pressable>
       )}
+
+      {/* Avatar Profile Menu */}
+      <Modal
+        visible={profileMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setProfileMenuVisible(false)}
+      >
+        <View style={{ flex: 1 }}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setProfileMenuVisible(false)} />
+          <View style={[styles.profileDropdown, { top: profileMenuPos.top, left: profileMenuPos.left }]}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setProfileMenuVisible(false);
+                Alert.alert('Coming Soon', 'User profiles will be available in a future update.');
+              }}
+            >
+              <Ionicons name="person-outline" size={18} color={colors.text.primary} />
+              <Text style={styles.menuItemText}>View Profile</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Messages */}
       <KeyboardAvoidingView
@@ -314,6 +372,9 @@ export default function MessageThreadScreen() {
                   senderPhotoUrl={otherUserPhotoUrl}
                   senderTrustLevel={otherUserTrustLevel}
                   showAvatar={isLastInGroup}
+                  onAvatarPress={(pageX, pageY) => {
+                    openProfileMenuAt(pageX, pageY);
+                  }}
                 />
               );
             }}
@@ -404,6 +465,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.s,
     paddingVertical: 12,
     gap: spacing.xs,
+  },
+  menuItemText: {
+    ...typography.body,
+    fontSize: 15,
+    color: colors.text.primary,
+  },
+  profileDropdown: {
+    position: 'absolute',
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    paddingVertical: 4,
+    minWidth: 160,
+    elevation: 8,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   menuItemTextDanger: {
     ...typography.body,

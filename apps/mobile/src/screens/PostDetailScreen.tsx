@@ -64,6 +64,12 @@ const LIGHTBOX_MIN_SCALE = 1;
 const LIGHTBOX_MAX_SCALE = 4;
 const DOUBLE_TAP_ZOOM_SCALE = 2.5;
 
+type AvatarMenuUser = {
+  id: string;
+  full_name: string;
+  trust_level: number;
+};
+
 /**
  * Convert a hex color to an rgba string at the given alpha.
  */
@@ -307,6 +313,8 @@ export default function PostDetailScreen() {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
+  const [avatarMenuUser, setAvatarMenuUser] = useState<AvatarMenuUser | null>(null);
+  const [avatarMenuPos, setAvatarMenuPos] = useState({ top: 0, left: 0 });
 
   // Like state
   const [isLiked, setIsLiked] = useState(false);
@@ -593,7 +601,7 @@ export default function PostDetailScreen() {
   };
 
   const handleAvatarChat = async () => {
-    if (!user || !post?.author) return;
+    if (!user || !avatarMenuUser) return;
 
     if (isLevel0) {
       Alert.alert(
@@ -608,8 +616,8 @@ export default function PostDetailScreen() {
       supabase,
       user.id,
       user.full_name,
-      post.author.id,
-      post.author.full_name
+      avatarMenuUser.id,
+      avatarMenuUser.full_name
     );
 
     if (result.data) {
@@ -619,9 +627,9 @@ export default function PostDetailScreen() {
           screen: 'MessageThread',
           params: {
             conversationId: result.data.conversationId,
-            otherUserId: post.author.id,
-            otherUserName: post.author.full_name,
-            otherUserTrustLevel: post.author.trust_level,
+            otherUserId: avatarMenuUser.id,
+            otherUserName: avatarMenuUser.full_name,
+            otherUserTrustLevel: avatarMenuUser.trust_level,
           },
         });
       }
@@ -629,6 +637,29 @@ export default function PostDetailScreen() {
       Alert.alert('Error', 'Failed to start conversation. Please try again.');
     }
   };
+
+  const openAvatarMenu = useCallback((menuUser: AvatarMenuUser | null, pageX: number, pageY: number) => {
+    if (!menuUser) return;
+    if (menuUser.id === user?.id) return;
+
+    const MENU_WIDTH = 180;
+    const MENU_HEIGHT = 112;
+    const EDGE_GAP = 8;
+    const VERTICAL_OFFSET = 8;
+
+    const maxLeft = Math.max(EDGE_GAP, viewportWidth - MENU_WIDTH - EDGE_GAP);
+    const left = Math.min(Math.max(EDGE_GAP, pageX), maxLeft);
+
+    const belowTop = pageY + VERTICAL_OFFSET;
+    const canOpenBelow = belowTop + MENU_HEIGHT <= viewportHeight - EDGE_GAP;
+    const top = canOpenBelow
+      ? belowTop
+      : Math.max(EDGE_GAP, pageY - MENU_HEIGHT - VERTICAL_OFFSET);
+
+    setAvatarMenuUser(menuUser);
+    setAvatarMenuPos({ top, left });
+    setAvatarMenuVisible(true);
+  }, [user?.id, viewportHeight, viewportWidth]);
 
   const handleSharePost = async () => {
     if (!post) return;
@@ -680,7 +711,19 @@ export default function PostDetailScreen() {
           {post.author && (
             <View style={styles.authorRowTop}>
               <TouchableOpacity
-                onPress={() => { if (!isOwnPost) setAvatarMenuVisible(true); }}
+                onPress={(event) => {
+                  openAvatarMenu(
+                    post.author
+                      ? {
+                          id: post.author.id,
+                          full_name: post.author.full_name,
+                          trust_level: post.author.trust_level,
+                        }
+                      : null,
+                    event.nativeEvent.pageX,
+                    event.nativeEvent.pageY
+                  );
+                }}
                 activeOpacity={isOwnPost ? 1 : 0.7}
               >
                 <Avatar
@@ -909,12 +952,29 @@ export default function PostDetailScreen() {
                 return (
                   <View key={thread.parent.id} style={styles.commentThread}>
                     <View style={styles.commentItem}>
-                      <Avatar
-                        name={thread.parent.author?.full_name || 'User'}
-                        photoUrl={thread.parent.author?.profile_photo}
-                        trustLevel={thread.parent.author?.trust_level ?? 0}
-                        size="small"
-                      />
+                      <TouchableOpacity
+                        onPress={(event) => {
+                          openAvatarMenu(
+                            thread.parent.author
+                              ? {
+                                  id: thread.parent.author_id,
+                                  full_name: thread.parent.author.full_name,
+                                  trust_level: thread.parent.author.trust_level,
+                                }
+                              : null,
+                            event.nativeEvent.pageX,
+                            event.nativeEvent.pageY
+                          );
+                        }}
+                        activeOpacity={thread.parent.author_id === user?.id ? 1 : 0.7}
+                      >
+                        <Avatar
+                          name={thread.parent.author?.full_name || 'User'}
+                          photoUrl={thread.parent.author?.profile_photo}
+                          trustLevel={thread.parent.author?.trust_level ?? 0}
+                          size="small"
+                        />
+                      </TouchableOpacity>
                       <View style={styles.commentContent}>
                         <View style={styles.commentHeader}>
                           <Text style={styles.commentAuthorName}>{thread.parent.author?.full_name || 'User'}</Text>
@@ -956,12 +1016,29 @@ export default function PostDetailScreen() {
                     {showReplies &&
                       thread.replies.map((reply) => (
                         <View key={reply.id} style={styles.replyItem}>
-                          <Avatar
-                            name={reply.author?.full_name || 'User'}
-                            photoUrl={reply.author?.profile_photo}
-                            trustLevel={reply.author?.trust_level ?? 0}
-                            size="small"
-                          />
+                          <TouchableOpacity
+                            onPress={(event) => {
+                              openAvatarMenu(
+                                reply.author
+                                  ? {
+                                      id: reply.author_id,
+                                      full_name: reply.author.full_name,
+                                      trust_level: reply.author.trust_level,
+                                    }
+                                  : null,
+                                event.nativeEvent.pageX,
+                                event.nativeEvent.pageY
+                              );
+                            }}
+                            activeOpacity={reply.author_id === user?.id ? 1 : 0.7}
+                          >
+                            <Avatar
+                              name={reply.author?.full_name || 'User'}
+                              photoUrl={reply.author?.profile_photo}
+                              trustLevel={reply.author?.trust_level ?? 0}
+                              size="small"
+                            />
+                          </TouchableOpacity>
                           <View style={styles.commentContent}>
                             <View style={styles.commentHeader}>
                               <Text style={styles.commentAuthorName}>{reply.author?.full_name || 'User'}</Text>
@@ -1068,14 +1145,25 @@ export default function PostDetailScreen() {
           visible={avatarMenuVisible}
           transparent
           animationType="fade"
-          onRequestClose={() => setAvatarMenuVisible(false)}
+          onRequestClose={() => {
+            setAvatarMenuVisible(false);
+            setAvatarMenuUser(null);
+          }}
         >
-          <Pressable style={styles.menuOverlay} onPress={() => setAvatarMenuVisible(false)}>
-            <View style={styles.avatarMenu}>
+          <View style={styles.menuOverlay}>
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={() => {
+                setAvatarMenuVisible(false);
+                setAvatarMenuUser(null);
+              }}
+            />
+            <View style={[styles.avatarMenu, { top: avatarMenuPos.top, left: avatarMenuPos.left }]}>
               <TouchableOpacity
                 style={styles.avatarMenuItem}
                 onPress={() => {
                   setAvatarMenuVisible(false);
+                  setAvatarMenuUser(null);
                   Alert.alert('Coming Soon', 'User profiles will be available in a future update.');
                 }}
               >
@@ -1086,6 +1174,7 @@ export default function PostDetailScreen() {
                 style={styles.avatarMenuItem}
                 onPress={() => {
                   setAvatarMenuVisible(false);
+                  setAvatarMenuUser(null);
                   handleAvatarChat();
                 }}
               >
@@ -1093,7 +1182,7 @@ export default function PostDetailScreen() {
                 <Text style={[styles.avatarMenuText, { color: colors.primary.main }]}>Chat</Text>
               </TouchableOpacity>
             </View>
-          </Pressable>
+          </View>
         </Modal>
 
         {!isLevel0 ? (
@@ -1416,10 +1505,9 @@ const styles = StyleSheet.create({
   menuOverlay: {
     flex: 1,
     backgroundColor: colors.overlayLight,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   avatarMenu: {
+    position: 'absolute',
     backgroundColor: colors.white,
     borderRadius: 12,
     paddingVertical: 8,
