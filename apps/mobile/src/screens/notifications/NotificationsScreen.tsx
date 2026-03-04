@@ -138,6 +138,26 @@ export function NotificationsScreen() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.navHeaderActions}>
+          {unreadCount > 0 && (
+            <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
+              <Text style={styles.markAllText}>Mark all read</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('NotificationPreferences')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="settings-outline" size={22} color={colors.text.secondary} />
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, unreadCount, handleMarkAllRead]);
+
   const renderItem = ({ item }: { item: Notification }) => (
     <TouchableOpacity
       style={[
@@ -174,25 +194,6 @@ export function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
-
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>
-          Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}
-        </Text>
-        <View style={styles.headerActions}>
-          {unreadCount > 0 && (
-            <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
-              <Text style={styles.markAllText}>Mark all read</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('NotificationPreferences')}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="settings-outline" size={22} color={colors.text.secondary} />
-          </TouchableOpacity>
-        </View>
-      </View>
 
       {loading && (
         <View style={styles.centered}>
@@ -231,25 +232,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  screenTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  headerActions: {
+  navHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.s,
+    paddingRight: spacing.xs,
   },
   markAllBtn: {
     paddingHorizontal: spacing.s,
