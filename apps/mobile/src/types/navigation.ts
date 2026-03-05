@@ -49,6 +49,7 @@ export type ProfileStackParamList = {
 export type HomeStackParamList = {
   HomeMain: undefined;
   PostDetail: { postId: string };
+  PublicProfileView: { userId: string };
   ManageLocations: undefined;
   AddLocation: undefined;
   Notifications: undefined;

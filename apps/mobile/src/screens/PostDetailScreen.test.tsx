@@ -100,4 +100,28 @@ describe('PostDetailScreen avatar menu', () => {
       expect(screen.getByText('Chat')).toBeTruthy();
     });
   });
+
+  it('pressing View Profile for other user navigates to PublicProfileView', async () => {
+    const mockNavigate = jest.fn();
+    mockUseNavigation.mockReturnValue({
+      navigate: mockNavigate,
+      getParent: () => ({ navigate: jest.fn() }),
+    });
+    const screen = render(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Post title')).toBeTruthy();
+    });
+
+    // Tap author avatar to open dropdown (author is 'other-user', current user is 'current-user')
+    fireEvent.press(screen.getByText('AU'), {
+      nativeEvent: { pageX: 90, pageY: 110 },
+    });
+
+    await waitFor(() => expect(screen.getByText('View Profile')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('View Profile'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('PublicProfileView', { userId: 'other-user' });
+  });
 });

@@ -347,6 +347,10 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     loadPosts();
   }
 
+  function handleAvatarViewProfile(authorId: string) {
+    router.push(`/users/${authorId}`);
+  }
+
   async function handleAvatarChat(authorId: string, authorName: string) {
     if (!user) return;
     const result = await getOrCreateConversation(
@@ -524,6 +528,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                   saved={savedIds.has(post.id)}
                   onTagClick={handleTagChipToggle}
                   currentUserId={user?.id}
+                  onAvatarViewProfile={handleAvatarViewProfile}
                   onAvatarChat={handleAvatarChat}
                   onOpenLightbox={openLightbox}
                   onSharePost={handleSharePost}
@@ -656,6 +661,7 @@ function PostCard({
   saved,
   onTagClick,
   currentUserId,
+  onAvatarViewProfile,
   onAvatarChat,
   onOpenLightbox,
   onSharePost,
@@ -668,6 +674,7 @@ function PostCard({
   saved?: boolean;
   onTagClick: (slug: string) => void;
   currentUserId?: string;
+  onAvatarViewProfile?: (authorId: string) => void;
   onAvatarChat?: (authorId: string, authorName: string) => void;
   onOpenLightbox: (photos: string[], startIndex: number) => void;
   onSharePost: (post: Post) => Promise<void>;
@@ -796,7 +803,7 @@ function PostCard({
                   e.preventDefault();
                   e.stopPropagation();
                   setAvatarMenuOpen(false);
-                  alert('User profiles coming soon');
+                  onAvatarViewProfile?.(post.author_id);
                 }}
               >
                 View Profile

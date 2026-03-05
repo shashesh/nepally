@@ -6,6 +6,7 @@ import PostDetailScreen from '../screens/PostDetailScreen';
 import AddLocationScreen from '../screens/location/AddLocationScreen';
 import ManageLocationsScreen from '../screens/location/ManageLocationsScreen';
 import { NotificationsScreen, NotificationPreferencesScreen } from '../screens/notifications';
+import PublicProfileScreen from '../screens/profile/PublicProfileScreen';
 import { colors } from '../styles/colors';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -28,6 +29,11 @@ export function HomeNavigator() {
         name="PostDetail"
         component={PostDetailScreen}
         options={{ title: '' }}
+      />
+      <Stack.Screen
+        name="PublicProfileView"
+        component={PublicProfileScreen}
+        options={{ title: 'Profile' }}
       />
       <Stack.Screen
         name="AddLocation"

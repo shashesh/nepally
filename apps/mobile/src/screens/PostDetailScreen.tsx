@@ -29,6 +29,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/useAuth';
 import {
   getPostById,
@@ -303,7 +304,7 @@ function PinchableLightboxImage({
 export default function PostDetailScreen() {
   const { user } = useAuth();
   const route = useRoute<DetailRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList, 'PostDetail'>>();
   const { postId } = route.params;
   const scrollViewRef = useRef<ScrollView>(null);
   const commentsRef = useRef<View>(null);
@@ -1162,9 +1163,15 @@ export default function PostDetailScreen() {
               <TouchableOpacity
                 style={styles.avatarMenuItem}
                 onPress={() => {
+                  const targetId = avatarMenuUser?.id;
                   setAvatarMenuVisible(false);
                   setAvatarMenuUser(null);
-                  Alert.alert('Coming Soon', 'User profiles will be available in a future update.');
+                  if (!targetId) return;
+                  if (targetId === user?.id) {
+                    navigation.getParent()?.navigate('Profile');
+                  } else {
+                    navigation.navigate('PublicProfileView', { userId: targetId });
+                  }
                 }}
               >
                 <Ionicons name="person-outline" size={20} color={colors.text.primary} />

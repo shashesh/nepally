@@ -9,3 +9,4 @@ export * from './validators';
 export * from './location';
 export * from './comments';
 export * from './clientLogger';
+export * from './user';

@@ -396,8 +396,8 @@ export default function HomeScreen() {
     navigation.navigate('PostDetail', { postId: post.id });
   };
 
-  const handleAvatarViewProfile = () => {
-    Alert.alert('Coming Soon', 'User profiles will be available in a future update.');
+  const handleAvatarViewProfile = (authorId: string) => {
+    navigation.navigate('PublicProfileView', { userId: authorId });
   };
 
   const handleAvatarChat = async (post: Post) => {
@@ -679,7 +679,7 @@ export default function HomeScreen() {
             authorId={item.author_id}
             currentUserId={user?.id}
             onTagPress={handleTagChipPress}
-            onAvatarViewProfile={handleAvatarViewProfile}
+            onAvatarViewProfile={() => handleAvatarViewProfile(item.author_id)}
             onAvatarChat={() => handleAvatarChat(item)}
             onMorePress={() => handleMorePress(item)}
             onMediaPress={() => handlePostPress(item)}

@@ -391,4 +391,24 @@ describe('PostDetailPage', () => {
       expect(screen.getByText(/❤️ 6/)).toBeDefined();
     });
   });
+
+  // ─── Avatar dropdown: View Profile navigation ──────────────────────────────
+
+  it('clicking View Profile in avatar dropdown navigates to public profile page', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+
+    // Open avatar dropdown for post author (author_id = 'user-2', current user = 'user-1')
+    const avatarOptionsButtons = screen.getAllByLabelText('User options');
+    fireEvent.click(avatarOptionsButtons[0], { clientX: 120, clientY: 180 });
+
+    await waitFor(() => expect(screen.getByText('View Profile')).toBeDefined());
+
+    fireEvent.click(screen.getByText('View Profile'));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/users/user-2');
+    });
+  });
 });

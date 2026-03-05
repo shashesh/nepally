@@ -395,4 +395,35 @@ describe('FeedPage', () => {
       expect(screen.getByText('Unsave Post')).toBeDefined();
     });
   });
+
+  // ─── Avatar dropdown: View Profile navigation ──────────────────────────────
+
+  it('clicking avatar for non-own post opens dropdown with View Profile and Chat options', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    // mockPosts[0].author_id = 'user-2', current user = 'user-1' → non-own post
+    fireEvent.click(screen.getByTestId('avatar'));
+
+    await waitFor(() => {
+      expect(screen.getByText('View Profile')).toBeDefined();
+      expect(screen.getByText('Chat')).toBeDefined();
+    });
+  });
+
+  it('clicking View Profile in avatar dropdown navigates to public profile page', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByTestId('avatar'));
+    await waitFor(() => expect(screen.getByText('View Profile')).toBeDefined());
+
+    fireEvent.click(screen.getByText('View Profile'));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/users/user-2');
+    });
+  });
 });

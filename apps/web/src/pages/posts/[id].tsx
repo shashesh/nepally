@@ -818,8 +818,11 @@ export default function PostDetailPage() {
             <button
               className={styles.avatarDropdownItem}
               onClick={() => {
+                const targetId = avatarMenuUser?.id;
                 setAvatarMenuOpen(false);
-                alert('User profiles coming soon');
+                if (targetId) {
+                  router.push(`/users/${targetId}`);
+                }
               }}
             >
               View Profile
