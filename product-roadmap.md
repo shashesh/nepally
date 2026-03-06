@@ -1,7 +1,7 @@
 # NUSA App: Product Roadmap
 
-**Version:** 1.3
-**Last Updated:** 2026-02-23 (Profile UX Refresh: Reddit-style tabs + hamburger account actions on web/mobile)
+**Version:** 1.4
+**Last Updated:** 2026-03-05 (Public Profile View: privacy-safe user profiles on mobile + web)
 
 ---
 
@@ -276,23 +276,40 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 - Improved content recall via explicit Posts/Saved Posts separation
 - Cleaner account action discoverability via hamburger menu
 
-### H. Events (Documentation Only)
+### G3. Public Profile View (Implemented)
+
+**Goal:** Allow users to view any author's public profile by tapping their avatar in the feed or post detail.
+
+**Implemented (2026-03-04):**
+- Shared `formatPublicName()` utility — formats full names as "Firstname L." to protect PII
+- Mobile `PublicProfileScreen` accessible from feed and post detail; own-post avatar tap redirects to own Profile tab instead
+- Web `/users/[id]` dynamic page with matching layout
+- Both surfaces show: masked name, trust badge, metro city + state, "Member since [year]", post count, their public posts, and a "Message" button
+- No email, phone, or ZIP exposed on public profiles
+- Replaced all "Coming soon" avatar stubs in HomeScreen, PostDetailScreen (mobile) and feed, post detail (web)
+
+**Data Layer:**
+- Reuses existing `getUserById()` and `getPostsByAuthorId()` shared API functions — no DB changes needed
+- `formatPublicName()` added to `packages/shared/src/utils/user.ts`, exported from shared index
+
+---
+
+### H. Events
 
 **Purpose:** Community event discovery and coordination.
 
-**Phase 1 Scope:**
-- Bottom navigation tab with "Coming Soon" placeholder
-- Feature specification documented for future implementation
+**Status:** Spec approved — implementation pending.
 
-**Future Features:**
-- Browse upcoming events by metro area
-- Event details: title, date/time, location, description
-- Filter by event type (Cultural, Religious, Social, Career)
-- RSVP functionality with attendance tracking
-- Event creation by verified users (Level 1+)
-- Push notification reminders
+**Scope:**
+- Chronological events feed with filter chips (Cultural, Religious, Social, Career, Other)
+- Event creation by Level 1+ verified users (local by default; premium users can toggle global)
+- Event detail: title, date/time, location, description, organizer info
+- RSVP functionality with organizer-controlled privacy (public attendee list or count-only)
+- Edit, cancel, and delete events (organizer only)
+- Events visible on organizer's public profile
+- Push notification reminders (deferred — depends on full notifications infrastructure)
 
-See [Events Feature Spec](docs/features/events.md) for full details.
+See [Events Feature Spec](docs/features/events.md) and [Events Feature Breakdown](docs/features/events-feature-breakdown.md) for full details.
 
 ### I. Marketplace (Documentation Only)
 
@@ -466,7 +483,7 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 1. Implement post photo upload (DB field and placeholder UI exist, needs file picker, upload, and compression logic)
 2. Build reporting system (DB schema exists, needs API functions and UI for report button, report categories, auto-hide threshold)
 3. Design and build Admin Dashboard (moderator tools: flagged content queue, trust level management, ban/unban, platform stats)
-4. Define the User Journey for emergency posting (Red Alert verification flow)
+4. Complete full notifications system (mobile UI screens exist; DB layer, shared API, web integration, and push delivery still needed — see `docs/implementation-plans/notifications-feature.md`)
 
 ### Research Needed
 - Legal review of liability disclaimers

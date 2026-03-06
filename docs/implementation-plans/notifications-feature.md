@@ -121,7 +121,7 @@ Create data model and trigger behavior for notification generation and user/devi
 - Realtime publication enabled for `user_settings`, `device_tokens`
 
 **File Changes**
-- `supabase/migrations/001_schema.sql` (per requested implementation scope)
+- `supabase/migrations/004_notifications.sql` — new incremental migration (NEVER modify 001_schema.sql; it is frozen and destructive)
 
 **Tests / Validation**
 - SQL syntax/apply sanity checks
@@ -341,8 +341,10 @@ Create deploy-ready scaffold for push fanout logic.
 - `apps/mobile/src/services/notifications.ts`
 - `supabase/functions/send-push-notification/index.ts`
 
+### New Migration File
+- `supabase/migrations/004_notifications.sql` — incremental, additive only (ALTER TABLE / CREATE TABLE / CREATE POLICY / CREATE OR REPLACE FUNCTION)
+
 ### Modified Files
-- `supabase/migrations/001_schema.sql`
 - `packages/shared/src/types/user.ts`
 - `packages/shared/src/types/index.ts`
 - `packages/shared/src/api/index.ts`

@@ -163,43 +163,74 @@ This directory contains custom skills for building NUSA with a structured, docum
 
 ---
 
+### 7. Shared-First Check (`/shared-first-check`)
+**Purpose**: Validate that code follows shared-first architecture — no duplicated types, API logic, or constants between apps
+
+**When to use**: After every `/implement-feature` and before marking any feature complete
+
+**Usage**:
+```
+/shared-first-check
+```
+
+**What it does**:
+1. Checks for type/interface duplication across workspaces
+2. Verifies all Supabase query logic lives in `packages/shared/src/api/` (not in `apps/`)
+3. Checks for duplicated validation schemas or constants
+4. Verifies `packages/shared/` has no platform-specific imports
+5. Checks that `apps/` import from `@nusa/shared`
+6. Verifies `packages/shared/src/index.ts` exports all new modules
+7. Checks that new logic has corresponding unit tests
+
+**Output**: Consolidated compliance report with pass/fail per category and specific remediation actions
+
+---
+
 ## Recommended Workflow
 
-### For New Features
+**Full process is documented in [`docs/feature-development-process.md`](../../docs/feature-development-process.md).** Read that first for complex features.
+
+### Quick Reference (7 Stages)
 
 ```
-1. /design-feature [feature-name]
-   ↓ Creates feature specification
-
-2. /user-journey [journey-name]
-   ↓ Documents user flow step-by-step
-
-3. /wireframe [screen-name]
-   ↓ Designs each screen (repeat for all screens)
-
-4. /implement-feature [feature-name]
-   ↓ Builds the feature with full context
+Stage 0: /break-features [feature]     ← for complex features only
+Stage 1: /design-feature [feature]     ← feature specification
+Stage 2: /user-journey [flow-name]     ← one per user flow
+Stage 3: /wireframe [screen-name]      ← one per screen
+Stage 4: create implementation plan    ← docs/implementation-plans/
+Stage 5: /implement-feature [feature]  ← build shared layer first, then UI
+Stage 6: /shared-first-check + tests   ← validate before marking done
 ```
 
-### Example: Building Signup Flow
+### Example: Building Events Feature
 
 ```bash
-# Step 1: Design the feature
-/design-feature signup-and-onboarding
+# Stage 0: Break down scope first (events is complex)
+/break-features events
 
-# Step 2: Document user journey
-/user-journey signup-and-onboarding
+# Stage 1: Design (scoped to Phase 2 output from Stage 0)
+/design-feature events
 
-# Step 3: Create wireframes for each screen
-/wireframe welcome-screen
-/wireframe signup-method-selection
-/wireframe zip-code-entry
-/wireframe metro-confirmation
-/wireframe onboarding-tutorial
-/wireframe home-screen-level-0
+# Stage 2: Journeys (one per flow)
+/user-journey event-browsing
+/user-journey event-creation
+/user-journey event-rsvp
 
-# Step 4: Implement with full context
-/implement-feature signup-and-onboarding
+# Stage 3: Wireframes (one per screen)
+/wireframe event-list-screen
+/wireframe event-detail-screen
+/wireframe event-creation-screen
+
+# Stage 4: Implementation plan
+# Prompt Claude: "Create docs/implementation-plans/events-feature.md
+#                 using the template. DB changes go in 004_events.sql."
+
+# Stage 5: Implement
+/implement-feature events
+
+# Stage 6: Validate
+/shared-first-check
+npm run test && npm run test:coverage
 ```
 
 ---

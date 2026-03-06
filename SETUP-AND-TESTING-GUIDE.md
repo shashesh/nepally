@@ -4,28 +4,26 @@
 
 Before starting, ensure you have:
 
-- **Node.js**: Version 18.0.0 or higher (you currently have 16.20.2, which may cause issues)
+- **Node.js**: Version 18.0.0 or higher
 - **npm**: Version 9.0.0 or higher
 - **Git**: For version control
 - **Code editor**: VS Code recommended
 - **Mobile testing**: Expo Go app on your phone OR iOS Simulator/Android Emulator
 
-## Step 1: Upgrade Node.js (Important!)
+## Step 1: Verify Node.js Version
 
-Your current Node.js version (16.20.2) is below the required 18.0.0. Upgrade first:
+### Check your current version:
+```bash
+node --version  # Should show v18.x.x or higher
+npm --version   # Should show 9.x.x or higher
+```
 
-### Windows:
+### If you need to upgrade (Windows):
 ```bash
 # Download and install from https://nodejs.org/
 # Or use nvm-windows:
 nvm install 18
 nvm use 18
-```
-
-### Verify installation:
-```bash
-node --version  # Should show v18.x.x or higher
-npm --version   # Should show 9.x.x or higher
 ```
 
 ## Step 2: Install Dependencies
@@ -268,13 +266,17 @@ npm run dev
 
 ## Step 8: Test the Web App
 
-### Web App Testing (Currently Limited)
+### Web App Testing
 
-The web app doesn't have the full onboarding implemented yet in this phase, but you can test:
+The web app mirrors the mobile feature set. Key flows to test:
 
-1. **Homepage loads** ✓
-2. **Check console** for errors (F12 → Console tab)
-3. **Verify Supabase connection** (check Network tab)
+1. **Feed loads** at `/feed` ✓ — posts, tag filters, like/comment/message actions
+2. **Post detail** at `/posts/[id]` ✓ — full post, comments thread, contact author
+3. **Profile** at `/profile` ✓ — Posts/Saved/About tabs, hamburger account menu
+4. **Public profile** at `/users/[id]` ✓ — masked name, trust badge, user posts
+5. **Messages** at `/messages` ✓ — conversation list and threads
+6. **Check console** for errors (F12 → Console tab)
+7. **Verify Supabase connection** (check Network tab)
 
 ## Step 8.5: Run Unit Tests & Coverage (Required)
 
@@ -451,6 +453,10 @@ npm run test:coverage --workspace=packages/shared
 - [ ] App loads at http://localhost:3000
 - [ ] No console errors (some warnings OK)
 - [ ] Supabase connection works (check Network tab)
+- [ ] Feed page loads posts with tag filters
+- [ ] Post detail shows comments and actions
+- [ ] Profile page shows Posts / Saved / About tabs
+- [ ] Public profile at /users/[id] shows masked name and posts
 
 ## Step 11: View Running Apps Side-by-Side
 

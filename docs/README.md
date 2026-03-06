@@ -6,6 +6,7 @@ This directory contains detailed documentation for the NUSA project.
 
 | File | Purpose |
 |------|---------|
+| [feature-development-process.md](./feature-development-process.md) | **Start here** — end-to-end process from idea to shipped feature |
 | [database-schema.md](./database-schema.md) | PostgreSQL tables, RLS policies, query patterns |
 | [code-sharing-guide.md](./code-sharing-guide.md) | What to share between mobile/web apps |
 | [monorepo-structure.md](./monorepo-structure.md) | Codebase organization and workspace setup |

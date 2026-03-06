@@ -1,0 +1,2182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wiremd Mockup</title>
+  <style>
+
+/* wiremd Sketch Style - Balsamiq-inspired hand-drawn mockups */
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body.wmd-root {
+  font-family: 'Kalam', 'Comic Sans MS', 'Marker Felt', 'Chalkboard', cursive, sans-serif;
+  background: #f5f5dc;
+  color: #333;
+  padding: 20px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Headings */
+.wmd-h1, .wmd-h2, .wmd-h3, .wmd-h4, .wmd-h5, .wmd-h6 {
+  font-weight: bold;
+  margin: 1em 0 0.5em;
+  line-height: 1.3;
+}
+
+.wmd-h1 { font-size: 2em; text-decoration: underline; }
+.wmd-h2 { font-size: 1.75em; }
+.wmd-h3 { font-size: 1.5em; }
+.wmd-h4 { font-size: 1.25em; }
+.wmd-h5 { font-size: 1.1em; }
+.wmd-h6 { font-size: 1em; }
+
+/* Paragraph */
+.wmd-paragraph {
+  margin: 0.5em 0;
+}
+
+/* Buttons */
+.wmd-button {
+  display: inline-block;
+  padding: 8px 16px;
+  margin: 4px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+  transform: rotate(-0.5deg);
+  transition: all 0.1s;
+}
+
+.wmd-button:hover {
+  transform: rotate(-0.5deg) translateY(-2px);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+}
+
+.wmd-button-primary, .wmd-button.wmd-primary {
+  background: #87CEEB;
+  border-color: #4682B4;
+}
+
+.wmd-button-secondary, .wmd-button.wmd-secondary {
+  background: #DDD;
+  border-color: #999;
+}
+
+.wmd-button-danger, .wmd-button.wmd-danger {
+  background: #FFB6C1;
+  border-color: #DC143C;
+}
+
+.wmd-button[disabled], .wmd-button.wmd-state-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wmd-button.wmd-loading::after {
+  content: '...';
+  animation: loading 1s infinite;
+}
+
+/* Inputs */
+.wmd-input, .wmd-textarea, .wmd-select {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  margin: 4px 0;
+  font-family: inherit;
+  font-size: 14px;
+  background: #fff;
+  border: 2px solid #666;
+  border-radius: 4px;
+  transform: rotate(0.3deg);
+}
+
+.wmd-input:focus, .wmd-textarea:focus, .wmd-select:focus {
+  outline: 2px solid #4682B4;
+  outline-offset: 2px;
+}
+
+.wmd-input[disabled], .wmd-input.wmd-state-disabled,
+.wmd-textarea[disabled], .wmd-textarea.wmd-state-disabled,
+.wmd-select[disabled], .wmd-select.wmd-state-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.wmd-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Checkboxes and Radios */
+.wmd-checkbox, .wmd-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wmd-checkbox input[type="checkbox"],
+.wmd-radio input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  font-size: 1.2em;
+  line-height: 1;
+  vertical-align: middle;
+  margin: 0 0.2em;
+}
+
+/* Containers */
+.wmd-container-hero, .wmd-container-card, .wmd-container-modal {
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 16px 0;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+  transform: rotate(-0.3deg);
+}
+
+.wmd-container-hero {
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE6CC 100%);
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.wmd-container-card {
+  max-width: 400px;
+}
+
+.wmd-container-modal {
+  position: relative;
+  max-width: 500px;
+  margin: 32px auto;
+  border-width: 4px;
+}
+
+/* Radio Groups */
+.wmd-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.wmd-radio-group-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.wmd-radio-group-inline .wmd-radio {
+  margin: 0;
+}
+
+/* Icons */
+.wmd-icon {
+  display: inline-block;
+  font-size: 1.2em;
+  line-height: 1;
+  vertical-align: middle;
+  margin: 0 0.2em;
+}
+
+/* Navigation */
+.wmd-nav {
+  background: #87CEEB;
+  border: 3px solid #4682B4;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.15);
+}
+
+.wmd-nav-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wmd-brand {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-right: auto;
+}
+
+.wmd-nav-item {
+  display: inline-block;
+  color: #000;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 6px 14px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+  transform: rotate(0.3deg);
+  transition: all 0.1s;
+}
+
+.wmd-nav-item:hover {
+  transform: rotate(0.3deg) translateY(-1px);
+  box-shadow: 2px 3px 0 rgba(0,0,0,0.15);
+  background: #f8f8f8;
+}
+
+.wmd-nav .wmd-button {
+  margin: 0;
+}
+
+/* Grid */
+.wmd-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 3), 1fr);
+  gap: 24px;
+  margin: 24px 0;
+}
+
+.wmd-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.wmd-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.wmd-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+.wmd-grid-item {
+  background: #fff;
+  border: 2px solid #666;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  transform: rotate(0.5deg);
+}
+
+.wmd-grid-item:nth-child(even) {
+  transform: rotate(-0.5deg);
+}
+
+/* Lists */
+.wmd-list {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.wmd-list-item {
+  margin: 4px 0;
+}
+
+/* Blockquote */
+.wmd-blockquote {
+  border-left: 4px solid #666;
+  padding-left: 16px;
+  margin: 16px 0;
+  font-style: italic;
+  color: #555;
+}
+
+/* Code */
+.wmd-code-inline {
+  background: #FFF3CD;
+  border: 1px solid #FFC107;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.wmd-code-block {
+  background: #FFF3CD;
+  border: 2px solid #FFC107;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.wmd-code-block code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+/* Separator */
+.wmd-separator {
+  border: none;
+  border-top: 3px dashed #666;
+  margin: 24px 0;
+}
+
+/* Table */
+.wmd-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 3px solid #000;
+  border-radius: 8px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.wmd-table th, .wmd-table td {
+  border: 2px solid #666;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.wmd-table th {
+  background: #DDD;
+  font-weight: bold;
+}
+
+/* Table cell alignment - more specific to override th/td defaults */
+.wmd-table .wmd-align-left {
+  text-align: left !important;
+}
+
+.wmd-table .wmd-align-center {
+  text-align: center !important;
+}
+
+.wmd-table .wmd-align-right {
+  text-align: right !important;
+}
+
+/* State Containers */
+.wmd-container-loading-state {
+  background: #fff;
+  border: 2px solid #87CEEB;
+  border-radius: 8px;
+  padding: 32px;
+  margin: 16px 0;
+  text-align: center;
+  position: relative;
+}
+
+.wmd-container-loading-state::before {
+  content: '⟳';
+  display: block;
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: spin 1.5s linear infinite;
+  transform-origin: center;
+}
+
+.wmd-container-empty-state {
+  background: #f5f5f5;
+  border: 2px dashed #999;
+  border-radius: 8px;
+  padding: 48px 32px;
+  margin: 16px 0;
+  text-align: center;
+  color: #666;
+}
+
+.wmd-container-empty-state::before {
+  content: '📭';
+  display: block;
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.wmd-container-error-state {
+  background: #FFE6E6;
+  border: 3px solid #DC143C;
+  border-radius: 8px;
+  padding: 32px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.wmd-container-error-state::before {
+  content: '⚠️';
+  display: block;
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wmd-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .wmd-nav-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wmd-brand {
+    margin-right: 0;
+  }
+}
+
+@keyframes loading {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body class="wmd-root wmd-sketch">
+  <h1 class="wmd-h1">Wireframe: Event Detail Screen</h1>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><strong>Screen:</strong> 17 | <strong>Status:</strong> Draft | <strong>Updated:</strong> 2026-03-05
+<strong>Feature Spec:</strong> <a href="../../features/events.md">events.md</a>
+<strong>Previous Screen:</strong> <a href="../16-events-list/16-events-list.md">16-events-list.md</a>
+<strong>Story:</strong> As a verified user, I want to view full event details and RSVP so I can plan my attendance and let the organizer know I'm coming.</p>
+</blockquote>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Screen Purpose + Key Goals</h2>
+<p class="wmd-paragraph">The Event Detail screen shows the complete information for a single event and is the primary surface for RSVPs. Users arrive by tapping an event card in the Events List.</p>
+<p class="wmd-paragraph"><strong>Key Goals:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Display all event information needed to decide whether to attend</li>
+  <li class="wmd-list-item">Enable RSVP with a single tap (Level 1+)</li>
+  <li class="wmd-list-item">Surface organizer identity and provide a path to message them</li>
+  <li class="wmd-list-item">Show attendee list (public) or RSVP count (private)</li>
+  <li class="wmd-list-item">Give organizers access to edit, cancel, and delete actions</li>
+  <li class="wmd-list-item">Handle past/cancelled events gracefully</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Visual Wireframe</h2>
+<h3 class="wmd-h3">State 1: Default — Active Event, Level 1+ User (Not RSVP&#039;d)</h3>
+<div class="wmd-container-nav">
+  <p class="wmd-paragraph">←                    <span class="wmd-icon" data-icon="flag" aria-label="flag">🚩</span>Report</p>
+</div>
+<div class="wmd-container-hero">
+  <div class="wmd-container-form-group">
+  <img src="assets/event-photo-placeholder.png" alt="Event photo or type illustration" class="wmd-image" />
+</div>
+</div>
+<p class="wmd-paragraph">🎭 Cultural {.badge-cultural}             📍 Local</p>
+<h2 class="wmd-h2">Teej Festival 2026</h2>
+<p class="wmd-paragraph">📅 <strong>Saturday, August 29, 2026</strong>
+6:00 PM – 10:00 PM</p>
+<p class="wmd-paragraph">📍 Dallas Convention Center
+650 S Griffin St, Dallas, TX 75202</p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><em>Teej is a celebrated festival observed by Hindu women and girls. Join our community for an evening of traditional songs, dance, and feasting. All are welcome — bring the whole family! Traditional attire encouraged.</em></p>
+<p class="wmd-paragraph"><em>Activities include: group singing of Teej songs, folk dance performances, traditional food (sel roti, dahi, fruits), and cultural games.</em></p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Organizer</strong></p>
+<div class="wmd-container-form-group">
+  <strong>[AK]</strong>   Asha K. ✓         
+  <button class="wmd-button wmd-outline">Message Organizer</button>
+</div>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Attendance</strong></p>
+<p class="wmd-paragraph"><strong>[👤][👤][👤][👤][👤]</strong> +29   34 going</p>
+<button class="wmd-button wmd-outline">View all attendees</button>
+<hr class="wmd-separator" />
+<button class="wmd-button wmd-button-primary">RSVP — I&#039;m Going <span class="wmd-icon" data-icon="calendar" aria-label="calendar">📅</span></button>
+<hr class="wmd-separator" />
+<div class="wmd-container-footer">
+  <div class="wmd-container-form-group">
+  [[ 
+  <span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>
+   Home | 
+  <span class="wmd-icon" data-icon="pencil" aria-label="pencil">●</span>
+   Post |<em>:calendar: Events</em>| 
+  <span class="wmd-icon" data-icon="storefront" aria-label="storefront">●</span>
+   Marketplace | 
+  <span class="wmd-icon" data-icon="user" aria-label="user">👤</span>
+   Profile ]]
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 2: RSVP&#039;d — &quot;Going&quot; State</h3>
+<div class="wmd-container-nav">
+  <p class="wmd-paragraph">←                    <span class="wmd-icon" data-icon="flag" aria-label="flag">🚩</span>Report</p>
+</div>
+<div class="wmd-container-hero">
+  <div class="wmd-container-form-group">
+  <img src="assets/event-photo-placeholder.png" alt="Event photo" class="wmd-image" />
+</div>
+</div>
+<p class="wmd-paragraph">🎭 Cultural {.badge-cultural}             📍 Local</p>
+<h2 class="wmd-h2">Teej Festival 2026</h2>
+<p class="wmd-paragraph">📅 <strong>Saturday, August 29, 2026</strong>
+6:00 PM – 10:00 PM</p>
+<p class="wmd-paragraph">📍 Dallas Convention Center
+650 S Griffin St, Dallas, TX 75202</p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><em>Teej is a celebrated festival observed by Hindu women and girls...</em></p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Organizer</strong></p>
+<div class="wmd-container-form-group">
+  <strong>[AK]</strong>   Asha K. ✓         
+  <button class="wmd-button wmd-outline">Message Organizer</button>
+</div>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Attendance</strong></p>
+<p class="wmd-paragraph"><strong>[👤][👤][👤][👤][👤]</strong> +30   35 going</p>
+<button class="wmd-button wmd-outline">View all attendees</button>
+<hr class="wmd-separator" />
+<div class="wmd-container-alert success">
+  <p class="wmd-paragraph">✓ You&#039;re going! We&#039;ll remind you before the event.</p>
+</div>
+<div class="wmd-container-button-group">
+  <button class="wmd-button wmd-button-success">Going ✓</button>
+  <button class="wmd-button wmd-outline">Can&#039;t make it</button>
+</div>
+<hr class="wmd-separator" />
+<div class="wmd-container-footer">
+  <div class="wmd-container-form-group">
+  [[ 
+  <span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>
+   Home | 
+  <span class="wmd-icon" data-icon="pencil" aria-label="pencil">●</span>
+   Post |<em>:calendar: Events</em>| 
+  <span class="wmd-icon" data-icon="storefront" aria-label="storefront">●</span>
+   Marketplace | 
+  <span class="wmd-icon" data-icon="user" aria-label="user">👤</span>
+   Profile ]]
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 3: Private RSVP (Count Only — No Attendee List)</h3>
+<p class="wmd-paragraph"><strong>Attendance</strong></p>
+<p class="wmd-paragraph"><strong>34 going</strong></p>
+<blockquote class="wmd-blockquote">
+  <p class="wmd-paragraph"><em>(Attendee list is private. Organizer controls visibility.)</em></p>
+</blockquote>
+<hr class="wmd-separator" />
+<button class="wmd-button wmd-button-primary">RSVP — I&#039;m Going <span class="wmd-icon" data-icon="calendar" aria-label="calendar">📅</span></button>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 4: Organizer View (Own Event — Edit/Cancel/Delete)</h3>
+<div class="wmd-container-nav">
+  <p class="wmd-paragraph">←                    ⋮ {.icon-button}</p>
+</div>
+<div class="wmd-container-hero">
+  <div class="wmd-container-form-group">
+  <img src="assets/event-photo-placeholder.png" alt="Event photo" class="wmd-image" />
+</div>
+</div>
+<p class="wmd-paragraph">🎭 Cultural {.badge-cultural}             📍 Local</p>
+<h2 class="wmd-h2">Teej Festival 2026</h2>
+<p class="wmd-paragraph">📅 <strong>Saturday, August 29, 2026</strong>
+6:00 PM – 10:00 PM</p>
+<p class="wmd-paragraph">📍 Dallas Convention Center
+650 S Griffin St, Dallas, TX 75202</p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><em>Teej is a celebrated festival...</em></p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Organizer</strong></p>
+<p class="wmd-paragraph"><strong>[AK]</strong>   Asha K. ✓            <em>You</em></p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Attendance — 34 RSVPs</strong></p>
+<p class="wmd-paragraph"><strong>[👤][👤][👤][👤][👤]</strong> +29   34 going</p>
+<button class="wmd-button wmd-button-primary">View all attendees</button>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>You're the organizer</strong></p>
+<hr class="wmd-separator" />
+<div class="wmd-container-footer">
+  <div class="wmd-container-form-group">
+  [[ 
+  <span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>
+   Home | 
+  <span class="wmd-icon" data-icon="pencil" aria-label="pencil">●</span>
+   Post |<em>:calendar: Events</em>| 
+  <span class="wmd-icon" data-icon="storefront" aria-label="storefront">●</span>
+   Marketplace | 
+  <span class="wmd-icon" data-icon="user" aria-label="user">👤</span>
+   Profile ]]
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 4a: Organizer Three-Dot Menu (Expanded)</h3>
+<div class="wmd-container-modal">
+  <button class="wmd-button wmd-outline">Cancel Event</button>
+  <button class="wmd-button wmd-button-danger">Delete Event</button>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 5: Cancelled Event</h3>
+<div class="wmd-container-nav">
+  <p class="wmd-paragraph">←                    <span class="wmd-icon" data-icon="flag" aria-label="flag">🚩</span>Report</p>
+</div>
+<div class="wmd-container-hero">
+  <div class="wmd-container-form-group">
+  <img src="assets/event-photo-placeholder.png" alt="Event photo — dimmed" class="wmd-image" />
+</div>
+</div>
+<div class="wmd-container-alert error">
+  <p class="wmd-paragraph">🚫<strong>This event has been cancelled.</strong></p>
+</div>
+<p class="wmd-paragraph">🎭 Cultural {.badge-cultural-muted}</p>
+<h2 class="wmd-h2">Teej Festival 2026</h2>
+<p class="wmd-paragraph">📅 Saturday, August 29, 2026
+6:00 PM – 10:00 PM</p>
+<p class="wmd-paragraph">📍 Dallas Convention Center</p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><em>Teej is a celebrated festival...</em></p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Organizer</strong></p>
+<p class="wmd-paragraph"><strong>[AK]</strong>   Asha K. ✓</p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>34 people had RSVP'd</strong></p>
+<hr class="wmd-separator" />
+<div class="wmd-container-footer">
+  <div class="wmd-container-form-group">
+  [[ 
+  <span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>
+   Home | 
+  <span class="wmd-icon" data-icon="pencil" aria-label="pencil">●</span>
+   Post |<em>:calendar: Events</em>| 
+  <span class="wmd-icon" data-icon="storefront" aria-label="storefront">●</span>
+   Marketplace | 
+  <span class="wmd-icon" data-icon="user" aria-label="user">👤</span>
+   Profile ]]
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 6: Past Event</h3>
+<div class="wmd-container-nav">
+  <p class="wmd-paragraph">←                    <span class="wmd-icon" data-icon="flag" aria-label="flag">🚩</span>Report</p>
+</div>
+<div class="wmd-container-hero">
+  <div class="wmd-container-form-group">
+  <img src="assets/event-photo-placeholder.png" alt="Event photo" class="wmd-image" />
+</div>
+</div>
+<div class="wmd-container-alert info">
+  <p class="wmd-paragraph">📅<strong>This event has passed.</strong></p>
+</div>
+<p class="wmd-paragraph">🎭 Cultural {.badge-cultural}</p>
+<h2 class="wmd-h2">Teej Festival 2026</h2>
+<p class="wmd-paragraph">📅 Saturday, August 29, 2026
+<em>(Ended)</em></p>
+<p class="wmd-paragraph">📍 Dallas Convention Center</p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><em>Teej is a celebrated festival...</em></p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Organizer</strong></p>
+<div class="wmd-container-form-group">
+  <strong>[AK]</strong>   Asha K. ✓         
+  <button class="wmd-button wmd-outline">Message Organizer</button>
+</div>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>47 people attended</strong></p>
+<hr class="wmd-separator" />
+<button class="wmd-button wmd-state-disabled" disabled>Event Has Passed</button>
+<hr class="wmd-separator" />
+<div class="wmd-container-footer">
+  <div class="wmd-container-form-group">
+  [[ 
+  <span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>
+   Home | 
+  <span class="wmd-icon" data-icon="pencil" aria-label="pencil">●</span>
+   Post |<em>:calendar: Events</em>| 
+  <span class="wmd-icon" data-icon="storefront" aria-label="storefront">●</span>
+   Marketplace | 
+  <span class="wmd-icon" data-icon="user" aria-label="user">👤</span>
+   Profile ]]
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 7: Level 0 User View</h3>
+<div class="wmd-container-nav">
+  <p class="wmd-paragraph">←                    <span class="wmd-icon" data-icon="flag" aria-label="flag">🚩</span>Report</p>
+</div>
+<div class="wmd-container-hero">
+  <div class="wmd-container-form-group">
+  <img src="assets/event-photo-placeholder.png" alt="Event photo" class="wmd-image" />
+</div>
+</div>
+<p class="wmd-paragraph">🎭 Cultural {.badge-cultural}</p>
+<h2 class="wmd-h2">Teej Festival 2026</h2>
+<p class="wmd-paragraph">📅 <strong>Saturday, August 29, 2026</strong>
+6:00 PM – 10:00 PM</p>
+<p class="wmd-paragraph">📍 Dallas Convention Center
+650 S Griffin St, Dallas, TX 75202</p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><em>Teej is a celebrated festival...</em></p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Organizer</strong></p>
+<p class="wmd-paragraph"><strong>[AK]</strong>   Asha K. ✓</p>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>34 going</strong></p>
+<hr class="wmd-separator" />
+<div class="wmd-container-alert warning">
+  <p class="wmd-paragraph">⚠️ Verify your phone to RSVP and message the organizer.   <button class="wmd-button wmd-outline">Verify Now</button></p>
+</div>
+<button class="wmd-button wmd-state-disabled" disabled>Verify to RSVP</button>
+<hr class="wmd-separator" />
+<div class="wmd-container-footer">
+  <div class="wmd-container-form-group">
+  [[ 
+  <span class="wmd-icon" data-icon="home" aria-label="home">🏠</span>
+   Home | 
+  <span class="wmd-icon" data-icon="pencil" aria-label="pencil">●</span>
+   Post |<em>:calendar: Events</em>| 
+  <span class="wmd-icon" data-icon="storefront" aria-label="storefront">●</span>
+   Marketplace | 
+  <span class="wmd-icon" data-icon="user" aria-label="user">👤</span>
+   Profile ]]
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 8: Attendee List Modal (Public RSVP)</h3>
+<div class="wmd-container-modal">
+  <h2 class="wmd-h2">34 Going</h2>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>[AK]</strong>   Asha K. ✓</p>
+  <p class="wmd-paragraph"><strong>[RS]</strong>   Rohan S. ✓</p>
+  <p class="wmd-paragraph"><strong>[PG]</strong>   Priya G.</p>
+  <p class="wmd-paragraph"><strong>[BT]</strong>   Bikram T. ✓</p>
+  <p class="wmd-paragraph"><strong>[SG]</strong>   Sita G. ✓</p>
+  <p class="wmd-paragraph"><strong>[AM]</strong>   Anita M.</p>
+  <p class="wmd-paragraph"><em>... and 28 more</em></p>
+  <button class="wmd-button">Close</button>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 9: Cancel Event Confirmation</h3>
+<div class="wmd-container-modal">
+  <h2 class="wmd-h2">Cancel This Event?</h2>
+  <p class="wmd-paragraph">Attendees will see this event as cancelled. Their RSVPs will be preserved.</p>
+  <p class="wmd-paragraph"><em>This action cannot be undone.</em></p>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button wmd-outline">Keep Event</button>
+  <button class="wmd-button wmd-button-danger">Yes, Cancel It</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 10: Delete Event Confirmation</h3>
+<div class="wmd-container-modal">
+  <h2 class="wmd-h2">Delete This Event?</h2>
+  <p class="wmd-paragraph">This will permanently remove the event from all feeds. Attendees will not be notified.</p>
+  <p class="wmd-paragraph"><em>This action cannot be undone.</em></p>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button wmd-outline">Keep Event</button>
+  <button class="wmd-button wmd-button-danger">Delete</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 11: Un-RSVP Confirmation</h3>
+<div class="wmd-container-modal">
+  <h2 class="wmd-h2">Can&#039;t Make It?</h2>
+  <p class="wmd-paragraph">Remove your RSVP for <strong>Teej Festival 2026</strong>?</p>
+  <div class="wmd-container-button-group">
+  <button class="wmd-button wmd-outline">Stay Going</button>
+  <button class="wmd-button wmd-button-danger">Remove RSVP</button>
+</div>
+</div>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">State 12: Web Layout (Desktop)</h3>
+<div class="wmd-container-nav">
+  <nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <div class="wmd-brand"><span class="wmd-icon" data-icon="logo" aria-label="logo">◈</span>NUSA</div>
+    <a href="#" class="wmd-nav-item">Events</a>
+    <a href="#" class="wmd-nav-item">Home</a>
+    <a href="#" class="wmd-nav-item">Marketplace</a>
+    <a href="#" class="wmd-nav-item"><span class="wmd-icon" data-icon="user" aria-label="user">👤</span>Profile</a>
+  </div>
+</nav>
+</div>
+<nav class="wmd-nav">
+  <div class="wmd-nav-content">
+    <a href="#" class="wmd-nav-item">Events &gt; Teej Festival 2026</a>
+  </div>
+</nav>
+<div class="wmd-grid wmd-grid-2 wmd-grid-2" style="--grid-columns: 2">
+  <div class="wmd-grid-item">
+    <h3 class="wmd-h3">Left Column — Event Info</h3>
+    <div class="wmd-container-hero">
+  <div class="wmd-container-form-group">
+  <img src="assets/event-photo-placeholder.png" alt="Event photo" class="wmd-image" />
+</div>
+</div>
+    <p class="wmd-paragraph">🎭 Cultural {.badge-cultural}   📍 Local</p>
+  </div>
+  <div class="wmd-grid-item">
+    <h3 class="wmd-h3">Teej Festival 2026</h3>
+    <p class="wmd-paragraph">📅 Saturday, August 29, 2026 · 6:00 PM – 10:00 PM</p>
+    <p class="wmd-paragraph">📍 Dallas Convention Center
+650 S Griffin St, Dallas, TX 75202</p>
+    <hr class="wmd-separator" />
+    <p class="wmd-paragraph"><em>Teej is a celebrated festival observed by Hindu women and girls. Join our community for an evening of traditional songs, dance, and feasting...</em></p>
+  </div>
+  <div class="wmd-grid-item">
+    <h3 class="wmd-h3">Right Column — Actions &amp; Organizer</h3>
+    <div class="wmd-container-card">
+  <p class="wmd-paragraph"><strong>[AK]</strong>   Asha K. ✓</p>
+  <button class="wmd-button wmd-outline">Message Organizer</button>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph"><strong>34 going</strong></p>
+  <p class="wmd-paragraph"><strong>[👤][👤][👤][👤][👤]</strong> +29</p>
+  <button class="wmd-button wmd-outline">View all attendees</button>
+  <hr class="wmd-separator" />
+  <button class="wmd-button wmd-button-primary">RSVP — I&#039;m Going <span class="wmd-icon" data-icon="calendar" aria-label="calendar">📅</span></button>
+  <hr class="wmd-separator" />
+  <p class="wmd-paragraph">:flag: <button class="wmd-button wmd-outline">Report Event</button></p>
+</div>
+    <hr class="wmd-separator" />
+  </div>
+</div>
+<h2 class="wmd-h2">Component Specifications</h2>
+<h3 class="wmd-h3">1. Back Navigation Bar</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    <th class="wmd-table-cell wmd-align-left">Web</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Type</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Navigation bar</td>
+    <td class="wmd-table-cell wmd-align-left">App bar</td>
+    <td class="wmd-table-cell wmd-align-left">Breadcrumb</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">44px</td>
+    <td class="wmd-table-cell wmd-align-left">56dp</td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Background</strong></td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+    <td class="wmd-table-cell wmd-align-left">White (#FFFFFF)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Border</strong></td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom #E0E0E0</td>
+    <td class="wmd-table-cell wmd-align-left">elevation 2dp</td>
+    <td class="wmd-table-cell wmd-align-left">1px bottom #E0E0E0</td>
+  </tr>
+  </tbody>
+</table>
+<div class="wmd-container-form-group">
+  <strong>Left:</strong> Back arrow (←) — taps to pop screen, returns to Events List
+<strong>Right:</strong> Report button (
+  <span class="wmd-icon" data-icon="flag" aria-label="flag">🚩</span>
+   icon, 24px, #757575) — opens report flow
+</div>
+<ul class="wmd-list">
+  <li class="wmd-list-item">For event organizer: Report replaced by three-dot menu (⋮) with Edit / Cancel / Delete</li>
+</ul>
+<p class="wmd-paragraph"><strong>a11y:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Back: &quot;Back to Events, button&quot;</li>
+  <li class="wmd-list-item">Report: &quot;Report event, button&quot;</li>
+  <li class="wmd-list-item">Three-dot (organizer): &quot;More options, button&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">2. Hero Image</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    <th class="wmd-table-cell wmd-align-left">Web</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Width</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Full screen width</td>
+    <td class="wmd-table-cell wmd-align-left">Full screen width</td>
+    <td class="wmd-table-cell wmd-align-left">Full left column</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Height</strong></td>
+    <td class="wmd-table-cell wmd-align-left">220px</td>
+    <td class="wmd-table-cell wmd-align-left">220dp</td>
+    <td class="wmd-table-cell wmd-align-left">280px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Corner Radius</strong></td>
+    <td class="wmd-table-cell wmd-align-left">0 (edge-to-edge)</td>
+    <td class="wmd-table-cell wmd-align-left">0</td>
+    <td class="wmd-table-cell wmd-align-left">8px (within column)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Object Fit</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Cover</td>
+    <td class="wmd-table-cell wmd-align-left">centerCrop</td>
+    <td class="wmd-table-cell wmd-align-left">Cover</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Fallback (no photo uploaded):</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Event-type illustration with subtle color background matching event type<ul class="wmd-list">
+  <li class="wmd-list-item">Cultural: warm orange gradient + stylized dhaka pattern silhouette</li>
+  <li class="wmd-list-item">Religious: purple gradient + diya silhouette</li>
+  <li class="wmd-list-item">Social: green gradient + mountain silhouette</li>
+  <li class="wmd-list-item">Career: blue gradient + handshake silhouette</li>
+  <li class="wmd-list-item">Other: gray gradient + calendar silhouette</li>
+</ul></li>
+</ul>
+<p class="wmd-paragraph"><strong>Cancelled overlay:</strong> Photo dimmed to 40% opacity with no additional overlay text (the alert banner below handles it)</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">3. Event Type Badge + Scope Badge Row</h3>
+<p class="wmd-paragraph">Below hero image, horizontal row:</p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Left: Event type badge (same color scheme as events list)</li>
+  <li class="wmd-list-item">Right: 📍 Local or 🌐 Global badge</li>
+</ul>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Badge</th>
+    <th class="wmd-table-cell wmd-align-left">Text Color</th>
+    <th class="wmd-table-cell wmd-align-left">Background</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Cultural</td>
+    <td class="wmd-table-cell wmd-align-left">#E65100</td>
+    <td class="wmd-table-cell wmd-align-left">#FFF3E0</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Religious</td>
+    <td class="wmd-table-cell wmd-align-left">#6A1B9A</td>
+    <td class="wmd-table-cell wmd-align-left">#F3E5F5</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Social</td>
+    <td class="wmd-table-cell wmd-align-left">#1B5E20</td>
+    <td class="wmd-table-cell wmd-align-left">#E8F5E9</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Career</td>
+    <td class="wmd-table-cell wmd-align-left">#0D47A1</td>
+    <td class="wmd-table-cell wmd-align-left">#E3F2FD</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Other</td>
+    <td class="wmd-table-cell wmd-align-left">#424242</td>
+    <td class="wmd-table-cell wmd-align-left">#F5F5F5</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Local</td>
+    <td class="wmd-table-cell wmd-align-left">#388E3C</td>
+    <td class="wmd-table-cell wmd-align-left">#E8F5E9</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Global</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">#E3F2FD</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph">Margin: 16px top, 8px bottom</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">4. Event Title</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Typography</strong></td>
+    <td class="wmd-table-cell wmd-align-left">24pt/22sp Bold, #212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Max Lines</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Unlimited (no truncation on detail screen)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Margin</strong></td>
+    <td class="wmd-table-cell wmd-align-left">8px top</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph">For <strong>cancelled</strong> events: title in strikethrough style, #757575</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">5. Date/Time Row</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: 📅 calendar, 18px, #757575</li>
+  <li class="wmd-list-item">Format rules:<ul class="wmd-list">
+  <li class="wmd-list-item">Single day, with time: &quot;Saturday, August 29, 2026 · 6:00 PM – 10:00 PM&quot;</li>
+  <li class="wmd-list-item">Single day, no end time: &quot;Saturday, August 29, 2026 · 6:00 PM&quot;</li>
+  <li class="wmd-list-item">Multi-day: &quot;Fri, Aug 29 – Sun, Aug 31, 2026&quot;</li>
+  <li class="wmd-list-item">Multi-day with times: &quot;Fri, Aug 29 at 6:00 PM – Sun, Aug 31 at 2:00 PM&quot;</li>
+</ul></li>
+  <li class="wmd-list-item">Typography: 15pt/14sp Regular, #424242</li>
+  <li class="wmd-list-item">Margin: 12px top, 4px bottom</li>
+</ul>
+<p class="wmd-paragraph">For <strong>cancelled</strong> events: date row in strikethrough, #BDBDBD
+For <strong>past</strong> events: "<em>(Ended)</em>" appended, #757575</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">6. Location Row</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Icon: 📍 map pin, 18px, #757575</li>
+  <li class="wmd-list-item">Location name: Bold line, 15pt/14sp Semibold, #424242</li>
+  <li class="wmd-list-item">Address: Second line (if provided), 14pt/13sp Regular, #757575</li>
+  <li class="wmd-list-item">Tapping location row: future — open Maps app (deferred for MVP)</li>
+  <li class="wmd-list-item">Margin: 12px top, 4px bottom</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">7. Description</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Full text, no truncation</li>
+  <li class="wmd-list-item">Typography: 15pt/14sp Regular, #424242</li>
+  <li class="wmd-list-item">Line height: 1.6 (spacious for readability)</li>
+  <li class="wmd-list-item">Supports paragraph breaks (multiple \n\n render as distinct paragraphs)</li>
+  <li class="wmd-list-item">Margin: 16px top and bottom</li>
+  <li class="wmd-list-item">Dividers (horizontal rule) above and below section</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">8. Organizer Section</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Property</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Avatar</strong></td>
+    <td class="wmd-table-cell wmd-align-left">40×40px circle, profile photo or initials</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Name</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Masked: &quot;Firstname L.&quot;, 15pt/14sp Medium, #212121</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Trust badge</strong></td>
+    <td class="wmd-table-cell wmd-align-left">✓ checkmark, 16px, #2E7D32 (Level 1+)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Layout</strong></td>
+    <td class="wmd-table-cell wmd-align-left">[Avatar] [Name] [✓] ........... [Message Organizer]</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>"Message Organizer" button:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Outline style, 13pt/12sp Semibold, #1565C0</li>
+  <li class="wmd-list-item">Level 1+: taps to open/create chat with organizer</li>
+  <li class="wmd-list-item">Level 0: button hidden; replaced with &quot;Verify to message&quot; text link</li>
+  <li class="wmd-list-item">Own event (organizer): &quot;Message Organizer&quot; hidden; replaced with &quot;You&quot; text label</li>
+</ul>
+<p class="wmd-paragraph"><strong>Tap organizer name/avatar:</strong> Navigates to organizer's public profile (reuses PublicProfileScreen / /users/[id])</p>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">9. RSVP Attendance Section</h3>
+<p class="wmd-paragraph"><strong>Section header:</strong> "Attendance" (15pt/14sp Semibold, #212121)</p>
+<h4 class="wmd-h4">When RSVP is Public:</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Avatar stack: up to 5 circular avatars (24px each, overlapping by 8px)<ul class="wmd-list">
+  <li class="wmd-list-item">Photos or initials, same avatar component used app-wide</li>
+</ul></li>
+  <li class="wmd-list-item">RSVP count label: &quot;[N] going&quot; (15pt/14sp Regular, #757575)<ul class="wmd-list">
+  <li class="wmd-list-item">Layout: [avatar stack] [+N text] ........... [N going]</li>
+</ul></li>
+  <li class="wmd-list-item">&quot;View all attendees&quot; outline button below<ul class="wmd-list">
+  <li class="wmd-list-item">Taps to open Attendee List modal/sheet</li>
+</ul></li>
+  <li class="wmd-list-item">Empty state: &quot;Be the first to RSVP!&quot;</li>
+</ul>
+<h4 class="wmd-h4">When RSVP is Private:</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">No avatar stack shown</li>
+  <li class="wmd-list-item">Only: &quot;[N] going&quot; text, center or left aligned</li>
+  <li class="wmd-list-item">No &quot;View all attendees&quot; button</li>
+  <li class="wmd-list-item">Empty state: &quot;No RSVPs yet&quot;</li>
+</ul>
+<h4 class="wmd-h4">Organizer View (regardless of privacy):</h4>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Section header: &quot;Attendance — [N] RSVPs&quot;</li>
+  <li class="wmd-list-item">Always shows full avatar stack and &quot;View all attendees&quot; button</li>
+  <li class="wmd-list-item">Tap &quot;View all attendees&quot; shows full list (organizer always sees names)</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">10. RSVP Button</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">State</th>
+    <th class="wmd-table-cell wmd-align-left">Label</th>
+    <th class="wmd-table-cell wmd-align-left">Style</th>
+    <th class="wmd-table-cell wmd-align-left">Trigger</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Not going (default)</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;RSVP — I&#039;m Going 📅&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Primary filled (#1565C0)</td>
+    <td class="wmd-table-cell wmd-align-left">Level 1+ tap → RSVP</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Going</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Going ✓&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Success filled (#2E7D32)</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Going (un-RSVP)</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Can&#039;t make it&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Outline (#C62828)</td>
+    <td class="wmd-table-cell wmd-align-left">Shows alongside Going button</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Past event</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Event Has Passed&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Disabled gray</td>
+    <td class="wmd-table-cell wmd-align-left">Non-interactive</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Cancelled</td>
+    <td class="wmd-table-cell wmd-align-left">Hidden</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+    <td class="wmd-table-cell wmd-align-left">Not shown</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Own event</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;You&#039;re the organizer&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Disabled text label</td>
+    <td class="wmd-table-cell wmd-align-left">Non-interactive</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Level 0</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Verify to RSVP&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Disabled outline</td>
+    <td class="wmd-table-cell wmd-align-left">Tap → verification prompt</td>
+  </tr>
+  </tbody>
+</table>
+<div class="wmd-container-form-group">
+  <strong>Going state layout:</strong> Two buttons side by side: 
+  <button class="wmd-button">Going ✓</button>
+   (success, left) + 
+  <button class="wmd-button">Can&#039;t make it</button>
+   (outline, right)
+</div>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Tapping &quot;Can&#039;t make it&quot; shows un-RSVP confirmation modal before removing</li>
+</ul>
+<p class="wmd-paragraph"><strong>Optimistic UI:</strong> Button state updates immediately on tap; reverts with error toast on failure.</p>
+<p class="wmd-paragraph"><strong>a11y:</strong></p>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Default: &quot;RSVP button. I&#039;m going. Double-tap to confirm attendance.&quot;</li>
+  <li class="wmd-list-item">Going: &quot;You are going. Double-tap to remove RSVP.&quot;</li>
+  <li class="wmd-list-item">Disabled: &quot;Event has passed. Cannot RSVP.&quot;</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">11. Report Button</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Position: top-right of navigation bar (icon only on mobile, text link on web)</li>
+  <li class="wmd-list-item">Icon: <span class="wmd-icon" data-icon="flag" aria-label="flag">🚩</span> flag, 24px, #757575</li>
+  <li class="wmd-list-item">Taps to open existing report flow (same as post reporting)</li>
+  <li class="wmd-list-item">Hidden for event organizer (they have three-dot menu instead)</li>
+</ul>
+<hr class="wmd-separator" />
+<h3 class="wmd-h3">12. Organizer Three-Dot Menu (Own Event Only)</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Positioned at top-right of nav bar, replacing Report button</li>
+  <li class="wmd-list-item">Options:<ol class="wmd-list">
+  <li class="wmd-list-item">&quot;Edit Event&quot; — navigates to Create Event form (pre-filled)</li>
+  <li class="wmd-list-item">&quot;Cancel Event&quot; — shows Cancel confirmation modal</li>
+  <li class="wmd-list-item">&quot;Delete Event&quot; — shows Delete confirmation modal (text in red)</li>
+</ol></li>
+  <li class="wmd-list-item">Sheet/action sheet on mobile, dropdown on web</li>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Spacing &amp; Layout (Mobile)</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">#</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Height</th>
+    <th class="wmd-table-cell wmd-align-left">Spacing After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Status bar / safe area</td>
+    <td class="wmd-table-cell wmd-align-left">Auto</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Navigation bar</td>
+    <td class="wmd-table-cell wmd-align-left">44px</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Hero image</td>
+    <td class="wmd-table-cell wmd-align-left">220px</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">Type badge + scope badge row</td>
+    <td class="wmd-table-cell wmd-align-left">32px</td>
+    <td class="wmd-table-cell wmd-align-left">12px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">Event title</td>
+    <td class="wmd-table-cell wmd-align-left">Variable</td>
+    <td class="wmd-table-cell wmd-align-left">12px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Date/time row</td>
+    <td class="wmd-table-cell wmd-align-left">40px</td>
+    <td class="wmd-table-cell wmd-align-left">4px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">7</td>
+    <td class="wmd-table-cell wmd-align-left">Location row</td>
+    <td class="wmd-table-cell wmd-align-left">40–60px (2 lines)</td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">8</td>
+    <td class="wmd-table-cell wmd-align-left">Horizontal divider</td>
+    <td class="wmd-table-cell wmd-align-left">1px</td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">9</td>
+    <td class="wmd-table-cell wmd-align-left">Description</td>
+    <td class="wmd-table-cell wmd-align-left">Variable</td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">10</td>
+    <td class="wmd-table-cell wmd-align-left">Horizontal divider</td>
+    <td class="wmd-table-cell wmd-align-left">1px</td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">11</td>
+    <td class="wmd-table-cell wmd-align-left">Organizer section</td>
+    <td class="wmd-table-cell wmd-align-left">56px</td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">12</td>
+    <td class="wmd-table-cell wmd-align-left">Horizontal divider</td>
+    <td class="wmd-table-cell wmd-align-left">1px</td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">13</td>
+    <td class="wmd-table-cell wmd-align-left">Attendance header</td>
+    <td class="wmd-table-cell wmd-align-left">24px</td>
+    <td class="wmd-table-cell wmd-align-left">8px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">14</td>
+    <td class="wmd-table-cell wmd-align-left">Avatar stack + count</td>
+    <td class="wmd-table-cell wmd-align-left">32px</td>
+    <td class="wmd-table-cell wmd-align-left">8px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">15</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;View all&quot; button (if public)</td>
+    <td class="wmd-table-cell wmd-align-left">36px</td>
+    <td class="wmd-table-cell wmd-align-left">16px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">16</td>
+    <td class="wmd-table-cell wmd-align-left">RSVP button(s)</td>
+    <td class="wmd-table-cell wmd-align-left">48px</td>
+    <td class="wmd-table-cell wmd-align-left">24px</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">17</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom safe area + tab bar</td>
+    <td class="wmd-table-cell wmd-align-left">56px + safe</td>
+    <td class="wmd-table-cell wmd-align-left">—</td>
+  </tr>
+  </tbody>
+</table>
+<p class="wmd-paragraph"><strong>Total scrollable content:</strong> approximately 700–900px depending on description length</p>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">User Interactions</h2>
+<h3 class="wmd-h3">Primary Flow (View &amp; RSVP)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps event card in Events List → navigates to Event Detail (slide-in animation)</li>
+  <li class="wmd-list-item">Screen loads with hero image, title, date/time, location, description</li>
+  <li class="wmd-list-item">User scrolls down to see organizer and attendance info</li>
+  <li class="wmd-list-item">User taps &quot;RSVP — I&#039;m Going&quot; button</li>
+  <li class="wmd-list-item">Button immediately flips to &quot;Going ✓&quot; (optimistic UI); count increments by 1</li>
+  <li class="wmd-list-item">Success alert appears: &quot;You&#039;re going! We&#039;ll remind you before the event.&quot;</li>
+  <li class="wmd-list-item">User can tap &quot;Can&#039;t make it&quot; → confirmation modal → removes RSVP</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Message Organizer)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps &quot;Message Organizer&quot; button</li>
+  <li class="wmd-list-item">If existing conversation with this organizer: opens that conversation</li>
+  <li class="wmd-list-item">If new conversation: creates conversation, navigates to message thread</li>
+  <li class="wmd-list-item">Level 0 user: &quot;Verify to message&quot; taps → navigates to verification flow</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (View Organizer Profile)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps organizer avatar or name</li>
+  <li class="wmd-list-item">Navigates to organizer&#039;s Public Profile screen</li>
+  <li class="wmd-list-item">Shows organizer&#039;s events, posts, masked name, trust badge</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Edit Event — Organizer)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Organizer taps ⋮ menu → &quot;Edit Event&quot;</li>
+  <li class="wmd-list-item">Navigates to Create Event form, pre-filled with current data</li>
+  <li class="wmd-list-item">Organizer edits fields, saves</li>
+  <li class="wmd-list-item">Returns to Event Detail with updated content + &quot;Edited&quot; label</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Cancel Event — Organizer)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Organizer taps ⋮ menu → &quot;Cancel Event&quot;</li>
+  <li class="wmd-list-item">Confirmation modal: &quot;Cancel this event? Attendees will see this event as cancelled.&quot;</li>
+  <li class="wmd-list-item">Organizer taps &quot;Yes, Cancel It&quot; → event status set to &#039;cancelled&#039;</li>
+  <li class="wmd-list-item">Detail screen updates: red &quot;Cancelled&quot; banner, strikethrough on title/date, RSVP button hidden</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (Delete Event — Organizer)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">Organizer taps ⋮ menu → &quot;Delete Event&quot;</li>
+  <li class="wmd-list-item">Confirmation modal (destructive): &quot;Delete this event? This permanently removes the event.&quot;</li>
+  <li class="wmd-list-item">Organizer taps &quot;Delete&quot; → navigated back to Events List; event no longer appears</li>
+</ol>
+<h3 class="wmd-h3">Alternative Flow (View Attendees)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">User taps &quot;View all attendees&quot; (public RSVP events only)</li>
+  <li class="wmd-list-item">Attendee list modal/sheet slides up</li>
+  <li class="wmd-list-item">Scrollable list of masked names + avatars + trust badges</li>
+  <li class="wmd-list-item">User taps a name → navigates to their public profile</li>
+</ol>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Platform-Specific Differences</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Aspect</th>
+    <th class="wmd-table-cell wmd-align-left">iOS</th>
+    <th class="wmd-table-cell wmd-align-left">Android</th>
+    <th class="wmd-table-cell wmd-align-left">Web</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Navigation</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Navigation bar + back arrow</td>
+    <td class="wmd-table-cell wmd-align-left">App bar + back arrow</td>
+    <td class="wmd-table-cell wmd-align-left">Breadcrumb trail</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Back gesture</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Swipe right</td>
+    <td class="wmd-table-cell wmd-align-left">System back</td>
+    <td class="wmd-table-cell wmd-align-left">Browser back</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Three-dot menu</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Action Sheet from bottom</td>
+    <td class="wmd-table-cell wmd-align-left">Overflow menu (top-right)</td>
+    <td class="wmd-table-cell wmd-align-left">Dropdown</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Attendee modal</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Bottom sheet</td>
+    <td class="wmd-table-cell wmd-align-left">Bottom sheet</td>
+    <td class="wmd-table-cell wmd-align-left">Modal dialog</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Confirmation dialogs</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Alert (native iOS)</td>
+    <td class="wmd-table-cell wmd-align-left">AlertDialog</td>
+    <td class="wmd-table-cell wmd-align-left">Modal overlay</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Hero image</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Full bleed, edge-to-edge</td>
+    <td class="wmd-table-cell wmd-align-left">Full bleed, edge-to-edge</td>
+    <td class="wmd-table-cell wmd-align-left">Constrained to left column</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>RSVP button</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Full width, 48px tall</td>
+    <td class="wmd-table-cell wmd-align-left">Full width, 56dp tall</td>
+    <td class="wmd-table-cell wmd-align-left">Fixed width in right column</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Layout</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Single column, scroll</td>
+    <td class="wmd-table-cell wmd-align-left">Single column, scroll</td>
+    <td class="wmd-table-cell wmd-align-left">Two-column (info left, actions right)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><strong>Report link</strong></td>
+    <td class="wmd-table-cell wmd-align-left">Icon only in nav bar</td>
+    <td class="wmd-table-cell wmd-align-left">Icon only in nav bar</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Report Event&quot; text link in right column</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Error States &amp; Edge Cases</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Scenario</th>
+    <th class="wmd-table-cell wmd-align-left">Behavior</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Event not found (deleted)</td>
+    <td class="wmd-table-cell wmd-align-left">Error screen: &quot;This event no longer exists.&quot; + &quot;Back to Events&quot; button</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Network error on load</td>
+    <td class="wmd-table-cell wmd-align-left">Retry prompt with cached data if available</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">RSVP fails (network error)</td>
+    <td class="wmd-table-cell wmd-align-left">Optimistic UI reverted; error toast: &quot;Couldn&#039;t update RSVP. Try again.&quot;</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">RSVP fails (already RSVP&#039;d in another session)</td>
+    <td class="wmd-table-cell wmd-align-left">Sync state; show &quot;Going ✓&quot; without error</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">User views own event (no RSVP action)</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;You&#039;re the organizer&quot; label; three-dot menu for management</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Cancelled event</td>
+    <td class="wmd-table-cell wmd-align-left">Red &quot;Cancelled&quot; banner; strikethrough on title/date; RSVP button hidden</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Past event</td>
+    <td class="wmd-table-cell wmd-align-left">Blue &quot;This event has passed&quot; banner; RSVP button shows &quot;Event Has Passed&quot; (disabled)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Event has no photo</td>
+    <td class="wmd-table-cell wmd-align-left">Type-specific illustration shown as hero (Cultural → dhaka pattern, etc.)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Event has no end time</td>
+    <td class="wmd-table-cell wmd-align-left">Show only start time: &quot;6:00 PM&quot; (no dash or end)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Event has no location address</td>
+    <td class="wmd-table-cell wmd-align-left">Show only location name (no second line)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Very long description</td>
+    <td class="wmd-table-cell wmd-align-left">Fully scrollable; no &quot;read more&quot; truncation on detail screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Organizer is Level 0</td>
+    <td class="wmd-table-cell wmd-align-left">Trust badge hidden; &quot;Asha K.&quot; shown without ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Private RSVP, organizer viewing</td>
+    <td class="wmd-table-cell wmd-align-left">Organizer sees full attendee list with &quot;View all attendees&quot; button</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">0 RSVPs, public</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Be the first to RSVP!&quot; — no avatar stack</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1 RSVP</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;1 going&quot; (singular)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1000+ RSVPs</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;1,000 going&quot; (comma formatted)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Global event</td>
+    <td class="wmd-table-cell wmd-align-left">🌐 Global badge shown instead of 📍 Local</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Report from Level 0</td>
+    <td class="wmd-table-cell wmd-align-left">Report button visible; report flow doesn&#039;t require Level 1</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Accessibility</h2>
+<h3 class="wmd-h3">Screen Reader Order (Mobile)</h3>
+<ol class="wmd-list">
+  <li class="wmd-list-item">&quot;Back to Events, button.&quot;</li>
+  <li class="wmd-list-item">&quot;Report event, button.&quot; (or &quot;More options, button&quot; for organizer)</li>
+  <li class="wmd-list-item">&quot;Event photo.&quot; (or &quot;Teej Festival illustration.&quot;)</li>
+  <li class="wmd-list-item">&quot;Cultural event.&quot;</li>
+  <li class="wmd-list-item">&quot;Local post.&quot; (or &quot;Global post.&quot;)</li>
+  <li class="wmd-list-item">&quot;Teej Festival 2026. Heading.&quot;</li>
+  <li class="wmd-list-item">&quot;Saturday August 29 2026. 6:00 PM to 10:00 PM.&quot;</li>
+  <li class="wmd-list-item">&quot;Location: Dallas Convention Center. 650 S Griffin St, Dallas TX.&quot;</li>
+  <li class="wmd-list-item">&quot;Description: Teej is a celebrated festival...&quot; (full text)</li>
+  <li class="wmd-list-item">&quot;Organizer: Asha K., verified.&quot;</li>
+  <li class="wmd-list-item">&quot;Message Organizer, button.&quot;</li>
+  <li class="wmd-list-item">&quot;34 people going. View all attendees, button.&quot;</li>
+  <li class="wmd-list-item">&quot;RSVP, I&#039;m going, button.&quot; (or &quot;Going, you are attending. Remove RSVP, button.&quot;)</li>
+</ol>
+<h3 class="wmd-h3">Touch Targets</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Back arrow: 44×44pt / 48×48dp</li>
+  <li class="wmd-list-item">Report/three-dot: 44×44pt / 48×48dp</li>
+  <li class="wmd-list-item">Organizer avatar: 44×44pt / 48×48dp (larger touch target than 40px visual)</li>
+  <li class="wmd-list-item">Message Organizer button: 44×44pt / 48×48dp</li>
+  <li class="wmd-list-item">&quot;View all attendees&quot;: 44×44pt / 48×48dp</li>
+  <li class="wmd-list-item">RSVP button: 48px height × full width — exceeds minimum</li>
+</ul>
+<h3 class="wmd-h3">Color Contrast (WCAG)</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Foreground</th>
+    <th class="wmd-table-cell wmd-align-left">Background</th>
+    <th class="wmd-table-cell wmd-align-left">Ratio</th>
+    <th class="wmd-table-cell wmd-align-left">Level</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Event title</td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">16.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Date/location</td>
+    <td class="wmd-table-cell wmd-align-left">#424242</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">10.7:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Description</td>
+    <td class="wmd-table-cell wmd-align-left">#424242</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">10.7:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Organizer name</td>
+    <td class="wmd-table-cell wmd-align-left">#212121</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">16.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">RSVP button text</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">#1565C0</td>
+    <td class="wmd-table-cell wmd-align-left">7.2:1</td>
+    <td class="wmd-table-cell wmd-align-left">AAA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Going button text</td>
+    <td class="wmd-table-cell wmd-align-left">#FFFFFF</td>
+    <td class="wmd-table-cell wmd-align-left">#2E7D32</td>
+    <td class="wmd-table-cell wmd-align-left">5.9:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Cultural badge</td>
+    <td class="wmd-table-cell wmd-align-left">#E65100</td>
+    <td class="wmd-table-cell wmd-align-left">#FFF3E0</td>
+    <td class="wmd-table-cell wmd-align-left">4.5:1</td>
+    <td class="wmd-table-cell wmd-align-left">AA ✓</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Animations &amp; Transitions</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Step</th>
+    <th class="wmd-table-cell wmd-align-left">Element</th>
+    <th class="wmd-table-cell wmd-align-left">Delay</th>
+    <th class="wmd-table-cell wmd-align-left">Duration</th>
+    <th class="wmd-table-cell wmd-align-left">Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">1</td>
+    <td class="wmd-table-cell wmd-align-left">Screen enter (from list)</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">Slide in from right (iOS) / fade+slide (Android)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">2</td>
+    <td class="wmd-table-cell wmd-align-left">Hero image</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">400ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">3</td>
+    <td class="wmd-table-cell wmd-align-left">Content below hero</td>
+    <td class="wmd-table-cell wmd-align-left">100ms</td>
+    <td class="wmd-table-cell wmd-align-left">250ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">4</td>
+    <td class="wmd-table-cell wmd-align-left">RSVP button tap</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">150ms</td>
+    <td class="wmd-table-cell wmd-align-left">Scale 0.97 → 1.0, color transition</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">5</td>
+    <td class="wmd-table-cell wmd-align-left">RSVP success alert</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">250ms</td>
+    <td class="wmd-table-cell wmd-align-left">Slide down from above button</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">6</td>
+    <td class="wmd-table-cell wmd-align-left">Attendee modal open</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">300ms</td>
+    <td class="wmd-table-cell wmd-align-left">Slide up from bottom</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">7</td>
+    <td class="wmd-table-cell wmd-align-left">Three-dot menu open</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">200ms</td>
+    <td class="wmd-table-cell wmd-align-left">Expand from anchor point</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">8</td>
+    <td class="wmd-table-cell wmd-align-left">Cancel/delete modal</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">250ms</td>
+    <td class="wmd-table-cell wmd-align-left">Fade in overlay + modal</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">9</td>
+    <td class="wmd-table-cell wmd-align-left">Screen exit (back)</td>
+    <td class="wmd-table-cell wmd-align-left">0ms</td>
+    <td class="wmd-table-cell wmd-align-left">250ms</td>
+    <td class="wmd-table-cell wmd-align-left">Slide out to right</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Content &amp; Localization</h2>
+<h3 class="wmd-h3">String Keys</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Key</th>
+    <th class="wmd-table-cell wmd-align-left">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_back</code></td>
+    <td class="wmd-table-cell wmd-align-left">Back</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_report</code></td>
+    <td class="wmd-table-cell wmd-align-left">Report event</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_more</code></td>
+    <td class="wmd-table-cell wmd-align-left">More options</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_organizer</code></td>
+    <td class="wmd-table-cell wmd-align-left">Organizer</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_attendance</code></td>
+    <td class="wmd-table-cell wmd-align-left">Attendance</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_you_organizer</code></td>
+    <td class="wmd-table-cell wmd-align-left">You&#039;re the organizer</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_message_organizer</code></td>
+    <td class="wmd-table-cell wmd-align-left">Message Organizer</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_view_attendees</code></td>
+    <td class="wmd-table-cell wmd-align-left">View all attendees</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_going_count</code></td>
+    <td class="wmd-table-cell wmd-align-left">{n} going</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_went_count</code></td>
+    <td class="wmd-table-cell wmd-align-left">{n} went</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_going_singular</code></td>
+    <td class="wmd-table-cell wmd-align-left">1 going</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_first_rsvp</code></td>
+    <td class="wmd-table-cell wmd-align-left">Be the first to RSVP!</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_rsvp_btn</code></td>
+    <td class="wmd-table-cell wmd-align-left">RSVP — I&#039;m Going</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_going_btn</code></td>
+    <td class="wmd-table-cell wmd-align-left">Going ✓</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_cancel_rsvp_btn</code></td>
+    <td class="wmd-table-cell wmd-align-left">Can&#039;t make it</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_past_btn</code></td>
+    <td class="wmd-table-cell wmd-align-left">Event Has Passed</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_verify_rsvp</code></td>
+    <td class="wmd-table-cell wmd-align-left">Verify to RSVP</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_cancelled_banner</code></td>
+    <td class="wmd-table-cell wmd-align-left">This event has been cancelled.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_past_banner</code></td>
+    <td class="wmd-table-cell wmd-align-left">This event has passed.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_rsvp_success</code></td>
+    <td class="wmd-table-cell wmd-align-left">You&#039;re going! We&#039;ll remind you before the event.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_rsvp_error</code></td>
+    <td class="wmd-table-cell wmd-align-left">Couldn&#039;t update RSVP. Try again.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_edit</code></td>
+    <td class="wmd-table-cell wmd-align-left">Edit Event</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_cancel_event</code></td>
+    <td class="wmd-table-cell wmd-align-left">Cancel Event</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_delete_event</code></td>
+    <td class="wmd-table-cell wmd-align-left">Delete Event</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_cancel_confirm</code></td>
+    <td class="wmd-table-cell wmd-align-left">Cancel this event? Attendees will see this event as cancelled.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_delete_confirm</code></td>
+    <td class="wmd-table-cell wmd-align-left">Delete this event? This permanently removes the event.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_confirm_keep</code></td>
+    <td class="wmd-table-cell wmd-align-left">Keep Event</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_confirm_cancel</code></td>
+    <td class="wmd-table-cell wmd-align-left">Yes, Cancel It</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_confirm_delete</code></td>
+    <td class="wmd-table-cell wmd-align-left">Delete</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_not_found</code></td>
+    <td class="wmd-table-cell wmd-align-left">This event no longer exists.</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left"><code class="wmd-code-inline">event_detail_attendees_title</code></td>
+    <td class="wmd-table-cell wmd-align-left">{n} Going</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Technical Notes</h2>
+<h3 class="wmd-h3">Screen Identifiers</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">Mobile: EventDetailScreen (registered in HomeStack)</li>
+  <li class="wmd-list-item">Web route: /events/[id]</li>
+</ul>
+<h3 class="wmd-h3">State Management</h3>
+<pre class="wmd-code-block"><code data-lang="typescript">// EventDetailScreen state
+{
+  event: Event | null;
+  isLoading: boolean;
+  hasError: boolean;
+  isRsvp&#039;d: boolean;          // from getUserRsvps() on app start
+  isRsvpLoading: boolean;     // optimistic state
+  attendees: EventRsvp[];     // loaded on-demand (tap &quot;View all&quot;)
+  attendeesLoading: boolean;
+  showAttendeeModal: boolean;
+  showCancelModal: boolean;
+  showDeleteModal: boolean;
+  isOrganizer: boolean;       // event.organizer_id === currentUser.id
+}</code></pre>
+<h3 class="wmd-h3">API Calls</h3>
+<ul class="wmd-list">
+  <li class="wmd-list-item">On mount: getEventById(supabase, eventId) — includes organizer join</li>
+  <li class="wmd-list-item">RSVP toggle: rsvpToEvent() or unrsvpFromEvent() — optimistic</li>
+  <li class="wmd-list-item">Load attendees: getEventAttendees(supabase, eventId) — on demand only</li>
+  <li class="wmd-list-item">Cancel event: cancelEvent(supabase, eventId) — organizer only</li>
+  <li class="wmd-list-item">Delete event: deleteEvent(supabase, eventId) — organizer only</li>
+</ul>
+<h3 class="wmd-h3">Navigation</h3>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Direction</th>
+    <th class="wmd-table-cell wmd-align-left">Trigger</th>
+    <th class="wmd-table-cell wmd-align-left">Destination</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">Tap event card (Events List)</td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">Tap event in organizer&#039;s profile</td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Entry</td>
+    <td class="wmd-table-cell wmd-align-left">Deep link <code class="wmd-code-inline">/events/[id]</code></td>
+    <td class="wmd-table-cell wmd-align-left">This screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Back button / swipe</td>
+    <td class="wmd-table-cell wmd-align-left">Events List (or back stack)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Tap organizer avatar/name</td>
+    <td class="wmd-table-cell wmd-align-left">Public Profile (<code class="wmd-code-inline">/users/[id]</code>)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Message Organizer&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Message Thread screen</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Edit Event&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Create Event screen (pre-filled)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">Delete confirmed</td>
+    <td class="wmd-table-cell wmd-align-left">Events List (event removed)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Exit</td>
+    <td class="wmd-table-cell wmd-align-left">&quot;Back to Events&quot; (not-found)</td>
+    <td class="wmd-table-cell wmd-align-left">Events List</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Modal</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;View all attendees&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Attendee List modal</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Modal</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Cancel Event&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Cancel confirmation modal</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Modal</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Delete Event&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Delete confirmation modal</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Modal</td>
+    <td class="wmd-table-cell wmd-align-left">Tap &quot;Can&#039;t make it&quot;</td>
+    <td class="wmd-table-cell wmd-align-left">Un-RSVP confirmation modal</td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Testing Checklist</h2>
+<h3 class="wmd-h3">Functional Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Event loads with all fields: title, date/time, location, description, photo</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Hero image shows event photo; fallback illustration shown when no photo</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Date formats correctly for single-day, multi-day, with/without end time</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Address shown only when location_address is provided (not null)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Organizer name masked as &quot;Firstname L.&quot; via formatPublicName()</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Organizer avatar shows photo or initials + trust-level color</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tap organizer → navigates to Public Profile</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>RSVP button default state: &quot;RSVP — I&#039;m Going&quot; (Level 1+, not yet RSVP&#039;d)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Tap RSVP → optimistic toggle to &quot;Going ✓&quot;, count +1, success alert</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>&quot;Can&#039;t make it&quot; shows un-RSVP confirmation; confirmed → reverts button, count -1</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Already RSVP&#039;d users see &quot;Going ✓&quot; on load (from getUserRsvps() hydration)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Public RSVP: avatar stack + &quot;View all attendees&quot; shown</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Private RSVP: count only shown, no avatar stack, no &quot;View all&quot; button</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Organizer always sees full attendee list regardless of privacy setting</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>&quot;Message Organizer&quot; navigates to/creates chat (Level 1+)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Level 0: RSVP button disabled, &quot;Message Organizer&quot; hidden, verify banner shown</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Own event: RSVP section replaced with &quot;You&#039;re the organizer&quot;; three-dot menu in header</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Three-dot menu: Edit → Create Event form; Cancel → modal → status=cancelled; Delete → modal → navigated away</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Cancelled event: red banner, strikethrough, RSVP button hidden</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Past event: blue banner, RSVP button shows &quot;Event Has Passed&quot; (disabled)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Global event: 🌐 Global badge shown (not 📍 Local)</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Visual Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Hero image is full width, 220px tall</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Type badge and scope badge on same row, correct colors</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>RSVP &quot;Going ✓&quot; button is green (#2E7D32)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Cancelled banner is red (#C62828 background)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Past event banner is blue (info style)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Strikethrough on title/date for cancelled events</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Muted type badge for cancelled events</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Accessibility Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>VoiceOver/TalkBack reads all sections in correct order</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>RSVP button announces correct state (&quot;going&quot; vs &quot;not going&quot;)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Trust badge announced alongside organizer name</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Confirmation modals trap focus correctly</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>All touch targets meet 44pt/48dp minimum</span>
+  </label>
+</ul>
+<h3 class="wmd-h3">Edge Case Tests</h3>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Event not found → error screen with &quot;Back to Events&quot; button</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Network error on load → retry option shown</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>RSVP network error → optimistic state reverted, toast shown</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>0 RSVPs → &quot;Be the first to RSVP!&quot; shown (no avatar stack)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>1 RSVP → &quot;1 going&quot; (singular)</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Very long description → scrollable, no truncation</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>No event photo → type-specific illustration shown</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>No end time → only start time shown</span>
+  </label>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Open Questions</h2>
+<ul class="wmd-list">
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should tapping the location row open Maps app? → Rec: Defer to post-MVP. Include location_address in event data so deep link is easy to add later.</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should the success RSVP alert auto-dismiss? → Rec: Yes, auto-dismiss after 3 seconds; user can still tap manually.</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Should &quot;edited&quot; label be shown if organizer edits after RSVPs exist? → Rec: Yes — show &quot;Edited [date]&quot; label below title, same as post edit label.</span>
+  </label>
+  <label class="wmd-checkbox">
+    <input type="checkbox" />
+    <span>Attendee list: should it paginate or load all at once? → Rec: Load all for MVP (events unlikely to have thousands of RSVPs); add pagination only if needed.</span>
+  </label>
+</ul>
+<hr class="wmd-separator" />
+<h2 class="wmd-h2">Related Screens</h2>
+<table class="wmd-table">
+  <thead>
+    <tr>
+      <th class="wmd-table-cell wmd-align-left">Relation</th>
+    <th class="wmd-table-cell wmd-align-left">Screen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Previous</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../16-events-list/16-events-list.md" class="wmd-link">16-events-list.md</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Next</td>
+    <td class="wmd-table-cell wmd-align-left">Create Event Screen (wireframe TBD)</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Feature Spec</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../../features/events.md" class="wmd-link">events.md</a></td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Related</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../07-conversation-list/07-conversation-list.md" class="wmd-link">07-conversation-list.md</a> — Message Organizer navigates here</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Related</td>
+    <td class="wmd-table-cell wmd-align-left">Public Profile Screen — organizer tap navigates here</td>
+  </tr>
+    <tr>
+    <td class="wmd-table-cell wmd-align-left">Design System</td>
+    <td class="wmd-table-cell wmd-align-left"><a href="../00-design-system-foundation/00-design-system-foundation.md" class="wmd-link">00-design-system-foundation.md</a></td>
+  </tr>
+  </tbody>
+</table>
+<hr class="wmd-separator" />
+<p class="wmd-paragraph"><strong>Status:</strong> Draft — Ready for Review</p>
+</body>
+</html>

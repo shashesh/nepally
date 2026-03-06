@@ -6,6 +6,15 @@
 
 ---
 
+## Implementation Update (2026-03-05)
+
+The following Phase 1 work is now implemented:
+
+- ✅ **Public Profile View (3.4):** Privacy-safe user profile view accessible from feed and post detail on mobile and web. Shows masked name ("Firstname L."), trust badge, metro city, member-since year, and the user's public posts. "Message" button opens direct chat. Own-post avatars redirect to the user's own Profile tab instead. Shared `formatPublicName()` utility added to `packages/shared/src/utils/user.ts`.
+- ✅ **Notifications UI Scaffold (12.3 + 12.4, mobile):** `NotificationsScreen` and `NotificationPreferencesScreen` are implemented and registered in the mobile HomeStack. Full feature (DB layer, shared API, web integration, push delivery) remains in progress — see `docs/implementation-plans/notifications-feature.md`.
+
+---
+
 ## Implementation Update (2026-02-23)
 
 The following Phase 1 post-management work is now implemented across web and mobile:

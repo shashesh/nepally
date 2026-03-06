@@ -169,6 +169,8 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 
 **CRITICAL: Always gather context before coding**
 
+The complete feature development process (from idea to shipped code) is documented in [`docs/feature-development-process.md`](./docs/feature-development-process.md). Read that for full guidance, especially for complex features like Events and Marketplace.
+
 When implementing any feature, follow this mandatory sequence:
 
 ### 1. Context Gathering (Read ALL relevant documentation)
@@ -222,6 +224,8 @@ When implementing any feature, follow this mandatory sequence:
 - `/wireframe [screen-name]` - Create screen wireframe
 - `/implement-feature [feature-name]` - Guided feature implementation with full context
 - `/shared-first-check` - Validate that code follows shared-first architecture (run after every implementation)
+- `/refine-roadmap [section-name]` - Analyze and improve product roadmap sections
+- `/break-features [feature-name]` - Break large features into smaller implementable pieces
 
 **Never start coding without first reading the relevant documentation. Context-first development prevents misalignment and rework.**
 
@@ -234,7 +238,7 @@ When implementing any feature, follow this mandatory sequence:
 ## Current Phase Status
 
 **PHASE 1: Utility Core & Trust Foundation**
-- Done: Onboarding, home feed, tag-based posts, profile management, location management, in-app chat, likes, comments, profile photos, premium scaffolding, web nav revamp
+- Done: Onboarding, home feed, tag-based posts, profile management, location management, in-app chat, likes, comments, profile photos, premium scaffolding, web nav revamp, profile experience refresh (Reddit-style tabs + hamburger menu), save post, avatar menus (cross-platform), chat sender avatars (Messenger-style), public profile view, notifications UI scaffold (mobile screens + preferences)
 - Next up: Post photo upload, reporting system, admin dashboard
 
 ## Development Phases
