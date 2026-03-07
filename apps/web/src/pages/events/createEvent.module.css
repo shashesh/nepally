@@ -1,0 +1,320 @@
+.page {
+  min-height: 100vh;
+  background: #F5F5F5;
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.backLink {
+  color: #1565C0;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #212121;
+  margin: 0;
+}
+
+.form {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #212121;
+}
+
+.input {
+  border: 1.5px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: #212121;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: #1565C0;
+}
+
+.inputError {
+  border-color: #C62828;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.errorText {
+  font-size: 12px;
+  color: #C62828;
+}
+
+.charCount {
+  font-size: 11px;
+  color: #9E9E9E;
+  text-align: right;
+}
+
+.typeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.typeChip {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #E0E0E0;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #757575;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.typeChipActive {
+  border-color: transparent;
+}
+
+.typeChipActiveCultural {
+  background: #FCE4EC;
+  color: #AD1457;
+}
+
+.typeChipActiveReligious {
+  background: #E8EAF6;
+  color: #3949AB;
+}
+
+.typeChipActiveSocial {
+  background: #E0F7FA;
+  color: #00838F;
+}
+
+.typeChipActiveCareer {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.typeChipActiveOther {
+  background: #F5F5F5;
+  color: #424242;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.radioInput {
+  margin-top: 3px;
+  accent-color: #1565C0;
+}
+
+.radioLabel {
+  font-size: 14px;
+  color: #212121;
+}
+
+.photoPicker {
+  border: 1.5px dashed #BDBDBD;
+  border-radius: 8px;
+  padding: 14px 12px;
+  background: #FAFAFA;
+  color: #1565C0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.photoHelp {
+  font-size: 12px;
+  color: #757575;
+  font-weight: 500;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.photoCard {
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #FFFFFF;
+}
+
+.photoPreview {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #F5F5F5;
+}
+
+.photoActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.photoBtnSecondary {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #E0E0E0;
+  color: #616161;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+}
+
+.photoBtnDanger {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #C62828;
+  color: #C62828;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #FFFFFF;
+}
+
+.photoBtnDanger:hover {
+  background: #FFEBEE;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F5F5F5;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.switchLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.switchTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #212121;
+}
+
+.switchSubtitle {
+  font-size: 12px;
+  color: #757575;
+}
+
+.switchInput {
+  accent-color: #1565C0;
+  width: 36px;
+  height: 18px;
+}
+
+.postingFooter {
+  background: #E3F2FD;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1565C0;
+}
+
+.submitRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #E0E0E0;
+}
+
+.cancelBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1.5px solid #E0E0E0;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #757575;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.submitBtn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  background: #1565C0;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #104D99;
+}
+
+.submitBtn:disabled {
+  background: #BDBDBD;
+  cursor: default;
+}

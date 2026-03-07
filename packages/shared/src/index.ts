@@ -13,6 +13,7 @@ export * from './constants/postPhotos';
 export * from './constants/tags';
 export * from './constants/trustLevels';
 export * from './constants/location';
+export * from './constants/events';
 
 // Utilities
 export * from './utils';

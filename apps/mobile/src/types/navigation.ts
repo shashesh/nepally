@@ -75,7 +75,8 @@ export type ChatStackParamList = {
  */
 export type EventsStackParamList = {
   EventsList: undefined;
-  // Future: EventDetail: { eventId: string };
+  EventDetail: { eventId: string };
+  CreateEvent: { editEventId?: string } | undefined;
 };
 
 /**

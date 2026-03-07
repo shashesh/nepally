@@ -1,0 +1,85 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+
+@media (min-width: 640px) {
+  .overlay {
+    align-items: center;
+  }
+}
+
+.dialog {
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .dialog {
+    border-radius: 16px;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #212121;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #757575;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.attendeeRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #F5F5F5;
+}
+
+.attendeeName {
+  font-size: 15px;
+  color: #212121;
+}
+
+.empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: #757575;
+  font-size: 15px;
+}
+
+.loading {
+  padding: 32px 20px;
+  text-align: center;
+}

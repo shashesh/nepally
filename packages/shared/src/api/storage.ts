@@ -13,6 +13,7 @@ import {
 } from '../validation/post';
 
 const AVATARS_BUCKET = 'avatars';
+const EVENT_PHOTOS_BUCKET = 'event-photos';
 
 export interface PostPhotoUploadInput {
   user_id: string;
@@ -205,6 +206,61 @@ export async function uploadProfilePhoto(
   } catch (error) {
     return {
       error: error instanceof Error ? error : new Error('Failed to upload photo'),
+    };
+  }
+}
+
+export interface EventPhotoUploadInput {
+  user_id: string;
+  file_data: ArrayBuffer | Uint8Array;
+  mime_type: string;
+  size_bytes: number;
+  file_name?: string;
+}
+
+/**
+ * Upload a single event photo to Supabase Storage (event-photos bucket).
+ * Returns a public URL and storage path for optional cleanup.
+ */
+export async function uploadEventPhoto(
+  supabase: SupabaseClient,
+  input: EventPhotoUploadInput
+): Promise<{ url?: string; path?: string; error?: Error }> {
+  try {
+    if (input.size_bytes > 2 * 1024 * 1024) {
+      return { error: new Error('Event photo must be 2MB or smaller') };
+    }
+
+    const extension = getExtensionFromMimeType(input.mime_type);
+    const allowed = ['jpg', 'png', 'webp'];
+    if (!allowed.includes(extension)) {
+      return { error: new Error('Unsupported image type') };
+    }
+
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).slice(2, 10);
+    const baseName = input.file_name
+      ? sanitizeFileName(input.file_name).replace(/\.[a-zA-Z0-9]+$/, '').slice(0, 40)
+      : 'event';
+    const filePath = `${input.user_id}/${timestamp}-${random}-${baseName}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(EVENT_PHOTOS_BUCKET)
+      .upload(filePath, input.file_data, {
+        contentType: input.mime_type,
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from(EVENT_PHOTOS_BUCKET)
+      .getPublicUrl(filePath);
+
+    return { url: urlData.publicUrl, path: filePath };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to upload event photo'),
     };
   }
 }

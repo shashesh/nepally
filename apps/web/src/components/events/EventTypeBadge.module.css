@@ -1,0 +1,36 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.badgeCultural {
+  background-color: #FFF3E0;
+  color: #E65100;
+}
+
+.badgeReligious {
+  background-color: #F3E5F5;
+  color: #6A1B9A;
+}
+
+.badgeSocial {
+  background-color: #E8F5E9;
+  color: #1B5E20;
+}
+
+.badgeCareer {
+  background-color: #E3F2FD;
+  color: #0D47A1;
+}
+
+.badgeOther {
+  background-color: #F5F5F5;
+  color: #424242;
+}
