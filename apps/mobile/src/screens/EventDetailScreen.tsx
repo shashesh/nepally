@@ -35,11 +35,9 @@ import { RsvpButton } from '../components/events/RsvpButton';
 import { AttendeeAvatarStack } from '../components/events/AttendeeAvatarStack';
 import { Avatar } from '../components/Avatar';
 import { colors } from '../styles/colors';
-import { spacing, borderRadius, shadows } from '../styles/spacing';
+import { spacing, borderRadius } from '../styles/spacing';
 import { typography } from '../styles/typography';
 import type { EventsStackParamList } from '../types/navigation';
-import type { HomeStackParamList } from '../types/navigation';
-import type { ChatStackParamList } from '../types/navigation';
 
 type Nav = NativeStackNavigationProp<EventsStackParamList>;
 type Route = RouteProp<EventsStackParamList, 'EventDetail'>;

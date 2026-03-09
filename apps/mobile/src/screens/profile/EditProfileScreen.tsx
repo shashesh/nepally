@@ -32,6 +32,10 @@ import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function EditProfileScreen() {
   const navigation = useNavigation();
   const { user, refreshUser } = useAuth();
@@ -127,8 +131,8 @@ export function EditProfileScreen() {
       setLocalPhotoUri(url!);
       await refreshUser();
       setPhotoStatus({ type: 'success', message: 'Photo updated' });
-    } catch (error: any) {
-      setPhotoStatus({ type: 'error', message: error.message || 'Failed to upload photo' });
+    } catch (error: unknown) {
+      setPhotoStatus({ type: 'error', message: getErrorMessage(error, 'Failed to upload photo') });
     } finally {
       setPhotoUploading(false);
     }
@@ -181,8 +185,8 @@ export function EditProfileScreen() {
       setLocalPhotoUri(null);
       await refreshUser();
       setPhotoStatus({ type: 'success', message: 'Photo removed' });
-    } catch (error: any) {
-      setPhotoStatus({ type: 'error', message: error.message || 'Failed to remove photo' });
+    } catch (error: unknown) {
+      setPhotoStatus({ type: 'error', message: getErrorMessage(error, 'Failed to remove photo') });
     } finally {
       setPhotoUploading(false);
     }
@@ -252,8 +256,8 @@ export function EditProfileScreen() {
       Alert.alert('Success', 'Profile updated successfully', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to update profile');
+    } catch (error: unknown) {
+      Alert.alert('Error', getErrorMessage(error, 'Failed to update profile'));
     } finally {
       setSaving(false);
     }

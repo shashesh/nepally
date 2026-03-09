@@ -26,6 +26,10 @@ import { spacing, borderRadius } from '../../styles/spacing';
 
 type Mode = 'signup' | 'login';
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function EmailSignupScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -95,8 +99,8 @@ export function EmailSignupScreen() {
       }
 
       navigation.navigate('LocationPermission', { userId: data.user.id });
-    } catch (error: any) {
-      Alert.alert('Signup Failed', error.message || 'Something went wrong');
+    } catch (error: unknown) {
+      Alert.alert('Signup Failed', getErrorMessage(error, 'Something went wrong'));
     } finally {
       setLoading(false);
     }
@@ -129,8 +133,8 @@ export function EmailSignupScreen() {
       } else {
         navigation.navigate('LocationPermission', { userId: data.user.id });
       }
-    } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Invalid credentials');
+    } catch (error: unknown) {
+      Alert.alert('Login Failed', getErrorMessage(error, 'Invalid credentials'));
     } finally {
       setLoading(false);
     }

@@ -32,7 +32,7 @@ jest.mock('../../hooks/useAuth', () => ({
 }));
 
 jest.mock('../../config/supabase', () => ({
-  supabase: { from: (...args: any[]) => mockSupabaseFrom(...args) },
+  supabase: { from: (...args: unknown[]) => mockSupabaseFrom.apply(null, args) },
 }));
 
 jest.mock('../../components/Avatar', () => ({
@@ -40,9 +40,9 @@ jest.mock('../../components/Avatar', () => ({
 }));
 
 jest.mock('@nusa/shared', () => ({
-  getUserById: (...args: any[]) => mockGetUserById(...args),
-  getPostsByAuthorId: (...args: any[]) => mockGetPostsByAuthorId(...args),
-  getOrCreateConversation: (...args: any[]) => mockGetOrCreateConversation(...args),
+  getUserById: (...args: unknown[]) => mockGetUserById.apply(null, args),
+  getPostsByAuthorId: (...args: unknown[]) => mockGetPostsByAuthorId.apply(null, args),
+  getOrCreateConversation: (...args: unknown[]) => mockGetOrCreateConversation.apply(null, args),
   formatRelativeTime: jest.fn(() => '2h ago'),
   formatPublicName: (name: string) => {
     if (!name || !name.trim()) return '';

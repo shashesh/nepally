@@ -34,7 +34,7 @@ describe('useAuth', () => {
     render(
       React.createElement(
         AuthContext.Provider,
-        { value: mockContext as Parameters<typeof AuthContext.Provider>[0]['value'] },
+        { value: mockContext as unknown as Parameters<typeof AuthContext.Provider>[0]['value'] },
         React.createElement(TestComponent)
       )
     );

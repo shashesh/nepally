@@ -148,7 +148,8 @@ describe('FeedPage', () => {
 
     await waitFor(() => {
       const composerTrigger = screen.getByText(/What's on your mind/i).closest('a');
-      expect(composerTrigger.getAttribute('href')).toBe('/posts/create');
+      expect(composerTrigger).toBeTruthy();
+      expect(composerTrigger?.getAttribute('href')).toBe('/posts/create');
     });
   });
 
@@ -162,7 +163,8 @@ describe('FeedPage', () => {
 
     await waitFor(() => {
       const composerTrigger = screen.getByText(/What's on your mind/i).closest('a');
-      expect(composerTrigger.getAttribute('href')).toBe('/profile');
+      expect(composerTrigger).toBeTruthy();
+      expect(composerTrigger?.getAttribute('href')).toBe('/profile');
     });
   });
 
