@@ -74,7 +74,7 @@ export default function ConversationListScreen() {
       <Ionicons name="chatbubbles-outline" size={64} color={colors.text.disabled} />
       <Text style={styles.emptyTitle}>No messages yet</Text>
       <Text style={styles.emptySubtitle}>
-        Tap any user's avatar on a post to start chatting.
+        Tap any user&apos;s avatar on a post to start chatting.
       </Text>
       <TouchableOpacity
         style={styles.browseCta}

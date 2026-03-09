@@ -11,13 +11,13 @@ jest.mock('@expo/vector-icons', () => ({
 }));
 
 jest.mock('react-native-gesture-handler', () => {
-  const React = require('react');
-  const { View, ScrollView } = require('react-native');
+  const mockReact = jest.requireActual('react');
+  const { View: mockView, ScrollView: mockScrollView } = jest.requireActual('react-native');
   return {
-    PinchGestureHandler: ({ children }: any) => <View>{children}</View>,
-    PanGestureHandler: ({ children }: any) => <View>{children}</View>,
-    GestureHandlerRootView: ({ children }: any) => <View>{children}</View>,
-    ScrollView,
+    PinchGestureHandler: ({ children }: any) => mockReact.createElement(mockView, null, children),
+    PanGestureHandler: ({ children }: any) => mockReact.createElement(mockView, null, children),
+    GestureHandlerRootView: ({ children }: any) => mockReact.createElement(mockView, null, children),
+    ScrollView: mockScrollView,
     State: { ACTIVE: 4, BEGAN: 2 },
   };
 });

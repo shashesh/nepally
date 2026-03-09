@@ -42,8 +42,8 @@ test.describe('Feed page', () => {
   test('shows create post button for verified users', async ({ page }) => {
     await page.goto('/feed');
 
-    // trust_level:1 user should see the "New Post" or equivalent CTA
-    await expect(page.getByRole('link', { name: /new post|create post|\+ post/i })).toBeVisible({
+    // trust_level:1 user should see the explicit Create Post button CTA
+    await expect(page.getByRole('link', { name: /^create post$/i })).toBeVisible({
       timeout: 10_000,
     });
   });

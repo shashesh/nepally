@@ -69,10 +69,13 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
   await page.route('**/rest/v1/posts**', async (route) => {
     const method = route.request().method();
     if (method === 'GET') {
+      const requestUrl = route.request().url();
+      const isSavedPostsQuery = requestUrl.includes('saved_posts.user_id=eq.');
+
       await route.fulfill({
         status: 200,
         headers: JSON_HEADERS,
-        body: JSON.stringify(buildMockPostRows()),
+        body: JSON.stringify(isSavedPostsQuery ? [] : buildMockPostRows()),
       });
     } else if (method === 'POST') {
       const createdPost = {

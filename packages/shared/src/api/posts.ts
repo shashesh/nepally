@@ -49,7 +49,7 @@ export async function getPostsByMetroArea(
   offset: number = 0
 ): Promise<PostsResult> {
   try {
-    let query = supabase
+    const query = supabase
       .from('posts')
       .select(POST_SELECT)
       .eq('status', 'active')

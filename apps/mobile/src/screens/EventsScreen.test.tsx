@@ -1,14 +1,15 @@
 import React from 'react';
 import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
+import { getEventsByMetro } from '@nusa/shared';
 import EventsScreen from './EventsScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 jest.mock('react-native-safe-area-context', () => {
-  const React = require('react');
-  const { View } = require('react-native');
+  const mockReact = jest.requireActual('react');
+  const { View: mockView } = jest.requireActual('react-native');
   return {
-    SafeAreaView: ({ children }: any) => React.createElement(View, null, children),
+    SafeAreaView: ({ children }: { children: unknown }) => mockReact.createElement(mockView, null, children),
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   };
 });
@@ -151,8 +152,8 @@ describe('EventsScreen', () => {
   });
 
   it('shows error state and retry button on fetch failure', async () => {
-    const { getEventsByMetro } = require('@nusa/shared');
-    getEventsByMetro.mockResolvedValueOnce({ error: new Error('Network error') });
+    const mockGetEventsByMetro = getEventsByMetro as jest.MockedFunction<typeof getEventsByMetro>;
+    mockGetEventsByMetro.mockResolvedValueOnce({ error: new Error('Network error') });
 
     const { getByText } = render(<EventsScreen />);
     await waitFor(() => {

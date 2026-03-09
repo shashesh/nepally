@@ -7,11 +7,11 @@ jest.mock('@nusa/shared', () => ({
 }));
 
 jest.mock('../Avatar', () => {
-  const React = require('react');
-  const { View } = require('react-native');
+  const mockReact = jest.requireActual('react');
+  const { View: mockView } = jest.requireActual('react-native');
   return {
     Avatar: ({ name }: { name: string }) =>
-      React.createElement(View, { testID: `avatar-${name}` }),
+      mockReact.createElement(mockView, { testID: `avatar-${name}` }),
   };
 });
 

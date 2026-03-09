@@ -111,6 +111,8 @@ export type RootStackParamList = {
 /* eslint-disable @typescript-eslint/no-namespace */
 declare global {
   namespace ReactNavigation {
+    // Required by React Navigation for global route typing augmentation.
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     interface RootParamList extends RootStackParamList {}
   }
 }

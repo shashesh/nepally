@@ -1,14 +1,15 @@
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { getEventById, hasUserRsvp, rsvpToEvent } from '@nusa/shared';
 import EventDetailScreen from './EventDetailScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 jest.mock('react-native-safe-area-context', () => {
-  const React = require('react');
-  const { View } = require('react-native');
+  const mockReact = jest.requireActual('react');
+  const { View: mockView } = jest.requireActual('react-native');
   return {
-    SafeAreaView: ({ children }: any) => React.createElement(View, null, children),
+    SafeAreaView: ({ children }: { children: unknown }) => mockReact.createElement(mockView, null, children),
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   };
 });
@@ -92,8 +93,8 @@ jest.mock('@nusa/shared', () => ({
 describe('EventDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    const { getEventById } = require('@nusa/shared');
-    getEventById.mockResolvedValue({ data: MOCK_EVENT });
+    const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
+    mockGetEventById.mockResolvedValue({ data: MOCK_EVENT });
     mockUseAuth.mockReturnValue({
       user: { id: 'user-2', trust_level: 1, metro_area_id: '19100' },
     });
@@ -128,8 +129,8 @@ describe('EventDetailScreen', () => {
   });
 
   it('shows cancelled banner for cancelled event', async () => {
-    const { getEventById } = require('@nusa/shared');
-    getEventById.mockResolvedValue({ data: CANCELLED_EVENT });
+    const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
+    mockGetEventById.mockResolvedValue({ data: CANCELLED_EVENT });
 
     const { getByText } = render(<EventDetailScreen />);
     await waitFor(() => {
@@ -138,8 +139,8 @@ describe('EventDetailScreen', () => {
   });
 
   it('shows past banner for past event', async () => {
-    const { getEventById } = require('@nusa/shared');
-    getEventById.mockResolvedValue({ data: PAST_EVENT });
+    const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
+    mockGetEventById.mockResolvedValue({ data: PAST_EVENT });
 
     const { getByText } = render(<EventDetailScreen />);
     await waitFor(() => {
@@ -155,8 +156,8 @@ describe('EventDetailScreen', () => {
   });
 
   it('shows error state on fetch failure', async () => {
-    const { getEventById } = require('@nusa/shared');
-    getEventById.mockResolvedValue({ error: new Error('Not found') });
+    const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
+    mockGetEventById.mockResolvedValue({ error: new Error('Not found') });
 
     const { getByText } = render(<EventDetailScreen />);
     await waitFor(() => {
@@ -165,15 +166,17 @@ describe('EventDetailScreen', () => {
   });
 
   it('toggles RSVP on button press and re-syncs from server', async () => {
-    const { getEventById, hasUserRsvp, rsvpToEvent } = require('@nusa/shared');
+    const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
+    const mockHasUserRsvp = hasUserRsvp as jest.MockedFunction<typeof hasUserRsvp>;
+    const mockRsvpToEvent = rsvpToEvent as jest.MockedFunction<typeof rsvpToEvent>;
     const { getByText } = render(<EventDetailScreen />);
     await waitFor(() => expect(getByText('RSVP')).toBeTruthy());
 
     fireEvent.press(getByText('RSVP'));
     await waitFor(() => {
-      expect(rsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
-      expect(getEventById).toHaveBeenCalledTimes(2);
-      expect(hasUserRsvp).toHaveBeenCalledTimes(2);
+      expect(mockRsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
+      expect(mockGetEventById).toHaveBeenCalledTimes(2);
+      expect(mockHasUserRsvp).toHaveBeenCalledTimes(2);
     });
   });
 });

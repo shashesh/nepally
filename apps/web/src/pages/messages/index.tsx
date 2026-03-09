@@ -67,7 +67,7 @@ export default function MessagesPage() {
             <div className={styles.emptyIcon}>💬</div>
             <h3>No messages yet</h3>
             <p>
-              Tap any user's avatar on a post to start chatting.
+              Tap any user&apos;s avatar on a post to start chatting.
             </p>
           </div>
         ) : (

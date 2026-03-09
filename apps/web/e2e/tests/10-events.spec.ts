@@ -279,7 +279,7 @@ test.describe('Event detail page', () => {
 
   test('shows Organizer section with organizer name', async ({ page }) => {
     await page.goto('/events/event-e2e-001');
-    await expect(page.getByText('Organizer')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Organizer', { exact: true })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/Asha K\./)).toBeVisible();
   });
 
@@ -295,7 +295,7 @@ test.describe('Event detail page', () => {
 
   test('shows breadcrumb back to Events', async ({ page }) => {
     await page.goto('/events/event-e2e-001');
-    await expect(page.getByRole('link', { name: 'Events' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('main').getByRole('link', { name: 'Events' })).toBeVisible({ timeout: 10_000 });
   });
 
   test('shows page title with event name', async ({ page }) => {
@@ -369,19 +369,20 @@ test.describe('Create Event page', () => {
     await expect(submitBtn).toBeDisabled({ timeout: 10_000 });
   });
 
-  test('shows validation error for short title', async ({ page }) => {
+  test('keeps submit button disabled for short title', async ({ page }) => {
     await page.goto('/events/create');
     await page.getByPlaceholder('e.g. Dashain Celebration 2026').fill('Hi');
 
-    // Fill other required fields to avoid early short-circuit
+    // Fill all other required fields; short title should still block submit
     await page.getByPlaceholder("Tell people about your event...").fill('Long enough description here for test.');
     await page.getByRole('button', { name: /Cultural/i }).click();
     await page.getByPlaceholder('e.g. Dallas Convention Center').fill('Some Venue');
+    const futureLocal = new Date(Date.now() + 48 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 16);
+    await page.locator('input[type="datetime-local"]').first().fill(futureLocal);
 
-    await page.getByRole('button', { name: 'Create Event' }).click();
-    await expect(page.getByText(/Title must be at least 5 characters/i)).toBeVisible({
-      timeout: 5_000,
-    });
+    await expect(page.getByRole('button', { name: 'Create Event' })).toBeDisabled({ timeout: 5_000 });
   });
 
   test('submit creates event and navigates to detail page', async ({ page }) => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import PublicProfileScreen from './PublicProfileScreen';
 
@@ -223,7 +223,6 @@ describe('PublicProfileScreen', () => {
     mockUseAuth.mockReturnValue({
       user: { id: 'current-user', full_name: 'Test User', trust_level: 0 },
     });
-    const { Alert } = require('react-native');
     jest.spyOn(Alert, 'alert');
 
     render(<PublicProfileScreen />);

@@ -17,20 +17,20 @@ jest.mock('@nusa/shared', () => ({
 }));
 
 jest.mock('../Avatar', () => {
-  const React = require('react');
-  const { View, Text } = require('react-native');
+  const mockReact = jest.requireActual('react');
+  const { View: mockView, Text: mockText } = jest.requireActual('react-native');
   return {
     Avatar: ({ name }: { name: string }) =>
-      React.createElement(View, { testID: 'avatar' }, React.createElement(Text, null, name)),
+      mockReact.createElement(mockView, { testID: 'avatar' }, mockReact.createElement(mockText, null, name)),
   };
 });
 
 jest.mock('./EventTypeBadge', () => {
-  const React = require('react');
-  const { Text } = require('react-native');
+  const mockReact = jest.requireActual('react');
+  const { Text: mockText } = jest.requireActual('react-native');
   return {
     EventTypeBadge: ({ type }: { type: string }) =>
-      React.createElement(Text, { testID: 'event-type-badge' }, type),
+      mockReact.createElement(mockText, { testID: 'event-type-badge' }, type),
   };
 });
 

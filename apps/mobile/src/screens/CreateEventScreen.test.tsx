@@ -1,14 +1,15 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { createEvent, getEventById } from '@nusa/shared';
 import CreateEventScreen from './CreateEventScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 jest.mock('react-native-safe-area-context', () => {
-  const React = require('react');
-  const { View } = require('react-native');
+  const mockReact = jest.requireActual('react');
+  const { View: mockView } = jest.requireActual('react-native');
   return {
-    SafeAreaView: ({ children }: any) => React.createElement(View, null, children),
+    SafeAreaView: ({ children }: { children: unknown }) => mockReact.createElement(mockView, null, children),
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   };
 });
@@ -37,13 +38,22 @@ jest.mock('../config/supabase', () => ({ supabase: {} }));
 
 const FUTURE = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
+type ValidationIssue = { path: string[]; message: string };
+type CreateEventLikeInput = {
+  title?: string;
+  description?: string;
+  event_type?: string;
+  start_date?: string;
+  location_name?: string;
+};
+
 jest.mock('@nusa/shared', () => ({
   createEvent: jest.fn(async () => ({ data: { id: 'new-event-1' } })),
   updateEvent: jest.fn(async () => ({ data: { id: 'edit-event-1' } })),
   getEventById: jest.fn(async () => ({ data: null })),
   createEventSchema: {
-    safeParse: (data: any) => {
-      const errors: any[] = [];
+    safeParse: (data: CreateEventLikeInput) => {
+      const errors: ValidationIssue[] = [];
       if (!data.title || data.title.trim().length < 5) {
         errors.push({ path: ['title'], message: 'Title must be at least 5 characters' });
       }
@@ -116,7 +126,7 @@ describe('CreateEventScreen', () => {
   });
 
   it('calls createEvent with correct data on valid submit', async () => {
-    const { createEvent } = require('@nusa/shared');
+    const mockCreateEvent = createEvent as jest.MockedFunction<typeof createEvent>;
     const { getByPlaceholderText, getByText } = render(<CreateEventScreen />);
 
     fireEvent.changeText(getByPlaceholderText('e.g. Dashain Celebration 2026'), 'Dashain Celebration 2026');
@@ -131,7 +141,7 @@ describe('CreateEventScreen', () => {
     fireEvent.press(getByText('Create'));
 
     await waitFor(() => {
-      expect(createEvent).toHaveBeenCalledWith(
+      expect(mockCreateEvent).toHaveBeenCalledWith(
         {},
         expect.objectContaining({
           title: 'Dashain Celebration 2026',
@@ -183,16 +193,16 @@ describe('CreateEventScreen — edit mode', () => {
   });
 
   it('shows "Edit Event" title and calls getEventById', async () => {
-    const { getEventById } = require('@nusa/shared');
-    const { getByText } = render(<CreateEventScreen />);
-    expect(getByText('Edit Event')).toBeTruthy();
+    const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
+    const { findByText } = render(<CreateEventScreen />);
+    expect(await findByText('Edit Event')).toBeTruthy();
     await waitFor(() => {
-      expect(getEventById).toHaveBeenCalledWith({}, 'event-to-edit');
+      expect(mockGetEventById).toHaveBeenCalledWith({}, 'event-to-edit');
     });
   });
 
-  it('shows "Save" submit button in edit mode', () => {
-    const { getByText } = render(<CreateEventScreen />);
-    expect(getByText('Save')).toBeTruthy();
+  it('shows "Save" submit button in edit mode', async () => {
+    const { findByText } = render(<CreateEventScreen />);
+    expect(await findByText('Save')).toBeTruthy();
   });
 });

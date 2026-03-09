@@ -60,11 +60,8 @@ export default function EventsPage() {
     fetchEvents();
   }, [fetchEvents]);
 
-  if (!user) return null;
-
-  const now = new Date();
-
   const { upcoming, past } = useMemo(() => {
+    const now = new Date();
     const filtered = activeFilter === 'all'
       ? events
       : events.filter((e) => e.event_type === activeFilter);
@@ -77,6 +74,8 @@ export default function EventsPage() {
     }
     return { upcoming, past };
   }, [events, activeFilter]);
+
+  if (!user) return null;
 
   return (
     <>

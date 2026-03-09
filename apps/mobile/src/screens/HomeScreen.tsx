@@ -539,7 +539,7 @@ export default function HomeScreen() {
           onPress={handleCreatePost}
           activeOpacity={0.7}
         >
-          <Text style={styles.createPostPlaceholder}>What's on your mind, {firstName}?</Text>
+          <Text style={styles.createPostPlaceholder}>What&apos;s on your mind, {firstName}?</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.createPostButton, isLevel0 && styles.createPostButtonDisabled]}
@@ -574,7 +574,7 @@ export default function HomeScreen() {
   const renderErrorState = () => (
     <View style={styles.errorState}>
       <Ionicons name="warning-outline" size={48} color={colors.warning} />
-      <Text style={styles.errorTitle}>Couldn't load posts</Text>
+      <Text style={styles.errorTitle}>Couldn&apos;t load posts</Text>
       <Text style={styles.errorMessage}>{loadError || 'Please try again.'}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={handleRetryLoad} activeOpacity={0.8}>
         <Text style={styles.retryButtonText}>Retry</Text>
