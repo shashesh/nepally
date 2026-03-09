@@ -220,18 +220,57 @@ describe('updateEvent', () => {
     const result = await updateEvent(supabase, 'event-1', { title: 'Updated Title' });
     expect(result.data?.title).toBe('Updated Title');
   });
+
+  it('maps PostgREST not-found error (PGRST116) to friendly message', async () => {
+    const chain = {
+      update: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: {
+          code: 'PGRST116',
+          details: 'The result contains 0 rows',
+          hint: null,
+          message: 'JSON object requested, multiple (or no) rows returned',
+        },
+      }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await updateEvent(supabase, 'missing', { title: 'New Title' });
+    expect(result.error?.message).toBe('Event not found');
+  });
 });
 
 describe('cancelEvent / deleteEvent', () => {
   it('cancelEvent sets status to cancelled', async () => {
     const chain = {
       update: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockResolvedValue({ error: null }),
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: { id: 'event-1' }, error: null }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
     const result = await cancelEvent(supabase, 'event-1');
     expect(result.error).toBeUndefined();
+  });
+
+  it('cancelEvent returns error when event not found (PGRST116)', async () => {
+    const chain = {
+      update: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' },
+      }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await cancelEvent(supabase, 'missing-event');
+    expect(result.error?.message).toBe('Event not found or not allowed');
   });
 
   it('deleteEvent returns error on failure', async () => {
@@ -421,7 +460,9 @@ describe('cancelEvent — additional paths', () => {
   it('returns error on supabase failure', async () => {
     const chain = {
       update: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockResolvedValue({ error: new Error('Cancel failed') }),
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: new Error('Cancel failed') }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 

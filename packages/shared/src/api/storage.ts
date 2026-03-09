@@ -231,12 +231,13 @@ export async function uploadEventPhoto(
       return { error: new Error('Event photo must be 2MB or smaller') };
     }
 
-    const extension = getExtensionFromMimeType(input.mime_type);
-    const allowed = ['jpg', 'png', 'webp'];
-    if (!allowed.includes(extension)) {
+    const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!ALLOWED_MIME_TYPES.includes(input.mime_type)) {
       return { error: new Error('Unsupported image type') };
     }
 
+    // Extension is derived from mime_type for file path construction only; type validation done above
+    const extension = getExtensionFromMimeType(input.mime_type);
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 10);
     const baseName = input.file_name

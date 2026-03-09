@@ -107,13 +107,11 @@ async function mockEventsEndpoints(
   options: {
     events?: typeof MOCK_EVENTS;
     eventDetail?: (typeof MOCK_EVENTS)[0];
-    rsvps?: { event_id: string }[];
     attendees?: { id: string; event_id: string; user_id: string; created_at: string; user: any }[];
   } = {}
 ) {
   const events = options.events ?? MOCK_EVENTS;
   const eventDetail = options.eventDetail ?? MOCK_EVENTS[0];
-  const rsvps = options.rsvps ?? [];
   const attendees = options.attendees ?? [];
 
   // Events list + single event GET

@@ -203,8 +203,11 @@ export async function updateEvent(
       .select(EVENT_SELECT)
       .single();
 
+    if ((error as { code?: string } | null)?.code === 'PGRST116') {
+      return { error: new Error('Event not found') };
+    }
     if (error) throw error;
-    if (!data) throw new Error('Event not found');
+    if (!data) return { error: new Error('Event not found') };
     return { data: data as Event };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to update event') };
@@ -220,12 +223,18 @@ export async function cancelEvent(
   eventId: string
 ): Promise<{ error?: Error }> {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('events')
       .update({ status: 'cancelled' })
-      .eq('id', eventId);
+      .eq('id', eventId)
+      .select('id')
+      .single();
 
+    if ((error as { code?: string } | null)?.code === 'PGRST116') {
+      return { error: new Error('Event not found or not allowed') };
+    }
     if (error) throw error;
+    if (!data) return { error: new Error('Event not found or not allowed') };
     return {};
   } catch (error) {
     if (error instanceof Error) return { error };
