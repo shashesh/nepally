@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -9,6 +9,7 @@ import {
   updateEvent,
   getEventById,
   createEventSchema,
+  updateEventSchema,
   uploadEventPhoto,
   MAX_EVENT_PHOTO_BYTES,
   EVENT_TYPES,
@@ -66,6 +67,12 @@ export default function CreateEventPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<string | null>(null);
 
+  // Ref that always holds the current preview URL so the unmount cleanup can revoke it
+  const selectedPhotoPreviewRef = useRef<string | null>(null);
+  useEffect(() => {
+    selectedPhotoPreviewRef.current = selectedPhotoPreview;
+  }, [selectedPhotoPreview]);
+
   const userId = (user as any)?.id ?? '';
   const metroId = (user as any)?.metro_area_id ?? '';
   const trustLevel = (user as any)?.trust_level ?? 0;
@@ -99,6 +106,15 @@ export default function CreateEventPage() {
     })();
   }, [isEditMode, edit]);
 
+  // Revoke the object URL on unmount to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (selectedPhotoPreviewRef.current) {
+        URL.revokeObjectURL(selectedPhotoPreviewRef.current);
+      }
+    };
+  }, []);
+
   const setField = useCallback(
     <K extends keyof FormState>(key: K, value: FormState[K]) => {
       setForm((prev) => ({ ...prev, [key]: value }));
@@ -108,7 +124,8 @@ export default function CreateEventPage() {
   );
 
   const validate = useCallback((): boolean => {
-    const result = createEventSchema.safeParse({
+    const schema = isEditMode ? updateEventSchema : createEventSchema;
+    const result = schema.safeParse({
       ...form,
       event_type: form.event_type || undefined,
       end_date: form.end_date || undefined,
@@ -128,7 +145,7 @@ export default function CreateEventPage() {
 
     setErrors({});
     return true;
-  }, [form]);
+  }, [form, isEditMode]);
 
   const normalizeDateTimeLocal = useCallback((value: string): string => {
     if (!value) return '';

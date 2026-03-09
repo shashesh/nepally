@@ -31,10 +31,10 @@ CREATE TABLE IF NOT EXISTS events (
   description      TEXT NOT NULL CHECK (char_length(description) BETWEEN 10 AND 3000),
   event_type       event_type NOT NULL,
   start_date       TIMESTAMPTZ NOT NULL,
-  end_date         TIMESTAMPTZ,
+  end_date         TIMESTAMPTZ CHECK (end_date IS NULL OR end_date > start_date),
   location_name    TEXT NOT NULL CHECK (char_length(location_name) BETWEEN 5 AND 100),
   location_address TEXT CHECK (char_length(location_address) <= 200),
-  metro_area_id    TEXT NOT NULL,
+  metro_area_id    TEXT NOT NULL REFERENCES metro_areas(id),
   is_global        BOOLEAN NOT NULL DEFAULT FALSE,
   organizer_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   photo_url        TEXT,
@@ -190,7 +190,7 @@ CREATE TRIGGER trg_event_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_event_updated_at();
 
 -- =============================================================================
--- Merged from Migration 007: Event Photos Storage Bucket
+-- Event Photos Storage Bucket
 -- =============================================================================
 
 INSERT INTO storage.buckets (id, name, public)
@@ -231,7 +231,7 @@ CREATE POLICY "Users can delete own event photos"
   );
 
 -- =============================================================================
--- Merged from Migration 009: Soft Delete Event RPC
+-- Soft Delete Event RPC
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.soft_delete_event(p_event_id uuid)
