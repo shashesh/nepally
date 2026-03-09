@@ -39,11 +39,11 @@ describe('App', () => {
   });
 
   it('passes pageProps down to the Component', () => {
-    const TestPage = ({ greeting }: { greeting: string }) =>
+    const TestPage: React.ComponentType<{ greeting: string }> = ({ greeting }) =>
       React.createElement('span', null, greeting);
     render(
       React.createElement(App, {
-        Component: TestPage as React.ComponentType,
+        Component: TestPage,
         pageProps: { greeting: 'Hello NUSA' },
         router: {} as AppProps['router'],
       })

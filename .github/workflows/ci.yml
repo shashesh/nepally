@@ -27,6 +27,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Lint guards
+        run: npm run lint:guards
+
       - name: Type check
         run: npm run type-check
 
@@ -35,3 +38,12 @@ jobs:
 
       - name: Coverage
         run: npm run test:coverage
+
+      - name: Install Playwright browsers
+        run: npm exec --workspace=apps/web playwright install --with-deps
+
+      - name: Web E2E tests
+        run: npm run test:e2e --workspace=apps/web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL != '' && vars.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'ci-placeholder-anon-key' }}

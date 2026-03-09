@@ -28,7 +28,6 @@ import {
   EVENT_TYPE_LABELS,
   EVENT_TYPE_COLORS,
   EVENT_TYPE_ICONS,
-  TrustLevel,
   type EventType,
 } from '@nusa/shared';
 import { useAuth } from '../hooks/useAuth';

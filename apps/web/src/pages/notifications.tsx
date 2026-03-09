@@ -63,7 +63,7 @@ function groupNotifications(notifications: Notification[]): Array<{ label: strin
     if (!byDay.has(label)) byDay.set(label, []);
     byDay.get(label)!.push(n);
   }
-  for (const [label, items] of byDay) {
+  for (const [label, items] of Array.from(byDay.entries())) {
     groups.push({ label, items });
   }
 

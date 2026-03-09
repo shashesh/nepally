@@ -20,6 +20,10 @@ import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function ChangePasswordScreen() {
   const navigation = useNavigation();
   const { user, pauseAuthListener, resumeAuthListener } = useAuth();
@@ -88,8 +92,8 @@ export function ChangePasswordScreen() {
 
       navigation.goBack();
       Alert.alert('Password Changed', 'Your password has been updated successfully.');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to change password');
+    } catch (error: unknown) {
+      Alert.alert('Error', getErrorMessage(error, 'Failed to change password'));
     } finally {
       setSaving(false);
       resumeAuthListener();

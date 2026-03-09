@@ -20,6 +20,10 @@ import styles from '../styles/Profile.module.css';
 
 type ProfileTab = 'posts' | 'saved' | 'about';
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, signOut, refreshUser } = useAuth();
@@ -128,10 +132,10 @@ export default function ProfilePage() {
     try {
       await signOut();
       router.push('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setMenuStatus({
         type: 'error',
-        message: error?.message || 'Failed to log out. Please try again.',
+        message: getErrorMessage(error, 'Failed to log out. Please try again.'),
       });
     }
   }
@@ -232,10 +236,10 @@ export default function ProfilePage() {
 
       await refreshUser();
       setPhotoStatus({ type: 'success', message: 'Photo updated' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setPhotoStatus({
         type: 'error',
-        message: error.message || 'Failed to upload photo',
+        message: getErrorMessage(error, 'Failed to upload photo'),
       });
     } finally {
       setPhotoUploading(false);
@@ -255,10 +259,10 @@ export default function ProfilePage() {
 
       await refreshUser();
       setPhotoStatus({ type: 'success', message: 'Photo removed' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setPhotoStatus({
         type: 'error',
-        message: error.message || 'Failed to remove photo',
+        message: getErrorMessage(error, 'Failed to remove photo'),
       });
     } finally {
       setPhotoUploading(false);

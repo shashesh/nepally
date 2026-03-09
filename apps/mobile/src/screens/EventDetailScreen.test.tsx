@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import { getEventById, hasUserRsvp, rsvpToEvent } from '@nusa/shared';
+import type { Event } from '@nusa/shared';
 import EventDetailScreen from './EventDetailScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -33,7 +34,7 @@ jest.mock('../config/supabase', () => ({ supabase: {} }));
 const FUTURE = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 const PAST = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-const MOCK_EVENT = {
+const MOCK_EVENT: Event = {
   id: 'event-1',
   title: 'Dashain Celebration',
   description: 'Join us for the annual Dashain cultural celebration.',
@@ -57,8 +58,8 @@ const MOCK_EVENT = {
   },
 };
 
-const CANCELLED_EVENT = { ...MOCK_EVENT, status: 'cancelled' };
-const PAST_EVENT = { ...MOCK_EVENT, start_date: PAST };
+const CANCELLED_EVENT: Event = { ...MOCK_EVENT, status: 'cancelled' };
+const PAST_EVENT: Event = { ...MOCK_EVENT, start_date: PAST };
 
 jest.mock('@nusa/shared', () => ({
   getEventById: jest.fn(async () => ({ data: MOCK_EVENT })),

@@ -23,6 +23,24 @@ const ORGANIZER_SELECT = `
 
 const EVENT_SELECT = `*, ${ORGANIZER_SELECT}`;
 
+type AttendeeRow = {
+  id: string;
+  event_id: string;
+  user_id: string;
+  created_at: string;
+  user?: {
+    id: string;
+    full_name: string;
+    trust_level: number;
+    profile_photo?: string | null;
+  } | {
+    id: string;
+    full_name: string;
+    trust_level: number;
+    profile_photo?: string | null;
+  }[] | null;
+};
+
 /**
  * Get upcoming events for a metro area (local + global), chronological.
  * Excludes removed events. Includes cancelled events (shown with banner).
@@ -124,7 +142,26 @@ export async function getEventAttendees(
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return { data: (data || []) as EventRsvp[] };
+
+    const attendees = ((data || []) as AttendeeRow[]).map((row) => {
+      const user = Array.isArray(row.user) ? row.user[0] : row.user;
+      return {
+        id: row.id,
+        event_id: row.event_id,
+        user_id: row.user_id,
+        created_at: row.created_at,
+        user: user
+          ? {
+              id: user.id,
+              full_name: user.full_name,
+              trust_level: user.trust_level,
+              profile_photo: user.profile_photo ?? null,
+            }
+          : undefined,
+      } satisfies EventRsvp;
+    });
+
+    return { data: attendees };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch attendees') };
   }

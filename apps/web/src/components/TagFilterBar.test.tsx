@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Tag } from '@nusa/shared';
 
 vi.mock('@nusa/shared', () => ({
   TAG_EMOJI: {
@@ -16,17 +17,32 @@ vi.mock('@nusa/shared', () => ({
 
 import TagFilterBar from './TagFilterBar';
 
-const FOUR_TAGS = [
-  { id: '1', slug: 'housing', name: 'Housing' },
-  { id: '2', slug: 'jobs', name: 'Jobs' },
-  { id: '3', slug: 'help', name: 'Help' },
-  { id: '4', slug: 'question', name: 'Question' },
+function makeTag(id: string, slug: string, name: string): Tag {
+  return {
+    id,
+    slug,
+    name,
+    icon: null,
+    color: null,
+    description: null,
+    is_system: true,
+    requires_moderation: false,
+    sort_order: Number(id),
+    created_at: '2026-01-01T00:00:00Z',
+  };
+}
+
+const FOUR_TAGS: Tag[] = [
+  makeTag('1', 'housing', 'Housing'),
+  makeTag('2', 'jobs', 'Jobs'),
+  makeTag('3', 'help', 'Help'),
+  makeTag('4', 'question', 'Question'),
 ];
 
-const SIX_TAGS = [
+const SIX_TAGS: Tag[] = [
   ...FOUR_TAGS,
-  { id: '5', slug: 'politics', name: 'Politics' },
-  { id: '6', slug: 'discussion', name: 'Discussion' },
+  makeTag('5', 'politics', 'Politics'),
+  makeTag('6', 'discussion', 'Discussion'),
 ];
 
 describe('TagFilterBar', () => {

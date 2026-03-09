@@ -34,31 +34,6 @@ const MOCK_EVENT = {
   updated_at: new Date().toISOString(),
 };
 
-function buildMockSupabase(overrides: Record<string, any> = {}): SupabaseClient {
-  const chain: Record<string, any> = {
-    select: vi.fn(),
-    neq: vi.fn(),
-    eq: vi.fn(),
-    or: vi.fn(),
-    order: vi.fn(),
-    limit: vi.fn(),
-    single: vi.fn(),
-    insert: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    ...overrides,
-  };
-
-  // Chain all methods back to chain object
-  for (const key of Object.keys(chain)) {
-    if (typeof chain[key] === 'function' && !overrides[key]) {
-      chain[key].mockReturnValue(chain);
-    }
-  }
-
-  return { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
-}
-
 describe('getEventsByMetro', () => {
   it('returns events list for a metro', async () => {
     const chain = {

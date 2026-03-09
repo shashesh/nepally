@@ -9,7 +9,7 @@ export interface User {
   email: string;
   full_name: string;
   phone?: string;
-  profile_photo?: string;
+  profile_photo?: string | null;
 
   // Location
   metro_area_id?: string;
