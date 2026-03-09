@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatPublicName, type Event } from '@nusa/shared';
 import Avatar from '../Avatar';
 import EventTypeBadge from './EventTypeBadge';
@@ -44,7 +45,13 @@ export default function EventCard({ event, past = false }: Props) {
       className={`${styles.card} ${past ? styles.cardPast : ''}`}
     >
       {event.photo_url ? (
-        <img src={event.photo_url} alt={event.title} className={styles.thumbnail} />
+        <Image
+          src={event.photo_url}
+          alt={event.title}
+          width={110}
+          height={110}
+          className={styles.thumbnail}
+        />
       ) : (
         <div className={styles.thumbnailPlaceholder}>📅</div>
       )}

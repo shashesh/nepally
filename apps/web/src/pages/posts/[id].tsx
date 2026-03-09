@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -607,9 +608,11 @@ export default function PostDetailPage() {
               onTouchEnd={handleCarouselTouchEnd}
               onMouseMove={resetCarouselChromeTimer}
             >
-              <img
+              <Image
                 src={postPhotos[currentPhotoIndex]}
                 alt={`Post image ${currentPhotoIndex + 1}`}
+                fill
+                sizes="(max-width: 960px) 100vw, 800px"
                 className={styles.mediaCarouselImage}
                 onClick={() => openLightbox(postPhotos, currentPhotoIndex)}
               />
@@ -886,9 +889,11 @@ export default function PostDetailPage() {
                 </button>
               </div>
 
-              <img
+              <Image
                 src={lightboxPhotos[lightboxIndex]}
                 alt={`Post photo ${lightboxIndex + 1}`}
+                width={1600}
+                height={1200}
                 className={`${styles.lightboxImage} ${getLightboxImageZoomClass(lightboxZoomLevel)}`}
                 onWheel={handleLightboxWheel}
                 onDoubleClick={() => {

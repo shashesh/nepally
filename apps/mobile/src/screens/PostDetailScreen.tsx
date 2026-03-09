@@ -16,6 +16,7 @@ import {
   Pressable,
   Image,
   Animated,
+  findNodeHandle,
   useWindowDimensions,
 } from 'react-native';
 import {
@@ -116,8 +117,8 @@ function PinchableLightboxImage({
   const [isZoomed, setIsZoomed] = useState(false);
   const lastTapTime = useRef(0);
 
-  const pinchRef = useRef<unknown>(null);
-  const panRef = useRef<unknown>(null);
+  const pinchRef = useRef<PinchGestureHandler | null>(null);
+  const panRef = useRef<PanGestureHandler | null>(null);
 
   const clampPan = useCallback((s: number, x: number, y: number) => {
     const maxX = Math.max(0, (viewportWidth * (s - 1)) / 2);
@@ -875,8 +876,11 @@ export default function PostDetailScreen() {
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => {
+                const scrollViewNode = scrollViewRef.current ? findNodeHandle(scrollViewRef.current) : null;
+                if (!scrollViewNode) return;
+
                 commentsRef.current?.measureLayout(
-                  scrollViewRef.current as unknown as number,
+                  scrollViewNode,
                   (_x: number, y: number) => {
                     scrollViewRef.current?.scrollTo({ y, animated: true });
                   },

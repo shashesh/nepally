@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -230,7 +231,13 @@ export default function EventDetailPage() {
             {/* Main content */}
             <div className={styles.main}>
               {event.photo_url ? (
-                <img src={event.photo_url} alt={event.title} className={styles.hero} />
+                <Image
+                  src={event.photo_url}
+                  alt={event.title}
+                  width={1200}
+                  height={280}
+                  className={styles.hero}
+                />
               ) : (
                 <div className={styles.heroPlaceholder}>📅</div>
               )}

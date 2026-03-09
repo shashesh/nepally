@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from '../hooks/useLocation';
@@ -594,9 +595,11 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 ✕
               </button>
 
-              <img
+              <Image
                 src={lightboxPhotos[lightboxIndex]}
                 alt={`Post photo ${lightboxIndex + 1}`}
+                width={1600}
+                height={1200}
                 className={`${styles.lightboxImage} ${getLightboxImageZoomClass(lightboxZoomLevel)}`}
                 onWheel={handleLightboxWheel}
                 onDoubleClick={() => {
@@ -938,11 +941,12 @@ function PostCard({
             tabIndex={0}
             aria-label="Open post image"
           >
-            <img
+            <Image
               src={photoUrls[mediaIndex]}
               alt={`Post image ${mediaIndex + 1}`}
+              fill
+              sizes="(max-width: 900px) 100vw, 720px"
               className={styles.postMediaImg}
-              loading="lazy"
             />
 
             {photoUrls.length > 1 && (
