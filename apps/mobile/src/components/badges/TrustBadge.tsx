@@ -10,19 +10,21 @@ interface TrustBadgeProps {
   showLabel?: boolean;
 }
 
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
 const badgeConfig = {
   0: {
-    icon: 'ellipse-outline' as any,
+    icon: 'ellipse-outline' as IoniconName,
     color: colors.badge.level0,
     label: 'New',
   },
   1: {
-    icon: 'checkmark-circle' as any,
+    icon: 'checkmark-circle' as IoniconName,
     color: colors.badge.level1,
     label: 'Verified',
   },
   2: {
-    icon: 'checkmark-done-circle' as any,
+    icon: 'checkmark-done-circle' as IoniconName,
     color: colors.badge.level2,
     label: 'Contributor',
   },

@@ -93,34 +93,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // When user changes, reload
-  useEffect(() => {
-    if (user) {
-      refreshSavedLocations();
-      if (!activeLocation && user.metro_area_id) {
-        initActiveLocationFromUser();
-      }
-    } else {
-      setActiveLocation(null);
-      setSavedLocations([]);
-      setDetectedLocation(null);
-      setShowChangePrompt(false);
-    }
-  }, [user?.id]);
-
-  // Visibility change listener (foreground detection for web)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && user && !manualOverrideRef.current) {
-        checkLocationChange();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user, activeLocation, snoozes]);
-
-  async function initActiveLocationFromUser() {
+  const initActiveLocationFromUser = useCallback(async () => {
     if (!user?.metro_area_id) return;
 
     const { data } = await supabase
@@ -140,7 +113,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       setActiveLocation(loc);
       saveToStorage('@nusa:web_active_location', loc);
     }
-  }
+  }, [user?.metro_area_id]);
 
   const refreshSavedLocations = useCallback(async () => {
     if (!user) return;
@@ -148,7 +121,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     if (result.data) {
       setSavedLocations(result.data);
     }
-  }, [user?.id]);
+  }, [user]);
 
   const checkLocationChange = useCallback(async () => {
     if (!activeLocation) return;
@@ -168,6 +141,33 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       setShowChangePrompt(true);
     }
   }, [activeLocation, snoozes]);
+
+  // When user changes, reload
+  useEffect(() => {
+    if (user) {
+      refreshSavedLocations();
+      if (!activeLocation && user.metro_area_id) {
+        initActiveLocationFromUser();
+      }
+    } else {
+      setActiveLocation(null);
+      setSavedLocations([]);
+      setDetectedLocation(null);
+      setShowChangePrompt(false);
+    }
+  }, [user, activeLocation, refreshSavedLocations, initActiveLocationFromUser]);
+
+  // Visibility change listener (foreground detection for web)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user && !manualOverrideRef.current) {
+        checkLocationChange();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, checkLocationChange]);
 
   const browseMetro = useCallback((metro: ActiveLocation) => {
     const tempLocation: ActiveLocation = {
@@ -198,7 +198,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       saveToStorage('@nusa:web_active_location', newLocation);
       setShowChangePrompt(false);
     },
-    [user]
+    [user, refreshUser]
   );
 
   const snoozeMetro = useCallback(

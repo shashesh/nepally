@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { OnboardingStackParamList, RootStackParamList } from '../../types/navigation';
 import { TutorialCard } from '../../components/tutorial/TutorialCard';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { TextButton } from '../../components/buttons/TextButton';
@@ -40,7 +42,7 @@ const TUTORIAL_CARDS = [
 ];
 
 export function TutorialScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'Tutorial'>>();
   const { completeOnboarding } = useOnboarding();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
@@ -71,12 +73,16 @@ export function TutorialScreen() {
   const handleGetStarted = async () => {
     await completeOnboarding();
     // Navigate to main app (HomeScreen will be in tab navigator)
-    navigation.replace('Main');
+    navigation
+      .getParent<NativeStackNavigationProp<RootStackParamList>>()
+      ?.replace('Main', { screen: 'Home', params: { screen: 'HomeMain' } });
   };
 
   const handleSkip = async () => {
     await completeOnboarding();
-    navigation.replace('Main');
+    navigation
+      .getParent<NativeStackNavigationProp<RootStackParamList>>()
+        ?.replace('Main', { screen: 'Home', params: { screen: 'HomeMain' } });
   };
 
   const renderDot = (index: number) => (

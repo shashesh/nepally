@@ -77,9 +77,8 @@ export default function EventsScreen() {
     fetchEvents();
   }, [fetchEvents]);
 
-  const now = new Date();
-
   const { upcoming, past } = useMemo(() => {
+    const now = new Date();
     const filtered =
       activeFilter === 'all'
         ? events

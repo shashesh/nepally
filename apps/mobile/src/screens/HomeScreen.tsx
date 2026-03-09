@@ -113,23 +113,21 @@ export default function HomeScreen() {
   }, []);
 
   // Reload posts, liked state, and unread count every time the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      if (metroAreaId) {
-        loadPosts();
-      }
-      loadLikedPosts();
-      loadSavedPosts();
+  useFocusEffect(() => {
+    if (metroAreaId) {
+      loadPosts();
+    }
+    loadLikedPosts();
+    loadSavedPosts();
+    refreshUnreadCount();
+    refreshUnreadNotifCount();
+    // Refresh unread counts periodically
+    const interval = setInterval(() => {
       refreshUnreadCount();
       refreshUnreadNotifCount();
-      // Refresh unread counts periodically
-      const interval = setInterval(() => {
-        refreshUnreadCount();
-        refreshUnreadNotifCount();
-      }, 30000);
-      return () => clearInterval(interval);
-    }, [selectedTagSlugs, metroAreaId])
-  );
+    }, 30000);
+    return () => clearInterval(interval);
+  });
 
   const refreshUnreadCount = useCallback(async () => {
     if (!user?.id) return;
@@ -381,7 +379,7 @@ export default function HomeScreen() {
   };
 
   const handleCommentPress = (post: Post) => {
-    navigation.navigate('PostDetail', { postId: post.id, scrollToComments: true } as any);
+    navigation.navigate('PostDetail', { postId: post.id });
   };
 
   const handleVerifyPress = () => {
@@ -445,7 +443,7 @@ export default function HomeScreen() {
   const handleMoreEdit = () => {
     if (!morePost) return;
     setMorePost(null);
-    navigation.navigate('Post' as any, {
+    navigation.navigate('Post', {
       screen: 'CreatePost',
       params: { editPostId: morePost.id },
     });
@@ -494,7 +492,7 @@ export default function HomeScreen() {
         ]
       );
     } else {
-      navigation.navigate('Post' as any);
+      navigation.navigate('Post', { screen: 'CreatePost' });
     }
   };
 

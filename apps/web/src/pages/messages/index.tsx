@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -19,13 +19,23 @@ export default function MessagesPage() {
   const [openAvatarMenuId, setOpenAvatarMenuId] = useState<string | null>(null);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
 
+  const loadConversations = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    const result = await getConversations(supabase, user.id);
+    if (result.data) {
+      setConversations(result.data);
+    }
+    setLoading(false);
+  }, [user]);
+
   useEffect(() => {
     if (!user) {
       router.replace('/login');
       return;
     }
     loadConversations();
-  }, [user]);
+  }, [user, router, loadConversations]);
 
   // Close avatar dropdown on outside click
   useEffect(() => {
@@ -39,16 +49,6 @@ export default function MessagesPage() {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openAvatarMenuId]);
-
-  async function loadConversations() {
-    if (!user) return;
-    setLoading(true);
-    const result = await getConversations(supabase, user.id);
-    if (result.data) {
-      setConversations(result.data);
-    }
-    setLoading(false);
-  }
 
   if (!user) return null;
 

@@ -8,6 +8,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Post, PostsResult, PostResult, Tag } from '../types/post';
 
+type RawPostTagJoin = {
+  tag?: Tag | null;
+} | null;
+
+type RawPost = Omit<Post, 'tags'> & {
+  post_tags?: RawPostTagJoin[] | null;
+};
+
 // ── Select fragment used across queries ─────────────────────────────
 const POST_SELECT = `
   *,
@@ -25,11 +33,11 @@ const POST_SELECT = `
 /**
  * Flatten the nested post_tags → tag join into a flat `tags` array on the Post.
  */
-function flattenPostTags(raw: any): Post {
+function flattenPostTags(raw: RawPost): Post {
   const { post_tags, ...rest } = raw;
   const tags: Tag[] = (post_tags || [])
-    .map((pt: any) => pt.tag)
-    .filter(Boolean);
+    .map((pt) => pt?.tag)
+    .filter((tag): tag is Tag => Boolean(tag));
   return { ...rest, tags } as Post;
 }
 

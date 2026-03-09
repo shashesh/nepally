@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { getUserById } from '@nusa/shared';
 import type { User } from '@nusa/shared';
@@ -27,10 +27,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    try {
+      const result = await getUserById(supabase, userId);
+      if (result.data) {
+        setUser(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    }
+  }, []);
+
+  const loadUser = useCallback(async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        setSupabaseUser(session.user);
+        await fetchUserProfile(session.user.id);
+      }
+    } catch (error) {
+      console.error('Failed to load user:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchUserProfile]);
+
   // Load initial session
   useEffect(() => {
     loadUser();
-  }, []);
+  }, [loadUser]);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -49,34 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
-
-  async function loadUser() {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await fetchUserProfile(session.user.id);
-      }
-    } catch (error) {
-      console.error('Failed to load user:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function fetchUserProfile(userId: string) {
-    try {
-      const result = await getUserById(supabase, userId);
-      if (result.data) {
-        setUser(result.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-    }
-  }
+  }, [fetchUserProfile]);
 
   async function refreshUser() {
     const {

@@ -29,12 +29,12 @@ export const TextInput: React.FC<TextInputProps> = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
-  const handleFocus = (e: any) => {
+  const handleFocus = (e: Parameters<NonNullable<RNTextInputProps['onFocus']>>[0]) => {
     setIsFocused(true);
     onFocus?.(e);
   };
 
-  const handleBlur = (e: any) => {
+  const handleBlur = (e: Parameters<NonNullable<RNTextInputProps['onBlur']>>[0]) => {
     setIsFocused(false);
     onBlur?.(e);
   };

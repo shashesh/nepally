@@ -13,6 +13,10 @@ interface UseMetroAreaReturn {
   getCachedMetroArea: () => Promise<MetroArea | null>;
 }
 
+type CachedMetroArea = Pick<MetroArea, 'id' | 'name' | 'state'> & {
+  population?: number | null;
+};
+
 /**
  * Hook for metro area operations
  */
@@ -76,10 +80,10 @@ export function useMetroArea(): UseMetroAreaReturn {
 
   const loadCachedMetroArea = useCallback(async (): Promise<MetroArea | null> => {
     try {
-      const cached = await getCachedMetroArea();
+      const cached = (await getCachedMetroArea()) as CachedMetroArea | null;
       if (cached) {
         // AsyncStorage caches {id, name, state} — add population for type compat
-        const full: MetroArea = { ...cached, population: (cached as any).population ?? null };
+        const full: MetroArea = { ...cached, population: cached.population ?? null };
         setMetroArea(full);
         return full;
       }

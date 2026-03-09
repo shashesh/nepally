@@ -233,16 +233,37 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   useEffect(() => {
     if (lightboxPhotos.length === 0) return;
 
+    function resetChromeTimer() {
+      setLightboxChromeVisible(true);
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+      }
+      lightboxChromeHideTimeoutRef.current = setTimeout(() => {
+        setLightboxChromeVisible(false);
+      }, LIGHTBOX_CHROME_HIDE_DELAY_MS);
+    }
+
+    function closeLightboxFromKey() {
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+        lightboxChromeHideTimeoutRef.current = null;
+      }
+      setLightboxPhotos([]);
+      setLightboxIndex(0);
+      setLightboxZoomLevel(0);
+      setLightboxChromeVisible(true);
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        closeLightbox();
+        closeLightboxFromKey();
       }
       if (event.key === 'ArrowRight') {
-        resetLightboxChromeTimer();
+        resetChromeTimer();
         setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
       }
       if (event.key === 'ArrowLeft') {
-        resetLightboxChromeTimer();
+        resetChromeTimer();
         setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
       }
     }

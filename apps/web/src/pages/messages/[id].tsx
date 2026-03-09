@@ -81,7 +81,7 @@ export default function MessageThreadPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, conversationId]);
+  }, [user, conversationId, router]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

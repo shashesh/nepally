@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import type { EventRsvp } from '@nusa/shared';
 
 vi.mock('@nusa/shared', () => ({
   formatPublicName: (name: string) => {
@@ -104,7 +105,7 @@ describe('AttendeeList (web)', () => {
       created_at: new Date().toISOString(),
       user: undefined,
     };
-    render(React.createElement(AttendeeList, { attendees: [rsvpNoUser] as any, onClose: vi.fn() }));
+    render(React.createElement(AttendeeList, { attendees: [rsvpNoUser] as EventRsvp[], onClose: vi.fn() }));
     expect(screen.getByText('User')).toBeDefined();
   });
 });

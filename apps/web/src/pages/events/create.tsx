@@ -73,10 +73,10 @@ export default function CreateEventPage() {
     selectedPhotoPreviewRef.current = selectedPhotoPreview;
   }, [selectedPhotoPreview]);
 
-  const userId = (user as any)?.id ?? '';
-  const metroId = (user as any)?.metro_area_id ?? '';
-  const trustLevel = (user as any)?.trust_level ?? 0;
-  const isPremium = (user as any)?.is_premium ?? false;
+  const userId = user?.id ?? '';
+  const metroId = user?.metro_area_id ?? '';
+  const trustLevel = user?.trust_level ?? 0;
+  const isPremium = user?.is_premium ?? false;
 
   useEffect(() => {
     if (!user) { router.replace('/login'); return; }

@@ -25,6 +25,8 @@ import {
   GestureHandlerRootView,
   ScrollView as GHScrollView,
   type PinchGestureHandlerStateChangeEvent,
+  type HandlerStateChangeEvent,
+  type PanGestureHandlerEventPayload,
 } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -114,8 +116,8 @@ function PinchableLightboxImage({
   const [isZoomed, setIsZoomed] = useState(false);
   const lastTapTime = useRef(0);
 
-  const pinchRef = useRef<any>(null);
-  const panRef = useRef<any>(null);
+  const pinchRef = useRef<unknown>(null);
+  const panRef = useRef<unknown>(null);
 
   const clampPan = useCallback((s: number, x: number, y: number) => {
     const maxX = Math.max(0, (viewportWidth * (s - 1)) / 2);
@@ -207,7 +209,7 @@ function PinchableLightboxImage({
     [translateX, translateY]
   );
 
-  const onPanStateChange = useCallback((event: any) => {
+  const onPanStateChange = useCallback((event: HandlerStateChangeEvent<PanGestureHandlerEventPayload>) => {
     const { state, oldState } = event.nativeEvent;
 
     // Set offset at gesture start so Animated.event delta is relative to current position.
@@ -355,6 +357,7 @@ export default function PostDetailScreen() {
     loadComments();
     loadLikeState();
     loadSaveState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
   useEffect(() => {
@@ -873,7 +876,7 @@ export default function PostDetailScreen() {
               style={styles.actionButton}
               onPress={() => {
                 commentsRef.current?.measureLayout(
-                  scrollViewRef.current as any,
+                  scrollViewRef.current as unknown as number,
                   (_x: number, y: number) => {
                     scrollViewRef.current?.scrollTo({ y, animated: true });
                   },

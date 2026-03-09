@@ -80,6 +80,17 @@ export default function MessageThreadScreen() {
     setProfileMenuVisible(true);
   }, [viewportHeight, viewportWidth]);
 
+  const loadMessages = useCallback(async () => {
+    setLoadError(null);
+    const result = await getMessages(supabase, conversationId);
+    if (result.data) {
+      setMessages(result.data);
+    } else {
+      setLoadError('Could not load messages. Please try again.');
+    }
+    setLoading(false);
+  }, [conversationId]);
+
   // Load messages and subscribe to realtime
   useEffect(() => {
     loadMessages();
@@ -118,7 +129,7 @@ export default function MessageThreadScreen() {
     return () => {
       channel.unsubscribe();
     };
-  }, [conversationId]);
+  }, [conversationId, loadMessages, user?.id]);
 
   // Mark as read on mount
   useEffect(() => {
@@ -126,17 +137,6 @@ export default function MessageThreadScreen() {
       markAsRead(supabase, conversationId, user.id);
     }
   }, [conversationId, user?.id]);
-
-  const loadMessages = async () => {
-    setLoadError(null);
-    const result = await getMessages(supabase, conversationId);
-    if (result.data) {
-      setMessages(result.data);
-    } else {
-      setLoadError('Could not load messages. Please try again.');
-    }
-    setLoading(false);
-  };
 
   const handleRetryLoad = () => {
     setLoading(true);
@@ -220,7 +220,10 @@ export default function MessageThreadScreen() {
 
   // Group messages by date for separators
   const renderMessages = () => {
-    const items: { type: 'date' | 'message'; data: any }[] = [];
+    const items: Array<
+      { type: 'date'; data: string } |
+      { type: 'message'; data: ChatMessage }
+    > = [];
     let lastDate = '';
 
     for (const msg of messages) {

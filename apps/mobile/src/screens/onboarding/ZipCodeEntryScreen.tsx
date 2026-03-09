@@ -8,7 +8,9 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { OnboardingStackParamList } from '../../types/navigation';
 import { ZipCodeInput } from '../../components/inputs/ZipCodeInput';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { TextButton } from '../../components/buttons/TextButton';
@@ -18,8 +20,8 @@ import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
 
 export function ZipCodeEntryScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'ZipCodeEntry'>>();
+  const route = useRoute<RouteProp<OnboardingStackParamList, 'ZipCodeEntry'>>();
   const { userId } = route.params || {};
 
   const [zipCode, setZipCode] = useState('');

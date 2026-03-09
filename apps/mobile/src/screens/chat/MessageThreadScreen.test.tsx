@@ -25,10 +25,10 @@ jest.mock('../../config/supabase', () => ({
 }));
 
 jest.mock('@nusa/shared', () => ({
-  getMessages: (...args: any[]) => mockGetMessages(...args),
+  getMessages: (...args: unknown[]) => mockGetMessages(...args),
   sendMessage: jest.fn(async () => ({ data: null })),
   markAsRead: jest.fn(async () => ({})),
-  subscribeToMessages: (...args: any[]) => mockSubscribeToMessages(...args),
+  subscribeToMessages: (...args: unknown[]) => mockSubscribeToMessages(...args),
   blockUser: jest.fn(async () => ({})),
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
 }));

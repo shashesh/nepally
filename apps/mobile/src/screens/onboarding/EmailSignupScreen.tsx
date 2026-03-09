@@ -12,7 +12,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { OnboardingStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../config/supabase';
 import { createUserProfile, APP_CONFIG } from '@nusa/shared';
@@ -31,8 +33,8 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function EmailSignupScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'EmailSignup'>>();
+  const route = useRoute<RouteProp<OnboardingStackParamList, 'EmailSignup'>>();
   const { refreshUser } = useContext(AuthContext);
 
   const [mode, setMode] = useState<Mode>(route.params?.mode || 'signup');

@@ -39,8 +39,8 @@ export default function EventDetailPage() {
   const [attendeesLoading, setAttendeesLoading] = useState(false);
   const [messagingLoading, setMessagingLoading] = useState(false);
 
-  const userId = (user as any)?.id ?? '';
-  const trustLevel = (user as any)?.trust_level ?? 0;
+  const userId = user?.id ?? '';
+  const trustLevel = user?.trust_level ?? 0;
   const isOrganizer = event?.organizer_id === userId;
   const isPast = event
     ? new Date(event.end_date ?? event.start_date) < new Date()

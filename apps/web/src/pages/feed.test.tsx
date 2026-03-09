@@ -2,6 +2,14 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+type MockTagFilterBarProps = {
+  tags: Array<{ id: string; slug: string; name: string }>;
+  selectedSlugs: string[];
+  onTagToggle: (slug: string) => void;
+  onAllPress: () => void;
+};
+type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
+
 const feedMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   useLocationMock: vi.fn(),
@@ -38,10 +46,10 @@ vi.mock('@nusa/shared', async () => {
   };
 });
 vi.mock('../components/TagFilterBar', () => ({
-  default: ({ tags, selectedSlugs, onTagToggle, onAllPress }: any) =>
+  default: ({ tags, selectedSlugs: _selectedSlugs, onTagToggle, onAllPress }: MockTagFilterBarProps) =>
     React.createElement('div', { 'data-testid': 'tag-filter-bar' },
       React.createElement('button', { onClick: onAllPress }, 'All'),
-      tags.map((t: any) =>
+      tags.map((t) =>
         React.createElement('button', { key: t.id, onClick: () => onTagToggle(t.slug) }, t.name)
       )
     ),
@@ -55,7 +63,7 @@ vi.mock('next/head', () => ({
     React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: any) =>
+  default: ({ href, children, className }: MockLinkProps) =>
     React.createElement('a', { href, className }, children),
 }));
 

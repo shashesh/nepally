@@ -8,7 +8,7 @@ import { spacing } from '../../styles/spacing';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface TutorialCardProps {
-  icon: any; // Ionicons name
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   description: string;
   iconColor: string;

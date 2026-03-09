@@ -15,6 +15,13 @@ jest.mock('../config/supabase', () => ({
 
 import { useMetroArea } from './useMetroArea';
 
+type CachedMetro = {
+  id: string;
+  name: string;
+  state: string;
+  population: number | null;
+};
+
 describe('useMetroArea', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
@@ -25,11 +32,11 @@ describe('useMetroArea', () => {
       id: '35620',
       name: 'New York-Newark-Jersey City',
       state: 'NY',
-    } as any);
+    });
 
     const { result } = renderHook(() => useMetroArea());
 
-    let cached: any = null;
+    let cached: CachedMetro | null = null;
     await act(async () => {
       cached = await result.current.getCachedMetroArea();
     });
