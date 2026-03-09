@@ -6,7 +6,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { SecondaryButton } from '../../components/buttons/SecondaryButton';
 import { colors } from '../../styles/colors';
@@ -14,7 +14,7 @@ import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
 
 export function WelcomeScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const handleSignUp = () => {
     navigation.navigate('SignupMethod');

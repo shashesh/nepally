@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -73,10 +74,10 @@ export default function CreateEventPage() {
     selectedPhotoPreviewRef.current = selectedPhotoPreview;
   }, [selectedPhotoPreview]);
 
-  const userId = (user as any)?.id ?? '';
-  const metroId = (user as any)?.metro_area_id ?? '';
-  const trustLevel = (user as any)?.trust_level ?? 0;
-  const isPremium = (user as any)?.is_premium ?? false;
+  const userId = user?.id ?? '';
+  const metroId = user?.metro_area_id ?? '';
+  const trustLevel = user?.trust_level ?? 0;
+  const isPremium = user?.is_premium ?? false;
 
   useEffect(() => {
     if (!user) { router.replace('/login'); return; }
@@ -394,9 +395,12 @@ export default function CreateEventPage() {
               <label className={styles.label}>Event Photo (optional)</label>
               {(selectedPhotoPreview || form.photo_url) ? (
                 <div className={styles.photoCard}>
-                  <img
+                  <Image
                     src={selectedPhotoPreview || form.photo_url}
                     alt="Event preview"
+                    width={1200}
+                    height={800}
+                    unoptimized
                     className={styles.photoPreview}
                   />
                   <div className={styles.photoActions}>

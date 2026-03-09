@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { TAG_EMOJI } from '@nusa/shared';
 import type { Tag } from '@nusa/shared';
 import styles from './TagFilterBar.module.css';
@@ -23,8 +23,8 @@ export default function TagFilterBar({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Separate visible tags and "more" tags
-  const visibleTags = tags.slice(0, MAX_VISIBLE_CHIPS);
-  const moreTags = tags.slice(MAX_VISIBLE_CHIPS);
+  const visibleTags = useMemo(() => tags.slice(0, MAX_VISIBLE_CHIPS), [tags]);
+  const moreTags = useMemo(() => tags.slice(MAX_VISIBLE_CHIPS), [tags]);
   const moreSelectedCount = moreTags.filter((t) =>
     selectedSlugs.includes(t.slug)
   ).length;
@@ -38,7 +38,7 @@ export default function TagFilterBar({
         selectedSlugs.filter((slug) => moreTags.some((t) => t.slug === slug))
       );
     }
-  }, [moreOpen]);
+  }, [moreOpen, moreTags, selectedSlugs]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

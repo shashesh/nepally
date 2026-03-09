@@ -69,6 +69,7 @@ export function ProfileScreen() {
 
   useEffect(() => {
     loadMetroArea();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.metro_area_id]);
 
   useEffect(() => {

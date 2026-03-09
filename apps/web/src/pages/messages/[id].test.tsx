@@ -2,6 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
+
 const threadMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   useRouterMock: vi.fn(),
@@ -36,7 +38,7 @@ vi.mock('next/head', () => ({
     React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: any) =>
+  default: ({ href, children, className }: MockLinkProps) =>
     React.createElement('a', { href, className }, children),
 }));
 

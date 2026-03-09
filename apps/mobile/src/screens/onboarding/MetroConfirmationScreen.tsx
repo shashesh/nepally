@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { OnboardingStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { useMetroArea } from '../../hooks/useMetroArea';
@@ -19,14 +21,18 @@ import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
 
 export function MetroConfirmationScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'MetroConfirmation'>>();
+  const route = useRoute<RouteProp<OnboardingStackParamList, 'MetroConfirmation'>>();
   const { userId, zipCode, metroAreaId, metroName } = route.params || {};
 
   const { updateLocation } = useMetroArea();
   const { refreshUser } = useAuth();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const handleContinue = useCallback(() => {
+    navigation.navigate('Tutorial');
+  }, [navigation]);
 
   useEffect(() => {
     // Animate checkmark
@@ -59,11 +65,7 @@ export function MetroConfirmationScreen() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
-
-  const handleContinue = () => {
-    navigation.navigate('Tutorial');
-  };
+  }, [fadeAnim, scaleAnim, userId, zipCode, metroAreaId, updateLocation, refreshUser, handleContinue]);
 
   return (
     <SafeAreaView style={styles.container}>

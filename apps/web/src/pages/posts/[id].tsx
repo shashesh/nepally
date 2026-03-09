@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useRef, FormEvent } from 'react';
+import React, { useEffect, useState, useRef, useCallback, FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -97,7 +98,7 @@ export default function PostDetailPage() {
         }
       });
     }
-  }, [user, post?.id]);
+  }, [user, post]);
 
   useEffect(() => {
     if (user && post) {
@@ -107,7 +108,7 @@ export default function PostDetailPage() {
         }
       });
     }
-  }, [user, post?.id]);
+  }, [user, post]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -311,21 +312,21 @@ export default function PostDetailPage() {
   const commentThreads = buildSingleLevelCommentThreads(comments);
   const postPhotos = (post?.photos || []).filter(Boolean).slice(0, 3);
 
-  function clearCarouselChromeTimer() {
+  const clearCarouselChromeTimer = useCallback(() => {
     if (carouselChromeHideTimeoutRef.current) {
       clearTimeout(carouselChromeHideTimeoutRef.current);
       carouselChromeHideTimeoutRef.current = null;
     }
-  }
+  }, []);
 
-  function resetCarouselChromeTimer() {
+  const resetCarouselChromeTimer = useCallback(() => {
     setCarouselChromeVisible(true);
     if (postPhotos.length <= 1) return;
     clearCarouselChromeTimer();
     carouselChromeHideTimeoutRef.current = setTimeout(() => {
       setCarouselChromeVisible(false);
     }, DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS);
-  }
+  }, [postPhotos.length, clearCarouselChromeTimer]);
 
   useEffect(() => {
     if (postPhotos.length <= 1) {
@@ -335,21 +336,42 @@ export default function PostDetailPage() {
     }
 
     resetCarouselChromeTimer();
-  }, [post?.id, postPhotos.length]);
+  }, [post?.id, postPhotos.length, clearCarouselChromeTimer, resetCarouselChromeTimer]);
 
   useEffect(() => {
     if (lightboxPhotos.length === 0) return;
 
+    function resetChromeTimer() {
+      setLightboxChromeVisible(true);
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+      }
+      lightboxChromeHideTimeoutRef.current = setTimeout(() => {
+        setLightboxChromeVisible(false);
+      }, DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS);
+    }
+
+    function closeLightboxFromKey() {
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+        lightboxChromeHideTimeoutRef.current = null;
+      }
+      setLightboxPhotos([]);
+      setLightboxIndex(0);
+      setLightboxZoomLevel(0);
+      setLightboxChromeVisible(true);
+    }
+
     function handleLightboxKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        closeLightbox();
+        closeLightboxFromKey();
       }
       if (event.key === 'ArrowRight') {
-        resetLightboxChromeTimer();
+        resetChromeTimer();
         setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
       }
       if (event.key === 'ArrowLeft') {
-        resetLightboxChromeTimer();
+        resetChromeTimer();
         setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
       }
     }
@@ -586,9 +608,11 @@ export default function PostDetailPage() {
               onTouchEnd={handleCarouselTouchEnd}
               onMouseMove={resetCarouselChromeTimer}
             >
-              <img
+              <Image
                 src={postPhotos[currentPhotoIndex]}
                 alt={`Post image ${currentPhotoIndex + 1}`}
+                fill
+                sizes="(max-width: 960px) 100vw, 800px"
                 className={styles.mediaCarouselImage}
                 onClick={() => openLightbox(postPhotos, currentPhotoIndex)}
               />
@@ -865,9 +889,11 @@ export default function PostDetailPage() {
                 </button>
               </div>
 
-              <img
+              <Image
                 src={lightboxPhotos[lightboxIndex]}
                 alt={`Post photo ${lightboxIndex + 1}`}
+                width={1600}
+                height={1200}
                 className={`${styles.lightboxImage} ${getLightboxImageZoomClass(lightboxZoomLevel)}`}
                 onWheel={handleLightboxWheel}
                 onDoubleClick={() => {

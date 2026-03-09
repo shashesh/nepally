@@ -1,5 +1,6 @@
 /* ── Avatar Component ─────────────────────── */
 .avatar {
+  position: relative;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;

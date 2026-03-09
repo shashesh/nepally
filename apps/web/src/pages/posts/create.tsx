@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
@@ -634,7 +635,14 @@ export default function CreatePostPage() {
                     onDrop={(event) => handlePhotoDrop(index, event)}
                     onDragEnd={handlePhotoDragEnd}
                   >
-                    <img src={photoUrl} alt={altText} className={styles.photoPreviewImage} />
+                    <Image
+                      src={photoUrl}
+                      alt={altText}
+                      fill
+                      sizes="80px"
+                      unoptimized
+                      className={styles.photoPreviewImage}
+                    />
                     <button
                       type="button"
                       className={styles.photoRemoveBtn}

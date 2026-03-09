@@ -71,11 +71,20 @@ describe('createEventSchema', () => {
   });
 
   it('accepts optional fields being absent', () => {
-    const { location_address, photo_url, end_date, ...minimal } = {
+    const withOptionalFields = {
       ...VALID_INPUT,
-      location_address: undefined,
-      photo_url: undefined,
-      end_date: undefined,
+      location_address: '123 Main St',
+      photo_url: 'https://example.com/event.jpg',
+      end_date: FAR_FUTURE_DATE,
+    };
+    const minimal = {
+      title: withOptionalFields.title,
+      description: withOptionalFields.description,
+      event_type: withOptionalFields.event_type,
+      start_date: withOptionalFields.start_date,
+      location_name: withOptionalFields.location_name,
+      rsvp_visibility: withOptionalFields.rsvp_visibility,
+      is_global: withOptionalFields.is_global,
     };
     const result = createEventSchema.safeParse(minimal);
     expect(result.success).toBe(true);
@@ -90,7 +99,14 @@ describe('createEventSchema', () => {
   });
 
   it('defaults rsvp_visibility to public when not provided', () => {
-    const { rsvp_visibility, ...withoutVisibility } = VALID_INPUT;
+    const withoutVisibility = {
+      title: VALID_INPUT.title,
+      description: VALID_INPUT.description,
+      event_type: VALID_INPUT.event_type,
+      start_date: VALID_INPUT.start_date,
+      location_name: VALID_INPUT.location_name,
+      is_global: VALID_INPUT.is_global,
+    };
     const result = createEventSchema.safeParse(withoutVisibility);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -99,7 +115,14 @@ describe('createEventSchema', () => {
   });
 
   it('defaults is_global to false when not provided', () => {
-    const { is_global, ...withoutGlobal } = VALID_INPUT;
+    const withoutGlobal = {
+      title: VALID_INPUT.title,
+      description: VALID_INPUT.description,
+      event_type: VALID_INPUT.event_type,
+      start_date: VALID_INPUT.start_date,
+      location_name: VALID_INPUT.location_name,
+      rsvp_visibility: VALID_INPUT.rsvp_visibility,
+    };
     const result = createEventSchema.safeParse(withoutGlobal);
     expect(result.success).toBe(true);
     if (result.success) {

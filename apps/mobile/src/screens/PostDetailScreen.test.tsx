@@ -14,9 +14,9 @@ jest.mock('react-native-gesture-handler', () => {
   const mockReact = jest.requireActual('react');
   const { View: mockView, ScrollView: mockScrollView } = jest.requireActual('react-native');
   return {
-    PinchGestureHandler: ({ children }: any) => mockReact.createElement(mockView, null, children),
-    PanGestureHandler: ({ children }: any) => mockReact.createElement(mockView, null, children),
-    GestureHandlerRootView: ({ children }: any) => mockReact.createElement(mockView, null, children),
+    PinchGestureHandler: ({ children }: { children?: React.ReactNode }) => mockReact.createElement(mockView, null, children),
+    PanGestureHandler: ({ children }: { children?: React.ReactNode }) => mockReact.createElement(mockView, null, children),
+    GestureHandlerRootView: ({ children }: { children?: React.ReactNode }) => mockReact.createElement(mockView, null, children),
     ScrollView: mockScrollView,
     State: { ACTIVE: 4, BEGAN: 2 },
   };
@@ -57,7 +57,7 @@ jest.mock('@nusa/shared', () => ({
       },
     },
   })),
-  getOrCreateConversation: (...args: any[]) => mockGetOrCreateConversation(...args),
+  getOrCreateConversation: (...args: unknown[]) => mockGetOrCreateConversation(...args),
   likePost: jest.fn(async () => ({})),
   unlikePost: jest.fn(async () => ({})),
   getUserLikedPostIds: jest.fn(async () => ({ data: [] })),

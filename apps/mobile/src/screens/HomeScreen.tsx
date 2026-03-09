@@ -112,25 +112,6 @@ export default function HomeScreen() {
     loadTags();
   }, []);
 
-  // Reload posts, liked state, and unread count every time the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      if (metroAreaId) {
-        loadPosts();
-      }
-      loadLikedPosts();
-      loadSavedPosts();
-      refreshUnreadCount();
-      refreshUnreadNotifCount();
-      // Refresh unread counts periodically
-      const interval = setInterval(() => {
-        refreshUnreadCount();
-        refreshUnreadNotifCount();
-      }, 30000);
-      return () => clearInterval(interval);
-    }, [selectedTagSlugs, metroAreaId])
-  );
-
   const refreshUnreadCount = useCallback(async () => {
     if (!user?.id) return;
     const result = await getTotalUnreadCount(supabase, user.id);
@@ -198,7 +179,7 @@ export default function HomeScreen() {
     }
   };
 
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     if (!metroAreaId) {
       setPosts([]);
       setLoadError(null);
@@ -224,7 +205,7 @@ export default function HomeScreen() {
       setInitialLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [metroAreaId, selectedTagSlugs]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -243,21 +224,44 @@ export default function HomeScreen() {
     setBannerVisible(false);
   };
 
-  const loadLikedPosts = async () => {
+  const loadLikedPosts = useCallback(async () => {
     if (!user?.id) return;
     const result = await getUserLikedPostIds(supabase, user.id);
     if (result.data) {
       setLikedPostIds(new Set(result.data));
     }
-  };
+  }, [user?.id]);
 
-  const loadSavedPosts = async () => {
+  const loadSavedPosts = useCallback(async () => {
     if (!user?.id) return;
     const result = await getUserSavedPostIds(supabase, user.id);
     if (result.data) {
       setSavedPostIds(new Set(result.data));
     }
-  };
+  }, [user?.id]);
+
+  // Reload posts, liked state, and unread count every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadPosts();
+      loadLikedPosts();
+      loadSavedPosts();
+      refreshUnreadCount();
+      refreshUnreadNotifCount();
+      // Refresh unread counts periodically
+      const interval = setInterval(() => {
+        refreshUnreadCount();
+        refreshUnreadNotifCount();
+      }, 30000);
+      return () => clearInterval(interval);
+    }, [
+      loadPosts,
+      loadLikedPosts,
+      loadSavedPosts,
+      refreshUnreadCount,
+      refreshUnreadNotifCount,
+    ])
+  );
 
   const showSaveToast = (message: string) => {
     setSaveToast(message);
@@ -381,7 +385,7 @@ export default function HomeScreen() {
   };
 
   const handleCommentPress = (post: Post) => {
-    navigation.navigate('PostDetail', { postId: post.id, scrollToComments: true } as any);
+    navigation.navigate('PostDetail', { postId: post.id });
   };
 
   const handleVerifyPress = () => {
@@ -445,7 +449,7 @@ export default function HomeScreen() {
   const handleMoreEdit = () => {
     if (!morePost) return;
     setMorePost(null);
-    navigation.navigate('Post' as any, {
+    navigation.navigate('Post', {
       screen: 'CreatePost',
       params: { editPostId: morePost.id },
     });
@@ -494,7 +498,7 @@ export default function HomeScreen() {
         ]
       );
     } else {
-      navigation.navigate('Post' as any);
+      navigation.navigate('Post', { screen: 'CreatePost' });
     }
   };
 

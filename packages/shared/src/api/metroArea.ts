@@ -5,6 +5,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { MetroArea, MetroAreaResult } from '../types/metro';
 
+type MetroAreasJoinRow = {
+  metro_areas: MetroArea | MetroArea[] | null;
+};
+
 /**
  * Get metro area by ZIP code.
  * Queries the metro_area_zipcodes join table to find the metro area for a given ZIP.
@@ -31,7 +35,14 @@ export async function getMetroByZip(
     if (error) throw error;
     if (!data) throw new Error('ZIP code not found');
 
-    const metroAreaData = data.metro_areas as any;
+    const metroAreaRow = data as unknown as MetroAreasJoinRow;
+    const metroAreaData = Array.isArray(metroAreaRow.metro_areas)
+      ? metroAreaRow.metro_areas[0]
+      : metroAreaRow.metro_areas;
+
+    if (!metroAreaData) {
+      throw new Error('Metro area not found for ZIP code');
+    }
 
     return {
       data: {

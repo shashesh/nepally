@@ -2,6 +2,8 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
+type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
+
 vi.mock('@nusa/shared', () => ({
   formatPublicName: (name: string) => {
     const parts = name.trim().split(' ');
@@ -11,7 +13,7 @@ vi.mock('@nusa/shared', () => ({
 }));
 
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: any) =>
+  default: ({ href, children, className }: MockLinkProps) =>
     React.createElement('a', { href, className }, children),
 }));
 
@@ -120,7 +122,7 @@ describe('EventCard (web)', () => {
   });
 
   it('shows Unknown when organizer is missing', () => {
-    render(React.createElement(EventCard, { event: { ...MOCK_EVENT, organizer: undefined } as any }));
+    render(React.createElement(EventCard, { event: { ...MOCK_EVENT, organizer: undefined } }));
     expect(screen.getByText('Unknown')).toBeDefined();
   });
 

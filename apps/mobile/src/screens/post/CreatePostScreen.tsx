@@ -148,6 +148,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (!isEditing || !editPostId || availableTags.length === 0) return;
     loadExistingPost(editPostId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, editPostId, availableTags.length]);
 
   const postButtonHint = tagsLoading
@@ -199,6 +200,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
       ),
       title: isEditing ? 'Edit Post' : 'Create Post',
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     canSubmit,
     submitting,

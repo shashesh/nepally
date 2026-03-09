@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from '../hooks/useLocation';
@@ -233,16 +234,37 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   useEffect(() => {
     if (lightboxPhotos.length === 0) return;
 
+    function resetChromeTimer() {
+      setLightboxChromeVisible(true);
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+      }
+      lightboxChromeHideTimeoutRef.current = setTimeout(() => {
+        setLightboxChromeVisible(false);
+      }, LIGHTBOX_CHROME_HIDE_DELAY_MS);
+    }
+
+    function closeLightboxFromKey() {
+      if (lightboxChromeHideTimeoutRef.current) {
+        clearTimeout(lightboxChromeHideTimeoutRef.current);
+        lightboxChromeHideTimeoutRef.current = null;
+      }
+      setLightboxPhotos([]);
+      setLightboxIndex(0);
+      setLightboxZoomLevel(0);
+      setLightboxChromeVisible(true);
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        closeLightbox();
+        closeLightboxFromKey();
       }
       if (event.key === 'ArrowRight') {
-        resetLightboxChromeTimer();
+        resetChromeTimer();
         setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
       }
       if (event.key === 'ArrowLeft') {
-        resetLightboxChromeTimer();
+        resetChromeTimer();
         setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
       }
     }
@@ -573,9 +595,11 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 ✕
               </button>
 
-              <img
+              <Image
                 src={lightboxPhotos[lightboxIndex]}
                 alt={`Post photo ${lightboxIndex + 1}`}
+                width={1600}
+                height={1200}
                 className={`${styles.lightboxImage} ${getLightboxImageZoomClass(lightboxZoomLevel)}`}
                 onWheel={handleLightboxWheel}
                 onDoubleClick={() => {
@@ -917,11 +941,12 @@ function PostCard({
             tabIndex={0}
             aria-label="Open post image"
           >
-            <img
+            <Image
               src={photoUrls[mediaIndex]}
               alt={`Post image ${mediaIndex + 1}`}
+              fill
+              sizes="(max-width: 900px) 100vw, 720px"
               className={styles.postMediaImg}
-              loading="lazy"
             />
 
             {photoUrls.length > 1 && (

@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import styles from './Avatar.module.css';
 
 type AvatarSize = 'small' | 'medium' | 'large' | 'xlarge';
@@ -50,9 +51,11 @@ export default function Avatar({
   if (photoUrl) {
     return (
       <div className={`${styles.avatar} ${sizeClass}`}>
-        <img
+        <Image
           src={photoUrl}
           alt={`${name}'s avatar`}
+          fill
+          sizes="80px"
           className={styles.avatarImage}
         />
       </div>

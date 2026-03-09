@@ -132,7 +132,7 @@ describe('EventCard', () => {
 
   it('shows Unknown organizer when organizer is missing', () => {
     const event = { ...MOCK_EVENT, organizer: undefined };
-    const { getByText } = render(<EventCard event={event as any} />);
+    const { getByText } = render(<EventCard event={event} />);
     expect(getByText('Unknown')).toBeTruthy();
   });
 

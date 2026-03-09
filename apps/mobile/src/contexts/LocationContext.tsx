@@ -67,39 +67,12 @@ export function LocationProvider({ children }: LocationProviderProps) {
   const [showChangePrompt, setShowChangePrompt] = useState(false);
   const [snoozes, setSnoozes] = useState<LocationSnooze[]>([]);
   const manualOverrideRef = useRef(false);
+  const initializedUserIdRef = useRef<string | null>(null);
 
   // Load active location from storage and saved locations from DB on mount
   useEffect(() => {
     loadInitialState();
   }, []);
-
-  // When user changes (login/logout), reload locations
-  useEffect(() => {
-    if (user) {
-      refreshSavedLocations();
-      // If no active location in storage, derive from user's metro
-      if (!activeLocation && user.metro_area_id) {
-        initActiveLocationFromUser();
-      }
-    } else {
-      setActiveLocation(null);
-      setSavedLocations([]);
-      setDetectedLocation(null);
-      setShowChangePrompt(false);
-    }
-  }, [user?.id]);
-
-  // AppState listener: check location on foreground
-  useEffect(() => {
-    const handleAppStateChange = (nextState: AppStateStatus) => {
-      if (nextState === 'active' && user && !manualOverrideRef.current) {
-        checkLocationChange();
-      }
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription.remove();
-  }, [user, activeLocation, snoozes]);
 
   async function loadInitialState() {
     const [stored, storedSnoozes] = await Promise.all([
@@ -124,7 +97,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
     }
   }
 
-  async function initActiveLocationFromUser() {
+  const initActiveLocationFromUser = useCallback(async () => {
     if (!user?.metro_area_id) return;
 
     // Fetch metro name from DB
@@ -145,7 +118,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
       setActiveLocation(loc);
       await saveActiveLocation(loc);
     }
-  }
+  }, [user?.metro_area_id]);
 
   const refreshSavedLocations = useCallback(async () => {
     if (!user) return;
@@ -280,7 +253,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
         }
       }
     }
-  }, [user?.id, user?.metro_area_id, activeLocation]);
+  }, [user, activeLocation]);
 
   const checkLocationChange = useCallback(async () => {
     if (!activeLocation) return;
@@ -300,6 +273,40 @@ export function LocationProvider({ children }: LocationProviderProps) {
       setShowChangePrompt(true);
     }
   }, [activeLocation, snoozes]);
+
+  // When user changes (login/logout), reload locations
+  useEffect(() => {
+    if (user) {
+      refreshSavedLocations();
+      const shouldInitForUser = initializedUserIdRef.current !== user.id;
+      if (shouldInitForUser) {
+        initializedUserIdRef.current = user.id;
+      }
+
+      // Initialize from user metro only once per signed-in user to avoid loops
+      if (shouldInitForUser && !activeLocation && user.metro_area_id) {
+        initActiveLocationFromUser();
+      }
+    } else {
+      initializedUserIdRef.current = null;
+      setActiveLocation(null);
+      setSavedLocations([]);
+      setDetectedLocation(null);
+      setShowChangePrompt(false);
+    }
+  }, [user, activeLocation, refreshSavedLocations, initActiveLocationFromUser]);
+
+  // AppState listener: check location on foreground
+  useEffect(() => {
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === 'active' && user && !manualOverrideRef.current) {
+        checkLocationChange();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [user, checkLocationChange]);
 
   const browseMetro = useCallback((metro: ActiveLocation) => {
     const tempLocation: ActiveLocation = {
@@ -331,7 +338,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
       await saveActiveLocation(newLocation);
       setShowChangePrompt(false);
     },
-    [user]
+    [user, refreshUser]
   );
 
   const snoozeMetro = useCallback(

@@ -38,8 +38,15 @@ export function NotificationPreferencesScreen() {
     if (!user) return;
     getUserSettings(supabase, user.id).then((result) => {
       if (result.data) {
-        const { user_id: _id, created_at: _c, updated_at: _u, ...rest } = result.data;
-        setSettings(rest as Omit<UserSettings, 'user_id'>);
+        setSettings({
+          email_notifications: result.data.email_notifications,
+          push_notifications: result.data.push_notifications,
+          emergency_alerts: result.data.emergency_alerts,
+          metro_area_alerts: result.data.metro_area_alerts,
+          notify_chat: result.data.notify_chat,
+          notify_comments: result.data.notify_comments,
+          notify_likes: result.data.notify_likes,
+        });
       }
       setLoading(false);
     });

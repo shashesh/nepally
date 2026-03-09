@@ -1,6 +1,10 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { getEventsByMetro } from '@nusa/shared';
+
+type MockHeadProps = { children?: React.ReactNode };
+type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -10,10 +14,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
 vi.mock('next/head', () => ({
-  default: ({ children }: any) => React.createElement(React.Fragment, null, children),
+  default: ({ children }: MockHeadProps) => React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: any) =>
+  default: ({ href, children, className }: MockLinkProps) =>
     React.createElement('a', { href, className }, children),
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
@@ -120,8 +124,7 @@ describe('EventsPage', () => {
   });
 
   it('shows error state on fetch failure', async () => {
-    const { getEventsByMetro } = await import('@nusa/shared');
-    (getEventsByMetro as any).mockResolvedValueOnce({ error: new Error('Network error') });
+    vi.mocked(getEventsByMetro).mockResolvedValueOnce({ error: new Error('Network error') });
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: '19100' } });
     render(React.createElement(EventsPage));
     await waitFor(() => {

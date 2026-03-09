@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { supabase } from '../config/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { saveUserData, clearAllData } from '../utils/storage';
@@ -45,54 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const authPausedRef = useRef(false);
 
-  // Load user data from storage on mount
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  // Listen for auth state changes
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Skip auth state changes while paused (e.g. during password change)
-        if (authPausedRef.current) return;
-
-        if (event === 'SIGNED_OUT') {
-          setSupabaseUser(null);
-          setUser(null);
-        } else if (session?.user) {
-          setSupabaseUser(session.user);
-          await refreshUser();
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      // Check if there's an active session
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await refreshUser();
-      } else {
-        // No valid Supabase session: keep auth state signed out.
-        setSupabaseUser(null);
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Failed to load user:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const { data: { user: supabaseUser } } = await supabase.auth.getUser();
 
@@ -128,7 +81,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }
-  };
+  }, []);
+
+  const loadUser = useCallback(async () => {
+    try {
+      // Check if there's an active session
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        setSupabaseUser(session.user);
+        await refreshUser();
+      } else {
+        // No valid Supabase session: keep auth state signed out.
+        setSupabaseUser(null);
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Failed to load user:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshUser]);
+
+  // Load user data from storage on mount
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        // Skip auth state changes while paused (e.g. during password change)
+        if (authPausedRef.current) return;
+
+        if (event === 'SIGNED_OUT') {
+          setSupabaseUser(null);
+          setUser(null);
+        } else if (session?.user) {
+          setSupabaseUser(session.user);
+          await refreshUser();
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [refreshUser]);
 
   const pauseAuthListener = () => {
     authPausedRef.current = true;

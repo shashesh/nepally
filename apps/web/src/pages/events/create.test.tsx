@@ -2,6 +2,10 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+type MockHeadProps = { children?: React.ReactNode };
+type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
+type SchemaIssue = { path: string[]; message: string };
+
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useRouter: vi.fn(),
@@ -10,10 +14,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
 vi.mock('next/head', () => ({
-  default: ({ children }: any) => React.createElement(React.Fragment, null, children),
+  default: ({ children }: MockHeadProps) => React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: any) =>
+  default: ({ href, children, className }: MockLinkProps) =>
     React.createElement('a', { href, className }, children),
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
@@ -23,25 +27,32 @@ vi.mock('@nusa/shared', () => ({
   updateEvent: vi.fn(async () => ({ data: { id: 'edit-event' } })),
   getEventById: vi.fn(async () => ({ data: null })),
   createEventSchema: {
-    safeParse: (data: any) => {
-      const errors: any[] = [];
-      if (!data.title || data.title.trim().length < 5) {
+    safeParse: (data: unknown) => {
+      const parsed = data as Partial<{
+        title: string;
+        description: string;
+        event_type: string;
+        start_date: string;
+        location_name: string;
+      }>;
+      const errors: SchemaIssue[] = [];
+      if (!parsed.title || parsed.title.trim().length < 5) {
         errors.push({ path: ['title'], message: 'Title must be at least 5 characters' });
       }
-      if (!data.description || data.description.trim().length < 10) {
+      if (!parsed.description || parsed.description.trim().length < 10) {
         errors.push({ path: ['description'], message: 'Description must be at least 10 characters' });
       }
-      if (!data.event_type) {
+      if (!parsed.event_type) {
         errors.push({ path: ['event_type'], message: 'Select a valid event type' });
       }
-      if (!data.start_date) {
+      if (!parsed.start_date) {
         errors.push({ path: ['start_date'], message: 'Start date is required' });
       }
-      if (!data.location_name || data.location_name.trim().length < 5) {
+      if (!parsed.location_name || parsed.location_name.trim().length < 5) {
         errors.push({ path: ['location_name'], message: 'Location name must be at least 5 characters' });
       }
       if (errors.length > 0) return { success: false, error: { issues: errors } };
-      return { success: true, data };
+      return { success: true, data: parsed };
     },
   },
   EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -39,8 +40,8 @@ export default function EventDetailPage() {
   const [attendeesLoading, setAttendeesLoading] = useState(false);
   const [messagingLoading, setMessagingLoading] = useState(false);
 
-  const userId = (user as any)?.id ?? '';
-  const trustLevel = (user as any)?.trust_level ?? 0;
+  const userId = user?.id ?? '';
+  const trustLevel = user?.trust_level ?? 0;
   const isOrganizer = event?.organizer_id === userId;
   const isPast = event
     ? new Date(event.end_date ?? event.start_date) < new Date()
@@ -230,7 +231,13 @@ export default function EventDetailPage() {
             {/* Main content */}
             <div className={styles.main}>
               {event.photo_url ? (
-                <img src={event.photo_url} alt={event.title} className={styles.hero} />
+                <Image
+                  src={event.photo_url}
+                  alt={event.title}
+                  width={1200}
+                  height={280}
+                  className={styles.hero}
+                />
               ) : (
                 <div className={styles.heroPlaceholder}>📅</div>
               )}

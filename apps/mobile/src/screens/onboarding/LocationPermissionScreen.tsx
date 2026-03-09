@@ -7,7 +7,9 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { OnboardingStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { TextButton } from '../../components/buttons/TextButton';
@@ -20,8 +22,8 @@ import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
 
 export function LocationPermissionScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'LocationPermission'>>();
+  const route = useRoute<RouteProp<OnboardingStackParamList, 'LocationPermission'>>();
   const { userId } = route.params || {};
 
   const [loading, setLoading] = useState(false);

@@ -83,7 +83,7 @@ export async function isBannerDismissed(bannerId: string): Promise<boolean> {
 /**
  * Save user data
  */
-export async function saveUserData(userData: any): Promise<void> {
+export async function saveUserData(userData: unknown): Promise<void> {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
   } catch (error) {
@@ -94,10 +94,10 @@ export async function saveUserData(userData: any): Promise<void> {
 /**
  * Get user data
  */
-export async function getUserData(): Promise<any | null> {
+export async function getUserData<T = unknown>(): Promise<T | null> {
   try {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-    return data ? JSON.parse(data) : null;
+    return data ? (JSON.parse(data) as T) : null;
   } catch (error) {
     console.error('Failed to get user data:', error);
     return null;

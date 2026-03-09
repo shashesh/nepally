@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
@@ -16,7 +16,7 @@ import { spacing, heights, borderRadius } from '../../styles/spacing';
 import { TextButton } from '../../components/buttons/TextButton';
 
 export function SignupMethodScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const handleComingSoon = (method: string) => {
     Alert.alert(

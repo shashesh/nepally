@@ -11,7 +11,7 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate, getParent: jest.fn(() => ({ navigate: jest.fn() })) }),
-  useFocusEffect: (cb: any) => cb(),
+  useFocusEffect: (cb: () => void) => cb(),
 }));
 
 jest.mock('../../hooks/useAuth', () => ({
@@ -23,7 +23,7 @@ jest.mock('../../config/supabase', () => ({
 }));
 
 jest.mock('@nusa/shared', () => ({
-  getConversations: (...args: any[]) => mockGetConversations(...args),
+  getConversations: (...args: unknown[]) => mockGetConversations(...args),
 }));
 
 describe('ConversationListScreen', () => {

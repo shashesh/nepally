@@ -6,9 +6,12 @@ import Avatar from './Avatar';
 describe('Avatar', () => {
   describe('with photoUrl', () => {
     it('renders an img element when photoUrl is provided', () => {
-      render(<Avatar name="Test User" photoUrl="https://example.com/photo.jpg" />);
+      const photoUrl = 'https://example.com/photo.jpg';
+      render(<Avatar name="Test User" photoUrl={photoUrl} />);
       const img = screen.getByRole('img');
-      expect(img.getAttribute('src')).toBe('https://example.com/photo.jpg');
+      const src = img.getAttribute('src');
+      expect(src).toContain('/_next/image?');
+      expect(src).toContain(encodeURIComponent(photoUrl));
     });
 
     it('sets alt text based on user name', () => {

@@ -1,6 +1,11 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { getEventById } from '@nusa/shared';
+import type { Event } from '@nusa/shared';
+
+type MockHeadProps = { children?: React.ReactNode };
+type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -10,10 +15,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
 vi.mock('next/head', () => ({
-  default: ({ children }: any) => React.createElement(React.Fragment, null, children),
+  default: ({ children }: MockHeadProps) => React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: any) =>
+  default: ({ href, children, className }: MockLinkProps) =>
     React.createElement('a', { href, className }, children),
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
@@ -21,7 +26,7 @@ vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 const FUTURE = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 const PAST = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-const MOCK_EVENT = {
+const MOCK_EVENT: Event = {
   id: 'event-1', title: 'Dashain Celebration',
   description: 'Annual cultural celebration in Dallas.',
   event_type: 'cultural', start_date: FUTURE,
@@ -84,8 +89,7 @@ describe('EventDetailPage', () => {
   });
 
   it('shows cancelled banner for cancelled event', async () => {
-    const { getEventById } = await import('@nusa/shared');
-    (getEventById as any).mockResolvedValueOnce({
+    vi.mocked(getEventById).mockResolvedValueOnce({
       data: { ...MOCK_EVENT, status: 'cancelled' },
     });
     render(React.createElement(EventDetailPage));
@@ -95,8 +99,7 @@ describe('EventDetailPage', () => {
   });
 
   it('shows past banner for past event', async () => {
-    const { getEventById } = await import('@nusa/shared');
-    (getEventById as any).mockResolvedValueOnce({
+    vi.mocked(getEventById).mockResolvedValueOnce({
       data: { ...MOCK_EVENT, start_date: PAST },
     });
     render(React.createElement(EventDetailPage));
@@ -106,8 +109,7 @@ describe('EventDetailPage', () => {
   });
 
   it('shows error state on fetch failure', async () => {
-    const { getEventById } = await import('@nusa/shared');
-    (getEventById as any).mockResolvedValueOnce({ error: new Error('Not found') });
+    vi.mocked(getEventById).mockResolvedValueOnce({ error: new Error('Not found') });
     render(React.createElement(EventDetailPage));
     await waitFor(() => {
       expect(screen.getByText('Not found')).toBeDefined();

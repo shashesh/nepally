@@ -33,8 +33,8 @@ export default function EventsPage() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [level0BannerVisible, setLevel0BannerVisible] = useState(true);
 
-  const metroId = (user as any)?.metro_area_id ?? '';
-  const trustLevel = (user as any)?.trust_level ?? 0;
+  const metroId = user?.metro_area_id ?? '';
+  const trustLevel = user?.trust_level ?? 0;
   const isLevel0 = trustLevel < TrustLevel.VERIFIED;
   const canCreate = !isLevel0;
 
