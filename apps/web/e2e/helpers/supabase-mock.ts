@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Page, Route } from '@playwright/test';
 import {
   MOCK_USER_PROFILE,
   MOCK_TAGS,
@@ -12,7 +12,7 @@ import {
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-function expectsSingleObject(route: Parameters<Page['route']>[1] extends (route: infer R) => Promise<void> ? R : never): boolean {
+function expectsSingleObject(route: Route): boolean {
   const acceptHeader = route.request().headers()['accept'];
   return typeof acceptHeader === 'string' && acceptHeader.includes('application/vnd.pgrst.object+json');
 }

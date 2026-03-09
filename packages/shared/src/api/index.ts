@@ -14,3 +14,4 @@ export * from './storage';
 export * from './notifications';
 export * from './userSettings';
 export * from './deviceTokens';
+export * from './events';

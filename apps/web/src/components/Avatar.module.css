@@ -43,6 +43,7 @@
   color: white;
   font-weight: var(--font-weight-semibold);
   line-height: 1;
+  -webkit-user-select: none;
   user-select: none;
 }
 

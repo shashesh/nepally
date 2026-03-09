@@ -8,3 +8,4 @@ export * from './chat';
 export * from './metro';
 export * from './location';
 export * from './notification';
+export * from './events';
