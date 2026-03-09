@@ -95,7 +95,7 @@ DROP POLICY IF EXISTS "events_delete" ON events;
 CREATE POLICY "events_delete" ON events
   FOR DELETE USING (organizer_id = auth.uid());
 
--- RSVPs: anyone can read (privacy filtering handled in application layer)
+-- RSVPs: privacy visibility is enforced by RLS (public events, organizer, or RSVP owner); UI filtering is additive only
 DROP POLICY IF EXISTS "rsvps_select" ON event_rsvps;
 CREATE POLICY "rsvps_select" ON event_rsvps
   FOR SELECT USING (

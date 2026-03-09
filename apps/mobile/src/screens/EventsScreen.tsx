@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,12 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   getEventsByMetro,
-  getUserRsvps,
   EVENT_TYPES,
   EVENT_TYPE_LABELS,
   EVENT_TYPE_ICONS,
@@ -48,7 +46,6 @@ export default function EventsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterChip>('all');
-  const [rsvpIds, setRsvpIds] = useState<Set<string>>(new Set());
   const [level0DismissedBanner, setLevel0DismissedBanner] = useState(false);
 
   const metroId = user?.metro_area_id ?? '';
@@ -71,24 +68,14 @@ export default function EventsScreen() {
     setRefreshing(false);
   }, [metroId]);
 
-  const fetchRsvps = useCallback(async () => {
-    if (!user?.id) return;
-    const result = await getUserRsvps(supabase, user.id);
-    if (result.data) {
-      setRsvpIds(new Set(result.data));
-    }
-  }, [user?.id]);
-
   useEffect(() => {
     fetchEvents();
-    fetchRsvps();
-  }, [fetchEvents, fetchRsvps]);
+  }, [fetchEvents]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchEvents();
-    fetchRsvps();
-  }, [fetchEvents, fetchRsvps]);
+  }, [fetchEvents]);
 
   const now = new Date();
 

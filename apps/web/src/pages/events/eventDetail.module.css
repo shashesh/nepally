@@ -221,6 +221,15 @@
   margin-bottom: 12px;
 }
 
+.rsvpCountButton {
+  width: 100%;
+  text-align: left;
+  border: none;
+  padding: 0;
+  background: none;
+  font: inherit;
+}
+
 .rsvpCountClickable {
   color: #1565C0;
   cursor: pointer;

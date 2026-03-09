@@ -63,8 +63,11 @@ export async function getEventById(
       .neq('status', 'removed')
       .single();
 
+    if ((error as { code?: string } | null)?.code === 'PGRST116') {
+      return { error: new Error('Event not found') };
+    }
     if (error) throw error;
-    if (!data) throw new Error('Event not found');
+    if (!data) return { error: new Error('Event not found') };
     return { data: data as Event };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch event') };

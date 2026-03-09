@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { injectAuthSession } from '../fixtures/auth';
 import { mockSupabaseLoggedIn } from '../helpers/supabase-mock';
 import { MOCK_USER_ID, MOCK_METRO_ID } from '../fixtures/mock-data';
@@ -102,7 +103,7 @@ const MOCK_CANCELLED_EVENT = {
  * Call BEFORE page.goto().
  */
 async function mockEventsEndpoints(
-  page: Parameters<typeof import('@playwright/test').test.beforeEach>[0] extends (args: infer A) => any ? A['page'] : never,
+  page: Page,
   options: {
     events?: typeof MOCK_EVENTS;
     eventDetail?: (typeof MOCK_EVENTS)[0];

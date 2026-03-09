@@ -281,12 +281,17 @@ export default function EventDetailPage() {
                 <p className={styles.sectionTitle}>Attendance</p>
 
                 {event.rsvp_visibility === 'public' || isOrganizer ? (
-                  <div
-                    className={`${styles.rsvpCount} ${event.rsvp_count > 0 ? styles.rsvpCountClickable : ''}`}
-                    onClick={event.rsvp_count > 0 ? handleShowAttendees : undefined}
-                  >
-                    {event.rsvp_count === 1 ? '1 person going' : `${event.rsvp_count} people going`}
-                  </div>
+                  event.rsvp_count > 0 ? (
+                    <button
+                      type="button"
+                      className={`${styles.rsvpCountButton} ${styles.rsvpCount} ${styles.rsvpCountClickable}`}
+                      onClick={handleShowAttendees}
+                    >
+                      {event.rsvp_count === 1 ? '1 person going' : `${event.rsvp_count} people going`}
+                    </button>
+                  ) : (
+                    <p className={styles.rsvpCount}>0 people going</p>
+                  )
                 ) : (
                   <p className={styles.rsvpPrivate}>{event.rsvp_count} going</p>
                 )}

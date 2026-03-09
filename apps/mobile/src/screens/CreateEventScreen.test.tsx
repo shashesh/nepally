@@ -15,10 +15,11 @@ jest.mock('react-native-safe-area-context', () => {
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
+let mockRouteParams: Record<string, unknown> | undefined = undefined;
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
-  useRoute: () => ({ params: undefined }),
+  useRoute: () => ({ params: mockRouteParams }),
 }));
 
 jest.mock('../hooks/useAuth', () => ({
@@ -85,6 +86,7 @@ jest.mock('@nusa/shared', () => ({
 describe('CreateEventScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRouteParams = undefined;
   });
 
   it('renders the form with all required fields', () => {
@@ -173,15 +175,24 @@ describe('CreateEventScreen', () => {
 describe('CreateEventScreen — edit mode', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mock('@react-navigation/native', () => ({
-      useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
-      useRoute: () => ({ params: { editEventId: 'event-to-edit' } }),
-    }));
+    mockRouteParams = { editEventId: 'event-to-edit' };
   });
 
-  it('renders without crashing (edit mode handled by route param)', () => {
-    // Route is set to undefined in main mock; edit mode test just verifies no crash
+  afterEach(() => {
+    mockRouteParams = undefined;
+  });
+
+  it('shows "Edit Event" title and calls getEventById', async () => {
+    const { getEventById } = require('@nusa/shared');
     const { getByText } = render(<CreateEventScreen />);
-    expect(getByText('Create Event')).toBeTruthy();
+    expect(getByText('Edit Event')).toBeTruthy();
+    await waitFor(() => {
+      expect(getEventById).toHaveBeenCalledWith({}, 'event-to-edit');
+    });
+  });
+
+  it('shows "Save" submit button in edit mode', () => {
+    const { getByText } = render(<CreateEventScreen />);
+    expect(getByText('Save')).toBeTruthy();
   });
 });

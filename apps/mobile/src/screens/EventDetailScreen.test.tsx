@@ -16,6 +16,7 @@ jest.mock('react-native-safe-area-context', () => {
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
 const mockGetParent = jest.fn(() => ({ navigate: mockNavigate }));
+const mockUseAuth = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack, getParent: mockGetParent }),
@@ -23,9 +24,7 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 jest.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'user-2', trust_level: 1, metro_area_id: '19100' },
-  }),
+  useAuth: () => mockUseAuth(),
 }));
 
 jest.mock('../config/supabase', () => ({ supabase: {} }));
@@ -95,12 +94,9 @@ describe('EventDetailScreen', () => {
     jest.clearAllMocks();
     const { getEventById } = require('@nusa/shared');
     getEventById.mockResolvedValue({ data: MOCK_EVENT });
-  });
-
-  it('renders without crashing initially', async () => {
-    const { getByText } = render(<EventDetailScreen />);
-    // Wait for load to complete and nav bar to appear
-    await waitFor(() => expect(getByText('← Back')).toBeTruthy());
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', trust_level: 1, metro_area_id: '19100' },
+    });
   });
 
   it('renders event details after fetch', async () => {
@@ -120,15 +116,15 @@ describe('EventDetailScreen', () => {
   });
 
   it('shows edit/cancel/delete buttons for organizer', async () => {
-    jest.mock('../hooks/useAuth', () => ({
-      useAuth: () => ({ user: { id: 'user-1', trust_level: 1, metro_area_id: '19100' } }),
-    }));
-    const { getEventById } = require('@nusa/shared');
-    getEventById.mockResolvedValue({ data: { ...MOCK_EVENT, organizer_id: 'user-2' } });
-
-    // This test checks the component renders without crashing
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1', trust_level: 1, metro_area_id: '19100' },
+    });
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('← Back')).toBeTruthy());
+    await waitFor(() => {
+      expect(getByText('Edit')).toBeTruthy();
+      expect(getByText('Cancel')).toBeTruthy();
+      expect(getByText('Delete')).toBeTruthy();
+    });
   });
 
   it('shows cancelled banner for cancelled event', async () => {

@@ -120,12 +120,20 @@ describe('getEventById', () => {
     expect(result.data?.id).toBe('event-1');
   });
 
-  it('returns error when event not found', async () => {
+  it('maps PostgREST not-found error to friendly message', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: {
+          code: 'PGRST116',
+          details: 'The result contains 0 rows',
+          hint: null,
+          message: 'JSON object requested, multiple (or no) rows returned',
+        },
+      }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 

@@ -6,7 +6,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import {
   getEventsByMetro,
-  getUserRsvps,
   EVENT_TYPES,
   EVENT_TYPE_LABELS,
   EVENT_TYPE_ICONS,
