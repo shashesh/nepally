@@ -65,6 +65,7 @@ export default function MessageThreadScreen() {
   // Android: track viewport height to detect whether adjustResize compensated
   const baseViewportHeightRef = useRef(viewportHeight);
   const currentViewportHeightRef = useRef(viewportHeight);
+  const isKeyboardVisibleRef = useRef(false);
 
   const openProfileMenuAt = useCallback((pageX: number, pageY: number) => {
     const MENU_WIDTH = 160;
@@ -146,6 +147,11 @@ export default function MessageThreadScreen() {
   // Track viewport height changes (Android adjustResize detection)
   useEffect(() => {
     currentViewportHeightRef.current = viewportHeight;
+    // Refresh the baseline whenever the viewport changes while the keyboard is hidden
+    // (e.g. rotation, split-screen) so alreadyShrunk stays accurate.
+    if (!isKeyboardVisibleRef.current) {
+      baseViewportHeightRef.current = viewportHeight;
+    }
   }, [viewportHeight]);
 
   // Keyboard handling: iOS uses animation-driven padding; Android uses manual padding
@@ -177,13 +183,18 @@ export default function MessageThreadScreen() {
       // On Android 15 edge-to-edge, adjustResize is ignored so we apply manual padding.
       // Detect how much the window already shrank (adjustResize) and add the remainder.
       const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+        isKeyboardVisibleRef.current = true;
         const keyboardH = e.endCoordinates.height;
         const alreadyShrunk = baseViewportHeightRef.current - currentViewportHeightRef.current;
         keyboardPadding.setValue(Math.max(0, keyboardH - alreadyShrunk));
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
       });
       const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+        isKeyboardVisibleRef.current = false;
         keyboardPadding.setValue(0);
+        // Refresh baseline now that keyboard is gone; viewport may have changed
+        // (e.g. adjustResize restored it) and this becomes the new reference point.
+        baseViewportHeightRef.current = currentViewportHeightRef.current;
       });
       return () => {
         showSub.remove();

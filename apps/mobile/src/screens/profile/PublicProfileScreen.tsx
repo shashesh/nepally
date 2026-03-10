@@ -107,7 +107,7 @@ export default function PublicProfileScreen() {
 
     async function loadEvents() {
       setEventsLoading(true);
-      const result = await getEventsByOrganizer(supabase, userId);
+      const result = await getEventsByOrganizer(supabase, userId, 50);
       if (!isMounted) return;
       setUserEvents(result.data || []);
       setEventsLoading(false);

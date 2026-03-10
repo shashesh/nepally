@@ -79,7 +79,7 @@ export default function PublicProfilePage() {
 
     async function loadEvents() {
       setEventsLoading(true);
-      const result = await getEventsByOrganizer(supabase, id as string);
+      const result = await getEventsByOrganizer(supabase, id as string, 50);
       if (!isMounted) return;
       setUserEvents(result.data || []);
       setEventsLoading(false);

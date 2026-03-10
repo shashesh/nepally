@@ -318,6 +318,8 @@ export default function PostDetailScreen() {
   // Android: track viewport height to detect whether adjustResize compensated
   const baseViewportHeightRef = useRef(viewportHeight);
   const currentViewportHeightRef = useRef(viewportHeight);
+  const isKeyboardVisibleRef = useRef(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -372,11 +374,17 @@ export default function PostDetailScreen() {
 
   useEffect(() => {
     currentViewportHeightRef.current = viewportHeight;
+    // Refresh the baseline whenever the viewport changes while the keyboard is hidden
+    // (e.g. rotation, split-screen) so alreadyShrunk stays accurate.
+    if (!isKeyboardVisibleRef.current) {
+      baseViewportHeightRef.current = viewportHeight;
+    }
   }, [viewportHeight]);
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
       const showSub = Keyboard.addListener('keyboardWillChangeFrame', (e) => {
+        if (e.endCoordinates.height > 0) setIsKeyboardVisible(true);
         Animated.timing(keyboardPadding, {
           toValue: e.endCoordinates.height,
           duration: e.duration ?? 250,
@@ -387,6 +395,7 @@ export default function PostDetailScreen() {
         });
       });
       const hideSub = Keyboard.addListener('keyboardWillHide', (e) => {
+        setIsKeyboardVisible(false);
         Animated.timing(keyboardPadding, {
           toValue: 0,
           duration: e.duration ?? 250,
@@ -402,13 +411,20 @@ export default function PostDetailScreen() {
       // On Android 15 edge-to-edge, adjustResize is ignored so we apply manual padding.
       // Detect how much the window already shrank (adjustResize) and add the remainder.
       const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+        isKeyboardVisibleRef.current = true;
+        setIsKeyboardVisible(true);
         const keyboardH = e.endCoordinates.height;
         const alreadyShrunk = baseViewportHeightRef.current - currentViewportHeightRef.current;
         keyboardPadding.setValue(Math.max(0, keyboardH - alreadyShrunk));
         setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 50);
       });
       const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+        isKeyboardVisibleRef.current = false;
+        setIsKeyboardVisible(false);
         keyboardPadding.setValue(0);
+        // Refresh baseline now that keyboard is gone; viewport may have changed
+        // (e.g. adjustResize restored it) and this becomes the new reference point.
+        baseViewportHeightRef.current = currentViewportHeightRef.current;
       });
       return () => {
         showSub.remove();
@@ -765,7 +781,7 @@ export default function PostDetailScreen() {
           style={styles.scrollFlex}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
         >
           {post.author && (
             <View style={styles.authorRowTop}>
@@ -1254,7 +1270,7 @@ export default function PostDetailScreen() {
         </Modal>
 
         {!isLevel0 ? (
-          <View style={[styles.commentInputContainer, insets.bottom > 0 && { paddingBottom: 12 + insets.bottom }]}>
+          <View style={[styles.commentInputContainer, !isKeyboardVisible && insets.bottom > 0 && { paddingBottom: 12 + insets.bottom }]}>
             {replyTarget && (
               <View style={styles.replyTargetBar}>
                 <Text style={styles.replyTargetText}>Replying to {replyTarget.author?.full_name || 'user'}</Text>
@@ -1291,7 +1307,7 @@ export default function PostDetailScreen() {
             </View>
           </View>
         ) : (
-          <View style={[styles.commentInputContainer, insets.bottom > 0 && { paddingBottom: 12 + insets.bottom }]}>
+          <View style={[styles.commentInputContainer, !isKeyboardVisible && insets.bottom > 0 && { paddingBottom: 12 + insets.bottom }]}>
             <Text style={styles.verifyPrompt}>Verify your account to comment</Text>
           </View>
         )}
