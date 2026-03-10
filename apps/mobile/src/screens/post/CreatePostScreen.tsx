@@ -38,6 +38,8 @@ import {
 } from '@nusa/shared';
 import type { Tag } from '@nusa/shared';
 import { supabase } from '../../config/supabase';
+import { savePostDraft, loadPostDraft, clearPostDraft } from '../../utils/storage';
+import type { PostDraft } from '../../utils/storage';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
@@ -150,6 +152,59 @@ export default function CreatePostScreen({ navigation, route }: Props) {
     loadExistingPost(editPostId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, editPostId, availableTags.length]);
+
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-save draft for new posts (not edits)
+  useEffect(() => {
+    if (isEditing) return;
+    if (!title && !body && selectedTagIds.length === 0) return; // nothing to save
+
+    if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+    draftSaveTimerRef.current = setTimeout(() => {
+      savePostDraft({
+        title,
+        body,
+        selectedTagIds,
+        isGlobal,
+        savedAt: new Date().toISOString(),
+      });
+    }, 500);
+
+    return () => {
+      if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+    };
+  }, [title, body, selectedTagIds, isGlobal, isEditing]);
+
+  // Offer draft recovery on mount for new posts
+  useEffect(() => {
+    if (isEditing) return;
+    loadPostDraft().then((draft: PostDraft | null) => {
+      if (!draft) return;
+      if (!draft.title && !draft.body && draft.selectedTagIds.length === 0) return;
+      Alert.alert(
+        'Restore Draft?',
+        'You have an unsaved post from a previous session. Would you like to restore it?',
+        [
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => clearPostDraft(),
+          },
+          {
+            text: 'Restore',
+            onPress: () => {
+              setTitle(draft.title);
+              setBody(draft.body);
+              setSelectedTagIds(draft.selectedTagIds);
+              setIsGlobal(draft.isGlobal);
+            },
+          },
+        ]
+      );
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const postButtonHint = tagsLoading
     ? 'Loading tags...'
@@ -266,7 +321,14 @@ export default function CreatePostScreen({ navigation, route }: Props) {
     if (isDirty) {
       Alert.alert('Discard Post?', 'You have unsaved changes. Are you sure you want to discard this post?', [
         { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => {
+            clearPostDraft();
+            navigation.goBack();
+          },
+        },
       ]);
     } else {
       navigation.goBack();
@@ -558,6 +620,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       } else {
+        clearPostDraft();
         Alert.alert('Post Published!', 'Your post is now live.', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
