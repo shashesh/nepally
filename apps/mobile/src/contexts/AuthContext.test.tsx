@@ -28,6 +28,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const mockAuth = supabase.auth as jest.Mocked<typeof supabase.auth>;
 const mockFrom = supabase.from as jest.Mock;
+type GetSessionResult = Awaited<ReturnType<typeof mockAuth.getSession>>;
+type GetUserResult = Awaited<ReturnType<typeof mockAuth.getUser>>;
+type OnAuthStateChangeResult = ReturnType<typeof mockAuth.onAuthStateChange>;
+type SignOutResult = Awaited<ReturnType<typeof mockAuth.signOut>>;
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -41,10 +45,10 @@ describe('AuthContext', () => {
     mockAuth.getSession.mockResolvedValue({
       data: { session: null },
       error: null,
-    } as any);
+    } as GetSessionResult);
     mockAuth.onAuthStateChange.mockReturnValue({
       data: { subscription: { unsubscribe: jest.fn() } },
-    } as any);
+    } as unknown as OnAuthStateChangeResult);
   });
 
   it('starts with loading true and user null', () => {
@@ -70,11 +74,11 @@ describe('AuthContext', () => {
         },
       },
       error: null,
-    } as any);
+    } as GetSessionResult);
     mockAuth.getUser.mockResolvedValue({
       data: { user: { id: 'user-1' } },
       error: null,
-    } as any);
+    } as GetUserResult);
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
@@ -101,7 +105,7 @@ describe('AuthContext', () => {
   });
 
   it('signs out and clears user', async () => {
-    mockAuth.signOut.mockResolvedValue({ error: null } as any);
+    mockAuth.signOut.mockResolvedValue({ error: null } as SignOutResult);
 
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
     await act(async () => {

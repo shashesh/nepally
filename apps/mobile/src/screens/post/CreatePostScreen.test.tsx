@@ -73,12 +73,14 @@ import { render } from '@testing-library/react-native';
 import CreatePostScreen from './CreatePostScreen';
 import * as storage from '../../utils/storage';
 
+type CreatePostScreenProps = React.ComponentProps<typeof CreatePostScreen>;
+
 const mockNavigation = {
   navigate: jest.fn(),
   goBack: jest.fn(),
   setOptions: jest.fn(),
-};
-const mockRoute = { params: {} };
+} as unknown as CreatePostScreenProps['navigation'];
+const mockRoute = { params: {} } as unknown as CreatePostScreenProps['route'];
 
 jest.mock('@react-navigation/native-stack', () => ({
   NativeStackScreenProps: {},
@@ -97,8 +99,8 @@ describe('CreatePostScreen', () => {
   it('renders without crashing', () => {
     const { toJSON } = render(
       <CreatePostScreen
-        navigation={mockNavigation as any}
-        route={mockRoute as any}
+        navigation={mockNavigation}
+        route={mockRoute}
       />
     );
     expect(toJSON()).not.toBeNull();
@@ -109,8 +111,8 @@ describe('CreatePostScreen', () => {
 
     const { toJSON } = render(
       <CreatePostScreen
-        navigation={mockNavigation as any}
-        route={mockRoute as any}
+        navigation={mockNavigation}
+        route={mockRoute}
       />
     );
     expect(toJSON()).not.toBeNull();

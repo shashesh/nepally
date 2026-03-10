@@ -100,7 +100,10 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
     getParent: mockGetParent,
   }),
-  useFocusEffect: (cb: () => unknown) => cb(),
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    const ReactActual = jest.requireActual('react') as typeof import('react');
+    ReactActual.useEffect(() => cb(), [cb]);
+  },
 }));
 
 describe('HomeScreen', () => {

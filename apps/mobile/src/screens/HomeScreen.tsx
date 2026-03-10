@@ -207,6 +207,12 @@ export default function HomeScreen() {
     }
   }, [metroAreaId, selectedTagSlugs]);
 
+  const loadPostsRef = useRef(loadPosts);
+
+  useEffect(() => {
+    loadPostsRef.current = loadPosts;
+  }, [loadPosts]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     setLoadError(null);
@@ -239,7 +245,7 @@ export default function HomeScreen() {
           filter: `metro_area_id=eq.${metroAreaId}`,
         },
         () => {
-          loadPosts();
+          loadPostsRef.current();
         }
       )
       .subscribe();
@@ -247,7 +253,7 @@ export default function HomeScreen() {
     return () => {
       supabase.removeChannel(feedChannel);
     };
-  }, [metroAreaId, loadPosts]);
+  }, [metroAreaId]);
 
   const loadLikedPosts = useCallback(async () => {
     if (!user?.id) return;
