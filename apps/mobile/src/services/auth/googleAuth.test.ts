@@ -89,6 +89,10 @@ describe('googleAuth service', () => {
     expect(result.error).toBeInstanceOf(Error);
   });
 
+  it('rejects callback URL with auth-like hostname and callback path', async () => {
+    const result = await handleGoogleAuthCallback('nusa://myauth/callback?code=abc');
+    expect(result.error).toBeInstanceOf(Error);
+  });
   it('rejects callback URL with no code', async () => {
     const result = await handleGoogleAuthCallback('nusa://auth/callback');
     expect(result.error).toBeInstanceOf(Error);
