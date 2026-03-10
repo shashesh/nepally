@@ -16,6 +16,9 @@ import {
   saveActiveLocation,
   saveOnboardingStep,
   savePermissionBannerState,
+  savePostDraft,
+  loadPostDraft,
+  clearPostDraft,
 } from './storage';
 
 describe('storage utils', () => {
@@ -68,5 +71,48 @@ describe('storage utils', () => {
     await savePermissionBannerState(state);
 
     await expect(getPermissionBannerState()).resolves.toEqual(state);
+  });
+});
+
+describe('post draft storage', () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    await AsyncStorage.clear();
+  });
+
+  it('saves and loads a post draft', async () => {
+    const draft = {
+      title: 'Test Title',
+      body: 'Test body content',
+      selectedTagIds: ['tag-1', 'tag-2'],
+      isGlobal: false,
+      savedAt: '2026-03-10T00:00:00.000Z',
+    };
+
+    await savePostDraft(draft);
+    const loaded = await loadPostDraft();
+
+    expect(loaded).toEqual(draft);
+  });
+
+  it('returns null when no draft exists', async () => {
+    const result = await loadPostDraft();
+    expect(result).toBeNull();
+  });
+
+  it('clears a saved draft', async () => {
+    const draft = {
+      title: 'Draft',
+      body: 'Body',
+      selectedTagIds: [],
+      isGlobal: false,
+      savedAt: '2026-03-10T00:00:00.000Z',
+    };
+
+    await savePostDraft(draft);
+    await clearPostDraft();
+    const result = await loadPostDraft();
+
+    expect(result).toBeNull();
   });
 });

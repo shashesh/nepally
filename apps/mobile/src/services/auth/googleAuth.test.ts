@@ -77,4 +77,20 @@ describe('googleAuth service', () => {
     expect(result.user?.id).toBe('user-1');
     expect(result.user?.full_name).toBe('Nusa User');
   });
+
+  it('rejects callback URL with invalid scheme', async () => {
+    const result = await handleGoogleAuthCallback('https://evil.com/auth/callback?code=abc');
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.error?.message).toMatch(/[Ii]nvalid/);
+  });
+
+  it('rejects callback URL with non-auth path', async () => {
+    const result = await handleGoogleAuthCallback('nusa://malicious/path?code=abc');
+    expect(result.error).toBeInstanceOf(Error);
+  });
+
+  it('rejects callback URL with no code', async () => {
+    const result = await handleGoogleAuthCallback('nusa://auth/callback');
+    expect(result.error).toBeInstanceOf(Error);
+  });
 });
