@@ -224,6 +224,31 @@ export default function HomeScreen() {
     setBannerVisible(false);
   };
 
+  // Realtime feed updates: refresh posts when new post appears in active metro
+  useEffect(() => {
+    if (!metroAreaId) return;
+
+    const feedChannel = supabase
+      .channel(`feed-posts-mobile:${metroAreaId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts',
+          filter: `metro_area_id=eq.${metroAreaId}`,
+        },
+        () => {
+          loadPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(feedChannel);
+    };
+  }, [metroAreaId, loadPosts]);
+
   const loadLikedPosts = useCallback(async () => {
     if (!user?.id) return;
     const result = await getUserLikedPostIds(supabase, user.id);
