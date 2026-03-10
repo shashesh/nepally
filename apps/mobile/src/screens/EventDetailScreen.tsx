@@ -118,19 +118,24 @@ export default function EventDetailScreen() {
 
   useEffect(() => {
     (async () => {
-      const result = await getEventById(supabase, eventId);
-      if (result.error) {
-        setError(result.error.message);
-      } else if (result.data) {
-        setEvent(result.data);
-        if (user?.id) {
-          const rsvpStateResult = await hasUserRsvp(supabase, eventId, user.id);
-          if (rsvpStateResult.data !== undefined) {
-            setIsGoing(rsvpStateResult.data);
+      try {
+        const result = await getEventById(supabase, eventId);
+        if (result.error) {
+          setError(result.error.message);
+        } else if (result.data) {
+          setEvent(result.data);
+          if (user?.id) {
+            const rsvpStateResult = await hasUserRsvp(supabase, eventId, user.id);
+            if (rsvpStateResult.data !== undefined) {
+              setIsGoing(rsvpStateResult.data);
+            }
           }
         }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load event.');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [eventId, user?.id]);
 
