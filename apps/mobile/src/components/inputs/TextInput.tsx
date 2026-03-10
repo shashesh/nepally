@@ -25,6 +25,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   containerStyle,
   onFocus,
   onBlur,
+  accessibilityLabel,
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -51,9 +52,10 @@ export const TextInput: React.FC<TextInputProps> = ({
         placeholderTextColor={colors.text.secondary}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        accessibilityLabel={accessibilityLabel ?? label}
         {...props}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={styles.errorText} accessibilityRole="alert">{error}</Text>}
       {helperText && !error && <Text style={styles.helperText}>{helperText}</Text>}
     </View>
   );
