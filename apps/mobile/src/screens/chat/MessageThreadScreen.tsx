@@ -5,7 +5,8 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  KeyboardAvoidingView,
+  Animated,
+  Keyboard,
   Platform,
   Alert,
   StatusBar,
@@ -60,6 +61,10 @@ export default function MessageThreadScreen() {
   const [profileMenuPos, setProfileMenuPos] = useState({ top: 0, left: 0 });
   const flatListRef = useRef<FlatList>(null);
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const keyboardPadding = useRef(new Animated.Value(0)).current;
+  // Android: track viewport height to detect whether adjustResize compensated
+  const baseViewportHeightRef = useRef(viewportHeight);
+  const currentViewportHeightRef = useRef(viewportHeight);
 
   const openProfileMenuAt = useCallback((pageX: number, pageY: number) => {
     const MENU_WIDTH = 160;
@@ -137,6 +142,55 @@ export default function MessageThreadScreen() {
       markAsRead(supabase, conversationId, user.id);
     }
   }, [conversationId, user?.id]);
+
+  // Track viewport height changes (Android adjustResize detection)
+  useEffect(() => {
+    currentViewportHeightRef.current = viewportHeight;
+  }, [viewportHeight]);
+
+  // Keyboard handling: iOS uses animation-driven padding; Android uses manual padding
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      const showSub = Keyboard.addListener('keyboardWillChangeFrame', (e) => {
+        Animated.timing(keyboardPadding, {
+          toValue: e.endCoordinates.height,
+          duration: e.duration ?? 250,
+          useNativeDriver: false,
+        }).start(() => {
+          // Scroll after keyboard is fully raised so viewport is at final size
+          flatListRef.current?.scrollToEnd({ animated: true });
+        });
+      });
+      const hideSub = Keyboard.addListener('keyboardWillHide', (e) => {
+        Animated.timing(keyboardPadding, {
+          toValue: 0,
+          duration: e.duration ?? 250,
+          useNativeDriver: false,
+        }).start();
+      });
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
+    } else {
+      // Android: adjustResize resizes the window on older Android.
+      // On Android 15 edge-to-edge, adjustResize is ignored so we apply manual padding.
+      // Detect how much the window already shrank (adjustResize) and add the remainder.
+      const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+        const keyboardH = e.endCoordinates.height;
+        const alreadyShrunk = baseViewportHeightRef.current - currentViewportHeightRef.current;
+        keyboardPadding.setValue(Math.max(0, keyboardH - alreadyShrunk));
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+      });
+      const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+        keyboardPadding.setValue(0);
+      });
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
+    }
+  }, [keyboardPadding]);
 
   const handleRetryLoad = () => {
     setLoading(true);
@@ -331,11 +385,7 @@ export default function MessageThreadScreen() {
       </Modal>
 
       {/* Messages */}
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
-      >
+      <Animated.View style={[styles.flex, { paddingBottom: keyboardPadding }]}>
         {loading ? (
           <View style={styles.threadStateContainer}>
             <ActivityIndicator size="large" color={colors.primary.main} />
@@ -402,7 +452,7 @@ export default function MessageThreadScreen() {
         )}
 
         <ChatInput onSend={handleSend} />
-      </KeyboardAvoidingView>
+      </Animated.View>
     </SafeAreaView>
   );
 }

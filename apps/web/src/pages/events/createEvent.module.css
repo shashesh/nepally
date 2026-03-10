@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: linear-gradient(180deg, #F4F8FF 0%, #F7F7F7 100%);
 }
 
 .container {
@@ -37,11 +37,13 @@
   background: #fff;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border: 1px solid #E6EAF0;
+  box-shadow: 0 8px 30px rgba(11, 37, 69, 0.08);
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
+
 
 .fieldGroup {
   display: flex;
@@ -60,15 +62,33 @@
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 15px;
-  color: #212121;
+  color: #1C1F23 !important;
+  background: #FFFFFF !important;
+  -webkit-text-fill-color: #1C1F23;
+  color-scheme: light;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
   width: 100%;
   box-sizing: border-box;
 }
 
+.input::placeholder {
+  color: #8A94A6;
+  opacity: 1;
+}
+
+.input:hover {
+  border-color: #C7D0DC;
+}
+
 .input:focus {
   border-color: #1565C0;
+  box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.16);
+}
+
+.input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  opacity: 0.75;
+  cursor: pointer;
 }
 
 .inputError {
@@ -78,6 +98,7 @@
 .textarea {
   resize: vertical;
   min-height: 120px;
+  line-height: 1.5;
 }
 
 .errorText {
@@ -107,6 +128,11 @@
   color: #757575;
   cursor: pointer;
   transition: background 0.1s, border-color 0.1s;
+}
+
+.typeChip:hover {
+  border-color: #BCC7D4;
+  color: #495262;
 }
 
 .typeChipActive {
@@ -165,7 +191,7 @@
   border: 1.5px dashed #BDBDBD;
   border-radius: 8px;
   padding: 14px 12px;
-  background: #FAFAFA;
+  background: #F9FCFF;
   color: #1565C0;
   font-size: 14px;
   font-weight: 600;
@@ -173,6 +199,11 @@
   display: inline-flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.photoPicker:hover {
+  border-color: #90A4C1;
+  background: #F2F8FF;
 }
 
 .photoHelp {
@@ -315,6 +346,36 @@
 }
 
 .submitBtn:disabled {
-  background: #BDBDBD;
+  background: #B0B7C3;
   cursor: default;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 16px 12px 28px;
+  }
+
+  .form {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .submitRow {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 -16px -16px;
+    padding: 10px 16px;
+    border-top: 1px solid #DDE6F2;
+    background: rgba(255, 255, 255, 0.97);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    gap: 8px;
+  }
+
+  .cancelBtn,
+  .submitBtn {
+    flex: 1;
+    justify-content: center;
+  }
 }

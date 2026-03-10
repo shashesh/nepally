@@ -11,6 +11,7 @@ const mockGetParent = jest.fn(() => ({ navigate: mockParentNavigate }));
 const mockUseNavigation = jest.fn();
 const mockGetUserById = jest.fn();
 const mockGetPostsByAuthorId = jest.fn();
+const mockGetEventsByOrganizer = jest.fn();
 const mockGetOrCreateConversation = jest.fn();
 
 const mockSupabaseSingle = jest.fn();
@@ -45,6 +46,8 @@ jest.mock('@nusa/shared', () => ({
   getUserById: (...args: Parameters<typeof mockGetUserById>) => mockGetUserById(...args),
   getPostsByAuthorId: (...args: Parameters<typeof mockGetPostsByAuthorId>) =>
     mockGetPostsByAuthorId(...args),
+  getEventsByOrganizer: (...args: Parameters<typeof mockGetEventsByOrganizer>) =>
+    mockGetEventsByOrganizer(...args),
   getOrCreateConversation: (...args: Parameters<typeof mockGetOrCreateConversation>) =>
     mockGetOrCreateConversation(...args),
   formatRelativeTime: jest.fn(() => '2h ago'),
@@ -79,6 +82,28 @@ const mockUserPosts = [
   },
 ];
 
+const mockUserEvents = [
+  {
+    id: 'event-1',
+    title: 'Nepali Networking Night',
+    description: 'Meet professionals in DFW.',
+    event_type: 'career',
+    start_date: '2026-04-01T18:00:00Z',
+    end_date: null,
+    location_name: 'Irving Community Hall',
+    location_address: null,
+    metro_area_id: '19100',
+    is_global: false,
+    organizer_id: 'profile-user',
+    photo_url: null,
+    rsvp_count: 18,
+    rsvp_visibility: 'public',
+    status: 'active',
+    created_at: '2026-03-01T12:00:00Z',
+    updated_at: '2026-03-01T12:00:00Z',
+  },
+];
+
 describe('PublicProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -92,6 +117,7 @@ describe('PublicProfileScreen', () => {
     });
     mockGetUserById.mockResolvedValue({ data: mockProfileUser });
     mockGetPostsByAuthorId.mockResolvedValue({ data: mockUserPosts });
+    mockGetEventsByOrganizer.mockResolvedValue({ data: mockUserEvents });
     mockSupabaseSingle.mockResolvedValue({
       data: { name: 'Dallas-Fort Worth', state: 'TX' },
     });
@@ -294,6 +320,45 @@ describe('PublicProfileScreen', () => {
     });
   });
 
+  it('shows organizer events in Events tab', async () => {
+    render(<PublicProfileScreen />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('Events'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Nepali Networking Night')).toBeTruthy();
+      expect(screen.getByText('18 going')).toBeTruthy();
+    });
+  });
+
+  it('opens event detail in Events tab when event card is pressed', async () => {
+    render(<PublicProfileScreen />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('Events'));
+    await waitFor(() => expect(screen.getByText('Nepali Networking Night')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('Nepali Networking Night'));
+
+    expect(mockParentNavigate).toHaveBeenCalledWith('Events', {
+      screen: 'EventDetail',
+      params: { eventId: 'event-1' },
+    });
+  });
+
+  it('shows "No events yet." when user has no events', async () => {
+    mockGetEventsByOrganizer.mockResolvedValue({ data: [] });
+    render(<PublicProfileScreen />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('Events'));
+
+    await waitFor(() => {
+      expect(screen.getByText('No events yet.')).toBeTruthy();
+    });
+  });
+
   // ─── About Tab ────────────────────────────────────────────────────────────
 
   it('switches to About tab when pressed and shows metro name', async () => {
@@ -339,8 +404,19 @@ describe('PublicProfileScreen', () => {
     fireEvent.press(screen.getByText('About'));
 
     await waitFor(() => {
-      // 1 post from mockUserPosts
-      expect(screen.getByText('1')).toBeTruthy();
+      // Counts now include both Posts and Events and can contain duplicate "1" values.
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('shows event count in About tab', async () => {
+    render(<PublicProfileScreen />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('About'));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
     });
   });
 

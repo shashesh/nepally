@@ -10,8 +10,10 @@ import {
   ActivityIndicator,
   Image,
   Linking,
+  Platform,
   StyleSheet,
 } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -84,6 +86,11 @@ export default function CreateEventScreen() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(isEditMode);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+  const [pickerField, setPickerField] = useState<'start_date' | 'end_date'>('start_date');
+  const [pickerValue, setPickerValue] = useState(new Date());
+  const [pickerDraftDate, setPickerDraftDate] = useState<Date | null>(null);
   const isDirty = useRef(false);
 
   const metroId = user?.metro_area_id ?? '';
@@ -122,6 +129,85 @@ export default function CreateEventScreen() {
       setErrors((prev) => ({ ...prev, [key]: undefined }));
     },
     []
+  );
+
+  const parseIsoDate = useCallback((value: string): Date | null => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, []);
+
+  const formatDateTimeLabel = useCallback(
+    (value: string, placeholder: string): string => {
+      const parsed = parseIsoDate(value);
+      if (!parsed) return placeholder;
+      const dateText = parsed.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      const timeText = parsed.toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+      return `${dateText} at ${timeText}`;
+    },
+    [parseIsoDate]
+  );
+
+  const openDateTimePicker = useCallback(
+    (field: 'start_date' | 'end_date') => {
+      const existingFieldDate = parseIsoDate(form[field]);
+      const fallbackDate = field === 'end_date' ? parseIsoDate(form.start_date) : null;
+      const initialDate = existingFieldDate ?? fallbackDate ?? new Date();
+
+      setPickerField(field);
+      setPickerMode('date');
+      setPickerDraftDate(null);
+      setPickerValue(initialDate);
+      setPickerVisible(true);
+    },
+    [form, parseIsoDate]
+  );
+
+  const handleDateTimeChange = useCallback(
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
+      if (event.type === 'dismissed') {
+        setPickerVisible(false);
+        setPickerDraftDate(null);
+        setPickerMode('date');
+        return;
+      }
+
+      if (!selectedDate) return;
+
+      if (pickerMode === 'date') {
+        const existing = parseIsoDate(form[pickerField]) ?? new Date();
+        const dateWithExistingTime = new Date(selectedDate);
+        dateWithExistingTime.setHours(existing.getHours(), existing.getMinutes(), 0, 0);
+
+        setPickerDraftDate(dateWithExistingTime);
+        setPickerValue(dateWithExistingTime);
+        setPickerMode('time');
+
+        // Android needs an explicit re-open after mode change.
+        if (Platform.OS === 'android') {
+          setPickerVisible(false);
+          requestAnimationFrame(() => setPickerVisible(true));
+        }
+        return;
+      }
+
+      const base = pickerDraftDate ?? pickerValue;
+      const combined = new Date(base);
+      combined.setHours(selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+
+      setField(pickerField, combined.toISOString());
+      setPickerVisible(false);
+      setPickerDraftDate(null);
+      setPickerMode('date');
+    },
+    [form, parseIsoDate, pickerMode, pickerField, pickerDraftDate, pickerValue, setField]
   );
 
   const validate = useCallback((): boolean => {
@@ -376,27 +462,38 @@ export default function CreateEventScreen() {
         {/* Start Date */}
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Start Date & Time *</Text>
-          <TextInput
-            style={[styles.input, errors.start_date && styles.inputError]}
-            placeholder="YYYY-MM-DDTHH:MM (e.g. 2026-03-15T18:00)"
-            value={form.start_date}
-            onChangeText={(v) => setField('start_date', v)}
-            autoCapitalize="none"
-            keyboardType="default"
-          />
+          <TouchableOpacity
+            style={[styles.input, styles.dateTimeButton, errors.start_date && styles.inputError]}
+            onPress={() => openDateTimePicker('start_date')}
+          >
+            <Text
+              style={[
+                styles.dateTimeText,
+                !form.start_date && styles.dateTimePlaceholder,
+              ]}
+            >
+              {formatDateTimeLabel(form.start_date, 'Select start date and time')}
+            </Text>
+          </TouchableOpacity>
           {errors.start_date && <Text style={styles.errorText}>{errors.start_date}</Text>}
         </View>
 
         {/* End Date */}
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>End Date & Time (optional)</Text>
-          <TextInput
-            style={[styles.input, errors.end_date && styles.inputError]}
-            placeholder="YYYY-MM-DDTHH:MM"
-            value={form.end_date}
-            onChangeText={(v) => setField('end_date', v)}
-            autoCapitalize="none"
-          />
+          <TouchableOpacity
+            style={[styles.input, styles.dateTimeButton, errors.end_date && styles.inputError]}
+            onPress={() => openDateTimePicker('end_date')}
+          >
+            <Text
+              style={[
+                styles.dateTimeText,
+                !form.end_date && styles.dateTimePlaceholder,
+              ]}
+            >
+              {formatDateTimeLabel(form.end_date, 'Select end date and time (optional)')}
+            </Text>
+          </TouchableOpacity>
           {errors.end_date && <Text style={styles.errorText}>{errors.end_date}</Text>}
         </View>
 
@@ -510,6 +607,16 @@ export default function CreateEventScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {pickerVisible && (
+        <DateTimePicker
+          value={pickerValue}
+          mode={pickerMode}
+          display="default"
+          is24Hour={false}
+          onChange={handleDateTimeChange}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -587,6 +694,17 @@ const styles = StyleSheet.create({
     padding: 12,
     ...typography.body,
     color: colors.text.primary,
+  },
+  dateTimeButton: {
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  dateTimeText: {
+    ...typography.body,
+    color: colors.text.primary,
+  },
+  dateTimePlaceholder: {
+    color: colors.text.secondary,
   },
   inputError: {
     borderColor: colors.error,

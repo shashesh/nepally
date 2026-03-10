@@ -218,6 +218,93 @@
   font-size: var(--font-size-caption);
 }
 
+/* ── Event List ───────────────────────────── */
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+}
+
+.eventItem {
+  display: block;
+  border: var(--glass-border-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-s);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.65);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: all var(--transition-normal);
+}
+
+.eventItem:hover {
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.eventItemTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-s);
+}
+
+.eventItemTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
+}
+
+.eventScopeBadge {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.eventScopeLocal {
+  background: rgba(var(--color-primary-rgb), 0.07);
+  color: var(--color-text-secondary);
+}
+
+.eventScopeGlobal {
+  background: rgba(var(--color-primary-rgb), 0.12);
+  color: var(--color-primary);
+}
+
+.eventItemMeta {
+  margin: var(--space-xs) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+}
+
+.eventItemBottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+}
+
+.eventRsvp {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+.eventStateCancelled {
+  color: var(--color-error);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+}
+
+.eventStatePast {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+}
+
 /* ── About / Info Section ─────────────────── */
 .infoSection {
   margin-bottom: var(--space-m);

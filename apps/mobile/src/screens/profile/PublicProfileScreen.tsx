@@ -20,11 +20,12 @@ import {
   TrustLevel,
   getUserById,
   getPostsByAuthorId,
+  getEventsByOrganizer,
   getOrCreateConversation,
   formatRelativeTime,
   formatPublicName,
 } from '@nusa/shared';
-import type { User, Post } from '@nusa/shared';
+import type { User, Post, Event } from '@nusa/shared';
 import { Avatar } from '../../components/Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
@@ -54,11 +55,13 @@ export default function PublicProfileScreen() {
 
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [userEvents, setUserEvents] = useState<Event[]>([]);
   const [metroName, setMetroName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [eventsLoading, setEventsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'events' | 'about'>('posts');
   const [messagingLoading, setMessagingLoading] = useState(false);
 
   useEffect(() => {
@@ -102,8 +105,17 @@ export default function PublicProfileScreen() {
       setPostsLoading(false);
     }
 
+    async function loadEvents() {
+      setEventsLoading(true);
+      const result = await getEventsByOrganizer(supabase, userId);
+      if (!isMounted) return;
+      setUserEvents(result.data || []);
+      setEventsLoading(false);
+    }
+
     loadProfile();
     loadPosts();
+    loadEvents();
 
     return () => {
       isMounted = false;
@@ -221,6 +233,61 @@ export default function PublicProfileScreen() {
     );
   }
 
+  function renderEvents() {
+    if (eventsLoading) {
+      return <Text style={styles.tabMessage}>Loading...</Text>;
+    }
+    if (userEvents.length === 0) {
+      return <Text style={styles.tabMessage}>No events yet.</Text>;
+    }
+
+    return (
+      <View style={styles.eventList}>
+        {userEvents.map((event) => {
+          const isPast = new Date(event.end_date ?? event.start_date) < new Date();
+          const isCancelled = event.status === 'cancelled';
+
+          return (
+            <TouchableOpacity
+              key={event.id}
+              style={styles.eventItem}
+              activeOpacity={0.75}
+              onPress={() => {
+                const rootNavigation = navigation.getParent();
+                if (!rootNavigation) return;
+                (rootNavigation.navigate as (...args: unknown[]) => void)('Events', {
+                  screen: 'EventDetail',
+                  params: { eventId: event.id },
+                });
+              }}
+            >
+              <View style={styles.eventItemHeader}>
+                <Text style={styles.eventItemTitle} numberOfLines={1}>
+                  {event.title}
+                </Text>
+                <View style={[styles.scopeBadge, event.is_global ? styles.scopeGlobal : styles.scopeLocal]}>
+                  <Text style={event.is_global ? styles.scopeTextGlobal : styles.scopeTextLocal}>
+                    {event.is_global ? '🌐 Global' : '📍 Local'}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.eventItemMeta} numberOfLines={1}>
+                {new Date(event.start_date).toLocaleDateString()} · {event.location_name}
+              </Text>
+
+              <View style={styles.eventMetaRow}>
+                <Text style={styles.postMetaText}>{event.rsvp_count} going</Text>
+                {isCancelled && <Text style={styles.eventCancelledText}>Cancelled</Text>}
+                {!isCancelled && isPast && <Text style={styles.eventPastText}>Past</Text>}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
@@ -273,6 +340,15 @@ export default function PublicProfileScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'events' ? styles.tabButtonActive : null]}
+              onPress={() => setActiveTab('events')}
+            >
+              <Text style={[styles.tabButtonText, activeTab === 'events' ? styles.tabButtonTextActive : null]}>
+                Events
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[styles.tabButton, activeTab === 'about' ? styles.tabButtonActive : null]}
               onPress={() => setActiveTab('about')}
             >
@@ -283,6 +359,8 @@ export default function PublicProfileScreen() {
           </View>
 
           {activeTab === 'posts' && renderPosts()}
+
+          {activeTab === 'events' && renderEvents()}
 
           {activeTab === 'about' && (
             <View>
@@ -298,6 +376,10 @@ export default function PublicProfileScreen() {
               <View style={styles.aboutRow}>
                 <Text style={styles.aboutLabel}>Posts</Text>
                 <Text style={styles.aboutValue}>{userPosts.length}</Text>
+              </View>
+              <View style={styles.aboutRow}>
+                <Text style={styles.aboutLabel}>Events</Text>
+                <Text style={styles.aboutValue}>{userEvents.length}</Text>
               </View>
               <View style={styles.aboutRow}>
                 <Text style={styles.aboutLabel}>Member Since</Text>
@@ -426,7 +508,16 @@ const styles = StyleSheet.create({
   postList: {
     gap: spacing.s,
   },
+  eventList: {
+    gap: spacing.s,
+  },
   postItem: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
+    padding: spacing.s,
+  },
+  eventItem: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: borderRadius.card,
@@ -438,7 +529,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.s,
   },
+  eventItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.s,
+  },
   postItemTitle: {
+    ...typography.body,
+    color: colors.text.primary,
+    fontWeight: '700',
+    flex: 1,
+  },
+  eventItemTitle: {
     ...typography.body,
     color: colors.text.primary,
     fontWeight: '700',
@@ -476,9 +579,30 @@ const styles = StyleSheet.create({
     gap: spacing.s,
     marginTop: spacing.xs,
   },
+  eventMetaRow: {
+    flexDirection: 'row',
+    gap: spacing.s,
+    marginTop: spacing.xs,
+  },
   postMetaText: {
     ...typography.caption,
     color: colors.text.secondary,
+  },
+  eventItemMeta: {
+    ...typography.body,
+    color: colors.text.secondary,
+    fontSize: 14,
+    marginTop: spacing.xs,
+  },
+  eventCancelledText: {
+    ...typography.caption,
+    color: colors.error,
+    fontWeight: '700',
+  },
+  eventPastText: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    fontWeight: '700',
   },
   sectionTitle: {
     ...typography.caption,
