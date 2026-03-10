@@ -325,7 +325,9 @@ export default function CreatePostScreen({ navigation, route }: Props) {
           text: 'Discard',
           style: 'destructive',
           onPress: () => {
-            clearPostDraft();
+            if (!isEditing) {
+              clearPostDraft();
+            }
             navigation.goBack();
           },
         },
