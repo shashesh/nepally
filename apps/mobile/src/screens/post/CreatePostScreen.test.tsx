@@ -1,6 +1,6 @@
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
+import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
+
+jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
 jest.mock('../../config/supabase', () => ({
   supabase: {
@@ -71,6 +71,7 @@ jest.mock('expo-file-system/legacy', () => ({
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import CreatePostScreen from './CreatePostScreen';
+import * as storage from '../../utils/storage';
 
 const mockNavigation = {
   navigate: jest.fn(),
@@ -104,8 +105,7 @@ describe('CreatePostScreen', () => {
   });
 
   it('does not crash when checking for drafts on mount', async () => {
-    const { loadPostDraft } = require('../../utils/storage');
-    loadPostDraft.mockResolvedValue(null);
+    jest.mocked(storage.loadPostDraft).mockResolvedValue(null);
 
     const { toJSON } = render(
       <CreatePostScreen

@@ -1,6 +1,6 @@
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
+import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
+
+jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
 jest.mock('../../config/supabase', () => ({
   supabase: {
@@ -76,14 +76,7 @@ jest.mock('../../components/Avatar', () => ({
   Avatar: () => null,
 }));
 jest.mock('../../components/buttons/PrimaryButton', () => ({
-  PrimaryButton: ({ title, onPress }: { title: string; onPress: () => void }) => {
-    const { TouchableOpacity, Text } = require('react-native');
-    return (
-      <TouchableOpacity onPress={onPress} testID="primary-button">
-        <Text>{title}</Text>
-      </TouchableOpacity>
-    );
-  },
+  PrimaryButton: () => null,
 }));
 
 import React from 'react';

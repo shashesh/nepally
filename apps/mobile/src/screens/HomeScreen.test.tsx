@@ -1,6 +1,6 @@
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
+import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
+
+jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
 jest.mock('../config/supabase', () => ({
   supabase: {
@@ -100,9 +100,7 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
     getParent: mockGetParent,
   }),
-  useFocusEffect: (cb: () => unknown) => {
-    require('react').useEffect(cb, []);
-  },
+  useFocusEffect: (cb: () => unknown) => cb(),
 }));
 
 describe('HomeScreen', () => {

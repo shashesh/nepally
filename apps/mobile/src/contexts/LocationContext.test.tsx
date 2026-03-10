@@ -1,6 +1,6 @@
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
+import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
+
+jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
 jest.mock('../config/supabase', () => ({
   supabase: {
@@ -42,6 +42,7 @@ jest.mock('@nusa/shared', () => ({
 import React from 'react';
 import { renderHook, act } from '@testing-library/react-native';
 import { LocationContext, LocationProvider } from './LocationContext';
+import { useAuth } from '../hooks/useAuth';
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return <LocationProvider>{children}</LocationProvider>;
@@ -64,8 +65,7 @@ describe('LocationContext', () => {
   it('browseMetro sets a temporary active location', async () => {
     // Use a user with no metro_area_id so initActiveLocationFromUser is skipped,
     // but user is non-null so the effect doesn't reset activeLocation to null.
-    const { useAuth } = require('../hooks/useAuth');
-    useAuth.mockReturnValue({
+    (useAuth as jest.Mock).mockReturnValue({
       user: { id: 'user-1', metro_area_id: null },
       refreshUser: jest.fn(),
     });
