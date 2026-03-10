@@ -58,11 +58,17 @@ export async function handleGoogleAuthCallback(url: string): Promise<GoogleAuthR
       return { error: new Error('Invalid OAuth callback URL') };
     }
 
-    // For deep links (e.g. nusa://auth/callback), the host is 'auth' and path is '/callback'.
-    // For exp:// URLs, the full auth path may appear in pathname.
-    const hostAndPath = callbackUrl.hostname + callbackUrl.pathname;
-    if (!hostAndPath.endsWith('auth/callback')) {
-      return { error: new Error('Invalid OAuth callback URL') };
+    // Validate callback path based on scheme to ensure integrity.
+    // For deep links (e.g. nusa://auth/callback), the host must be 'auth' and path '/callback'.
+    // For exp:// URLs, the auth callback should be in the pathname and end with '/auth/callback'.
+    if (callbackUrl.protocol === 'nusa:') {
+      if (callbackUrl.hostname !== 'auth' || callbackUrl.pathname !== '/callback') {
+        return { error: new Error('Invalid OAuth callback URL') };
+      }
+    } else if (callbackUrl.protocol === 'exp:') {
+      if (!callbackUrl.pathname.endsWith('/auth/callback')) {
+        return { error: new Error('Invalid OAuth callback URL') };
+      }
     }
 
     // Extract authorization code from callback URL
