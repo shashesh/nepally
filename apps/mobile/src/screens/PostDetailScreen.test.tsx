@@ -10,6 +10,15 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: () => null,
 }));
 
+jest.mock('react-native-safe-area-context', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
+  return {
+    SafeAreaView: ({ children }: { children?: React.ReactNode }) => ReactLocal.createElement(View, null, children),
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  };
+});
+
 jest.mock('react-native-gesture-handler', () => {
   const mockReact = jest.requireActual('react');
   const { View: mockView, ScrollView: mockScrollView } = jest.requireActual('react-native');

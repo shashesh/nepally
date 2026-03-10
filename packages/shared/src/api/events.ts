@@ -93,12 +93,15 @@ export async function getEventById(
 }
 
 /**
- * Get all events created by a specific user (for profile view).
+ * Get events created by a specific user (for profile view).
  * Ordered by start_date ascending (upcoming first, then past).
+ * Supports pagination via limit and offset.
  */
 export async function getEventsByOrganizer(
   supabase: SupabaseClient,
-  organizerId: string
+  organizerId: string,
+  limit: number = 50,
+  offset: number = 0
 ): Promise<EventsResult> {
   try {
     const { data, error } = await supabase
@@ -106,7 +109,8 @@ export async function getEventsByOrganizer(
       .select(EVENT_SELECT)
       .eq('organizer_id', organizerId)
       .neq('status', 'removed')
-      .order('start_date', { ascending: true });
+      .order('start_date', { ascending: true })
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
     return { data: (data || []) as Event[] };

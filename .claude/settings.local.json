@@ -54,7 +54,8 @@
       "Bash(wiremd docs/wireframes/15-notifications/15-notifications.md --style material -o docs/wireframes/15-notifications/15-notifications-material.html)",
       "Bash(echo \"exit: $?\")",
       "Bash(npm run test --workspace=packages/shared)",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); mcps=d.get\\(''mcpServers'',{}\\); [print\\(k,v.get\\(''command'',''''\\),v.get\\(''args'',''''\\)\\) for k,v in mcps.items\\(\\)]\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); mcps=d.get\\(''mcpServers'',{}\\); [print\\(k,v.get\\(''command'',''''\\),v.get\\(''args'',''''\\)\\) for k,v in mcps.items\\(\\)]\")",
+      "mcp__plugin_supabase_supabase__list_migrations"
     ]
   }
 }

@@ -9,7 +9,7 @@ import {
   Alert,
   StatusBar,
   TextInput,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Share,
   Modal,
@@ -29,7 +29,7 @@ import {
   type HandlerStateChangeEvent,
   type PanGestureHandlerEventPayload,
 } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -313,6 +313,13 @@ export default function PostDetailScreen() {
   const commentsRef = useRef<View>(null);
   const detailCarouselRef = useRef<ScrollView>(null);
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const keyboardPadding = useRef(new Animated.Value(0)).current;
+  // Android: track viewport height to detect whether adjustResize compensated
+  const baseViewportHeightRef = useRef(viewportHeight);
+  const currentViewportHeightRef = useRef(viewportHeight);
+  const isKeyboardVisibleRef = useRef(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -364,6 +371,67 @@ export default function PostDetailScreen() {
   useEffect(() => {
     setCurrentPhotoIndex(0);
   }, [post?.id]);
+
+  useEffect(() => {
+    currentViewportHeightRef.current = viewportHeight;
+    // Refresh the baseline whenever the viewport changes while the keyboard is hidden
+    // (e.g. rotation, split-screen) so alreadyShrunk stays accurate.
+    if (!isKeyboardVisibleRef.current) {
+      baseViewportHeightRef.current = viewportHeight;
+    }
+  }, [viewportHeight]);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      const showSub = Keyboard.addListener('keyboardWillChangeFrame', (e) => {
+        if (e.endCoordinates.height > 0) setIsKeyboardVisible(true);
+        Animated.timing(keyboardPadding, {
+          toValue: e.endCoordinates.height,
+          duration: e.duration ?? 250,
+          useNativeDriver: false,
+        }).start(() => {
+          // Scroll after keyboard is fully raised so viewport is at final size
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        });
+      });
+      const hideSub = Keyboard.addListener('keyboardWillHide', (e) => {
+        setIsKeyboardVisible(false);
+        Animated.timing(keyboardPadding, {
+          toValue: 0,
+          duration: e.duration ?? 250,
+          useNativeDriver: false,
+        }).start();
+      });
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
+    } else {
+      // Android: adjustResize in app.json resizes the window on older Android.
+      // On Android 15 edge-to-edge, adjustResize is ignored so we apply manual padding.
+      // Detect how much the window already shrank (adjustResize) and add the remainder.
+      const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+        isKeyboardVisibleRef.current = true;
+        setIsKeyboardVisible(true);
+        const keyboardH = e.endCoordinates.height;
+        const alreadyShrunk = baseViewportHeightRef.current - currentViewportHeightRef.current;
+        keyboardPadding.setValue(Math.max(0, keyboardH - alreadyShrunk));
+        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 50);
+      });
+      const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+        isKeyboardVisibleRef.current = false;
+        setIsKeyboardVisible(false);
+        keyboardPadding.setValue(0);
+        // Refresh baseline now that keyboard is gone; viewport may have changed
+        // (e.g. adjustResize restored it) and this becomes the new reference point.
+        baseViewportHeightRef.current = currentViewportHeightRef.current;
+      });
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
+    }
+  }, [keyboardPadding]);
 
   const clearDetailCarouselChromeTimer = useCallback(() => {
     if (detailCarouselChromeHideTimeoutRef.current) {
@@ -704,15 +772,17 @@ export default function PostDetailScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
-      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+      <Animated.View style={[styles.container, { paddingBottom: keyboardPadding }]}>
 
-        <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollFlex}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
+        >
           {post.author && (
             <View style={styles.authorRowTop}>
               <TouchableOpacity
@@ -1200,7 +1270,7 @@ export default function PostDetailScreen() {
         </Modal>
 
         {!isLevel0 ? (
-          <View style={styles.commentInputContainer}>
+          <View style={[styles.commentInputContainer, !isKeyboardVisible && insets.bottom > 0 && { paddingBottom: 12 + insets.bottom }]}>
             {replyTarget && (
               <View style={styles.replyTargetBar}>
                 <Text style={styles.replyTargetText}>Replying to {replyTarget.author?.full_name || 'user'}</Text>
@@ -1218,6 +1288,7 @@ export default function PostDetailScreen() {
                 onChangeText={(text) => setCommentText(text.slice(0, 1000))}
                 multiline
                 maxLength={1000}
+                textAlignVertical="top"
               />
               <TouchableOpacity
                 onPress={handleSubmitComment}
@@ -1236,7 +1307,7 @@ export default function PostDetailScreen() {
             </View>
           </View>
         ) : (
-          <View style={styles.commentInputContainer}>
+          <View style={[styles.commentInputContainer, !isKeyboardVisible && insets.bottom > 0 && { paddingBottom: 12 + insets.bottom }]}>
             <Text style={styles.verifyPrompt}>Verify your account to comment</Text>
           </View>
         )}
@@ -1246,8 +1317,8 @@ export default function PostDetailScreen() {
             <Text style={styles.saveToastText}>{saveToast}</Text>
           </Animated.View>
         )}
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+      </Animated.View>
+    </SafeAreaView>
   );
 }
 
@@ -1264,6 +1335,9 @@ const styles = StyleSheet.create({
   errorText: {
     ...typography.body,
     color: colors.text.secondary,
+  },
+  scrollFlex: {
+    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: spacing.s,

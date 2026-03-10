@@ -3,6 +3,27 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { createEvent, getEventById } from '@nusa/shared';
 import CreateEventScreen from './CreateEventScreen';
 
+jest.mock('@react-native-community/datetimepicker', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { TouchableOpacity, Text } = jest.requireActual('react-native');
+
+  return ({ mode, onChange }: { mode: 'date' | 'time'; onChange: (e: { type: string }, d: Date) => void }) =>
+    ReactLocal.createElement(
+      TouchableOpacity,
+      {
+        testID: `mock-datetime-${mode}`,
+        onPress: () => {
+          if (mode === 'date') {
+            onChange({ type: 'set' }, new Date('2026-03-15T00:00:00.000Z'));
+            return;
+          }
+          onChange({ type: 'set' }, new Date('2026-03-15T18:00:00.000Z'));
+        },
+      },
+      ReactLocal.createElement(Text, null, `Mock ${mode} picker`)
+    );
+});
+
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 jest.mock('react-native-safe-area-context', () => {
@@ -35,8 +56,6 @@ jest.mock('../hooks/useAuth', () => ({
 }));
 
 jest.mock('../config/supabase', () => ({ supabase: {} }));
-
-const FUTURE = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
 type ValidationIssue = { path: string[]; message: string };
 type CreateEventLikeInput = {
@@ -127,7 +146,7 @@ describe('CreateEventScreen', () => {
 
   it('calls createEvent with correct data on valid submit', async () => {
     const mockCreateEvent = createEvent as jest.MockedFunction<typeof createEvent>;
-    const { getByPlaceholderText, getByText } = render(<CreateEventScreen />);
+    const { getByPlaceholderText, getByText, getByTestId } = render(<CreateEventScreen />);
 
     fireEvent.changeText(getByPlaceholderText('e.g. Dashain Celebration 2026'), 'Dashain Celebration 2026');
     fireEvent.changeText(
@@ -135,7 +154,9 @@ describe('CreateEventScreen', () => {
       'Annual Dashain celebration with cultural programs and food.'
     );
     fireEvent.press(getByText('🎭 Cultural'));
-    fireEvent.changeText(getByPlaceholderText('YYYY-MM-DDTHH:MM (e.g. 2026-03-15T18:00)'), FUTURE);
+    fireEvent.press(getByText('Select start date and time'));
+    fireEvent.press(getByTestId('mock-datetime-date'));
+    fireEvent.press(getByTestId('mock-datetime-time'));
     fireEvent.changeText(getByPlaceholderText('e.g. Dallas Convention Center'), 'Dallas Convention Center');
 
     fireEvent.press(getByText('Create'));
@@ -153,7 +174,7 @@ describe('CreateEventScreen', () => {
   });
 
   it('navigates to EventDetail after successful creation', async () => {
-    const { getByPlaceholderText, getByText } = render(<CreateEventScreen />);
+    const { getByPlaceholderText, getByText, getByTestId } = render(<CreateEventScreen />);
 
     fireEvent.changeText(getByPlaceholderText('e.g. Dashain Celebration 2026'), 'Dashain Celebration 2026');
     fireEvent.changeText(
@@ -161,7 +182,9 @@ describe('CreateEventScreen', () => {
       'Annual Dashain celebration with cultural programs and food.'
     );
     fireEvent.press(getByText('🎭 Cultural'));
-    fireEvent.changeText(getByPlaceholderText('YYYY-MM-DDTHH:MM (e.g. 2026-03-15T18:00)'), FUTURE);
+    fireEvent.press(getByText('Select start date and time'));
+    fireEvent.press(getByTestId('mock-datetime-date'));
+    fireEvent.press(getByTestId('mock-datetime-time'));
     fireEvent.changeText(getByPlaceholderText('e.g. Dallas Convention Center'), 'Dallas Convention Center');
 
     fireEvent.press(getByText('Create'));

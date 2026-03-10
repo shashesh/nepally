@@ -15,6 +15,7 @@ const profilePageMocks = vi.hoisted(() => {
     useRouterMock: vi.fn(),
     getUserByIdMock: vi.fn(),
     getPostsByAuthorIdMock: vi.fn(),
+    getEventsByOrganizerMock: vi.fn(),
     getOrCreateConversationMock: vi.fn(),
     formatRelativeTimeMock: vi.fn(),
     supabaseSingleMock,
@@ -35,6 +36,7 @@ vi.mock('@nusa/shared', async () => {
     ...actual,
     getUserById: profilePageMocks.getUserByIdMock,
     getPostsByAuthorId: profilePageMocks.getPostsByAuthorIdMock,
+    getEventsByOrganizer: profilePageMocks.getEventsByOrganizerMock,
     getOrCreateConversation: profilePageMocks.getOrCreateConversationMock,
     formatRelativeTime: profilePageMocks.formatRelativeTimeMock,
   };
@@ -81,6 +83,28 @@ const mockUserPosts = [
   },
 ];
 
+const mockUserEvents = [
+  {
+    id: 'event-1',
+    title: 'Nepali Networking Night',
+    description: 'Meet professionals in DFW.',
+    event_type: 'career',
+    start_date: '2026-04-01T18:00:00Z',
+    end_date: null,
+    location_name: 'Irving Community Hall',
+    location_address: null,
+    metro_area_id: '19100',
+    is_global: false,
+    organizer_id: 'profile-user',
+    photo_url: null,
+    rsvp_count: 18,
+    rsvp_visibility: 'public',
+    status: 'active',
+    created_at: '2026-03-01T12:00:00Z',
+    updated_at: '2026-03-01T12:00:00Z',
+  },
+];
+
 import PublicProfilePage from './[id]';
 
 describe('PublicProfilePage', () => {
@@ -97,6 +121,7 @@ describe('PublicProfilePage', () => {
     profilePageMocks.useAuthMock.mockReturnValue({ user: mockCurrentUser });
     profilePageMocks.getUserByIdMock.mockResolvedValue({ data: mockProfileUser });
     profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: mockUserPosts });
+    profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: mockUserEvents });
     profilePageMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
     // Wire up supabase chain for metro area query
     profilePageMocks.supabaseSingleMock.mockResolvedValue({
@@ -300,6 +325,30 @@ describe('PublicProfilePage', () => {
     });
   });
 
+  it('shows organizer events in Events tab', async () => {
+    render(<PublicProfilePage />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Events' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Nepali Networking Night')).toBeDefined();
+      expect(screen.getByText('18 going')).toBeDefined();
+    });
+  });
+
+  it('shows empty state when user has no events', async () => {
+    profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: [] });
+    render(<PublicProfilePage />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Events' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('No events yet.')).toBeDefined();
+    });
+  });
+
   // ─── About Tab ────────────────────────────────────────────────────────────
 
   it('switches to About tab and shows metro area location', async () => {
@@ -346,6 +395,18 @@ describe('PublicProfilePage', () => {
 
     await waitFor(() => {
       // 1 post in mockUserPosts — the count "1" appears as the Posts value
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('shows event count in About tab', async () => {
+    render(<PublicProfilePage />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+
+    await waitFor(() => {
+      // 1 event in mockUserEvents — the count "1" appears as the Events value
       expect(screen.getAllByText('1').length).toBeGreaterThan(0);
     });
   });
