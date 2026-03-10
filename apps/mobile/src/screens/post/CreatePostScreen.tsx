@@ -425,7 +425,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
 
           const uploadResult = await uploadPostPhotos(supabase, uploadInputs);
           if (uploadResult.error || !uploadResult.urls) {
-            Alert.alert('Upload Error', uploadResult.error?.message || 'Failed to upload photos');
+            Alert.alert('Upload Error', 'Failed to upload photos. Please try again.');
             return;
           }
 
@@ -459,7 +459,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
           if (uploadedPhotoPaths.length > 0) {
             await deletePostPhotos(supabase, uploadedPhotoPaths);
           }
-          Alert.alert('Error', result.error.message);
+          Alert.alert('Error', 'Could not save post. Please try again.');
           return;
         }
 
@@ -522,7 +522,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
 
         const uploadResult = await uploadPostPhotos(supabase, uploadInputs);
         if (uploadResult.error || !uploadResult.urls) {
-          Alert.alert('Upload Error', uploadResult.error?.message || 'Failed to upload photos');
+          Alert.alert('Upload Error', 'Failed to upload photos. Please try again.');
           return;
         }
 
@@ -547,7 +547,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
         if (uploadedPhotoPaths.length > 0) {
           await deletePostPhotos(supabase, uploadedPhotoPaths);
         }
-        Alert.alert('Error', result.error.message);
+        Alert.alert('Error', 'Could not save post. Please try again.');
         return;
       }
 

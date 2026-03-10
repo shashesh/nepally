@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { colors } from '../styles/colors';
+import { sanitizeMediaUri } from '../utils/mediaUrl';
 
 type AvatarSize = 'small' | 'medium' | 'large' | 'xlarge';
 
@@ -55,10 +56,12 @@ export const Avatar: React.FC<AvatarProps> = ({
     borderRadius: dimension / 2,
   };
 
-  if (photoUrl) {
+  const safePhotoUrl = photoUrl ? sanitizeMediaUri(photoUrl) : null;
+
+  if (safePhotoUrl) {
     return (
       <Image
-        source={{ uri: photoUrl }}
+        source={{ uri: safePhotoUrl }}
         style={[styles.image, containerStyle]}
         defaultSource={undefined}
       />

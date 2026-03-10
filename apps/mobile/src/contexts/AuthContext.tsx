@@ -1,7 +1,16 @@
 import React, { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../config/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { saveUserData, clearAllData } from '../utils/storage';
+
+const SESSION_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const SENSITIVE_ACTION_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+const STORAGE_KEY_SIGN_IN_AT = '@nusa:session_sign_in_at';
+const STORAGE_KEY_LAST_ACTIVITY = '@nusa:session_last_activity';
+const STORAGE_KEY_USER_ID = '@nusa:session_user_id';
 
 interface User {
   id: string;
@@ -23,6 +32,8 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   pauseAuthListener: () => void;
   resumeAuthListener: () => void;
+  recordActivity: () => Promise<void>;
+  isWithinSensitiveActionWindow: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -33,6 +44,8 @@ export const AuthContext = createContext<AuthContextType>({
   refreshUser: async () => {},
   pauseAuthListener: () => {},
   resumeAuthListener: () => {},
+  recordActivity: async () => {},
+  isWithinSensitiveActionWindow: async () => false,
 });
 
 interface AuthProviderProps {
@@ -44,6 +57,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const authPausedRef = useRef(false);
+
+  const recordActivity = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY_LAST_ACTIVITY, Date.now().toString());
+    } catch (error) {
+      console.error('Failed to record activity:', error);
+    }
+  }, []);
+
+  const isSessionExpired = useCallback(async (): Promise<boolean> => {
+    try {
+      const [lastActivityStr, signInAtStr] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEY_LAST_ACTIVITY),
+        AsyncStorage.getItem(STORAGE_KEY_SIGN_IN_AT),
+      ]);
+      const now = Date.now();
+      if (lastActivityStr) {
+        const lastActivity = parseInt(lastActivityStr, 10);
+        if (now - lastActivity > SESSION_INACTIVITY_TIMEOUT_MS) return true;
+      }
+      if (signInAtStr) {
+        const signInAt = parseInt(signInAtStr, 10);
+        if (now - signInAt > SESSION_MAX_AGE_MS) return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const isWithinSensitiveActionWindow = useCallback(async (): Promise<boolean> => {
+    try {
+      const lastActivityStr = await AsyncStorage.getItem(STORAGE_KEY_LAST_ACTIVITY);
+      if (!lastActivityStr) return false;
+      const lastActivity = parseInt(lastActivityStr, 10);
+      return Date.now() - lastActivity <= SENSITIVE_ACTION_WINDOW_MS;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -89,8 +142,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session?.user) {
-        setSupabaseUser(session.user);
-        await refreshUser();
+        const expired = await isSessionExpired();
+        if (expired) {
+          await supabase.auth.signOut();
+          setSupabaseUser(null);
+          setUser(null);
+        } else {
+          setSupabaseUser(session.user);
+          await refreshUser();
+        }
       } else {
         // No valid Supabase session: keep auth state signed out.
         setSupabaseUser(null);
@@ -101,7 +161,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [refreshUser]);
+  }, [isSessionExpired, refreshUser]);
 
   // Load user data from storage on mount
   useEffect(() => {
@@ -118,8 +178,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (event === 'SIGNED_OUT') {
           setSupabaseUser(null);
           setUser(null);
+          await AsyncStorage.multiRemove([STORAGE_KEY_SIGN_IN_AT, STORAGE_KEY_LAST_ACTIVITY, STORAGE_KEY_USER_ID]);
         } else if (session?.user) {
           setSupabaseUser(session.user);
+          // Record sign-in time if not already set or if the user changed
+          const [existingSignInAt, existingUserId] = await Promise.all([
+            AsyncStorage.getItem(STORAGE_KEY_SIGN_IN_AT),
+            AsyncStorage.getItem(STORAGE_KEY_USER_ID),
+          ]);
+          if (!existingSignInAt || existingUserId !== session.user.id) {
+            const now = Date.now().toString();
+            await AsyncStorage.multiSet([
+              [STORAGE_KEY_SIGN_IN_AT, now],
+              [STORAGE_KEY_LAST_ACTIVITY, now],
+              [STORAGE_KEY_USER_ID, session.user.id],
+            ]);
+          }
           await refreshUser();
         }
       }
@@ -159,6 +233,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshUser,
         pauseAuthListener,
         resumeAuthListener,
+        recordActivity,
+        isWithinSensitiveActionWindow,
       }}
     >
       {children}
