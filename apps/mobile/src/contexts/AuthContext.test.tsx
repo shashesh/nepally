@@ -104,6 +104,53 @@ describe('AuthContext', () => {
     expect(result.current.loading).toBe(false);
   });
 
+  it('initializes session timestamps when missing on cold start with existing session', async () => {
+    mockAuth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1', email: 'test@nusa.com' } } },
+      error: null,
+    } as GetSessionResult);
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    } as GetUserResult);
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { id: 'user-1', email: 'test@nusa.com', full_name: 'Test User', trust_level: 1, is_premium: false },
+        error: null,
+      }),
+    });
+
+    // No timestamps in storage — simulates first launch after upgrade or storage clear
+    renderHook(() => React.useContext(AuthContext), { wrapper });
+    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+
+    const signInAt = await AsyncStorage.getItem('@nusa:session_sign_in_at');
+    const lastActivity = await AsyncStorage.getItem('@nusa:session_last_activity');
+    const userId = await AsyncStorage.getItem('@nusa:session_user_id');
+    expect(signInAt).not.toBeNull();
+    expect(lastActivity).not.toBeNull();
+    expect(userId).toBe('user-1');
+  });
+
+  it('signs out when session timestamps are corrupted (NaN)', async () => {
+    mockAuth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1', email: 'test@nusa.com' } } },
+      error: null,
+    } as GetSessionResult);
+    mockAuth.signOut.mockResolvedValue({ error: null } as SignOutResult);
+
+    await AsyncStorage.setItem('@nusa:session_last_activity', 'corrupted');
+    await AsyncStorage.setItem('@nusa:session_sign_in_at', 'corrupted');
+
+    const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+
+    expect(supabase.auth.signOut).toHaveBeenCalled();
+    expect(result.current.user).toBeNull();
+  });
+
   it('signs out and clears user', async () => {
     mockAuth.signOut.mockResolvedValue({ error: null } as SignOutResult);
 

@@ -75,11 +75,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const now = Date.now();
       if (lastActivityStr) {
         const lastActivity = parseInt(lastActivityStr, 10);
-        if (now - lastActivity > SESSION_INACTIVITY_TIMEOUT_MS) return true;
+        if (isNaN(lastActivity) || now - lastActivity > SESSION_INACTIVITY_TIMEOUT_MS) return true;
       }
       if (signInAtStr) {
         const signInAt = parseInt(signInAtStr, 10);
-        if (now - signInAt > SESSION_MAX_AGE_MS) return true;
+        if (isNaN(signInAt) || now - signInAt > SESSION_MAX_AGE_MS) return true;
       }
       return false;
     } catch {
@@ -148,6 +148,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setSupabaseUser(null);
           setUser(null);
         } else {
+          // Repair missing/mismatched timestamps so expiry is enforced from
+          // first load (e.g. after upgrade, storage clear, or user switch).
+          const [existingSignInAt, existingUserId] = await Promise.all([
+            AsyncStorage.getItem(STORAGE_KEY_SIGN_IN_AT),
+            AsyncStorage.getItem(STORAGE_KEY_USER_ID),
+          ]);
+          if (!existingSignInAt || existingUserId !== session.user.id) {
+            const now = Date.now().toString();
+            await AsyncStorage.multiSet([
+              [STORAGE_KEY_SIGN_IN_AT, now],
+              [STORAGE_KEY_LAST_ACTIVITY, now],
+              [STORAGE_KEY_USER_ID, session.user.id],
+            ]);
+          }
           setSupabaseUser(session.user);
           await refreshUser();
         }
