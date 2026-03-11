@@ -1,68 +1,54 @@
-name: CI
+name: CI Manual
 
 on:
-  pull_request:
-    types:
-      - closed
-    branches:
-      - master
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Branch to run the full CI pipeline on
+        required: true
+        default: master
 
 jobs:
-  gate:
-    name: Merge gate
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Confirm merged PR
-        run: echo "PR merged into master. Running CI jobs."
-
   lint:
     name: Lint
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
+      ref: ${{ github.event.inputs.target_branch }}
       command: npm run lint
 
   lint_guards:
     name: Lint guards
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
+      ref: ${{ github.event.inputs.target_branch }}
       command: npm run lint:guards
 
   type_check:
     name: Type check
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
+      ref: ${{ github.event.inputs.target_branch }}
       command: npm run type-check
 
   unit_tests:
     name: Unit tests
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
+      ref: ${{ github.event.inputs.target_branch }}
       command: npm run test
 
   coverage:
     name: Coverage
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
+      ref: ${{ github.event.inputs.target_branch }}
       command: npm run test:coverage
 
   web_e2e:
     name: Web E2E tests
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
+      ref: ${{ github.event.inputs.target_branch }}
       command: npm run test:e2e --workspace=apps/web
       install_playwright: true
       with_supabase_env: true

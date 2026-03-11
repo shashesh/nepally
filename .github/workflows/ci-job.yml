@@ -1,0 +1,63 @@
+name: CI Job Template
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: NPM command to execute
+        required: true
+        type: string
+      ref:
+        description: Optional git ref to checkout
+        required: false
+        default: ''
+        type: string
+      install_playwright:
+        description: Whether to install Playwright browsers
+        required: false
+        default: false
+        type: boolean
+      with_supabase_env:
+        description: Whether to inject Supabase env vars for the command
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        if: inputs.ref == ''
+        uses: actions/checkout@v4
+
+      - name: Checkout selected ref
+        if: inputs.ref != ''
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        if: inputs.install_playwright
+        run: npm exec --workspace=apps/web playwright install --with-deps
+
+      - name: Run command
+        if: inputs.with_supabase_env == false
+        run: ${{ inputs.command }}
+
+      - name: Run command with Supabase env
+        if: inputs.with_supabase_env
+        run: ${{ inputs.command }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL != '' && vars.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'ci-placeholder-anon-key' }}
