@@ -3,7 +3,7 @@
 **Plan Version:** v1
 **Date:** 2026-03-06
 **Owner:** Claude
-**Status:** Planned
+**Status:** Completed (2026-03-10)
 **Primary Spec/Wireframe:** `docs/features/events.md`, `docs/wireframes/16-events-list/`, `docs/wireframes/16-create-event/`, `docs/wireframes/17-event-detail/`
 
 ---
@@ -26,20 +26,20 @@ Use this plan as a live tracker during execution.
 
 | Step | Title | Owner | Status | Last Updated | Notes |
 |------|-------|-------|--------|--------------|-------|
-| 1 | DB Migration — `006_events.sql` | Claude | Not Started | 2026-03-06 | `events` + `event_rsvps` tables, RLS, triggers |
-| 2 | Shared Types — `events.ts` | Claude | Not Started | 2026-03-06 | |
-| 3 | Shared Constants — `events.ts` | Claude | Not Started | 2026-03-06 | Type labels, colors, icons |
-| 4 | Shared Validation — `events.ts` + tests | Claude | Not Started | 2026-03-06 | `createEventSchema`, `updateEventSchema` |
-| 5 | Shared API — `events.ts` + `uploadEventPhoto` + tests | Claude | Not Started | 2026-03-06 | 12 API functions |
-| 6 | Mobile Navigation Types | Claude | Not Started | 2026-03-06 | Expand `EventsStackParamList` |
-| 7 | Mobile Event Components | Claude | Not Started | 2026-03-06 | `EventTypeBadge`, `EventCard`, `RsvpButton`, `AttendeeAvatarStack` |
-| 8 | Mobile `EventsScreen` + test | Claude | Not Started | 2026-03-06 | Replaces "Coming Soon" |
-| 9 | Mobile `EventDetailScreen` + test | Claude | Not Started | 2026-03-06 | |
-| 10 | Mobile `CreateEventScreen` + test | Claude | Not Started | 2026-03-06 | Create + edit mode |
-| 11 | Rewrite `EventsNavigator` | Claude | Not Started | 2026-03-06 | Wire all 3 screens |
-| 12 | Web Events Pages + tests | Claude | Not Started | 2026-03-06 | index, [id], create |
-| 13 | Web Event Components + CSS Modules | Claude | Not Started | 2026-03-06 | |
-| 14 | Full Test Run & Verification | Claude | Not Started | 2026-03-06 | |
+| 1 | DB Migration — `006_events.sql` | Claude | Completed | 2026-03-10 | `events` + `event_rsvps` tables, RLS, triggers |
+| 2 | Shared Types — `events.ts` | Claude | Completed | 2026-03-10 | |
+| 3 | Shared Constants — `events.ts` | Claude | Completed | 2026-03-10 | Type labels, colors, icons |
+| 4 | Shared Validation — `events.ts` + tests | Claude | Completed | 2026-03-10 | `createEventSchema`, `updateEventSchema` |
+| 5 | Shared API — `events.ts` + `uploadEventPhoto` + tests | Claude | Completed | 2026-03-10 | 12 API functions |
+| 6 | Mobile Navigation Types | Claude | Completed | 2026-03-10 | Expanded `EventsStackParamList` |
+| 7 | Mobile Event Components | Claude | Completed | 2026-03-10 | `EventTypeBadge`, `EventCard`, `RsvpButton`, `AttendeeAvatarStack` |
+| 8 | Mobile `EventsScreen` + test | Claude | Completed | 2026-03-10 | Replaces "Coming Soon" |
+| 9 | Mobile `EventDetailScreen` + test | Claude | Completed | 2026-03-10 | |
+| 10 | Mobile `CreateEventScreen` + test | Claude | Completed | 2026-03-10 | Create + edit mode |
+| 11 | Rewrite `EventsNavigator` | Claude | Completed | 2026-03-10 | All 3 screens wired |
+| 12 | Web Events Pages + tests | Claude | Completed | 2026-03-10 | index, [id], create |
+| 13 | Web Event Components + CSS Modules | Claude | Completed | 2026-03-10 | |
+| 14 | Full Test Run & Verification | Claude | Completed | 2026-03-10 | All workspace + monorepo tests pass |
 
 ---
 

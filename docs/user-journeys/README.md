@@ -1,7 +1,7 @@
 # NUSA User Journeys - Phase 1
 
-**Last Updated:** 2026-02-11
-**Total Journeys:** 12
+**Last Updated:** 2026-03-10
+**Total Journeys:** 14
 **Status:** Planning
 
 This document indexes all user journeys for the NUSA app. Each journey documents a specific user flow from start to finish, including pain points, decision trees, and success metrics.
@@ -25,10 +25,10 @@ Journeys are organized into **6 categories** based on user intent:
 |----------|---------------|---------|
 | **Onboarding** | 2 | Getting started with NUSA |
 | **Post Creation** | 4 | Creating housing, job, emergency, and travel posts |
-| **Discovery** | 2 | Finding and responding to posts |
+| **Discovery** | 3 | Finding posts, responding, and discovering events |
 | **Communication** | 1 | In-app chat and messaging |
 | **Safety** | 2 | Reporting content and moderation |
-| **Management** | 1 | Managing existing posts |
+| **Management** | 2 | Managing posts and events |
 
 ---
 
@@ -60,14 +60,17 @@ Journeys are organized into **6 categories** based on user intent:
 | 05 | **Emergency Post Creation** | Verified User (Level 1+) | 📝 Not Started | [post-creation/05-emergency-post-creation.md](./post-creation/05-emergency-post-creation.md) |
 | 06 | **Travel Post Creation** | Verified User (Level 1+) | 📝 Not Started | [post-creation/06-travel-post-creation.md](./post-creation/06-travel-post-creation.md) |
 
-**Purpose:** Creating structured posts with category-specific mandatory fields, photo uploads, and auto-expiry rules.
+**Purpose:** Creating tag-based posts (title + body + 1-3 tags) with optional photos — the Reddit-style format used for all post types.
 
 **Key Features:**
-- Category-specific forms (Housing: rent/room type, Jobs: pay/employment type, etc.)
-- Photo upload (max 3, auto-compressed to 2MB)
-- Metro area tagging
-- Auto-expiry (Housing/Jobs: 30 days, Emergency: 7 days, Travel: 2 days after travel)
-- Trust level enforcement (Level 1+ only)
+- Single unified form: title, body, tag selector (1-3 tags), optional photos (up to 3)
+- Tags: Housing, Jobs, Help, Question, Politics, Discussion, Emergency
+- Photo upload (max 3, auto-compressed to 2MB, reorderable)
+- Metro area tagging (automatic from user's location)
+- Emergency tag requires moderator approval before post becomes visible
+- Global toggle (premium users only) — visible across all metro areas
+- Trust level enforcement (Level 1+ to create)
+- No auto-expiry — posts remain active until deleted by author or removed by moderators
 
 **Prerequisites:**
 - Journey #01: Signup (must have account)
@@ -81,15 +84,19 @@ Journeys are organized into **6 categories** based on user intent:
 |---|--------------|--------------|--------|------|
 | 07 | **Browse and Search Posts** | Any User (Level 0+) | 📝 Not Started | [discovery/07-browse-and-search.md](./discovery/07-browse-and-search.md) |
 | 08 | **Respond to a Post** | Verified User (Level 1+) | 📝 Not Started | [discovery/08-respond-to-post.md](./discovery/08-respond-to-post.md) |
+| 13 | **Event Discovery & RSVP** | Any User (Level 0 browse; Level 1+ RSVP) | ✅ Reviewed | [discovery/13-event-discovery-and-rsvp.md](./discovery/13-event-discovery-and-rsvp.md) |
 
-**Purpose:** Finding relevant posts in the local metro area and initiating contact with post authors.
+**Purpose:** Finding relevant posts and events in the local metro area, initiating contact with post authors, and RSVPing to community events.
 
 **Key Features:**
-- Metro-first local feed (default view)
-- Category filtering (Housing, Jobs, Emergency, Travel)
-- Search by keywords, price range, date
-- Hyper-local radius filtering (within X miles)
-- Initiate chat with post author
+- Metro-first local feed (default view) — local + global posts mixed
+- Tag filter chips (All, Housing, Jobs, Help, Question, Politics, Discussion, Emergency)
+- 📍 Local / 🌐 Global badges on post cards and events
+- Like, comment, and message actions on post cards and post detail
+- Initiate private chat with post author (Level 1+ required)
+- Tap author avatar to view public profile
+- Events feed with type filter chips (Cultural, Religious, Social, Career, Other)
+- One-tap RSVP with optimistic UI (Level 1+ required)
 
 **Prerequisites:**
 - Journey #01: Signup (viewing posts)
@@ -101,7 +108,7 @@ Journeys are organized into **6 categories** based on user intent:
 
 | # | Journey Name | User Persona | Status | File |
 |---|--------------|--------------|--------|------|
-| 09 | **In-App Chat Conversation** | Verified User (Level 1+) | 📝 Not Started | [communication/09-in-app-chat.md](./communication/09-in-app-chat.md) |
+| 09 | **In-App Chat Conversation** | Verified User (Level 1+) | ✅ Reviewed | [communication/09-in-app-chat.md](./communication/09-in-app-chat.md) |
 
 **Purpose:** Real-time messaging between users for inquiries about posts, follow-ups, and coordination.
 
@@ -147,15 +154,20 @@ Journeys are organized into **6 categories** based on user intent:
 | # | Journey Name | User Persona | Status | File |
 |---|--------------|--------------|--------|------|
 | 12 | **Renew or Edit an Expired Post** | Verified User (Level 1+) | 📝 Not Started | [management/12-renew-edit-post.md](./management/12-renew-edit-post.md) |
+| 14 | **Event Creation & Management** | Verified User (Level 1+) as Organizer | ✅ Reviewed | [management/14-event-creation-and-management.md](./management/14-event-creation-and-management.md) |
 
-**Purpose:** Managing post lifecycle - renewing expiring posts or editing expired posts to reactivate them.
+**Purpose:** Managing post and event lifecycle — editing, renewing, cancelling, and deleting content.
 
-**Key Features:**
-- Notification 3 days before expiry
-- One-time renewal option (must update at least one field)
-- Edit and repost expired posts
-- View expired posts via "Show Expired" filter
-- Permanent deletion 90 days after expiry
+**Key Features (Posts):**
+- Edit post title, body, tags, photos at any time (owner only)
+- Delete post (owner only)
+- Renew or repost expired posts (Journey #12 — planned)
+
+**Key Features (Events):**
+- Edit event details after publish (organizer only)
+- Cancel event — marks as cancelled, remains visible to attendees
+- Delete event — removes from all feeds (soft delete)
+- Organizer controls accessible via ⋮ kebab menu on event detail
 
 **Prerequisites:**
 - Journey #03-06: User must have created a post previously
@@ -311,6 +323,6 @@ See [.claude/skills/user-journey/SKILL.md](../../.claude/skills/user-journey/SKI
 
 ---
 
-**Last Updated:** 2026-02-11
+**Last Updated:** 2026-03-10
 **Maintained By:** Product Team
 **Review Cycle:** After each journey is created or updated
