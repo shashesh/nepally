@@ -14,12 +14,18 @@ NUSA uses **PostgreSQL** via Supabase, a relational database with powerful query
 4. `tags` - Post tags/categories (scalable, database-driven)
 5. `posts` - User-created posts (title + body + tags)
 6. `post_tags` - Junction table linking posts to tags (many-to-many)
-7. `conversations` - Chat conversations
-8. `conversation_participants` - Conversation participant junction table
-9. `messages` - Chat messages
-10. `reports` - Content reports from users
-11. `notifications` - Push notification records
-12. `user_saved_locations` - Saved metro area locations per user
+7. `post_likes` - Post likes / helpful votes per user
+8. `post_comments` - Public comment threads on posts
+9. `conversations` - Chat conversations
+10. `conversation_participants` - Conversation participant junction table
+11. `messages` - Chat messages
+12. `blocked_users` - Blocked user relationships for chat
+13. `reports` - Content reports from users
+14. `notifications` - Push notification records
+15. `user_saved_locations` - Saved metro area locations per user
+16. `user_saved_posts` - Bookmarked posts per user
+17. `events` - Community events
+18. `event_rsvps` - Event RSVP records
 
 ## Tables Detail
 
@@ -808,6 +814,274 @@ CREATE POLICY "Users can update own notifications"
 
 ---
 
+### 10. Post Likes Table
+
+**Table:** `post_likes`
+
+**Migration:** `001_schema.sql` (initial schema)
+
+**Schema:**
+```sql
+CREATE TABLE post_likes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
+);
+
+-- Indexes
+CREATE INDEX idx_post_likes_post ON post_likes(post_id);
+CREATE INDEX idx_post_likes_user ON post_likes(user_id);
+
+-- Row Level Security
+ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Post likes are viewable by everyone"
+  ON post_likes FOR SELECT USING (true);
+
+CREATE POLICY "Verified users can like posts"
+  ON post_likes FOR INSERT
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1)
+    AND user_id = auth.uid()
+  );
+
+CREATE POLICY "Users can unlike their own likes"
+  ON post_likes FOR DELETE USING (user_id = auth.uid());
+```
+
+**Triggers:** Insert/delete on `post_likes` auto-increments/decrements `posts.likes_count` via DB trigger.
+
+---
+
+### 11. Post Comments Table
+
+**Table:** `post_comments`
+
+**Migration:** `001_schema.sql` (initial schema)
+
+**Schema:**
+```sql
+CREATE TABLE post_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body TEXT NOT NULL CHECK (char_length(body) <= 1000),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_post_comments_post ON post_comments(post_id, created_at ASC);
+CREATE INDEX idx_post_comments_author ON post_comments(author_id);
+
+-- Row Level Security
+ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Post comments are viewable by everyone"
+  ON post_comments FOR SELECT USING (true);
+
+CREATE POLICY "Verified users can comment"
+  ON post_comments FOR INSERT
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1)
+    AND author_id = auth.uid()
+  );
+
+CREATE POLICY "Authors can delete own comments"
+  ON post_comments FOR DELETE USING (author_id = auth.uid());
+```
+
+**Triggers:** Insert/delete on `post_comments` auto-increments/decrements `posts.comments_count`.
+
+---
+
+### 12. Blocked Users Table
+
+**Table:** `blocked_users`
+
+**Migration:** `004_consolidated_chat_and_fixes.sql`
+
+**Schema:**
+```sql
+CREATE TABLE blocked_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  blocker_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  blocked_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(blocker_id, blocked_id)
+);
+
+-- Indexes
+CREATE INDEX idx_blocked_users_blocker ON blocked_users(blocker_id);
+CREATE INDEX idx_blocked_users_blocked ON blocked_users(blocked_id);
+
+-- Row Level Security
+ALTER TABLE blocked_users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own blocks"
+  ON blocked_users FOR SELECT USING (blocker_id = auth.uid());
+
+CREATE POLICY "Users can block others"
+  ON blocked_users FOR INSERT WITH CHECK (blocker_id = auth.uid());
+
+CREATE POLICY "Users can unblock"
+  ON blocked_users FOR DELETE USING (blocker_id = auth.uid());
+```
+
+---
+
+### 13. User Saved Posts Table
+
+**Table:** `user_saved_posts`
+
+**Migration:** `005_add_saved_posts.sql`
+
+**Schema:**
+```sql
+CREATE TABLE user_saved_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, post_id)
+);
+
+-- Indexes
+CREATE INDEX idx_user_saved_posts_user ON user_saved_posts(user_id, created_at DESC);
+
+-- Row Level Security
+ALTER TABLE user_saved_posts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own saved posts"
+  ON user_saved_posts FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "Users can save posts"
+  ON user_saved_posts FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can unsave posts"
+  ON user_saved_posts FOR DELETE USING (user_id = auth.uid());
+```
+
+---
+
+### 14. Events Table
+
+**Table:** `events`
+
+**Migration:** `006_events.sql`
+
+**Schema:**
+```sql
+CREATE TYPE event_type AS ENUM ('cultural', 'religious', 'social', 'career', 'other');
+CREATE TYPE event_status AS ENUM ('active', 'cancelled', 'removed');
+
+CREATE TABLE events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  event_type event_type NOT NULL,
+  start_date TIMESTAMPTZ NOT NULL,
+  end_date TIMESTAMPTZ,
+  location_name TEXT NOT NULL,
+  location_address TEXT,
+  metro_area_id TEXT NOT NULL REFERENCES metro_areas(id),
+  is_global BOOLEAN NOT NULL DEFAULT false,
+  organizer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  photo_url TEXT,
+  rsvp_count INTEGER NOT NULL DEFAULT 0,
+  rsvp_visibility TEXT NOT NULL DEFAULT 'public',  -- 'public' | 'private'
+  status event_status NOT NULL DEFAULT 'active',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_events_metro_start ON events(metro_area_id, start_date ASC) WHERE status = 'active';
+CREATE INDEX idx_events_global_start ON events(start_date ASC) WHERE is_global = true AND status = 'active';
+CREATE INDEX idx_events_organizer ON events(organizer_id);
+
+-- Row Level Security
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Active events are viewable by everyone"
+  ON events FOR SELECT USING (status != 'removed');
+
+CREATE POLICY "Verified users can create events"
+  ON events FOR INSERT
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1)
+    AND organizer_id = auth.uid()
+  );
+
+CREATE POLICY "Organizers can update their events"
+  ON events FOR UPDATE USING (organizer_id = auth.uid());
+
+CREATE POLICY "Organizers can delete their events"
+  ON events FOR DELETE USING (organizer_id = auth.uid());
+```
+
+**Triggers:** `trg_event_updated_at` auto-updates `updated_at`. `trg_rsvp_insert` / `trg_rsvp_delete` increment/decrement `rsvp_count`.
+
+**Example:**
+```json
+{
+  "id": "evt-uuid-1",
+  "title": "Nepali New Year Celebration",
+  "event_type": "cultural",
+  "start_date": "2026-04-14T18:00:00Z",
+  "location_name": "Dallas Convention Center",
+  "metro_area_id": "19100",
+  "is_global": false,
+  "organizer_id": "user-uuid-1",
+  "rsvp_count": 42,
+  "rsvp_visibility": "public",
+  "status": "active"
+}
+```
+
+---
+
+### 15. Event RSVPs Table
+
+**Table:** `event_rsvps`
+
+**Migration:** `006_events.sql`
+
+**Schema:**
+```sql
+CREATE TABLE event_rsvps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(event_id, user_id)
+);
+
+-- Indexes
+CREATE INDEX idx_event_rsvps_event ON event_rsvps(event_id);
+CREATE INDEX idx_event_rsvps_user ON event_rsvps(user_id);
+
+-- Row Level Security
+ALTER TABLE event_rsvps ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "RSVPs viewable by everyone (for public events)"
+  ON event_rsvps FOR SELECT USING (true);
+
+CREATE POLICY "Verified users can RSVP"
+  ON event_rsvps FOR INSERT
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1)
+    AND user_id = auth.uid()
+  );
+
+CREATE POLICY "Users can cancel their RSVP"
+  ON event_rsvps FOR DELETE USING (user_id = auth.uid());
+```
+
+---
+
 ## Data Relationships
 
 ### Foreign Keys
@@ -819,15 +1093,27 @@ All relationships are enforced via foreign keys:
 - `posts.metro_area_id` → `metro_areas.id`
 - `post_tags.post_id` → `posts.id`
 - `post_tags.tag_id` → `tags.id`
+- `post_likes.post_id` → `posts.id`
+- `post_likes.user_id` → `users.id`
+- `post_comments.post_id` → `posts.id`
+- `post_comments.author_id` → `users.id`
 - `conversation_participants.conversation_id` → `conversations.id`
 - `conversation_participants.user_id` → `users.id`
 - `messages.conversation_id` → `conversations.id`
 - `messages.sender_id` → `users.id`
+- `blocked_users.blocker_id` → `users.id`
+- `blocked_users.blocked_id` → `users.id`
 - `reports.reported_by` → `users.id`
 - `reports.reviewed_by` → `users.id`
 - `notifications.user_id` → `users.id`
 - `user_saved_locations.user_id` → `users.id`
 - `user_saved_locations.metro_area_id` → `metro_areas.id`
+- `user_saved_posts.user_id` → `users.id`
+- `user_saved_posts.post_id` → `posts.id`
+- `events.organizer_id` → `users.id`
+- `events.metro_area_id` → `metro_areas.id`
+- `event_rsvps.event_id` → `events.id`
+- `event_rsvps.user_id` → `users.id`
 
 ---
 
@@ -980,6 +1266,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 ---
 
 ## Data Migration from Firestore
+
+> **Historical note:** The project migrated from Firebase/Firestore to Supabase early in development. The code below is kept for reference only — there is no Firestore data to migrate. The live database is Supabase-only.
 
 ### Migration strategy
 

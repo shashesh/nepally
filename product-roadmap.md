@@ -1,7 +1,7 @@
 # NUSA App: Product Roadmap
 
-**Version:** 1.4
-**Last Updated:** 2026-03-05 (Public Profile View: privacy-safe user profiles on mobile + web)
+**Version:** 1.5
+**Last Updated:** 2026-03-10 (Events: full implementation on mobile + web; PROGRESS.md synced to current state)
 
 ---
 
@@ -298,16 +298,20 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 
 **Purpose:** Community event discovery and coordination.
 
-**Status:** Spec approved — implementation pending.
+**Status:** IMPLEMENTED (2026-03-05) — full mobile + web implementation.
 
-**Scope:**
+**Shipped:**
 - Chronological events feed with filter chips (Cultural, Religious, Social, Career, Other)
 - Event creation by Level 1+ verified users (local by default; premium users can toggle global)
 - Event detail: title, date/time, location, description, organizer info
-- RSVP functionality with organizer-controlled privacy (public attendee list or count-only)
+- RSVP toggle with organizer-controlled privacy (public attendee list or count-only)
 - Edit, cancel, and delete events (organizer only)
+- DB: `events` + `event_rsvps` tables, enums, RLS (`006_events.sql`)
+- Shared API (full CRUD + RSVP) in `packages/shared/src/api/events.ts`
+
+**Deferred:**
+- Push notification reminders (depends on full notifications infrastructure)
 - Events visible on organizer's public profile
-- Push notification reminders (deferred — depends on full notifications infrastructure)
 
 See [Events Feature Spec](docs/features/events.md) and [Events Feature Breakdown](docs/features/events-feature-breakdown.md) for full details.
 
@@ -477,13 +481,40 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 
 ---
 
+## Phase 1 Completion Status
+
+### Shipped (Phase 1)
+- Onboarding (full mobile flow; web ZIP-only)
+- Identity & account levels (email auth; Level 0/1/2 data model)
+- Tag-based post engine (create, edit, delete, photos, global toggle)
+- Home feed (metro-first, tag filter chips, Local/Global badges)
+- Post interactions (likes, comments, save/bookmark)
+- In-app chat (real-time, read receipts, block user, unread badges, Messenger-style avatars)
+- Profile management (Reddit-style tabs, hamburger menu, password change)
+- Public profile view (masked name, trust badge, post history)
+- Location management (saved locations, premium multi-location switching)
+- Events (full feature: feed, create, detail, RSVP, privacy control)
+- Notifications UI scaffold (mobile + web screens + preferences)
+- Avatar component (across feed, chat, comments, profile)
+- Premium subscription scaffolding (`is_premium` flag, global posting, 5 saved locations)
+- Web navigation (sidebar, top nav, all pages)
+
+### Remaining (Phase 1)
+1. **Profile photo upload** — Avatar component done; file picker + Supabase upload pipeline not built
+2. **Reporting system** — DB schema exists; API, UI, auto-hide threshold, and moderator queue not built
+3. **Admin dashboard** — Web-based moderator tools (flagged queue, trust level management, ban/unban, platform stats)
+4. **Full notifications system** — UI screens exist; DB migration, shared API, and push delivery edge function not started (see `docs/implementation-plans/notifications-feature.md`)
+5. **Trust Level progression** — Level 0→1 phone verification flow not implemented
+6. **Chat RLS re-enablement** — Critical security fix before any public release (see Security TODO in PROGRESS.md)
+
 ## Next Steps
 
 ### Immediate Actions
-1. Implement post photo upload (DB field and placeholder UI exist, needs file picker, upload, and compression logic)
-2. Build reporting system (DB schema exists, needs API functions and UI for report button, report categories, auto-hide threshold)
-3. Design and build Admin Dashboard (moderator tools: flagged content queue, trust level management, ban/unban, platform stats)
-4. Complete full notifications system (mobile UI screens exist; DB layer, shared API, web integration, and push delivery still needed — see `docs/implementation-plans/notifications-feature.md`)
+1. Fix Chat RLS (critical security issue — see PROGRESS.md Security TODO for exact steps)
+2. Build profile photo upload (picker UI → compress → upload to `avatars` Supabase bucket → display)
+3. Build reporting system (API functions + "Report" button UI + auto-hide threshold + moderator queue)
+4. Build Admin Dashboard (flagged content queue, trust level management, ban/unban, platform stats)
+5. Complete full notifications system (see `docs/implementation-plans/notifications-feature.md`)
 
 ### Research Needed
 - Legal review of liability disclaimers
