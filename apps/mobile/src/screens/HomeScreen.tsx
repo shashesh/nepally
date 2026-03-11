@@ -207,6 +207,12 @@ export default function HomeScreen() {
     }
   }, [metroAreaId, selectedTagSlugs]);
 
+  const loadPostsRef = useRef(loadPosts);
+
+  useEffect(() => {
+    loadPostsRef.current = loadPosts;
+  }, [loadPosts]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     setLoadError(null);
@@ -223,6 +229,31 @@ export default function HomeScreen() {
     await saveBannerDismissed('level0-banner');
     setBannerVisible(false);
   };
+
+  // Realtime feed updates: refresh posts when new post appears in active metro
+  useEffect(() => {
+    if (!metroAreaId) return;
+
+    const feedChannel = supabase
+      .channel(`feed-posts-mobile:${metroAreaId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts',
+          filter: `metro_area_id=eq.${metroAreaId}`,
+        },
+        () => {
+          loadPostsRef.current();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(feedChannel);
+    };
+  }, [metroAreaId]);
 
   const loadLikedPosts = useCallback(async () => {
     if (!user?.id) return;
@@ -556,17 +587,30 @@ export default function HomeScreen() {
     );
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="document-text-outline" size={64} color={colors.text.disabled} />
-      <Text style={styles.emptyTitle}>No posts yet</Text>
-      <Text style={styles.emptySubtitle}>
-        {selectedTagSlugs.length > 0
-          ? 'No posts matching your filters in this area. Try different tags!'
-          : 'Be the first to post in your community!'}
-      </Text>
-    </View>
-  );
+  const renderEmptyState = () => {
+    if (!metroAreaId) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="location-outline" size={64} color={colors.text.disabled} />
+          <Text style={styles.emptyTitle}>No location set</Text>
+          <Text style={styles.emptySubtitle}>
+            Set your location to see posts from your local community.
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.emptyState}>
+        <Ionicons name="document-text-outline" size={64} color={colors.text.disabled} />
+        <Text style={styles.emptyTitle}>No posts yet</Text>
+        <Text style={styles.emptySubtitle}>
+          {selectedTagSlugs.length > 0
+            ? 'No posts matching your filters in this area. Try different tags!'
+            : 'Be the first to post in your community!'}
+        </Text>
+      </View>
+    );
+  };
 
   const renderLoadingState = () => (
     <View style={styles.loadingState}>

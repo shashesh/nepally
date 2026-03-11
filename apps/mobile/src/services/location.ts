@@ -30,27 +30,52 @@ export async function getLocationPermissionStatus(): Promise<LocationPermissionS
 /**
  * Get the device's current GPS coordinates
  * Returns null on failure or timeout (10s)
+ *
+ * Uses a cancellation flag so that if a new call is made before the previous
+ * GPS request resolves, the stale result is discarded rather than applied.
  */
+let _activeGpsRequest: { cancelled: boolean } | null = null;
+
 export async function getCurrentPosition(): Promise<GpsCoordinates | null> {
-  try {
-    const location = await Promise.race([
-      Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000)),
-    ]);
-
-    if (!location) return null;
-
-    return {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      accuracy: location.coords.accuracy ?? undefined,
-    };
-  } catch (error) {
-    console.error('Failed to get current position:', error);
-    return null;
+  // Cancel any previous pending request's result
+  if (_activeGpsRequest) {
+    _activeGpsRequest.cancelled = true;
   }
+  const thisRequest = { cancelled: false };
+  _activeGpsRequest = thisRequest;
+
+  return new Promise((resolve) => {
+    const timeoutId = setTimeout(() => {
+      thisRequest.cancelled = true;
+      if (_activeGpsRequest === thisRequest) _activeGpsRequest = null;
+      resolve(null);
+    }, 10000);
+
+    Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    })
+      .then((location) => {
+        clearTimeout(timeoutId);
+        if (thisRequest.cancelled) {
+          resolve(null);
+          return;
+        }
+        if (_activeGpsRequest === thisRequest) _activeGpsRequest = null;
+        resolve({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          accuracy: location.coords.accuracy ?? undefined,
+        });
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        if (!thisRequest.cancelled) {
+          console.error('Failed to get current position:', error);
+        }
+        if (_activeGpsRequest === thisRequest) _activeGpsRequest = null;
+        resolve(null);
+      });
+  });
 }
 
 /**

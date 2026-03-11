@@ -110,7 +110,7 @@ export default function AddLocationScreen() {
     setSaving(false);
 
     if (result.error) {
-      Alert.alert('Error', result.error.message);
+      Alert.alert('Error', 'Unable to save location. Please try again.');
     } else {
       await refreshSavedLocations();
       navigation.goBack();

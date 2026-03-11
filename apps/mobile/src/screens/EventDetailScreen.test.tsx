@@ -94,8 +94,8 @@ jest.mock('@nusa/shared', () => ({
 describe('EventDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
-    mockGetEventById.mockResolvedValue({ data: MOCK_EVENT });
+    (getEventById as jest.MockedFunction<typeof getEventById>).mockResolvedValue({ data: MOCK_EVENT });
+    (hasUserRsvp as jest.MockedFunction<typeof hasUserRsvp>).mockResolvedValue({ data: false });
     mockUseAuth.mockReturnValue({
       user: { id: 'user-2', trust_level: 1, metro_area_id: '19100' },
     });

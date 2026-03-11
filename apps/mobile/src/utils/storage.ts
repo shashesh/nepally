@@ -231,3 +231,56 @@ export async function getPermissionBannerState(): Promise<PermissionBannerState>
     return { show_count: 0, last_shown_at: null };
   }
 }
+
+// ── Post Draft ───────────────────────────────────────────────
+
+/**
+ * Post draft key prefix
+ */
+const POST_DRAFT_KEY = '@nusa:post_draft';
+
+/**
+ * Shape of a persisted post draft
+ */
+export interface PostDraft {
+  title: string;
+  body: string;
+  selectedTagIds: string[];
+  isGlobal: boolean;
+  savedAt: string; // ISO timestamp
+}
+
+/**
+ * Save a post draft (new post only – not used for editing existing posts)
+ */
+export async function savePostDraft(draft: PostDraft): Promise<void> {
+  try {
+    await AsyncStorage.setItem(POST_DRAFT_KEY, JSON.stringify(draft));
+  } catch (error) {
+    console.error('Failed to save post draft:', error);
+  }
+}
+
+/**
+ * Load the saved post draft, if any
+ */
+export async function loadPostDraft(): Promise<PostDraft | null> {
+  try {
+    const data = await AsyncStorage.getItem(POST_DRAFT_KEY);
+    return data ? (JSON.parse(data) as PostDraft) : null;
+  } catch (error) {
+    console.error('Failed to load post draft:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear the saved post draft
+ */
+export async function clearPostDraft(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(POST_DRAFT_KEY);
+  } catch (error) {
+    console.error('Failed to clear post draft:', error);
+  }
+}

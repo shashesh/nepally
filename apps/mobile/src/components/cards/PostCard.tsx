@@ -185,6 +185,8 @@ export const PostCard: React.FC<PostCardProps> = ({
       style={styles.card}
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={title}
     >
       {/* Author Row */}
       {authorName && (
@@ -346,6 +348,8 @@ export const PostCard: React.FC<PostCardProps> = ({
             onLikePress?.();
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={isLiked ? 'Unlike post' : 'Like post'}
         >
           <Ionicons
             name={isLiked ? 'heart' : 'heart-outline'}
@@ -364,6 +368,8 @@ export const PostCard: React.FC<PostCardProps> = ({
             onCommentPress?.();
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Comment on post"
         >
           <Ionicons name="chatbubble-outline" size={20} color={colors.text.secondary} />
           <Text style={styles.actionCount}>{formatCount(commentsCount)}</Text>
@@ -376,6 +382,8 @@ export const PostCard: React.FC<PostCardProps> = ({
             onSavePress?.();
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={isSaved ? 'Unsave post' : 'Save post'}
         >
           <Ionicons
             name={isSaved ? 'bookmark' : 'bookmark-outline'}

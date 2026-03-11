@@ -29,6 +29,8 @@ export function MainTabNavigator() {
         name="Home"
         component={HomeNavigator}
         options={{
+          tabBarLabel: 'Home',
+          tabBarAccessibilityLabel: 'Home tab',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -38,6 +40,8 @@ export function MainTabNavigator() {
         name="Post"
         component={PostNavigator}
         options={{
+          tabBarLabel: 'Post',
+          tabBarAccessibilityLabel: 'Create post tab',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="add-circle" size={size} color={color} />
           ),
@@ -47,6 +51,8 @@ export function MainTabNavigator() {
         name="Events"
         component={EventsNavigator}
         options={{
+          tabBarLabel: 'Events',
+          tabBarAccessibilityLabel: 'Events tab',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),
@@ -56,6 +62,8 @@ export function MainTabNavigator() {
         name="Marketplace"
         component={MarketplaceNavigator}
         options={{
+          tabBarLabel: 'Marketplace',
+          tabBarAccessibilityLabel: 'Marketplace tab',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="storefront-outline" size={size} color={color} />
           ),
@@ -65,6 +73,8 @@ export function MainTabNavigator() {
         name="Profile"
         component={ProfileNavigator}
         options={{
+          tabBarLabel: 'Profile',
+          tabBarAccessibilityLabel: 'Profile tab',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

@@ -83,7 +83,7 @@ export function NotificationsScreen() {
 
   // Supabase Realtime subscription
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     const channel = supabase
       .channel(`notifications-mobile:${user.id}`)
       .on(
@@ -97,7 +97,7 @@ export function NotificationsScreen() {
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user?.id]);
 
   const handleNotifPress = useCallback(async (notif: Notification) => {
     if (!notif.read) {
