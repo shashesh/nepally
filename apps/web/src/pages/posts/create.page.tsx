@@ -137,14 +137,20 @@ export default function CreatePostPage() {
   useEffect(() => {
     setTagsLoading(true);
     setTagsError(null);
-    getTags(supabase).then((result) => {
-      if (result.data) {
-        setAvailableTags(result.data);
-      } else {
+    getTags(supabase)
+      .then((result) => {
+        if (result.error) {
+          setTagsError('Unable to load tags. Refresh the page and try again.');
+        } else {
+          setAvailableTags(result.data ?? []);
+        }
+      })
+      .catch(() => {
         setTagsError('Unable to load tags. Refresh the page and try again.');
-      }
-      setTagsLoading(false);
-    });
+      })
+      .finally(() => {
+        setTagsLoading(false);
+      });
   }, []);
 
   useEffect(() => {
