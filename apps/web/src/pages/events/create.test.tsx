@@ -68,7 +68,7 @@ vi.mock('@nusa/shared', () => ({
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
 }));
 
-import CreateEventPage from './create';
+import CreateEventPage from './create.page';
 
 describe('CreateEventPage', () => {
   const mockReplace = vi.fn();

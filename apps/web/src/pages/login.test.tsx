@@ -38,7 +38,7 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
-import LoginPage from './login';
+import LoginPage from './login.page';
 
 describe('LoginPage', () => {
   const mockPush = vi.fn();

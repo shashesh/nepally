@@ -16,7 +16,7 @@ vi.mock('next/document', () => ({
   NextScript: docMocks.nextScriptMock,
 }));
 
-import Document from './_document';
+import Document from './_document.page';
 
 describe('Document', () => {
   it('renders without errors', () => {

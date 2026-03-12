@@ -42,7 +42,7 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
-import NotificationsPage from './notifications';
+import NotificationsPage from './notifications.page';
 
 const mockReplace = vi.fn();
 const mockPush = vi.fn();

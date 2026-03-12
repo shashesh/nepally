@@ -105,7 +105,7 @@ const mockUserEvents = [
   },
 ];
 
-import PublicProfilePage from './[id]';
+import PublicProfilePage from './[id].page';
 
 describe('PublicProfilePage', () => {
   const mockPush = vi.fn();

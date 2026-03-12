@@ -20,7 +20,7 @@ vi.mock('../components/Layout', () => ({
 
 vi.mock('../styles/globals.css', () => ({}));
 
-import App from './_app';
+import App from './_app.page';
 
 describe('App', () => {
   it('wraps Component in AuthProvider, LocationProvider, and Layout', () => {

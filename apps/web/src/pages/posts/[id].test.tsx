@@ -77,7 +77,7 @@ const mockPost = {
   location_state: 'TX',
 };
 
-import PostDetailPage from './[id]';
+import PostDetailPage from './[id].page';
 
 describe('PostDetailPage', () => {
   const mockPush = vi.fn();

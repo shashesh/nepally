@@ -60,7 +60,7 @@ const mockUser = {
   metro_area_id: '19100',
 };
 
-import ProfilePage from './profile';
+import ProfilePage from './profile.page';
 
 describe('ProfilePage', () => {
   const mockPush = vi.fn();

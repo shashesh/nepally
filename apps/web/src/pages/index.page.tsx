@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../hooks/useAuth';
-import { FeedPage } from './feed';
+import { FeedPage } from './feed.page';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {

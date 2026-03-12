@@ -35,7 +35,7 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
-import MessagesPage from './index';
+import MessagesPage from './index.page';
 
 describe('MessagesPage', () => {
   const mockReplace = vi.fn();

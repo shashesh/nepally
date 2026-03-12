@@ -28,7 +28,7 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
-import NotificationPreferencesPage from './notifications';
+import NotificationPreferencesPage from './notifications.page';
 
 const mockReplace = vi.fn();
 

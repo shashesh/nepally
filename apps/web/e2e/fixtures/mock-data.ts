@@ -13,6 +13,7 @@ export const MOCK_USER_PROFILE: User = {
   metro_area_id: MOCK_METRO_ID,
   zip_code: '10001',
   trust_level: 1,
+  email_verified: true,
   phone_verified: false,
   facebook_verified: false,
   google_verified: false,

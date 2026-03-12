@@ -9,7 +9,7 @@ import styles from '../styles/Auth.module.css';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,8 +59,9 @@ export default function SignupPage() {
     if (result.error) {
       setError(result.error.message);
     } else {
-      await refreshUser();
-      router.push('/onboarding/zip');
+      // No session yet — email confirmation is required.
+      // Profile creation happens in /auth/callback after the user clicks the link.
+      router.push('/verify-email?email=' + encodeURIComponent(email));
     }
   }
 

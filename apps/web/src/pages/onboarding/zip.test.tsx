@@ -33,7 +33,7 @@ vi.mock('next/head', () => ({
     React.createElement(React.Fragment, null, children),
 }));
 
-import ZipCodePage from './zip';
+import ZipCodePage from './zip.page';
 
 describe('ZipCodePage', () => {
   const mockPush = vi.fn();

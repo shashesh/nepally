@@ -58,7 +58,7 @@ const mockSavedLocations = [
 
 const mockUser = { id: 'user-1' };
 
-import ManageLocationsPage from './locations';
+import ManageLocationsPage from './locations.page';
 
 describe('ManageLocationsPage', () => {
   const mockReplace = vi.fn();

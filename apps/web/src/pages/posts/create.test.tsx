@@ -57,7 +57,7 @@ const mockUser = {
   is_premium: false,
 };
 
-import CreatePostPage from './create';
+import CreatePostPage from './create.page';
 
 describe('CreatePostPage', () => {
   const mockPush = vi.fn();

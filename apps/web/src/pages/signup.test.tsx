@@ -34,7 +34,7 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
-import SignupPage from './signup';
+import SignupPage from './signup.page';
 
 describe('SignupPage', () => {
   const mockPush = vi.fn();
@@ -129,17 +129,18 @@ describe('SignupPage', () => {
     });
   });
 
-  it('redirects to /onboarding/zip on successful signup', async () => {
+  it('redirects to /verify-email on successful signup', async () => {
     signupMocks.signUpWithEmailMock.mockResolvedValue({ user: { id: 'user-1' } });
-    mockRefreshUser.mockResolvedValue(undefined);
     render(<SignupPage />);
     fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
     await waitFor(() => {
-      expect(mockRefreshUser).toHaveBeenCalled();
-      expect(mockPush).toHaveBeenCalledWith('/onboarding/zip');
+      expect(mockRefreshUser).not.toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith(
+        '/verify-email?email=test%40example.com'
+      );
     });
   });
 

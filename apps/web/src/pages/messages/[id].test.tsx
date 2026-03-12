@@ -42,7 +42,7 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
-import MessageThreadPage from './[id]';
+import MessageThreadPage from './[id].page';
 
 const mockChannel = { id: 'channel-1' };
 

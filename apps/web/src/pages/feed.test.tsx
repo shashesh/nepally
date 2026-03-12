@@ -98,7 +98,7 @@ const mockPosts = [
   },
 ];
 
-import { FeedPage } from './feed';
+import { FeedPage } from './feed.page';
 
 describe('FeedPage', () => {
   const mockPush = vi.fn();

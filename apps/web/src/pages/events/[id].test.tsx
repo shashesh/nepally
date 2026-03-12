@@ -61,7 +61,7 @@ vi.mock('@nusa/shared', () => ({
   EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
 }));
 
-import EventDetailPage from './[id]';
+import EventDetailPage from './[id].page';
 
 describe('EventDetailPage', () => {
   const mockReplace = vi.fn();

@@ -8,7 +8,7 @@ const indexMocks = vi.hoisted(() => ({
 
 vi.mock('../hooks/useAuth', () => ({ useAuth: indexMocks.useAuthMock }));
 
-vi.mock('./feed', () => ({
+vi.mock('./feed.page', () => ({
   FeedPage: () => React.createElement('div', { 'data-testid': 'feed-page' }, 'Feed'),
 }));
 
@@ -22,7 +22,7 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
-import Home from './index';
+import Home from './index.page';
 
 describe('Home (index page)', () => {
   beforeEach(() => {

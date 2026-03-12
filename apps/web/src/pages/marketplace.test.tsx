@@ -14,7 +14,7 @@ vi.mock('next/head', () => ({
     React.createElement(React.Fragment, null, children),
 }));
 
-import MarketplacePage from './marketplace';
+import MarketplacePage from './marketplace.page';
 
 describe('MarketplacePage', () => {
   const mockReplace = vi.fn();

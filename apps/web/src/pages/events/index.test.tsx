@@ -60,7 +60,7 @@ vi.mock('@nusa/shared', () => ({
   formatPublicName: (name: string) => name,
 }));
 
-import EventsPage from './index';
+import EventsPage from './index.page';
 
 describe('EventsPage', () => {
   const mockReplace = vi.fn();
