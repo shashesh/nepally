@@ -117,7 +117,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Profile not yet created (e.g. auth state fires before createUserProfile completes during signup)
       if (error) throw error;
-      if (!userData) return;
+      if (!userData) {
+        setUser(null);
+        return;
+      }
 
       const userProfile: User = {
         id: userData.id,

@@ -8,6 +8,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # NEXT_PUBLIC_* keys are intentionally bundled into client-side JS by Next.js.
+  # Without this, Netlify secrets scanning flags them as false positives.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY"
 
 # Disable Netlify's own CI builds on PRs — CI is handled by GitHub Actions.
 # Remove this block if you want Netlify deploy previews on pull requests.

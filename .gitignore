@@ -12,6 +12,7 @@ playwright-report/
 build/
 dist/
 .next/
+.netlify/
 out/
 
 # Misc

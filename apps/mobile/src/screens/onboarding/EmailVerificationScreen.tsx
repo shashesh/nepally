@@ -27,8 +27,12 @@ import { spacing, borderRadius } from '../../styles/spacing';
 const RESEND_COOLDOWN_SECONDS = 60;
 
 function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  if (!domain || local.length <= 2) return email;
+  const atIndex = email.indexOf('@');
+  if (atIndex === -1) return email;
+  const local = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1);
+  if (local.length === 1) return `${local}***@${domain}`;
+  if (local.length === 2) return `${local[0]}*@${domain}`;
   return `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}@${domain}`;
 }
 
@@ -55,6 +59,7 @@ export function EmailVerificationScreen() {
   }, []);
 
   function startCooldown() {
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
     setResendCooldown(RESEND_COOLDOWN_SECONDS);
     cooldownRef.current = setInterval(() => {
       setResendCooldown((prev) => {
@@ -101,10 +106,11 @@ export function EmailVerificationScreen() {
       const profileResult = await createUserProfile(supabase, userId, email, fullName);
       if (profileResult.error) {
         console.error('Profile creation error:', profileResult.error);
-        // Don't block — auth account is confirmed, profile can be retried
+        setError('Account setup failed. Please try again.');
+        return;
       }
 
-      // Mark email verified in our users table
+      // Mark email verified in our users table — only safe after profile exists
       const verifyResult = await markEmailVerified(supabase, userId);
       if (verifyResult.error) {
         console.error('markEmailVerified error:', verifyResult.error);
