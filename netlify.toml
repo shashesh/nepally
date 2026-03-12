@@ -1,0 +1,18 @@
+[build]
+  # Stay at repo root so npm workspaces resolve correctly
+  base = "/"
+  # Build shared package first (needed for transpilePackages), then web
+  command = "npm run build --workspace=packages/shared && npm run build --workspace=apps/web"
+  # Next.js output directory relative to repo root
+  publish = "apps/web/.next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Disable Netlify's own CI builds on PRs — CI is handled by GitHub Actions.
+# Remove this block if you want Netlify deploy previews on pull requests.
+[context.deploy-preview]
+  command = "echo 'Preview builds disabled — CI handled by GitHub Actions'"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
