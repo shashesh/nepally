@@ -17,6 +17,7 @@ export interface User {
 
   // Trust & Safety
   trust_level: number; // 0 = New, 1 = Verified, 2 = Contributor
+  email_verified: boolean;
   phone_verified: boolean;
   facebook_verified?: boolean;
   google_verified?: boolean;
