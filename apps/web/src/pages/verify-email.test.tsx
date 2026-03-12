@@ -34,7 +34,7 @@ import VerifyEmailPage from './verify-email.page';
 describe('VerifyEmailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     verifyMocks.useRouterMock.mockReturnValue({
       query: { email: 'test@example.com' },
     });

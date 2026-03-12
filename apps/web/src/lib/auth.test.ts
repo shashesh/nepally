@@ -46,7 +46,7 @@ describe('signUpWithEmail', () => {
     expect(result.error).toBeUndefined();
   });
 
-  it('calls createUserProfile after successful signup', async () => {
+  it('does not call createUserProfile during signup (deferred to /auth/callback)', async () => {
     authMocks.signUpMock.mockResolvedValue({
       data: { user: { id: 'new-user-1', email: 'test@example.com' } },
       error: null,
@@ -54,12 +54,8 @@ describe('signUpWithEmail', () => {
 
     await signUpWithEmail('test@example.com', 'password123', 'Test User');
 
-    expect(authMocks.createUserProfileMock).toHaveBeenCalledWith(
-      expect.anything(),
-      'new-user-1',
-      'test@example.com',
-      'Test User'
-    );
+    // Web defers profile creation to /auth/callback after email confirmation.
+    expect(authMocks.createUserProfileMock).not.toHaveBeenCalled();
   });
 
   it('returns error when supabase signUp fails', async () => {

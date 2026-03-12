@@ -59,7 +59,7 @@ describe('AuthCallbackPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
 
     callbackMocks.useRouterMock.mockReturnValue({ push: mockPush });
     callbackMocks.onAuthStateChangeMock.mockImplementation(() => ({

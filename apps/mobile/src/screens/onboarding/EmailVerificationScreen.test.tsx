@@ -10,8 +10,8 @@ const mockResend = jest.fn();
 jest.mock('../../config/supabase', () => ({
   supabase: {
     auth: {
-      verifyOtp: (...args: any[]) => mockVerifyOtp(...args),
-      resend: (...args: any[]) => mockResend(...args),
+      verifyOtp: (...args: Parameters<typeof mockVerifyOtp>) => mockVerifyOtp(...args),
+      resend: (...args: Parameters<typeof mockResend>) => mockResend(...args),
     },
   },
 }));
@@ -20,8 +20,8 @@ const mockCreateUserProfile = jest.fn();
 const mockMarkEmailVerified = jest.fn();
 
 jest.mock('@nusa/shared', () => ({
-  createUserProfile: (...args: any[]) => mockCreateUserProfile(...args),
-  markEmailVerified: (...args: any[]) => mockMarkEmailVerified(...args),
+  createUserProfile: (...args: Parameters<typeof mockCreateUserProfile>) => mockCreateUserProfile(...args),
+  markEmailVerified: (...args: Parameters<typeof mockMarkEmailVerified>) => mockMarkEmailVerified(...args),
 }));
 
 // AuthContext is mocked as a real React context so useContext works correctly.
@@ -85,7 +85,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 
 function renderScreen() {
   return render(
-    <AuthContext.Provider value={{ refreshUser: mockRefreshUser } as any}>
+    <AuthContext.Provider value={{ refreshUser: mockRefreshUser } as unknown as React.ContextType<typeof AuthContext>}>
       <EmailVerificationScreen />
     </AuthContext.Provider>
   );
