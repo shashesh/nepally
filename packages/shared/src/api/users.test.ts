@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   createUserProfile,
   getUserById,
+  markEmailVerified,
+  resendVerificationEmail,
   updateUserProfile,
 } from './users';
 
@@ -92,5 +94,88 @@ describe('users api', () => {
       full_name: 'New User',
       trust_level: 0,
     });
+  });
+
+  it('marks email as verified', async () => {
+    const query = {
+      update: vi.fn(),
+      eq: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn(),
+    };
+
+    query.update.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.select.mockReturnValue(query);
+    query.single.mockResolvedValue({
+      data: { id: 'user-3', email_verified: true, trust_level: 1 },
+      error: null,
+    });
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as SupabaseClient;
+
+    const result = await markEmailVerified(supabase, 'user-3');
+
+    expect(result.error).toBeUndefined();
+    expect(query.update).toHaveBeenCalledWith(
+      expect.objectContaining({ email_verified: true, trust_level: 1 })
+    );
+  });
+
+  it('returns error when markEmailVerified DB call fails', async () => {
+    const query = {
+      update: vi.fn(),
+      eq: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn(),
+    };
+
+    query.update.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.select.mockReturnValue(query);
+    query.single.mockResolvedValue({
+      data: null,
+      error: new Error('DB error'),
+    });
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as SupabaseClient;
+
+    const result = await markEmailVerified(supabase, 'user-3');
+
+    expect(result.error).toBeDefined();
+    expect(result.data).toBeUndefined();
+  });
+
+  it('resends verification email via supabase auth', async () => {
+    const supabase = {
+      auth: {
+        resend: vi.fn().mockResolvedValue({ error: null }),
+      },
+    } as unknown as SupabaseClient;
+
+    const result = await resendVerificationEmail(supabase, 'user@example.com');
+
+    expect(result.error).toBeUndefined();
+    expect(supabase.auth.resend).toHaveBeenCalledWith({
+      type: 'signup',
+      email: 'user@example.com',
+    });
+  });
+
+  it('returns error when resend fails', async () => {
+    const supabase = {
+      auth: {
+        resend: vi.fn().mockResolvedValue({ error: new Error('Rate limited') }),
+      },
+    } as unknown as SupabaseClient;
+
+    const result = await resendVerificationEmail(supabase, 'user@example.com');
+
+    expect(result.error).toBeDefined();
+    expect(result.error?.message).toBe('Rate limited');
   });
 });

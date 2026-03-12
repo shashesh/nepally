@@ -113,9 +113,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .from('users')
         .select('*')
         .eq('id', supabaseUser.id)
-        .single();
+        .maybeSingle();
 
+      // Profile not yet created (e.g. auth state fires before createUserProfile completes during signup)
       if (error) throw error;
+      if (!userData) return;
 
       const userProfile: User = {
         id: userData.id,

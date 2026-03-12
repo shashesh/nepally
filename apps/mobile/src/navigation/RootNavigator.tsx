@@ -13,7 +13,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const { user, loading: authLoading } = useAuth();
-  const { isComplete: onboardingComplete, loading: onboardingLoading } = useOnboarding();
+  const { loading: onboardingLoading } = useOnboarding();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -31,10 +31,10 @@ export function RootNavigator() {
     );
   }
 
-  // Show onboarding if user doesn't exist or onboarding is not complete.
-  // For returning users who log in again, metro_area_id being set means
-  // they already completed onboarding even if the AsyncStorage flag was cleared.
-  const showOnboarding = !user || (!onboardingComplete && !user.metro_area_id);
+  // Show onboarding if user has no profile or hasn't set their metro area yet.
+  // metro_area_id is the source of truth — a user without it must complete onboarding
+  // regardless of any AsyncStorage flags (prevents stale state from skipping location step).
+  const showOnboarding = !user || !user.metro_area_id;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

@@ -9,6 +9,11 @@ export type OnboardingStackParamList = {
   EmailSignup: {
     mode?: 'signup' | 'login';
   };
+  EmailVerification: {
+    email: string;
+    userId: string;
+    fullName: string;
+  };
   LocationPermission: {
     userId: string;
   };

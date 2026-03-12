@@ -16,6 +16,7 @@ jest.mock('../config/supabase', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       single: jest.fn(),
+      maybeSingle: jest.fn(),
     })),
   },
 }));
@@ -82,7 +83,7 @@ describe('AuthContext', () => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({
+      maybeSingle: jest.fn().mockResolvedValue({
         data: {
           id: 'user-1',
           email: 'test@nusa.com',
@@ -116,7 +117,7 @@ describe('AuthContext', () => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({
+      maybeSingle: jest.fn().mockResolvedValue({
         data: { id: 'user-1', email: 'test@nusa.com', full_name: 'Test User', trust_level: 1, is_premium: false },
         error: null,
       }),

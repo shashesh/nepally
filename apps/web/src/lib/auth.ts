@@ -4,7 +4,6 @@
  */
 import { supabase } from './supabase';
 import type { EmailAuthResult } from '@nusa/shared';
-import { createUserProfile } from '@nusa/shared';
 
 export async function signUpWithEmail(
   email: string,
@@ -20,8 +19,8 @@ export async function signUpWithEmail(
     if (error) throw error;
     if (!data.user) throw new Error('No user data returned');
 
-    // Create user profile row in the users table
-    await createUserProfile(supabase, data.user.id, email, fullName);
+    // Profile creation is deferred to /auth/callback after email confirmation.
+    // session is null at this point when email confirmation is enabled.
 
     return { user: { id: data.user.id, email: data.user.email || email } };
   } catch (error) {

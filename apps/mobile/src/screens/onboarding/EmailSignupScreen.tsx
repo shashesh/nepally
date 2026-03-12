@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../config/supabase';
-import { createUserProfile, APP_CONFIG } from '@nusa/shared';
+import { APP_CONFIG } from '@nusa/shared';
 import { AuthContext } from '../../contexts/AuthContext';
 import { markOnboardingComplete } from '../../utils/storage';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
@@ -87,20 +87,12 @@ export function EmailSignupScreen() {
       if (error) throw error;
       if (!data.user) throw new Error('Signup failed — no user returned');
 
-      // Create profile in users table
-      const profileResult = await createUserProfile(
-        supabase,
-        data.user.id,
-        email.trim(),
-        fullName.trim()
-      );
-
-      if (profileResult.error) {
-        console.error('Profile creation error:', profileResult.error);
-        // Don't block — auth account exists, profile can be retried
-      }
-
-      navigation.navigate('LocationPermission', { userId: data.user.id });
+      // Profile creation happens after email verification in EmailVerificationScreen
+      navigation.navigate('EmailVerification', {
+        email: email.trim(),
+        userId: data.user.id,
+        fullName: fullName.trim(),
+      });
     } catch (error: unknown) {
       Alert.alert('Signup Failed', getErrorMessage(error, 'Something went wrong'));
     } finally {
