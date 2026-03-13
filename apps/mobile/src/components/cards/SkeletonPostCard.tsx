@@ -7,7 +7,7 @@ export const SkeletonPostCard: React.FC = () => {
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const loopAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, {
           toValue: 1,
@@ -20,7 +20,13 @@ export const SkeletonPostCard: React.FC = () => {
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+
+    loopAnimation.start();
+
+    return () => {
+      loopAnimation.stop();
+    };
   }, [opacity]);
 
   return (
