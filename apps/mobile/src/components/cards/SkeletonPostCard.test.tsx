@@ -6,9 +6,10 @@ import { SkeletonPostCard } from './SkeletonPostCard';
 describe('SkeletonPostCard', () => {
   it('starts loop animation on mount', () => {
     const start = jest.fn();
+    const stop = jest.fn();
     const loopSpy = jest
       .spyOn(Animated, 'loop')
-      .mockReturnValue({ start } as unknown as Animated.CompositeAnimation);
+      .mockReturnValue({ start, stop } as unknown as Animated.CompositeAnimation);
 
     render(<SkeletonPostCard />);
 
