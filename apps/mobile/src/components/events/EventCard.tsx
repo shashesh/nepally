@@ -6,7 +6,7 @@ import { formatPublicName, type Event } from '@nusa/shared';
 import { Avatar } from '../Avatar';
 import { EventTypeBadge } from './EventTypeBadge';
 import { colors } from '../../styles/colors';
-import { spacing, borderRadius, shadows } from '../../styles/spacing';
+import { spacing } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 import type { EventsStackParamList } from '../../types/navigation';
 
@@ -115,11 +115,9 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    borderRadius: borderRadius.card,
-    marginHorizontal: spacing.s,
-    marginVertical: spacing.xs / 2,
     overflow: 'hidden',
-    ...shadows.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   cardPast: {
     opacity: 0.65,

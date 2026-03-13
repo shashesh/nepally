@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../styles/colors';
@@ -42,6 +44,32 @@ export function PostMoreSheet({
   isSaved,
   onSave,
 }: PostMoreSheetProps) {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 5 && gs.dy > Math.abs(gs.dx),
+      onPanResponderMove: (_, gs) => {
+        if (gs.dy > 0) translateY.setValue(gs.dy);
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dy > 80 || gs.vy > 0.4) {
+          onCloseRef.current();
+          translateY.setValue(0);
+        } else {
+          Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 100, friction: 10 }).start();
+        }
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (visible) translateY.setValue(0);
+  }, [visible, translateY]);
+
   const saveAction: ActionItem | null = onSave
     ? {
         icon: isSaved ? 'bookmark' : 'bookmark-outline',
@@ -73,8 +101,12 @@ export function PostMoreSheet({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Animated.View
+          style={[styles.sheet, { transform: [{ translateY }] }]}
+          {...panResponder.panHandlers}
+        >
           {/* Drag Handle */}
           <View style={styles.handle} />
 
@@ -109,8 +141,8 @@ export function PostMoreSheet({
           <TouchableOpacity style={styles.cancelRow} onPress={onClose} activeOpacity={0.7}>
             <Text style={styles.cancelLabel}>Cancel</Text>
           </TouchableOpacity>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -120,6 +152,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'flex-end',
+    position: 'relative',
   },
   sheet: {
     backgroundColor: colors.white,

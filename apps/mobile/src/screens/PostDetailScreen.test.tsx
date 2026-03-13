@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import PostDetailScreen from './PostDetailScreen';
+import { likePost } from '@nusa/shared';
 
 const mockUseRoute = jest.fn();
 const mockUseNavigation = jest.fn();
@@ -132,5 +133,36 @@ describe('PostDetailScreen avatar menu', () => {
     fireEvent.press(screen.getByText('View Profile'));
 
     expect(mockNavigate).toHaveBeenCalledWith('PublicProfileView', { userId: 'other-user' });
+  });
+
+  it('opens avatar menu when pressing author name', async () => {
+    const screen = render(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Author User')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Author User'), {
+      nativeEvent: { pageX: 90, pageY: 110 },
+    });
+    await waitFor(() => expect(screen.getByText('View Profile')).toBeTruthy());
+  });
+
+  it('shows reaction picker on long press Like and triggers like action', async () => {
+    const screen = render(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Like')).toBeTruthy();
+    });
+
+    fireEvent(screen.getByText('Like'), 'longPress');
+    await waitFor(() => {
+      expect(screen.getByText('❤️')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('🙏'));
+    await waitFor(() => {
+      expect(likePost).toHaveBeenCalled();
+    });
   });
 });
