@@ -63,6 +63,10 @@ import { spacing, borderRadius } from '../styles/spacing';
 
 type DetailRouteProp = RouteProp<HomeStackParamList, 'PostDetail'>;
 const DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
+
+// Tracks whether the current Like interaction was triggered via long-press,
+// so we can suppress the subsequent onPress that fires on release.
+let likeLongPressActive = false;
 const LIGHTBOX_MIN_SCALE = 1;
 const LIGHTBOX_MAX_SCALE = 4;
 const DOUBLE_TAP_ZOOM_SCALE = 2.5;
@@ -896,8 +900,19 @@ export default function PostDetailScreen() {
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={handleLikePress}
-                onLongPress={() => setReactionVisible(true)}
+                onPress={() => {
+                  // If this press follows a long-press, suppress the like toggle
+                  // because the reaction picker will handle the final state.
+                  if (likeLongPressActive) {
+                    likeLongPressActive = false;
+                    return;
+                  }
+                  handleLikePress();
+                }}
+                onLongPress={() => {
+                  likeLongPressActive = true;
+                  setReactionVisible(true);
+                }}
                 delayLongPress={400}
                 activeOpacity={0.7}
               >
