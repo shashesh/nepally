@@ -408,7 +408,13 @@ export const PostCard: React.FC<PostCardProps> = ({
       <View style={styles.actionBar}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={(e) => { e.stopPropagation?.(); onLikePress?.(); }}
+          onPress={(e) => {
+            e.stopPropagation?.();
+            if (reactionVisible) {
+              return;
+            }
+            onLikePress?.();
+          }}
           onLongPress={(e) => { e.stopPropagation?.(); setReactionVisible(true); }}
           delayLongPress={400}
           accessibilityRole="button"
