@@ -467,7 +467,7 @@ export default function PostDetailScreen() {
 
   const handleOpenLightbox = useCallback(
     (startIndex: number) => {
-      const normalizedIndex = Math.min(Math.max(startIndex, 0), Math.max(postPhotos.length - 1, 0));
+      const normalizedIndex = Math.min(Math.max(startIndex, 0), Math.max(allPostPhotos.length - 1, 0));
       setLightboxIndex(normalizedIndex);
       setLightboxVisible(true);
       setTimeout(() => {
@@ -477,7 +477,7 @@ export default function PostDetailScreen() {
         });
       }, 0);
     },
-    [postPhotos.length, viewportWidth]
+    [allPostPhotos.length, viewportWidth]
   );
 
   const handleCloseLightbox = useCallback(() => {
@@ -1176,9 +1176,9 @@ export default function PostDetailScreen() {
               ]}
               pointerEvents="box-none"
             >
-              {postPhotos.length > 1 && (
+              {allPostPhotos.length > 1 && (
                 <View style={styles.lightboxCounterPill}>
-                  <Text style={styles.lightboxCounterText}>{lightboxIndex + 1} / {postPhotos.length}</Text>
+                  <Text style={styles.lightboxCounterText}>{lightboxIndex + 1} / {allPostPhotos.length}</Text>
                 </View>
               )}
               <TouchableOpacity
@@ -1208,7 +1208,7 @@ export default function PostDetailScreen() {
                   setLightboxIndex(nextIndex);
                 }}
               >
-                {postPhotos.map((photoUrl, index) => (
+                {allPostPhotos.map((photoUrl, index) => (
                   <View key={`${photoUrl}-${index}`} style={[styles.lightboxSlide, { width: viewportWidth }]}>
                     <View style={styles.lightboxZoomContent}>
                       <PinchableLightboxImage
