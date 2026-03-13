@@ -50,7 +50,7 @@ export function PostMoreSheet({
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gs) => gs.dy > 5 && gs.dy > Math.abs(gs.dx),
       onPanResponderMove: (_, gs) => {
         if (gs.dy > 0) translateY.setValue(gs.dy);
