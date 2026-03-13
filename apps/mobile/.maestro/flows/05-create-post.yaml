@@ -28,7 +28,7 @@ appId: com.nusa.app
 - inputText: "This is a valid E2E test post title"
 - tapOn:
     id: "post-body-input"
-- inputText: "This is the body of the post with enough content to pass validation requirements."
+- inputText: "This is the body of the post with enough content to pass validation requirements. It is intentionally long so the feed card shows the See more link in preview mode for this freshly created post."
 
 # Select at least one tag (Housing)
 - tapOn: "Housing"
@@ -39,3 +39,11 @@ appId: com.nusa.app
 # Back to HomeScreen
 - assertVisible:
     id: "create-post-fab"
+
+# Verify updated post card interactions
+- assertVisible: "See more"
+- tapOn: "See more"
+- assertVisible: "feed card shows the See more link in preview mode"
+- assertVisible: "Like"
+- assertVisible: "Comment"
+- assertVisible: "Save"

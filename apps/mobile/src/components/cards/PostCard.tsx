@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
-import { spacing, borderRadius, shadows } from '../../styles/spacing';
+import { spacing } from '../../styles/spacing';
 import type { Tag } from '@nusa/shared';
 import { TAG_EMOJI, TAG_COLORS, DEFAULT_TAG_COLOR } from '@nusa/shared';
 
@@ -142,24 +142,107 @@ export const PostCard: React.FC<PostCardProps> = ({
   const descPreview = description ? truncateDescription(description) : null;
   const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
   const [avatarMenuPos, setAvatarMenuPos] = useState({ top: 0, left: 0 });
-  const [mediaIndex, setMediaIndex] = useState(0);
-  const isOwnPost = authorId && currentUserId && authorId === currentUserId;
-  const mediaUrls = (imageUrls && imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [])
-    .filter(Boolean)
-    .slice(0, 3) as string[];
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [reactionVisible, setReactionVisible] = useState(false);
+  const isOwnPost = Boolean(authorId && currentUserId && authorId === currentUserId);
+  const allMediaUrls = (imageUrls && imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [])
+    .filter(Boolean) as string[];
+  const mediaUrls = allMediaUrls.slice(0, 4);
+  const extraCount = allMediaUrls.length - 4;
 
-  useEffect(() => {
-    setMediaIndex(0);
-  }, [title, timestamp]);
+  function renderMediaGrid() {
+    const GAP = 2;
+    const totalWidth = viewportWidth;
+    const halfWidth = (totalWidth - GAP) / 2;
+    const cellStyle = { width: halfWidth, height: halfWidth, backgroundColor: colors.background as string };
 
-  function showPreviousMedia() {
-    if (mediaUrls.length <= 1) return;
-    setMediaIndex((prev) => (prev - 1 + mediaUrls.length) % mediaUrls.length);
-  }
+    if (mediaUrls.length === 1) {
+      return (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={(e) => { e.stopPropagation?.(); onMediaPress?.(allMediaUrls, 0); }}
+        >
+          <Image source={{ uri: mediaUrls[0] }} style={styles.mediaSingle} resizeMode="cover" />
+        </TouchableOpacity>
+      );
+    }
 
-  function showNextMedia() {
-    if (mediaUrls.length <= 1) return;
-    setMediaIndex((prev) => (prev + 1) % mediaUrls.length);
+    if (mediaUrls.length === 2) {
+      return (
+        <View style={[styles.mediaRow, { gap: GAP }]}>
+          {mediaUrls.map((url, i) => (
+            <TouchableOpacity
+              key={i}
+              activeOpacity={0.9}
+              onPress={(e) => { e.stopPropagation?.(); onMediaPress?.(allMediaUrls, i); }}
+            >
+              <Image source={{ uri: url }} style={cellStyle} resizeMode="cover" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      );
+    }
+
+    if (mediaUrls.length === 3) {
+      const leftWidth = totalWidth * 0.6 - GAP / 2;
+      const rightWidth = totalWidth * 0.4 - GAP / 2;
+      const cellHeight = leftWidth; // square-ish
+      return (
+        <View style={[styles.mediaRow, { gap: GAP }]}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={(e) => { e.stopPropagation?.(); onMediaPress?.(allMediaUrls, 0); }}
+          >
+            <Image source={{ uri: mediaUrls[0] }} style={{ width: leftWidth, height: cellHeight, backgroundColor: colors.background }} resizeMode="cover" />
+          </TouchableOpacity>
+          <View style={[styles.mediaCol, { gap: GAP }]}>
+            {[1, 2].map((i) => (
+              <TouchableOpacity
+                key={i}
+                activeOpacity={0.9}
+                onPress={(e) => { e.stopPropagation?.(); onMediaPress?.(allMediaUrls, i); }}
+              >
+                <Image source={{ uri: mediaUrls[i] }} style={{ width: rightWidth, height: (cellHeight - GAP) / 2, backgroundColor: colors.background }} resizeMode="cover" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      );
+    }
+
+    // 4 photos — 2×2 grid
+    return (
+      <View style={[styles.mediaGrid, { gap: GAP }]}>
+        <View style={[styles.mediaRow, { gap: GAP }]}>
+          {[0, 1].map((i) => (
+            <TouchableOpacity
+              key={i}
+              activeOpacity={0.9}
+              onPress={(e) => { e.stopPropagation?.(); onMediaPress?.(allMediaUrls, i); }}
+            >
+              <Image source={{ uri: mediaUrls[i] }} style={cellStyle} resizeMode="cover" />
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={[styles.mediaRow, { gap: GAP }]}>
+          {[2, 3].map((i) => (
+            <TouchableOpacity
+              key={i}
+              activeOpacity={0.9}
+              style={{ position: 'relative' }}
+              onPress={(e) => { e.stopPropagation?.(); onMediaPress?.(allMediaUrls, i); }}
+            >
+              <Image source={{ uri: mediaUrls[i] }} style={cellStyle} resizeMode="cover" />
+              {i === 3 && extraCount > 0 && (
+                <View style={styles.mediaOverlay}>
+                  <Text style={styles.mediaOverlayText}>+{extraCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
   }
 
   function getAvatarMenuPosition(pageX: number, pageY: number) {
@@ -211,9 +294,15 @@ export const PostCard: React.FC<PostCardProps> = ({
           </TouchableOpacity>
           <View style={styles.authorInfo}>
             <View style={styles.authorNameRow}>
-              <Text style={styles.authorName} numberOfLines={1}>
-                {authorName}
-              </Text>
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation?.(); if (!isOwnPost) onAvatarViewProfile?.(); }}
+                activeOpacity={isOwnPost ? 1 : 0.6}
+                disabled={isOwnPost}
+              >
+                <Text style={styles.authorName} numberOfLines={1}>
+                  {authorName}
+                </Text>
+              </TouchableOpacity>
               {isVerified && (
                 <Ionicons
                   name="checkmark-circle"
@@ -250,10 +339,13 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Description Preview */}
       {descPreview && (
         <View style={styles.descriptionRow}>
-          <Text style={styles.descriptionText} numberOfLines={2}>
-            {descPreview.text}
-            {descPreview.truncated && (
-              <Text style={styles.viewMore}> View More</Text>
+          <Text style={styles.descriptionText}>
+            {descriptionExpanded ? description : descPreview.text}
+            {descPreview.truncated && !descriptionExpanded && (
+              <Text
+                style={styles.viewMore}
+                onPress={(e) => { e.stopPropagation?.(); setDescriptionExpanded(true); }}
+              > See more</Text>
             )}
           </Text>
         </View>
@@ -262,50 +354,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Photos */}
       {mediaUrls.length > 0 && (
         <View style={styles.mediaWrap}>
-          <TouchableOpacity
-            style={styles.mediaCarouselFrame}
-            activeOpacity={0.9}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              onMediaPress?.(mediaUrls, mediaIndex);
-            }}
-          >
-            <Image source={{ uri: mediaUrls[mediaIndex] }} style={styles.mediaCarouselImage} resizeMode="cover" />
-
-            {mediaUrls.length > 1 && (
-              <>
-                <View style={styles.mediaCounterPill}>
-                  <Text style={styles.mediaCounterText}>{mediaIndex + 1} / {mediaUrls.length}</Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.mediaNavButton, styles.mediaNavButtonLeft]}
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                    showPreviousMedia();
-                  }}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Previous image"
-                >
-                  <Text style={styles.mediaNavText}>‹</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.mediaNavButton, styles.mediaNavButtonRight]}
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                    showNextMedia();
-                  }}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Next image"
-                >
-                  <Text style={styles.mediaNavText}>›</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </TouchableOpacity>
+          {renderMediaGrid()}
         </View>
       )}
 
@@ -339,15 +388,35 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       </View>
 
+      {/* Counts Row */}
+      {(likesCount > 0 || commentsCount > 0) && (
+        <View style={styles.countsRow}>
+          {likesCount > 0 && (
+            <Text style={styles.countText}>
+              {formatCount(likesCount)} {likesCount === 1 ? 'like' : 'likes'}
+            </Text>
+          )}
+          {commentsCount > 0 && (
+            <Text style={styles.countText}>
+              {formatCount(commentsCount)} {commentsCount === 1 ? 'comment' : 'comments'}
+            </Text>
+          )}
+        </View>
+      )}
+
       {/* Action Bar */}
       <View style={styles.actionBar}>
         <TouchableOpacity
           style={styles.actionButton}
           onPress={(e) => {
             e.stopPropagation?.();
+            if (reactionVisible) {
+              return;
+            }
             onLikePress?.();
           }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onLongPress={(e) => { e.stopPropagation?.(); setReactionVisible(true); }}
+          delayLongPress={400}
           accessibilityRole="button"
           accessibilityLabel={isLiked ? 'Unlike post' : 'Like post'}
         >
@@ -356,32 +425,26 @@ export const PostCard: React.FC<PostCardProps> = ({
             size={20}
             color={isLiked ? colors.accent.red : colors.text.secondary}
           />
-          <Text style={[styles.actionCount, isLiked && { color: colors.accent.red }]}>
-            {formatCount(likesCount)}
-          </Text>
+          <Text style={[styles.actionLabel, isLiked && { color: colors.accent.red }]}>Like</Text>
         </TouchableOpacity>
+
+        <View style={styles.actionDivider} />
 
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={(e) => {
-            e.stopPropagation?.();
-            onCommentPress?.();
-          }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onPress={(e) => { e.stopPropagation?.(); onCommentPress?.(); }}
           accessibilityRole="button"
           accessibilityLabel="Comment on post"
         >
           <Ionicons name="chatbubble-outline" size={20} color={colors.text.secondary} />
-          <Text style={styles.actionCount}>{formatCount(commentsCount)}</Text>
+          <Text style={styles.actionLabel}>Comment</Text>
         </TouchableOpacity>
+
+        <View style={styles.actionDivider} />
 
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={(e) => {
-            e.stopPropagation?.();
-            onSavePress?.();
-          }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onPress={(e) => { e.stopPropagation?.(); onSavePress?.(); }}
           accessibilityRole="button"
           accessibilityLabel={isSaved ? 'Unsave post' : 'Save post'}
         >
@@ -390,9 +453,33 @@ export const PostCard: React.FC<PostCardProps> = ({
             size={20}
             color={isSaved ? colors.primary.main : colors.text.secondary}
           />
+          <Text style={[styles.actionLabel, isSaved && { color: colors.primary.main }]}>Save</Text>
         </TouchableOpacity>
-
       </View>
+
+      {/* Reaction Picker */}
+      {reactionVisible && (
+        <>
+          <Pressable
+            style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]}
+            onPress={() => setReactionVisible(false)}
+          />
+          <View style={styles.reactionPicker}>
+            <TouchableOpacity
+              style={styles.reactionOption}
+              onPress={() => { setReactionVisible(false); onLikePress?.(); }}
+            >
+              <Text style={styles.reactionEmoji}>❤️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reactionOption}
+              onPress={() => { setReactionVisible(false); onLikePress?.(); }}
+            >
+              <Text style={styles.reactionEmoji}>🙏</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       {/* Avatar Tap Menu */}
       <Modal
@@ -434,18 +521,14 @@ export const PostCard: React.FC<PostCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
-    borderRadius: borderRadius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.s,
-    marginBottom: spacing.s,
-    ...shadows.card,
+    paddingTop: spacing.s,
   },
   // Author row
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    paddingHorizontal: spacing.s,
   },
   authorInfo: {
     flex: 1,
@@ -475,6 +558,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 17,
     marginBottom: 4,
+    paddingHorizontal: spacing.s,
   },
   // Local / Global badge
   badge: {
@@ -502,6 +586,7 @@ const styles = StyleSheet.create({
   // Description
   descriptionRow: {
     marginBottom: spacing.xs,
+    paddingHorizontal: spacing.s,
   },
   descriptionText: {
     fontSize: 14,
@@ -513,62 +598,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary.main,
   },
-  // Image
+  // Image grid
   mediaWrap: {
     marginBottom: spacing.xs,
+    marginTop: spacing.xs,
+    overflow: 'hidden',
   },
-  mediaCarouselFrame: {
+  mediaSingle: {
     width: '100%',
     aspectRatio: 16 / 10,
-    borderRadius: borderRadius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
     backgroundColor: colors.background,
-    position: 'relative',
   },
-  mediaCarouselImage: {
-    width: '100%',
-    height: '100%',
+  mediaRow: {
+    flexDirection: 'row',
   },
-  mediaCounterPill: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    borderRadius: 12,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+  mediaCol: {
+    flexDirection: 'column',
+  },
+  mediaGrid: {
+    flexDirection: 'column',
+  },
+  mediaOverlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlayMedium,
-  },
-  mediaCounterText: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    color: colors.white,
-  },
-  mediaNavButton: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -16,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.overlayMedium,
   },
-  mediaNavButtonLeft: {
-    left: 8,
-  },
-  mediaNavButtonRight: {
-    right: 8,
-  },
-  mediaNavText: {
-    fontSize: 19,
-    lineHeight: 19,
+  mediaOverlayText: {
     color: colors.white,
+    fontSize: 24,
     fontWeight: '700',
-    marginTop: -1,
   },
   // Tag pills
   tagRow: {
@@ -576,6 +635,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 12,
+    paddingHorizontal: spacing.s,
   },
   tagPillsWrap: {
     flex: 1,
@@ -592,25 +652,71 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
+  // Counts row (above action bar)
+  countsRow: {
+    flexDirection: 'row',
+    gap: spacing.s,
+    paddingHorizontal: spacing.s,
+    paddingBottom: 4,
+  },
+  countText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
   // Action bar
   actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: spacing.xs,
+    paddingBottom: spacing.s,
+    paddingHorizontal: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    gap: 24,
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 6,
   },
-  actionCount: {
+  actionLabel: {
     fontSize: 13,
     color: colors.text.secondary,
     fontWeight: '500',
+  },
+  actionDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: colors.border,
+  },
+  // Reaction picker
+  reactionPicker: {
+    position: 'absolute',
+    bottom: 54,
+    left: spacing.s,
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderRadius: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 4,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 11,
+  },
+  reactionOption: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reactionEmoji: {
+    fontSize: 30,
   },
   // Avatar menu
   menuOverlay: {

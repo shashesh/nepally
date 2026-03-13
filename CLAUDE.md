@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Workflow Rules (Non-Negotiable)
+
+- **Always ask for explicit user confirmation before running `git commit` or `git push`.**
+- Show a summary of what will be committed/pushed and wait for approval before proceeding.
+- Never auto-commit or auto-push, even at the end of a task.
+
 ## Project Overview
 
 NUSA (Nepalese United Support Alliance) is a utility-first community platform designed for the Nepalese diaspora in the USA. The app shifts away from algorithm-based social media feeds to provide structured, location-based services for housing, jobs, emergencies, and travel coordination.

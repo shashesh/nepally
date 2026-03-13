@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -41,6 +43,32 @@ export function LocationSwitcherSheet({
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const insets = useSafeAreaInsets();
 
+  const translateY = useRef(new Animated.Value(0)).current;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 5 && gs.dy > Math.abs(gs.dx),
+      onPanResponderMove: (_, gs) => {
+        if (gs.dy > 0) translateY.setValue(gs.dy);
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dy > 80 || gs.vy > 0.4) {
+          onCloseRef.current();
+          translateY.setValue(0);
+        } else {
+          Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 100, friction: 10 }).start();
+        }
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (visible) translateY.setValue(0);
+  }, [visible, translateY]);
+
   const showDetected =
     detectedLocation &&
     activeLocation &&
@@ -71,8 +99,10 @@ export function LocationSwitcherSheet({
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
 
-        <View style={[styles.sheetContainer, { paddingBottom: spacing.l + insets.bottom }]}> 
-          <View style={styles.handleBar} />
+        <Animated.View style={[styles.sheetContainer, { paddingBottom: spacing.l + insets.bottom, transform: [{ translateY }] }]}>
+          <View style={styles.handleContainer} {...panResponder.panHandlers}>
+            <View style={styles.handleBar} />
+          </View>
 
           <ScrollView bounces={false} style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           {/* Your Locations */}
@@ -170,7 +200,7 @@ export function LocationSwitcherSheet({
             )}
           </Pressable>
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -197,13 +227,15 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     maxHeight: '72%',
   },
+  handleContainer: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
   handleBar: {
     width: 40,
     height: 4,
     backgroundColor: colors.border,
     borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: spacing.s,
   },
   scrollView: {
     paddingHorizontal: spacing.s,

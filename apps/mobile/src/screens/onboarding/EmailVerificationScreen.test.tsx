@@ -94,14 +94,9 @@ function renderScreen() {
 describe('EmailVerificationScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
     mockCreateUserProfile.mockResolvedValue({ data: { id: 'user-123' }, error: null });
     mockMarkEmailVerified.mockResolvedValue({ data: { id: 'user-123', email_verified: true }, error: null });
     mockRefreshUser.mockResolvedValue(undefined);
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
   });
 
   it('renders masked email and OTP input', () => {
@@ -113,9 +108,7 @@ describe('EmailVerificationScreen', () => {
   });
 
   it('shows error when OTP is less than 6 digits', async () => {
-    const { getByPlaceholderText, getByTestId, getByText } = render(
-      <EmailVerificationScreen />
-    );
+    const { getByPlaceholderText, getByTestId, getByText } = renderScreen();
 
     fireEvent.changeText(getByPlaceholderText('000000'), '123');
     fireEvent.press(getByTestId('primary-button'));
@@ -190,9 +183,7 @@ describe('EmailVerificationScreen', () => {
       error: new Error('Token has expired'),
     });
 
-    const { getByPlaceholderText, getByTestId, getByText } = render(
-      <EmailVerificationScreen />
-    );
+    const { getByPlaceholderText, getByTestId, getByText } = renderScreen();
 
     fireEvent.changeText(getByPlaceholderText('000000'), '000000');
     fireEvent.press(getByTestId('primary-button'));
@@ -208,9 +199,7 @@ describe('EmailVerificationScreen', () => {
       error: new Error('Invalid token'),
     });
 
-    const { getByPlaceholderText, getByTestId, getByText } = render(
-      <EmailVerificationScreen />
-    );
+    const { getByPlaceholderText, getByTestId, getByText } = renderScreen();
 
     fireEvent.changeText(getByPlaceholderText('000000'), '000000');
     fireEvent.press(getByTestId('primary-button'));
@@ -226,6 +215,7 @@ describe('EmailVerificationScreen', () => {
   });
 
   it('resend button becomes active after cooldown expires', () => {
+    jest.useFakeTimers();
     const { getByText } = renderScreen();
 
     act(() => {
@@ -233,9 +223,11 @@ describe('EmailVerificationScreen', () => {
     });
 
     expect(getByText('Resend Code')).toBeTruthy();
+    jest.useRealTimers();
   });
 
   it('calls supabase.auth.resend when resend is triggered after cooldown', async () => {
+    jest.useFakeTimers();
     mockResend.mockResolvedValueOnce({ error: null });
 
     const { getByText } = renderScreen();
@@ -252,6 +244,7 @@ describe('EmailVerificationScreen', () => {
         email: 'test@example.com',
       });
     });
+    jest.useRealTimers();
   });
 
   it('does not call resend when cooldown is active', () => {

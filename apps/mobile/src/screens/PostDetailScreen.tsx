@@ -62,8 +62,11 @@ import { typography } from '../styles/typography';
 import { spacing, borderRadius } from '../styles/spacing';
 
 type DetailRouteProp = RouteProp<HomeStackParamList, 'PostDetail'>;
-const DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS = 1500;
 const DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
+
+// Tracks whether the current Like interaction was triggered via long-press,
+// so we can suppress the subsequent onPress that fires on release.
+let likeLongPressActive = false;
 const LIGHTBOX_MIN_SCALE = 1;
 const LIGHTBOX_MAX_SCALE = 4;
 const DOUBLE_TAP_ZOOM_SCALE = 2.5;
@@ -311,7 +314,6 @@ export default function PostDetailScreen() {
   const { postId } = route.params;
   const scrollViewRef = useRef<ScrollView>(null);
   const commentsRef = useRef<View>(null);
-  const detailCarouselRef = useRef<ScrollView>(null);
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const keyboardPadding = useRef(new Animated.Value(0)).current;
@@ -344,21 +346,21 @@ export default function PostDetailScreen() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [replyTarget, setReplyTarget] = useState<PostComment | null>(null);
   const [expandedReplyParents, setExpandedReplyParents] = useState<Record<string, boolean>>({});
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [detailCarouselChromeVisible, setDetailCarouselChromeVisible] = useState(true);
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
   const [lightboxIsZoomed, setLightboxIsZoomed] = useState(false);
-  const detailCarouselChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [reactionVisible, setReactionVisible] = useState(false);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lightboxScrollRef = useRef<ScrollView>(null);
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
   const isOwnPost = post?.author_id === user?.id;
   const commentThreads = useMemo(() => buildSingleLevelCommentThreads(comments), [comments]);
-  const postPhotos = (post?.photos || []).filter(Boolean).slice(0, 3);
-  const detailCarouselWidth = Math.max(viewportWidth - spacing.s * 2, 1);
+  const allPostPhotos = (post?.photos || []).filter(Boolean) as string[];
+  const postPhotos = allPostPhotos.slice(0, 4);
+  const extraPhotoCount = allPostPhotos.length - 4;
+  const contentWidth = Math.max(viewportWidth - spacing.s * 2, 1);
 
   useEffect(() => {
     loadPost();
@@ -368,9 +370,6 @@ export default function PostDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
-  useEffect(() => {
-    setCurrentPhotoIndex(0);
-  }, [post?.id]);
 
   useEffect(() => {
     currentViewportHeightRef.current = viewportHeight;
@@ -433,40 +432,13 @@ export default function PostDetailScreen() {
     }
   }, [keyboardPadding]);
 
-  const clearDetailCarouselChromeTimer = useCallback(() => {
-    if (detailCarouselChromeHideTimeoutRef.current) {
-      clearTimeout(detailCarouselChromeHideTimeoutRef.current);
-      detailCarouselChromeHideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const resetDetailCarouselChromeTimer = useCallback(() => {
-    setDetailCarouselChromeVisible(true);
-    if (postPhotos.length <= 1) return;
-    clearDetailCarouselChromeTimer();
-    detailCarouselChromeHideTimeoutRef.current = setTimeout(() => {
-      setDetailCarouselChromeVisible(false);
-    }, DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS);
-  }, [clearDetailCarouselChromeTimer, postPhotos.length]);
-
   useEffect(() => {
     return () => {
-      clearDetailCarouselChromeTimer();
       if (lightboxChromeHideTimeoutRef.current) {
         clearTimeout(lightboxChromeHideTimeoutRef.current);
       }
     };
-  }, [clearDetailCarouselChromeTimer]);
-
-  useEffect(() => {
-    if (postPhotos.length <= 1) {
-      clearDetailCarouselChromeTimer();
-      setDetailCarouselChromeVisible(true);
-      return;
-    }
-
-    resetDetailCarouselChromeTimer();
-  }, [post?.id, postPhotos.length, clearDetailCarouselChromeTimer, resetDetailCarouselChromeTimer]);
+  }, []);
 
   const clearLightboxChromeTimer = useCallback(() => {
     if (lightboxChromeHideTimeoutRef.current) {
@@ -495,7 +467,7 @@ export default function PostDetailScreen() {
 
   const handleOpenLightbox = useCallback(
     (startIndex: number) => {
-      const normalizedIndex = Math.min(Math.max(startIndex, 0), Math.max(postPhotos.length - 1, 0));
+      const normalizedIndex = Math.min(Math.max(startIndex, 0), Math.max(allPostPhotos.length - 1, 0));
       setLightboxIndex(normalizedIndex);
       setLightboxVisible(true);
       setTimeout(() => {
@@ -505,7 +477,7 @@ export default function PostDetailScreen() {
         });
       }, 0);
     },
-    [postPhotos.length, viewportWidth]
+    [allPostPhotos.length, viewportWidth]
   );
 
   const handleCloseLightbox = useCallback(() => {
@@ -810,7 +782,21 @@ export default function PostDetailScreen() {
               </TouchableOpacity>
               <View style={styles.authorInfo}>
                 <View style={styles.authorNameRow}>
-                  <Text style={styles.authorName}>{post.author.full_name}</Text>
+                  <TouchableOpacity
+                    onPress={(event) => {
+                      openAvatarMenu(
+                        post.author
+                          ? { id: post.author.id, full_name: post.author.full_name, trust_level: post.author.trust_level }
+                          : null,
+                        event.nativeEvent.pageX,
+                        event.nativeEvent.pageY
+                      );
+                    }}
+                    activeOpacity={isOwnPost ? 1 : 0.6}
+                    disabled={isOwnPost}
+                  >
+                    <Text style={styles.authorName}>{post.author.full_name}</Text>
+                  </TouchableOpacity>
                   {post.author.trust_level >= TrustLevel.VERIFIED && (
                     <Ionicons
                       name="checkmark-circle"
@@ -830,158 +816,181 @@ export default function PostDetailScreen() {
           {post.description ? <Text style={styles.description}>{post.description}</Text> : null}
 
           {postPhotos.length > 0 && (
-            <View style={styles.detailCarouselWrap} onTouchStart={resetDetailCarouselChromeTimer}>
-              <ScrollView
-                ref={detailCarouselRef}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScrollBeginDrag={resetDetailCarouselChromeTimer}
-                onMomentumScrollEnd={(event) => {
-                  resetDetailCarouselChromeTimer();
-                  const nextIndex = Math.round(event.nativeEvent.contentOffset.x / detailCarouselWidth);
-                  setCurrentPhotoIndex(nextIndex);
-                }}
-              >
-                {postPhotos.map((photoUrl, index) => (
-                  <View key={`${photoUrl}-${index}`} style={[styles.detailCarouselSlide, { width: detailCarouselWidth }]}>
-                    <TouchableOpacity
-                      style={styles.detailCarouselImageButton}
-                      activeOpacity={0.95}
-                      onPress={() => {
-                        resetDetailCarouselChromeTimer();
-                        handleOpenLightbox(index);
-                      }}
-                    >
-                      <Image source={{ uri: photoUrl }} style={styles.detailCarouselImage} resizeMode="cover" />
+            <View style={styles.detailMediaWrap}>
+              {postPhotos.length === 1 && (
+                <TouchableOpacity activeOpacity={0.9} onPress={() => handleOpenLightbox(0)}>
+                  <Image source={{ uri: postPhotos[0] }} style={[styles.detailMediaSingle, { width: contentWidth }]} resizeMode="cover" />
+                </TouchableOpacity>
+              )}
+
+              {postPhotos.length === 2 && (
+                <View style={[styles.detailMediaRow, { gap: 2 }]}>
+                  {postPhotos.map((url, i) => (
+                    <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => handleOpenLightbox(i)}>
+                      <Image source={{ uri: url }} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} resizeMode="cover" />
                     </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {postPhotos.length === 3 && (() => {
+                const leftW = contentWidth * 0.6 - 1;
+                const rightW = contentWidth * 0.4 - 1;
+                const h = leftW;
+                return (
+                  <View style={[styles.detailMediaRow, { gap: 2 }]}>
+                    <TouchableOpacity activeOpacity={0.9} onPress={() => handleOpenLightbox(0)}>
+                      <Image source={{ uri: postPhotos[0] }} style={{ width: leftW, height: h }} resizeMode="cover" />
+                    </TouchableOpacity>
+                    <View style={[styles.detailMediaCol, { gap: 2 }]}>
+                      {[1, 2].map((i) => (
+                        <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => handleOpenLightbox(i)}>
+                          <Image source={{ uri: postPhotos[i] }} style={{ width: rightW, height: (h - 2) / 2 }} resizeMode="cover" />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
-                ))}
-              </ScrollView>
+                );
+              })()}
 
-              {postPhotos.length > 1 && (
-                <>
-                  <TouchableOpacity
-                    style={[
-                      styles.detailCarouselChrome,
-                      styles.detailCarouselNavBtn,
-                      styles.detailCarouselPrevBtn,
-                      detailCarouselChromeVisible ? styles.detailCarouselChromeVisible : styles.detailCarouselChromeHidden,
-                    ]}
-                    disabled={!detailCarouselChromeVisible}
-                    onPress={() => {
-                      resetDetailCarouselChromeTimer();
-                      const nextIndex = (currentPhotoIndex - 1 + postPhotos.length) % postPhotos.length;
-                      detailCarouselRef.current?.scrollTo({ x: nextIndex * detailCarouselWidth, animated: true });
-                      setCurrentPhotoIndex(nextIndex);
-                    }}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Previous image"
-                  >
-                    <Ionicons name="chevron-back" size={18} color={colors.white} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.detailCarouselChrome,
-                      styles.detailCarouselNavBtn,
-                      styles.detailCarouselNextBtn,
-                      detailCarouselChromeVisible ? styles.detailCarouselChromeVisible : styles.detailCarouselChromeHidden,
-                    ]}
-                    disabled={!detailCarouselChromeVisible}
-                    onPress={() => {
-                      resetDetailCarouselChromeTimer();
-                      const nextIndex = (currentPhotoIndex + 1) % postPhotos.length;
-                      detailCarouselRef.current?.scrollTo({ x: nextIndex * detailCarouselWidth, animated: true });
-                      setCurrentPhotoIndex(nextIndex);
-                    }}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Next image"
-                  >
-                    <Ionicons name="chevron-forward" size={18} color={colors.white} />
-                  </TouchableOpacity>
-
-                  <View
-                    style={[
-                      styles.detailCarouselChrome,
-                      styles.detailCarouselDots,
-                      detailCarouselChromeVisible ? styles.detailCarouselChromeVisible : styles.detailCarouselChromeHidden,
-                    ]}
-                    pointerEvents={detailCarouselChromeVisible ? 'auto' : 'none'}
-                  >
-                    {postPhotos.map((_, index) => (
-                      <TouchableOpacity
-                        key={`detail-dot-${index}`}
-                        style={[
-                          styles.detailCarouselDot,
-                          index === currentPhotoIndex && styles.detailCarouselDotActive,
-                        ]}
-                        onPress={() => {
-                          resetDetailCarouselChromeTimer();
-                          detailCarouselRef.current?.scrollTo({ x: index * detailCarouselWidth, animated: true });
-                          setCurrentPhotoIndex(index);
-                        }}
-                        activeOpacity={0.8}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Go to image ${index + 1}`}
-                      />
+              {postPhotos.length === 4 && (
+                <View style={[styles.detailMediaGrid, { gap: 2 }]}>
+                  <View style={[styles.detailMediaRow, { gap: 2 }]}>
+                    {[0, 1].map((i) => (
+                      <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => handleOpenLightbox(i)}>
+                        <Image source={{ uri: postPhotos[i] }} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} resizeMode="cover" />
+                      </TouchableOpacity>
                     ))}
                   </View>
-                </>
+                  <View style={[styles.detailMediaRow, { gap: 2 }]}>
+                    {[2, 3].map((i) => (
+                      <TouchableOpacity key={i} activeOpacity={0.9} style={{ position: 'relative' }} onPress={() => handleOpenLightbox(i)}>
+                        <Image source={{ uri: postPhotos[i] }} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} resizeMode="cover" />
+                        {i === 3 && extraPhotoCount > 0 && (
+                          <View style={styles.detailMediaOverlay}>
+                            <Text style={styles.detailMediaOverlayText}>+{extraPhotoCount}</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
               )}
             </View>
           )}
 
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleLikePress} activeOpacity={0.7}>
-              <Ionicons
-                name={isLiked ? 'heart' : 'heart-outline'}
-                size={20}
-                color={isLiked ? colors.accent.red : colors.text.secondary}
-              />
-              <Text style={[styles.actionText, isLiked && { color: colors.accent.red }]}> {localLikesCount}</Text>
-            </TouchableOpacity>
+          {/* Counts Row */}
+          {(localLikesCount > 0 || comments.length > 0) && (
+            <View style={styles.countsRow}>
+              {localLikesCount > 0 && (
+                <Text style={styles.countText}>
+                  {localLikesCount} {localLikesCount === 1 ? 'like' : 'likes'}
+                </Text>
+              )}
+              {comments.length > 0 && (
+                <Text style={styles.countText}>
+                  {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+                </Text>
+              )}
+            </View>
+          )}
 
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => {
-                const scrollViewNode = scrollViewRef.current ? findNodeHandle(scrollViewRef.current) : null;
-                if (!scrollViewNode) return;
-
-                commentsRef.current?.measureLayout(
-                  scrollViewNode,
-                  (_x: number, y: number) => {
-                    scrollViewRef.current?.scrollTo({ y, animated: true });
-                  },
-                  () => undefined
-                );
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chatbubble-outline" size={20} color={colors.text.secondary} />
-              <Text style={styles.actionText}> {comments.length}</Text>
-            </TouchableOpacity>
-
-            {!isOwnPost && (
+          {/* Action Bar */}
+          <View style={styles.actionRowWrap}>
+            <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={handleSavePress}
+                onPress={() => {
+                  // If this press follows a long-press, suppress the like toggle
+                  // because the reaction picker will handle the final state.
+                  if (likeLongPressActive) {
+                    likeLongPressActive = false;
+                    return;
+                  }
+                  handleLikePress();
+                }}
+                onLongPress={() => {
+                  likeLongPressActive = true;
+                  setReactionVisible(true);
+                }}
+                delayLongPress={400}
                 activeOpacity={0.7}
               >
                 <Ionicons
-                  name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                  name={isLiked ? 'heart' : 'heart-outline'}
                   size={20}
-                  color={isSaved ? colors.primary.main : colors.text.secondary}
+                  color={isLiked ? colors.accent.red : colors.text.secondary}
                 />
-                <Text style={[styles.actionText, isSaved && { color: colors.primary.main }]}> Save</Text>
+                <Text style={[styles.actionText, isLiked && { color: colors.accent.red }]}>Like</Text>
               </TouchableOpacity>
-            )}
 
-            <TouchableOpacity style={styles.actionButton} onPress={handleSharePost} activeOpacity={0.7}>
-              <Ionicons name="share-social-outline" size={20} color={colors.text.secondary} />
-              <Text style={styles.actionText}> Share</Text>
-            </TouchableOpacity>
+              <View style={styles.actionDivider} />
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  if (!scrollViewRef.current) return;
+                  const scrollViewNode = findNodeHandle(scrollViewRef.current);
+                  if (!scrollViewNode) return;
+                  commentsRef.current?.measureLayout(
+                    scrollViewNode,
+                    (_x: number, y: number) => {
+                      scrollViewRef.current?.scrollTo({ y, animated: true });
+                    },
+                    () => undefined
+                  );
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="chatbubble-outline" size={20} color={colors.text.secondary} />
+                <Text style={styles.actionText}>Comment</Text>
+              </TouchableOpacity>
+
+              {!isOwnPost && (
+                <>
+                  <View style={styles.actionDivider} />
+                  <TouchableOpacity style={styles.actionButton} onPress={handleSavePress} activeOpacity={0.7}>
+                    <Ionicons
+                      name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                      size={20}
+                      color={isSaved ? colors.primary.main : colors.text.secondary}
+                    />
+                    <Text style={[styles.actionText, isSaved && { color: colors.primary.main }]}>Save</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              <View style={styles.actionDivider} />
+
+              <TouchableOpacity style={styles.actionButton} onPress={handleSharePost} activeOpacity={0.7}>
+                <Ionicons name="share-social-outline" size={20} color={colors.text.secondary} />
+                <Text style={styles.actionText}>Share</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Reaction Picker */}
+            {reactionVisible && (
+              <>
+                <Pressable
+                  style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]}
+                  onPress={() => setReactionVisible(false)}
+                />
+                <View style={styles.reactionPicker}>
+                  <TouchableOpacity
+                    style={styles.reactionOption}
+                    onPress={() => { setReactionVisible(false); handleLikePress(); }}
+                  >
+                    <Text style={styles.reactionEmoji}>❤️</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.reactionOption}
+                    onPress={() => { setReactionVisible(false); handleLikePress(); }}
+                  >
+                    <Text style={styles.reactionEmoji}>🙏</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
 
           <View style={styles.metaRow}>
@@ -1167,9 +1176,9 @@ export default function PostDetailScreen() {
               ]}
               pointerEvents="box-none"
             >
-              {postPhotos.length > 1 && (
+              {allPostPhotos.length > 1 && (
                 <View style={styles.lightboxCounterPill}>
-                  <Text style={styles.lightboxCounterText}>{lightboxIndex + 1} / {postPhotos.length}</Text>
+                  <Text style={styles.lightboxCounterText}>{lightboxIndex + 1} / {allPostPhotos.length}</Text>
                 </View>
               )}
               <TouchableOpacity
@@ -1199,7 +1208,7 @@ export default function PostDetailScreen() {
                   setLightboxIndex(nextIndex);
                 }}
               >
-                {postPhotos.map((photoUrl, index) => (
+                {allPostPhotos.map((photoUrl, index) => (
                   <View key={`${photoUrl}-${index}`} style={[styles.lightboxSlide, { width: viewportWidth }]}>
                     <View style={styles.lightboxZoomContent}>
                       <PinchableLightboxImage
@@ -1361,68 +1370,34 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: spacing.s,
   },
-  detailCarouselWrap: {
-    position: 'relative',
-    borderRadius: borderRadius.input,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+  detailMediaWrap: {
     marginBottom: spacing.s,
+    overflow: 'hidden',
+    borderRadius: borderRadius.input,
+  },
+  detailMediaSingle: {
     aspectRatio: 16 / 10,
+    backgroundColor: colors.background,
   },
-  detailCarouselSlide: {
-    height: '100%',
+  detailMediaRow: {
+    flexDirection: 'row',
   },
-  detailCarouselImageButton: {
-    width: '100%',
-    height: '100%',
+  detailMediaCol: {
+    flexDirection: 'column',
   },
-  detailCarouselImage: {
-    width: '100%',
-    height: '100%',
+  detailMediaGrid: {
+    flexDirection: 'column',
   },
-  detailCarouselChrome: {
-    opacity: 1,
-  },
-  detailCarouselChromeVisible: {
-    opacity: 1,
-  },
-  detailCarouselChromeHidden: {
-    opacity: 0,
-  },
-  detailCarouselNavBtn: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -16,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  detailMediaOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlayMedium,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.overlayMedium,
   },
-  detailCarouselPrevBtn: {
-    left: spacing.xs,
-  },
-  detailCarouselNextBtn: {
-    right: spacing.xs,
-  },
-  detailCarouselDots: {
-    position: 'absolute',
-    bottom: spacing.xs,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  detailCarouselDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-  },
-  detailCarouselDotActive: {
-    backgroundColor: colors.white,
+  detailMediaOverlayText: {
+    color: colors.white,
+    fontSize: 24,
+    fontWeight: '700',
   },
   gestureRootFill: {
     flex: 1,
@@ -1523,24 +1498,43 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: 2,
   },
+  countsRow: {
+    flexDirection: 'row',
+    gap: spacing.s,
+    paddingHorizontal: spacing.s,
+    paddingTop: spacing.xs,
+    paddingBottom: 4,
+  },
+  countText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+  actionRowWrap: {
+    position: 'relative',
+    marginBottom: spacing.s,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 10,
-    marginBottom: spacing.s,
+    borderBottomColor: colors.border,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    justifyContent: 'center',
+    gap: 6,
     paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.background,
+  },
+  actionDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: colors.border,
   },
   actionButtonDisabled: {
     opacity: 0.85,
@@ -1552,6 +1546,32 @@ const styles = StyleSheet.create({
   },
   actionTextDisabled: {
     color: colors.text.disabled,
+  },
+  reactionPicker: {
+    position: 'absolute',
+    bottom: 50,
+    left: spacing.s,
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderRadius: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 4,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 11,
+  },
+  reactionOption: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reactionEmoji: {
+    fontSize: 30,
   },
   metaRow: {
     flexDirection: 'row',

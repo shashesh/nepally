@@ -9,7 +9,6 @@ import {
   StatusBar,
   Alert,
   Share,
-  ActivityIndicator,
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +24,7 @@ import { LocationPermissionBanner } from '../components/banners/LocationPermissi
 import { LocationChangeSheet } from '../components/location/LocationChangeSheet';
 import { LocationSwitcherSheet } from '../components/location/LocationSwitcherSheet';
 import { PostCard } from '../components/cards/PostCard';
+import { SkeletonPostCard } from '../components/cards/SkeletonPostCard';
 import { TagFilterBar } from '../components/filters/TagFilterBar';
 import { PostMoreSheet } from '../components/sheets/PostMoreSheet';
 import {
@@ -47,7 +47,7 @@ import { isBannerDismissed, saveBannerDismissed } from '../utils/storage';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
-import { spacing, borderRadius, shadows } from '../styles/spacing';
+import { spacing } from '../styles/spacing';
 import { MainTabParamList, HomeStackParamList } from '../types/navigation';
 
 type HomeScreenNavProp = CompositeNavigationProp<
@@ -88,6 +88,9 @@ export default function HomeScreen() {
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const saveToastOpacity = useRef(new Animated.Value(0)).current;
   const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [newPostsCount, setNewPostsCount] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  const pillTranslateY = useRef(new Animated.Value(-60)).current;
 
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
@@ -189,6 +192,7 @@ export default function HomeScreen() {
 
     try {
       setLoadError(null);
+      setNewPostsCount(0);
       const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
       const result = await getPostsByMetroArea(supabase, metroAreaId!, slugs);
 
@@ -216,6 +220,7 @@ export default function HomeScreen() {
   const handleRefresh = () => {
     setRefreshing(true);
     setLoadError(null);
+    setNewPostsCount(0);
     loadPosts();
   };
 
@@ -230,7 +235,17 @@ export default function HomeScreen() {
     setBannerVisible(false);
   };
 
-  // Realtime feed updates: refresh posts when new post appears in active metro
+  // Animate new posts pill in/out
+  useEffect(() => {
+    Animated.spring(pillTranslateY, {
+      toValue: newPostsCount > 0 ? 0 : -60,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 10,
+    }).start();
+  }, [newPostsCount, pillTranslateY]);
+
+  // Realtime feed updates: show pill for others' posts, silent reload for own
   useEffect(() => {
     if (!metroAreaId) return;
 
@@ -244,8 +259,13 @@ export default function HomeScreen() {
           table: 'posts',
           filter: `metro_area_id=eq.${metroAreaId}`,
         },
-        () => {
-          loadPostsRef.current();
+        (payload) => {
+          const newPost = payload.new as { author_id?: string };
+          if (newPost.author_id === user?.id) {
+            loadPostsRef.current();
+          } else {
+            setNewPostsCount((c) => c + 1);
+          }
         }
       )
       .subscribe();
@@ -253,7 +273,7 @@ export default function HomeScreen() {
     return () => {
       supabase.removeChannel(feedChannel);
     };
-  }, [metroAreaId]);
+  }, [metroAreaId, user?.id, pillTranslateY]);
 
   const loadLikedPosts = useCallback(async () => {
     if (!user?.id) return;
@@ -591,7 +611,9 @@ export default function HomeScreen() {
     if (!metroAreaId) {
       return (
         <View style={styles.emptyState}>
-          <Ionicons name="location-outline" size={64} color={colors.text.disabled} />
+          <View style={styles.emptyIllustration}>
+            <Text style={styles.emptyIllustrationEmoji}>📍</Text>
+          </View>
           <Text style={styles.emptyTitle}>No location set</Text>
           <Text style={styles.emptySubtitle}>
             Set your location to see posts from your local community.
@@ -601,21 +623,38 @@ export default function HomeScreen() {
     }
     return (
       <View style={styles.emptyState}>
-        <Ionicons name="document-text-outline" size={64} color={colors.text.disabled} />
-        <Text style={styles.emptyTitle}>No posts yet</Text>
+        <View style={styles.emptyIllustration}>
+          <Text style={styles.emptyIllustrationEmoji}>🏔️</Text>
+        </View>
+        <Text style={styles.emptyTitle}>
+          {selectedTagSlugs.length > 0 ? 'No matching posts' : 'Be the first to post'}
+        </Text>
         <Text style={styles.emptySubtitle}>
           {selectedTagSlugs.length > 0
-            ? 'No posts matching your filters in this area. Try different tags!'
-            : 'Be the first to post in your community!'}
+            ? 'No posts match your filters in this area.\nTry different tags or clear the filter.'
+            : 'Share something useful with your\nNepalese community here.'}
         </Text>
+        {!isLevel0 && selectedTagSlugs.length === 0 && (
+          <TouchableOpacity
+            style={styles.emptyCtaButton}
+            onPress={handleCreatePost}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.emptyCtaText}>Create first post</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
 
   const renderLoadingState = () => (
-    <View style={styles.loadingState}>
-      <ActivityIndicator size="large" color={colors.primary.main} />
-      <Text style={styles.loadingText}>Loading posts…</Text>
+    <View>
+      {[0, 1, 2, 3].map((i) => (
+        <React.Fragment key={i}>
+          <SkeletonPostCard />
+          {i < 3 && <View style={styles.postDivider} />}
+        </React.Fragment>
+      ))}
     </View>
   );
 
@@ -701,50 +740,75 @@ export default function HomeScreen() {
         onAllPress={handleAllChipPress}
       />
 
-      {/* Posts Feed */}
-      <FlatList
-        data={posts}
-        renderItem={({ item }) => (
-          <PostCard
-            title={item.title}
-            description={item.description}
-            timestamp={item.created_at}
-            imageUrls={item.photos}
-            tags={item.tags}
-            isGlobal={item.is_global}
-            isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
-            authorName={item.author?.full_name}
-            authorPhotoUrl={item.author?.profile_photo}
-            authorTrustLevel={item.author?.trust_level ?? 0}
-            likesCount={item.likes_count ?? 0}
-            commentsCount={item.comments_count ?? 0}
-            isLiked={likedPostIds.has(item.id)}
-            isSaved={savedPostIds.has(item.id)}
-            onPress={() => handlePostPress(item)}
-            onLikePress={() => handleLikePress(item)}
-            onCommentPress={() => handleCommentPress(item)}
-            onSavePress={item.author_id !== user?.id ? () => handleSaveFromCard(item) : undefined}
-            authorId={item.author_id}
-            currentUserId={user?.id}
-            onTagPress={handleTagChipPress}
-            onAvatarViewProfile={() => handleAvatarViewProfile(item.author_id)}
-            onAvatarChat={() => handleAvatarChat(item)}
-            onMorePress={() => handleMorePress(item)}
-            onMediaPress={() => handlePostPress(item)}
-          />
+      {/* Posts Feed + New Posts Pill */}
+      <View style={styles.feedContainer}>
+        <FlatList
+          ref={flatListRef}
+          data={posts}
+          renderItem={({ item }) => (
+            <PostCard
+              title={item.title}
+              description={item.description}
+              timestamp={item.created_at}
+              imageUrls={item.photos}
+              tags={item.tags}
+              isGlobal={item.is_global}
+              isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
+              authorName={item.author?.full_name}
+              authorPhotoUrl={item.author?.profile_photo}
+              authorTrustLevel={item.author?.trust_level ?? 0}
+              likesCount={item.likes_count ?? 0}
+              commentsCount={item.comments_count ?? 0}
+              isLiked={likedPostIds.has(item.id)}
+              isSaved={savedPostIds.has(item.id)}
+              onPress={() => handlePostPress(item)}
+              onLikePress={() => handleLikePress(item)}
+              onCommentPress={() => handleCommentPress(item)}
+              onSavePress={item.author_id !== user?.id ? () => handleSaveFromCard(item) : undefined}
+              authorId={item.author_id}
+              currentUserId={user?.id}
+              onTagPress={handleTagChipPress}
+              onAvatarViewProfile={() => handleAvatarViewProfile(item.author_id)}
+              onAvatarChat={() => handleAvatarChat(item)}
+              onMorePress={() => handleMorePress(item)}
+              onMediaPress={() => handlePostPress(item)}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.postsContent}
+          ItemSeparatorComponent={() => <View style={styles.postDivider} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary.main}
+            />
+          }
+          ListHeaderComponent={renderCreatePostBanner}
+          ListEmptyComponent={initialLoading ? renderLoadingState : loadError ? renderErrorState : renderEmptyState}
+        />
+
+        {/* New Posts Pill */}
+        {newPostsCount > 0 && (
+          <Animated.View
+            style={[styles.newPostsPill, { transform: [{ translateY: pillTranslateY }] }]}
+            pointerEvents="box-none"
+          >
+            <TouchableOpacity
+              style={styles.newPostsPillButton}
+              onPress={() => {
+                loadPostsRef.current();
+                flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.newPostsPillText}>
+                ↑ {newPostsCount} new post{newPostsCount > 1 ? 's' : ''}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         )}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.postsContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary.main}
-          />
-        }
-        ListHeaderComponent={renderCreatePostBanner}
-        ListEmptyComponent={initialLoading ? renderLoadingState : loadError ? renderErrorState : renderEmptyState}
-      />
+      </View>
 
       {/* Location Switcher */}
       <LocationSwitcherSheet
@@ -910,34 +974,77 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
+  feedContainer: {
+    flex: 1,
+    position: 'relative',
+  },
   postsContent: {
-    padding: spacing.s,
+    paddingBottom: 80,
+  },
+  postDivider: {
+    height: 8,
+    backgroundColor: colors.background,
+  },
+  newPostsPill: {
+    position: 'absolute',
+    top: 12,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  newPostsPillButton: {
+    backgroundColor: colors.primary.main,
+    borderRadius: 20,
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.xs,
+  },
+  newPostsPillText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.xl * 2,
+    paddingHorizontal: spacing.m,
+  },
+  emptyIllustration: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.primary.light,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.s,
+  },
+  emptyIllustrationEmoji: {
+    fontSize: 46,
   },
   emptyTitle: {
     ...typography.h3,
     color: colors.text.primary,
-    marginTop: spacing.s,
+    marginTop: spacing.xs,
   },
   emptySubtitle: {
     ...typography.body,
     color: colors.text.secondary,
     marginTop: spacing.xs,
     textAlign: 'center',
+    lineHeight: 22,
   },
-  loadingState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl * 2,
-    gap: spacing.s,
+  emptyCtaButton: {
+    marginTop: spacing.m,
+    paddingHorizontal: spacing.l,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: colors.primary.main,
   },
-  loadingText: {
-    ...typography.body,
-    color: colors.text.secondary,
+  emptyCtaText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.white,
   },
   errorState: {
     alignItems: 'center',
@@ -973,11 +1080,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: borderRadius.card,
-    padding: spacing.xs,
-    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.xs,
     gap: spacing.xs,
-    ...shadows.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   createPostAvatar: {
     width: 40,
