@@ -133,6 +133,6 @@ jobs:
             echo "## Vercel Production Deployment"
             echo ""
             echo "- Branch: master"
-            echo "- Commit: ${{ github.sha }}"
+            echo "- Commit: ${{ steps.master_sha.outputs.value }}"
             echo "- URL: ${{ steps.deploy.outputs.deployment_url }}"
           } >> "$GITHUB_STEP_SUMMARY"
