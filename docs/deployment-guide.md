@@ -58,31 +58,80 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    - Name: `www`
    - Value: `cname.vercel-dns.com`
 
-### 5. Deploy
+### 5. Configure GitHub Actions Deployments (Recommended)
 
-Vercel automatically deploys when you push to GitHub:
+Use GitHub Actions as the deployment controller for both environments:
 
-```bash
-git push origin main
-```
+1. **Dev environment** (automatic): deploy to Vercel preview on every push to `master`
+2. **Production environment** (manual): run a manual workflow that deploys latest `master` only after approval
 
-**Deployment process:**
-1. Vercel detects push
-2. Installs dependencies
-3. Builds Next.js app
-4. Deploys to edge network
-5. Updates production URL
+This repository now includes:
 
-**Deployment time:** ~2-3 minutes
+1. `.github/workflows/deploy-vercel-dev.yml`
+2. `.github/workflows/deploy-vercel-prod.yml`
 
-### 6. Monitor Deployment
+### 6. Configure GitHub Environments
+
+In GitHub repository settings, create two environments:
+
+1. `dev`
+2. `production`
+
+For `production`, enable:
+
+1. **Required reviewers** (release approvers)
+2. Optional wait timer
+3. Branch restriction to `master`
+
+### 7. Configure GitHub Secrets and Variables
+
+Set these values:
+
+**Environment secret (or repository secret):**
+
+1. `VERCEL_TOKEN`
+
+**Environment or repository variables:**
+
+1. `VERCEL_ORG_ID`
+2. `VERCEL_PROJECT_ID` — single Vercel project used by both dev and production workflows
+
+You do **not** need two separate Vercel projects. One project handles both environments:
+- Dev deploys create Preview deployments (unique URL per deploy)
+- Production deploys promote to the Production domain (`nusa.app`)
+
+Scope environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, etc.) per Vercel environment in the project dashboard under **Settings > Environment Variables**, selecting **Preview** or **Production** scope as appropriate.
+
+### 8. Deployment Behavior
+
+**Dev deploy (automatic):**
+
+1. Trigger: push to `master` (path-filtered for web/shared/deploy files)
+2. Workflow: `.github/workflows/deploy-vercel-dev.yml`
+3. Guarded by workflow checks: commit must be associated with a merged PR and required CI checks must be successful
+4. Target: Vercel preview/dev project
+
+**Production deploy (manual):**
+
+1. Trigger: `workflow_dispatch`
+2. Workflow: `.github/workflows/deploy-vercel-prod.yml`
+3. Always checks out latest `master`
+4. Guarded by workflow checks: latest `master` commit must be associated with a merged PR and required CI checks must be successful
+5. Requires GitHub environment approval before deployment
+6. Target: Vercel production project
+
+**Private repository fallback protection:**
+
+If GitHub plan limits prevent branch protection/ruleset enforcement on private repositories, the deploy workflows still enforce release safety by refusing deployment unless the merged-PR + successful-checks criteria are met.
+
+### 9. Monitor Deployment
 
 View deployment logs in Vercel dashboard:
 - **Deployments** tab shows all deployments
 - Click deployment to see logs
 - Check for build errors
 
-### 7. Test Production Site
+### 10. Test Production Site
 
 1. Visit https://nusa.app
 2. Test key features:
@@ -91,6 +140,68 @@ View deployment logs in Vercel dashboard:
    - Create post
    - Search
    - SEO (check page source for meta tags)
+
+### 11. Release Runbook
+
+Use this release sequence:
+
+1. Merge tested PRs to `master`
+2. Confirm automatic dev deployment succeeds
+3. Perform dev smoke checks
+4. Trigger manual production workflow from Actions tab
+5. Approver reviews and approves `production` environment deployment
+6. Perform production smoke checks
+
+Rollback options:
+
+1. Redeploy a previous successful deployment from Vercel dashboard
+2. Re-run production workflow after reverting `master` to a safe commit
+
+### 12. Troubleshooting (GitHub Actions + Vercel)
+
+1. **`Error: No existing credentials found` or token failures**
+  - Confirm `VERCEL_TOKEN` is set in the correct GitHub environment (`dev` or `production`).
+  - Regenerate the token in Vercel if it was rotated or revoked.
+
+2. **`Project not found` during `vercel pull`/`vercel deploy`**
+  - Verify `VERCEL_ORG_ID` and project ID variables match the target Vercel team/project.
+  - Ensure dev workflow uses `VERCEL_PROJECT_ID_DEV` and prod uses `VERCEL_PROJECT_ID_PROD`.
+
+3. **Production workflow starts but cannot deploy**
+  - Check `production` GitHub environment protection rules for pending approvals.
+  - Confirm the workflow was dispatched from `master`.
+
+4. **Build passes locally but fails in Actions**
+  - Confirm lockfile is committed and `npm ci` is used.
+  - Check Node version parity (workflows run Node 20).
+  - Verify required env vars are present in Vercel for the target environment.
+
+5. **Dev deploy did not trigger after a merge**
+  - Confirm merge produced a push to `master`.
+  - Confirm changed files match workflow path filters (web/shared/deploy files).
+
+6. **Deploy blocked with merged-PR guard failure**
+  - The commit is likely a direct push or not linked to a merged PR.
+  - Merge through PR to satisfy guard conditions.
+
+7. **Deploy blocked with required checks failure**
+  - Open Actions for the target commit and ensure all required jobs are green:
+    - `PR gate`
+    - `Lint`
+    - `Lint guards`
+    - `Type check`
+    - `Unit tests`
+    - `Coverage`
+    - `Web E2E tests`
+  - Re-run CI or merge a fix PR, then redeploy.
+
+8. **Wrong environment values in runtime**
+  - Verify Vercel environment variable scopes (Preview vs Production).
+  - Redeploy after env-var updates; Vercel does not retroactively apply new env values to old deployments.
+
+9. **Need urgent rollback**
+  - Fastest path: redeploy the last known good production deployment from Vercel dashboard.
+  - Controlled path: revert `master` and run the manual production workflow again.
 
 ### Vercel CLI (Optional)
 
