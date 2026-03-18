@@ -17,3 +17,9 @@ jest.mock('@expo/vector-icons', () => {
     AntDesign: MockIcon,
   };
 });
+
+afterEach(() => {
+  // Prevent leaked fake timers or pending timer callbacks from keeping Jest alive.
+  jest.clearAllTimers();
+  jest.useRealTimers();
+});

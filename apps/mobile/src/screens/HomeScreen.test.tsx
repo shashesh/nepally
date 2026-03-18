@@ -91,7 +91,10 @@ jest.mock('@react-navigation/native', () => ({
     const ReactActual = jest.requireActual('react') as typeof import('react');
     const cbRef = ReactActual.useRef(cb);
     cbRef.current = cb;
-    ReactActual.useEffect(() => cbRef.current(), []);
+    ReactActual.useEffect(() => {
+      const cleanup = cbRef.current();
+      return typeof cleanup === 'function' ? cleanup : undefined;
+    }, []);
   },
 }));
 

@@ -44,7 +44,7 @@ jobs:
     needs:
       - gate
     with:
-      command: npm run test
+      command: npm run test:ci
 
   coverage:
     name: Coverage
@@ -52,7 +52,7 @@ jobs:
     needs:
       - gate
     with:
-      command: npm run test:coverage
+      command: npm run test:coverage:ci
 
   web_e2e:
     name: Web E2E tests

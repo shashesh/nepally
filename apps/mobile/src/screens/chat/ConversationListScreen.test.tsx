@@ -11,7 +11,15 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate, getParent: jest.fn(() => ({ navigate: jest.fn() })) }),
-  useFocusEffect: (cb: () => void) => cb(),
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    const ReactActual = jest.requireActual('react') as typeof import('react');
+    const cbRef = ReactActual.useRef(cb);
+    cbRef.current = cb;
+    ReactActual.useEffect(() => {
+      const cleanup = cbRef.current();
+      return typeof cleanup === 'function' ? cleanup : undefined;
+    }, []);
+  },
 }));
 
 jest.mock('../../hooks/useAuth', () => ({

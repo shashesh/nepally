@@ -92,6 +92,11 @@ function renderScreen() {
 }
 
 describe('EmailVerificationScreen', () => {
+  afterEach(() => {
+    // Always restore real timers so fake timers from one test cannot leak into the next.
+    jest.useRealTimers();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockCreateUserProfile.mockResolvedValue({ data: { id: 'user-123' }, error: null });
@@ -223,7 +228,6 @@ describe('EmailVerificationScreen', () => {
     });
 
     expect(getByText('Resend Code')).toBeTruthy();
-    jest.useRealTimers();
   });
 
   it('calls supabase.auth.resend when resend is triggered after cooldown', async () => {
@@ -238,13 +242,14 @@ describe('EmailVerificationScreen', () => {
 
     fireEvent.press(getByText('Resend Code'));
 
-    await waitFor(() => {
-      expect(mockResend).toHaveBeenCalledWith({
-        type: 'signup',
-        email: 'test@example.com',
-      });
+    // Use act(async () => {}) instead of waitFor() here: waitFor() polls via setTimeout,
+    // which is frozen under fake timers and would deadlock.
+    await act(async () => {});
+
+    expect(mockResend).toHaveBeenCalledWith({
+      type: 'signup',
+      email: 'test@example.com',
     });
-    jest.useRealTimers();
   });
 
   it('does not call resend when cooldown is active', () => {
