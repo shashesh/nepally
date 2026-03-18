@@ -53,6 +53,7 @@ describe('AuthContext', () => {
   });
 
   it('starts with loading true and user null', () => {
+    mockAuth.getSession.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
     expect(result.current.loading).toBe(true);
     expect(result.current.user).toBeNull();

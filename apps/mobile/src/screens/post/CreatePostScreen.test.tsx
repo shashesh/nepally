@@ -96,13 +96,14 @@ describe('CreatePostScreen', () => {
     jest.clearAllMocks();
   });
 
-  it('renders without crashing', () => {
+  it('renders without crashing', async () => {
     const { toJSON } = render(
       <CreatePostScreen
         navigation={mockNavigation}
         route={mockRoute}
       />
     );
+    await act(async () => {});
     expect(toJSON()).not.toBeNull();
   });
 

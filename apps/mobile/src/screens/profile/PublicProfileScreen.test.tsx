@@ -131,6 +131,7 @@ describe('PublicProfileScreen', () => {
   it('shows ActivityIndicator while profile data is loading', () => {
     mockGetUserById.mockReturnValue(new Promise(() => {}));
     mockGetPostsByAuthorId.mockReturnValue(new Promise(() => {}));
+    mockGetEventsByOrganizer.mockReturnValue(new Promise(() => {}));
     const { UNSAFE_getByType } = render(<PublicProfileScreen />);
     expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });

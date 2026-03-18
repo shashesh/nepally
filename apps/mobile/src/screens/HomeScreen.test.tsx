@@ -89,12 +89,15 @@ jest.mock('@react-navigation/native', () => ({
   }),
   useFocusEffect: (cb: () => void | (() => void)) => {
     const ReactActual = jest.requireActual('react') as typeof import('react');
-    ReactActual.useEffect(() => cb(), [cb]);
+    const cbRef = ReactActual.useRef(cb);
+    cbRef.current = cb;
+    ReactActual.useEffect(() => cbRef.current(), []);
   },
 }));
 
 describe('HomeScreen', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     mockInsertHandlerRef.current = null;
     mockGetPostsByMetroArea.mockResolvedValue({ data: [], error: null });
@@ -127,8 +130,14 @@ describe('HomeScreen', () => {
     });
   });
 
-  it('renders without crashing', () => {
+  afterEach(() => {
+    act(() => { jest.runOnlyPendingTimers(); });
+    jest.useRealTimers();
+  });
+
+  it('renders without crashing', async () => {
     const { toJSON } = render(<HomeScreen />);
+    await act(async () => {});
     expect(toJSON()).not.toBeNull();
   });
 
