@@ -35,7 +35,6 @@ describe('useMetroArea', () => {
     });
 
     const { result } = renderHook(() => useMetroArea());
-    await act(async () => {});
 
     let cached: CachedMetro | null = null;
     await act(async () => {
