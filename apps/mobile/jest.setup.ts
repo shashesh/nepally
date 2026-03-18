@@ -18,8 +18,7 @@ jest.mock('@expo/vector-icons', () => {
   };
 });
 
-afterEach(() => {
-  // Prevent leaked fake timers or pending timer callbacks from keeping Jest alive.
-  jest.clearAllTimers();
+beforeEach(() => {
+  // Ensure one suite cannot leak fake timers into the next suite.
   jest.useRealTimers();
 });

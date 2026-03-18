@@ -71,9 +71,8 @@ describe('LocationContext', () => {
     });
 
     const { result } = renderHook(() => React.useContext(LocationContext), { wrapper });
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-    });
+    await act(async () => {});
+    await act(async () => {});
 
     await act(async () => {
       result.current.browseMetro({

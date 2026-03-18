@@ -150,7 +150,9 @@ describe('AuthContext', () => {
     await AsyncStorage.setItem('@nusa:session_sign_in_at', 'corrupted');
 
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
-    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    await act(async () => {});
+    await act(async () => {});
+    await act(async () => {});
 
     expect(supabase.auth.signOut).toHaveBeenCalled();
     expect(result.current.user).toBeNull();
