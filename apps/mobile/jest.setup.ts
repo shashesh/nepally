@@ -17,21 +17,3 @@ jest.mock('@expo/vector-icons', () => {
     AntDesign: MockIcon,
   };
 });
-
-const originalConsoleError = console.error;
-
-beforeAll(() => {
-  jest.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
-    const [firstArg] = args;
-    if (typeof firstArg === 'string' && firstArg.includes('not wrapped in act(...)')) {
-      return;
-    }
-    originalConsoleError(...(args as Parameters<typeof console.error>));
-  });
-});
-
-afterAll(() => {
-  if (jest.isMockFunction(console.error)) {
-    (console.error as jest.Mock).mockRestore();
-  }
-});

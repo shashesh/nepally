@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { createEvent, getEventById } from '@nusa/shared';
 import CreateEventScreen from './CreateEventScreen';
 
@@ -217,15 +217,17 @@ describe('CreateEventScreen — edit mode', () => {
 
   it('shows "Edit Event" title and calls getEventById', async () => {
     const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
-    const { findByText } = render(<CreateEventScreen />);
-    expect(await findByText('Edit Event')).toBeTruthy();
-    await waitFor(() => {
-      expect(mockGetEventById).toHaveBeenCalledWith({}, 'event-to-edit');
-    });
+    const { getByText } = render(<CreateEventScreen />);
+    await act(async () => {});
+
+    expect(getByText('Edit Event')).toBeTruthy();
+    expect(mockGetEventById).toHaveBeenCalledWith({}, 'event-to-edit');
   });
 
   it('shows "Save" submit button in edit mode', async () => {
-    const { findByText } = render(<CreateEventScreen />);
-    expect(await findByText('Save')).toBeTruthy();
+    const { getByText } = render(<CreateEventScreen />);
+    await act(async () => {});
+
+    expect(getByText('Save')).toBeTruthy();
   });
 });

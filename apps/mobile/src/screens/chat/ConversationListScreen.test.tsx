@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import ConversationListScreen from './ConversationListScreen';
 
 const mockNavigate = jest.fn();
@@ -48,11 +48,9 @@ describe('ConversationListScreen', () => {
 
   it('navigates to MessageThread when a conversation is pressed', async () => {
     const screen = render(<ConversationListScreen />);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('Other User')).toBeTruthy();
-    });
-
+    expect(screen.getByText('Other User')).toBeTruthy();
     fireEvent.press(screen.getByText('Other User'));
 
     expect(mockNavigate).toHaveBeenCalledWith('MessageThread', {

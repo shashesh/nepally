@@ -69,7 +69,7 @@ jest.mock('expo-file-system/legacy', () => ({
 }));
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, act } from '@testing-library/react-native';
 import CreatePostScreen from './CreatePostScreen';
 import * as storage from '../../utils/storage';
 
@@ -115,6 +115,7 @@ describe('CreatePostScreen', () => {
         route={mockRoute}
       />
     );
+    await act(async () => {});
     expect(toJSON()).not.toBeNull();
   });
 });
