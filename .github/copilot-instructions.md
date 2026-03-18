@@ -38,6 +38,34 @@
   - `apps/mobile`: unit tests for hooks/services/utils and critical reusable components.
 - Do not mark work complete until relevant test commands pass for touched workspaces.
 
+### Mobile Async Component Tests — Required Pattern
+React 19 with `IS_REACT_ACT_ENVIRONMENT=true` (set by the react-native jest preset) queues state updates from async `useEffect` code in an internal `actQueue`. `waitFor`/`findByText` use **synchronous** `act()` which does NOT drain this queue. Any component that has two or more sequential `await` calls in a `useEffect` will be stuck at its loading state in CI.
+
+**Always use `await act(async () => {})` after `render()` when the component fetches data on mount:**
+
+```typescript
+// CORRECT
+it('renders data', async () => {
+  render(<MyScreen />);
+  await act(async () => {}); // drains actQueue — flushes all async state updates
+  expect(getByText('Data')).toBeTruthy();
+});
+
+// CORRECT — after interactions that trigger async work
+fireEvent.press(getByText('Submit'));
+await act(async () => {});
+expect(getByText('Success')).toBeTruthy();
+
+// WRONG — synchronous act() inside waitFor does not drain actQueue
+await waitFor(() => expect(getByText('Data')).toBeTruthy(), { timeout: 10000 });
+
+// WRONG — increasing testTimeout just makes failures slower
+// jest.config.js → testTimeout: 15000
+
+// WRONG — suppressing act() warnings hides the root cause
+jest.spyOn(console, 'error').mockImplementation(msg => { if (msg.includes('act')) return; });
+```
+
 ## Commands and Validation
 - Install all deps: `npm install`
 - Web dev: `npm run web` (or `npm run dev --workspace=apps/web`)
