@@ -97,7 +97,6 @@ jest.mock('@react-navigation/native', () => ({
 
 describe('HomeScreen', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.clearAllMocks();
     mockInsertHandlerRef.current = null;
     mockGetPostsByMetroArea.mockResolvedValue({ data: [], error: null });
@@ -130,11 +129,6 @@ describe('HomeScreen', () => {
     });
   });
 
-  afterEach(() => {
-    act(() => { jest.runOnlyPendingTimers(); });
-    jest.useRealTimers();
-  });
-
   it('renders without crashing', async () => {
     const { toJSON } = render(<HomeScreen />);
     await act(async () => {});
@@ -165,16 +159,14 @@ describe('HomeScreen', () => {
     });
 
     const screen = render(<HomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('No location set')).toBeTruthy();
-    });
+    await act(async () => {});
+    expect(screen.getByText('No location set')).toBeTruthy();
   });
 
   it('shows create-first-post CTA and navigates', async () => {
     const screen = render(<HomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Be the first to post')).toBeTruthy();
-    });
+    await act(async () => {});
+    expect(screen.getByText('Be the first to post')).toBeTruthy();
 
     fireEvent.press(screen.getByText('Create first post'));
     expect(mockNavigate).toHaveBeenCalledWith('Post', { screen: 'CreatePost' });
