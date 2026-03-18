@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook } from '@testing-library/react-native';
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
 
 jest.mock(
@@ -21,19 +21,16 @@ describe('useOnboarding', () => {
   it('loads onboarding state on mount', async () => {
     const { result } = renderHook(() => useOnboarding());
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.currentStep).toBe(2);
-      expect(result.current.isComplete).toBe(false);
-    });
+    await act(async () => {});
+    expect(result.current.loading).toBe(false);
+    expect(result.current.currentStep).toBe(2);
+    expect(result.current.isComplete).toBe(false);
   });
 
   it('updates onboarding step with setStep', async () => {
     const { result } = renderHook(() => useOnboarding());
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    await act(async () => {});
 
     await act(async () => {
       await result.current.setStep(4);
@@ -46,9 +43,7 @@ describe('useOnboarding', () => {
   it('marks onboarding complete and resets step', async () => {
     const { result } = renderHook(() => useOnboarding());
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    await act(async () => {});
 
     await act(async () => {
       await result.current.completeOnboarding();

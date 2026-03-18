@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import { getEventById, hasUserRsvp, rsvpToEvent } from '@nusa/shared';
 import type { Event } from '@nusa/shared';
 import EventDetailScreen from './EventDetailScreen';
@@ -103,7 +103,8 @@ describe('EventDetailScreen', () => {
 
   it('renders event details after fetch', async () => {
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('Dashain Celebration')).toBeTruthy());
+    await act(async () => {});
+    expect(getByText('Dashain Celebration')).toBeTruthy();
 
     expect(getByText('Join us for the annual Dashain cultural celebration.')).toBeTruthy();
     expect(getByText('Dallas Convention Center')).toBeTruthy();
@@ -111,7 +112,8 @@ describe('EventDetailScreen', () => {
 
   it('shows RSVP button for non-organizer level 1 user', async () => {
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('RSVP')).toBeTruthy());
+    await act(async () => {});
+    expect(getByText('RSVP')).toBeTruthy();
   });
 
   it('shows edit/cancel/delete buttons for organizer', async () => {
@@ -119,7 +121,8 @@ describe('EventDetailScreen', () => {
       user: { id: 'user-1', trust_level: 1, metro_area_id: '19100' },
     });
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('Edit')).toBeTruthy());
+    await act(async () => {});
+    expect(getByText('Edit')).toBeTruthy();
 
     expect(getByText('Cancel')).toBeTruthy();
     expect(getByText('Delete')).toBeTruthy();
@@ -129,19 +132,21 @@ describe('EventDetailScreen', () => {
     (getEventById as jest.MockedFunction<typeof getEventById>).mockResolvedValue({ data: CANCELLED_EVENT });
 
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('This event has been cancelled.')).toBeTruthy());
+    await act(async () => {});
+    expect(getByText('This event has been cancelled.')).toBeTruthy();
   });
 
   it('shows past banner for past event', async () => {
     (getEventById as jest.MockedFunction<typeof getEventById>).mockResolvedValue({ data: PAST_EVENT });
 
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('This event has passed.')).toBeTruthy());
+    await act(async () => {});
+    expect(getByText('This event has passed.')).toBeTruthy();
   });
 
   it('navigates back on back button press', async () => {
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('← Back')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(getByText('← Back'));
     expect(mockGoBack).toHaveBeenCalled();
@@ -151,7 +156,8 @@ describe('EventDetailScreen', () => {
     (getEventById as jest.MockedFunction<typeof getEventById>).mockResolvedValue({ error: new Error('Not found') });
 
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('Not found')).toBeTruthy());
+    await act(async () => {});
+    expect(getByText('Not found')).toBeTruthy();
   });
 
   it('toggles RSVP on button press and re-syncs from server', async () => {
@@ -159,7 +165,8 @@ describe('EventDetailScreen', () => {
     const mockHasUserRsvp = hasUserRsvp as jest.MockedFunction<typeof hasUserRsvp>;
     const mockRsvpToEvent = rsvpToEvent as jest.MockedFunction<typeof rsvpToEvent>;
     const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('RSVP')).toBeTruthy());
+    await act(async () => {});
+    expect(getByText('RSVP')).toBeTruthy();
 
     fireEvent.press(getByText('RSVP'));
     await act(async () => {});
