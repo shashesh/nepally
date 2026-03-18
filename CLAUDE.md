@@ -123,33 +123,6 @@ Before implementing ANY feature, read:
 - Prefer testing pure logic first (utils, validation, API behavior with mocks), then hooks/contexts, then critical reusable UI.
 - Do not consider a feature complete until relevant workspace tests pass, then full monorepo tests pass.
 
-#### Mobile Async Component Tests (MANDATORY pattern)
-
-React 19 + `IS_REACT_ACT_ENVIRONMENT=true` (set by the react-native jest preset) requires `await act(async () => {})` to drain pending async state updates. **`waitFor`/`findByText` use synchronous `act()` internally which does NOT drain the queue** — components with two or more sequential `await` calls in a `useEffect` will stay stuck at their loading state forever in CI.
-
-**Always use this pattern for any screen/component that fetches data on mount:**
-
-```typescript
-it('renders data after fetch', async () => {
-  const { getByText } = render(<MyScreen />);
-  await act(async () => {}); // flushes ALL pending async state updates
-  expect(getByText('My Data')).toBeTruthy();
-});
-
-it('handles interaction that triggers async work', async () => {
-  const { getByText } = render(<MyScreen />);
-  await act(async () => {}); // flush initial load
-  fireEvent.press(getByText('Button'));
-  await act(async () => {}); // flush async work from the press
-  expect(getByText('Result')).toBeTruthy();
-});
-```
-
-**Never do this:**
-- `await waitFor(() => expect(x).toBeTruthy(), { timeout: 10000 })` — increasing the timeout just makes stuck tests slower, it does not fix them
-- Increase `testTimeout` in `jest.config.js` as a workaround for timing out tests
-- Suppress `act()` warnings in `jest.setup.ts` via `console.error` mocking — those warnings are the diagnostic signal, not noise
-
 ## Database Migrations
 
 **CRITICAL: `001_schema.sql`, `002_seed_data.sql`, and `003_storage.sql` are FROZEN. Never modify or re-run them on a live database.**
