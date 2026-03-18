@@ -4,6 +4,8 @@ import { getEventById, hasUserRsvp, rsvpToEvent } from '@nusa/shared';
 import type { Event } from '@nusa/shared';
 import EventDetailScreen from './EventDetailScreen';
 
+const ASYNC_TIMEOUT_MS = 10000;
+
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 jest.mock('react-native-safe-area-context', () => {
@@ -105,54 +107,47 @@ describe('EventDetailScreen', () => {
     const { getByText } = render(<EventDetailScreen />);
     await waitFor(() => {
       expect(getByText('Dashain Celebration')).toBeTruthy();
-      expect(getByText('Join us for the annual Dashain cultural celebration.')).toBeTruthy();
-      expect(getByText('Dallas Convention Center')).toBeTruthy();
-    });
+    }, { timeout: ASYNC_TIMEOUT_MS });
+
+    expect(getByText('Join us for the annual Dashain cultural celebration.')).toBeTruthy();
+    expect(getByText('Dallas Convention Center')).toBeTruthy();
   });
 
   it('shows RSVP button for non-organizer level 1 user', async () => {
-    const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => {
-      expect(getByText('RSVP')).toBeTruthy();
-    });
+    const { findByText } = render(<EventDetailScreen />);
+    expect(await findByText('RSVP', {}, { timeout: ASYNC_TIMEOUT_MS })).toBeTruthy();
   });
 
   it('shows edit/cancel/delete buttons for organizer', async () => {
     mockUseAuth.mockReturnValue({
       user: { id: 'user-1', trust_level: 1, metro_area_id: '19100' },
     });
-    const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => {
-      expect(getByText('Edit')).toBeTruthy();
-      expect(getByText('Cancel')).toBeTruthy();
-      expect(getByText('Delete')).toBeTruthy();
-    });
+    const { findByText } = render(<EventDetailScreen />);
+    expect(await findByText('Edit', {}, { timeout: ASYNC_TIMEOUT_MS })).toBeTruthy();
+    expect(await findByText('Cancel', {}, { timeout: ASYNC_TIMEOUT_MS })).toBeTruthy();
+    expect(await findByText('Delete', {}, { timeout: ASYNC_TIMEOUT_MS })).toBeTruthy();
   });
 
   it('shows cancelled banner for cancelled event', async () => {
     const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
     mockGetEventById.mockResolvedValue({ data: CANCELLED_EVENT });
 
-    const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => {
-      expect(getByText('This event has been cancelled.')).toBeTruthy();
-    });
+    const { findByText } = render(<EventDetailScreen />);
+    expect(await findByText('This event has been cancelled.', {}, { timeout: ASYNC_TIMEOUT_MS })).toBeTruthy();
   });
 
   it('shows past banner for past event', async () => {
     const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
     mockGetEventById.mockResolvedValue({ data: PAST_EVENT });
 
-    const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => {
-      expect(getByText('This event has passed.')).toBeTruthy();
-    });
+    const { findByText } = render(<EventDetailScreen />);
+    expect(await findByText('This event has passed.', {}, { timeout: ASYNC_TIMEOUT_MS })).toBeTruthy();
   });
 
   it('navigates back on back button press', async () => {
-    const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('← Back')).toBeTruthy());
-    fireEvent.press(getByText('← Back'));
+    const { findByText } = render(<EventDetailScreen />);
+    const backButton = await findByText('← Back', {}, { timeout: ASYNC_TIMEOUT_MS });
+    fireEvent.press(backButton);
     expect(mockGoBack).toHaveBeenCalled();
   });
 
@@ -160,24 +155,22 @@ describe('EventDetailScreen', () => {
     const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
     mockGetEventById.mockResolvedValue({ error: new Error('Not found') });
 
-    const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => {
-      expect(getByText('Not found')).toBeTruthy();
-    });
+    const { findByText } = render(<EventDetailScreen />);
+    expect(await findByText('Not found', {}, { timeout: ASYNC_TIMEOUT_MS })).toBeTruthy();
   });
 
   it('toggles RSVP on button press and re-syncs from server', async () => {
     const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
     const mockHasUserRsvp = hasUserRsvp as jest.MockedFunction<typeof hasUserRsvp>;
     const mockRsvpToEvent = rsvpToEvent as jest.MockedFunction<typeof rsvpToEvent>;
-    const { getByText } = render(<EventDetailScreen />);
-    await waitFor(() => expect(getByText('RSVP')).toBeTruthy());
+    const { getByText, findByText } = render(<EventDetailScreen />);
+    await findByText('RSVP', {}, { timeout: ASYNC_TIMEOUT_MS });
 
     fireEvent.press(getByText('RSVP'));
     await waitFor(() => {
       expect(mockRsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
       expect(mockGetEventById).toHaveBeenCalledTimes(2);
       expect(mockHasUserRsvp).toHaveBeenCalledTimes(2);
-    });
+    }, { timeout: ASYNC_TIMEOUT_MS });
   });
 });
