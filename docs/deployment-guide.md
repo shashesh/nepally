@@ -165,7 +165,7 @@ Rollback options:
 
 2. **`Project not found` during `vercel pull`/`vercel deploy`**
   - Verify `VERCEL_ORG_ID` and project ID variables match the target Vercel team/project.
-  - Ensure dev workflow uses `VERCEL_PROJECT_ID_DEV` and prod uses `VERCEL_PROJECT_ID_PROD`.
+  - Ensure `VERCEL_PROJECT_ID` is set correctly in the repository variables (single project ID used by both dev and production workflows).
 
 3. **Production workflow starts but cannot deploy**
   - Check `production` GitHub environment protection rules for pending approvals.
