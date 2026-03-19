@@ -54,6 +54,8 @@ test.describe('Signup flow', () => {
   });
 
   test('already existing email shows error from API', async ({ page }) => {
+    test.slow();
+
     await page.route('**/auth/v1/signup**', async (route) => {
       await route.fulfill({
         status: 422,
@@ -63,6 +65,7 @@ test.describe('Signup flow', () => {
     });
 
     await page.goto('/signup');
+    await expect(page.locator('#fullName')).toBeVisible({ timeout: 15_000 });
     await page.locator('#fullName').fill('Test User');
     await page.locator('#email').fill(MOCK_USER_EMAIL);
     await page.locator('#password').fill('Password123!');

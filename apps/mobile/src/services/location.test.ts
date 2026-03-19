@@ -36,12 +36,6 @@ import { getMetroByZip } from '@nusa/shared';
 describe('location service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
   });
 
   it('maps permission states correctly', async () => {

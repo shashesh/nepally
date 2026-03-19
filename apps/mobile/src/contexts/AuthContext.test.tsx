@@ -53,6 +53,7 @@ describe('AuthContext', () => {
   });
 
   it('starts with loading true and user null', () => {
+    mockAuth.getSession.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
     expect(result.current.loading).toBe(true);
     expect(result.current.user).toBeNull();
@@ -96,9 +97,10 @@ describe('AuthContext', () => {
     });
 
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
-    });
+    // Flush all pending microtasks (getSession → getUser → profile fetch chain).
+    await act(async () => {});
+    await act(async () => {});
+    await act(async () => {});
 
     expect(result.current.user?.id).toBe('user-1');
     expect(result.current.user?.full_name).toBe('Test User');
@@ -125,7 +127,9 @@ describe('AuthContext', () => {
 
     // No timestamps in storage — simulates first launch after upgrade or storage clear
     renderHook(() => React.useContext(AuthContext), { wrapper });
-    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    await act(async () => {});
+    await act(async () => {});
+    await act(async () => {});
 
     const signInAt = await AsyncStorage.getItem('@nusa:session_sign_in_at');
     const lastActivity = await AsyncStorage.getItem('@nusa:session_last_activity');
@@ -146,7 +150,9 @@ describe('AuthContext', () => {
     await AsyncStorage.setItem('@nusa:session_sign_in_at', 'corrupted');
 
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
-    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    await act(async () => {});
+    await act(async () => {});
+    await act(async () => {});
 
     expect(supabase.auth.signOut).toHaveBeenCalled();
     expect(result.current.user).toBeNull();

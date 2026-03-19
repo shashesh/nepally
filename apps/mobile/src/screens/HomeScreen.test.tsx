@@ -89,7 +89,12 @@ jest.mock('@react-navigation/native', () => ({
   }),
   useFocusEffect: (cb: () => void | (() => void)) => {
     const ReactActual = jest.requireActual('react') as typeof import('react');
-    ReactActual.useEffect(() => cb(), [cb]);
+    const cbRef = ReactActual.useRef(cb);
+    cbRef.current = cb;
+    ReactActual.useEffect(() => {
+      const cleanup = cbRef.current();
+      return typeof cleanup === 'function' ? cleanup : undefined;
+    }, []);
   },
 }));
 
@@ -127,8 +132,9 @@ describe('HomeScreen', () => {
     });
   });
 
-  it('renders without crashing', () => {
+  it('renders without crashing', async () => {
     const { toJSON } = render(<HomeScreen />);
+    await act(async () => {});
     expect(toJSON()).not.toBeNull();
   });
 
@@ -156,16 +162,14 @@ describe('HomeScreen', () => {
     });
 
     const screen = render(<HomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('No location set')).toBeTruthy();
-    });
+    await act(async () => {});
+    expect(screen.getByText('No location set')).toBeTruthy();
   });
 
   it('shows create-first-post CTA and navigates', async () => {
     const screen = render(<HomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Be the first to post')).toBeTruthy();
-    });
+    await act(async () => {});
+    expect(screen.getByText('Be the first to post')).toBeTruthy();
 
     fireEvent.press(screen.getByText('Create first post'));
     expect(mockNavigate).toHaveBeenCalledWith('Post', { screen: 'CreatePost' });

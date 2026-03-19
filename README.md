@@ -94,6 +94,10 @@ See [Monorepo Structure](./docs/monorepo-structure.md) for details.
 
 CI runs on GitHub Actions. All jobs run on `ubuntu-latest` with Node 20.
 
+[![CI](https://github.com/shashesh/nusa/actions/workflows/ci.yml/badge.svg)](https://github.com/shashesh/nusa/actions/workflows/ci.yml)
+[![Deploy Dev](https://github.com/shashesh/nusa/actions/workflows/deploy-vercel-dev.yml/badge.svg)](https://github.com/shashesh/nusa/actions/workflows/deploy-vercel-dev.yml)
+[![Deploy Prod](https://github.com/shashesh/nusa/actions/workflows/deploy-vercel-prod.yml/badge.svg)](https://github.com/shashesh/nusa/actions/workflows/deploy-vercel-prod.yml)
+
 ### Automatic (on PR merge to `master`)
 
 The pipeline triggers when a pull request is merged into `master`. All jobs run in parallel after a merge gate:
@@ -112,6 +116,11 @@ Web E2E tests use Playwright and inject Supabase env vars from GitHub repository
 ### Manual (`workflow_dispatch`)
 
 The **CI Manual** workflow can be triggered from the GitHub Actions UI on any branch. Same jobs, same commands — useful for validating feature branches before merging.
+
+### Deploy Workflows
+
+- **Deploy Web Dev (Vercel)**: automatic on push to `master`
+- **Deploy Web Production (Vercel)**: manual `workflow_dispatch` with `production` environment approvals
 
 ## Testing
 

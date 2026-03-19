@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import ConversationListScreen from './ConversationListScreen';
 
 const mockNavigate = jest.fn();
@@ -11,7 +11,15 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate, getParent: jest.fn(() => ({ navigate: jest.fn() })) }),
-  useFocusEffect: (cb: () => void) => cb(),
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    const ReactActual = jest.requireActual('react') as typeof import('react');
+    const cbRef = ReactActual.useRef(cb);
+    cbRef.current = cb;
+    ReactActual.useEffect(() => {
+      const cleanup = cbRef.current();
+      return typeof cleanup === 'function' ? cleanup : undefined;
+    }, []);
+  },
 }));
 
 jest.mock('../../hooks/useAuth', () => ({
@@ -48,11 +56,9 @@ describe('ConversationListScreen', () => {
 
   it('navigates to MessageThread when a conversation is pressed', async () => {
     const screen = render(<ConversationListScreen />);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('Other User')).toBeTruthy();
-    });
-
+    expect(screen.getByText('Other User')).toBeTruthy();
     fireEvent.press(screen.getByText('Other User'));
 
     expect(mockNavigate).toHaveBeenCalledWith('MessageThread', {

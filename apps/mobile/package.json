@@ -8,8 +8,12 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest",
+    "test:ci": "jest --ci --runInBand",
+    "test:ci:debug": "jest --ci --runInBand --detectOpenHandles",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:coverage:ci": "jest --ci --runInBand --coverage",
+    "test:coverage:ci:debug": "jest --ci --runInBand --coverage --detectOpenHandles",
     "test:e2e": "node scripts/run-maestro-e2e.js",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit"

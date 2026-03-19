@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import MessageThreadScreen from './MessageThreadScreen';
 
 const mockUseRoute = jest.fn();
@@ -65,18 +65,16 @@ describe('MessageThreadScreen avatar menu', () => {
 
   it('shows View Profile only when avatar is tapped', async () => {
     const screen = render(<MessageThreadScreen />);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('Hello there')).toBeTruthy();
-    });
+    expect(screen.getByText('Hello there')).toBeTruthy();
 
     fireEvent.press(screen.getAllByText('OU')[0], {
       nativeEvent: { pageX: 120, pageY: 160 },
     });
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('View Profile')).toBeTruthy();
-    });
+    expect(screen.getByText('View Profile')).toBeTruthy();
     expect(screen.queryByText('Chat')).toBeNull();
   });
 });

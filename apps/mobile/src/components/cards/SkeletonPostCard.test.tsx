@@ -11,11 +11,17 @@ describe('SkeletonPostCard', () => {
       .spyOn(Animated, 'loop')
       .mockReturnValue({ start, stop } as unknown as Animated.CompositeAnimation);
 
-    render(<SkeletonPostCard />);
+    try {
+      const { unmount } = render(<SkeletonPostCard />);
 
-    expect(loopSpy).toHaveBeenCalledTimes(1);
-    expect(start).toHaveBeenCalledTimes(1);
-    loopSpy.mockRestore();
+      expect(loopSpy).toHaveBeenCalledTimes(1);
+      expect(start).toHaveBeenCalledTimes(1);
+
+      unmount();
+      expect(stop).toHaveBeenCalledTimes(1);
+    } finally {
+      loopSpy.mockRestore();
+    }
   });
 });
 

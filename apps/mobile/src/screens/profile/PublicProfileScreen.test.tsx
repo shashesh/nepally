@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Alert } from 'react-native';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import PublicProfileScreen from './PublicProfileScreen';
 
 const mockUseAuth = jest.fn();
@@ -131,6 +131,7 @@ describe('PublicProfileScreen', () => {
   it('shows ActivityIndicator while profile data is loading', () => {
     mockGetUserById.mockReturnValue(new Promise(() => {}));
     mockGetPostsByAuthorId.mockReturnValue(new Promise(() => {}));
+    mockGetEventsByOrganizer.mockReturnValue(new Promise(() => {}));
     const { UNSAFE_getByType } = render(<PublicProfileScreen />);
     expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });
@@ -138,34 +139,33 @@ describe('PublicProfileScreen', () => {
   it('shows error message when getUserById returns an error', async () => {
     mockGetUserById.mockResolvedValue({ error: new Error('not found'), data: null });
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Could not load profile.')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('Could not load profile.')).toBeTruthy();
   });
 
   it('shows error message when data is null (treated as load error)', async () => {
     mockGetUserById.mockResolvedValue({ data: null });
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Could not load profile.')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('Could not load profile.')).toBeTruthy();
   });
 
   // ─── Profile Display ───────────────────────────────────────────────────────
 
   it('renders the formatted public name', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      // formatPublicName('Bikal Shrestha') → 'Bikal S.'
-      expect(screen.getByText('Bikal S.')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('Bikal S.')).toBeTruthy();
   });
 
   it('renders trust badge with correct level and label for verified user', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText(/Level 1.*Verified/)).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText(/Level 1.*Verified/)).toBeTruthy();
   });
 
   it('renders trust badge with correct level and label for new user', async () => {
@@ -173,9 +173,9 @@ describe('PublicProfileScreen', () => {
       data: { ...mockProfileUser, trust_level: 0 },
     });
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText(/Level 0.*New Member/)).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText(/Level 0.*New Member/)).toBeTruthy();
   });
 
   it('renders trust badge with correct level and label for contributor user', async () => {
@@ -183,18 +183,18 @@ describe('PublicProfileScreen', () => {
       data: { ...mockProfileUser, trust_level: 2 },
     });
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText(/Level 2.*Contributor/)).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText(/Level 2.*Contributor/)).toBeTruthy();
   });
 
   // ─── Message Button ────────────────────────────────────────────────────────
 
   it('shows Message button when viewing another user profile', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Message')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('Message')).toBeTruthy();
   });
 
   it('does not show Message button when viewing own profile', async () => {
@@ -202,7 +202,9 @@ describe('PublicProfileScreen', () => {
       user: { id: 'profile-user', full_name: 'Bikal Shrestha', trust_level: 1 },
     });
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
+
+    expect(screen.getByText('Bikal S.')).toBeTruthy();
     expect(screen.queryByText('Message')).toBeNull();
   });
 
@@ -214,39 +216,37 @@ describe('PublicProfileScreen', () => {
       },
     });
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Message')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('Message'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(mockGetOrCreateConversation).toHaveBeenCalledWith(
-        expect.anything(),
-        'current-user',
-        'Test User',
-        'profile-user',
-        'Bikal Shrestha'
-      );
-      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
-        screen: 'MessageThread',
-        params: expect.objectContaining({
-          conversationId: 'conv-abc',
-          otherUserId: 'profile-user',
-          otherUserName: 'Bikal Shrestha',
-        }),
-      });
+    expect(mockGetOrCreateConversation).toHaveBeenCalledWith(
+      expect.anything(),
+      'current-user',
+      'Test User',
+      'profile-user',
+      'Bikal Shrestha'
+    );
+    expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+      screen: 'MessageThread',
+      params: expect.objectContaining({
+        conversationId: 'conv-abc',
+        otherUserId: 'profile-user',
+        otherUserName: 'Bikal Shrestha',
+      }),
     });
   });
 
   it('shows "Opening..." while messaging is in progress', async () => {
     mockGetOrCreateConversation.mockReturnValue(new Promise(() => {}));
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Message')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('Message'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('Opening...')).toBeTruthy();
-    });
+    expect(screen.getByText('Opening...')).toBeTruthy();
   });
 
   it('shows alert when NEW user tries to message', async () => {
@@ -256,7 +256,7 @@ describe('PublicProfileScreen', () => {
     jest.spyOn(Alert, 'alert');
 
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Message')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('Message'));
 
@@ -272,25 +272,25 @@ describe('PublicProfileScreen', () => {
 
   it('shows user posts in the Posts tab by default', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Roommate needed')).toBeTruthy();
-      expect(screen.getByText('Looking for a roommate.')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('Roommate needed')).toBeTruthy();
+    expect(screen.getByText('Looking for a roommate.')).toBeTruthy();
   });
 
   it('shows "No posts yet." when user has no posts', async () => {
     mockGetPostsByAuthorId.mockResolvedValue({ data: [] });
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('No posts yet.')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('No posts yet.')).toBeTruthy();
   });
 
   it('shows Local badge for non-global posts', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('📍 Local')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('📍 Local')).toBeTruthy();
   });
 
   it('shows Global badge for global posts', async () => {
@@ -298,46 +298,44 @@ describe('PublicProfileScreen', () => {
       data: [{ ...mockUserPosts[0], is_global: true }],
     });
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('🌐 Global')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('🌐 Global')).toBeTruthy();
   });
 
   it('pressing a post navigates to PostDetail', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Roommate needed')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('Roommate needed'));
-
     expect(mockNavigate).toHaveBeenCalledWith('PostDetail', { postId: 'post-1' });
   });
 
   it('shows like and comment counts on post items', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('❤️ 2')).toBeTruthy();
-      expect(screen.getByText('💬 1')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(screen.getByText('❤️ 2')).toBeTruthy();
+    expect(screen.getByText('💬 1')).toBeTruthy();
   });
 
   it('shows organizer events in Events tab', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('Events'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('Nepali Networking Night')).toBeTruthy();
-      expect(screen.getByText('18 going')).toBeTruthy();
-    });
+    expect(screen.getByText('Nepali Networking Night')).toBeTruthy();
+    expect(screen.getByText('18 going')).toBeTruthy();
   });
 
   it('opens event detail in Events tab when event card is pressed', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('Events'));
-    await waitFor(() => expect(screen.getByText('Nepali Networking Night')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('Nepali Networking Night'));
 
@@ -350,26 +348,24 @@ describe('PublicProfileScreen', () => {
   it('shows "No events yet." when user has no events', async () => {
     mockGetEventsByOrganizer.mockResolvedValue({ data: [] });
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('Events'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('No events yet.')).toBeTruthy();
-    });
+    expect(screen.getByText('No events yet.')).toBeTruthy();
   });
 
   // ─── About Tab ────────────────────────────────────────────────────────────
 
   it('switches to About tab when pressed and shows metro name', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('About'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('Dallas-Fort Worth, TX')).toBeTruthy();
-    });
+    expect(screen.getByText('Dallas-Fort Worth, TX')).toBeTruthy();
   });
 
   it('shows "Location not set" when user has no metro area', async () => {
@@ -377,61 +373,57 @@ describe('PublicProfileScreen', () => {
       data: { ...mockProfileUser, metro_area_id: null },
     });
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('About'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('Location not set')).toBeTruthy();
-    });
+    expect(screen.getByText('Location not set')).toBeTruthy();
   });
 
   it('shows member since year in About tab', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('About'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('2024')).toBeTruthy();
-    });
+    expect(screen.getByText('2024')).toBeTruthy();
   });
 
   it('shows post count in About tab', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('About'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      // Counts now include both Posts and Events and can contain duplicate "1" values.
-      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
-    });
+    // Counts now include both Posts and Events and can contain duplicate "1" values.
+    expect(screen.getAllByText('1').length).toBeGreaterThan(0);
   });
 
   it('shows event count in About tab', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('About'));
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
-    });
+    expect(screen.getAllByText('1').length).toBeGreaterThan(0);
   });
 
   it('can switch back from About to Posts tab', async () => {
     render(<PublicProfileScreen />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeTruthy());
+    await act(async () => {});
 
     fireEvent.press(screen.getByText('About'));
-    await waitFor(() => expect(screen.getByText('Dallas-Fort Worth, TX')).toBeTruthy());
+    await act(async () => {});
+    expect(screen.getByText('Dallas-Fort Worth, TX')).toBeTruthy();
 
     // Multiple "Posts" texts exist while in About tab (tab button + activity label)
     // Press the first one which is the tab button
     fireEvent.press(screen.getAllByText('Posts')[0]);
-    await waitFor(() => {
-      expect(screen.getByText('Roommate needed')).toBeTruthy();
-    });
+    await act(async () => {});
+    expect(screen.getByText('Roommate needed')).toBeTruthy();
   });
 });
