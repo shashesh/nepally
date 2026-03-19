@@ -60,15 +60,17 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 ### 5. Configure GitHub Actions Deployments (Recommended)
 
-Use GitHub Actions as the deployment controller for both environments:
+Use GitHub Actions as the deployment controller for all environments. Vercel's built-in Git auto-deploy is **disabled** — all deploys are controlled exclusively via GitHub Actions workflows.
 
-1. **Dev environment** (automatic): deploy to Vercel preview on every push to `master`
-2. **Production environment** (manual): run a manual workflow that deploys latest `master` only after approval
+1. **PR preview** (automatic): deploy a Vercel preview on every PR targeting `master`
+2. **Dev environment** (automatic): deploy to Vercel preview on every push to `master`
+3. **Production environment** (manual): run a manual workflow that deploys latest `master` only after approval
 
 This repository now includes:
 
-1. `.github/workflows/deploy-vercel-dev.yml`
-2. `.github/workflows/deploy-vercel-prod.yml`
+1. `.github/workflows/preview-vercel.yml`
+2. `.github/workflows/deploy-vercel-dev.yml`
+3. `.github/workflows/deploy-vercel-prod.yml`
 
 ### 6. Configure GitHub Environments
 
@@ -102,7 +104,22 @@ You do **not** need two separate Vercel projects. One project handles both envir
 
 Scope environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, etc.) per Vercel environment in the project dashboard under **Settings > Environment Variables**, selecting **Preview** or **Production** scope as appropriate.
 
-### 8. Deployment Behavior
+### 8. Disable Vercel Auto-Deploy
+
+Since GitHub Actions controls all deployments, Vercel's built-in Git integration auto-deploy must be **disabled** to prevent duplicate/unwanted production deploys:
+
+1. Go to Vercel dashboard → project **Settings → Git**
+2. Disable auto-deploy (or disconnect the Git integration)
+
+### 9. Deployment Behavior
+
+**PR preview (automatic):**
+
+1. Trigger: `pull_request` targeting `master` (path-filtered for web/shared files)
+2. Workflow: `.github/workflows/preview-vercel.yml`
+3. No guard checks — preview only for testing before merge
+4. Posts/updates a comment on the PR with the preview URL
+5. Target: Vercel preview deployment (unique URL per deploy)
 
 **Dev deploy (automatic):**
 
@@ -124,14 +141,14 @@ Scope environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_A
 
 If GitHub plan limits prevent branch protection/ruleset enforcement on private repositories, the deploy workflows still enforce release safety by refusing deployment unless the merged-PR + successful-checks criteria are met.
 
-### 9. Monitor Deployment
+### 10. Monitor Deployment
 
 View deployment logs in Vercel dashboard:
 - **Deployments** tab shows all deployments
 - Click deployment to see logs
 - Check for build errors
 
-### 10. Test Production Site
+### 11. Test Production Site
 
 1. Visit https://nusa.app
 2. Test key features:
@@ -141,7 +158,7 @@ View deployment logs in Vercel dashboard:
    - Search
    - SEO (check page source for meta tags)
 
-### 11. Release Runbook
+### 12. Release Runbook
 
 Use this release sequence:
 
@@ -157,7 +174,7 @@ Rollback options:
 1. Redeploy a previous successful deployment from Vercel dashboard
 2. Re-run production workflow after reverting `master` to a safe commit
 
-### 12. Troubleshooting (GitHub Actions + Vercel)
+### 13. Troubleshooting (GitHub Actions + Vercel)
 
 1. **`Error: No existing credentials found` or token failures**
   - Confirm `VERCEL_TOKEN` is set in the correct GitHub environment (`dev` or `production`).
