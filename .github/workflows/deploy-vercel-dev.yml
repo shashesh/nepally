@@ -47,19 +47,24 @@ jobs:
             ];
 
             const { owner, repo } = context.repo;
-            const commitSha = context.sha;
+            const mergeCommitSha = context.sha;
 
             const pullsResponse = await github.rest.repos.listPullRequestsAssociatedWithCommit({
               owner,
               repo,
-              commit_sha: commitSha,
+              commit_sha: mergeCommitSha,
             });
 
             const mergedPulls = pullsResponse.data.filter((pr) => Boolean(pr.merged_at));
             if (mergedPulls.length === 0) {
-              core.setFailed(`Commit ${commitSha} is not associated with a merged pull request.`);
+              core.setFailed(`Commit ${mergeCommitSha} is not associated with a merged pull request.`);
               return;
             }
+
+            // CI checks run on the PR head commit, not the merge commit.
+            // Look up checks on the PR head SHA where CI actually ran.
+            const prHeadSha = mergedPulls[0].head.sha;
+            const commitSha = prHeadSha;
 
             const checksResponse = await github.rest.checks.listForRef({
               owner,
