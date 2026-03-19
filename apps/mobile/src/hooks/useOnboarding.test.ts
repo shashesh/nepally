@@ -94,8 +94,9 @@ describe('useOnboarding', () => {
       const { result } = await renderAndSettle();
 
       await act(async () => {
-        await result.current.setStep(4);
+        result.current.setStep(4);
       });
+      await act(async () => {});
 
       expect(mockSaveOnboardingStep).toHaveBeenCalledWith(4);
       expect(result.current.currentStep).toBe(4);
@@ -106,8 +107,9 @@ describe('useOnboarding', () => {
       const { result } = await renderAndSettle();
 
       await act(async () => {
-        await result.current.setStep(0);
+        result.current.setStep(0);
       });
+      await act(async () => {});
 
       expect(mockSaveOnboardingStep).toHaveBeenCalledWith(0);
       expect(result.current.currentStep).toBe(0);
@@ -119,8 +121,9 @@ describe('useOnboarding', () => {
       const { result } = await renderAndSettle();
 
       await act(async () => {
-        await result.current.setStep(5);
+        result.current.setStep(5);
       });
+      await act(async () => {});
 
       // Step should not update on error
       expect(result.current.currentStep).toBe(0);
@@ -137,8 +140,9 @@ describe('useOnboarding', () => {
       expect(result.current.currentStep).toBe(3);
 
       await act(async () => {
-        await result.current.completeOnboarding();
+        result.current.completeOnboarding();
       });
+      await act(async () => {});
 
       expect(mockMarkOnboardingComplete).toHaveBeenCalled();
       expect(result.current.isComplete).toBe(true);
@@ -151,8 +155,9 @@ describe('useOnboarding', () => {
       const { result } = await renderAndSettle();
 
       await act(async () => {
-        await result.current.completeOnboarding();
+        result.current.completeOnboarding();
       });
+      await act(async () => {});
 
       // State should not change on error
       expect(result.current.isComplete).toBe(false);
