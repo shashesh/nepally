@@ -86,9 +86,9 @@ jobs:
             for (const run of checksResponse.data.check_runs) {
               if (!requiredChecks.includes(run.name)) continue;
               const existing = latestRunByName.get(run.name);
-              // Use run ID (monotonically increasing) so in-progress reruns
-              // always replace older completed runs.
-              if (!existing || run.id > existing.id) {
+              const existingCompletedAt = existing?.completed_at ? Date.parse(existing.completed_at) : 0;
+              const runCompletedAt = run.completed_at ? Date.parse(run.completed_at) : 0;
+              if (!existing || runCompletedAt >= existingCompletedAt) {
                 latestRunByName.set(run.name, run);
               }
             }
