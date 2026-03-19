@@ -15,12 +15,24 @@ jest.mock('../utils/storage', () => ({
 }));
 
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Text, Pressable, View } from 'react-native';
-import { renderHook } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 import { useOnboarding } from './useOnboarding';
 
-// --- Test harness component (mirrors EventDetailScreen test pattern) ---
+// ---------------------------------------------------------------------------
+// Test harness for action tests.
+//
+// Why: React 19's act() can hang on CI when combining renderHook() (bare,
+// no wrapper) + a useEffect that fires on mount + a subsequent act() call
+// that triggers new async work.  This does NOT reproduce locally but
+// consistently times out on GitHub Actions ubuntu runners.
+//
+// The workaround — proven CI-stable in EventDetailScreen.test.tsx and
+// LocationContext.test.tsx — is to use render(<Component />) + waitFor()
+// instead of renderHook + act for any test that triggers async actions
+// after the initial mount settle.
+// ---------------------------------------------------------------------------
 function TestHarness() {
   const { currentStep, isComplete, loading, setStep, completeOnboarding } = useOnboarding();
   return (
@@ -28,22 +40,15 @@ function TestHarness() {
       <Text testID="step">{String(currentStep)}</Text>
       <Text testID="complete">{String(isComplete)}</Text>
       <Text testID="loading">{String(loading)}</Text>
-      <Pressable onPress={() => setStep(4)}><Text>SetStep4</Text></Pressable>
-      <Pressable onPress={() => setStep(0)}><Text>SetStep0</Text></Pressable>
-      <Pressable onPress={() => setStep(5)}><Text>SetStep5</Text></Pressable>
-      <Pressable onPress={() => completeOnboarding()}><Text>Complete</Text></Pressable>
+      <Pressable testID="setStep4" onPress={() => setStep(4)}><Text>SetStep4</Text></Pressable>
+      <Pressable testID="setStep0" onPress={() => setStep(0)}><Text>SetStep0</Text></Pressable>
+      <Pressable testID="setStep5" onPress={() => setStep(5)}><Text>SetStep5</Text></Pressable>
+      <Pressable testID="complete-btn" onPress={() => completeOnboarding()}><Text>Complete</Text></Pressable>
     </View>
   );
 }
 
 // --- Helpers ---
-async function renderHarnessAndSettle() {
-  const utils = render(<TestHarness />);
-  await act(async () => {});
-  await act(async () => {});
-  return utils;
-}
-
 async function renderHookAndSettle() {
   const result = renderHook(() => useOnboarding());
   await act(async () => {});
@@ -61,6 +66,7 @@ describe('useOnboarding', () => {
   });
 
   // ─── Initial State & Loading ────────────────────────────────────────
+  // These use renderHook — safe because they never call act() after settle.
 
   describe('initial state and loading', () => {
     it('starts with loading true', () => {
@@ -116,43 +122,56 @@ describe('useOnboarding', () => {
   });
 
   // ─── setStep ────────────────────────────────────────────────────────
+  // Action tests use render() + waitFor() — no explicit act() calls.
 
   describe('setStep', () => {
     it('saves step to storage and updates state', async () => {
-      const { getByText, getByTestId } = await renderHarnessAndSettle();
+      const { getByText, getByTestId } = render(<TestHarness />);
 
-      await act(async () => {
-        fireEvent.press(getByText('SetStep4'));
+      await waitFor(() => {
+        expect(getByTestId('loading').props.children).toBe('false');
       });
-      await act(async () => {});
+
+      fireEvent.press(getByText('SetStep4'));
+
+      await waitFor(() => {
+        expect(getByTestId('step').props.children).toBe('4');
+      });
 
       expect(mockSaveOnboardingStep).toHaveBeenCalledWith(4);
-      expect(getByTestId('step').props.children).toBe('4');
     });
 
     it('can set step to 0', async () => {
       mockGetOnboardingStep.mockResolvedValue(3);
-      const { getByText, getByTestId } = await renderHarnessAndSettle();
-      expect(getByTestId('step').props.children).toBe('3');
+      const { getByText, getByTestId } = render(<TestHarness />);
 
-      await act(async () => {
-        fireEvent.press(getByText('SetStep0'));
+      await waitFor(() => {
+        expect(getByTestId('step').props.children).toBe('3');
       });
-      await act(async () => {});
+
+      fireEvent.press(getByText('SetStep0'));
+
+      await waitFor(() => {
+        expect(getByTestId('step').props.children).toBe('0');
+      });
 
       expect(mockSaveOnboardingStep).toHaveBeenCalledWith(0);
-      expect(getByTestId('step').props.children).toBe('0');
     });
 
     it('handles save error gracefully', async () => {
       mockSaveOnboardingStep.mockRejectedValue(new Error('Write failed'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const { getByText, getByTestId } = await renderHarnessAndSettle();
+      const { getByText, getByTestId } = render(<TestHarness />);
 
-      await act(async () => {
-        fireEvent.press(getByText('SetStep5'));
+      await waitFor(() => {
+        expect(getByTestId('loading').props.children).toBe('false');
       });
-      await act(async () => {});
+
+      fireEvent.press(getByText('SetStep5'));
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalled();
+      });
 
       // Step should not update on error
       expect(getByTestId('step').props.children).toBe('0');
@@ -165,28 +184,36 @@ describe('useOnboarding', () => {
   describe('completeOnboarding', () => {
     it('marks onboarding complete and resets step to 0', async () => {
       mockGetOnboardingStep.mockResolvedValue(3);
-      const { getByText, getByTestId } = await renderHarnessAndSettle();
-      expect(getByTestId('step').props.children).toBe('3');
+      const { getByText, getByTestId } = render(<TestHarness />);
 
-      await act(async () => {
-        fireEvent.press(getByText('Complete'));
+      await waitFor(() => {
+        expect(getByTestId('step').props.children).toBe('3');
       });
-      await act(async () => {});
+
+      fireEvent.press(getByText('Complete'));
+
+      await waitFor(() => {
+        expect(getByTestId('complete').props.children).toBe('true');
+      });
 
       expect(mockMarkOnboardingComplete).toHaveBeenCalled();
-      expect(getByTestId('complete').props.children).toBe('true');
       expect(getByTestId('step').props.children).toBe('0');
     });
 
     it('handles complete error gracefully', async () => {
       mockMarkOnboardingComplete.mockRejectedValue(new Error('Complete failed'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const { getByText, getByTestId } = await renderHarnessAndSettle();
+      const { getByText, getByTestId } = render(<TestHarness />);
 
-      await act(async () => {
-        fireEvent.press(getByText('Complete'));
+      await waitFor(() => {
+        expect(getByTestId('loading').props.children).toBe('false');
       });
-      await act(async () => {});
+
+      fireEvent.press(getByText('Complete'));
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalled();
+      });
 
       // State should not change on error
       expect(getByTestId('complete').props.children).toBe('false');
