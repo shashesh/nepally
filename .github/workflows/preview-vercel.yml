@@ -22,6 +22,7 @@ jobs:
   preview:
     name: Preview deploy
     runs-on: ubuntu-latest
+    environment: dev
 
     env:
       VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
