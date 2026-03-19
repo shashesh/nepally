@@ -14,11 +14,37 @@ jest.mock('../utils/storage', () => ({
   markOnboardingComplete: (...args: unknown[]) => mockMarkOnboardingComplete(...args),
 }));
 
-import { renderHook, act } from '@testing-library/react-native';
+import React from 'react';
+import { render, fireEvent, act } from '@testing-library/react-native';
+import { Text, Pressable, View } from 'react-native';
+import { renderHook } from '@testing-library/react-native';
 import { useOnboarding } from './useOnboarding';
 
+// --- Test harness component (mirrors EventDetailScreen test pattern) ---
+function TestHarness() {
+  const { currentStep, isComplete, loading, setStep, completeOnboarding } = useOnboarding();
+  return (
+    <View>
+      <Text testID="step">{String(currentStep)}</Text>
+      <Text testID="complete">{String(isComplete)}</Text>
+      <Text testID="loading">{String(loading)}</Text>
+      <Pressable onPress={() => setStep(4)}><Text>SetStep4</Text></Pressable>
+      <Pressable onPress={() => setStep(0)}><Text>SetStep0</Text></Pressable>
+      <Pressable onPress={() => setStep(5)}><Text>SetStep5</Text></Pressable>
+      <Pressable onPress={() => completeOnboarding()}><Text>Complete</Text></Pressable>
+    </View>
+  );
+}
+
 // --- Helpers ---
-async function renderAndSettle() {
+async function renderHarnessAndSettle() {
+  const utils = render(<TestHarness />);
+  await act(async () => {});
+  await act(async () => {});
+  return utils;
+}
+
+async function renderHookAndSettle() {
   const result = renderHook(() => useOnboarding());
   await act(async () => {});
   await act(async () => {});
@@ -30,6 +56,8 @@ describe('useOnboarding', () => {
     jest.clearAllMocks();
     mockGetOnboardingStep.mockResolvedValue(null);
     mockIsOnboardingComplete.mockResolvedValue(false);
+    mockSaveOnboardingStep.mockResolvedValue(undefined);
+    mockMarkOnboardingComplete.mockResolvedValue(undefined);
   });
 
   // ─── Initial State & Loading ────────────────────────────────────────
@@ -45,32 +73,32 @@ describe('useOnboarding', () => {
     });
 
     it('sets loading to false after state loads', async () => {
-      const { result } = await renderAndSettle();
+      const { result } = await renderHookAndSettle();
       expect(result.current.loading).toBe(false);
     });
 
     it('loads saved step from storage', async () => {
       mockGetOnboardingStep.mockResolvedValue(3);
-      const { result } = await renderAndSettle();
+      const { result } = await renderHookAndSettle();
       expect(result.current.currentStep).toBe(3);
     });
 
     it('defaults to step 0 when no saved step', async () => {
       mockGetOnboardingStep.mockResolvedValue(null);
-      const { result } = await renderAndSettle();
+      const { result } = await renderHookAndSettle();
       expect(result.current.currentStep).toBe(0);
     });
 
     it('loads completion state from storage', async () => {
       mockIsOnboardingComplete.mockResolvedValue(true);
-      const { result } = await renderAndSettle();
+      const { result } = await renderHookAndSettle();
       expect(result.current.isComplete).toBe(true);
     });
 
     it('loads both step and completion in parallel', async () => {
       mockGetOnboardingStep.mockResolvedValue(2);
       mockIsOnboardingComplete.mockResolvedValue(false);
-      const { result } = await renderAndSettle();
+      const { result } = await renderHookAndSettle();
       expect(mockGetOnboardingStep).toHaveBeenCalled();
       expect(mockIsOnboardingComplete).toHaveBeenCalled();
       expect(result.current.currentStep).toBe(2);
@@ -80,7 +108,7 @@ describe('useOnboarding', () => {
     it('handles storage error gracefully and stops loading', async () => {
       mockGetOnboardingStep.mockRejectedValue(new Error('Storage failed'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const { result } = await renderAndSettle();
+      const { result } = await renderHookAndSettle();
       expect(result.current.loading).toBe(false);
       expect(result.current.currentStep).toBe(0);
       consoleSpy.mockRestore();
@@ -91,39 +119,43 @@ describe('useOnboarding', () => {
 
   describe('setStep', () => {
     it('saves step to storage and updates state', async () => {
-      const { result } = await renderAndSettle();
+      const { getByText, getByTestId } = await renderHarnessAndSettle();
 
       await act(async () => {
-        await result.current.setStep(4);
+        fireEvent.press(getByText('SetStep4'));
       });
+      await act(async () => {});
 
       expect(mockSaveOnboardingStep).toHaveBeenCalledWith(4);
-      expect(result.current.currentStep).toBe(4);
+      expect(getByTestId('step').props.children).toBe('4');
     });
 
     it('can set step to 0', async () => {
       mockGetOnboardingStep.mockResolvedValue(3);
-      const { result } = await renderAndSettle();
+      const { getByText, getByTestId } = await renderHarnessAndSettle();
+      expect(getByTestId('step').props.children).toBe('3');
 
       await act(async () => {
-        await result.current.setStep(0);
+        fireEvent.press(getByText('SetStep0'));
       });
+      await act(async () => {});
 
       expect(mockSaveOnboardingStep).toHaveBeenCalledWith(0);
-      expect(result.current.currentStep).toBe(0);
+      expect(getByTestId('step').props.children).toBe('0');
     });
 
     it('handles save error gracefully', async () => {
       mockSaveOnboardingStep.mockRejectedValue(new Error('Write failed'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const { result } = await renderAndSettle();
+      const { getByText, getByTestId } = await renderHarnessAndSettle();
 
       await act(async () => {
-        await result.current.setStep(5);
+        fireEvent.press(getByText('SetStep5'));
       });
+      await act(async () => {});
 
       // Step should not update on error
-      expect(result.current.currentStep).toBe(0);
+      expect(getByTestId('step').props.children).toBe('0');
       consoleSpy.mockRestore();
     });
   });
@@ -133,29 +165,31 @@ describe('useOnboarding', () => {
   describe('completeOnboarding', () => {
     it('marks onboarding complete and resets step to 0', async () => {
       mockGetOnboardingStep.mockResolvedValue(3);
-      const { result } = await renderAndSettle();
-      expect(result.current.currentStep).toBe(3);
+      const { getByText, getByTestId } = await renderHarnessAndSettle();
+      expect(getByTestId('step').props.children).toBe('3');
 
       await act(async () => {
-        await result.current.completeOnboarding();
+        fireEvent.press(getByText('Complete'));
       });
+      await act(async () => {});
 
       expect(mockMarkOnboardingComplete).toHaveBeenCalled();
-      expect(result.current.isComplete).toBe(true);
-      expect(result.current.currentStep).toBe(0);
+      expect(getByTestId('complete').props.children).toBe('true');
+      expect(getByTestId('step').props.children).toBe('0');
     });
 
     it('handles complete error gracefully', async () => {
       mockMarkOnboardingComplete.mockRejectedValue(new Error('Complete failed'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const { result } = await renderAndSettle();
+      const { getByText, getByTestId } = await renderHarnessAndSettle();
 
       await act(async () => {
-        await result.current.completeOnboarding();
+        fireEvent.press(getByText('Complete'));
       });
+      await act(async () => {});
 
       // State should not change on error
-      expect(result.current.isComplete).toBe(false);
+      expect(getByTestId('complete').props.children).toBe('false');
       consoleSpy.mockRestore();
     });
   });
