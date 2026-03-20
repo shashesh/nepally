@@ -58,6 +58,13 @@
 - Never use `DROP TABLE` or `DROP TYPE` in an incremental migration unless explicitly confirmed safe with no live data.
 - Never use timestamped filenames (e.g., `20260224_something.sql`). Use sequential numeric prefixes only.
 
+## Git Workflow Rules (Non-Negotiable)
+- **NEVER commit or push directly to the master branch.**
+- Before every `git commit` or `git push`, verify the current branch is NOT master.
+- If on master, create or switch to a feature branch first.
+- All changes must go through feature branches and pull requests.
+- Never auto-commit or auto-push — always confirm with the user first.
+
 ## Project-Specific Conventions
 - Web route logic lives in `apps/web/src/pages/*` with providers in `apps/web/src/pages/_app.tsx`.
 - Web styling uses CSS Modules; avoid introducing alternative styling systems.
