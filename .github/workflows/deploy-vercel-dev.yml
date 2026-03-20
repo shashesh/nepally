@@ -11,6 +11,7 @@ on:
       - 'package-lock.json'
       - '.github/workflows/deploy-vercel-dev.yml'
       - '.github/workflows/deploy-vercel-prod.yml'
+      - '.github/workflows/preview-vercel.yml'
 
 permissions:
   contents: read
@@ -46,6 +47,9 @@ jobs:
               'Web E2E tests',
             ];
 
+            const MAX_ATTEMPTS = 30;
+            const POLL_INTERVAL_MS = 20_000; // 20 seconds between polls (~10 min max)
+
             const { owner, repo } = context.repo;
             const mergeCommitSha = context.sha;
 
@@ -62,42 +66,63 @@ jobs:
             }
 
             // CI checks run on the PR head commit, not the merge commit.
-            // Look up checks on the PR head SHA where CI actually ran.
             const prHeadSha = mergedPulls[0].head.sha;
             const commitSha = prHeadSha;
+            core.info(`Waiting for CI checks on PR head SHA: ${commitSha}`);
 
-            const checksResponse = await github.rest.checks.listForRef({
-              owner,
-              repo,
-              ref: commitSha,
-              per_page: 100,
-            });
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-            const latestRunByName = new Map();
-            for (const run of checksResponse.data.check_runs) {
-              if (!requiredChecks.includes(run.name)) continue;
-              const existing = latestRunByName.get(run.name);
-              const existingCompletedAt = existing?.completed_at ? Date.parse(existing.completed_at) : 0;
-              const runCompletedAt = run.completed_at ? Date.parse(run.completed_at) : 0;
-              if (!existing || runCompletedAt >= existingCompletedAt) {
-                latestRunByName.set(run.name, run);
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+              const checksResponse = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref: commitSha,
+                per_page: 100,
+              });
+
+              const latestRunByName = new Map();
+              for (const run of checksResponse.data.check_runs) {
+                if (!requiredChecks.includes(run.name)) continue;
+                const existing = latestRunByName.get(run.name);
+                // Use run ID (monotonically increasing) so in-progress reruns
+                // always replace older completed runs.
+                if (!existing || run.id > existing.id) {
+                  latestRunByName.set(run.name, run);
+                }
+              }
+
+              const missingChecks = requiredChecks.filter((name) => !latestRunByName.has(name));
+              const pendingChecks = requiredChecks.filter((name) => {
+                const run = latestRunByName.get(name);
+                return run && run.status !== 'completed';
+              });
+
+              // All checks present and completed — evaluate results
+              if (missingChecks.length === 0 && pendingChecks.length === 0) {
+                const failingChecks = requiredChecks.filter(
+                  (name) => latestRunByName.get(name).conclusion !== 'success',
+                );
+                if (failingChecks.length > 0) {
+                  const details = failingChecks
+                    .map((name) => `${name}=${latestRunByName.get(name).conclusion}`)
+                    .join(', ');
+                  core.setFailed(`Required checks not successful on ${commitSha}: ${details}`);
+                  return;
+                }
+                core.info(`All required checks passed on ${commitSha}.`);
+                return;
+              }
+
+              // Still waiting — log and retry
+              const waiting = [...missingChecks.map((n) => `${n} (missing)`), ...pendingChecks.map((n) => `${n} (in progress)`)];
+              core.info(`Attempt ${attempt}/${MAX_ATTEMPTS}: waiting for: ${waiting.join(', ')}`);
+
+              if (attempt < MAX_ATTEMPTS) {
+                await sleep(POLL_INTERVAL_MS);
               }
             }
 
-            const missingChecks = requiredChecks.filter((name) => !latestRunByName.has(name));
-            if (missingChecks.length > 0) {
-              core.setFailed(`Missing required checks on ${commitSha}: ${missingChecks.join(', ')}`);
-              return;
-            }
-
-            const failingChecks = requiredChecks.filter((name) => latestRunByName.get(name).conclusion !== 'success');
-            if (failingChecks.length > 0) {
-              const details = failingChecks
-                .map((name) => `${name}=${latestRunByName.get(name).conclusion}`)
-                .join(', ');
-              core.setFailed(`Required checks not successful on ${commitSha}: ${details}`);
-              return;
-            }
+            core.setFailed(`Timed out waiting for CI checks on ${commitSha} after ${MAX_ATTEMPTS} attempts.`);
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -111,20 +136,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
       - name: Pull Vercel environment (preview)
-        run: npx vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: apps/web
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Vercel artifact
-        run: npx vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: apps/web
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel preview
         id: deploy
         run: |
-          deployment_url=$(npx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --yes | tail -n 1)
+          deployment_url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --yes | tail -n 1)
           echo "deployment_url=${deployment_url}" >> "$GITHUB_OUTPUT"
-        working-directory: apps/web
 
       - name: Deployment summary
         run: |
