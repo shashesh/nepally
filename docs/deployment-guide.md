@@ -123,9 +123,9 @@ Since GitHub Actions controls all deployments, Vercel's built-in Git integration
 
 **Dev deploy (automatic):**
 
-1. Trigger: push to `master` (path-filtered for web/shared/deploy files)
+1. Trigger: `workflow_run` — fires automatically after CI completes on `master`
 2. Workflow: `.github/workflows/deploy-vercel-dev.yml`
-3. Guarded by workflow checks: commit must be associated with a merged PR and required CI checks must be successful
+3. Only runs if CI succeeded (no separate guard needed)
 4. Target: Vercel preview/dev project
 
 **Production deploy (manual):**
@@ -133,13 +133,9 @@ Since GitHub Actions controls all deployments, Vercel's built-in Git integration
 1. Trigger: `workflow_dispatch`
 2. Workflow: `.github/workflows/deploy-vercel-prod.yml`
 3. Always checks out latest `master`
-4. Guarded by workflow checks: latest `master` commit must be associated with a merged PR and required CI checks must be successful
+4. Guard verifies all CI checks passed on the master commit
 5. Requires GitHub environment approval before deployment
 6. Target: Vercel production project
-
-**Private repository fallback protection:**
-
-If GitHub plan limits prevent branch protection/ruleset enforcement on private repositories, the deploy workflows still enforce release safety by refusing deployment unless the merged-PR + successful-checks criteria are met.
 
 ### 10. Monitor Deployment
 

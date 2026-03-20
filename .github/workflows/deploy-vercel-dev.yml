@@ -1,22 +1,15 @@
 name: Deploy Web Dev (Vercel)
 
 on:
-  push:
+  workflow_run:
+    workflows: ['CI']
+    types:
+      - completed
     branches:
       - master
-    paths:
-      - 'apps/web/**'
-      - 'packages/shared/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/deploy-vercel-dev.yml'
-      - '.github/workflows/deploy-vercel-prod.yml'
-      - '.github/workflows/preview-vercel.yml'
 
 permissions:
   contents: read
-  pull-requests: read
-  checks: read
 
 concurrency:
   group: vercel-dev-deploy
@@ -25,6 +18,7 @@ concurrency:
 jobs:
   deploy_dev:
     name: Deploy to Vercel Dev
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: dev
 
@@ -33,97 +27,6 @@ jobs:
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
 
     steps:
-      - name: Guard - merged PR + required checks
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const requiredChecks = [
-              'PR gate',
-              'Lint',
-              'Lint guards',
-              'Type check',
-              'Unit tests',
-              'Coverage',
-              'Web E2E tests',
-            ];
-
-            const MAX_ATTEMPTS = 30;
-            const POLL_INTERVAL_MS = 20_000; // 20 seconds between polls (~10 min max)
-
-            const { owner, repo } = context.repo;
-            const mergeCommitSha = context.sha;
-
-            const pullsResponse = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-              owner,
-              repo,
-              commit_sha: mergeCommitSha,
-            });
-
-            const mergedPulls = pullsResponse.data.filter((pr) => Boolean(pr.merged_at));
-            if (mergedPulls.length === 0) {
-              core.setFailed(`Commit ${mergeCommitSha} is not associated with a merged pull request.`);
-              return;
-            }
-
-            // CI checks run on the PR head commit, not the merge commit.
-            const prHeadSha = mergedPulls[0].head.sha;
-            const commitSha = prHeadSha;
-            core.info(`Waiting for CI checks on PR head SHA: ${commitSha}`);
-
-            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-              const checksResponse = await github.rest.checks.listForRef({
-                owner,
-                repo,
-                ref: commitSha,
-                per_page: 100,
-              });
-
-              const latestRunByName = new Map();
-              for (const run of checksResponse.data.check_runs) {
-                if (!requiredChecks.includes(run.name)) continue;
-                const existing = latestRunByName.get(run.name);
-                // Use run ID (monotonically increasing) so in-progress reruns
-                // always replace older completed runs.
-                if (!existing || run.id > existing.id) {
-                  latestRunByName.set(run.name, run);
-                }
-              }
-
-              const missingChecks = requiredChecks.filter((name) => !latestRunByName.has(name));
-              const pendingChecks = requiredChecks.filter((name) => {
-                const run = latestRunByName.get(name);
-                return run && run.status !== 'completed';
-              });
-
-              // All checks present and completed — evaluate results
-              if (missingChecks.length === 0 && pendingChecks.length === 0) {
-                const failingChecks = requiredChecks.filter(
-                  (name) => latestRunByName.get(name).conclusion !== 'success',
-                );
-                if (failingChecks.length > 0) {
-                  const details = failingChecks
-                    .map((name) => `${name}=${latestRunByName.get(name).conclusion}`)
-                    .join(', ');
-                  core.setFailed(`Required checks not successful on ${commitSha}: ${details}`);
-                  return;
-                }
-                core.info(`All required checks passed on ${commitSha}.`);
-                return;
-              }
-
-              // Still waiting — log and retry
-              const waiting = [...missingChecks.map((n) => `${n} (missing)`), ...pendingChecks.map((n) => `${n} (in progress)`)];
-              core.info(`Attempt ${attempt}/${MAX_ATTEMPTS}: waiting for: ${waiting.join(', ')}`);
-
-              if (attempt < MAX_ATTEMPTS) {
-                await sleep(POLL_INTERVAL_MS);
-              }
-            }
-
-            core.setFailed(`Timed out waiting for CI checks on ${commitSha} after ${MAX_ATTEMPTS} attempts.`);
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -156,7 +59,8 @@ jobs:
           {
             echo "## Vercel Dev Deployment"
             echo ""
-            echo "- Branch: ${{ github.ref_name }}"
-            echo "- Commit: ${{ github.sha }}"
+            echo "- Branch: ${{ github.event.workflow_run.head_branch }}"
+            echo "- Commit: ${{ github.event.workflow_run.head_sha }}"
+            echo "- CI Run: ${{ github.event.workflow_run.html_url }}"
             echo "- URL: ${{ steps.deploy.outputs.deployment_url }}"
           } >> "$GITHUB_STEP_SUMMARY"
