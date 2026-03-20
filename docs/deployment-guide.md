@@ -190,14 +190,15 @@ Rollback options:
   - Verify required env vars are present in Vercel for the target environment.
 
 5. **Dev deploy did not trigger after a merge**
-  - Confirm merge produced a push to `master`.
-  - Confirm changed files match workflow path filters (web/shared/deploy files).
+  - Dev deploy uses `workflow_run` — it fires after CI completes on `master`.
+  - Confirm CI ran successfully on the merge commit (check Actions → CI workflow).
+  - If CI passed but deploy didn't run, the merge may not have changed web-relevant files (`apps/web/`, `packages/shared/`, `package.json`, `package-lock.json`). The deploy workflow skips non-web changes.
 
-6. **Deploy blocked with merged-PR guard failure**
-  - The commit is likely a direct push or not linked to a merged PR.
-  - Merge through PR to satisfy guard conditions.
+6. **Production deploy blocked with missing checks**
+  - CI runs automatically on push to `master`. Wait for CI to complete before triggering the production workflow.
+  - Check CI status at Actions → CI workflow for the target commit.
 
-7. **Deploy blocked with required checks failure**
+7. **Production deploy blocked with failed checks**
   - Open Actions for the target commit and ensure all required jobs are green:
     - `PR gate`
     - `Lint`
@@ -206,7 +207,7 @@ Rollback options:
     - `Unit tests`
     - `Coverage`
     - `Web E2E tests`
-  - Re-run CI or merge a fix PR, then redeploy.
+  - Re-run CI or merge a fix PR, then retrigger the production workflow.
 
 8. **Wrong environment values in runtime**
   - Verify Vercel environment variable scopes (Preview vs Production).

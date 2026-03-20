@@ -14,8 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Confirm PR event
-        run: echo "PR event for master detected. Running CI jobs."
+      - name: Confirm CI trigger
+        run: echo "CI triggered by ${{ github.event_name }} on ${{ github.ref_name }}. Running CI jobs."
 
   lint:
     name: Lint

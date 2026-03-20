@@ -76,7 +76,11 @@ jobs:
 
             const missingChecks = requiredChecks.filter((name) => !latestRunByName.has(name));
             if (missingChecks.length > 0) {
-              core.setFailed(`Missing required checks on ${commitSha}: ${missingChecks.join(', ')}. Run CI on master first.`);
+              core.setFailed(
+                `Missing required checks on ${commitSha}: ${missingChecks.join(', ')}. ` +
+                `CI runs automatically on push to master — wait for it to complete before triggering production deploy. ` +
+                `Check status: https://github.com/${owner}/${repo}/actions/workflows/ci.yml`
+              );
               return;
             }
 
