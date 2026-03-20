@@ -123,9 +123,9 @@ Since GitHub Actions controls all deployments, Vercel's built-in Git integration
 
 **Dev deploy (automatic):**
 
-1. Trigger: push to `master` (path-filtered for web/shared/deploy files)
+1. Trigger: `workflow_run` — fires automatically after CI completes on `master`
 2. Workflow: `.github/workflows/deploy-vercel-dev.yml`
-3. Guarded by workflow checks: commit must be associated with a merged PR and required CI checks must be successful
+3. Only runs if CI succeeded (no separate guard needed)
 4. Target: Vercel preview/dev project
 
 **Production deploy (manual):**
@@ -133,13 +133,9 @@ Since GitHub Actions controls all deployments, Vercel's built-in Git integration
 1. Trigger: `workflow_dispatch`
 2. Workflow: `.github/workflows/deploy-vercel-prod.yml`
 3. Always checks out latest `master`
-4. Guarded by workflow checks: latest `master` commit must be associated with a merged PR and required CI checks must be successful
+4. Guard verifies all CI checks passed on the master commit
 5. Requires GitHub environment approval before deployment
 6. Target: Vercel production project
-
-**Private repository fallback protection:**
-
-If GitHub plan limits prevent branch protection/ruleset enforcement on private repositories, the deploy workflows still enforce release safety by refusing deployment unless the merged-PR + successful-checks criteria are met.
 
 ### 10. Monitor Deployment
 
@@ -194,14 +190,15 @@ Rollback options:
   - Verify required env vars are present in Vercel for the target environment.
 
 5. **Dev deploy did not trigger after a merge**
-  - Confirm merge produced a push to `master`.
-  - Confirm changed files match workflow path filters (web/shared/deploy files).
+  - Dev deploy uses `workflow_run` — it fires after CI completes on `master`.
+  - Confirm CI ran successfully on the merge commit (check Actions → CI workflow).
+  - If CI passed but deploy didn't run, the merge may not have changed web-relevant files (`apps/web/`, `packages/shared/`, `package.json`, `package-lock.json`). The deploy workflow skips non-web changes.
 
-6. **Deploy blocked with merged-PR guard failure**
-  - The commit is likely a direct push or not linked to a merged PR.
-  - Merge through PR to satisfy guard conditions.
+6. **Production deploy blocked with missing checks**
+  - CI runs automatically on push to `master`. Wait for CI to complete before triggering the production workflow.
+  - Check CI status at Actions → CI workflow for the target commit.
 
-7. **Deploy blocked with required checks failure**
+7. **Production deploy blocked with failed checks**
   - Open Actions for the target commit and ensure all required jobs are green:
     - `PR gate`
     - `Lint`
@@ -210,7 +207,7 @@ Rollback options:
     - `Unit tests`
     - `Coverage`
     - `Web E2E tests`
-  - Re-run CI or merge a fix PR, then redeploy.
+  - Re-run CI or merge a fix PR, then retrigger the production workflow.
 
 8. **Wrong environment values in runtime**
   - Verify Vercel environment variable scopes (Preview vs Production).
