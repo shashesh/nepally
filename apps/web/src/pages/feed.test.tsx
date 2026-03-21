@@ -26,10 +26,7 @@ const feedMocks = vi.hoisted(() => ({
   notificationsShowMock: vi.fn(),
 }));
 
-vi.mock('@mantine/notifications', () => ({
-  notifications: { show: feedMocks.notificationsShowMock },
-}));
-
+vi.mock('@mantine/notifications', () => ({ notifications: { show: feedMocks.notificationsShowMock } }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: feedMocks.useAuthMock }));
 vi.mock('../hooks/useLocation', () => ({ useLocation: feedMocks.useLocationMock }));
 vi.mock('next/router', () => ({ useRouter: feedMocks.useRouterMock }));

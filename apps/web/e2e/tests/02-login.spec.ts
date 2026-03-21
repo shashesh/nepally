@@ -8,8 +8,8 @@ test.describe('Login flow', () => {
     await mockSupabaseLoggedIn(page);
 
     await page.goto('/login');
-    await page.locator('#email').fill(MOCK_USER_EMAIL);
-    await page.locator('#password').fill('Password123!');
+    await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
+    await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /sign in/i }).click();
 
     await expect(page).toHaveURL(/\/feed/, { timeout: 10_000 });
@@ -17,8 +17,8 @@ test.describe('Login flow', () => {
 
   test('invalid email shows validation error', async ({ page }) => {
     await page.goto('/login');
-    await page.locator('#email').fill('');
-    await page.locator('#password').fill('somepassword');
+    await page.getByLabel('Email').fill('');
+    await page.getByLabel('Password', { exact: true }).fill('somepassword');
     await page.getByRole('button', { name: /sign in/i }).click();
 
     await expect(page.getByText(/valid email address/i)).toBeVisible();
@@ -27,7 +27,7 @@ test.describe('Login flow', () => {
 
   test('empty password shows validation error', async ({ page }) => {
     await page.goto('/login');
-    await page.locator('#email').fill(MOCK_USER_EMAIL);
+    await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
     // leave password empty
     await page.getByRole('button', { name: /sign in/i }).click();
 
@@ -44,8 +44,8 @@ test.describe('Login flow', () => {
     });
 
     await page.goto('/login');
-    await page.locator('#email').fill(MOCK_USER_EMAIL);
-    await page.locator('#password').fill('WrongPassword1!');
+    await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
+    await page.getByLabel('Password', { exact: true }).fill('WrongPassword1!');
     await page.getByRole('button', { name: /sign in/i }).click();
 
     await expect(page.getByText(/invalid login credentials/i)).toBeVisible();
@@ -64,10 +64,11 @@ test.describe('Login flow', () => {
     });
 
     await page.goto('/login');
-    await page.locator('#email').fill(MOCK_USER_EMAIL);
-    await page.locator('#password').fill('Password123!');
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
+    await page.getByLabel('Password', { exact: true }).fill('Password123!');
+    const submitButton = page.getByRole('button', { name: /sign in/i });
+    await submitButton.click();
 
-    await expect(page.getByRole('button', { name: /signing in/i })).toBeVisible();
+    await expect(submitButton).toBeDisabled();
   });
 });

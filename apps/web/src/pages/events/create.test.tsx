@@ -91,8 +91,8 @@ describe('CreateEventPage', () => {
 
   it('keeps submit disabled on invalid form', async () => {
     render(React.createElement(CreateEventPage));
-    const submitButton = screen.getByRole('button', { name: 'Create Event' });
-    expect(submitButton.hasAttribute('disabled')).toBe(true);
+    const submitButton = screen.getByRole('button', { name: /Create Event/ });
+    expect(submitButton.getAttribute('disabled')).not.toBeNull();
   });
 
   it('redirects to /login when not logged in', async () => {
@@ -144,7 +144,7 @@ describe('CreateEventPage', () => {
       fireEvent.change(dateInput, { target: { value: futureDate } });
     }
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create Event' }));
+    fireEvent.click(screen.getByRole('button', { name: /Create Event/ }));
 
     await waitFor(() => {
       expect(createEvent).toHaveBeenCalledWith(

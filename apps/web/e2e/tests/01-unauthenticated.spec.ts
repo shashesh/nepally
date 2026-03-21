@@ -19,8 +19,8 @@ test.describe('Unauthenticated access', () => {
   test('login page renders correctly', async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
-    await expect(page.locator('#email')).toBeVisible();
-    await expect(page.locator('#password')).toBeVisible();
+    await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
     await expect(page.locator('main').getByRole('link', { name: /^sign up$/i })).toBeVisible();
   });
@@ -28,9 +28,9 @@ test.describe('Unauthenticated access', () => {
   test('signup page renders correctly', async ({ page }) => {
     await page.goto('/signup');
     await expect(page.getByRole('heading', { name: /join nusa/i })).toBeVisible();
-    await expect(page.locator('#fullName')).toBeVisible();
-    await expect(page.locator('#email')).toBeVisible();
-    await expect(page.locator('#password')).toBeVisible();
+    await expect(page.getByLabel('Full Name')).toBeVisible();
+    await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /create account/i })).toBeVisible();
   });
 

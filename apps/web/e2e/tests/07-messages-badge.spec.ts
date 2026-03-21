@@ -23,8 +23,9 @@ test.describe('Messages badge', () => {
     await page.goto('/feed');
 
     const messagesLink = page.getByLabel('Messages');
+    const messagesIndicator = messagesLink.locator('..');
     await expect(messagesLink).toBeVisible({ timeout: 10_000 });
-    await expect(messagesLink.locator('span')).toHaveCount(0);
+    await expect(messagesIndicator.getByText('3', { exact: true })).toHaveCount(0);
 
     unreadRows = [{ unread_count: 3 }];
 
@@ -32,7 +33,7 @@ test.describe('Messages badge', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    await expect(messagesLink.locator('span')).toHaveText('3');
+    await expect(messagesIndicator.getByText('3', { exact: true })).toBeVisible();
 
     unreadRows = [];
 
@@ -40,6 +41,6 @@ test.describe('Messages badge', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    await expect(messagesLink.locator('span')).toHaveCount(0);
+    await expect(messagesIndicator.getByText('3', { exact: true })).toHaveCount(0);
   });
 });
