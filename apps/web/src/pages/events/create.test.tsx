@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 type MockHeadProps = { children?: React.ReactNode };
@@ -91,8 +91,8 @@ describe('CreateEventPage', () => {
 
   it('keeps submit disabled on invalid form', async () => {
     render(React.createElement(CreateEventPage));
-    const submitButton = screen.getByText('Create Event', { selector: 'button' });
-    expect(submitButton.getAttribute('disabled')).not.toBeNull();
+    const submitButton = screen.getByRole('button', { name: 'Create Event' });
+    expect(submitButton.hasAttribute('disabled')).toBe(true);
   });
 
   it('redirects to /login when not logged in', async () => {
@@ -144,7 +144,7 @@ describe('CreateEventPage', () => {
       fireEvent.change(dateInput, { target: { value: futureDate } });
     }
 
-    fireEvent.click(screen.getByText('Create Event', { selector: 'button' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create Event' }));
 
     await waitFor(() => {
       expect(createEvent).toHaveBeenCalledWith(

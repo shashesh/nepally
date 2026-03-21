@@ -1,55 +1,4 @@
-.container {
-  display: flex;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-m);
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.chip {
-  padding: var(--space-xs) var(--space-s);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--transition-fast);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.chip:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.chipActive {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-.chipActive:hover {
-  background: var(--color-primary-dark);
-  color: white;
-}
-
-.chipMoreActive {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.chevron {
-  font-size: 10px;
-  margin-left: 2px;
-}
-
-/* ── More Dropdown ───────────────────────── */
+/* TagFilterBar — dropdown positioning (Mantine handles buttons, checkboxes, layout) */
 .moreWrapper {
   position: relative;
 }
@@ -59,132 +8,26 @@
   top: calc(100% + 8px);
   left: 0;
   z-index: 100;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--dropdown-bg);
+  border: var(--dropdown-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--dropdown-shadow);
   min-width: 280px;
   max-width: 320px;
 }
 
 .dropdownHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-s);
   border-bottom: 1px solid var(--color-border);
 }
 
-.dropdownTitle {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.closeBtn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  line-height: 1;
-}
-
-.closeBtn:hover {
-  color: var(--color-text-primary);
-}
-
 .dropdownContent {
-  padding: var(--space-xs);
-  max-height: 300px;
   overflow-y: auto;
 }
 
-.dropdownItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: var(--space-s);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  margin-bottom: var(--space-xs);
-  transition: all var(--transition-fast);
-  text-align: left;
-}
-
-.dropdownItem:last-child {
-  margin-bottom: 0;
-}
-
-.dropdownItem:hover {
-  border-color: var(--color-primary);
-}
-
-.dropdownItemSelected {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.dropdownItemLabel {
-  flex: 1;
-}
-
-.checkmark {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-bold);
-}
-
 .dropdownFooter {
-  display: flex;
-  gap: var(--space-xs);
-  padding: var(--space-s);
   border-top: 1px solid var(--color-border);
 }
 
-.clearBtn {
-  flex: 1;
-  padding: var(--space-xs) var(--space-s);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.clearBtn:hover {
-  border-color: var(--color-text-secondary);
-  color: var(--color-text-primary);
-}
-
-.applyBtn {
-  flex: 2;
-  padding: var(--space-xs) var(--space-s);
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: white;
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.applyBtn:hover {
-  background: var(--color-primary-dark);
-}
-
-/* ── Responsive ──────────────────────────── */
 @media (max-width: 480px) {
   .dropdown {
     position: fixed;

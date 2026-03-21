@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const indexMocks = vi.hoisted(() => ({
@@ -31,8 +31,9 @@ describe('Home (index page)', () => {
 
   it('returns null while auth is loading', () => {
     indexMocks.useAuthMock.mockReturnValue({ user: null, loading: true });
-    const { container } = render(React.createElement(Home));
-    expect(container.firstChild).toBeNull();
+    render(React.createElement(Home));
+    expect(screen.queryByText('Welcome to NUSA')).toBeNull();
+    expect(screen.queryByTestId('feed-page')).toBeNull();
   });
 
   it('renders FeedPage when user is logged in', () => {

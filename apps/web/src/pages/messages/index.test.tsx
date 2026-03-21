@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -49,8 +49,8 @@ describe('MessagesPage', () => {
 
   it('returns null and redirects when user is not logged in', async () => {
     messagesMocks.useAuthMock.mockReturnValue({ user: null });
-    const { container } = render(<MessagesPage />);
-    expect(container.firstChild).toBeNull();
+    render(<MessagesPage />);
+    expect(screen.queryByText('Messages')).toBeNull();
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 

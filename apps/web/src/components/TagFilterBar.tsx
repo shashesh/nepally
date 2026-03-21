@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Button, Group, Stack, Checkbox, Text } from '@mantine/core';
+import { useClickOutside } from '@mantine/hooks';
 import { TAG_EMOJI } from '@nusa/shared';
 import type { Tag } from '@nusa/shared';
 import styles from './TagFilterBar.module.css';
@@ -20,9 +22,8 @@ export default function TagFilterBar({
 }: TagFilterBarProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [localMoreSelections, setLocalMoreSelections] = useState<string[]>([]);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useClickOutside(() => setMoreOpen(false));
 
-  // Separate visible tags and "more" tags
   const visibleTags = useMemo(() => tags.slice(0, MAX_VISIBLE_CHIPS), [tags]);
   const moreTags = useMemo(() => tags.slice(MAX_VISIBLE_CHIPS), [tags]);
   const moreSelectedCount = moreTags.filter((t) =>
@@ -31,7 +32,6 @@ export default function TagFilterBar({
 
   const isAllActive = selectedSlugs.length === 0;
 
-  // Sync local state when dropdown opens
   useEffect(() => {
     if (moreOpen) {
       setLocalMoreSelections(
@@ -39,19 +39,6 @@ export default function TagFilterBar({
       );
     }
   }, [moreOpen, moreTags, selectedSlugs]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setMoreOpen(false);
-      }
-    }
-    if (moreOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [moreOpen]);
 
   const handleMoreTagToggle = (slug: string) => {
     setLocalMoreSelections((prev) => {
@@ -63,7 +50,6 @@ export default function TagFilterBar({
   };
 
   const handleApply = () => {
-    // Remove old "more" selections and add new ones
     moreTags.forEach((tag) => {
       const wasSelected = selectedSlugs.includes(tag.slug);
       const isNowSelected = localMoreSelections.includes(tag.slug);
@@ -79,85 +65,89 @@ export default function TagFilterBar({
   };
 
   return (
-    <div className={styles.container}>
-      {/* "All" chip */}
-      <button
-        className={`${styles.chip} ${isAllActive ? styles.chipActive : ''}`}
+    <Group gap="xs" mb="md" wrap="wrap">
+      <Button
+        variant={isAllActive ? 'filled' : 'outline'}
+        color="nusaPrimary.6"
+        radius="xl"
+        size="xs"
         onClick={onAllPress}
       >
         All
-      </button>
+      </Button>
 
-      {/* Visible tag chips */}
       {visibleTags.map((tag) => {
         const isActive = selectedSlugs.includes(tag.slug);
         const emoji = TAG_EMOJI[tag.slug] || '';
         return (
-          <button
+          <Button
             key={tag.id}
-            className={`${styles.chip} ${isActive ? styles.chipActive : ''}`}
+            variant={isActive ? 'filled' : 'outline'}
+            color="nusaPrimary.6"
+            radius="xl"
+            size="xs"
             onClick={() => onTagToggle(tag.slug)}
           >
             {emoji ? `${emoji} ${tag.name}` : tag.name}
-          </button>
+          </Button>
         );
       })}
 
-      {/* "More" dropdown */}
       {moreTags.length > 0 && (
         <div className={styles.moreWrapper} ref={dropdownRef}>
-          <button
-            className={`${styles.chip} ${moreSelectedCount > 0 ? styles.chipMoreActive : ''}`}
+          <Button
+            variant={moreSelectedCount > 0 ? 'light' : 'outline'}
+            color="nusaPrimary.6"
+            radius="xl"
+            size="xs"
             onClick={() => setMoreOpen(!moreOpen)}
           >
-            More{moreSelectedCount > 0 ? ` +${moreSelectedCount}` : ''}
-            <span className={styles.chevron}>▼</span>
-          </button>
+            More{moreSelectedCount > 0 ? ` +${moreSelectedCount}` : ''} ▼
+          </Button>
 
           {moreOpen && (
             <div className={styles.dropdown}>
-              <div className={styles.dropdownHeader}>
-                <span className={styles.dropdownTitle}>Filter by Tags</span>
-                <button
-                  className={styles.closeBtn}
+              <Group justify="space-between" p="sm" className={styles.dropdownHeader}>
+                <Text fw={600}>Filter by Tags</Text>
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  size="compact-xs"
                   onClick={() => setMoreOpen(false)}
                   aria-label="Close"
                 >
                   ×
-                </button>
-              </div>
+                </Button>
+              </Group>
 
-              <div className={styles.dropdownContent}>
+              <Stack gap="xs" p="xs" mah={300} className={styles.dropdownContent}>
                 {moreTags.map((tag) => {
                   const isSelected = localMoreSelections.includes(tag.slug);
                   const emoji = TAG_EMOJI[tag.slug] || '';
                   return (
-                    <button
+                    <Checkbox
                       key={tag.id}
-                      className={`${styles.dropdownItem} ${isSelected ? styles.dropdownItemSelected : ''}`}
-                      onClick={() => handleMoreTagToggle(tag.slug)}
-                    >
-                      <span className={styles.dropdownItemLabel}>
-                        {emoji ? `${emoji} ${tag.name}` : tag.name}
-                      </span>
-                      {isSelected && <span className={styles.checkmark}>✓</span>}
-                    </button>
+                      label={emoji ? `${emoji} ${tag.name}` : tag.name}
+                      checked={isSelected}
+                      onChange={() => handleMoreTagToggle(tag.slug)}
+                      color="nusaPrimary.6"
+                    />
                   );
                 })}
-              </div>
+              </Stack>
 
-              <div className={styles.dropdownFooter}>
-                <button className={styles.clearBtn} onClick={handleClear}>
+              <Group gap="xs" p="sm" className={styles.dropdownFooter}>
+                <Button variant="outline" color="gray" size="xs" flex={1} onClick={handleClear}>
                   Clear
-                </button>
-                <button className={styles.applyBtn} onClick={handleApply}>
+                </Button>
+                <Button color="nusaPrimary.6" size="xs" flex={2} onClick={handleApply}>
                   Apply{localMoreSelections.length > 0 ? ` (${localMoreSelections.length})` : ''}
-                </button>
-              </div>
+                </Button>
+              </Group>
             </div>
           )}
         </div>
       )}
-    </div>
+    </Group>
   );
 }

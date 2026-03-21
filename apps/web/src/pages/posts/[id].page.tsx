@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, FormEvent } from 'react';
+import { ActionIcon, Badge, Button, Center, Text, UnstyledButton } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -46,8 +48,6 @@ export default function PostDetailPage() {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [saved, setSaved] = useState(false);
-  const [saveToast, setSaveToast] = useState<string | null>(null);
-  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [commentText, setCommentText] = useState('');
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
@@ -167,12 +167,6 @@ export default function PostDetailPage() {
     }
   }
 
-  function showSaveToast(message: string) {
-    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
-    setSaveToast(message);
-    saveToastTimerRef.current = setTimeout(() => setSaveToast(null), 2500);
-  }
-
   async function handleSave() {
     if (!user || !post) return;
     const wasSaved = saved;
@@ -180,11 +174,11 @@ export default function PostDetailPage() {
     if (wasSaved) {
       setSaved(false);
       const { error } = await unsavePost(supabase, post.id);
-      showSaveToast(error ? 'Failed to unsave post.' : 'Post unsaved.');
+      notifications.show({ message: error ? 'Failed to unsave post.' : 'Post unsaved.', autoClose: 2500 });
     } else {
       setSaved(true);
       const { error } = await savePost(supabase, post.id);
-      showSaveToast(error ? 'Failed to save post.' : 'Post saved.');
+      notifications.show({ message: error ? 'Failed to save post.' : 'Post saved.', autoClose: 2500 });
     }
   }
 
@@ -488,23 +482,22 @@ export default function PostDetailPage() {
   }
 
   if (loading) {
-    return <div className={styles.loading}>Loading...</div>;
+    return <Center p="xl"><Text c="dimmed">Loading...</Text></Center>;
   }
 
   if (!post) {
     return (
-      <div className={styles.loading}>
-        <h2>Post not found</h2>
-        <Link href="/feed">Back to Feed</Link>
-      </div>
+      <Center p="xl">
+        <div>
+          <h2>Post not found</h2>
+          <Link href="/feed">Back to Feed</Link>
+        </div>
+      </Center>
     );
   }
 
   return (
     <>
-      {saveToast && (
-        <div className={styles.toast}>{saveToast}</div>
-      )}
       <Head>
         <title>{post.title} - NUSA</title>
       </Head>
@@ -516,8 +509,7 @@ export default function PostDetailPage() {
         <div className={styles.postDetail}>
           <div className={styles.postHeader}>
             <div className={styles.avatarWrapper} data-avatar-menu-root="true">
-              <button
-                type="button"
+              <UnstyledButton
                 className={post.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
                 onClick={(event) => {
                   openAvatarMenu(event, post.author ? { id: post.author_id, full_name: post.author.full_name } : null);
@@ -530,7 +522,7 @@ export default function PostDetailPage() {
                   trustLevel={post.author?.trust_level}
                   size="medium"
                 />
-              </button>
+              </UnstyledButton>
             </div>
             <div className={styles.authorInfo}>
               <div className={styles.authorName}>
@@ -540,48 +532,38 @@ export default function PostDetailPage() {
             </div>
 
             <div className={styles.postHeaderActions}>
-              <span
-                className={`${styles.categoryBadge} ${post.is_global ? styles.globalBadge : styles.localBadge}`}
-              >
+              <Badge variant="light" color={post.is_global ? 'orange' : 'blue'}>
                 {post.is_global ? '🌐 Global' : '📍 Local'}
-              </span>
+              </Badge>
 
               <div className={styles.postMenuWrapper} ref={postMenuRef}>
-                <button
-                  type="button"
-                  className={styles.postMenuButton}
-                  onClick={() => setPostMenuOpen((prev) => !prev)}
-                  aria-label="Post options"
-                >
+                <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => setPostMenuOpen((prev) => !prev)} aria-label="Post options">
                   ⋯
-                </button>
+                </ActionIcon>
 
                 {postMenuOpen && (
                   <div className={styles.postMenuDropdown}>
                     {post.author_id === user?.id ? (
                       <>
-                        <button type="button" className={styles.postMenuItem} onClick={handleEditPost}>Edit Post</button>
-                        <button type="button" className={styles.postMenuItem} onClick={handleShare}>Share Post</button>
-                        <button
-                          type="button"
+                        <UnstyledButton className={styles.postMenuItem} onClick={handleEditPost}>Edit Post</UnstyledButton>
+                        <UnstyledButton className={styles.postMenuItem} onClick={handleShare}>Share Post</UnstyledButton>
+                        <UnstyledButton
                           className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
                           onClick={handleDeletePost}
                         >
                           Delete Post
-                        </button>
+                        </UnstyledButton>
                       </>
                     ) : (
                       <>
-                        <button
-                          type="button"
+                        <UnstyledButton
                           className={styles.postMenuItem}
                           onClick={() => { setPostMenuOpen(false); handleSave(); }}
                         >
                           {saved ? 'Unsave Post' : 'Save Post'}
-                        </button>
-                        <button type="button" className={styles.postMenuItem} onClick={handleShare}>Share Post</button>
-                        <button
-                          type="button"
+                        </UnstyledButton>
+                        <UnstyledButton className={styles.postMenuItem} onClick={handleShare}>Share Post</UnstyledButton>
+                        <UnstyledButton
                           className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
                           onClick={() => {
                             setPostMenuOpen(false);
@@ -589,7 +571,7 @@ export default function PostDetailPage() {
                           }}
                         >
                           Report Post
-                        </button>
+                        </UnstyledButton>
                       </>
                     )}
                   </div>
@@ -712,9 +694,9 @@ export default function PostDetailPage() {
               {replyTargetId && (
                 <div className={styles.replyBanner}>
                   Replying to comment
-                  <button type="button" className={styles.replyCancel} onClick={() => setReplyTargetId(null)}>
+                  <Button variant="subtle" size="compact-sm" onClick={() => setReplyTargetId(null)}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               )}
               <div className={styles.commentFormRow}>
@@ -725,13 +707,9 @@ export default function PostDetailPage() {
                   className={styles.commentInput}
                   placeholder={replyTargetId ? 'Write a reply...' : 'Write a comment...'}
                 />
-                <button
-                  type="submit"
-                  className={styles.commentSubmitBtn}
-                  disabled={submitting || !commentText.trim()}
-                >
-                  {submitting ? '...' : 'Post'}
-                </button>
+                <Button type="submit" disabled={!commentText.trim()} loading={submitting}>
+                  Post
+                </Button>
               </div>
             </form>
           )}
@@ -745,8 +723,7 @@ export default function PostDetailPage() {
               <div key={thread.parent.id} className={styles.commentThread}>
                 <div className={styles.comment}>
                   <div className={styles.avatarWrapper} data-avatar-menu-root="true">
-                    <button
-                      type="button"
+                    <UnstyledButton
                       className={thread.parent.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
                       onClick={(event) => {
                         openAvatarMenu(event,
@@ -763,7 +740,7 @@ export default function PostDetailPage() {
                         trustLevel={thread.parent.author?.trust_level}
                         size="small"
                       />
-                    </button>
+                    </UnstyledButton>
                   </div>
                   <div className={styles.commentContent}>
                     <span className={styles.commentAuthor}>{thread.parent.author?.full_name || 'Anonymous'}</span>
@@ -794,8 +771,7 @@ export default function PostDetailPage() {
                 {expandedReplies[thread.parent.id] && thread.replies.map((reply) => (
                   <div key={reply.id} className={styles.replyRow}>
                     <div className={styles.avatarWrapper} data-avatar-menu-root="true">
-                      <button
-                        type="button"
+                      <UnstyledButton
                         className={reply.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
                         onClick={(event) => {
                           openAvatarMenu(event,
@@ -812,7 +788,7 @@ export default function PostDetailPage() {
                           trustLevel={reply.author?.trust_level}
                           size="small"
                         />
-                      </button>
+                      </UnstyledButton>
                     </div>
                     <div className={styles.commentContent}>
                       <span className={styles.commentAuthor}>{reply.author?.full_name || 'Anonymous'}</span>
@@ -839,7 +815,7 @@ export default function PostDetailPage() {
             className={`${styles.avatarDropdown} ${styles.avatarDropdownAnchored}`}
             data-avatar-menu-root="true"
           >
-            <button
+            <UnstyledButton
               className={styles.avatarDropdownItem}
               onClick={() => {
                 const targetId = avatarMenuUser?.id;
@@ -850,8 +826,8 @@ export default function PostDetailPage() {
               }}
             >
               View Profile
-            </button>
-            <button
+            </UnstyledButton>
+            <UnstyledButton
               className={styles.avatarDropdownItem}
               onClick={() => {
                 setAvatarMenuOpen(false);
@@ -859,7 +835,7 @@ export default function PostDetailPage() {
               }}
             >
               Chat
-            </button>
+            </UnstyledButton>
           </div>
         )}
 

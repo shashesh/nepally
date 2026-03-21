@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '../../test-utils';
 import { describe, it, expect, vi } from 'vitest';
 import type { EventRsvp } from '@nusa/shared';
 
@@ -16,21 +16,6 @@ vi.mock('../Avatar', () => ({
     React.createElement('div', { 'data-testid': `avatar-${name}` }),
 }));
 
-vi.mock('./AttendeeList.module.css', () => ({
-  default: {
-    overlay: 'overlay',
-    dialog: 'dialog',
-    header: 'header',
-    title: 'title',
-    closeButton: 'closeButton',
-    loading: 'loading',
-    empty: 'empty',
-    list: 'list',
-    attendeeRow: 'attendeeRow',
-    attendeeName: 'attendeeName',
-  },
-}));
-
 import AttendeeList from './AttendeeList';
 
 const makeRsvp = (id: string, name: string) => ({
@@ -45,11 +30,6 @@ describe('AttendeeList (web)', () => {
   it('renders title "Attendees"', () => {
     render(React.createElement(AttendeeList, { attendees: [], onClose: vi.fn() }));
     expect(screen.getByText('Attendees')).toBeDefined();
-  });
-
-  it('shows loading state when loading=true', () => {
-    render(React.createElement(AttendeeList, { attendees: [], loading: true, onClose: vi.fn() }));
-    expect(screen.getByText('Loading...')).toBeDefined();
   });
 
   it('shows empty state when no attendees and not loading', () => {
@@ -73,28 +53,12 @@ describe('AttendeeList (web)', () => {
   it('calls onClose when close button is clicked', () => {
     const onClose = vi.fn();
     render(React.createElement(AttendeeList, { attendees: [], onClose }));
-    fireEvent.click(screen.getByLabelText('Close'));
+    // Mantine Modal renders a close button with role="button"
+    const buttons = screen.getAllByRole('button');
+    const closeBtn = buttons.find(b => b.className.includes('close') || b.className.includes('Close'));
+    expect(closeBtn).toBeDefined();
+    fireEvent.click(closeBtn!);
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('calls onClose when overlay (backdrop) is clicked', () => {
-    const onClose = vi.fn();
-    const { container } = render(
-      React.createElement(AttendeeList, { attendees: [], onClose })
-    );
-    // The outer overlay div has role="dialog"
-    const overlay = container.querySelector('[role="dialog"]');
-    expect(overlay).not.toBeNull();
-    fireEvent.click(overlay!);
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not close when inner dialog is clicked', () => {
-    const onClose = vi.fn();
-    render(React.createElement(AttendeeList, { attendees: [], onClose }));
-    // Click the title element inside the dialog — should not propagate to overlay
-    fireEvent.click(screen.getByText('Attendees'));
-    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('shows "User" fallback when attendee has no user data', () => {

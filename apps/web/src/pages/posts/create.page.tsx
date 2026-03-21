@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Alert, Button, Switch, Text } from '@mantine/core';
 import Head from 'next/head';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
@@ -510,20 +511,14 @@ export default function CreatePostPage() {
       <div className={styles.container}>
         {/* Header */}
         <div className={styles.header}>
-          <button className={styles.cancelBtn} onClick={handleCancel}>
-            Cancel
-          </button>
+          <Button variant="subtle" onClick={handleCancel}>Cancel</Button>
           <h2 className={styles.headerTitle}>{isEditing ? 'Edit Post' : 'Create Post'}</h2>
-          <button
-            className={`${styles.postBtn} ${!canSubmit ? styles.postBtnDisabled : ''}`}
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-          >
-            {submitting ? (isEditing ? 'Saving...' : 'Posting...') : (isEditing ? 'Save' : 'Post')}
-          </button>
+          <Button disabled={!canSubmit} loading={submitting} onClick={handleSubmit}>
+            {isEditing ? 'Save' : 'Post'}
+          </Button>
         </div>
 
-        {error && <div className={styles.error}>{error}</div>}
+        {error && <Alert color="red" variant="light">{error}</Alert>}
 
         {/* Title */}
         <div className={styles.titleSection}>
@@ -536,12 +531,12 @@ export default function CreatePostPage() {
             aria-label="Post title, required"
           />
           {title.length >= TITLE_COUNTER_THRESHOLD && (
-            <span className={`${styles.charCounter} ${title.length >= 140 ? styles.charCounterError : ''}`}>
+            <Text size="xs" c={title.length >= 140 ? 'red' : 'dimmed'} ta="right" mt={4}>
               {title.length}/{TITLE_MAX}
-            </span>
+            </Text>
           )}
           {!titleValid && title.length > 0 && (
-            <div className={styles.inlineError}>Title must be at least 5 characters</div>
+            <Text c="red" size="xs" mt={6}>Title must be at least 5 characters</Text>
           )}
         </div>
 
@@ -556,12 +551,12 @@ export default function CreatePostPage() {
             aria-label="Post body, required"
           />
           {body.length >= BODY_COUNTER_THRESHOLD && (
-            <span className={`${styles.charCounter} ${body.length >= 4800 ? styles.charCounterError : ''}`}>
+            <Text size="xs" c={body.length >= 4800 ? 'red' : 'dimmed'} ta="right" mt={4}>
               {body.length}/{BODY_MAX}
-            </span>
+            </Text>
           )}
           {!bodyValid && body.length > 0 && (
-            <div className={styles.inlineError}>Body must be at least 10 characters</div>
+            <Text c="red" size="xs" mt={6}>Body must be at least 10 characters</Text>
           )}
         </div>
 
@@ -569,9 +564,9 @@ export default function CreatePostPage() {
         <div className={styles.section}>
           <div className={styles.sectionLabelRow}>
             <div className={styles.sectionLabel}>Tags (1-3 required)</div>
-            <div className={styles.sectionHint}>{selectedTagIds.length}/{MAX_TAGS_PER_POST}</div>
+            <Text size="xs" c="dimmed">{selectedTagIds.length}/{MAX_TAGS_PER_POST}</Text>
           </div>
-          {tagsError && <div className={styles.inlineError}>{tagsError}</div>}
+          {tagsError && <Text c="red" size="xs" mt={6}>{tagsError}</Text>}
           <div className={styles.tagGrid}>
             {availableTags.map((tag) => {
               const isSelected = selectedTagIds.includes(tag.id);
@@ -593,13 +588,13 @@ export default function CreatePostPage() {
           </div>
 
           {!tagsValid && !tagsLoading && (
-            <div className={styles.inlineError}>Please select at least 1 tag</div>
+            <Text c="red" size="xs" mt={6}>Please select at least 1 tag</Text>
           )}
 
           {hasEmergencyTag && (
-            <div className={styles.emergencyWarning}>
+            <Alert color="red" variant="light" mt={10}>
               Emergency posts require moderator approval before becoming visible. This is NOT a replacement for 911.
-            </div>
+            </Alert>
           )}
         </div>
 
@@ -621,8 +616,8 @@ export default function CreatePostPage() {
               <span className={styles.photoCount}>{existingPhotos.length + selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</span>
             </span>
           </label>
-          <div className={styles.sectionHint}>Photos are optional and not required to publish.</div>
-          <div className={styles.sectionHint}>Allowed: JPG, PNG, WEBP up to {Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each.</div>
+          <Text size="xs" c="dimmed" mt={6}>Photos are optional and not required to publish.</Text>
+          <Text size="xs" c="dimmed" mt={6}>Allowed: JPG, PNG, WEBP up to {Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each.</Text>
 
           {(existingPhotos.length > 0 || selectedPhotos.length > 0) && (
             <div className={styles.photoPreviewRow}>
@@ -693,7 +688,7 @@ export default function CreatePostPage() {
           )}
 
           {isEditing && existingPhotos.length + selectedPhotos.length > 1 && (
-            <div className={styles.sectionHint}>Reorder photos by drag-and-drop, or use ← and → controls on each thumbnail.</div>
+            <Text size="xs" c="dimmed" mt={6}>Reorder photos by drag-and-drop, or use ← and → controls on each thumbnail.</Text>
           )}
         </div>
 
@@ -711,19 +706,15 @@ export default function CreatePostPage() {
               <div className={styles.globalLabel}>🌐 Post Globally</div>
               <div className={styles.globalSublabel}>Visible in all metro areas</div>
             </div>
-            <label className={styles.toggleLabel}>
-              <input
-                type="checkbox"
-                checked={isGlobal}
-                onChange={(e) => setIsGlobal(e.target.checked)}
-                className={styles.toggleInput}
-                aria-label="Post globally toggle"
-              />
-            </label>
+            <Switch
+              checked={isGlobal}
+              onChange={(e) => setIsGlobal(e.currentTarget.checked)}
+              aria-label="Post globally toggle"
+            />
           </div>
         )}
 
-        {postButtonHint && <div className={styles.submitHint}>{postButtonHint}</div>}
+        {postButtonHint && <Text c="dimmed" size="xs" ta="center" px={16} pb={16}>{postButtonHint}</Text>}
       </div>
     </>
   );

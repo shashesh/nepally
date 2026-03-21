@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+import { Avatar as MantineAvatar } from '@mantine/core';
 import styles from './Avatar.module.css';
 
 type AvatarSize = 'small' | 'medium' | 'large' | 'xlarge';
@@ -11,18 +11,11 @@ interface AvatarProps {
   size?: AvatarSize;
 }
 
-const SIZE_CLASSES: Record<AvatarSize, string> = {
-  small: styles.sizeSmall,
-  medium: styles.sizeMedium,
-  large: styles.sizeLarge,
-  xlarge: styles.sizeXlarge,
-};
-
-const FONT_CLASSES: Record<AvatarSize, string> = {
-  small: styles.initialsSmall,
-  medium: styles.initialsMedium,
-  large: styles.initialsLarge,
-  xlarge: styles.initialsXlarge,
+const SIZE_MAP: Record<AvatarSize, number> = {
+  small: 32,
+  medium: 40,
+  large: 64,
+  xlarge: 80,
 };
 
 const TRUST_CLASSES: Record<number, string> = {
@@ -45,28 +38,17 @@ export default function Avatar({
   trustLevel = 0,
   size = 'medium',
 }: AvatarProps) {
-  const sizeClass = SIZE_CLASSES[size];
-  const trustClass = TRUST_CLASSES[trustLevel] ?? TRUST_CLASSES[0];
-
-  if (photoUrl) {
-    return (
-      <div className={`${styles.avatar} ${sizeClass}`}>
-        <Image
-          src={photoUrl}
-          alt={`${name}'s avatar`}
-          fill
-          sizes="80px"
-          className={styles.avatarImage}
-        />
-      </div>
-    );
-  }
+  const trustClass = !photoUrl ? (TRUST_CLASSES[trustLevel] ?? TRUST_CLASSES[0]) : undefined;
 
   return (
-    <div className={`${styles.avatar} ${sizeClass} ${trustClass}`}>
-      <span className={`${styles.initials} ${FONT_CLASSES[size]}`}>
-        {getInitials(name)}
-      </span>
-    </div>
+    <MantineAvatar
+      src={photoUrl}
+      alt={`${name}'s avatar`}
+      size={SIZE_MAP[size]}
+      radius="xl"
+      className={trustClass}
+    >
+      {getInitials(name)}
+    </MantineAvatar>
   );
 }

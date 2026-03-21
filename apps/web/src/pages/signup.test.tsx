@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -144,12 +144,13 @@ describe('SignupPage', () => {
     });
   });
 
-  it('toggles password visibility', () => {
+  it('toggles password visibility', async () => {
     render(<SignupPage />);
-    const passwordInput = screen.getByLabelText('Password');
-    expect(passwordInput.getAttribute('type')).toBe('password');
-    fireEvent.click(screen.getByLabelText('Show password'));
-    expect(passwordInput.getAttribute('type')).toBe('text');
+    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('password');
+    await act(async () => {
+      fireEvent.mouseDown(screen.getByLabelText('Toggle password visibility'));
+    });
+    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('text');
   });
 
   it('shows loading state while submitting', async () => {
@@ -162,7 +163,9 @@ describe('SignupPage', () => {
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Creating account...' }).hasAttribute('disabled')).toBe(true);
+      const btn = screen.getByRole('button', { name: 'Create Account' });
+      expect(btn.hasAttribute('disabled')).toBe(true);
+      expect(btn.getAttribute('data-loading')).toBe('true');
     });
   });
 });

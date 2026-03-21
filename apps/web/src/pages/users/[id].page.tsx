@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Badge, Button, Center, Text } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import {
@@ -113,7 +115,7 @@ export default function PublicProfilePage() {
     if (result.data) {
       router.push(`/messages/${result.data.conversationId}`);
     } else {
-      alert('Failed to start conversation. Please try again.');
+      notifications.show({ message: 'Failed to start conversation. Please try again.', color: 'red' });
     }
   }
 
@@ -121,7 +123,7 @@ export default function PublicProfilePage() {
     return (
       <>
         <Head><title>Profile - NUSA</title></Head>
-        <div className={styles.loadingPage}>Loading profile...</div>
+        <Center p="xl"><Text c="dimmed">Loading profile...</Text></Center>
       </>
     );
   }
@@ -130,7 +132,7 @@ export default function PublicProfilePage() {
     return (
       <>
         <Head><title>Profile - NUSA</title></Head>
-        <div className={styles.errorPage}>{error || 'Profile not found.'}</div>
+        <Center p="xl"><Text c="red">{error || 'Profile not found.'}</Text></Center>
       </>
     );
   }
@@ -149,8 +151,8 @@ export default function PublicProfilePage() {
   const publicName = formatPublicName(profileUser.full_name);
 
   function renderPosts() {
-    if (postsLoading) return <div className={styles.tabMessage}>Loading...</div>;
-    if (userPosts.length === 0) return <div className={styles.tabMessage}>No posts yet.</div>;
+    if (postsLoading) return <Text c="dimmed" p="md">Loading...</Text>;
+    if (userPosts.length === 0) return <Text c="dimmed" p="md">No posts yet.</Text>;
 
     return (
       <div className={styles.postList}>
@@ -158,13 +160,9 @@ export default function PublicProfilePage() {
           <Link key={post.id} href={`/posts/${post.id}`} className={styles.postItem}>
             <div className={styles.postItemTop}>
               <span className={styles.postItemTitle}>{post.title}</span>
-              <span
-                className={`${styles.postScopeBadge} ${
-                  post.is_global ? styles.postScopeGlobal : styles.postScopeLocal
-                }`}
-              >
+              <Badge variant="light" color={post.is_global ? 'orange' : 'blue'} size="sm">
                 {post.is_global ? '🌐 Global' : '📍 Local'}
-              </span>
+              </Badge>
             </div>
             <p className={styles.postItemDescription}>{post.description}</p>
             <div className={styles.postItemMeta}>
@@ -179,8 +177,8 @@ export default function PublicProfilePage() {
   }
 
   function renderEvents() {
-    if (eventsLoading) return <div className={styles.tabMessage}>Loading...</div>;
-    if (userEvents.length === 0) return <div className={styles.tabMessage}>No events yet.</div>;
+    if (eventsLoading) return <Text c="dimmed" p="md">Loading...</Text>;
+    if (userEvents.length === 0) return <Text c="dimmed" p="md">No events yet.</Text>;
 
     return (
       <div className={styles.eventList}>
@@ -192,11 +190,9 @@ export default function PublicProfilePage() {
             <Link key={event.id} href={`/events/${event.id}`} className={styles.eventItem}>
               <div className={styles.eventItemTop}>
                 <span className={styles.eventItemTitle}>{event.title}</span>
-                {event.is_global ? (
-                  <span className={`${styles.eventScopeBadge} ${styles.eventScopeGlobal}`}>🌐 Global</span>
-                ) : (
-                  <span className={`${styles.eventScopeBadge} ${styles.eventScopeLocal}`}>📍 Local</span>
-                )}
+                <Badge variant="light" color={event.is_global ? 'orange' : 'blue'} size="sm">
+                  {event.is_global ? '🌐 Global' : '📍 Local'}
+                </Badge>
               </div>
               <p className={styles.eventItemMeta}>
                 {new Date(event.start_date).toLocaleDateString()}
@@ -239,14 +235,17 @@ export default function PublicProfilePage() {
                 Level {profileUser.trust_level}: {trustLabel}
               </span>
               {!isOwnProfile && (
-                <button
-                  className={styles.messageBtn}
+                <Button
+                  variant="gradient"
+                  gradient={{ from: 'blue', to: 'cyan' }}
+                  radius="xl"
+                  size="compact-sm"
                   onClick={handleMessage}
-                  disabled={messagingLoading}
-                  type="button"
+                  loading={messagingLoading}
+                  loaderProps={{ size: 14 }}
                 >
-                  {messagingLoading ? 'Opening...' : '💬 Message'}
-                </button>
+                  💬 Message
+                </Button>
               )}
             </div>
           </div>

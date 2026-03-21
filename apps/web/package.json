@@ -15,9 +15,16 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@mantine/core": "^8.3.18",
+    "@mantine/form": "^8.3.18",
+    "@mantine/hooks": "^8.3.18",
+    "@mantine/notifications": "^8.3.18",
     "@nusa/shared": "*",
     "@supabase/supabase-js": "^2.43.0",
     "next": "^15.5.12",
+    "postcss": "^8.4.31",
+    "postcss-preset-mantine": "^1.18.0",
+    "postcss-simple-vars": "^7.0.1",
     "react": "19.1.4",
     "react-dom": "19.1.4"
   },

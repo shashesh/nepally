@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const loginMocks = vi.hoisted(() => ({
@@ -146,17 +146,20 @@ describe('LoginPage', () => {
     });
   });
 
-  it('toggles password field type when eye button is clicked', () => {
+  it('toggles password field type when visibility button is clicked', async () => {
     render(<LoginPage />);
-    const passwordInput = screen.getByLabelText('Password');
-    expect(passwordInput.getAttribute('type')).toBe('password');
-    fireEvent.click(screen.getByLabelText('Show password'));
-    expect(passwordInput.getAttribute('type')).toBe('text');
-    fireEvent.click(screen.getByLabelText('Hide password'));
-    expect(passwordInput.getAttribute('type')).toBe('password');
+    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('password');
+    await act(async () => {
+      fireEvent.mouseDown(screen.getByLabelText('Toggle password visibility'));
+    });
+    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('text');
+    await act(async () => {
+      fireEvent.mouseDown(screen.getByLabelText('Toggle password visibility'));
+    });
+    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('password');
   });
 
-  it('disables submit button and shows loading text while signing in', async () => {
+  it('disables submit button while signing in', async () => {
     loginMocks.signInWithEmailMock.mockImplementation(
       () => new Promise((resolve) => setTimeout(resolve, 2000))
     );
@@ -169,9 +172,9 @@ describe('LoginPage', () => {
     });
     fireEvent.submit(screen.getByRole('button', { name: 'Sign In' }));
     await waitFor(() => {
-      const btn = screen.getByRole('button', { name: 'Signing in...' });
-      expect(btn).toBeDefined();
+      const btn = screen.getByRole('button', { name: 'Sign In' });
       expect(btn.hasAttribute('disabled')).toBe(true);
+      expect(btn.getAttribute('data-loading')).toBe('true');
     });
   });
 });

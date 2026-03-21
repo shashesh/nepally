@@ -1,78 +1,15 @@
-/* ── Avatar Component ─────────────────────── */
-.avatar {
-  position: relative;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-}
-
-/* Sizes */
-.sizeSmall {
-  width: 32px;
-  height: 32px;
-}
-
-.sizeMedium {
-  width: 40px;
-  height: 40px;
-}
-
-.sizeLarge {
-  width: 64px;
-  height: 64px;
-}
-
-.sizeXlarge {
-  width: 80px;
-  height: 80px;
-}
-
-/* Photo */
-.avatarImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-full);
-}
-
-/* Initials fallback */
-.initials {
-  color: white;
-  font-weight: var(--font-weight-semibold);
-  line-height: 1;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-.initialsSmall {
-  font-size: 12px;
-}
-
-.initialsMedium {
-  font-size: 14px;
-}
-
-.initialsLarge {
-  font-size: 24px;
-}
-
-.initialsXlarge {
-  font-size: 28px;
-}
-
-/* Trust level background colors */
+/* Trust level background overrides for Mantine Avatar placeholder */
 .trustLevel0 {
-  background-color: #E0E0E0;
+  --avatar-bg: #E0E0E0;
+  --avatar-color: white;
 }
 
 .trustLevel1 {
-  background-color: #4A90E2;
+  --avatar-bg: #4A90E2;
+  --avatar-color: white;
 }
 
 .trustLevel2 {
-  background-color: #7B61FF;
+  --avatar-bg: #7B61FF;
+  --avatar-color: white;
 }

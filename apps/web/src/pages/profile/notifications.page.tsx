@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Button, Switch, Text } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -91,15 +92,13 @@ export default function NotificationPreferencesPage() {
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Push Notifications</h2>
               <p className={styles.sectionDesc}>Receive alerts even when the app is closed.</p>
-              <label className={styles.toggleRow}>
+              <div className={styles.toggleRow}>
                 <span className={styles.toggleLabel}>Enable push notifications</span>
-                <input
-                  type="checkbox"
-                  className={styles.toggle}
+                <Switch
                   checked={settings.push_notifications}
-                  onChange={(e) => setSettings((s) => ({ ...s, push_notifications: e.target.checked }))}
+                  onChange={(e) => setSettings((s) => ({ ...s, push_notifications: e.currentTarget.checked }))}
                 />
-              </label>
+              </div>
             </section>
 
             {/* Notification types */}
@@ -134,18 +133,16 @@ export default function NotificationPreferencesPage() {
 
               {/* Comments */}
               <div className={styles.prefGroup}>
-                <label className={styles.toggleRow}>
+                <div className={styles.toggleRow}>
                   <div>
                     <span className={styles.prefGroupTitle}>💬 Comments</span>
                     <span className={styles.prefGroupDesc}>When someone comments on your post</span>
                   </div>
-                  <input
-                    type="checkbox"
-                    className={styles.toggle}
+                  <Switch
                     checked={settings.notify_comments}
-                    onChange={(e) => setSettings((s) => ({ ...s, notify_comments: e.target.checked }))}
+                    onChange={(e) => setSettings((s) => ({ ...s, notify_comments: e.currentTarget.checked }))}
                   />
-                </label>
+                </div>
               </div>
 
               {/* Likes */}
@@ -176,28 +173,27 @@ export default function NotificationPreferencesPage() {
 
               {/* Emergency alerts — display only, always on */}
               <div className={styles.prefGroup}>
-                <label className={`${styles.toggleRow} ${styles.toggleRowDisabled}`}>
+                <div className={`${styles.toggleRow} ${styles.toggleRowDisabled}`}>
                   <div>
                     <span className={styles.prefGroupTitle}>🛡️ Emergency Alerts</span>
                     <span className={styles.prefGroupDesc}>Verified metro-wide emergency broadcasts — required for your safety</span>
                   </div>
-                  <input type="checkbox" className={styles.toggle} checked disabled readOnly />
-                </label>
+                  <Switch checked disabled />
+                </div>
               </div>
             </section>
 
-            {error && <p className={styles.errorMsg}>{error}</p>}
+            {error && <Text c="red" mb="sm">{error}</Text>}
 
             <div className={styles.actions}>
-              <button
-                className={styles.saveBtn}
+              <Button
                 onClick={handleSave}
-                disabled={saving}
+                loading={saving}
                 type="button"
               >
-                {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Preferences'}
-              </button>
-              <Link href="/notifications" className={styles.cancelLink}>Cancel</Link>
+                {saved ? '✓ Saved' : 'Save Preferences'}
+              </Button>
+              <Button component={Link} href="/notifications" variant="default">Cancel</Button>
             </div>
           </div>
         )}

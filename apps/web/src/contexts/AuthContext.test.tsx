@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const authMocks = vi.hoisted(() => ({

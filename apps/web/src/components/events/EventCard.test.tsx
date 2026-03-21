@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../../test-utils';
 import { describe, it, expect, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -25,16 +25,6 @@ vi.mock('../Avatar', () => ({
 vi.mock('./EventTypeBadge', () => ({
   default: ({ type }: { type: string }) =>
     React.createElement('span', { 'data-testid': 'event-type-badge' }, type),
-}));
-
-vi.mock('./EventCard.module.css', () => ({
-  default: {
-    card: 'card', cardPast: 'cardPast', thumbnail: 'thumbnail',
-    thumbnailPlaceholder: 'thumbnailPlaceholder', content: 'content',
-    badgeRow: 'badgeRow', globalBadge: 'globalBadge', cancelledBadge: 'cancelledBadge',
-    title: 'title', titlePast: 'titlePast', meta: 'meta', footer: 'footer',
-    organizerRow: 'organizerRow', organizerName: 'organizerName', rsvpCount: 'rsvpCount',
-  },
 }));
 
 import EventCard from './EventCard';

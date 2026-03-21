@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render } from '../test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
 const docMocks = vi.hoisted(() => ({

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Badge, Center, Text, UnstyledButton } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -61,7 +62,7 @@ export default function MessagesPage() {
         <h1 className={styles.pageTitle}>Messages</h1>
 
         {loading ? (
-          <div className={styles.loading}>Loading conversations...</div>
+          <Center p="xl"><Text c="dimmed">Loading conversations...</Text></Center>
         ) : conversations.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>💬</div>
@@ -79,8 +80,7 @@ export default function MessagesPage() {
                   className={styles.avatarMenuWrapper}
                   ref={openAvatarMenuId === conv.id ? avatarMenuRef : undefined}
                 >
-                  <button
-                    type="button"
+                  <UnstyledButton
                     className={styles.avatarMenuBtn}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -94,11 +94,10 @@ export default function MessagesPage() {
                       trustLevel={conv.other_user_trust_level}
                       size="medium"
                     />
-                  </button>
+                  </UnstyledButton>
                   {openAvatarMenuId === conv.id && (
                     <div className={styles.avatarDropdown}>
-                      <button
-                        type="button"
+                      <UnstyledButton
                         className={styles.avatarDropdownItem}
                         onClick={() => {
                           setOpenAvatarMenuId(null);
@@ -106,7 +105,7 @@ export default function MessagesPage() {
                         }}
                       >
                         👤 View Profile
-                      </button>
+                      </UnstyledButton>
                     </div>
                   )}
                 </div>
@@ -136,9 +135,9 @@ export default function MessagesPage() {
                 </Link>
 
                 {conv.unread_count > 0 && (
-                  <span className={styles.unreadBadge}>
+                  <Badge circle size="lg">
                     {conv.unread_count}
-                  </span>
+                  </Badge>
                 )}
               </div>
             ))}

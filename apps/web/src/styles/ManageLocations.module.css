@@ -71,41 +71,6 @@
   gap: 8px;
 }
 
-.iconBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 4px;
-}
-
-.iconBtnDanger {
-  color: var(--color-error);
-}
-
-.setDefaultBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--color-primary);
-  margin-left: 32px;
-  margin-top: 4px;
-  padding: 0;
-}
-
-.addBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 15px;
-  color: var(--color-primary);
-  padding: 12px 0;
-}
-
 .addSection {
   margin-top: 16px;
   padding: 16px;
@@ -162,12 +127,6 @@
   display: block;
 }
 
-.addError {
-  color: var(--color-error);
-  font-size: 13px;
-  margin-top: 4px;
-}
-
 .chips {
   display: flex;
   gap: 8px;
@@ -197,29 +156,3 @@
   margin-top: 12px;
 }
 
-.cancelBtn {
-  flex: 1;
-  height: 40px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.saveBtn {
-  flex: 2;
-  height: 40px;
-  border: none;
-  border-radius: 8px;
-  background: var(--color-primary);
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: var(--font-weight-semibold);
-}
-
-.saveBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}

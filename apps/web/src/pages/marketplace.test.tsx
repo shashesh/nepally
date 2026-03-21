@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const marketplaceMocks = vi.hoisted(() => ({
@@ -26,8 +26,8 @@ describe('MarketplacePage', () => {
 
   it('returns null and redirects to /login when user is not logged in', async () => {
     marketplaceMocks.useAuthMock.mockReturnValue({ user: null });
-    const { container } = render(React.createElement(MarketplacePage));
-    expect(container.firstChild).toBeNull();
+    render(React.createElement(MarketplacePage));
+    expect(screen.queryByText('Marketplace Coming Soon')).toBeNull();
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 

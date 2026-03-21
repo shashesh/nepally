@@ -3,19 +3,6 @@
   margin: 0 auto;
 }
 
-.loadingPage,
-.errorPage {
-  max-width: 600px;
-  margin: var(--space-xl) auto;
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-body);
-}
-
-.errorPage {
-  color: var(--color-error);
-}
-
 /* ── Profile Card ─────────────────────────── */
 .profileCard {
   background: var(--glass-bg-strong);
@@ -79,34 +66,6 @@
   color: var(--color-primary);
 }
 
-/* ── Message Button ───────────────────────── */
-.messageBtn {
-  height: 36px;
-  padding: 0 var(--space-m);
-  background: var(--gradient-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  box-shadow: 0 4px 12px rgba(14, 95, 156, 0.22);
-  width: fit-content;
-}
-
-.messageBtn:hover {
-  background: var(--gradient-primary-hover);
-  box-shadow: 0 6px 20px rgba(14, 95, 156, 0.32);
-  transform: translateY(-1px);
-}
-
-.messageBtn:disabled {
-  opacity: 0.6;
-  cursor: default;
-  transform: none;
-}
-
 /* ── Tabs ─────────────────────────────────── */
 .menuTabs {
   display: flex;
@@ -138,12 +97,6 @@
 
 .tabContent {
   padding-top: var(--space-xs);
-}
-
-.tabMessage {
-  padding: var(--space-m) 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-small);
 }
 
 /* ── Post List ────────────────────────────── */
@@ -183,24 +136,6 @@
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-bold);
   letter-spacing: -0.01em;
-}
-
-.postScopeBadge {
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-bold);
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
-
-.postScopeLocal {
-  background: rgba(var(--color-primary-rgb), 0.07);
-  color: var(--color-text-secondary);
-}
-
-.postScopeGlobal {
-  background: rgba(var(--color-primary-rgb), 0.12);
-  color: var(--color-primary);
 }
 
 .postItemDescription {
@@ -255,24 +190,6 @@
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-bold);
   letter-spacing: -0.01em;
-}
-
-.eventScopeBadge {
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-bold);
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
-
-.eventScopeLocal {
-  background: rgba(var(--color-primary-rgb), 0.07);
-  color: var(--color-text-secondary);
-}
-
-.eventScopeGlobal {
-  background: rgba(var(--color-primary-rgb), 0.12);
-  color: var(--color-primary);
 }
 
 .eventItemMeta {

@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { Button, Text } from '@mantine/core';
 import { isValidZipCode, cleanZipCode, getMetroByZip, updateUserLocation, addSavedLocation } from '@nusa/shared';
 import type { MetroArea } from '@nusa/shared';
 import { supabase } from '../../lib/supabase';
@@ -103,7 +104,7 @@ export default function ZipCodePage() {
                 Enter your ZIP code so we can show you local community posts.
               </p>
 
-              {error && <div className={styles.error}>{error}</div>}
+              {error && <Text c="red" ta="center" mb="sm">{error}</Text>}
 
               <form onSubmit={handleZipLookup} className={styles.form}>
                 <div className={styles.fieldGroup}>
@@ -123,27 +124,31 @@ export default function ZipCodePage() {
                   />
                 </div>
 
-                <button
+                <Button
                   type="submit"
-                  className={styles.submitBtn}
-                  disabled={loading || zipCode.length !== 5}
+                  fullWidth
+                  radius="xl"
+                  loading={loading}
+                  disabled={zipCode.length !== 5}
                 >
-                  {loading ? 'Looking up...' : 'Find My Area'}
-                </button>
+                  Find My Area
+                </Button>
               </form>
 
                 <div className={styles.dividerRow}>
                   <span className={styles.dividerText}>or</span>
               </div>
 
-              <button
+              <Button
                 type="button"
-                  className={`${styles.submitBtn} ${styles.secondaryBtn}`}
+                fullWidth
+                variant="outline"
+                radius="xl"
                 onClick={handleDetectLocation}
-                disabled={detecting}
+                loading={detecting}
               >
-                {detecting ? 'Detecting...' : '📍 Detect My Location'}
-              </button>
+                📍 Detect My Location
+              </Button>
             </>
           )}
 
@@ -160,22 +165,26 @@ export default function ZipCodePage() {
                 </p>
               </div>
 
-              {error && <div className={styles.error}>{error}</div>}
+              {error && <Text c="red" ta="center" mb="sm">{error}</Text>}
 
               <div className={styles.confirmActions}>
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
+                  radius="xl"
                   onClick={() => { setStep('zip'); setMetro(null); }}
-                  className={`${styles.submitBtn} ${styles.secondaryBtn}`}
                 >
                   Change ZIP
-                </button>
-                <button
+                </Button>
+                <Button
+                  type="button"
+                  radius="xl"
+                  className={styles.flexOne}
                   onClick={handleConfirm}
-                  className={`${styles.submitBtn} ${styles.flexOne}`}
-                  disabled={loading}
+                  loading={loading}
                 >
-                  {loading ? 'Saving...' : 'Confirm & Continue'}
-                </button>
+                  Confirm & Continue
+                </Button>
               </div>
             </>
           )}

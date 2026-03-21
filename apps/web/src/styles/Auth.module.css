@@ -65,65 +65,6 @@
   box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.10);
 }
 
-.inputError {
-  border-color: var(--color-error);
-}
-
-.passwordWrapper {
-  position: relative;
-}
-
-.passwordWrapper .input {
-  width: 100%;
-  padding-right: 48px;
-}
-
-.eyeToggle {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 4px;
-  line-height: 1;
-  color: var(--color-text-tertiary);
-  transition: color var(--transition-fast);
-}
-
-.eyeToggle:hover {
-  color: var(--color-text-secondary);
-}
-
-.submitBtn {
-  height: var(--button-height);
-  background: var(--gradient-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-bold);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  margin-top: var(--space-xs);
-  box-shadow: 0 4px 16px rgba(14, 95, 156, 0.28);
-  letter-spacing: 0.01em;
-}
-
-.submitBtn:hover {
-  background: var(--gradient-primary-hover);
-  box-shadow: 0 6px 24px rgba(14, 95, 156, 0.38);
-  transform: translateY(-1px);
-}
-
-.submitBtn:disabled {
-  background: var(--color-disabled);
-  box-shadow: none;
-  cursor: not-allowed;
-  transform: none;
-}
 
 .error {
   background: rgba(198, 40, 40, 0.08);
@@ -165,21 +106,6 @@
   width: 100%;
 }
 
-.passwordErrors {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.passwordErrors li {
-  font-size: var(--font-size-caption);
-  color: var(--color-error);
-  padding: 2px 0;
-}
-
-.passwordErrors li::before {
-  content: '• ';
-}
 
 .dividerRow {
   text-align: center;
@@ -189,25 +115,6 @@
 .dividerText {
   color: var(--color-text-tertiary);
   font-size: 14px;
-}
-
-.secondaryBtn {
-  background: transparent;
-  color: var(--color-primary);
-  border: 1.5px solid rgba(var(--color-primary-rgb), 0.3);
-  border-radius: var(--radius-full);
-  transition: all var(--transition-normal);
-}
-
-.secondaryBtn:hover {
-  background: rgba(var(--color-primary-rgb), 0.08);
-  border-color: var(--color-primary);
-}
-
-.secondaryBtn:disabled {
-  color: var(--color-disabled);
-  border-color: var(--color-disabled);
-  background: transparent;
 }
 
 .confirmAreaCard {

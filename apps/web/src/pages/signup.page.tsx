@@ -2,6 +2,7 @@ import React, { useState, FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Alert, Button, List, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import { validateEmail, validatePassword, validateFullName } from '@nusa/shared';
 import { signUpWithEmail } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
@@ -16,7 +17,6 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   // Redirect if already logged in
   if (user) {
@@ -77,78 +77,61 @@ export default function SignupPage() {
             Create your account to connect with the community
           </p>
 
-          {error && <div className={styles.error}>{error}</div>}
+          {error && (
+            <Alert color="red" variant="light">
+              {error}
+            </Alert>
+          )}
 
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.fieldGroup}>
-              <label htmlFor="fullName" className={styles.label}>
-                Full Name
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                className={styles.input}
+          <form onSubmit={handleSubmit}>
+            <Stack gap="sm">
+              <TextInput
+                label="Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Your full name"
                 autoComplete="name"
               />
-            </div>
 
-            <div className={styles.fieldGroup}>
-              <label htmlFor="email" className={styles.label}>
-                Email
-              </label>
-              <input
-                id="email"
+              <TextInput
+                label="Email"
                 type="email"
-                className={styles.input}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
               />
-            </div>
 
-            <div className={styles.fieldGroup}>
-              <label htmlFor="password" className={styles.label}>
-                Password
-              </label>
-              <div className={styles.passwordWrapper}>
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  className={`${styles.input} ${passwordErrors.length > 0 ? styles.inputError : ''}`}
+              <div>
+                <PasswordInput
+                  label="Password"
                   value={password}
                   onChange={(e) => handlePasswordChange(e.target.value)}
                   placeholder="Create a strong password"
                   autoComplete="new-password"
+                  error={passwordErrors.length > 0}
+                  visibilityToggleButtonProps={{ 'aria-label': 'Toggle password visibility' }}
                 />
-                <button
-                  type="button"
-                  className={styles.eyeToggle}
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? '🙈' : '👁'}
-                </button>
+                {passwordErrors.length > 0 && (
+                  <List size="xs" mt={4}>
+                    {passwordErrors.map((err) => (
+                      <List.Item key={err}>
+                        <Text size="xs" c="red">{err}</Text>
+                      </List.Item>
+                    ))}
+                  </List>
+                )}
               </div>
-              {passwordErrors.length > 0 && (
-                <ul className={styles.passwordErrors}>
-                  {passwordErrors.map((err) => (
-                    <li key={err}>{err}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
 
-            <button
-              type="submit"
-              className={styles.submitBtn}
-              disabled={loading}
-            >
-              {loading ? 'Creating account...' : 'Create Account'}
-            </button>
+              <Button
+                type="submit"
+                fullWidth
+                loading={loading}
+                mt="xs"
+              >
+                Create Account
+              </Button>
+            </Stack>
           </form>
 
           <p className={styles.switchText}>

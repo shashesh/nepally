@@ -12,10 +12,10 @@
 }
 
 .leftRail {
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur-sm);
-  backdrop-filter: var(--glass-blur-sm);
-  border-right: var(--glass-border);
+  background: var(--surface-rail-bg);
+  -webkit-backdrop-filter: var(--surface-rail-blur);
+  backdrop-filter: var(--surface-rail-blur);
+  border-right: var(--surface-rail-border);
   padding: var(--space-m) var(--space-s);
   display: flex;
   flex-direction: column;
@@ -23,7 +23,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  box-shadow: 2px 0 24px rgba(14, 95, 156, 0.06);
+  box-shadow: var(--surface-rail-shadow);
 }
 
 .logo {
@@ -136,11 +136,11 @@
 /* ── Glassmorphism Top Bar ───────────────── */
 .topBar {
   height: var(--nav-height);
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  border-bottom: var(--glass-border);
-  box-shadow: var(--shadow-glass);
+  background: var(--surface-topbar-bg);
+  -webkit-backdrop-filter: var(--surface-topbar-blur);
+  backdrop-filter: var(--surface-topbar-blur);
+  border-bottom: var(--surface-topbar-border);
+  box-shadow: var(--surface-topbar-shadow);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -169,11 +169,11 @@
 /* ── Glassmorphism Nav (logged-out) ─────── */
 .nav {
   height: var(--nav-height);
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  border-bottom: var(--glass-border);
-  box-shadow: var(--shadow-glass);
+  background: var(--surface-nav-bg);
+  -webkit-backdrop-filter: var(--surface-nav-blur);
+  backdrop-filter: var(--surface-nav-blur);
+  border-bottom: var(--surface-nav-border);
+  box-shadow: var(--surface-nav-shadow);
   display: flex;
   align-items: center;
   padding: 0 var(--space-m);
@@ -198,45 +198,6 @@
   gap: var(--space-xs);
 }
 
-.btnPrimary,
-.btnSecondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  padding: 0 var(--space-s);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  text-decoration: none;
-  transition: all var(--transition-normal);
-  letter-spacing: 0.01em;
-}
-
-.btnPrimary {
-  background: var(--gradient-primary);
-  color: var(--color-surface);
-  box-shadow: 0 4px 14px rgba(14, 95, 156, 0.28);
-}
-
-.btnPrimary:hover {
-  background: var(--gradient-primary-hover);
-  box-shadow: 0 6px 20px rgba(14, 95, 156, 0.38);
-  text-decoration: none;
-  transform: translateY(-1px);
-}
-
-.btnSecondary {
-  background: rgba(var(--color-primary-rgb), 0.06);
-  color: var(--color-primary);
-  border: 1.5px solid rgba(var(--color-primary-rgb), 0.25);
-}
-
-.btnSecondary:hover {
-  background: rgba(var(--color-primary-rgb), 0.12);
-  border-color: var(--color-primary);
-  text-decoration: none;
-}
 
 .navRight {
   display: flex;
@@ -244,71 +205,7 @@
   gap: 8px;
 }
 
-.iconButton {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-full);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-secondary);
-  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
-}
 
-.iconButton:hover {
-  background: rgba(var(--color-primary-rgb), 0.08);
-  color: var(--color-primary);
-  transform: scale(1.08);
-}
-
-.iconBadge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  background: linear-gradient(135deg, #DC143C, #ff4d6d);
-  color: var(--color-surface);
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: var(--font-weight-bold);
-  box-shadow: 0 2px 6px rgba(220, 20, 60, 0.4);
-}
-
-.tooltipWrapper {
-  position: relative;
-}
-
-.tooltip {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  background: var(--color-text-primary);
-  color: var(--color-surface);
-  font-size: 12px;
-  font-weight: var(--font-weight-medium);
-  padding: 5px 12px;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
-  z-index: 201;
-}
-
-.tooltipWrapper:hover .tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
 
 .avatarButton {
   cursor: pointer;
@@ -337,12 +234,12 @@
   position: absolute;
   right: 0;
   top: calc(100% + 10px);
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  border: var(--glass-border);
+  background: var(--dropdown-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: var(--dropdown-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg), var(--shadow-glass);
+  box-shadow: var(--dropdown-shadow);
   z-index: 200;
   min-width: 240px;
   padding: var(--space-xs) 0;
@@ -392,12 +289,6 @@
   text-overflow: ellipsis;
 }
 
-.dropdownDivider {
-  border: none;
-  border-top: 1px solid rgba(var(--color-primary-rgb), 0.08);
-  margin: var(--space-xxs) var(--space-s);
-}
-
 .dropdownItem,
 .dropdownItemDanger {
   display: block;
@@ -437,27 +328,6 @@
   background: transparent;
 }
 
-.loadingContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(var(--color-primary-rgb), 0.12);
-  border-top: 3px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 @media (max-width: 980px) {
   .appShell {
@@ -486,11 +356,6 @@
     padding: 0 var(--space-s);
   }
 
-  .iconButton {
-    width: 36px;
-    height: 36px;
-  }
-
   .dropdown {
     min-width: 220px;
   }
@@ -511,12 +376,12 @@
   width: 360px;
   max-height: 480px;
   overflow-y: auto;
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  border: var(--glass-border);
+  background: var(--dropdown-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: var(--dropdown-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-glass), 0 8px 32px rgba(14, 95, 156, 0.12);
+  box-shadow: var(--dropdown-shadow);
   z-index: 200;
   animation: notifDropdownIn 0.15s ease;
 }
@@ -531,7 +396,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px 10px;
-  border-bottom: var(--glass-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .notifDropdownTitle {
@@ -566,7 +431,7 @@
   gap: 10px;
   padding: 12px 16px;
   cursor: pointer;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--color-border);
   transition: background var(--transition-fast);
 }
 
@@ -646,7 +511,7 @@
 
 .notifDropdownFooter {
   padding: 10px 16px;
-  border-top: var(--glass-border);
+  border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: flex-end;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -22,6 +22,7 @@ const postDetailMocks = vi.hoisted(() => ({
   buildSingleLevelCommentThreadsMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
   logClientEventMock: vi.fn(),
+  notificationsShowMock: vi.fn(),
 }));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: postDetailMocks.useAuthMock }));
@@ -49,6 +50,9 @@ vi.mock('@nusa/shared', async () => {
     TAG_EMOJI: { housing: '🏠', jobs: '💼' },
   };
 });
+vi.mock('@mantine/notifications', () => ({
+  notifications: { show: postDetailMocks.notificationsShowMock },
+}));
 vi.mock('../../components/Avatar', () => ({
   default: ({ name }: { name: string }) =>
     React.createElement('div', { 'data-testid': 'avatar' }, name),
@@ -254,7 +258,9 @@ describe('PostDetailPage', () => {
     fireEvent.click(screen.getByText(/🏷️ Save/));
 
     await waitFor(() => {
-      expect(screen.getByText('Post saved.')).toBeDefined();
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Post saved.' })
+      );
     });
   });
 
@@ -268,7 +274,9 @@ describe('PostDetailPage', () => {
 
     await waitFor(() => {
       expect(postDetailMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
-      expect(screen.getByText('Post unsaved.')).toBeDefined();
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Post unsaved.' })
+      );
     });
   });
 
@@ -281,7 +289,9 @@ describe('PostDetailPage', () => {
     fireEvent.click(screen.getByText(/🏷️ Save/));
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to save post.')).toBeDefined();
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Failed to save post.' })
+      );
     });
   });
 

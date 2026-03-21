@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { Badge, Button, Divider, Group, Stack, Text, UnstyledButton } from '@mantine/core';
+import { useClickOutside } from '@mantine/hooks';
 import { useLocation } from '../hooks/useLocation';
 import { getShortMetroName, hasMetroChanged, MAX_SAVED_LOCATIONS_PREMIUM } from '@nusa/shared';
 import type { SavedLocation } from '@nusa/shared';
@@ -15,6 +17,7 @@ export default function LocationSwitcher() {
     browseMetro,
   } = useLocation();
   const [open, setOpen] = useState(false);
+  const containerRef = useClickOutside(() => setOpen(false));
 
   if (!activeLocation) return null;
 
@@ -49,107 +52,113 @@ export default function LocationSwitcher() {
   };
 
   return (
-    <div className={styles.container}>
-      <button
+    <div ref={containerRef} className={styles.container}>
+      <UnstyledButton
         className={styles.locationTrigger}
         onClick={() => setOpen(!open)}
         aria-label={`Current location: ${activeLocation.metro_name}. Tap to switch locations`}
       >
         <span className={styles.locationIcon}>📍</span>
-        <span className={styles.locationName}>
+        <Text size="sm" fw={700} truncate maw={200}>
           {getShortMetroName(activeLocation.metro_name)}
-        </span>
-        <span className={styles.chevron}>▼</span>
+        </Text>
+        <Text size="xs" c="dimmed">▼</Text>
         {activeLocation.is_temporary && (
-          <span className={styles.visitingBadge}>Visiting</span>
+          <Badge variant="light" color="orange" size="xs">Visiting</Badge>
         )}
-      </button>
+      </UnstyledButton>
 
       {open && (
-        <>
-          <div className={styles.dropdownOverlay} onClick={() => setOpen(false)} />
-          <div className={styles.dropdown}>
-            <div className={styles.sectionHeader}>Your Locations</div>
+        <div className={styles.dropdown}>
+          <Text size="xs" fw={700} c="dimmed" tt="uppercase" px="sm" pt="sm" pb="xs" lts="0.8px">
+            Your Locations
+          </Text>
 
-            {savedLocations.map((loc) => {
-              const isActive =
-                activeLocation.metro_area_id === loc.metro_area_id;
-              const metroDisplay = loc.metro_area
-                ? `${loc.metro_area.name}, ${loc.metro_area.state}`
-                : loc.metro_area_id;
+          {savedLocations.map((loc) => {
+            const isActive = activeLocation.metro_area_id === loc.metro_area_id;
+            const metroDisplay = loc.metro_area
+              ? `${loc.metro_area.name}, ${loc.metro_area.state}`
+              : loc.metro_area_id;
 
-              return (
-                <div
-                  key={loc.id}
-                  className={styles.locationItem}
-                  onClick={() => handleSelectSaved(loc)}
-                >
-                  <div className={styles.locationItemLeft}>
-                    {loc.is_default ? (
-                      <span className={styles.starIcon}>⭐</span>
-                    ) : (
-                      <span className={styles.starPlaceholder} />
-                    )}
-                    <div>
-                      <div className={styles.locationLabel}>{loc.label}</div>
-                      <div className={styles.locationMetro}>{metroDisplay}</div>
-                    </div>
+            return (
+              <UnstyledButton
+                key={loc.id}
+                className={styles.locationItem}
+                onClick={() => handleSelectSaved(loc)}
+                w="100%"
+              >
+                <Group gap="xs" flex={1}>
+                  <Text size="sm" w={18} ta="center">
+                    {loc.is_default ? '⭐' : ''}
+                  </Text>
+                  <div>
+                    <Text size="sm" fw={600}>{loc.label}</Text>
+                    <Text size="xs" c="dimmed">{metroDisplay}</Text>
                   </div>
-                  {isActive && <span className={styles.checkmark}>✓</span>}
-                </div>
-              );
-            })}
+                </Group>
+                {isActive && <Text c="nusaPrimary.6" size="lg">✓</Text>}
+              </UnstyledButton>
+            );
+          })}
 
-            {showDetected && (
-              <>
-                <div className={styles.divider} />
-                <div className={styles.sectionHeader}>Detected Location</div>
-                <div
-                  className={styles.detectedItem}
-                  onClick={handleSelectDetected}
-                >
-                  <div className={styles.detectedLeft}>
-                    <span className={styles.detectedIcon}>📡</span>
-                    <div>
-                      <div className={styles.detectedSubtext}>
-                        You&apos;re currently near
-                      </div>
-                      <div className={styles.detectedMetro}>
-                        {getShortMetroName(detectedLocation!.metro_name)},{' '}
-                        {detectedLocation!.metro_state}
-                      </div>
-                    </div>
+          {showDetected && (
+            <>
+              <Divider />
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase" px="sm" pt="sm" pb="xs" lts="0.8px">
+                Detected Location
+              </Text>
+              <UnstyledButton
+                className={styles.detectedItem}
+                onClick={handleSelectDetected}
+                w="100%"
+              >
+                <Group gap="xs" flex={1}>
+                  <Text size="sm">📡</Text>
+                  <div>
+                    <Text size="xs" c="dimmed">You&apos;re currently near</Text>
+                    <Text size="sm" fw={600} c="nusaPrimary.6">
+                      {getShortMetroName(detectedLocation!.metro_name)},{' '}
+                      {detectedLocation!.metro_state}
+                    </Text>
                   </div>
-                  <span>→</span>
-                </div>
-              </>
-            )}
+                </Group>
+                <Text>→</Text>
+              </UnstyledButton>
+            </>
+          )}
 
-            <div className={styles.divider} />
+          <Divider />
 
+          <Stack gap={0} px="sm" py="xs">
             {savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
-              <button
-                className={styles.addButton}
+              <Button
+                variant="subtle"
+                color="nusaPrimary.6"
+                size="sm"
+                justify="flex-start"
+                fullWidth
                 onClick={() => {
                   setOpen(false);
                   router.push('/profile/locations?add=true');
                 }}
               >
                 ＋ Add a Location
-              </button>
+              </Button>
             )}
-
-            <button
-              className={styles.manageLink}
+            <Button
+              variant="subtle"
+              color="gray"
+              size="xs"
+              fullWidth
               onClick={() => {
                 setOpen(false);
                 router.push('/profile/locations');
               }}
             >
               Manage Locations
-            </button>
-          </div>
-        </>
+            </Button>
+          </Stack>
+        </div>
       )}
     </div>
   );

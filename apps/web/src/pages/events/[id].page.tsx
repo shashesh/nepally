@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Badge, Button, Center, Text, UnstyledButton } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -192,7 +193,7 @@ export default function EventDetailPage() {
     return (
       <div className={styles.page}>
         <div className={styles.container}>
-          <div className={styles.centered}>Loading...</div>
+          <Center p="xl"><Text c="dimmed">Loading...</Text></Center>
         </div>
       </div>
     );
@@ -204,7 +205,7 @@ export default function EventDetailPage() {
         <div className={styles.container}>
           <div className={styles.centered}>
             <div>
-              <p className={styles.errorText}>{error ?? 'Event not found'}</p>
+              <Text c="red">{error ?? 'Event not found'}</Text>
               <Link href="/events" className={styles.backLink}>← Back to Events</Link>
             </div>
           </div>
@@ -244,15 +245,15 @@ export default function EventDetailPage() {
 
               <div className={styles.mainBody}>
                 {isCancelled && (
-                  <div className={styles.cancelledBanner}>This event has been cancelled.</div>
+                  <Alert color="red" variant="light" mb="sm">This event has been cancelled.</Alert>
                 )}
                 {isPast && !isCancelled && (
-                  <div className={styles.pastBanner}>This event has passed.</div>
+                  <Alert color="gray" variant="light" mb="sm">This event has passed.</Alert>
                 )}
 
                 <div className={styles.badgeRow}>
                   <EventTypeBadge type={event.event_type} />
-                  {event.is_global && <span className={styles.globalBadge}>🌐 Global</span>}
+                  {event.is_global && <Badge variant="light" color="orange">🌐 Global</Badge>}
                 </div>
 
                 <h1 className={styles.title}>
@@ -289,13 +290,12 @@ export default function EventDetailPage() {
 
                 {event.rsvp_visibility === 'public' || isOrganizer ? (
                   event.rsvp_count > 0 ? (
-                    <button
-                      type="button"
+                    <UnstyledButton
                       className={`${styles.rsvpCountButton} ${styles.rsvpCount} ${styles.rsvpCountClickable}`}
                       onClick={handleShowAttendees}
                     >
                       {event.rsvp_count === 1 ? '1 person going' : `${event.rsvp_count} people going`}
-                    </button>
+                    </UnstyledButton>
                   ) : (
                     <p className={styles.rsvpCount}>0 people going</p>
                   )
@@ -331,14 +331,14 @@ export default function EventDetailPage() {
                     </div>
                   </div>
                   {!isOrganizer && !isLevel0 && (
-                    <button
-                      className={styles.messageButton}
-                      type="button"
+                    <Button
+                      variant="outline"
+                      fullWidth
                       onClick={handleMessageOrganizer}
-                      disabled={messagingLoading}
+                      loading={messagingLoading}
                     >
-                      {messagingLoading ? 'Opening chat...' : 'Message Organizer'}
-                    </button>
+                      Message Organizer
+                    </Button>
                   )}
                 </div>
               )}
@@ -348,18 +348,15 @@ export default function EventDetailPage() {
                 <div className={styles.sidebarCard}>
                   <p className={styles.sectionTitle}>Manage Event</p>
                   <div className={styles.organizerActions}>
-                    <Link
-                      href={`/events/create?edit=${event.id}`}
-                      className={styles.editButton}
-                    >
+                    <Button component={Link} href={`/events/create?edit=${event.id}`} variant="light" fullWidth>
                       Edit Event
-                    </Link>
-                    <button className={styles.cancelButton} onClick={handleCancelEvent} type="button">
+                    </Button>
+                    <Button variant="light" color="orange" fullWidth onClick={handleCancelEvent} type="button">
                       Cancel Event
-                    </button>
-                    <button className={styles.deleteButton} onClick={handleDeleteEvent} type="button">
+                    </Button>
+                    <Button variant="light" color="red" fullWidth onClick={handleDeleteEvent} type="button">
                       Delete Event
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

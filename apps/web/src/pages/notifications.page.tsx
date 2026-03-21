@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Badge, Button, Center, CloseButton, Text } from '@mantine/core';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import {
@@ -187,13 +188,13 @@ export default function NotificationsPage() {
         <div className={styles.header}>
           <h1 className={styles.title}>
             🔔 Notifications
-            {unreadCount > 0 && <span className={styles.unreadBadge}>{unreadCount}</span>}
+            {unreadCount > 0 && <Badge circle color="red" size="lg">{unreadCount}</Badge>}
           </h1>
           <div className={styles.headerActions}>
             {unreadCount > 0 && (
-              <button className={styles.markAllBtn} onClick={handleMarkAllRead} type="button">
+              <Button variant="outline" size="compact-sm" onClick={handleMarkAllRead}>
                 Mark all as read
-              </button>
+              </Button>
             )}
             <Link href="/profile/notifications" className={styles.prefsLink} aria-label="Notification preferences">
               ⚙️ Preferences
@@ -202,17 +203,16 @@ export default function NotificationsPage() {
         </div>
 
         {loading && (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <span>Loading notifications…</span>
-          </div>
+          <Center p="xl">
+            <Text c="dimmed">Loading notifications…</Text>
+          </Center>
         )}
 
         {!loading && loadError && (
-          <div className={styles.errorState}>
-            <p>{loadError}</p>
-            <button className={styles.retryBtn} onClick={loadInitial} type="button">Try again</button>
-          </div>
+          <Center p="xl" style={{ flexDirection: 'column' }}>
+            <Text c="red" mb="sm">{loadError}</Text>
+            <Button onClick={loadInitial}>Try again</Button>
+          </Center>
         )}
 
         {!loading && !loadError && notifications.length === 0 && (
@@ -244,14 +244,12 @@ export default function NotificationsPage() {
                     <span className={styles.notifBody}>{notif.body}</span>
                     <span className={styles.notifTime}>{timeAgo(notif.sent_at)}</span>
                   </div>
-                  <button
+                  <CloseButton
                     className={styles.dismissBtn}
-                    onClick={(e) => handleDismiss(e, notif.id)}
+                    onClick={(e: React.MouseEvent) => handleDismiss(e, notif.id)}
                     aria-label="Dismiss notification"
-                    type="button"
-                  >
-                    ×
-                  </button>
+                    size="sm"
+                  />
                 </li>
               ))}
             </ul>
@@ -259,14 +257,14 @@ export default function NotificationsPage() {
         ))}
 
         {hasMore && !loading && (
-          <button
-            className={styles.loadMoreBtn}
+          <Button
+            variant="default"
+            fullWidth
             onClick={handleLoadMore}
-            disabled={loadingMore}
-            type="button"
+            loading={loadingMore}
           >
-            {loadingMore ? 'Loading…' : 'Load more notifications'}
-          </button>
+            Load more notifications
+          </Button>
         )}
       </div>
     </>

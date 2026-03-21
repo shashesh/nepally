@@ -25,40 +25,10 @@
   margin: 0;
 }
 
-.unreadBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  background: linear-gradient(135deg, #DC143C, #ff4d6d);
-  color: #fff;
-  border-radius: var(--radius-full);
-  font-size: 12px;
-  font-weight: var(--font-weight-bold);
-}
-
 .headerActions {
   display: flex;
   align-items: center;
   gap: var(--space-s);
-}
-
-.markAllBtn {
-  background: none;
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-  padding: 6px 14px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition-fast);
-}
-
-.markAllBtn:hover {
-  background: rgba(var(--color-primary-rgb), 0.06);
 }
 
 .prefsLink {
@@ -80,51 +50,7 @@
   border-color: var(--color-primary);
 }
 
-/* Loading / error / empty */
-
-.loadingState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-s);
-  padding: var(--space-xl) 0;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-}
-
-.spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(var(--color-primary-rgb), 0.2);
-  border-top-color: var(--color-primary);
-  border-radius: var(--radius-full);
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.errorState {
-  text-align: center;
-  padding: var(--space-xl) 0;
-  color: var(--color-text-secondary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-s);
-}
-
-.retryBtn {
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 8px 20px;
-  font-size: 14px;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-}
+/* Empty */
 
 .emptyState {
   display: flex;
@@ -274,31 +200,6 @@
 
 .dismissBtn:hover {
   color: var(--color-error, #c62828);
-}
-
-/* Load more */
-
-.loadMoreBtn {
-  width: 100%;
-  padding: 12px;
-  background: none;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: border-color var(--transition-fast), color var(--transition-fast);
-}
-
-.loadMoreBtn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.loadMoreBtn:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 
 @media (max-width: 640px) {
