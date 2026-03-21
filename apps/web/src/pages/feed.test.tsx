@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockTagFilterBarProps = {
@@ -23,8 +23,10 @@ const feedMocks = vi.hoisted(() => ({
   deletePostMock: vi.fn(),
   getOrCreateConversationMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
+  notificationsShowMock: vi.fn(),
 }));
 
+vi.mock('@mantine/notifications', () => ({ notifications: { show: feedMocks.notificationsShowMock } }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: feedMocks.useAuthMock }));
 vi.mock('../hooks/useLocation', () => ({ useLocation: feedMocks.useLocationMock }));
 vi.mock('next/router', () => ({ useRouter: feedMocks.useRouterMock }));
@@ -326,7 +328,9 @@ describe('FeedPage', () => {
     fireEvent.click(screen.getByLabelText('Save post'));
 
     await waitFor(() => {
-      expect(screen.getByText('Post saved.')).toBeDefined();
+      expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Post saved.' })
+      );
     });
   });
 
@@ -365,7 +369,9 @@ describe('FeedPage', () => {
     fireEvent.click(screen.getByLabelText('Unsave post'));
 
     await waitFor(() => {
-      expect(screen.getByText('Post unsaved.')).toBeDefined();
+      expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Post unsaved.' })
+      );
     });
   });
 

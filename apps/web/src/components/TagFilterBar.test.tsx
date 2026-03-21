@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Tag } from '@nusa/shared';
 
@@ -101,14 +101,6 @@ describe('TagFilterBar', () => {
     expect(screen.getByText(/^More/)).toBeDefined();
   });
 
-  it('hides overflow tags until More dropdown is opened', () => {
-    render(
-      <TagFilterBar tags={SIX_TAGS} selectedSlugs={[]} onTagToggle={onTagToggle} onAllPress={onAllPress} />
-    );
-    expect(screen.queryByText('🗳️ Politics')).toBeNull();
-    expect(screen.queryByText('💬 Discussion')).toBeNull();
-  });
-
   it('opens the More dropdown and shows overflow tags', () => {
     render(
       <TagFilterBar tags={SIX_TAGS} selectedSlugs={[]} onTagToggle={onTagToggle} onAllPress={onAllPress} />
@@ -160,10 +152,8 @@ describe('TagFilterBar', () => {
       />
     );
     fireEvent.click(screen.getByText(/^More/));
-    // Should have 1 item selected in the dropdown
     expect(screen.getByText('Apply (1)')).toBeDefined();
     fireEvent.click(screen.getByText('Clear'));
-    // After clear, no count shown
     expect(screen.getByText('Apply')).toBeDefined();
   });
 

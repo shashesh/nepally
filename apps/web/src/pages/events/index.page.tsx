@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, CloseButton, Skeleton, Text } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -88,9 +89,9 @@ export default function EventsPage() {
           <div className={styles.header}>
             <h1 className={styles.title}>📅 Events</h1>
             {canCreate && (
-              <Link href="/events/create" className={styles.createButton}>
+              <Button component={Link} href="/events/create">
                 + Create Event
-              </Link>
+              </Button>
             )}
           </div>
 
@@ -98,7 +99,7 @@ export default function EventsPage() {
           {isLevel0 && level0BannerVisible && (
             <div className={styles.level0Banner}>
               <span>Verify your account to RSVP and create events.</span>
-              <button className={styles.level0BannerClose} onClick={() => setLevel0BannerVisible(false)}>✕</button>
+              <CloseButton size="xs" onClick={() => setLevel0BannerVisible(false)} />
             </div>
           )}
 
@@ -134,16 +135,16 @@ export default function EventsPage() {
             <div className={styles.feed}>
               {loading ? (
                 <>
-                  <div className={styles.skeleton} />
-                  <div className={styles.skeleton} />
-                  <div className={styles.skeleton} />
+                  <Skeleton height={120} radius="md" mb="sm" />
+                  <Skeleton height={120} radius="md" mb="sm" />
+                  <Skeleton height={120} radius="md" mb="sm" />
                 </>
               ) : error ? (
                 <div className={styles.errorContainer}>
-                  <p className={styles.errorText}>{error}</p>
-                  <button className={styles.retryButton} onClick={() => { setLoading(true); fetchEvents(); }}>
+                  <Text c="red" size="sm">{error}</Text>
+                  <Button mt="sm" onClick={() => { setLoading(true); fetchEvents(); }}>
                     Retry
-                  </button>
+                  </Button>
                 </div>
               ) : upcoming.length === 0 && past.length === 0 ? (
                 <div className={styles.emptyState}>

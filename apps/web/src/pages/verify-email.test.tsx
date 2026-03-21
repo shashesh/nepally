@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '../test-utils';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 const verifyMocks = vi.hoisted(() => ({

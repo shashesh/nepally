@@ -3,7 +3,7 @@ import { mockSignUp, mockSupabaseLoggedIn } from '../helpers/supabase-mock';
 import { MOCK_USER_EMAIL } from '../fixtures/mock-data';
 
 test.describe('Signup flow', () => {
-  test('valid signup redirects to onboarding flow', async ({ page }) => {
+  test('valid signup redirects to post-signup destination', async ({ page }) => {
     await mockSignUp(page, MOCK_USER_EMAIL);
     await mockSupabaseLoggedIn(page);
 
@@ -17,19 +17,19 @@ test.describe('Signup flow', () => {
     });
 
     await page.goto('/signup');
-    await page.locator('#fullName').fill('Test User');
-    await page.locator('#email').fill(MOCK_USER_EMAIL);
-    await page.locator('#password').fill('Password123!');
+    await page.getByLabel('Full Name').fill('Test User');
+    await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
+    await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
 
-    await expect(page).toHaveURL(/\/(onboarding\/zip|feed)/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/(verify-email\?email=|feed)/, { timeout: 10_000 });
   });
 
   test('invalid full name shows error', async ({ page }) => {
     await page.goto('/signup');
-    await page.locator('#fullName').fill('A'); // too short / invalid
-    await page.locator('#email').fill(MOCK_USER_EMAIL);
-    await page.locator('#password').fill('Password123!');
+    await page.getByLabel('Full Name').fill('A'); // too short / invalid
+    await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
+    await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
 
     await expect(page.getByText(/at least 2 characters/i)).toBeVisible();
@@ -38,9 +38,9 @@ test.describe('Signup flow', () => {
 
   test('invalid email shows error', async ({ page }) => {
     await page.goto('/signup');
-    await page.locator('#fullName').fill('Test User');
-    await page.locator('#email').fill('');
-    await page.locator('#password').fill('Password123!');
+    await page.getByLabel('Full Name').fill('Test User');
+    await page.getByLabel('Email').fill('');
+    await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
 
     await expect(page.getByText(/valid email address/i)).toBeVisible();
@@ -48,7 +48,7 @@ test.describe('Signup flow', () => {
 
   test('weak password shows inline errors', async ({ page }) => {
     await page.goto('/signup');
-    await page.locator('#password').fill('weak');
+    await page.getByLabel('Password', { exact: true }).fill('weak');
     // Password errors appear inline as user types
     await expect(page.getByRole('list')).toBeVisible();
   });
@@ -65,10 +65,10 @@ test.describe('Signup flow', () => {
     });
 
     await page.goto('/signup');
-    await expect(page.locator('#fullName')).toBeVisible({ timeout: 15_000 });
-    await page.locator('#fullName').fill('Test User');
-    await page.locator('#email').fill(MOCK_USER_EMAIL);
-    await page.locator('#password').fill('Password123!');
+    await expect(page.getByLabel('Full Name')).toBeVisible({ timeout: 15_000 });
+    await page.getByLabel('Full Name').fill('Test User');
+    await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
+    await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
 
     await expect(page.getByText(/already registered/i)).toBeVisible();

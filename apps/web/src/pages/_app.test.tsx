@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import type { AppProps } from 'next/app';
 
@@ -18,6 +18,21 @@ vi.mock('../components/Layout', () => ({
     React.createElement('div', { 'data-testid': 'layout' }, children),
 }));
 
+vi.mock('@mantine/core', () => ({
+  MantineProvider: ({ children }: { children: React.ReactNode }) =>
+    React.createElement('div', { 'data-testid': 'mantine-provider' }, children),
+}));
+
+vi.mock('@mantine/notifications', () => ({
+  Notifications: () => React.createElement('div', { 'data-testid': 'notifications' }),
+}));
+
+vi.mock('../styles/mantine-theme', () => ({
+  nusaTheme: {},
+}));
+
+vi.mock('@mantine/core/styles.css', () => ({}));
+vi.mock('@mantine/notifications/styles.css', () => ({}));
 vi.mock('../styles/globals.css', () => ({}));
 
 import App from './_app.page';
@@ -32,6 +47,7 @@ describe('App', () => {
         router: {} as AppProps['router'],
       })
     );
+    expect(screen.getAllByTestId('mantine-provider').length).toBeGreaterThan(0);
     expect(screen.getByTestId('auth-provider')).toBeDefined();
     expect(screen.getByTestId('location-provider')).toBeDefined();
     expect(screen.getByTestId('layout')).toBeDefined();

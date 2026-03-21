@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -270,7 +270,7 @@ describe('PublicProfilePage', () => {
     });
   });
 
-  it('shows "Opening..." text while messaging is in progress', async () => {
+  it('shows loading state while messaging is in progress', async () => {
     profilePageMocks.getOrCreateConversationMock.mockReturnValue(new Promise(() => {}));
     render(<PublicProfilePage />);
     await waitFor(() =>
@@ -278,7 +278,8 @@ describe('PublicProfilePage', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Message/ }));
     await waitFor(() => {
-      expect(screen.getByText('Opening...')).toBeDefined();
+      const btn = screen.getByRole('button', { name: /Message/ });
+      expect(btn.getAttribute('data-loading')).toBe('true');
     });
   });
 

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Button, Center, Switch, Text } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -268,7 +269,7 @@ export default function CreateEventPage() {
   if (loadingEdit) {
     return (
       <div className={styles.page}>
-        <div className={styles.container}>Loading...</div>
+        <Center p="xl"><Text c="dimmed">Loading...</Text></Center>
       </div>
     );
   }
@@ -297,8 +298,8 @@ export default function CreateEventPage() {
                 onChange={(e) => setField('title', e.target.value)}
                 maxLength={150}
               />
-              {errors.title && <span className={styles.errorText}>{errors.title}</span>}
-              <span className={styles.charCount}>{form.title.length}/150</span>
+              {errors.title && <Text c="red" size="xs" component="span">{errors.title}</Text>}
+              <Text size="xs" c="dimmed" component="span" className={styles.charCount}>{form.title.length}/150</Text>
             </div>
 
             {/* Event Type */}
@@ -319,7 +320,7 @@ export default function CreateEventPage() {
                   );
                 })}
               </div>
-              {errors.event_type && <span className={styles.errorText}>{errors.event_type}</span>}
+              {errors.event_type && <Text c="red" size="xs" component="span">{errors.event_type}</Text>}
             </div>
 
             {/* Start Date */}
@@ -332,7 +333,7 @@ export default function CreateEventPage() {
                 value={form.start_date ? form.start_date.slice(0, 16) : ''}
                 onChange={(e) => setField('start_date', normalizeDateTimeLocal(e.target.value))}
               />
-              {errors.start_date && <span className={styles.errorText}>{errors.start_date}</span>}
+              {errors.start_date && <Text c="red" size="xs" component="span">{errors.start_date}</Text>}
             </div>
 
             {/* End Date */}
@@ -345,7 +346,7 @@ export default function CreateEventPage() {
                 value={form.end_date ? form.end_date.slice(0, 16) : ''}
                 onChange={(e) => setField('end_date', normalizeDateTimeLocal(e.target.value))}
               />
-              {errors.end_date && <span className={styles.errorText}>{errors.end_date}</span>}
+              {errors.end_date && <Text c="red" size="xs" component="span">{errors.end_date}</Text>}
             </div>
 
             {/* Location Name */}
@@ -359,7 +360,7 @@ export default function CreateEventPage() {
                 onChange={(e) => setField('location_name', e.target.value)}
                 maxLength={100}
               />
-              {errors.location_name && <span className={styles.errorText}>{errors.location_name}</span>}
+              {errors.location_name && <Text c="red" size="xs" component="span">{errors.location_name}</Text>}
             </div>
 
             {/* Location Address */}
@@ -386,8 +387,8 @@ export default function CreateEventPage() {
                 onChange={(e) => setField('description', e.target.value)}
                 maxLength={3000}
               />
-              {errors.description && <span className={styles.errorText}>{errors.description}</span>}
-              <span className={styles.charCount}>{form.description.length}/3000</span>
+              {errors.description && <Text c="red" size="xs" component="span">{errors.description}</Text>}
+              <Text size="xs" c="dimmed" component="span" className={styles.charCount}>{form.description.length}/3000</Text>
             </div>
 
             {/* Event Photo */}
@@ -413,9 +414,9 @@ export default function CreateEventPage() {
                         onChange={handlePhotoChange}
                       />
                     </label>
-                    <button type="button" className={styles.photoBtnDanger} onClick={handleRemovePhoto}>
+                    <Button variant="subtle" color="red" size="compact-sm" onClick={handleRemovePhoto}>
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -462,12 +463,10 @@ export default function CreateEventPage() {
                     <span className={styles.switchTitle}>🌐 Make Global</span>
                     <span className={styles.switchSubtitle}>Visible across all metro areas</span>
                   </label>
-                  <input
+                  <Switch
                     id="event-is-global"
-                    type="checkbox"
-                    className={styles.switchInput}
                     checked={form.is_global}
-                    onChange={(e) => setField('is_global', e.target.checked)}
+                    onChange={(e) => setField('is_global', e.currentTarget.checked)}
                   />
                 </div>
               </div>
@@ -480,14 +479,10 @@ export default function CreateEventPage() {
 
             {/* Submit */}
             <div className={styles.submitRow}>
-              <Link href="/events" className={styles.cancelBtn}>Cancel</Link>
-              <button
-                type="submit"
-                className={styles.submitBtn}
-                disabled={submitting || !isFormValid}
-              >
-                {submitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Event'}
-              </button>
+              <Button component={Link} href="/events" variant="default">Cancel</Button>
+              <Button type="submit" loading={submitting} disabled={!isFormValid}>
+                {isEditMode ? 'Save Changes' : 'Create Event'}
+              </Button>
             </div>
           </form>
         </div>

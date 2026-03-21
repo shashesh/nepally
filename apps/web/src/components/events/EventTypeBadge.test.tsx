@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../../test-utils';
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('@nusa/shared', () => ({
@@ -9,17 +9,6 @@ vi.mock('@nusa/shared', () => ({
   EVENT_TYPE_LABELS: {
     cultural: 'Cultural', religious: 'Religious', social: 'Social',
     career: 'Career', other: 'Other',
-  },
-}));
-
-vi.mock('./EventTypeBadge.module.css', () => ({
-  default: {
-    badge: 'badge',
-    badgeCultural: 'badgeCultural',
-    badgeReligious: 'badgeReligious',
-    badgeSocial: 'badgeSocial',
-    badgeCareer: 'badgeCareer',
-    badgeOther: 'badgeOther',
   },
 }));
 
@@ -49,11 +38,6 @@ describe('EventTypeBadge (web)', () => {
   it('renders Other icon and label', () => {
     render(React.createElement(EventTypeBadge, { type: 'other' }));
     expect(screen.getByText('📌 Other')).toBeDefined();
-  });
-
-  it('renders a span element', () => {
-    const { container } = render(React.createElement(EventTypeBadge, { type: 'cultural' }));
-    expect(container.querySelector('span')).not.toBeNull();
   });
 
   it('does not crash for any valid event type', () => {

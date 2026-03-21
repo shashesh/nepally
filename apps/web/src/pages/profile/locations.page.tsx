@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ActionIcon, Button, Text, UnstyledButton } from '@mantine/core';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
@@ -165,35 +166,34 @@ export default function ManageLocationsPage() {
                   </div>
                   <div className={styles.actions}>
                     {editingId !== loc.id && (
-                      <button
-                        className={styles.iconBtn}
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
                         onClick={() => {
                           setEditingId(loc.id);
                           setEditingLabel(loc.label);
                         }}
-                        title="Rename"
+                        aria-label="Rename"
                       >
                         ✏️
-                      </button>
+                      </ActionIcon>
                     )}
                     {!loc.is_default && savedLocations.length > 1 && (
-                      <button
-                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
                         onClick={() => handleDelete(loc)}
-                        title="Remove"
+                        aria-label="Remove"
                       >
                         🗑️
-                      </button>
+                      </ActionIcon>
                     )}
                   </div>
                 </div>
                 {!loc.is_default && (
-                  <button
-                    className={styles.setDefaultBtn}
-                    onClick={() => handleSetDefault(loc)}
-                  >
+                  <Button variant="subtle" size="compact-sm" onClick={() => handleSetDefault(loc)}>
                     Set as default
-                  </button>
+                  </Button>
                 )}
               </div>
             );
@@ -202,12 +202,9 @@ export default function ManageLocationsPage() {
 
         {/* Add location */}
         {!showAdd && savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
-          <button
-            className={styles.addBtn}
-            onClick={() => setShowAdd(true)}
-          >
+          <Button fullWidth variant="light" onClick={() => setShowAdd(true)}>
             ＋ Add a Location
-          </button>
+          </Button>
         )}
 
         {showAdd && (
@@ -227,8 +224,7 @@ export default function ManageLocationsPage() {
                   autoFocus
                 />
                 {searchResults.map((m) => (
-                  <button
-                    type="button"
+                  <UnstyledButton
                     key={m.id}
                     className={styles.searchResult}
                     onClick={() => {
@@ -240,7 +236,7 @@ export default function ManageLocationsPage() {
                     }}
                   >
                     {m.name}, {m.state}
-                  </button>
+                  </UnstyledButton>
                 ))}
               </>
             ) : (
@@ -261,9 +257,7 @@ export default function ManageLocationsPage() {
                   autoFocus
                 />
                 {addError && (
-                  <div className={styles.addError}>
-                    {addError}
-                  </div>
+                  <Text c="red" size="xs">{addError}</Text>
                 )}
                 <div className={styles.chips}>
                   {SUGGESTED_LOCATION_LABELS.filter(
@@ -280,8 +274,8 @@ export default function ManageLocationsPage() {
                   ))}
                 </div>
                 <div className={styles.actionsRow}>
-                  <button
-                    className={styles.cancelBtn}
+                  <Button
+                    variant="default"
                     onClick={() => {
                       setShowAdd(false);
                       setSelectedMetro(null);
@@ -289,14 +283,14 @@ export default function ManageLocationsPage() {
                     }}
                   >
                     Cancel
-                  </button>
-                  <button
-                    className={styles.saveBtn}
+                  </Button>
+                  <Button
                     onClick={handleSaveNew}
-                    disabled={!newLabel.trim() || saving}
+                    disabled={!newLabel.trim()}
+                    loading={saving}
                   >
-                    {saving ? 'Saving...' : 'Save Location'}
-                  </button>
+                    Save Location
+                  </Button>
                 </div>
               </>
             )}

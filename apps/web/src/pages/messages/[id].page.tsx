@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, FormEvent } from 'react';
+import { ActionIcon, Button, Center, Text, UnstyledButton } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -199,8 +200,7 @@ export default function MessageThreadPage() {
               className={styles.avatarMenuWrapper}
               ref={avatarMenuRef}
             >
-              <button
-                type="button"
+              <UnstyledButton
                 className={styles.avatarMenuBtn}
                 onClick={handleAvatarPress}
                 aria-label="User options"
@@ -211,11 +211,10 @@ export default function MessageThreadPage() {
                   trustLevel={otherUser.trustLevel}
                   size="small"
                 />
-              </button>
+              </UnstyledButton>
               {avatarMenuOpen && (
                 <div className={styles.avatarDropdown}>
-                  <button
-                    type="button"
+                  <UnstyledButton
                     className={styles.avatarDropdownItem}
                     onClick={() => {
                       setAvatarMenuOpen(false);
@@ -223,7 +222,7 @@ export default function MessageThreadPage() {
                     }}
                   >
                     👤 View Profile
-                  </button>
+                  </UnstyledButton>
                 </div>
               )}
             </div>
@@ -233,14 +232,14 @@ export default function MessageThreadPage() {
 
         <div className={styles.messageList}>
           {loading ? (
-            <div className={styles.loading}>Loading messages...</div>
+            <Center p="xl"><Text c="dimmed">Loading messages...</Text></Center>
           ) : loadError ? (
             <div className={styles.threadErrorState}>
               <div className={styles.threadErrorIcon}>⚠️</div>
-              <p>{loadError}</p>
-              <button type="button" className={styles.retryBtn} onClick={handleRetryLoad}>
+              <Text c="red">{loadError}</Text>
+              <Button mt="sm" onClick={handleRetryLoad}>
                 Retry
-              </button>
+              </Button>
             </div>
           ) : messages.length === 0 ? (
             <div className={styles.emptyState}>
@@ -275,8 +274,7 @@ export default function MessageThreadPage() {
                   {!isSent && (
                     <div className={styles.avatarSlot}>
                       {isLastInGroup && otherUser ? (
-                        <button
-                          type="button"
+                        <UnstyledButton
                           className={styles.avatarMenuBtn}
                           onClick={handleAvatarPress}
                           aria-label="User options"
@@ -287,7 +285,7 @@ export default function MessageThreadPage() {
                             trustLevel={otherUser.trustLevel}
                             size="small"
                           />
-                        </button>
+                        </UnstyledButton>
                       ) : null}
                     </div>
                   )}
@@ -322,13 +320,15 @@ export default function MessageThreadPage() {
             placeholder="Type a message..."
             autoFocus
           />
-          <button
+          <ActionIcon
             type="submit"
-            className={styles.sendBtn}
+            size="xl"
+            radius="xl"
             disabled={sending || !text.trim()}
+            aria-label="Send message"
           >
             ↑
-          </button>
+          </ActionIcon>
         </form>
       </div>
     </>

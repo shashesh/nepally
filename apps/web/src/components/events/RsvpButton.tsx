@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './RsvpButton.module.css';
+import { Button } from '@mantine/core';
 
 type RsvpState = 'default' | 'going' | 'past' | 'cancelled' | 'organizer' | 'level0';
 
@@ -25,19 +25,16 @@ export default function RsvpButton({ state, onPress, loading = false }: Props) {
   const label = loading ? 'Updating...' : LABELS[state];
 
   return (
-    <button
-      className={[
-        styles.button,
-        state === 'going' ? styles.buttonGoing : '',
-        isDisabled ? styles.buttonDisabled : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
+    <Button
+      variant={state === 'going' ? 'filled' : 'outline'}
+      color="nusaPrimary.6"
+      radius="sm"
+      size="md"
       onClick={isDisabled ? undefined : onPress}
       disabled={isDisabled}
-      type="button"
+      loading={loading}
     >
       {label}
-    </button>
+    </Button>
   );
 }

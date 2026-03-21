@@ -3,6 +3,9 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { ActionIcon, Badge, Button, CloseButton, Skeleton, Stack, Text, UnstyledButton } from '@mantine/core';
+import { useClickOutside } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from '../hooks/useLocation';
 import { supabase } from '../lib/supabase';
@@ -46,8 +49,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
   const latestLoadRequestId = useRef(0);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [saveToast, setSaveToast] = useState<string | null>(null);
-  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Tag-based filtering (multi-select)
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
@@ -186,9 +187,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   }, [user]);
 
   function showSaveToast(message: string) {
-    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
-    setSaveToast(message);
-    saveToastTimerRef.current = setTimeout(() => setSaveToast(null), 2500);
+    notifications.show({ message, autoClose: 2500 });
   }
 
   async function handleSaveToggle(post: Post) {
@@ -445,9 +444,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
   return (
     <>
-      {saveToast && (
-        <div className={styles.toast}>{saveToast}</div>
-      )}
       <Head>
         <title>{pageTitle}</title>
       </Head>
@@ -460,13 +456,12 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                   ⚠️ You are a new member (Level 0). Verify your account to unlock
                   full posting rights.
                 </span>
-                <button
+                <CloseButton
                   onClick={() => setBannerDismissed(true)}
-                  className={styles.dismissBtn}
                   aria-label="Dismiss"
-                >
-                  ×
-                </button>
+                  size="sm"
+                  variant="subtle"
+                />
               </div>
             )}
 
@@ -501,26 +496,23 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
             />
 
             {loading ? (
-              <div data-testid="feed-loading" className={styles.loadingState}>
-                <div className={styles.skeletonCard}>
-                  <div className={styles.skeletonLineLg} />
-                  <div className={styles.skeletonLineMd} />
-                  <div className={styles.skeletonLineSm} />
-                </div>
-                <div className={styles.skeletonCard}>
-                  <div className={styles.skeletonLineLg} />
-                  <div className={styles.skeletonLineMd} />
-                  <div className={styles.skeletonLineSm} />
-                </div>
-              </div>
+              <Stack data-testid="feed-loading" gap="md">
+                {[0, 1].map((i) => (
+                  <div key={i} className={styles.skeletonCard}>
+                    <Skeleton height={16} width="70%" mb="sm" />
+                    <Skeleton height={12} width="50%" mb="xs" />
+                    <Skeleton height={12} width="30%" />
+                  </div>
+                ))}
+              </Stack>
             ) : loadError ? (
               <div className={styles.errorState}>
-                <div className={styles.errorIcon}>⚠️</div>
-                <h3>Couldn&apos;t load posts</h3>
-                <p>{loadError}</p>
-                <button className={styles.retryBtn} onClick={handleRetryLoad}>
+                <Text size="xl" ta="center" mb="xs">⚠️</Text>
+                <Text fw={600} ta="center">Couldn&apos;t load posts</Text>
+                <Text size="sm" c="dimmed" ta="center" mb="sm">{loadError}</Text>
+                <Button variant="outline" onClick={handleRetryLoad}>
                   Retry
-                </button>
+                </Button>
               </div>
             ) : posts.length === 0 ? (
               <div className={styles.emptyState}>
@@ -570,7 +562,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               <article key={item.id} className={styles.sponsoredCard}>
                 <h3 className={styles.sponsoredCardTitle}>{item.title}</h3>
                 <p className={styles.sponsoredCardText}>{item.description}</p>
-                <button type="button" className={styles.sponsoredCta}>{item.cta}</button>
+                <Button variant="subtle" size="compact-sm">{item.cta}</Button>
               </article>
             ))}
           </div>
@@ -584,8 +576,10 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               onMouseMove={resetLightboxChromeTimer}
               onTouchStart={resetLightboxChromeTimer}
             >
-              <button
-                type="button"
+              <ActionIcon
+                variant="filled"
+                color="dark"
+                radius="xl"
                 className={`${styles.lightboxClose} ${styles.lightboxChrome} ${
                   lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
                 }`}
@@ -593,7 +587,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 aria-label="Close image viewer"
               >
                 ✕
-              </button>
+              </ActionIcon>
 
               <Image
                 src={lightboxPhotos[lightboxIndex]}
@@ -709,30 +703,11 @@ function PostCard({
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [mediaIndex, setMediaIndex] = useState(0);
-  const avatarMenuRef = useRef<HTMLDivElement>(null);
-  const postMenuRef = useRef<HTMLDivElement>(null);
+  const avatarMenuRef = useClickOutside(() => setAvatarMenuOpen(false));
+  const postMenuRef = useClickOutside(() => setPostMenuOpen(false));
   const mediaTouchStartXRef = useRef<number | null>(null);
   const isOwnPost = currentUserId === post.author_id;
   const photoUrls = (post.photos || []).filter(Boolean).slice(0, 3);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
-        setAvatarMenuOpen(false);
-      }
-      if (postMenuRef.current && !postMenuRef.current.contains(event.target as Node)) {
-        setPostMenuOpen(false);
-      }
-    }
-
-    if (avatarMenuOpen || postMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [avatarMenuOpen, postMenuOpen]);
 
   useEffect(() => {
     setMediaIndex(0);
@@ -821,7 +796,7 @@ function PostCard({
           </div>
           {avatarMenuOpen && (
             <div className={styles.avatarDropdown}>
-              <button
+              <UnstyledButton
                 className={styles.avatarDropdownItem}
                 onClick={(e) => {
                   e.preventDefault();
@@ -831,8 +806,8 @@ function PostCard({
                 }}
               >
                 View Profile
-              </button>
-              <button
+              </UnstyledButton>
+              <UnstyledButton
                 className={styles.avatarDropdownItem}
                 onClick={(e) => {
                   e.preventDefault();
@@ -842,7 +817,7 @@ function PostCard({
                 }}
               >
                 Chat
-              </button>
+              </UnstyledButton>
             </div>
           )}
         </div>
@@ -855,17 +830,19 @@ function PostCard({
           </div>
         </div>
         <div className={styles.postHeaderRight}>
-          <span
-            className={`${styles.postCategoryBadge} ${
-              post.is_global ? styles.postCategoryBadgeGlobal : styles.postCategoryBadgeLocal
-            }`}
+          <Badge
+            variant="light"
+            color={post.is_global ? 'orange' : 'blue'}
+            size="sm"
           >
             {post.is_global ? '🌐 Global' : '📍 Local'}
-          </span>
+          </Badge>
 
           <div className={styles.postMoreWrapper} ref={postMenuRef}>
-            <button
-              className={styles.postMoreButton}
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -874,22 +851,22 @@ function PostCard({
               aria-label="Post options"
             >
               ⋯
-            </button>
+            </ActionIcon>
 
             {postMenuOpen && (
               <div className={styles.postMoreMenu}>
                 {isOwnPost ? (
                   <>
-                    <button className={styles.postMoreItem} onClick={handleEditPost}>Edit Post</button>
-                    <button className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</button>
-                    <button className={`${styles.postMoreItem} ${styles.postMoreItemDanger}`} onClick={handleDeleteMenuClick}>
+                    <UnstyledButton className={styles.postMoreItem} onClick={handleEditPost}>Edit Post</UnstyledButton>
+                    <UnstyledButton className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</UnstyledButton>
+                    <UnstyledButton className={`${styles.postMoreItem} ${styles.postMoreItemDanger}`} onClick={handleDeleteMenuClick}>
                       Delete Post
-                    </button>
+                    </UnstyledButton>
                   </>
                 ) : (
                   <>
                     {onSaveToggle && (
-                      <button
+                      <UnstyledButton
                         className={styles.postMoreItem}
                         onClick={(event) => {
                           event.preventDefault();
@@ -899,10 +876,10 @@ function PostCard({
                         }}
                       >
                         {saved ? 'Unsave Post' : 'Save Post'}
-                      </button>
+                      </UnstyledButton>
                     )}
-                    <button className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</button>
-                    <button
+                    <UnstyledButton className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</UnstyledButton>
+                    <UnstyledButton
                       className={`${styles.postMoreItem} ${styles.postMoreItemDanger}`}
                       onClick={(event) => {
                         event.preventDefault();
@@ -912,7 +889,7 @@ function PostCard({
                       }}
                     >
                       Report Post
-                    </button>
+                    </UnstyledButton>
                   </>
                 )}
               </div>

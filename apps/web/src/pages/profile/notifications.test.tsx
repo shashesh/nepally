@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -65,7 +65,7 @@ describe('NotificationPreferencesPage', () => {
     render(<NotificationPreferencesPage />);
     await waitFor(() => expect(screen.getByText('Save Preferences')).toBeDefined());
     // push toggle should be unchecked
-    const pushToggle = screen.getAllByRole('checkbox')[0];
+    const pushToggle = screen.getAllByRole('switch')[0];
     expect((pushToggle as HTMLInputElement).checked).toBe(false);
   });
 
@@ -73,7 +73,7 @@ describe('NotificationPreferencesPage', () => {
     mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
     render(<NotificationPreferencesPage />);
     await waitFor(() => expect(screen.getByText('Save Preferences')).toBeDefined());
-    fireEvent.click(screen.getByText('Save Preferences'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
     await waitFor(() => {
       expect(mocks.upsertUserSettingsMock).toHaveBeenCalledWith(
         expect.anything(),
@@ -88,7 +88,7 @@ describe('NotificationPreferencesPage', () => {
     mocks.upsertUserSettingsMock.mockResolvedValue({ error: new Error('fail') });
     render(<NotificationPreferencesPage />);
     await waitFor(() => expect(screen.getByText('Save Preferences')).toBeDefined());
-    fireEvent.click(screen.getByText('Save Preferences'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Preferences' }));
     await waitFor(() => expect(screen.getByText('Failed to save preferences. Please try again.')).toBeDefined());
   });
 
@@ -96,9 +96,9 @@ describe('NotificationPreferencesPage', () => {
     mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
     render(<NotificationPreferencesPage />);
     await waitFor(() => expect(screen.getByText('Save Preferences')).toBeDefined());
-    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    const emergencyCheckbox = checkboxes[checkboxes.length - 1];
-    expect(emergencyCheckbox.checked).toBe(true);
-    expect(emergencyCheckbox.disabled).toBe(true);
+    const switches = screen.getAllByRole('switch') as HTMLInputElement[];
+    const emergencySwitch = switches[switches.length - 1];
+    expect(emergencySwitch.checked).toBe(true);
+    expect(emergencySwitch.disabled).toBe(true);
   });
 });

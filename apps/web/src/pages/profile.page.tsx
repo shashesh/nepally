@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { ActionIcon, Badge, Button, Center, Text, UnstyledButton } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -33,15 +35,9 @@ export default function ProfilePage() {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
-  const [menuStatus, setMenuStatus] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [unsaveMenuId, setUnsaveMenuId] = useState<string | null>(null);
-  const [unsaveToast, setUnsaveToast] = useState<string | null>(null);
-  const unsaveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -133,9 +129,9 @@ export default function ProfilePage() {
       await signOut();
       router.push('/');
     } catch (error: unknown) {
-      setMenuStatus({
-        type: 'error',
+      notifications.show({
         message: getErrorMessage(error, 'Failed to log out. Please try again.'),
+        color: 'red',
       });
     }
   }
@@ -151,7 +147,7 @@ export default function ProfilePage() {
 
     const fullName = nextName.trim();
     if (!fullName) {
-      setMenuStatus({ type: 'error', message: 'Name cannot be empty' });
+      notifications.show({ message: 'Name cannot be empty', color: 'red' });
       setMenuOpen(false);
       return;
     }
@@ -161,13 +157,13 @@ export default function ProfilePage() {
     });
 
     if (error) {
-      setMenuStatus({ type: 'error', message: error.message || 'Failed to update profile' });
+      notifications.show({ message: error.message || 'Failed to update profile', color: 'red' });
       setMenuOpen(false);
       return;
     }
 
     await refreshUser();
-    setMenuStatus({ type: 'success', message: 'Profile updated' });
+    notifications.show({ message: 'Profile updated' });
     setMenuOpen(false);
   }
 
@@ -179,9 +175,9 @@ export default function ProfilePage() {
     });
 
     if (error) {
-      setMenuStatus({ type: 'error', message: error.message || 'Failed to send password reset email' });
+      notifications.show({ message: error.message || 'Failed to send password reset email', color: 'red' });
     } else {
-      setMenuStatus({ type: 'success', message: 'Password reset email sent' });
+      notifications.show({ message: 'Password reset email sent' });
     }
 
     setMenuOpen(false);
@@ -282,15 +278,16 @@ export default function ProfilePage() {
     setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
     setUnsaveMenuId(null);
     const { error } = await unsavePost(supabase, postId);
-    if (unsaveToastTimer.current) clearTimeout(unsaveToastTimer.current);
-    setUnsaveToast(error ? 'Failed to unsave post.' : 'Post unsaved.');
-    unsaveToastTimer.current = setTimeout(() => setUnsaveToast(null), 2500);
+    notifications.show({
+      message: error ? 'Failed to unsave post.' : 'Post unsaved.',
+      autoClose: 2500,
+    });
   }
 
   function renderSavedPostList() {
-    if (savedLoading) return <div className={styles.tabMessage}>Loading...</div>;
-    if (savedError) return <div className={styles.tabError}>{savedError}</div>;
-    if (savedPosts.length === 0) return <div className={styles.tabMessage}>No saved posts yet.</div>;
+    if (savedLoading) return <Center p="xl"><Text c="dimmed">Loading...</Text></Center>;
+    if (savedError) return <Text c="red" p="md">{savedError}</Text>;
+    if (savedPosts.length === 0) return <Center p="xl"><Text c="dimmed">No saved posts yet.</Text></Center>;
 
     return (
       <div className={styles.postList}>
@@ -299,13 +296,9 @@ export default function ProfilePage() {
             <Link href={`/posts/${post.id}`} className={styles.savedPostLink}>
               <div className={styles.postItemTop}>
                 <span className={styles.postItemTitle}>{post.title}</span>
-                <span
-                  className={`${styles.postScopeBadge} ${
-                    post.is_global ? styles.postScopeGlobal : styles.postScopeLocal
-                  }`}
-                >
+                <Badge variant="light" color={post.is_global ? 'orange' : 'blue'}>
                   {post.is_global ? '🌐 Global' : '📍 Local'}
-                </span>
+                </Badge>
               </div>
               <p className={styles.postItemDescription}>{post.description}</p>
               <div className={styles.postItemMeta}>
@@ -315,24 +308,23 @@ export default function ProfilePage() {
               </div>
             </Link>
             <div className={styles.savedPostMenu}>
-              <button
-                className={styles.savedPostMenuBtn}
+              <ActionIcon variant="subtle" color="gray" size="sm"
                 onClick={() => setUnsaveMenuId(unsaveMenuId === post.id ? null : post.id)}
                 aria-label="Post options"
               >
                 ⋮
-              </button>
+              </ActionIcon>
               {unsaveMenuId === post.id && (
                 <div
                   className={styles.savedPostMenuDropdown}
                   onMouseDown={(e) => e.stopPropagation()}
                 >
-                  <button
+                  <UnstyledButton
                     className={styles.savedPostMenuItem}
                     onClick={() => handleUnsave(post.id)}
                   >
                     Unsave Post
-                  </button>
+                  </UnstyledButton>
                 </div>
               )}
             </div>
@@ -349,15 +341,15 @@ export default function ProfilePage() {
     emptyText: string
   ) {
     if (loading) {
-      return <div className={styles.tabMessage}>Loading...</div>;
+      return <Center p="xl"><Text c="dimmed">Loading...</Text></Center>;
     }
 
     if (error) {
-      return <div className={styles.tabError}>{error}</div>;
+      return <Text c="red" p="md">{error}</Text>;
     }
 
     if (posts.length === 0) {
-      return <div className={styles.tabMessage}>{emptyText}</div>;
+      return <Center p="xl"><Text c="dimmed">{emptyText}</Text></Center>;
     }
 
     return (
@@ -366,13 +358,9 @@ export default function ProfilePage() {
           <Link key={post.id} href={`/posts/${post.id}`} className={styles.postItem}>
             <div className={styles.postItemTop}>
               <span className={styles.postItemTitle}>{post.title}</span>
-              <span
-                className={`${styles.postScopeBadge} ${
-                  post.is_global ? styles.postScopeGlobal : styles.postScopeLocal
-                }`}
-              >
+              <Badge variant="light" color={post.is_global ? 'orange' : 'blue'}>
                 {post.is_global ? '🌐 Global' : '📍 Local'}
-              </span>
+              </Badge>
             </div>
             <p className={styles.postItemDescription}>{post.description}</p>
             <div className={styles.postItemMeta}>
@@ -391,9 +379,6 @@ export default function ProfilePage() {
       <Head>
         <title>Profile - NUSA</title>
       </Head>
-      {unsaveToast && (
-        <div className={styles.toast}>{unsaveToast}</div>
-      )}
       <div className={styles.profilePage}>
         {menuOpen && (
           <div
@@ -405,60 +390,46 @@ export default function ProfilePage() {
         <div className={styles.topBar}>
           <h1 className={styles.pageTitle}>Profile</h1>
           <div className={styles.menuWrap}>
-            <button
-              className={styles.hamburgerBtn}
-              type="button"
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="lg"
               aria-label="Open profile menu"
               onClick={() => setMenuOpen((prev) => !prev)}
             >
               ☰
-            </button>
+            </ActionIcon>
 
             {menuOpen && (
               <div className={styles.hamburgerMenu}>
-                <button
+                <UnstyledButton
                   className={styles.hamburgerItem}
-                  type="button"
                   onClick={() => {
                     handleViewProfile();
                   }}
                 >
                   View Profile
-                </button>
-                <button
+                </UnstyledButton>
+                <UnstyledButton
                   className={styles.hamburgerItem}
-                  type="button"
                   onClick={() => {
                     handleChangePassword();
                   }}
                 >
                   Change Password
-                </button>
-                <button
+                </UnstyledButton>
+                <UnstyledButton
                   className={`${styles.hamburgerItem} ${styles.hamburgerItemDanger}`}
-                  type="button"
                   onClick={() => {
                     handleMenuLogout();
                   }}
                 >
                   Logout
-                </button>
+                </UnstyledButton>
               </div>
             )}
           </div>
         </div>
-
-        {menuStatus && (
-          <div
-            className={
-              menuStatus.type === 'success'
-                ? styles.menuStatusSuccess
-                : styles.menuStatusError
-            }
-          >
-            {menuStatus.message}
-          </div>
-        )}
 
         <div className={styles.profileCard}>
           <div className={styles.profileHeader}>
@@ -481,33 +452,33 @@ export default function ProfilePage() {
                 className={styles.hiddenInput}
               />
               <div className={styles.photoActions}>
-                <button
+                <Button
+                  variant="light"
+                  size="compact-sm"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={photoUploading}
-                  className={styles.photoBtn}
                 >
                   {user.profile_photo ? 'Change Photo' : 'Add Photo'}
-                </button>
+                </Button>
                 {user.profile_photo && (
-                  <button
+                  <Button
+                    variant="light"
+                    color="red"
+                    size="compact-sm"
                     onClick={handleRemovePhoto}
                     disabled={photoUploading}
-                    className={styles.photoBtnDanger}
                   >
                     Remove
-                  </button>
+                  </Button>
                 )}
               </div>
               {photoStatus && (
-                <span
-                  className={
-                    photoStatus.type === 'success'
-                      ? styles.photoSuccess
-                      : styles.photoError
-                  }
+                <Text
+                  size="xs"
+                  c={photoStatus.type === 'success' ? 'green' : 'red'}
                 >
                   {photoStatus.message}
-                </span>
+                </Text>
               )}
             </div>
             <div>
