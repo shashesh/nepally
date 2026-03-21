@@ -53,11 +53,8 @@ describe('AttendeeList (web)', () => {
   it('calls onClose when close button is clicked', () => {
     const onClose = vi.fn();
     render(React.createElement(AttendeeList, { attendees: [], onClose }));
-    // Mantine Modal renders a close button with role="button"
-    const buttons = screen.getAllByRole('button');
-    const closeBtn = buttons.find(b => b.className.includes('close') || b.className.includes('Close'));
-    expect(closeBtn).toBeDefined();
-    fireEvent.click(closeBtn!);
+    const closeBtn = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(closeBtn);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

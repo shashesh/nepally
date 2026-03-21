@@ -11,7 +11,7 @@ interface Props {
 
 export default function AttendeeList({ attendees, loading, onClose }: Props) {
   return (
-    <Modal opened onClose={onClose} title="Attendees" centered size="sm">
+    <Modal opened onClose={onClose} title="Attendees" centered size="sm" closeButtonProps={{ 'aria-label': 'Close' }}>
       {loading ? (
         <Center py="xl">
           <Loader size="sm" />

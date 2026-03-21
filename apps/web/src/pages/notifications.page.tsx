@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Badge, Button, Center, CloseButton, Text } from '@mantine/core';
+import { Badge, Button, Center, CloseButton, Stack, Text } from '@mantine/core';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import {
@@ -209,9 +209,11 @@ export default function NotificationsPage() {
         )}
 
         {!loading && loadError && (
-          <Center p="xl" style={{ flexDirection: 'column' }}>
-            <Text c="red" mb="sm">{loadError}</Text>
-            <Button onClick={loadInitial}>Try again</Button>
+          <Center p="xl">
+            <Stack align="center">
+              <Text c="red">{loadError}</Text>
+              <Button onClick={loadInitial}>Try again</Button>
+            </Stack>
           </Center>
         )}
 
