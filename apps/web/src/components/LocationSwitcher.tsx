@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { Badge, Group, Menu, Text, UnstyledButton } from '@mantine/core';
+import { Badge, Menu, Text, UnstyledButton } from '@mantine/core';
 import { useLocation } from '../hooks/useLocation';
 import { getShortMetroName, hasMetroChanged, MAX_SAVED_LOCATIONS_PREMIUM } from '@nusa/shared';
 import type { SavedLocation } from '@nusa/shared';
