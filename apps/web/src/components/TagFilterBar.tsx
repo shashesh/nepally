@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Button, Checkbox, Chip, CloseButton, Group, Popover, Stack, Text } from '@mantine/core';
 import { TAG_EMOJI } from '@nusa/shared';
 import type { Tag } from '@nusa/shared';
 import styles from './TagFilterBar.module.css';
@@ -20,7 +21,6 @@ export default function TagFilterBar({
 }: TagFilterBarProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [localMoreSelections, setLocalMoreSelections] = useState<string[]>([]);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Separate visible tags and "more" tags
   const visibleTags = useMemo(() => tags.slice(0, MAX_VISIBLE_CHIPS), [tags]);
@@ -39,19 +39,6 @@ export default function TagFilterBar({
       );
     }
   }, [moreOpen, moreTags, selectedSlugs]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setMoreOpen(false);
-      }
-    }
-    if (moreOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [moreOpen]);
 
   const handleMoreTagToggle = (slug: string) => {
     setLocalMoreSelections((prev) => {
@@ -79,85 +66,94 @@ export default function TagFilterBar({
   };
 
   return (
-    <div className={styles.container}>
+    <Group gap="xs" wrap="wrap" mb="md">
       {/* "All" chip */}
-      <button
-        className={`${styles.chip} ${isAllActive ? styles.chipActive : ''}`}
-        onClick={onAllPress}
+      <Chip
+        checked={isAllActive}
+        onChange={onAllPress}
+        variant="outline"
+        radius="xl"
       >
         All
-      </button>
+      </Chip>
 
       {/* Visible tag chips */}
       {visibleTags.map((tag) => {
         const isActive = selectedSlugs.includes(tag.slug);
         const emoji = TAG_EMOJI[tag.slug] || '';
         return (
-          <button
+          <Chip
             key={tag.id}
-            className={`${styles.chip} ${isActive ? styles.chipActive : ''}`}
-            onClick={() => onTagToggle(tag.slug)}
+            checked={isActive}
+            onChange={() => onTagToggle(tag.slug)}
+            variant="outline"
+            radius="xl"
           >
             {emoji ? `${emoji} ${tag.name}` : tag.name}
-          </button>
+          </Chip>
         );
       })}
 
       {/* "More" dropdown */}
       {moreTags.length > 0 && (
-        <div className={styles.moreWrapper} ref={dropdownRef}>
-          <button
-            className={`${styles.chip} ${moreSelectedCount > 0 ? styles.chipMoreActive : ''}`}
-            onClick={() => setMoreOpen(!moreOpen)}
-          >
-            More{moreSelectedCount > 0 ? ` +${moreSelectedCount}` : ''}
-            <span className={styles.chevron}>▼</span>
-          </button>
+        <Popover
+          opened={moreOpen}
+          onChange={setMoreOpen}
+          position="bottom-start"
+          shadow="md"
+          radius="md"
+          width={300}
+          withinPortal={false}
+          transitionProps={{ duration: 0 }}
+        >
+          <Popover.Target>
+            <Button
+              variant={moreSelectedCount > 0 ? 'light' : 'default'}
+              size="compact-sm"
+              radius="xl"
+              onClick={() => setMoreOpen((o) => !o)}
+              rightSection={<span className={styles.chevron}>▼</span>}
+            >
+              More{moreSelectedCount > 0 ? ` +${moreSelectedCount}` : ''}
+            </Button>
+          </Popover.Target>
 
-          {moreOpen && (
-            <div className={styles.dropdown}>
-              <div className={styles.dropdownHeader}>
-                <span className={styles.dropdownTitle}>Filter by Tags</span>
-                <button
-                  className={styles.closeBtn}
-                  onClick={() => setMoreOpen(false)}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
+          <Popover.Dropdown p={0}>
+            <Group justify="space-between" p="sm" className={styles.dropdownHeader}>
+              <Text fw={600} size="sm">Filter by Tags</Text>
+              <CloseButton
+                onClick={() => setMoreOpen(false)}
+                aria-label="Close"
+                size="sm"
+              />
+            </Group>
 
-              <div className={styles.dropdownContent}>
-                {moreTags.map((tag) => {
-                  const isSelected = localMoreSelections.includes(tag.slug);
-                  const emoji = TAG_EMOJI[tag.slug] || '';
-                  return (
-                    <button
-                      key={tag.id}
-                      className={`${styles.dropdownItem} ${isSelected ? styles.dropdownItemSelected : ''}`}
-                      onClick={() => handleMoreTagToggle(tag.slug)}
-                    >
-                      <span className={styles.dropdownItemLabel}>
-                        {emoji ? `${emoji} ${tag.name}` : tag.name}
-                      </span>
-                      {isSelected && <span className={styles.checkmark}>✓</span>}
-                    </button>
-                  );
-                })}
-              </div>
+            <Stack gap="xs" p="sm">
+              {moreTags.map((tag) => {
+                const isSelected = localMoreSelections.includes(tag.slug);
+                const emoji = TAG_EMOJI[tag.slug] || '';
+                return (
+                  <Checkbox
+                    key={tag.id}
+                    label={emoji ? `${emoji} ${tag.name}` : tag.name}
+                    checked={isSelected}
+                    onChange={() => handleMoreTagToggle(tag.slug)}
+                  />
+                );
+              })}
+            </Stack>
 
-              <div className={styles.dropdownFooter}>
-                <button className={styles.clearBtn} onClick={handleClear}>
-                  Clear
-                </button>
-                <button className={styles.applyBtn} onClick={handleApply}>
-                  Apply{localMoreSelections.length > 0 ? ` (${localMoreSelections.length})` : ''}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            <Group justify="space-between" p="sm" className={styles.dropdownFooter}>
+              <Button variant="subtle" size="compact-sm" onClick={handleClear} color="gray">
+                Clear
+              </Button>
+              <Button size="compact-sm" onClick={handleApply}>
+                Apply{localMoreSelections.length > 0 ? ` (${localMoreSelections.length})` : ''}
+              </Button>
+            </Group>
+          </Popover.Dropdown>
+        </Popover>
       )}
-    </div>
+    </Group>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '../test-utils';
+import { render, screen, fireEvent, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Tag } from '@nusa/shared';
 
@@ -98,14 +98,16 @@ describe('TagFilterBar', () => {
     render(
       <TagFilterBar tags={SIX_TAGS} selectedSlugs={[]} onTagToggle={onTagToggle} onAllPress={onAllPress} />
     );
-    expect(screen.getByText(/^More/)).toBeDefined();
+    expect(screen.getByRole('button', { name: /^More/ })).toBeDefined();
   });
 
-  it('opens the More dropdown and shows overflow tags', () => {
+  it('opens the More dropdown and shows overflow tags', async () => {
     render(
       <TagFilterBar tags={SIX_TAGS} selectedSlugs={[]} onTagToggle={onTagToggle} onAllPress={onAllPress} />
     );
-    fireEvent.click(screen.getByText(/^More/));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^More/ }));
+    });
     expect(screen.getByText('Filter by Tags')).toBeDefined();
     expect(screen.getByText('🗳️ Politics')).toBeDefined();
     expect(screen.getByText('💬 Discussion')).toBeDefined();
@@ -123,26 +125,30 @@ describe('TagFilterBar', () => {
     expect(screen.getByRole('button', { name: /More \+2/ })).toBeDefined();
   });
 
-  it('calls onTagToggle for newly selected tag when Apply is clicked', () => {
+  it('calls onTagToggle for newly selected tag when Apply is clicked', async () => {
     render(
       <TagFilterBar tags={SIX_TAGS} selectedSlugs={[]} onTagToggle={onTagToggle} onAllPress={onAllPress} />
     );
-    fireEvent.click(screen.getByText(/^More/));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^More/ }));
+    });
     fireEvent.click(screen.getByText('🗳️ Politics'));
     fireEvent.click(screen.getByText(/^Apply/));
     expect(onTagToggle).toHaveBeenCalledWith('politics');
   });
 
-  it('does not call onTagToggle when Apply is clicked with no changes', () => {
+  it('does not call onTagToggle when Apply is clicked with no changes', async () => {
     render(
       <TagFilterBar tags={SIX_TAGS} selectedSlugs={[]} onTagToggle={onTagToggle} onAllPress={onAllPress} />
     );
-    fireEvent.click(screen.getByText(/^More/));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^More/ }));
+    });
     fireEvent.click(screen.getByText(/^Apply/));
     expect(onTagToggle).not.toHaveBeenCalled();
   });
 
-  it('clears local selections when Clear is clicked', () => {
+  it('clears local selections when Clear is clicked', async () => {
     render(
       <TagFilterBar
         tags={SIX_TAGS}
@@ -151,19 +157,27 @@ describe('TagFilterBar', () => {
         onAllPress={onAllPress}
       />
     );
-    fireEvent.click(screen.getByText(/^More/));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^More/ }));
+    });
     expect(screen.getByText('Apply (1)')).toBeDefined();
-    fireEvent.click(screen.getByText('Clear'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Clear'));
+    });
     expect(screen.getByText('Apply')).toBeDefined();
   });
 
-  it('closes the More dropdown when Close button is clicked', () => {
+  it('closes the More dropdown when Close button is clicked', async () => {
     render(
       <TagFilterBar tags={SIX_TAGS} selectedSlugs={[]} onTagToggle={onTagToggle} onAllPress={onAllPress} />
     );
-    fireEvent.click(screen.getByText(/^More/));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^More/ }));
+    });
     expect(screen.getByText('Filter by Tags')).toBeDefined();
-    fireEvent.click(screen.getByLabelText('Close'));
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Close'));
+    });
     expect(screen.queryByText('Filter by Tags')).toBeNull();
   });
 });
