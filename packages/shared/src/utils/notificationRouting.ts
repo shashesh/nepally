@@ -7,7 +7,9 @@ export type NotificationRouteTarget =
   | { kind: 'notifications' };
 
 function asNonEmptyString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function targetFromPath(path: string): NotificationRouteTarget | null {

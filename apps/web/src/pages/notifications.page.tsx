@@ -118,28 +118,6 @@ export default function NotificationsPage() {
     if (user) loadInitial();
   }, [user, loadInitial]);
 
-  // Resilience fallback: refresh list and badge on tab focus + interval so
-  // notifications stay up to date when realtime events are delayed/missed.
-  useEffect(() => {
-    if (!user) return;
-
-    const onVisibilityChange = () => {
-      if (!document.hidden) {
-        loadInitial();
-      }
-    };
-
-    const intervalId = window.setInterval(() => {
-      loadInitial();
-    }, 30000);
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      window.clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [user, loadInitial]);
-
   // Realtime: new notifications while on this page
   useEffect(() => {
     if (!user) return;

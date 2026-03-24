@@ -296,11 +296,9 @@ describe('NotificationsPage', () => {
     await waitFor(() => expect(screen.getByText('Realtime message')).toBeDefined());
   });
 
-  it('reloads notifications when tab becomes visible again', async () => {
+  it('does not reload notifications when tab becomes visible again (handled by Layout polling)', async () => {
     mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
-    mocks.getNotificationsMock
-      .mockResolvedValueOnce({ data: [] })
-      .mockResolvedValueOnce({ data: [sampleNotif] });
+    mocks.getNotificationsMock.mockResolvedValue({ data: [] });
 
     render(<NotificationsPage />);
 
@@ -308,9 +306,10 @@ describe('NotificationsPage', () => {
 
     fireEvent(document, new Event('visibilitychange'));
 
+    // The notifications page no longer registers its own visibility handler —
+    // this is intentionally handled by the Layout's polling to avoid double-polling.
     await waitFor(() => {
-      expect(mocks.getNotificationsMock).toHaveBeenCalledTimes(2);
-      expect(screen.getByText('New comment on your post')).toBeDefined();
+      expect(mocks.getNotificationsMock).toHaveBeenCalledTimes(1);
     });
   });
 });

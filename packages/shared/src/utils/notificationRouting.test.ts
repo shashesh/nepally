@@ -81,4 +81,27 @@ describe('resolveNotificationRouteTarget', () => {
       kind: 'notifications',
     });
   });
+
+  it('trims leading/trailing whitespace from IDs before routing', () => {
+    const notif = makeNotification({
+      type: 'post_response',
+      data: { post_id: '  post-456  ' },
+    });
+
+    expect(resolveNotificationRouteTarget(notif)).toEqual({
+      kind: 'post',
+      postId: 'post-456',
+    });
+  });
+
+  it('falls back for IDs that are whitespace-only', () => {
+    const notif = makeNotification({
+      type: 'post_response',
+      data: { post_id: '   ' },
+    });
+
+    expect(resolveNotificationRouteTarget(notif)).toEqual({
+      kind: 'notifications',
+    });
+  });
 });

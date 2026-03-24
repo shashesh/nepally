@@ -395,13 +395,35 @@ The invocation path is:
 4. HTTP call to `/functions/v1/send-push-notification`
 5. Edge function fanout to Expo + Web Push tokens from `device_tokens`
 
+#### Required database settings
+
+The trigger function reads two PostgreSQL custom settings that must be configured before push delivery will work. Without them the trigger skips the HTTP call and logs a warning (it will not error or block notification inserts).
+
+| Setting | Description |
+|---|---|
+| `app.settings.supabase_url` | Full Supabase project URL, e.g. `https://<project-ref>.supabase.co` |
+| `app.settings.service_role_key` | Service-role secret key from **Project → API → service_role** |
+
+Set them via the Supabase SQL editor or `psql`:
+
+```sql
+ALTER DATABASE postgres SET "app.settings.supabase_url" = 'https://<project-ref>.supabase.co';
+ALTER DATABASE postgres SET "app.settings.service_role_key" = '<your-service-role-key>';
+```
+
+> **Security note:** The service-role key grants admin access; never expose it to the client or store it in application environment variables accessible to front-end code.
+
+**Local development:** Set these in your local Supabase config or skip push delivery by leaving them unset — the trigger safely no-ops with a `RAISE WARNING` log when either setting is missing.
+
 Deploy steps:
 
 ```bash
 # 1) Apply latest migration (includes push fanout trigger)
 supabase db push
 
-# 2) Deploy function
+# 2) Configure the required DB settings (see above)
+
+# 3) Deploy function
 supabase functions deploy send-push-notification
 ```
 

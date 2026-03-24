@@ -150,8 +150,10 @@ export default function Layout({ children }: LayoutProps) {
 
   // Resilience fallback: refresh bell count/list on tab focus + interval so
   // the icon stays accurate even if realtime notifications are delayed/missed.
+  // Skip when on /notifications to avoid double-polling with that page's own
+  // initial load and realtime subscription.
   useEffect(() => {
-    if (!user) return;
+    if (!user || router.pathname === '/notifications') return;
 
     const onVisibilityChange = () => {
       if (!document.hidden) {
@@ -168,7 +170,7 @@ export default function Layout({ children }: LayoutProps) {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [user, loadNotifications]);
+  }, [user, loadNotifications, router.pathname]);
 
   // Supabase Realtime: new notifications
   useEffect(() => {
