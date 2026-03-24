@@ -37,12 +37,12 @@ test.describe('Profile page', () => {
   test('navigating to /profile from feed works', async ({ page }) => {
     await page.goto('/feed');
 
-    // Open account menu and use View Profile action
+    // Open account menu (Mantine Menu) and use View Profile action
     await page.getByRole('button', { name: /open account menu/i }).click();
-    await page.getByRole('link', { name: /view profile/i }).click();
+    await page.getByRole('menuitem', { name: /view profile/i }).click();
 
     await expect(page).toHaveURL(/\/profile/);
-    await expect(page.getByText(MOCK_USER_PROFILE.full_name)).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('main').getByText(MOCK_USER_PROFILE.full_name)).toBeVisible({ timeout: 10_000 });
   });
 
   test('Saved Posts tab is visible on the profile page', async ({ page }) => {

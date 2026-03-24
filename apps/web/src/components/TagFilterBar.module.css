@@ -1,41 +1,13 @@
-/* TagFilterBar — dropdown positioning (Mantine handles buttons, checkboxes, layout) */
-.moreWrapper {
-  position: relative;
-}
-
-.dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 100;
-  background: var(--dropdown-bg);
-  border: var(--dropdown-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--dropdown-shadow);
-  min-width: 280px;
-  max-width: 320px;
+/* TagFilterBar — minimal custom styles for Mantine Popover sections */
+.chevron {
+  margin-left: 4px;
+  font-size: 10px;
 }
 
 .dropdownHeader {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.dropdownContent {
-  overflow-y: auto;
+  border-bottom: 1px solid var(--mantine-color-gray-3);
 }
 
 .dropdownFooter {
-  border-top: 1px solid var(--color-border);
-}
-
-@media (max-width: 480px) {
-  .dropdown {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-width: none;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  }
+  border-top: 1px solid var(--mantine-color-gray-3);
 }

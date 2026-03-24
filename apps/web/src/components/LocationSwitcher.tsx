@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
-import { Badge, Button, Divider, Group, Stack, Text, UnstyledButton } from '@mantine/core';
-import { useClickOutside } from '@mantine/hooks';
+import { Badge, Menu, Text, UnstyledButton } from '@mantine/core';
 import { useLocation } from '../hooks/useLocation';
 import { getShortMetroName, hasMetroChanged, MAX_SAVED_LOCATIONS_PREMIUM } from '@nusa/shared';
 import type { SavedLocation } from '@nusa/shared';
@@ -16,8 +15,6 @@ export default function LocationSwitcher() {
     setManualOverride,
     browseMetro,
   } = useLocation();
-  const [open, setOpen] = useState(false);
-  const containerRef = useClickOutside(() => setOpen(false));
 
   if (!activeLocation) return null;
 
@@ -26,7 +23,6 @@ export default function LocationSwitcher() {
     hasMetroChanged(activeLocation.metro_area_id, detectedLocation.metro_area_id);
 
   const handleSelectSaved = (loc: SavedLocation) => {
-    setOpen(false);
     if (loc.metro_area) {
       setManualOverride({
         metro_area_id: loc.metro_area_id,
@@ -39,7 +35,6 @@ export default function LocationSwitcher() {
   };
 
   const handleSelectDetected = () => {
-    setOpen(false);
     if (detectedLocation) {
       browseMetro({
         metro_area_id: detectedLocation.metro_area_id,
@@ -52,114 +47,113 @@ export default function LocationSwitcher() {
   };
 
   return (
-    <div ref={containerRef} className={styles.container}>
-      <UnstyledButton
-        className={styles.locationTrigger}
-        onClick={() => setOpen(!open)}
-        aria-label={`Current location: ${activeLocation.metro_name}. Tap to switch locations`}
-      >
-        <span className={styles.locationIcon}>📍</span>
-        <Text size="sm" fw={700} truncate maw={200}>
-          {getShortMetroName(activeLocation.metro_name)}
-        </Text>
-        <Text size="xs" c="dimmed">▼</Text>
-        {activeLocation.is_temporary && (
-          <Badge variant="light" color="orange" size="xs">Visiting</Badge>
-        )}
-      </UnstyledButton>
-
-      {open && (
-        <div className={styles.dropdown}>
-          <Text size="xs" fw={700} c="dimmed" tt="uppercase" px="sm" pt="sm" pb="xs" lts="0.8px">
-            Your Locations
+    <Menu
+      shadow="md"
+      width={300}
+      position="bottom-start"
+      offset={8}
+      radius="lg"
+    >
+      <Menu.Target>
+        <UnstyledButton
+          className={styles.locationTrigger}
+          aria-label={`Current location: ${activeLocation.metro_name}. Tap to switch locations`}
+        >
+          <span className={styles.locationIcon}>📍</span>
+          <Text size="sm" fw={700} truncate maw={200}>
+            {getShortMetroName(activeLocation.metro_name)}
           </Text>
-
-          {savedLocations.map((loc) => {
-            const isActive = activeLocation.metro_area_id === loc.metro_area_id;
-            const metroDisplay = loc.metro_area
-              ? `${loc.metro_area.name}, ${loc.metro_area.state}`
-              : loc.metro_area_id;
-
-            return (
-              <UnstyledButton
-                key={loc.id}
-                className={styles.locationItem}
-                onClick={() => handleSelectSaved(loc)}
-                w="100%"
-              >
-                <Group gap="xs" flex={1}>
-                  <Text size="sm" w={18} ta="center">
-                    {loc.is_default ? '⭐' : ''}
-                  </Text>
-                  <div>
-                    <Text size="sm" fw={600}>{loc.label}</Text>
-                    <Text size="xs" c="dimmed">{metroDisplay}</Text>
-                  </div>
-                </Group>
-                {isActive && <Text c="nusaPrimary.6" size="lg">✓</Text>}
-              </UnstyledButton>
-            );
-          })}
-
-          {showDetected && (
-            <>
-              <Divider />
-              <Text size="xs" fw={700} c="dimmed" tt="uppercase" px="sm" pt="sm" pb="xs" lts="0.8px">
-                Detected Location
-              </Text>
-              <UnstyledButton
-                className={styles.detectedItem}
-                onClick={handleSelectDetected}
-                w="100%"
-              >
-                <Group gap="xs" flex={1}>
-                  <Text size="sm">📡</Text>
-                  <div>
-                    <Text size="xs" c="dimmed">You&apos;re currently near</Text>
-                    <Text size="sm" fw={600} c="nusaPrimary.6">
-                      {getShortMetroName(detectedLocation!.metro_name)},{' '}
-                      {detectedLocation!.metro_state}
-                    </Text>
-                  </div>
-                </Group>
-                <Text>→</Text>
-              </UnstyledButton>
-            </>
+          <Text size="xs" c="dimmed">▼</Text>
+          {activeLocation.is_temporary && (
+            <Badge variant="light" color="orange" size="xs">Visiting</Badge>
           )}
+        </UnstyledButton>
+      </Menu.Target>
 
-          <Divider />
+      <Menu.Dropdown>
+        <Menu.Label>Your Locations</Menu.Label>
 
-          <Stack gap={0} px="sm" py="xs">
-            {savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
-              <Button
-                variant="subtle"
-                color="nusaPrimary.6"
-                size="sm"
-                justify="flex-start"
-                fullWidth
-                onClick={() => {
-                  setOpen(false);
-                  router.push('/profile/locations?add=true');
-                }}
-              >
-                ＋ Add a Location
-              </Button>
-            )}
-            <Button
-              variant="subtle"
-              color="gray"
-              size="xs"
-              fullWidth
-              onClick={() => {
-                setOpen(false);
-                router.push('/profile/locations');
-              }}
+        {savedLocations.map((loc) => {
+          const isActive = activeLocation.metro_area_id === loc.metro_area_id;
+          const metroDisplay = loc.metro_area
+            ? `${loc.metro_area.name}, ${loc.metro_area.state}`
+            : loc.metro_area_id;
+
+          return (
+            <Menu.Item
+              key={loc.id}
+              onClick={() => handleSelectSaved(loc)}
+              leftSection={
+                <Text size="sm" w={18} ta="center">
+                  {loc.is_default ? '⭐' : ''}
+                </Text>
+              }
+              rightSection={
+                isActive ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--mantine-color-nusaPrimary-6)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : null
+              }
             >
-              Manage Locations
-            </Button>
-          </Stack>
-        </div>
-      )}
-    </div>
+              <Text size="sm" fw={600}>{loc.label}</Text>
+              <Text size="xs" c="dimmed">{metroDisplay}</Text>
+            </Menu.Item>
+          );
+        })}
+
+        {showDetected && (
+          <>
+            <Menu.Divider />
+            <Menu.Label>Detected Location</Menu.Label>
+            <Menu.Item
+              onClick={handleSelectDetected}
+              leftSection={<Text size="sm">📡</Text>}
+              rightSection={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              }
+            >
+              <Text size="xs" c="dimmed">You&apos;re currently near</Text>
+              <Text size="sm" fw={600} c="nusaPrimary.6">
+                {getShortMetroName(detectedLocation!.metro_name)},{' '}
+                {detectedLocation!.metro_state}
+              </Text>
+            </Menu.Item>
+          </>
+        )}
+
+        <Menu.Divider />
+
+        {savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
+          <Menu.Item
+            onClick={() => router.push('/profile/locations?add=true')}
+            leftSection={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--mantine-color-nusaPrimary-6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            }
+            c="nusaPrimary.6"
+          >
+            Add a Location
+          </Menu.Item>
+        )}
+
+        <Menu.Item
+          onClick={() => router.push('/profile/locations')}
+          leftSection={
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          }
+          c="dimmed"
+        >
+          Manage Locations
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   );
 }

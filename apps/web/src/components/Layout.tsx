@@ -1,7 +1,7 @@
 import React, { ReactNode, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ActionIcon, Button, Center, Divider, Indicator, Loader, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Button, Center, Divider, Indicator, Loader, Menu, Text, UnstyledButton } from '@mantine/core';
 import { useClickOutside } from '@mantine/hooks';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
@@ -47,9 +47,7 @@ export default function Layout({ children }: LayoutProps) {
   // Chat unread badge (messages icon)
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Account dropdown
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useClickOutside(() => setDropdownOpen(false));
+  // Account dropdown (Mantine Menu handles open/close state)
 
   // Notification bell dropdown
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
@@ -204,7 +202,6 @@ export default function Layout({ children }: LayoutProps) {
   const isHomeActive = router.pathname === '/' || isActive('/feed');
 
   const handleSignOut = async () => {
-    setDropdownOpen(false);
     await signOut();
     router.push('/');
   };
@@ -346,63 +343,88 @@ export default function Layout({ children }: LayoutProps) {
               </Indicator>
 
               {/* Account dropdown */}
-              <div className={styles.dropdownWrapper} ref={dropdownRef}>
-                <UnstyledButton
-                  className={styles.avatarButton}
-                  onClick={() => setDropdownOpen((prev) => !prev)}
-                  aria-label="Open account menu"
-                  aria-haspopup="true"
-                >
-                  <Avatar
-                    name={user.full_name || '?'}
-                    photoUrl={user.profile_photo}
-                    trustLevel={user.trust_level}
-                    size="small"
-                  />
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </UnstyledButton>
+              <Menu
+                shadow="md"
+                width={260}
+                position="bottom-end"
+                offset={10}
+                radius="lg"
+              >
+                <Menu.Target>
+                  <UnstyledButton
+                    className={styles.avatarButton}
+                    aria-label="Open account menu"
+                  >
+                    <Avatar
+                      name={user.full_name || '?'}
+                      photoUrl={user.profile_photo}
+                      trustLevel={user.trust_level}
+                      size="small"
+                    />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </UnstyledButton>
+                </Menu.Target>
 
-                {dropdownOpen && (
-                  <div className={styles.dropdown}>
-                    <div className={styles.dropdownHeader}>
-                      <Avatar
-                        name={user.full_name || '?'}
-                        photoUrl={user.profile_photo}
-                        trustLevel={user.trust_level}
-                        size="small"
-                      />
-                      <div className={styles.dropdownHeaderText}>
-                        <span className={styles.dropdownName}>{user.full_name}</span>
-                        <span className={styles.dropdownEmail}>{user.email}</span>
-                      </div>
+                <Menu.Dropdown>
+                  <div className={styles.dropdownHeader}>
+                    <Avatar
+                      name={user.full_name || '?'}
+                      photoUrl={user.profile_photo}
+                      trustLevel={user.trust_level}
+                      size="small"
+                    />
+                    <div className={styles.dropdownHeaderText}>
+                      <Text size="sm" fw={700} className={styles.dropdownName}>{user.full_name}</Text>
+                      <Text size="xs" c="dimmed" className={styles.dropdownEmail}>{user.email}</Text>
                     </div>
-                    <Divider my={4} mx="sm" />
-                    <Link
-                      href="/profile"
-                      className={styles.dropdownItem}
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      View Profile
-                    </Link>
-                    <Link
-                      href="/profile/locations"
-                      className={styles.dropdownItem}
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Manage Locations
-                    </Link>
-                    <Divider my={4} mx="sm" />
-                    <UnstyledButton
-                      className={styles.dropdownItemDanger}
-                      onClick={handleSignOut}
-                    >
-                      Sign Out
-                    </UnstyledButton>
                   </div>
-                )}
-              </div>
+
+                  <Menu.Divider />
+
+                  <Menu.Item
+                    component={Link}
+                    href="/profile"
+                    leftSection={
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    }
+                  >
+                    View Profile
+                  </Menu.Item>
+                  <Menu.Item
+                    component={Link}
+                    href="/profile/locations"
+                    leftSection={
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                    }
+                  >
+                    Manage Locations
+                  </Menu.Item>
+
+                  <Menu.Divider />
+
+                  <Menu.Item
+                    color="red"
+                    onClick={handleSignOut}
+                    leftSection={
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                    }
+                  >
+                    Sign Out
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             </div>
           </header>
 

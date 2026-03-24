@@ -12,7 +12,6 @@ playwright-report/
 build/
 dist/
 .next/
-.netlify/
 .vercel/
 out/
 

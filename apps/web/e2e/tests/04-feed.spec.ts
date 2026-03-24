@@ -20,19 +20,19 @@ test.describe('Feed page', () => {
   test('displays tag filter bar', async ({ page }) => {
     await page.goto('/feed');
 
-    // Tag filter chips should render (TagFilterBar component)
-    await expect(page.getByRole('button', { name: new RegExp(MOCK_TAGS[0].name, 'i') })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: new RegExp(MOCK_TAGS[1].name, 'i') })).toBeVisible();
+    // Tag filter chips should render (Mantine Chip — visible label text)
+    await expect(page.locator('.mantine-Chip-label').filter({ hasText: new RegExp(MOCK_TAGS[0].name, 'i') })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.mantine-Chip-label').filter({ hasText: new RegExp(MOCK_TAGS[1].name, 'i') })).toBeVisible();
   });
 
   test('tag filter chip updates URL query', async ({ page }) => {
     await page.goto('/feed');
 
-    // Wait for tags to load
-    const housingChip = page.getByRole('button', { name: new RegExp(MOCK_TAGS[0].name, 'i') });
+    // Wait for tags to load (Mantine Chip — click the visible label)
+    const housingChip = page.locator('.mantine-Chip-label').filter({ hasText: new RegExp(MOCK_TAGS[0].name, 'i') });
     await expect(housingChip).toBeVisible({ timeout: 10_000 });
 
-    // Click the Housing tag chip
+    // Click the Housing tag chip label
     await housingChip.click();
 
     // URL should include the tag slug
