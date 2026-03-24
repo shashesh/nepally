@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../test-utils';
+import { render, screen, fireEvent, waitFor, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const layoutMocks = vi.hoisted(() => ({
@@ -330,27 +330,46 @@ describe('Layout', () => {
       expect(screen.getByText('Mark all as read')).toBeDefined();
     });
 
-    it('opens account dropdown when avatar button is clicked', () => {
+    it('opens account dropdown when avatar button is clicked', async () => {
       render(<Layout>Content</Layout>);
-      fireEvent.click(screen.getByLabelText('Open account menu'));
-      expect(screen.getByText('View Profile')).toBeDefined();
-      expect(screen.getByText('Manage Locations')).toBeDefined();
-      expect(screen.getByText('Sign Out')).toBeDefined();
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Open account menu'));
+      });
+      await waitFor(() => {
+        expect(screen.getByText('View Profile')).toBeDefined();
+        expect(screen.getByText('Manage Locations')).toBeDefined();
+        expect(screen.getByText('Sign Out')).toBeDefined();
+      });
     });
 
-    it('closes account dropdown when avatar button is clicked again', () => {
+    it('closes account dropdown when avatar button is clicked again', async () => {
       render(<Layout>Content</Layout>);
-      fireEvent.click(screen.getByLabelText('Open account menu'));
-      expect(screen.getByText('View Profile')).toBeDefined();
-      fireEvent.click(screen.getByLabelText('Open account menu'));
-      expect(screen.queryByText('View Profile')).toBeNull();
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Open account menu'));
+      });
+      await waitFor(() => {
+        expect(screen.getByText('View Profile')).toBeDefined();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Open account menu'));
+      });
+      await waitFor(() => {
+        expect(screen.queryByText('View Profile')).toBeNull();
+      });
     });
 
     it('calls signOut and navigates to / when Sign Out is clicked', async () => {
       layoutMocks.signOutMock.mockResolvedValue(undefined);
       render(<Layout>Content</Layout>);
-      fireEvent.click(screen.getByLabelText('Open account menu'));
-      fireEvent.click(screen.getByText('Sign Out'));
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Open account menu'));
+      });
+      await waitFor(() => {
+        expect(screen.getByText('Sign Out')).toBeDefined();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Sign Out'));
+      });
       await waitFor(() => {
         expect(layoutMocks.signOutMock).toHaveBeenCalled();
         expect(mockPush).toHaveBeenCalledWith('/');

@@ -1,8 +1,4 @@
-/* LocationSwitcher — layout-only styles (Mantine handles text, badges, buttons) */
-.container {
-  position: relative;
-}
-
+/* LocationSwitcher — trigger button only (Mantine Menu handles dropdown) */
 .locationTrigger {
   display: flex;
   align-items: center;
@@ -21,43 +17,4 @@
 
 .locationIcon {
   font-size: 16px;
-}
-
-.locationItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px var(--space-s);
-  border-bottom: 1px solid var(--color-border);
-  transition: background var(--transition-fast);
-}
-
-.locationItem:hover {
-  background: rgba(var(--color-primary-rgb), 0.06);
-}
-
-.detectedItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px var(--space-s);
-  background: rgba(var(--color-primary-rgb), 0.07);
-  transition: background var(--transition-fast);
-}
-
-.detectedItem:hover {
-  background: rgba(var(--color-primary-rgb), 0.12);
-}
-
-.dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  width: 320px;
-  background: var(--dropdown-bg);
-  border: var(--dropdown-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--dropdown-shadow);
-  z-index: 201;
-  overflow: hidden;
 }

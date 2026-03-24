@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '../test-utils';
+import { render, screen, fireEvent, waitFor, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -59,10 +59,14 @@ describe('LocationSwitcher', () => {
     expect(screen.getByLabelText(/Current location/i)).toBeDefined();
   });
 
-  it('opens the dropdown and shows saved locations', () => {
+  it('opens the dropdown and shows saved locations', async () => {
     render(<LocationSwitcher />);
-    fireEvent.click(screen.getByLabelText(/Current location/i));
-    expect(screen.getByText('Your Locations')).toBeDefined();
-    expect(screen.getByText('Home')).toBeDefined();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText(/Current location/i));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Your Locations')).toBeDefined();
+      expect(screen.getByText('Home')).toBeDefined();
+    });
   });
 });

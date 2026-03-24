@@ -225,39 +225,7 @@
   transform: scale(1.04);
 }
 
-.dropdownWrapper {
-  position: relative;
-}
-
-/* ── Glassmorphism Dropdown ──────────────── */
-.dropdown {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  background: var(--dropdown-bg);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  border: var(--dropdown-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--dropdown-shadow);
-  z-index: 200;
-  min-width: 240px;
-  padding: var(--space-xs) 0;
-  overflow: hidden;
-  animation: dropdownIn 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes dropdownIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
+/* ── Account Menu Header ──────────────────── */
 .dropdownHeader {
   display: flex;
   align-items: center;
@@ -272,9 +240,6 @@
 }
 
 .dropdownName {
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -282,41 +247,9 @@
 }
 
 .dropdownEmail {
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.dropdownItem,
-.dropdownItemDanger {
-  display: block;
-  width: 100%;
-  padding: 10px var(--space-m);
-  background: none;
-  border: none;
-  text-align: left;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  text-decoration: none;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.dropdownItem:hover {
-  background: rgba(var(--color-primary-rgb), 0.07);
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-.dropdownItemDanger {
-  color: var(--color-error);
-}
-
-.dropdownItemDanger:hover {
-  background: rgba(198, 40, 40, 0.06);
 }
 
 .main {
@@ -354,10 +287,6 @@
 @media (max-width: 640px) {
   .nav {
     padding: 0 var(--space-s);
-  }
-
-  .dropdown {
-    min-width: 220px;
   }
 }
 
