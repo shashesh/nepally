@@ -7,6 +7,7 @@ jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
 const mockInsertHandlerRef: { current: ((payload: { new: { author_id?: string } }) => void) | null } = { current: null };
 const mockGetPostsByMetroArea = jest.fn().mockResolvedValue({ data: [], error: null });
+const mockCreateReport = jest.fn().mockResolvedValue({ data: { id: 'report-1' }, error: null });
 const mockUseLocation = jest.fn();
 const mockUseAuth = jest.fn();
 const mockNavigate = jest.fn();
@@ -46,6 +47,7 @@ jest.mock('@nusa/shared', () => ({
   likePost: jest.fn().mockResolvedValue({ error: null }),
   unlikePost: jest.fn().mockResolvedValue({ error: null }),
   deletePost: jest.fn().mockResolvedValue({ error: null }),
+  createReport: (...args: unknown[]) => mockCreateReport(...args),
   getOrCreateConversation: jest.fn().mockResolvedValue({ data: null, error: null }),
   savePost: jest.fn().mockResolvedValue({ error: null }),
   unsavePost: jest.fn().mockResolvedValue({ error: null }),
@@ -70,7 +72,14 @@ jest.mock('../components/location/LocationSwitcherSheet', () => ({
   LocationSwitcherSheet: () => null,
 }));
 jest.mock('../components/cards/PostCard', () => ({
-  PostCard: () => null,
+  PostCard: ({ onMorePress }: { onMorePress?: () => void }) => {
+    const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
+    return (
+      <ReactNative.TouchableOpacity onPress={onMorePress} testID="mock-post-more-btn">
+        <ReactNative.Text>Open Post Menu</ReactNative.Text>
+      </ReactNative.TouchableOpacity>
+    );
+  },
 }));
 jest.mock('../components/cards/SkeletonPostCard', () => ({
   SkeletonPostCard: () => null,
@@ -79,7 +88,17 @@ jest.mock('../components/filters/TagFilterBar', () => ({
   TagFilterBar: () => null,
 }));
 jest.mock('../components/sheets/PostMoreSheet', () => ({
-  PostMoreSheet: () => null,
+  PostMoreSheet: ({ visible, onReport, onClose }: { visible?: boolean; onReport?: () => void; onClose?: () => void }) => {
+    const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
+    if (!visible) return null;
+    return (
+      <ReactNative.View>
+        <ReactNative.TouchableOpacity onPress={() => { onClose?.(); onReport?.(); }}>
+          <ReactNative.Text>Report Post</ReactNative.Text>
+        </ReactNative.TouchableOpacity>
+      </ReactNative.View>
+    );
+  },
 }));
 
 jest.mock('@react-navigation/native', () => ({
@@ -103,6 +122,7 @@ describe('HomeScreen', () => {
     jest.clearAllMocks();
     mockInsertHandlerRef.current = null;
     mockGetPostsByMetroArea.mockResolvedValue({ data: [], error: null });
+    mockCreateReport.mockResolvedValue({ data: { id: 'report-1' }, error: null });
     mockUseAuth.mockReturnValue({
       user: {
         id: 'user-1',
@@ -186,5 +206,117 @@ describe('HomeScreen', () => {
     });
 
     expect(screen.getByText('↑ 1 new post')).toBeTruthy();
+  });
+
+  it('opens report sheet from post menu and closes it on cancel', async () => {
+    mockGetPostsByMetroArea.mockResolvedValue({
+      data: [
+        {
+          id: 'post-1',
+          title: 'Sample Post',
+          description: 'Sample Description',
+          created_at: '2026-03-23T00:00:00.000Z',
+          author_id: 'user-2',
+          author: {
+            id: 'user-2',
+            full_name: 'Someone Else',
+            trust_level: 1,
+            profile_photo: null,
+          },
+          tags: [],
+          photos: [],
+          is_global: false,
+          likes_count: 0,
+          comments_count: 0,
+          views_count: 0,
+        },
+      ],
+      error: null,
+    });
+
+    const screen = render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-post-more-btn')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByTestId('mock-post-more-btn'));
+    await waitFor(() => {
+      expect(screen.getByText('Report Post')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Report Post'));
+    await waitFor(() => {
+      expect(screen.getByText('Submit Report')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Cancel'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Submit Report')).toBeNull();
+    });
+  });
+
+  it('submits report from sheet with reason and details', async () => {
+    mockGetPostsByMetroArea.mockResolvedValue({
+      data: [
+        {
+          id: 'post-1',
+          title: 'Sample Post',
+          description: 'Sample Description',
+          created_at: '2026-03-23T00:00:00.000Z',
+          author_id: 'user-2',
+          author: {
+            id: 'user-2',
+            full_name: 'Someone Else',
+            trust_level: 1,
+            profile_photo: null,
+          },
+          tags: [],
+          photos: [],
+          is_global: false,
+          likes_count: 0,
+          comments_count: 0,
+          views_count: 0,
+        },
+      ],
+      error: null,
+    });
+
+    const screen = render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-post-more-btn')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByTestId('mock-post-more-btn'));
+    await waitFor(() => {
+      expect(screen.getByText('Report Post')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Report Post'));
+    await waitFor(() => {
+      expect(screen.getByText('Submit Report')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Reason Scam'));
+    fireEvent.changeText(
+      screen.getByPlaceholderText('Add anything helpful for review'),
+      'Requests deposit before showing room.'
+    );
+    fireEvent.press(screen.getByText('Submit Report'));
+
+    await waitFor(() => {
+      expect(mockCreateReport).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          reported_by: 'user-1',
+          target_type: 'post',
+          target_id: 'post-1',
+          reason: 'Scam',
+          description: 'Requests deposit before showing room.',
+        })
+      );
+    });
   });
 });

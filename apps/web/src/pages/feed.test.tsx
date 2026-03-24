@@ -22,6 +22,7 @@ const feedMocks = vi.hoisted(() => ({
   unsavePostMock: vi.fn(),
   deletePostMock: vi.fn(),
   getOrCreateConversationMock: vi.fn(),
+  createReportMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
   notificationsShowMock: vi.fn(),
 }));
@@ -43,6 +44,7 @@ vi.mock('@nusa/shared', async () => {
     unsavePost: feedMocks.unsavePostMock,
     deletePost: feedMocks.deletePostMock,
     getOrCreateConversation: feedMocks.getOrCreateConversationMock,
+    createReport: feedMocks.createReportMock,
     formatRelativeTime: feedMocks.formatRelativeTimeMock,
     TAG_EMOJI: { housing: '🏠', jobs: '💼' },
   };
@@ -121,6 +123,7 @@ describe('FeedPage', () => {
     feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: [] });
     feedMocks.savePostMock.mockResolvedValue({});
     feedMocks.unsavePostMock.mockResolvedValue({});
+    feedMocks.createReportMock.mockResolvedValue({ data: { id: 'report-1' } });
   });
 
   it('redirects to /login when user is not logged in', async () => {
@@ -409,6 +412,56 @@ describe('FeedPage', () => {
     fireEvent.click(screen.getByLabelText('Post options'));
     await waitFor(() => {
       expect(screen.getByText('Unsave Post')).toBeDefined();
+    });
+  });
+
+  it('opens report modal from post menu', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Report Post')).toBeDefined());
+
+    fireEvent.click(screen.getByText('Report Post'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Report post')).toBeDefined();
+      expect(screen.getByText('Why are you reporting this post?')).toBeDefined();
+    });
+  });
+
+  it('submits report reason and details from modal', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Report Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Report Post'));
+
+    await waitFor(() => expect(screen.getByText('Report post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Scam or fraud'));
+    fireEvent.change(screen.getByLabelText('Additional details (optional)'), {
+      target: { value: 'Looks suspicious and asks for money upfront.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+
+    await waitFor(() => {
+      expect(feedMocks.createReportMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          reported_by: 'user-1',
+          target_type: 'post',
+          target_id: 'post-1',
+          reason: 'Scam',
+          description: 'Looks suspicious and asks for money upfront.',
+        })
+      );
+      expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Thanks. Your report has been submitted for review.' })
+      );
     });
   });
 

@@ -15,3 +15,4 @@ export * from './notifications';
 export * from './userSettings';
 export * from './deviceTokens';
 export * from './events';
+export * from './reports';
