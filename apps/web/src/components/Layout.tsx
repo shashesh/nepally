@@ -11,6 +11,8 @@ import {
   getUnreadNotificationCount,
   markNotificationRead,
   markAllNotificationsRead,
+  deleteNotification,
+  resolveNotificationRouteTarget,
 } from '@nusa/shared';
 import type { Notification } from '@nusa/shared';
 import LocationSwitcher from './LocationSwitcher';
@@ -146,6 +148,28 @@ export default function Layout({ children }: LayoutProps) {
     loadNotifications();
   }, [loadNotifications]);
 
+  // Resilience fallback: refresh bell count/list on tab focus + interval so
+  // the icon stays accurate even if realtime notifications are delayed/missed.
+  useEffect(() => {
+    if (!user) return;
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        loadNotifications();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      loadNotifications();
+    }, 30000);
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [user, loadNotifications]);
+
   // Supabase Realtime: new notifications
   useEffect(() => {
     if (!user) return;
@@ -156,7 +180,6 @@ export default function Layout({ children }: LayoutProps) {
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
         (payload) => {
           const newNotif = payload.new as Notification;
-          if (newNotif.type === 'message') return;
           setUnreadNotifCount((c) => c + 1);
           setNotifList((prev) => [newNotif, ...prev].slice(0, 8));
         }
@@ -173,12 +196,24 @@ export default function Layout({ children }: LayoutProps) {
       setUnreadNotifCount((c) => Math.max(0, c - 1));
       setNotifList((prev) => prev.map((n) => n.id === notif.id ? { ...n, read: true } : n));
     }
-    const data = notif.data as Record<string, string>;
-    if (data.post_id) {
-      router.push(`/posts/${data.post_id}`);
-    } else {
-      router.push('/notifications');
+    const target = resolveNotificationRouteTarget(notif);
+
+    if (target.kind === 'post') {
+      router.push(`/posts/${target.postId}`);
+      return;
     }
+
+    if (target.kind === 'event') {
+      router.push(`/events/${target.eventId}`);
+      return;
+    }
+
+    if (target.kind === 'message') {
+      router.push(`/messages/${target.conversationId}`);
+      return;
+    }
+
+    router.push('/notifications');
   };
 
   const handleMarkAllRead = async () => {
@@ -186,6 +221,19 @@ export default function Layout({ children }: LayoutProps) {
     await markAllNotificationsRead(supabase, user.id);
     setUnreadNotifCount(0);
     setNotifList((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleDeleteNotif = async (event: React.MouseEvent, notif: Notification) => {
+    event.stopPropagation();
+    const result = await deleteNotification(supabase, notif.id);
+    if (result.error) {
+      console.error('Failed to delete notification:', result.error);
+      return;
+    }
+    setNotifList((prev) => prev.filter((n) => n.id !== notif.id));
+    if (!notif.read) {
+      setUnreadNotifCount((c) => Math.max(0, c - 1));
+    }
   };
 
   if (loading) {
@@ -306,6 +354,14 @@ export default function Layout({ children }: LayoutProps) {
                               <span className={styles.notifItemBody}>{notif.body}</span>
                               <span className={styles.notifItemTime}>{timeAgo(notif.sent_at)}</span>
                             </div>
+                            <button
+                              type="button"
+                              className={styles.notifDismissBtn}
+                              aria-label="Delete notification"
+                              onClick={(event) => handleDeleteNotif(event, notif)}
+                            >
+                              ×
+                            </button>
                           </li>
                         ))}
                       </ul>

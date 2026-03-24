@@ -431,6 +431,29 @@
   margin-top: 2px;
 }
 
+.notifDismissBtn {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.notifDismissBtn:hover {
+  background: rgba(var(--color-primary-rgb), 0.1);
+  color: var(--color-text-primary);
+}
+
 .notifEmpty {
   padding: 24px 16px;
   text-align: center;

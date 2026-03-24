@@ -10,15 +10,37 @@ const mocks = vi.hoisted(() => ({
   markNotificationReadMock: vi.fn(),
   markAllNotificationsReadMock: vi.fn(),
   deleteNotificationMock: vi.fn(),
+  realtimeSubscriptions: [] as Array<{
+    event: unknown;
+    filter: unknown;
+    callback: (payload: unknown) => void;
+  }>,
 }));
 
 vi.mock('../hooks/useAuth', () => ({ useAuth: mocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouterMock }));
 vi.mock('../lib/supabase', () => ({
   supabase: {
-    channel: vi.fn().mockReturnValue({
-      on: vi.fn().mockReturnThis(),
-      subscribe: vi.fn().mockReturnThis(),
+    channel: vi.fn().mockImplementation(() => {
+      const channelRef: {
+        on: ReturnType<typeof vi.fn>;
+        subscribe: ReturnType<typeof vi.fn>;
+      } = {
+        on: vi.fn(),
+        subscribe: vi.fn(),
+      };
+
+      channelRef.on.mockImplementation((_event: unknown, _filter: unknown, callback: (payload: unknown) => void) => {
+        mocks.realtimeSubscriptions.push({
+          event: _event,
+          filter: _filter,
+          callback,
+        });
+        return channelRef;
+      });
+
+      channelRef.subscribe.mockReturnValue(channelRef);
+      return channelRef;
     }),
     removeChannel: vi.fn(),
   },
@@ -67,9 +89,34 @@ const sampleNotif = {
   sent_at: new Date().toISOString(),
 };
 
+const messageNotif = {
+  ...sampleNotif,
+  id: 'n-message',
+  type: 'message' as const,
+  title: 'New message',
+  data: { conversation_id: 'conv-1', sender_id: 'user-2' },
+};
+
+const eventNotif = {
+  ...sampleNotif,
+  id: 'n-event',
+  type: 'system' as const,
+  title: 'Event reminder',
+  data: { event_id: 'event-1' },
+};
+
+const malformedNotif = {
+  ...sampleNotif,
+  id: 'n-malformed',
+  type: 'message' as const,
+  title: 'Malformed payload',
+  data: { conversation_id: 123 },
+};
+
 describe('NotificationsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.realtimeSubscriptions.length = 0;
     mocks.useRouterMock.mockReturnValue({
       replace: mockReplace,
       push: mockPush,
@@ -133,6 +180,48 @@ describe('NotificationsPage', () => {
     });
   });
 
+  it('navigates to message thread for message notification payload', async () => {
+    mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
+    mocks.getNotificationsMock.mockResolvedValue({ data: [messageNotif] });
+
+    render(<NotificationsPage />);
+
+    await waitFor(() => expect(screen.getByText('New message')).toBeDefined());
+    fireEvent.click(screen.getByText('New message').closest('li')!);
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/messages/conv-1');
+    });
+  });
+
+  it('navigates to event detail for event notification payload', async () => {
+    mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
+    mocks.getNotificationsMock.mockResolvedValue({ data: [eventNotif] });
+
+    render(<NotificationsPage />);
+
+    await waitFor(() => expect(screen.getByText('Event reminder')).toBeDefined());
+    fireEvent.click(screen.getByText('Event reminder').closest('li')!);
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/events/event-1');
+    });
+  });
+
+  it('falls back safely to notifications page for malformed payloads', async () => {
+    mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
+    mocks.getNotificationsMock.mockResolvedValue({ data: [malformedNotif] });
+
+    render(<NotificationsPage />);
+
+    await waitFor(() => expect(screen.getByText('Malformed payload')).toBeDefined());
+    fireEvent.click(screen.getByText('Malformed payload').closest('li')!);
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/notifications');
+    });
+  });
+
   it('calls markAllNotificationsRead when Mark all as read is clicked', async () => {
     mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
     mocks.getNotificationsMock.mockResolvedValue({ data: [sampleNotif] });
@@ -162,5 +251,66 @@ describe('NotificationsPage', () => {
     mocks.getNotificationsMock.mockResolvedValue({ data: [emergencyNotif, sampleNotif] });
     render(<NotificationsPage />);
     await waitFor(() => expect(screen.getByText('🛡️ Emergency Alerts')).toBeDefined());
+  });
+
+  it('keeps notification visible when delete fails', async () => {
+    mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
+    mocks.getNotificationsMock.mockResolvedValue({ data: [sampleNotif] });
+    mocks.deleteNotificationMock.mockResolvedValue({ error: new Error('RLS delete blocked') });
+
+    render(<NotificationsPage />);
+
+    await waitFor(() => expect(screen.getByText('New comment on your post')).toBeDefined());
+
+    const dismissButton = screen.getByLabelText('Dismiss notification');
+    fireEvent.click(dismissButton);
+
+    await waitFor(() => {
+      expect(mocks.deleteNotificationMock).toHaveBeenCalledWith(expect.anything(), 'n1');
+    });
+    expect(screen.getByText('New comment on your post')).toBeDefined();
+  });
+
+  it('adds message notifications from realtime inserts', async () => {
+    mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
+    mocks.getNotificationsMock.mockResolvedValue({ data: [] });
+
+    render(<NotificationsPage />);
+
+    await waitFor(() => expect(mocks.getNotificationsMock).toHaveBeenCalled());
+
+    const notificationInsertSubscription = mocks.realtimeSubscriptions.find((sub) => {
+      const filter = sub.filter as { table?: string; event?: string };
+      return filter?.table === 'notifications' && filter?.event === 'INSERT';
+    });
+
+    expect(notificationInsertSubscription).toBeDefined();
+
+    notificationInsertSubscription?.callback({
+      new: {
+        ...messageNotif,
+        title: 'Realtime message',
+      },
+    });
+
+    await waitFor(() => expect(screen.getByText('Realtime message')).toBeDefined());
+  });
+
+  it('reloads notifications when tab becomes visible again', async () => {
+    mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
+    mocks.getNotificationsMock
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: [sampleNotif] });
+
+    render(<NotificationsPage />);
+
+    await waitFor(() => expect(mocks.getNotificationsMock).toHaveBeenCalledTimes(1));
+
+    fireEvent(document, new Event('visibilitychange'));
+
+    await waitFor(() => {
+      expect(mocks.getNotificationsMock).toHaveBeenCalledTimes(2);
+      expect(screen.getByText('New comment on your post')).toBeDefined();
+    });
   });
 });

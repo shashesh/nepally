@@ -1,11 +1,11 @@
 /**
  * send-push-notification — Supabase Edge Function
  *
- * TODO: Deploy and wire to DB triggers (notify_new_message, notify_new_comment, notify_new_like)
- * TODO: Set the following Supabase secrets before deploying:
+ * Required Supabase secrets:
  *   supabase secrets set VAPID_PRIVATE_KEY=<your-vapid-private-key>
+ *   supabase secrets set VAPID_PUBLIC_KEY=<your-vapid-public-key>
  *   supabase secrets set VAPID_SUBJECT=mailto:<your-email>
- *   supabase secrets set EXPO_ACCESS_TOKEN=<your-expo-access-token>  (optional, for enhanced delivery)
+ *   supabase secrets set EXPO_ACCESS_TOKEN=<your-expo-access-token>  (optional, for higher Expo rate limits)
  *
  * VAPID keys can be generated with:
  *   npx web-push generate-vapid-keys
@@ -23,6 +23,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import webpush from 'npm:web-push@3.6.7';
 
 interface PushPayload {
   userId: string;
@@ -38,6 +39,41 @@ interface DeviceTokenRow {
   endpoint?: string;
   p256dh?: string;
   auth_key?: string;
+}
+
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+
+function buildExpoHeaders(): HeadersInit {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  const expoAccessToken = Deno.env.get('EXPO_ACCESS_TOKEN');
+  if (expoAccessToken) {
+    headers.Authorization = `Bearer ${expoAccessToken}`;
+  }
+
+  return headers;
+}
+
+let vapidConfigured = false;
+
+function ensureWebPushConfigured(): void {
+  if (vapidConfigured) return;
+
+  const vapidSubject = Deno.env.get('VAPID_SUBJECT');
+  const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+  const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+
+  if (!vapidSubject || !vapidPublicKey || !vapidPrivateKey) {
+    throw new Error(
+      'Missing VAPID configuration. Expected VAPID_SUBJECT, VAPID_PUBLIC_KEY, and VAPID_PRIVATE_KEY.'
+    );
+  }
+
+  webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+  vapidConfigured = true;
 }
 
 serve(async (req: Request) => {
@@ -123,10 +159,9 @@ async function sendExpoNotifications(
     channelId: 'default',
   }));
 
-  // TODO: Add EXPO_ACCESS_TOKEN header for enhanced delivery rate limits
-  const response = await fetch('https://exp.host/--/api/v2/push/send', {
+  const response = await fetch(EXPO_PUSH_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: buildExpoHeaders(),
     body: JSON.stringify(messages),
   });
 
@@ -138,9 +173,8 @@ async function sendExpoNotifications(
 
 // ---------------------------------------------------------------------------
 // Web Push (VAPID)
-// Requires VAPID_PRIVATE_KEY + VAPID_SUBJECT env secrets.
-// The full VAPID signing implementation requires a crypto library —
-// swap the placeholder below with e.g. https://deno.land/x/web_push
+// Uses VAPID details from environment variables and sends one notification per
+// browser subscription endpoint.
 // ---------------------------------------------------------------------------
 async function sendWebPushNotifications(
   tokens: DeviceTokenRow[],
@@ -150,19 +184,32 @@ async function sendWebPushNotifications(
 ): Promise<void> {
   if (tokens.length === 0) return;
 
-  // TODO: Replace with a proper VAPID-signed web push implementation.
-  // Example using deno web-push:
-  //   import { sendNotification, setVapidDetails } from 'https://deno.land/x/web_push/mod.ts';
-  //   setVapidDetails(
-  //     Deno.env.get('VAPID_SUBJECT')!,
-  //     Deno.env.get('NEXT_PUBLIC_VAPID_PUBLIC_KEY')!,
-  //     Deno.env.get('VAPID_PRIVATE_KEY')!
-  //   );
-  //   for (const t of tokens) {
-  //     await sendNotification(
-  //       { endpoint: t.endpoint!, keys: { p256dh: t.p256dh!, auth: t.auth_key! } },
-  //       JSON.stringify({ title, body, url })
-  //     );
-  //   }
-  console.log(`[web-push] TODO: send to ${tokens.length} web subscribers — title: "${title}"`);
+  ensureWebPushConfigured();
+
+  const payload = JSON.stringify({ title, body, url });
+
+  for (const token of tokens) {
+    if (!token.endpoint || !token.p256dh || !token.auth_key) {
+      console.warn('[web-push] Skipping token with incomplete subscription keys');
+      continue;
+    }
+
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: token.endpoint,
+          keys: {
+            p256dh: token.p256dh,
+            auth: token.auth_key,
+          },
+        },
+        payload,
+        {
+          TTL: 60,
+        }
+      );
+    } catch (err) {
+      console.warn('[web-push] Failed for endpoint:', token.endpoint, err);
+    }
+  }
 }

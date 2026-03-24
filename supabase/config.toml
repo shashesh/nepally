@@ -79,6 +79,9 @@ secret = ""
 # If you want to use a bundler other than esbuild.
 # bundler = "esbuild"
 
+[functions.send-push-notification]
+verify_jwt = true
+
 # Auth rate limits
 [auth.rate_limit]
 # Number of requests allowed per minute for password recovery endpoints

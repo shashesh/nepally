@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  AppState,
   SectionList,
   StatusBar,
   StyleSheet,
@@ -17,6 +18,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   deleteNotification,
+  resolveNotificationRouteTarget,
 } from '@nusa/shared';
 import type { Notification } from '@nusa/shared';
 import { useAuth } from '../../hooks/useAuth';
@@ -61,6 +63,10 @@ interface SectionData {
   data: Notification[];
 }
 
+type ParentNavigator = {
+  navigate: (...args: unknown[]) => void;
+};
+
 export function NotificationsScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
@@ -81,6 +87,27 @@ export function NotificationsScreen() {
     loadNotifications();
   }, [loadNotifications]);
 
+  // Resilience fallback: refresh notifications when app returns to foreground
+  // and on a periodic interval in case realtime events are delayed/missed.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        loadNotifications();
+      }
+    });
+
+    const intervalId = setInterval(() => {
+      loadNotifications();
+    }, 30000);
+
+    return () => {
+      appStateSubscription.remove();
+      clearInterval(intervalId);
+    };
+  }, [user?.id, loadNotifications]);
+
   // Supabase Realtime subscription
   useEffect(() => {
     if (!user?.id) return;
@@ -91,7 +118,6 @@ export function NotificationsScreen() {
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
         (payload) => {
           const newNotif = payload.new as Notification;
-          if (newNotif.type === 'message') return;
           setNotifications((prev) => [newNotif, ...prev]);
         }
       )
@@ -104,14 +130,58 @@ export function NotificationsScreen() {
       await markNotificationRead(supabase, notif.id);
       setNotifications((prev) => prev.map((n) => n.id === notif.id ? { ...n, read: true } : n));
     }
-    const data = notif.data as Record<string, string>;
-    if (data.post_id) {
-      navigation.navigate('PostDetail', { postId: data.post_id });
+    const target = resolveNotificationRouteTarget(notif);
+
+    if (target.kind === 'post') {
+      navigation.navigate('PostDetail', { postId: target.postId });
+      return;
     }
+
+    if (target.kind === 'event') {
+      const parentNavigation = navigation.getParent() as ParentNavigator | undefined;
+      parentNavigation?.navigate('Main', {
+        screen: 'Events',
+        params: {
+          screen: 'EventDetail',
+          params: { eventId: target.eventId },
+        },
+      });
+      return;
+    }
+
+    if (target.kind === 'message') {
+      if (!target.senderId) {
+        const parentNavigation = navigation.getParent() as ParentNavigator | undefined;
+        parentNavigation?.navigate('Chat', { screen: 'ConversationList' });
+        return;
+      }
+
+      const parentNavigation = navigation.getParent() as ParentNavigator | undefined;
+      parentNavigation?.navigate('Chat', {
+        screen: 'MessageThread',
+        params: {
+          conversationId: target.conversationId,
+          otherUserId: target.senderId,
+          otherUserName: target.senderName ?? notif.title ?? 'Conversation',
+          // Trust level is not available in the notification payload; default
+          // to 1 (verified) so the thread renders. The thread screen should
+          // re-fetch the profile for an accurate badge if needed.
+          otherUserTrustLevel: 1,
+          otherUserPhotoUrl: null,
+        },
+      });
+      return;
+    }
+
+    navigation.navigate('Notifications');
   }, [navigation]);
 
   const handleDismiss = useCallback(async (notifId: string) => {
-    await deleteNotification(supabase, notifId);
+    const result = await deleteNotification(supabase, notifId);
+    if (result.error) {
+      console.error('Failed to delete notification:', result.error);
+      return;
+    }
     setNotifications((prev) => prev.filter((n) => n.id !== notifId));
   }, []);
 
@@ -180,6 +250,7 @@ export function NotificationsScreen() {
       <TouchableOpacity
         style={styles.dismissBtn}
         onPress={() => handleDismiss(item.id)}
+        accessibilityLabel="Dismiss notification"
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Ionicons name="close" size={16} color={colors.text.secondary} />

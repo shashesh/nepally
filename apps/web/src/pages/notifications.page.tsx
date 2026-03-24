@@ -11,6 +11,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   deleteNotification,
+  resolveNotificationRouteTarget,
 } from '@nusa/shared';
 import type { Notification } from '@nusa/shared';
 import styles from '../styles/Notifications.module.css';
@@ -117,6 +118,28 @@ export default function NotificationsPage() {
     if (user) loadInitial();
   }, [user, loadInitial]);
 
+  // Resilience fallback: refresh list and badge on tab focus + interval so
+  // notifications stay up to date when realtime events are delayed/missed.
+  useEffect(() => {
+    if (!user) return;
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        loadInitial();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      loadInitial();
+    }, 30000);
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [user, loadInitial]);
+
   // Realtime: new notifications while on this page
   useEffect(() => {
     if (!user) return;
@@ -127,7 +150,6 @@ export default function NotificationsPage() {
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
         (payload) => {
           const newNotif = payload.new as Notification;
-          if (newNotif.type === 'message') return;
           setNotifications((prev) => [newNotif, ...prev]);
           setUnreadCount((c) => c + 1);
         }
@@ -155,15 +177,33 @@ export default function NotificationsPage() {
       setNotifications((prev) => prev.map((n) => n.id === notif.id ? { ...n, read: true } : n));
       setUnreadCount((c) => Math.max(0, c - 1));
     }
-    const data = notif.data as Record<string, string>;
-    if (data.post_id) {
-      router.push(`/posts/${data.post_id}`);
+    const target = resolveNotificationRouteTarget(notif);
+
+    if (target.kind === 'post') {
+      router.push(`/posts/${target.postId}`);
+      return;
     }
+
+    if (target.kind === 'event') {
+      router.push(`/events/${target.eventId}`);
+      return;
+    }
+
+    if (target.kind === 'message') {
+      router.push(`/messages/${target.conversationId}`);
+      return;
+    }
+
+    router.push('/notifications');
   };
 
   const handleDismiss = async (e: React.MouseEvent, notifId: string) => {
     e.stopPropagation();
-    await deleteNotification(supabase, notifId);
+    const result = await deleteNotification(supabase, notifId);
+    if (result.error) {
+      console.error('Failed to delete notification:', result.error);
+      return;
+    }
     setNotifications((prev) => prev.filter((n) => n.id !== notifId));
   };
 

@@ -10,6 +10,7 @@ const layoutMocks = vi.hoisted(() => ({
   getNotificationsMock: vi.fn(),
   markAllNotificationsReadMock: vi.fn(),
   markNotificationReadMock: vi.fn(),
+  deleteNotificationMock: vi.fn(),
   signOutMock: vi.fn(),
   realtimeSubscriptions: [] as Array<{
     event: unknown;
@@ -62,6 +63,7 @@ vi.mock('@nusa/shared', async () => {
     getNotifications: layoutMocks.getNotificationsMock,
     markAllNotificationsRead: layoutMocks.markAllNotificationsReadMock,
     markNotificationRead: layoutMocks.markNotificationReadMock,
+    deleteNotification: layoutMocks.deleteNotificationMock,
   };
 });
 
@@ -103,6 +105,7 @@ describe('Layout', () => {
     layoutMocks.getNotificationsMock.mockResolvedValue({ data: [] });
     layoutMocks.markAllNotificationsReadMock.mockResolvedValue({});
     layoutMocks.markNotificationReadMock.mockResolvedValue({});
+    layoutMocks.deleteNotificationMock.mockResolvedValue({});
   });
 
   describe('when loading', () => {
@@ -157,6 +160,18 @@ describe('Layout', () => {
       email: 'test@example.com',
       trust_level: 1,
       profile_photo: null,
+    };
+
+    const baseNotification = {
+      id: 'notif-1',
+      user_id: 'user-1',
+      type: 'system' as const,
+      title: 'Notification title',
+      body: 'Notification body',
+      data: {},
+      read: false,
+      sent_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
 
     beforeEach(() => {
@@ -305,6 +320,55 @@ describe('Layout', () => {
       });
     });
 
+    it('updates notification badge for realtime message notifications', async () => {
+      layoutMocks.getUnreadNotificationCountMock.mockResolvedValue({ count: 0 });
+      layoutMocks.getNotificationsMock.mockResolvedValue({ data: [] });
+
+      render(<Layout>Content</Layout>);
+
+      await waitFor(() => {
+        expect(layoutMocks.getNotificationsMock).toHaveBeenCalled();
+      });
+
+      const notificationInsertSubscription = layoutMocks.realtimeSubscriptions.find((sub) => {
+        const filter = sub.filter as { table?: string; event?: string };
+        return filter?.table === 'notifications' && filter?.event === 'INSERT';
+      });
+
+      expect(notificationInsertSubscription).toBeDefined();
+
+      notificationInsertSubscription?.callback({
+        new: {
+          ...baseNotification,
+          id: 'notif-message-realtime',
+          type: 'message',
+          title: 'Realtime message',
+        },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('1')).toBeDefined();
+      });
+    });
+
+    it('refreshes notification badge when page becomes active', async () => {
+      layoutMocks.getUnreadNotificationCountMock
+        .mockResolvedValueOnce({ count: 0 })
+        .mockResolvedValueOnce({ count: 4 });
+
+      render(<Layout>Content</Layout>);
+
+      await waitFor(() => {
+        expect(layoutMocks.getUnreadNotificationCountMock).toHaveBeenCalled();
+      });
+
+      fireEvent(document, new Event('visibilitychange'));
+
+      await waitFor(() => {
+        expect(screen.getByText('4')).toBeDefined();
+      });
+    });
+
     it('opens notification dropdown when bell is clicked', async () => {
       render(<Layout>Content</Layout>);
       await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
@@ -328,6 +392,126 @@ describe('Layout', () => {
       await waitFor(() => expect(layoutMocks.getUnreadNotificationCountMock).toHaveBeenCalled());
       fireEvent.click(screen.getByLabelText(/Notifications/i));
       expect(screen.getByText('Mark all as read')).toBeDefined();
+    });
+
+    it('routes to message thread when notification includes conversation_id', async () => {
+      layoutMocks.getNotificationsMock.mockResolvedValue({
+        data: [
+          {
+            ...baseNotification,
+            id: 'notif-message',
+            type: 'message',
+            title: 'New message',
+            data: { conversation_id: 'conv-1', sender_id: 'user-2' },
+          },
+        ],
+      });
+
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
+
+      fireEvent.click(screen.getByLabelText(/Notifications/i));
+      fireEvent.click(screen.getByText('New message').closest('li')!);
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith('/messages/conv-1');
+      });
+    });
+
+    it('routes to event detail when notification includes event_id', async () => {
+      layoutMocks.getNotificationsMock.mockResolvedValue({
+        data: [
+          {
+            ...baseNotification,
+            id: 'notif-event',
+            title: 'Event reminder',
+            data: { event_id: 'event-1' },
+          },
+        ],
+      });
+
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
+
+      fireEvent.click(screen.getByLabelText(/Notifications/i));
+      fireEvent.click(screen.getByText('Event reminder').closest('li')!);
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith('/events/event-1');
+      });
+    });
+
+    it('falls back to notifications page for malformed notification payload', async () => {
+      layoutMocks.getNotificationsMock.mockResolvedValue({
+        data: [
+          {
+            ...baseNotification,
+            id: 'notif-malformed',
+            type: 'message',
+            title: 'Malformed payload',
+            data: { conversation_id: 123 },
+          },
+        ],
+      });
+
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
+
+      fireEvent.click(screen.getByLabelText(/Notifications/i));
+      fireEvent.click(screen.getByText('Malformed payload').closest('li')!);
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith('/notifications');
+      });
+    });
+
+    it('deletes a notification from dropdown individually', async () => {
+      layoutMocks.getUnreadNotificationCountMock.mockResolvedValue({ count: 1 });
+      layoutMocks.getNotificationsMock.mockResolvedValue({
+        data: [
+          {
+            ...baseNotification,
+            id: 'notif-delete',
+            title: 'Delete me',
+          },
+        ],
+      });
+
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
+
+      fireEvent.click(screen.getByLabelText(/Notifications/i));
+      fireEvent.click(screen.getByLabelText('Delete notification'));
+
+      await waitFor(() => {
+        expect(layoutMocks.deleteNotificationMock).toHaveBeenCalledWith(expect.anything(), 'notif-delete');
+      });
+      expect(screen.queryByText('Delete me')).toBeNull();
+    });
+
+    it('keeps notification in dropdown when delete fails', async () => {
+      layoutMocks.getUnreadNotificationCountMock.mockResolvedValue({ count: 1 });
+      layoutMocks.getNotificationsMock.mockResolvedValue({
+        data: [
+          {
+            ...baseNotification,
+            id: 'notif-delete-fail',
+            title: 'Delete should fail',
+          },
+        ],
+      });
+      layoutMocks.deleteNotificationMock.mockResolvedValue({ error: new Error('RLS blocked') });
+
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
+
+      fireEvent.click(screen.getByLabelText(/Notifications/i));
+      fireEvent.click(screen.getByLabelText('Delete notification'));
+
+      await waitFor(() => {
+        expect(layoutMocks.deleteNotificationMock).toHaveBeenCalledWith(expect.anything(), 'notif-delete-fail');
+      });
+      expect(screen.getByText('Delete should fail')).toBeDefined();
     });
 
     it('opens account dropdown when avatar button is clicked', async () => {

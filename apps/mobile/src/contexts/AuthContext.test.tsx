@@ -21,6 +21,13 @@ jest.mock('../config/supabase', () => ({
   },
 }));
 
+const mockRegisterForPushNotificationsAsync = jest.fn();
+
+jest.mock('../services/notifications', () => ({
+  registerForPushNotificationsAsync: (...args: unknown[]) =>
+    mockRegisterForPushNotificationsAsync(...args),
+}));
+
 import React from 'react';
 import { renderHook, act } from '@testing-library/react-native';
 import { AuthContext, AuthProvider } from './AuthContext';
@@ -39,17 +46,26 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('AuthContext', () => {
+  let authStateChangeCallback:
+    | ((event: string, session: { user?: { id: string } } | null) => Promise<void>)
+    | null = null;
+
   beforeEach(() => {
     jest.clearAllMocks();
     (AsyncStorage as jest.Mocked<typeof AsyncStorage>).clear();
+    mockRegisterForPushNotificationsAsync.mockResolvedValue(true);
     // Default: no active session
     mockAuth.getSession.mockResolvedValue({
       data: { session: null },
       error: null,
     } as GetSessionResult);
-    mockAuth.onAuthStateChange.mockReturnValue({
-      data: { subscription: { unsubscribe: jest.fn() } },
-    } as unknown as OnAuthStateChangeResult);
+    authStateChangeCallback = null;
+    mockAuth.onAuthStateChange.mockImplementation((callback) => {
+      authStateChangeCallback = callback as typeof authStateChangeCallback;
+      return {
+        data: { subscription: { unsubscribe: jest.fn() } },
+      } as unknown as OnAuthStateChangeResult;
+    });
   });
 
   it('starts with loading true and user null', () => {
@@ -105,6 +121,60 @@ describe('AuthContext', () => {
     expect(result.current.user?.id).toBe('user-1');
     expect(result.current.user?.full_name).toBe('Test User');
     expect(result.current.loading).toBe(false);
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledWith(supabase, 'user-1');
+  });
+
+  it('does not register push token when no session exists', async () => {
+    renderHook(() => React.useContext(AuthContext), { wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockRegisterForPushNotificationsAsync).not.toHaveBeenCalled();
+  });
+
+  it('avoids duplicate push registration for same user across auth transitions', async () => {
+    mockAuth.getSession.mockResolvedValue({
+      data: {
+        session: {
+          user: { id: 'user-1', email: 'test@nusa.com' },
+        },
+      },
+      error: null,
+    } as GetSessionResult);
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    } as GetUserResult);
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: {
+          id: 'user-1',
+          email: 'test@nusa.com',
+          full_name: 'Test User',
+          trust_level: 1,
+          is_premium: false,
+        },
+        error: null,
+      }),
+    });
+
+    renderHook(() => React.useContext(AuthContext), { wrapper });
+    await act(async () => {});
+    await act(async () => {});
+    await act(async () => {});
+
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
+    expect(authStateChangeCallback).not.toBeNull();
+
+    await act(async () => {
+      await authStateChangeCallback?.('SIGNED_IN', { user: { id: 'user-1' } });
+    });
+
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
   });
 
   it('initializes session timestamps when missing on cold start with existing session', async () => {
