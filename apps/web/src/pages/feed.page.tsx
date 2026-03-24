@@ -98,6 +98,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   }, [authLoading, user, router]);
 
   const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
+  const userNeedsMetroOnboarding = Boolean(user && !user.metro_area_id);
 
   function handleReportPost(postId: string) {
     setReportModalPostId(postId);
@@ -149,7 +150,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       return;
     }
 
-    if (!metroAreaId) {
+    if (userNeedsMetroOnboarding || !metroAreaId) {
       setPosts([]);
       setLoadError(null);
       setLoading(false);
@@ -180,6 +181,12 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
       if (requestId !== latestLoadRequestId.current) return;
 
+      if (!result || typeof result !== 'object') {
+        setPosts([]);
+        setLoadError('Could not load posts. Please check your connection and try again.');
+        return;
+      }
+
       if ('error' in result && result.error) {
         setPosts([]);
         setLoadError('Could not load posts. Please check your connection and try again.');
@@ -204,7 +211,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
         setLoading(false);
       }
     }
-  }, [authLoading, user, metroAreaId, selectedTagSlugs]);
+  }, [authLoading, user, userNeedsMetroOnboarding, metroAreaId, selectedTagSlugs]);
 
   // Load liked post IDs
   useEffect(() => {

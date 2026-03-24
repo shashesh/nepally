@@ -258,6 +258,8 @@ describe('NotificationsPage', () => {
     mocks.getNotificationsMock.mockResolvedValue({ data: [sampleNotif] });
     mocks.deleteNotificationMock.mockResolvedValue({ error: new Error('RLS delete blocked') });
 
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
     render(<NotificationsPage />);
 
     await waitFor(() => expect(screen.getByText('New comment on your post')).toBeDefined());
@@ -269,6 +271,8 @@ describe('NotificationsPage', () => {
       expect(mocks.deleteNotificationMock).toHaveBeenCalledWith(expect.anything(), 'n1');
     });
     expect(screen.getByText('New comment on your post')).toBeDefined();
+
+    errorSpy.mockRestore();
   });
 
   it('adds message notifications from realtime inserts', async () => {

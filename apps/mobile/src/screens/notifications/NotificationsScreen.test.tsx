@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { NotificationsScreen } from './NotificationsScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -203,11 +203,21 @@ describe('NotificationsScreen', () => {
     });
     mockDeleteNotification.mockResolvedValue({ error: new Error('RLS delete blocked') });
 
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
     const { getByText, getByLabelText } = await renderAndSettle();
 
     fireEvent.press(getByLabelText('Dismiss notification'));
 
-    expect(mockDeleteNotification).toHaveBeenCalledWith(expect.anything(), 'notif-delete-fail');
+    await waitFor(() => {
+      expect(mockDeleteNotification).toHaveBeenCalledWith(expect.anything(), 'notif-delete-fail');
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to delete notification:',
+        expect.any(Error)
+      );
+    });
     expect(getByText('Delete should fail')).toBeTruthy();
+
+    errorSpy.mockRestore();
   });
 });

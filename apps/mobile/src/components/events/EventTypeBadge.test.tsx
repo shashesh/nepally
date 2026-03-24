@@ -2,6 +2,16 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { EventTypeBadge } from './EventTypeBadge';
 
+// Suppress benign React 19 "overlapping act() calls" warning from rapid sequential renders
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].includes('overlapping act()')) return;
+    originalError(...args);
+  };
+});
+afterAll(() => { console.error = originalError; });
+
 jest.mock('@nusa/shared', () => ({
   EVENT_TYPE_COLORS: {
     cultural:  { text: '#E65100', background: '#FFF3E0' },

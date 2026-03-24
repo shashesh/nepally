@@ -502,6 +502,8 @@ describe('Layout', () => {
       });
       layoutMocks.deleteNotificationMock.mockResolvedValue({ error: new Error('RLS blocked') });
 
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
       render(<Layout>Content</Layout>);
       await waitFor(() => expect(layoutMocks.getNotificationsMock).toHaveBeenCalled());
 
@@ -512,6 +514,8 @@ describe('Layout', () => {
         expect(layoutMocks.deleteNotificationMock).toHaveBeenCalledWith(expect.anything(), 'notif-delete-fail');
       });
       expect(screen.getByText('Delete should fail')).toBeDefined();
+
+      errorSpy.mockRestore();
     });
 
     it('opens account dropdown when avatar button is clicked', async () => {
