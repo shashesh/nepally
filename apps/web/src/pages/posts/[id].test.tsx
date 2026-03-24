@@ -19,6 +19,7 @@ const postDetailMocks = vi.hoisted(() => ({
   unsavePostMock: vi.fn(),
   deletePostMock: vi.fn(),
   getOrCreateConversationMock: vi.fn(),
+  createReportMock: vi.fn(),
   buildSingleLevelCommentThreadsMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
   logClientEventMock: vi.fn(),
@@ -44,6 +45,7 @@ vi.mock('@nusa/shared', async () => {
     unsavePost: postDetailMocks.unsavePostMock,
     deletePost: postDetailMocks.deletePostMock,
     getOrCreateConversation: postDetailMocks.getOrCreateConversationMock,
+    createReport: postDetailMocks.createReportMock,
     buildSingleLevelCommentThreads: postDetailMocks.buildSingleLevelCommentThreadsMock,
     formatRelativeTime: postDetailMocks.formatRelativeTimeMock,
     logClientEvent: postDetailMocks.logClientEventMock,
@@ -99,6 +101,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: [] });
     postDetailMocks.savePostMock.mockResolvedValue({});
     postDetailMocks.unsavePostMock.mockResolvedValue({});
+    postDetailMocks.createReportMock.mockResolvedValue({ data: { id: 'report-1' } });
     postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([]);
     postDetailMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
   });
@@ -195,6 +198,56 @@ describe('PostDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Share Post')).toBeDefined();
       expect(screen.getByText('Report Post')).toBeDefined();
+    });
+  });
+
+  it('opens report modal from post menu', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Report Post')).toBeDefined());
+
+    fireEvent.click(screen.getByText('Report Post'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Report post')).toBeDefined();
+      expect(screen.getByText('Why are you reporting this post?')).toBeDefined();
+    });
+  });
+
+  it('submits report reason and details from modal', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Report Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Report Post'));
+
+    await waitFor(() => expect(screen.getByText('Report post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Harassment or hate'));
+    fireEvent.change(screen.getByLabelText('Additional details (optional)'), {
+      target: { value: 'Contains abusive language in description.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+
+    await waitFor(() => {
+      expect(postDetailMocks.createReportMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          reported_by: 'user-1',
+          target_type: 'post',
+          target_id: 'post-1',
+          reason: 'Harassment',
+          description: 'Contains abusive language in description.',
+        })
+      );
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Thanks. Your report has been submitted for review.' })
+      );
     });
   });
 

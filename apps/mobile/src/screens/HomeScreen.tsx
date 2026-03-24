@@ -27,6 +27,7 @@ import { PostCard } from '../components/cards/PostCard';
 import { SkeletonPostCard } from '../components/cards/SkeletonPostCard';
 import { TagFilterBar } from '../components/filters/TagFilterBar';
 import { PostMoreSheet } from '../components/sheets/PostMoreSheet';
+import { ReportPostSheet } from '../components/sheets/ReportPostSheet';
 import {
   getPostsByMetroArea,
   getTags,
@@ -34,6 +35,7 @@ import {
   likePost,
   unlikePost,
   deletePost,
+  createReport,
   getOrCreateConversation,
   getTotalUnreadCount,
   getUnreadNotificationCount,
@@ -85,6 +87,8 @@ export default function HomeScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [morePost, setMorePost] = useState<Post | null>(null);
+  const [reportPost, setReportPost] = useState<Post | null>(null);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const saveToastOpacity = useRef(new Animated.Value(0)).current;
   const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -529,8 +533,46 @@ export default function HomeScreen() {
     );
   };
 
-  const handleMoreReport = () => {
+  const submitPostReport = async (targetPost: Post, reason: string, description?: string) => {
+    if (!user?.id) {
+      Alert.alert('Sign In Required', 'Please sign in to report posts.');
+      return false;
+    }
+
+    setReportSubmitting(true);
+    const result = await createReport(supabase, {
+      reported_by: user.id,
+      target_type: 'post',
+      target_id: targetPost.id,
+      reason,
+      description,
+    });
+    setReportSubmitting(false);
+
+    if (result.error) {
+      Alert.alert('Error', result.error.message || 'Failed to report post. Please try again.');
+      return false;
+    }
+
+    setReportPost(null);
     Alert.alert('Post Reported', 'Thank you. Our moderation team will review this post.');
+    return true;
+  };
+
+  const handleMoreReport = () => {
+    if (!morePost) return;
+
+    setReportPost(morePost);
+  };
+
+  const handleReportSheetClose = () => {
+    if (reportSubmitting) return;
+    setReportPost(null);
+  };
+
+  const handleReportSheetSubmit = async (reason: string, description?: string) => {
+    if (!reportPost) return;
+    await submitPostReport(reportPost, reason, description);
   };
 
   const handleMoreShare = async () => {
@@ -884,6 +926,13 @@ export default function HomeScreen() {
         onShare={handleMoreShare}
         isSaved={savedPostIds.has(morePost?.id ?? '')}
         onSave={handleMoreSave}
+      />
+
+      <ReportPostSheet
+        visible={reportPost !== null}
+        submitting={reportSubmitting}
+        onClose={handleReportSheetClose}
+        onSubmit={handleReportSheetSubmit}
       />
 
       {/* Floating Action Button */}

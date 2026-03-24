@@ -18,12 +18,14 @@ import {
   savePost,
   unsavePost,
   getOrCreateConversation,
+  createReport,
   formatRelativeTime,
   TAG_EMOJI,
 } from '@nusa/shared';
 import type { Post, Tag } from '@nusa/shared';
 import TagFilterBar from '../components/TagFilterBar';
 import Avatar from '../components/Avatar';
+import ReportPostModal from '../components/ReportPostModal';
 import styles from '../styles/Feed.module.css';
 
 const LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
@@ -47,6 +49,8 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxZoomLevel, setLightboxZoomLevel] = useState(0);
   const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
+  const [reportModalPostId, setReportModalPostId] = useState<string | null>(null);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const latestLoadRequestId = useRef(0);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -94,6 +98,44 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   }, [authLoading, user, router]);
 
   const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
+
+  function handleReportPost(postId: string) {
+    setReportModalPostId(postId);
+  }
+
+  async function submitReport(values: { reason: string; description?: string }) {
+    if (!user?.id) {
+      return { error: 'Please sign in to report posts.' };
+    }
+
+    if (!reportModalPostId) {
+      return { error: 'Unable to report this post right now. Please try again.' };
+    }
+
+    setReportSubmitting(true);
+    try {
+      const result = await createReport(supabase, {
+        reported_by: user.id,
+        target_type: 'post',
+        target_id: reportModalPostId,
+        reason: values.reason,
+        description: values.description,
+      });
+
+      if (result.error) {
+        return { error: result.error.message || 'Failed to submit report. Please try again.' };
+      }
+
+      notifications.show({
+        message: 'Thanks. Your report has been submitted for review.',
+        autoClose: 2500,
+      });
+      setReportModalPostId(null);
+      return {};
+    } finally {
+      setReportSubmitting(false);
+    }
+  }
 
   const loadPosts = useCallback(async () => {
     if (authLoading) return;
@@ -548,6 +590,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                   onSharePost={handleSharePost}
                   onDeletePost={handleDeletePost}
                   onEditPost={handleEditPost}
+                  onReportPost={handleReportPost}
                   onSaveToggle={post.author_id !== user?.id ? () => handleSaveToggle(post) : undefined}
                 />
               ))
@@ -664,6 +707,17 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
             </div>
           </div>
         )}
+
+        <ReportPostModal
+          opened={Boolean(reportModalPostId)}
+          onClose={() => {
+            if (!reportSubmitting) {
+              setReportModalPostId(null);
+            }
+          }}
+          onSubmit={submitReport}
+          submitting={reportSubmitting}
+        />
       </div>
     </>
   );
@@ -685,6 +739,7 @@ function PostCard({
   onSharePost,
   onDeletePost,
   onEditPost,
+  onReportPost,
   onSaveToggle,
 }: {
   post: Post;
@@ -698,6 +753,7 @@ function PostCard({
   onSharePost: (post: Post) => Promise<void>;
   onDeletePost: (post: Post) => Promise<void>;
   onEditPost: (post: Post) => void;
+  onReportPost: (postId: string) => void;
   onSaveToggle?: () => void;
 }) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
@@ -885,7 +941,7 @@ function PostCard({
                         event.preventDefault();
                         event.stopPropagation();
                         setPostMenuOpen(false);
-                        alert('Post reported. Our moderation team will review this post.');
+                        onReportPost(post.id);
                       }}
                     >
                       Report Post

@@ -1,0 +1,4 @@
+.errorMessage {
+  color: var(--mantine-color-red-7);
+  font-weight: 600;
+}

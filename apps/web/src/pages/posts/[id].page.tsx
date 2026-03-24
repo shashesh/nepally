@@ -20,6 +20,7 @@ import {
   unsavePost,
   getUserSavedPostIds,
   getOrCreateConversation,
+  createReport,
   buildSingleLevelCommentThreads,
   formatRelativeTime,
   logClientEvent,
@@ -27,6 +28,7 @@ import {
 } from '@nusa/shared';
 import type { Post, PostComment } from '@nusa/shared';
 import Avatar from '../../components/Avatar';
+import ReportPostModal from '../../components/ReportPostModal';
 import styles from '../../styles/PostDetail.module.css';
 
 const DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS = 1500;
@@ -57,6 +59,8 @@ export default function PostDetailPage() {
   const [avatarMenuUser, setAvatarMenuUser] = useState<AvatarMenuUser | null>(null);
   const [avatarMenuPosition, setAvatarMenuPosition] = useState({ top: 0, left: 0 });
   const [postMenuOpen, setPostMenuOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [carouselChromeVisible, setCarouselChromeVisible] = useState(true);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
@@ -259,6 +263,36 @@ export default function PostDetailPage() {
 
     if (result.data) {
       router.push(`/messages/${result.data.conversationId}`);
+    }
+  }
+
+  async function submitReport(values: { reason: string; description?: string }) {
+    if (!post || !user?.id) {
+      return { error: 'Please sign in to report posts.' };
+    }
+
+    setReportSubmitting(true);
+    try {
+      const result = await createReport(supabase, {
+        reported_by: user.id,
+        target_type: 'post',
+        target_id: post.id,
+        reason: values.reason,
+        description: values.description,
+      });
+
+      if (result.error) {
+        return { error: result.error.message || 'Failed to submit report. Please try again.' };
+      }
+
+      notifications.show({
+        message: 'Thanks. Your report has been submitted for review.',
+        autoClose: 2500,
+      });
+      setReportModalOpen(false);
+      return {};
+    } finally {
+      setReportSubmitting(false);
     }
   }
 
@@ -567,7 +601,7 @@ export default function PostDetailPage() {
                           className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
                           onClick={() => {
                             setPostMenuOpen(false);
-                            alert('Post reported. Our moderation team will review this post.');
+                            setReportModalOpen(true);
                           }}
                         >
                           Report Post
@@ -838,6 +872,17 @@ export default function PostDetailPage() {
             </UnstyledButton>
           </div>
         )}
+
+        <ReportPostModal
+          opened={reportModalOpen}
+          onClose={() => {
+            if (!reportSubmitting) {
+              setReportModalOpen(false);
+            }
+          }}
+          onSubmit={submitReport}
+          submitting={reportSubmitting}
+        />
 
         {lightboxPhotos.length > 0 && (
           <div className={styles.lightboxOverlay} onClick={closeLightbox} role="presentation">
