@@ -407,6 +407,8 @@ The trigger function reads two PostgreSQL custom settings that must be configure
 Set them via the Supabase SQL editor or `psql`:
 
 ```sql
+-- 'postgres' is the standard database name on hosted Supabase projects.
+-- Replace it with your actual database name if it differs.
 ALTER DATABASE postgres SET "app.settings.supabase_url" = 'https://<project-ref>.supabase.co';
 ALTER DATABASE postgres SET "app.settings.service_role_key" = '<your-service-role-key>';
 ```
