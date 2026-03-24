@@ -8,6 +8,7 @@ const authMocks = vi.hoisted(() => ({
   onAuthStateChangeMock: vi.fn(),
   signOutMock: vi.fn(),
   getUserByIdMock: vi.fn(),
+  requestWebPushPermissionMock: vi.fn(),
   unsubscribeMock: vi.fn(),
 }));
 
@@ -30,6 +31,10 @@ vi.mock('@nusa/shared', async () => {
   };
 });
 
+vi.mock('../lib/webPush', () => ({
+  requestWebPushPermission: authMocks.requestWebPushPermissionMock,
+}));
+
 import { AuthContext, AuthProvider } from './AuthContext';
 
 function ContextProbe({ onSnapshot }: { onSnapshot: (value: React.ContextType<typeof AuthContext>) => void }) {
@@ -39,13 +44,22 @@ function ContextProbe({ onSnapshot }: { onSnapshot: (value: React.ContextType<ty
 }
 
 describe('AuthProvider', () => {
+  let authStateChangeCallback:
+    | ((event: string, session: { user?: { id: string } } | null) => Promise<void>)
+    | null = null;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    authStateChangeCallback = null;
     authMocks.getSessionMock.mockResolvedValue({ data: { session: null } });
     authMocks.getUserMock.mockResolvedValue({ data: { user: null } });
     authMocks.getUserByIdMock.mockResolvedValue({ data: undefined });
-    authMocks.onAuthStateChangeMock.mockReturnValue({
-      data: { subscription: { unsubscribe: authMocks.unsubscribeMock } },
+    authMocks.requestWebPushPermissionMock.mockResolvedValue(true);
+    authMocks.onAuthStateChangeMock.mockImplementation((callback: unknown) => {
+      authStateChangeCallback = callback as typeof authStateChangeCallback;
+      return {
+        data: { subscription: { unsubscribe: authMocks.unsubscribeMock } },
+      };
     });
     authMocks.signOutMock.mockResolvedValue({ error: null });
   });
@@ -71,6 +85,54 @@ describe('AuthProvider', () => {
       expect(latest.loading).toBe(false);
       expect(latest.user?.id).toBe('user-1');
       expect(latest.supabaseUser?.id).toBe('user-1');
+    });
+
+    await waitFor(() => {
+      expect(authMocks.requestWebPushPermissionMock).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user-1'
+      );
+    });
+  });
+
+  it('does not register web push when no authenticated user exists', async () => {
+    render(
+      <AuthProvider>
+        <ContextProbe onSnapshot={() => {}} />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(authMocks.getSessionMock).toHaveBeenCalled();
+    });
+
+    expect(authMocks.requestWebPushPermissionMock).not.toHaveBeenCalled();
+  });
+
+  it('avoids duplicate web push registration for repeated same-user auth events', async () => {
+    authMocks.getSessionMock.mockResolvedValue({
+      data: { session: { user: { id: 'user-1' } } },
+    });
+    authMocks.getUserByIdMock.mockResolvedValue({
+      data: { id: 'user-1', full_name: 'Nusa User' },
+    });
+
+    render(
+      <AuthProvider>
+        <ContextProbe onSnapshot={() => {}} />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(authMocks.requestWebPushPermissionMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(authStateChangeCallback).not.toBeNull();
+
+    await authStateChangeCallback?.('SIGNED_IN', { user: { id: 'user-1' } });
+
+    await waitFor(() => {
+      expect(authMocks.requestWebPushPermissionMock).toHaveBeenCalledTimes(1);
     });
   });
 

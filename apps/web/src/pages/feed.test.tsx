@@ -137,8 +137,12 @@ describe('FeedPage', () => {
       user: { ...mockUser, metro_area_id: null },
       loading: false,
     });
+    feedMocks.useLocationMock.mockReturnValue({ activeLocation: null });
     render(<FeedPage />);
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/onboarding/zip'));
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/onboarding/zip');
+      expect(feedMocks.getPostsByMetroAreaMock).not.toHaveBeenCalled();
+    });
   });
 
   it('shows loading state while fetching posts', () => {

@@ -1,10 +1,11 @@
 'use client';
 
-import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getUserById } from '@nusa/shared';
 import type { User } from '@nusa/shared';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { requestWebPushPermission } from '../lib/webPush';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const pushRegistrationAttemptedUserIdRef = useRef<string | null>(null);
 
   const fetchUserProfile = useCallback(async (userId: string) => {
     try {
@@ -59,6 +61,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, [loadUser]);
 
+  // Register browser push subscription once per authenticated user in this app session.
+  useEffect(() => {
+    const userId = supabaseUser?.id;
+
+    if (!userId) {
+      pushRegistrationAttemptedUserIdRef.current = null;
+      return;
+    }
+
+    if (pushRegistrationAttemptedUserIdRef.current === userId) {
+      return;
+    }
+
+    pushRegistrationAttemptedUserIdRef.current = userId;
+    let cancelled = false;
+
+    const registerPush = async () => {
+      try {
+        const didRegister = await requestWebPushPermission(supabase, userId);
+        if (!didRegister && !cancelled) {
+          console.warn('Web push registration skipped or denied for user:', userId);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Web push registration failed:', error);
+          // Unexpected exception: allow retry when auth state changes again.
+          pushRegistrationAttemptedUserIdRef.current = null;
+        }
+      }
+    };
+
+    void registerPush();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabaseUser?.id]);
+
   // Listen for auth state changes
   useEffect(() => {
     const {
@@ -67,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT') {
         setSupabaseUser(null);
         setUser(null);
+        pushRegistrationAttemptedUserIdRef.current = null;
       } else if (session?.user) {
         setSupabaseUser(session.user);
         await fetchUserProfile(session.user.id);
@@ -92,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       setUser(null);
       setSupabaseUser(null);
+      pushRegistrationAttemptedUserIdRef.current = null;
     } catch (error) {
       console.error('Failed to sign out:', error);
     }

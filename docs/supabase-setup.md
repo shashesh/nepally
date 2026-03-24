@@ -365,6 +365,91 @@ supabase secrets set TWILIO_ACCOUNT_SID=your-sid
 supabase secrets set TWILIO_AUTH_TOKEN=your-token
 ```
 
+### 4.1 Push Notification Secrets (NOTIF-02)
+
+For `send-push-notification`, configure these secrets:
+
+```bash
+supabase secrets set VAPID_PUBLIC_KEY=your-vapid-public-key
+supabase secrets set VAPID_PRIVATE_KEY=your-vapid-private-key
+supabase secrets set VAPID_SUBJECT=mailto:you@example.com
+
+# Optional for higher Expo push throughput
+supabase secrets set EXPO_ACCESS_TOKEN=your-expo-access-token
+```
+
+Also set web client env var:
+
+```bash
+# apps/web/.env.local
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-vapid-public-key
+```
+
+### 4.2 Deploy Push Function + Trigger Path (NOTIF-02)
+
+The invocation path is:
+
+1. Any insert into `public.notifications`
+2. DB trigger `trigger_enqueue_notification_push_delivery`
+3. Trigger function `enqueue_notification_push_delivery()`
+4. HTTP call to `/functions/v1/send-push-notification`
+5. Edge function fanout to Expo + Web Push tokens from `device_tokens`
+
+#### Required database settings
+
+The trigger function reads two PostgreSQL custom settings that must be configured before push delivery will work. Without them the trigger skips the HTTP call and logs a warning (it will not error or block notification inserts).
+
+| Setting | Description |
+|---|---|
+| `app.settings.supabase_url` | Full Supabase project URL, e.g. `https://<project-ref>.supabase.co` |
+| `app.settings.service_role_key` | Service-role secret key from **Project → API → service_role** |
+
+Set them via the Supabase SQL editor or `psql`:
+
+```sql
+-- 'postgres' is the standard database name on hosted Supabase projects.
+-- Replace it with your actual database name if it differs.
+ALTER DATABASE postgres SET "app.settings.supabase_url" = 'https://<project-ref>.supabase.co';
+ALTER DATABASE postgres SET "app.settings.service_role_key" = '<your-service-role-key>';
+```
+
+> **Security note:** The service-role key grants admin access; never expose it to the client or store it in application environment variables accessible to front-end code.
+
+**Local development:** Set these in your local Supabase config or skip push delivery by leaving them unset — the trigger safely no-ops with a `RAISE WARNING` log when either setting is missing.
+
+Deploy steps:
+
+```bash
+# 1) Apply latest migration (includes push fanout trigger)
+supabase db push
+
+# 2) Configure the required DB settings (see above)
+
+# 3) Deploy function
+supabase functions deploy send-push-notification
+```
+
+### 4.3 Validate Push Fanout End-to-End (NOTIF-02)
+
+```sql
+-- Create a test notification for an existing user UUID
+INSERT INTO public.notifications (user_id, type, title, body, data)
+VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  'system',
+  'Push test',
+  'Testing push fanout path',
+  '{}'::jsonb
+);
+```
+
+Expected behavior:
+
+1. Trigger runs automatically on insert.
+2. Edge function receives payload and fetches `device_tokens` for the user.
+3. Expo and/or web push deliveries are attempted for available tokens.
+4. Function logs show sent/error counts.
+
 ### 5. Configure Function Cron Jobs
 
 For scheduled functions like `expire-posts`:

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../config/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { saveUserData, clearAllData } from '../utils/storage';
+import { registerForPushNotificationsAsync } from '../services/notifications';
 
 const SESSION_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -57,6 +58,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const authPausedRef = useRef(false);
+  const pushRegistrationAttemptedUserIdRef = useRef<string | null>(null);
+
+  const registerPushTokenForUser = useCallback(async (userId: string) => {
+    if (pushRegistrationAttemptedUserIdRef.current === userId) {
+      return;
+    }
+
+    pushRegistrationAttemptedUserIdRef.current = userId;
+
+    try {
+      const didRegister = await registerForPushNotificationsAsync(supabase, userId);
+      if (!didRegister) {
+        console.warn('Push token registration skipped or denied for mobile user:', userId);
+      }
+    } catch (error) {
+      console.error('Mobile push token registration failed:', error);
+      // Allow retry on a subsequent auth transition when an unexpected error occurs.
+      pushRegistrationAttemptedUserIdRef.current = null;
+    }
+  }, []);
 
   const recordActivity = useCallback(async () => {
     try {
@@ -152,6 +173,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await supabase.auth.signOut();
           setSupabaseUser(null);
           setUser(null);
+          pushRegistrationAttemptedUserIdRef.current = null;
         } else {
           // Repair missing/mismatched timestamps so expiry is enforced from
           // first load (e.g. after upgrade, storage clear, or user switch).
@@ -168,19 +190,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             ]);
           }
           setSupabaseUser(session.user);
+          void registerPushTokenForUser(session.user.id);
           await refreshUser();
         }
       } else {
         // No valid Supabase session: keep auth state signed out.
         setSupabaseUser(null);
         setUser(null);
+        pushRegistrationAttemptedUserIdRef.current = null;
       }
     } catch (error) {
       console.error('Failed to load user:', error);
     } finally {
       setLoading(false);
     }
-  }, [isSessionExpired, refreshUser]);
+  }, [isSessionExpired, refreshUser, registerPushTokenForUser]);
 
   // Load user data from storage on mount
   useEffect(() => {
@@ -197,6 +221,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (event === 'SIGNED_OUT') {
           setSupabaseUser(null);
           setUser(null);
+          pushRegistrationAttemptedUserIdRef.current = null;
           await AsyncStorage.multiRemove([STORAGE_KEY_SIGN_IN_AT, STORAGE_KEY_LAST_ACTIVITY, STORAGE_KEY_USER_ID]);
         } else if (session?.user) {
           setSupabaseUser(session.user);
@@ -213,6 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               [STORAGE_KEY_USER_ID, session.user.id],
             ]);
           }
+          void registerPushTokenForUser(session.user.id);
           await refreshUser();
         }
       }
@@ -221,7 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [refreshUser]);
+  }, [refreshUser, registerPushTokenForUser]);
 
   const pauseAuthListener = () => {
     authPausedRef.current = true;
@@ -237,6 +263,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await clearAllData();
       setUser(null);
       setSupabaseUser(null);
+      pushRegistrationAttemptedUserIdRef.current = null;
     } catch (error) {
       console.error('Failed to sign out:', error);
     }
