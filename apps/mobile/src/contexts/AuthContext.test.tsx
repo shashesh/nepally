@@ -46,10 +46,6 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('AuthContext', () => {
-  let authStateChangeCallback:
-    | ((event: string, session: { user?: { id: string } } | null) => Promise<void>)
-    | null = null;
-
   beforeEach(() => {
     jest.clearAllMocks();
     (AsyncStorage as jest.Mocked<typeof AsyncStorage>).clear();
@@ -59,13 +55,9 @@ describe('AuthContext', () => {
       data: { session: null },
       error: null,
     } as GetSessionResult);
-    authStateChangeCallback = null;
-    mockAuth.onAuthStateChange.mockImplementation((callback) => {
-      authStateChangeCallback = callback as typeof authStateChangeCallback;
-      return {
-        data: { subscription: { unsubscribe: jest.fn() } },
-      } as unknown as OnAuthStateChangeResult;
-    });
+    mockAuth.onAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: jest.fn() } },
+    } as unknown as OnAuthStateChangeResult);
   });
 
   it('starts with loading true and user null', () => {
@@ -135,6 +127,16 @@ describe('AuthContext', () => {
   });
 
   it('avoids duplicate push registration for same user across auth transitions', async () => {
+    let authStateChangeCallback:
+      | ((event: string, session: { user?: { id: string } } | null) => Promise<void>)
+      | null = null;
+    mockAuth.onAuthStateChange.mockImplementation((callback) => {
+      authStateChangeCallback = callback as typeof authStateChangeCallback;
+      return {
+        data: { subscription: { unsubscribe: jest.fn() } },
+      } as unknown as OnAuthStateChangeResult;
+    });
+
     mockAuth.getSession.mockResolvedValue({
       data: {
         session: {
@@ -171,8 +173,9 @@ describe('AuthContext', () => {
     expect(authStateChangeCallback).not.toBeNull();
 
     await act(async () => {
-      await authStateChangeCallback?.('SIGNED_IN', { user: { id: 'user-1' } });
+      await authStateChangeCallback!('SIGNED_IN', { user: { id: 'user-1' } });
     });
+    await act(async () => {});
 
     expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
   });
