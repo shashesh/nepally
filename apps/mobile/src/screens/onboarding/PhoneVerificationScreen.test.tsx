@@ -148,9 +148,18 @@ describe('PhoneVerificationScreen', () => {
 
     const { getByPlaceholderText, getByTestId } = renderScreen();
 
+    // Expire the resend cooldown interval so act() has no pending timers
+    act(() => {
+      jest.advanceTimersByTime(61000);
+    });
+
     fireEvent.changeText(getByPlaceholderText('000000'), '123456');
     fireEvent.press(getByTestId('primary-button'));
 
+    // Flush the 5-chained-await async chain (verifyPhoneOTP → getUser →
+    // createUserProfile → markPhoneVerified → refreshUser).  Each await
+    // creates a microtask boundary; multiple act() flushes are needed.
+    await act(async () => {});
     await act(async () => {});
 
     expect(mockVerifyPhoneOTP).toHaveBeenCalledWith('+15551234567', '123456');
@@ -172,6 +181,8 @@ describe('PhoneVerificationScreen', () => {
 
     const { getByPlaceholderText, getByTestId, getByText } = renderScreen();
 
+    act(() => { jest.advanceTimersByTime(61000); });
+
     fireEvent.changeText(getByPlaceholderText('000000'), '000000');
     fireEvent.press(getByTestId('primary-button'));
 
@@ -187,6 +198,8 @@ describe('PhoneVerificationScreen', () => {
     });
 
     const { getByPlaceholderText, getByTestId, getByText } = renderScreen();
+
+    act(() => { jest.advanceTimersByTime(61000); });
 
     fireEvent.changeText(getByPlaceholderText('000000'), '000000');
     fireEvent.press(getByTestId('primary-button'));
@@ -205,9 +218,12 @@ describe('PhoneVerificationScreen', () => {
 
     const { getByPlaceholderText, getByTestId } = renderScreen();
 
+    act(() => { jest.advanceTimersByTime(61000); });
+
     fireEvent.changeText(getByPlaceholderText('000000'), '123456');
     fireEvent.press(getByTestId('primary-button'));
 
+    await act(async () => {});
     await act(async () => {});
 
     // Should still proceed to mark phone verified and navigate

@@ -73,6 +73,92 @@ Do NOT duplicate these in individual test files. The per-test `jest.useFakeTimer
 - For synchronous state updates (validation errors with no `await` in the handler), assert directly after `fireEvent` — no `act` or `waitFor` needed.
 - Never use `waitFor` with explicit timeouts or `testTimeout` overrides as a workaround for timing issues — find and fix the root cause instead.
 
+### Expire intervals before async assertions (CRITICAL)
+
+React 19's `act()` waits for ALL pending React work, including registered `setInterval` callbacks. With fake timers, a frozen interval never fires but `act()` still sees it as pending work — creating a **deadlock** where `act()` waits forever. This passes locally (fast machine) but hangs on slow CI runners.
+
+**Rule: Before any `await act(async () => {})` that flushes an async handler, advance fake timers past the interval's full duration so the component clears it naturally.**
+
+```typescript
+it('async action with component that has setInterval', async () => {
+  const { getByTestId } = render(<ComponentWithCooldown />);
+
+  // Expire the interval BEFORE triggering async work
+  act(() => {
+    jest.advanceTimersByTime(61000); // past 60s cooldown
+  });
+
+  fireEvent.press(getByTestId('submit'));
+  await act(async () => {});
+  expect(mockFn).toHaveBeenCalled();
+});
+```
+
+**Why not just `jest.clearAllTimers()` instead?** `clearAllTimers()` removes the timer from Jest's queue but does NOT trigger the component's cleanup logic (the `clearInterval` inside the state updater). React may still see stale scheduled work. Advancing time lets the component's own `if (prev <= 1) clearInterval(...)` logic run, cleanly removing the interval from both Jest and React's perspective.
+
+### Multiple act() flushes for long async chains
+
+A single `await act(async () => {})` flushes one level of the microtask queue. If the handler has many sequential `await` calls (e.g., `await a(); await b(); await c(); await d(); await e()`), one flush is not enough — React 19's scheduler on slow CI may not process all microtask boundaries in a single pass.
+
+**Rule: Use multiple `await act(async () => {})` calls for handlers with 3+ chained awaits.**
+
+```typescript
+// Handler has 5 sequential awaits: verify → getUser → createProfile → markVerified → refresh
+fireEvent.press(getByTestId('submit'));
+await act(async () => {});
+await act(async () => {});
+expect(mockNavigate).toHaveBeenCalled();
+```
+
+**How many act() calls?** 2 is sufficient for chains up to ~5 awaits. For very long chains, add more. Reference: `CreatePostScreen.test.tsx` uses double `act()` in `renderAndSettle()` and additional `act()` calls after interactions.
+
+### Combined pattern for components with timers + async handlers
+
+This is the full pattern for the most common case (component with `setInterval` AND async event handlers):
+
+```typescript
+describe('ComponentWithTimerAndAsync', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+    // mock setup...
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  // Sync assertion — no act/waitFor needed
+  it('validates input synchronously', () => {
+    const { getByTestId, getByText } = render(<Component />);
+    fireEvent.press(getByTestId('submit'));
+    expect(getByText('Validation error')).toBeTruthy();
+  });
+
+  // Short async chain (1-2 awaits) — expire interval + single act
+  it('shows error from async call', async () => {
+    mockApi.mockResolvedValueOnce({ success: false, error: new Error('fail') });
+    const { getByTestId, getByText } = render(<Component />);
+    act(() => { jest.advanceTimersByTime(61000); }); // expire interval
+    fireEvent.press(getByTestId('submit'));
+    await act(async () => {});
+    expect(getByText('fail')).toBeTruthy();
+  });
+
+  // Long async chain (3+ awaits) — expire interval + double act
+  it('completes full success flow', async () => {
+    mockApi.mockResolvedValueOnce({ success: true });
+    const { getByTestId } = render(<Component />);
+    act(() => { jest.advanceTimersByTime(61000); }); // expire interval
+    fireEvent.press(getByTestId('submit'));
+    await act(async () => {});
+    await act(async () => {});
+    expect(mockNavigate).toHaveBeenCalled();
+  });
+});
+```
+
 ## Running Tests Like CI
 
 Always verify with CI-equivalent flags before pushing:
