@@ -82,7 +82,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import { PhoneVerificationScreen } from './PhoneVerificationScreen';
 import { AuthContext } from '../../contexts/AuthContext';
 
@@ -137,6 +137,12 @@ describe('PhoneVerificationScreen', () => {
     expect(mockVerifyPhoneOTP).not.toHaveBeenCalled();
   });
 
+  // NOTE: All tests below use `await act(async () => {})` instead of `waitFor`
+  // to flush the async mock chain.  With fake timers, `waitFor` advances fake
+  // time while polling; after 1000ms of advances the component's setInterval
+  // (resend cooldown) fires, creating new React work that keeps waitFor polling
+  // forever — an infinite loop that manifests as a 10s timeout on slow CI.
+
   it('verifies OTP, creates profile, and navigates on success', async () => {
     mockVerifyPhoneOTP.mockResolvedValueOnce({ success: true });
 
@@ -145,16 +151,16 @@ describe('PhoneVerificationScreen', () => {
     fireEvent.changeText(getByPlaceholderText('000000'), '123456');
     fireEvent.press(getByTestId('primary-button'));
 
-    await waitFor(() => {
-      expect(mockVerifyPhoneOTP).toHaveBeenCalledWith('+15551234567', '123456');
-      expect(mockCreateUserProfile).toHaveBeenCalled();
-      expect(mockMarkPhoneVerified).toHaveBeenCalledWith(
-        expect.anything(),
-        'user-123'
-      );
-      expect(mockNavigate).toHaveBeenCalledWith('LocationPermission', {
-        userId: 'user-123',
-      });
+    await act(async () => {});
+
+    expect(mockVerifyPhoneOTP).toHaveBeenCalledWith('+15551234567', '123456');
+    expect(mockCreateUserProfile).toHaveBeenCalled();
+    expect(mockMarkPhoneVerified).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-123'
+    );
+    expect(mockNavigate).toHaveBeenCalledWith('LocationPermission', {
+      userId: 'user-123',
     });
   });
 
@@ -169,9 +175,9 @@ describe('PhoneVerificationScreen', () => {
     fireEvent.changeText(getByPlaceholderText('000000'), '000000');
     fireEvent.press(getByTestId('primary-button'));
 
-    await waitFor(() => {
-      expect(getByText('Invalid code. Please try again.')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(getByText('Invalid code. Please try again.')).toBeTruthy();
   });
 
   it('shows expired error for expired OTP', async () => {
@@ -185,9 +191,9 @@ describe('PhoneVerificationScreen', () => {
     fireEvent.changeText(getByPlaceholderText('000000'), '000000');
     fireEvent.press(getByTestId('primary-button'));
 
-    await waitFor(() => {
-      expect(getByText('Code expired. Request a new one.')).toBeTruthy();
-    });
+    await act(async () => {});
+
+    expect(getByText('Code expired. Request a new one.')).toBeTruthy();
   });
 
   it('handles duplicate profile gracefully', async () => {
@@ -202,12 +208,12 @@ describe('PhoneVerificationScreen', () => {
     fireEvent.changeText(getByPlaceholderText('000000'), '123456');
     fireEvent.press(getByTestId('primary-button'));
 
-    await waitFor(() => {
-      // Should still proceed to mark phone verified and navigate
-      expect(mockMarkPhoneVerified).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('LocationPermission', {
-        userId: 'user-123',
-      });
+    await act(async () => {});
+
+    // Should still proceed to mark phone verified and navigate
+    expect(mockMarkPhoneVerified).toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith('LocationPermission', {
+      userId: 'user-123',
     });
   });
 

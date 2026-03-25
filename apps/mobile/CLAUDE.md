@@ -63,10 +63,15 @@ Do NOT duplicate these in individual test files. The per-test `jest.useFakeTimer
 
 ### Async testing patterns
 
-- Use `await act(async () => {})` to flush microtasks (promise resolutions)
-- Use `await waitFor(() => ...)` for assertions that depend on async state updates — RNTL v13 auto-advances fake timers inside `waitFor`
-- **Never use `waitFor` for synchronous assertions in tests with fake timers.** When state is set synchronously (e.g., a validation check that calls `setError` and returns without any `await`), assert directly after `fireEvent`. Using `waitFor` here causes an infinite loop: `waitFor` advances fake timers to poll, the component's `setInterval` fires, creating new React work, causing `waitFor` to keep polling forever.
-- Never use `waitFor` with explicit timeouts or `testTimeout` overrides as a workaround for timing issues — find and fix the root cause instead
+- **Never use `waitFor` in test files that use `jest.useFakeTimers()`.** `waitFor` advances fake timers while polling; once the accumulated advances reach the component's `setInterval` period (e.g., 1000ms), the interval fires, creates new React work, and `waitFor` keeps polling forever — an infinite loop that hangs on slow CI.
+- Instead, use `await act(async () => {})` after `fireEvent` to flush the entire microtask chain (all chained promise resolutions from mocks), then assert directly:
+  ```typescript
+  fireEvent.press(button);
+  await act(async () => {});
+  expect(mockFn).toHaveBeenCalled();
+  ```
+- For synchronous state updates (validation errors with no `await` in the handler), assert directly after `fireEvent` — no `act` or `waitFor` needed.
+- Never use `waitFor` with explicit timeouts or `testTimeout` overrides as a workaround for timing issues — find and fix the root cause instead.
 
 ## Running Tests Like CI
 
