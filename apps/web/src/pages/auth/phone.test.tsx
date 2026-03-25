@@ -58,6 +58,13 @@ describe('PhoneAuthPage', () => {
   const mockRefreshUser = vi.fn();
 
   beforeEach(() => {
+    // Fake timers prevent the component's setInterval (resend cooldown) and
+    // Mantine Transition's setTimeout from firing after test teardown.
+    // Without this, Mantine's animation callback runs after jsdom is destroyed
+    // and throws "window is not defined".
+    // shouldAdvanceTime: true lets real time pass through so waitFor's internal
+    // setTimeout still works (unlike pure fake timers which would hang waitFor).
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.clearAllMocks();
     phoneMocks.useRouterMock.mockReturnValue({ push: mockPush, replace: mockReplace });
     phoneMocks.useAuthMock.mockReturnValue({ user: null, refreshUser: mockRefreshUser });
@@ -68,6 +75,7 @@ describe('PhoneAuthPage', () => {
   });
 
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
