@@ -95,11 +95,13 @@ function renderScreen() {
 }
 
 describe('PhoneVerificationScreen', () => {
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
   beforeEach(() => {
+    // Use fake timers for ALL tests so the component's setInterval (resend
+    // cooldown) never fires with real timers.  Real-timer intervals create
+    // continuous React state updates that prevent React 19's act() scope from
+    // closing during RNTL cleanup, leaking stale scopes into subsequent test
+    // suites and causing hangs on slow CI runners.
+    jest.useFakeTimers();
     jest.clearAllMocks();
     mockCreateUserProfile.mockResolvedValue({ data: { id: 'user-123' }, error: null });
     mockMarkPhoneVerified.mockResolvedValue({ data: { id: 'user-123', phone_verified: true }, error: null });
@@ -108,6 +110,11 @@ describe('PhoneVerificationScreen', () => {
       data: { user: { id: 'user-123', email: '' } },
       error: null,
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('renders masked phone and OTP input', () => {
@@ -210,7 +217,6 @@ describe('PhoneVerificationScreen', () => {
   });
 
   it('resend button becomes active after cooldown', () => {
-    jest.useFakeTimers();
     const { getByText } = renderScreen();
 
     act(() => {
