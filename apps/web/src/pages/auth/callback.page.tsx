@@ -50,17 +50,24 @@ export default function AuthCallbackPage() {
       }
     }
 
-    // detectSessionInUrl: true on the web client means Supabase parses the
-    // hash fragment automatically and fires SIGNED_IN when the token is valid.
+    // Listen for auth state changes (e.g. email magic-link token in URL hash).
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
           await handleVerifiedSession(session);
         }
       }
     );
 
-    // Fallback: if no SIGNED_IN fires within the timeout, show an error.
+    // Also check for an existing session immediately — OAuth redirects
+    // (Google) may have already exchanged the code before this component mounts.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        handleVerifiedSession(session);
+      }
+    });
+
+    // Fallback: if nothing resolves within the timeout, show an error.
     const timeout = setTimeout(() => {
       if (!settled) {
         settled = true;

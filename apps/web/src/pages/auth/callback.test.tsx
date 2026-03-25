@@ -6,6 +6,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 const callbackMocks = vi.hoisted(() => ({
   useRouterMock: vi.fn(),
   onAuthStateChangeMock: vi.fn(),
+  getSessionMock: vi.fn(),
   createUserProfileMock: vi.fn(),
   markEmailVerifiedMock: vi.fn(),
   markGoogleVerifiedMock: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       onAuthStateChange: callbackMocks.onAuthStateChangeMock,
+      getSession: callbackMocks.getSessionMock,
     },
   },
 }));
@@ -67,6 +69,7 @@ describe('AuthCallbackPage', () => {
     callbackMocks.onAuthStateChangeMock.mockImplementation(() => ({
       data: { subscription: { unsubscribe: mockUnsubscribe } },
     }));
+    callbackMocks.getSessionMock.mockResolvedValue({ data: { session: null } });
     callbackMocks.createUserProfileMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
     callbackMocks.markEmailVerifiedMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
     callbackMocks.markGoogleVerifiedMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
