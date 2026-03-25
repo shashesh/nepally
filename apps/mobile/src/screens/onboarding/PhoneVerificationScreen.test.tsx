@@ -125,15 +125,15 @@ describe('PhoneVerificationScreen', () => {
     expect(getByPlaceholderText('000000')).toBeTruthy();
   });
 
-  it('shows error when OTP is less than 6 digits', async () => {
+  it('shows error when OTP is less than 6 digits', () => {
     const { getByPlaceholderText, getByTestId, getByText } = renderScreen();
 
     fireEvent.changeText(getByPlaceholderText('000000'), '123');
     fireEvent.press(getByTestId('primary-button'));
 
-    await waitFor(() => {
-      expect(getByText('Please enter the 6-digit code from your SMS.')).toBeTruthy();
-    });
+    // setError is called synchronously (otp.length check returns early),
+    // so the error text is already rendered — no waitFor needed.
+    expect(getByText('Please enter the 6-digit code from your SMS.')).toBeTruthy();
     expect(mockVerifyPhoneOTP).not.toHaveBeenCalled();
   });
 
