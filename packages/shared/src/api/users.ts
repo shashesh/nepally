@@ -159,6 +159,70 @@ export async function resendVerificationEmail(
 }
 
 /**
+ * Mark a user's phone as verified and promote trust level
+ */
+export async function markPhoneVerified(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<UserResult> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        phone_verified: true,
+        trust_level: 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) throw new Error('Failed to mark phone verified');
+
+    return { data: data as User };
+  } catch (error) {
+    return {
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to mark phone verified'),
+    };
+  }
+}
+
+/**
+ * Mark a user's Google account as verified and promote trust level
+ */
+export async function markGoogleVerified(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<UserResult> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        google_verified: true,
+        trust_level: 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) throw new Error('Failed to mark Google verified');
+
+    return { data: data as User };
+  } catch (error) {
+    return {
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to mark Google verified'),
+    };
+  }
+}
+
+/**
  * Create user profile (called after email verification)
  */
 export async function createUserProfile(

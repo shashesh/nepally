@@ -15,9 +15,13 @@ export async function sendPhoneOTP(phone: string): Promise<PhoneAuthResult> {
 
     return { success: true };
   } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    const isProviderError = message.toLowerCase().includes('unsupported') && message.toLowerCase().includes('provider');
     return {
       success: false,
-      error: error instanceof Error ? error : new Error('Failed to send OTP'),
+      error: isProviderError
+        ? new Error('Phone auth is not configured. Please enable the Phone provider in Supabase Dashboard → Authentication → Providers.')
+        : error instanceof Error ? error : new Error('Failed to send OTP'),
     };
   }
 }

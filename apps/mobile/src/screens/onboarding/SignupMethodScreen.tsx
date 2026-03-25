@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -6,23 +6,87 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import type { OnboardingStackParamList } from '../../types/navigation';
+import { supabase } from '../../config/supabase';
+import { createUserProfile, markGoogleVerified } from '@nusa/shared';
+import { AuthContext } from '../../contexts/AuthContext';
+import { signInWithGoogle } from '../../services/auth/googleAuth';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, heights, borderRadius } from '../../styles/spacing';
 import { TextButton } from '../../components/buttons/TextButton';
 
 export function SignupMethodScreen() {
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'SignupMethod'>>();
+  const { refreshUser } = useContext(AuthContext);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleComingSoon = (method: string) => {
-    Alert.alert(
-      'Coming Soon',
-      `${method} signup will be available in a future update. Please use email signup for now.`
-    );
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithGoogle();
+
+      if (result.error) {
+        // Cancelled by user — don't show an alert
+        if (result.error.message === 'Google sign-in was cancelled') return;
+        throw result.error;
+      }
+
+      if (!result.user) throw new Error('No user returned from Google sign-in');
+
+      const userId = result.user.id;
+      const email = result.user.email;
+      const fullName = result.user.full_name || 'Google User';
+
+      // Create profile if new user (will fail silently for existing users)
+      const profileResult = await createUserProfile(supabase, userId, email, fullName);
+      if (profileResult.error) {
+        const isDuplicate = profileResult.error.message?.includes('duplicate') ||
+          profileResult.error.message?.includes('already exists');
+        if (!isDuplicate) {
+          console.error('Profile creation error:', profileResult.error);
+          Alert.alert('Error', 'Account setup failed. Please try again.');
+          return;
+        }
+      }
+
+      // Mark Google verified → trust_level: 1
+      const verifyResult = await markGoogleVerified(supabase, userId);
+      if (verifyResult.error) {
+        console.error('markGoogleVerified error:', verifyResult.error);
+      }
+
+      await refreshUser();
+
+      // Check if user already has metro_area set (returning user)
+      const { data: userData } = await supabase
+        .from('users')
+        .select('metro_area_id')
+        .eq('id', userId)
+        .single();
+
+      if (userData?.metro_area_id) {
+        // Returning user with location — AuthContext will route to Main
+        return;
+      }
+
+      navigation.navigate('LocationPermission', { userId });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Google sign-in failed';
+      Alert.alert('Google Sign-In Failed', message);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handlePhoneSignup = () => {
+    navigation.navigate('PhoneEntry');
   };
 
   const handleEmailSignup = () => {
@@ -43,27 +107,32 @@ export function SignupMethodScreen() {
         {/* Signup Options */}
         <View style={styles.optionsContainer}>
           <TouchableOpacity
-            style={[styles.optionCard, styles.optionCardDisabled]}
-            onPress={() => handleComingSoon('Google')}
+            style={styles.optionCard}
+            onPress={handleGoogleSignup}
             activeOpacity={0.7}
+            disabled={googleLoading}
           >
-            <Ionicons name="logo-google" size={24} color={colors.error} />
+            {googleLoading ? (
+              <ActivityIndicator size={24} color={colors.error} />
+            ) : (
+              <Ionicons name="logo-google" size={24} color={colors.error} />
+            )}
             <View style={styles.optionContent}>
               <Text style={styles.optionLabel}>Continue with Google</Text>
-              <Text style={styles.optionSubtext}>Coming soon</Text>
+              <Text style={styles.optionSubtext}>Quick and secure</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.optionCard, styles.optionCardDisabled]}
-            onPress={() => handleComingSoon('Phone')}
+            style={styles.optionCard}
+            onPress={handlePhoneSignup}
             activeOpacity={0.7}
           >
             <Ionicons name="call" size={24} color={colors.success} />
             <View style={styles.optionContent}>
               <Text style={styles.optionLabel}>Continue with Phone</Text>
-              <Text style={styles.optionSubtext}>Coming soon</Text>
+              <Text style={styles.optionSubtext}>Verify via SMS code</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
@@ -139,9 +208,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.card,
     padding: spacing.s,
     minHeight: heights.button.primary + spacing.s,
-  },
-  optionCardDisabled: {
-    opacity: 0.5,
   },
   optionContent: {
     flex: 1,

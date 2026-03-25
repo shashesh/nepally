@@ -2,6 +2,8 @@ export { WelcomeScreen } from './WelcomeScreen';
 export { SignupMethodScreen } from './SignupMethodScreen';
 export { EmailSignupScreen } from './EmailSignupScreen';
 export { EmailVerificationScreen } from './EmailVerificationScreen';
+export { PhoneEntryScreen } from './PhoneEntryScreen';
+export { PhoneVerificationScreen } from './PhoneVerificationScreen';
 export { LocationPermissionScreen } from './LocationPermissionScreen';
 export { ZipCodeEntryScreen } from './ZipCodeEntryScreen';
 export { MetroConfirmationScreen } from './MetroConfirmationScreen';
