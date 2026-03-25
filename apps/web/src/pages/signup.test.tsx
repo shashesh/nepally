@@ -131,6 +131,20 @@ describe('SignupPage', () => {
     });
   });
 
+  it('redirects to login with reason when email is already registered', async () => {
+    signupMocks.signUpWithEmailMock.mockResolvedValue({
+      error: new Error('User already registered'),
+    });
+    render(<SignupPage />);
+    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'google@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/login?reason=existing-account&email=google%40example.com');
+    });
+  });
+
   it('redirects to /verify-email on successful signup', async () => {
     signupMocks.signUpWithEmailMock.mockResolvedValue({ user: { id: 'user-1' } });
     render(<SignupPage />);

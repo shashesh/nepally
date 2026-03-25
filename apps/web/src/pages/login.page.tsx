@@ -11,11 +11,19 @@ import styles from '../styles/Auth.module.css';
 export default function LoginPage() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState((router.query.email as string) ?? '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Show contextual message based on redirect reason
+  React.useEffect(() => {
+    if (router.query.reason === 'existing-account') {
+      setInfo('An account with this email already exists. If you signed up with Google, use the Google button below to sign in.');
+    }
+  }, [router.query.reason]);
 
   // Redirect if already logged in
   if (user) {
@@ -69,6 +77,12 @@ export default function LoginPage() {
           <p className={styles.authSubtitle}>
             Sign in to your NUSA account
           </p>
+
+          {info && (
+            <Alert color="blue" variant="light">
+              {info}
+            </Alert>
+          )}
 
           {error && (
             <Alert color="red" variant="light">

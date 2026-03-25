@@ -69,6 +69,11 @@ export default function SignupPage() {
     setLoading(false);
 
     if (result.error) {
+      const msg = result.error.message.toLowerCase();
+      if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('user already registered')) {
+        router.push('/login?reason=existing-account&email=' + encodeURIComponent(email));
+        return;
+      }
       setError(result.error.message);
     } else {
       router.push('/verify-email?email=' + encodeURIComponent(email));

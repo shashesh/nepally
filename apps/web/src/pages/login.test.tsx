@@ -52,6 +52,7 @@ describe('LoginPage', () => {
     loginMocks.useRouterMock.mockReturnValue({
       push: mockPush,
       replace: mockReplace,
+      query: {},
     });
     loginMocks.useAuthMock.mockReturnValue({
       user: null,
@@ -215,5 +216,16 @@ describe('LoginPage', () => {
   it('shows email divider text', () => {
     render(<LoginPage />);
     expect(screen.getByText('or sign in with email')).toBeDefined();
+  });
+
+  it('shows info message when redirected with reason=existing-account', () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { reason: 'existing-account', email: 'test@example.com' },
+    });
+    render(<LoginPage />);
+    expect(screen.getByText(/account with this email already exists/i)).toBeDefined();
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('test@example.com');
   });
 });
