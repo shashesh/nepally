@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { createUserProfile, markEmailVerified, getUserById } from '@nusa/shared';
+import { createUserProfile, markEmailVerified, markGoogleVerified, getUserById } from '@nusa/shared';
 import styles from '../../styles/Auth.module.css';
 
 type CallbackState = 'verifying' | 'error';
@@ -25,6 +25,7 @@ export default function AuthCallbackPage() {
       const { user } = session;
       const email = user.email ?? '';
       const fullName = (user.user_metadata?.full_name as string | undefined) ?? '';
+      const provider = user.app_metadata?.provider;
 
       // Check if profile already exists (e.g. returning user via magic link)
       const { data: existingProfile } = await getUserById(supabase, user.id);
@@ -33,7 +34,12 @@ export default function AuthCallbackPage() {
         await createUserProfile(supabase, user.id, email, fullName);
       }
 
-      await markEmailVerified(supabase, user.id);
+      // Mark the appropriate verification based on the auth provider
+      if (provider === 'google') {
+        await markGoogleVerified(supabase, user.id);
+      } else {
+        await markEmailVerified(supabase, user.id);
+      }
 
       // Route based on onboarding state
       const { data: profile } = await getUserById(supabase, user.id);

@@ -1,9 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const authMocks = vi.hoisted(() => ({
   signUpMock: vi.fn(),
   signInWithPasswordMock: vi.fn(),
   signOutMock: vi.fn(),
+  signInWithOAuthMock: vi.fn(),
+  signInWithOtpMock: vi.fn(),
+  verifyOtpMock: vi.fn(),
   createUserProfileMock: vi.fn(),
 }));
 
@@ -13,6 +16,9 @@ vi.mock('./supabase', () => ({
       signUp: authMocks.signUpMock,
       signInWithPassword: authMocks.signInWithPasswordMock,
       signOut: authMocks.signOutMock,
+      signInWithOAuth: authMocks.signInWithOAuthMock,
+      signInWithOtp: authMocks.signInWithOtpMock,
+      verifyOtp: authMocks.verifyOtpMock,
     },
   },
 }));
@@ -25,7 +31,7 @@ vi.mock('@nusa/shared', async () => {
   };
 });
 
-import { signUpWithEmail, signInWithEmail, signOut } from './auth';
+import { signUpWithEmail, signInWithEmail, signOut, signInWithGoogle, sendPhoneOTP, verifyPhoneOTP } from './auth';
 
 describe('signUpWithEmail', () => {
   beforeEach(() => {
@@ -146,5 +152,130 @@ describe('signOut', () => {
     const result = await signOut();
 
     expect(result.error?.message).toBe('Sign out failed');
+  });
+});
+
+describe('signInWithGoogle', () => {
+  const originalLocation = window.location;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'location', {
+      value: { origin: 'http://localhost:3000', href: '' },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it('redirects browser to the OAuth URL on success', async () => {
+    authMocks.signInWithOAuthMock.mockResolvedValue({
+      data: { url: 'https://accounts.google.com/o/oauth2/...' },
+      error: null,
+    });
+
+    await signInWithGoogle();
+
+    expect(authMocks.signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'http://localhost:3000/auth/callback' },
+    });
+    expect(window.location.href).toBe('https://accounts.google.com/o/oauth2/...');
+  });
+
+  it('returns error when OAuth provider fails', async () => {
+    authMocks.signInWithOAuthMock.mockResolvedValue({
+      data: { url: null },
+      error: new Error('Provider not enabled'),
+    });
+
+    const result = await signInWithGoogle();
+
+    expect(result.error?.message).toBe('Provider not enabled');
+  });
+
+  it('returns error when no URL is returned', async () => {
+    authMocks.signInWithOAuthMock.mockResolvedValue({
+      data: { url: null },
+      error: null,
+    });
+
+    const result = await signInWithGoogle();
+
+    expect(result.error?.message).toBe('No OAuth URL returned');
+  });
+});
+
+describe('sendPhoneOTP', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns success when OTP is sent', async () => {
+    authMocks.signInWithOtpMock.mockResolvedValue({ error: null });
+
+    const result = await sendPhoneOTP('+12125551234');
+
+    expect(result.success).toBe(true);
+    expect(authMocks.signInWithOtpMock).toHaveBeenCalledWith({ phone: '+12125551234' });
+  });
+
+  it('returns friendly error for unsupported provider', async () => {
+    authMocks.signInWithOtpMock.mockResolvedValue({
+      error: new Error('Unsupported phone provider'),
+    });
+
+    const result = await sendPhoneOTP('+12125551234');
+
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toContain('Phone auth is not configured');
+  });
+
+  it('returns error on failure', async () => {
+    authMocks.signInWithOtpMock.mockResolvedValue({
+      error: new Error('Rate limit exceeded'),
+    });
+
+    const result = await sendPhoneOTP('+12125551234');
+
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toBe('Rate limit exceeded');
+  });
+});
+
+describe('verifyPhoneOTP', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns success when OTP is verified', async () => {
+    authMocks.verifyOtpMock.mockResolvedValue({ error: null });
+
+    const result = await verifyPhoneOTP('+12125551234', '123456');
+
+    expect(result.success).toBe(true);
+    expect(authMocks.verifyOtpMock).toHaveBeenCalledWith({
+      phone: '+12125551234',
+      token: '123456',
+      type: 'sms',
+    });
+  });
+
+  it('returns error when verification fails', async () => {
+    authMocks.verifyOtpMock.mockResolvedValue({
+      error: new Error('Invalid OTP'),
+    });
+
+    const result = await verifyPhoneOTP('+12125551234', '000000');
+
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toBe('Invalid OTP');
   });
 });

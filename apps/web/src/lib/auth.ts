@@ -1,9 +1,70 @@
 /**
- * Email auth functions for web.
+ * Auth functions for web.
  * Uses the platform-specific supabase client from lib/supabase.ts.
  */
 import { supabase } from './supabase';
-import type { EmailAuthResult } from '@nusa/shared';
+import type { EmailAuthResult, GoogleAuthResult, PhoneAuthResult } from '@nusa/shared';
+
+export async function signInWithGoogle(): Promise<GoogleAuthResult> {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) throw error;
+    if (!data.url) throw new Error('No OAuth URL returned');
+
+    // Supabase will redirect the browser to Google, then back to /auth/callback
+    window.location.href = data.url;
+
+    // This return is unreachable in practice (browser navigates away),
+    // but satisfies the type contract.
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Google sign-in failed'),
+    };
+  }
+}
+
+export async function sendPhoneOTP(phone: string): Promise<PhoneAuthResult> {
+  try {
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    const isProviderError = message.toLowerCase().includes('unsupported') && message.toLowerCase().includes('provider');
+    return {
+      success: false,
+      error: isProviderError
+        ? new Error('Phone auth is not configured. Please enable the Phone provider in Supabase Dashboard.')
+        : error instanceof Error ? error : new Error('Failed to send OTP'),
+    };
+  }
+}
+
+export async function verifyPhoneOTP(
+  phone: string,
+  code: string
+): Promise<PhoneAuthResult> {
+  try {
+    const { error } = await supabase.auth.verifyOtp({
+      phone,
+      token: code,
+      type: 'sms',
+    });
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error : new Error('Invalid OTP code'),
+    };
+  }
+}
 
 export async function signUpWithEmail(
   email: string,

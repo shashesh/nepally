@@ -6,6 +6,7 @@ const loginMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   useRouterMock: vi.fn(),
   signInWithEmailMock: vi.fn(),
+  signInWithGoogleMock: vi.fn(),
   validateEmailMock: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ vi.mock('next/router', () => ({
 
 vi.mock('../lib/auth', () => ({
   signInWithEmail: loginMocks.signInWithEmailMock,
+  signInWithGoogle: loginMocks.signInWithGoogleMock,
 }));
 
 vi.mock('@nusa/shared', async () => {
@@ -56,6 +58,7 @@ describe('LoginPage', () => {
       refreshUser: mockRefreshUser,
     });
     loginMocks.validateEmailMock.mockReturnValue(true);
+    loginMocks.signInWithGoogleMock.mockResolvedValue({});
   });
 
   it('renders the login form', () => {
@@ -176,5 +179,41 @@ describe('LoginPage', () => {
       expect(btn.hasAttribute('disabled')).toBe(true);
       expect(btn.getAttribute('data-loading')).toBe('true');
     });
+  });
+
+  it('renders Google and Phone sign-in buttons', () => {
+    render(<LoginPage />);
+    expect(screen.getByText('Continue with Google')).toBeDefined();
+    expect(screen.getByText('Continue with Phone')).toBeDefined();
+  });
+
+  it('calls signInWithGoogle when Google button is clicked', async () => {
+    render(<LoginPage />);
+    fireEvent.click(screen.getByText('Continue with Google'));
+    await waitFor(() => {
+      expect(loginMocks.signInWithGoogleMock).toHaveBeenCalled();
+    });
+  });
+
+  it('shows error when Google sign-in fails', async () => {
+    loginMocks.signInWithGoogleMock.mockResolvedValue({
+      error: new Error('Provider not enabled'),
+    });
+    render(<LoginPage />);
+    fireEvent.click(screen.getByText('Continue with Google'));
+    await waitFor(() => {
+      expect(screen.getByText('Provider not enabled')).toBeDefined();
+    });
+  });
+
+  it('navigates to /auth/phone when Phone button is clicked', () => {
+    render(<LoginPage />);
+    fireEvent.click(screen.getByText('Continue with Phone'));
+    expect(mockPush).toHaveBeenCalledWith('/auth/phone');
+  });
+
+  it('shows email divider text', () => {
+    render(<LoginPage />);
+    expect(screen.getByText('or sign in with email')).toBeDefined();
   });
 });

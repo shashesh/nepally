@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Alert, Button, List, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import { validateEmail, validatePassword, validateFullName } from '@nusa/shared';
-import { signUpWithEmail } from '../lib/auth';
+import { signUpWithEmail, signInWithGoogle } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import styles from '../styles/Auth.module.css';
 
@@ -17,6 +17,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Redirect if already logged in
   if (user) {
@@ -31,6 +32,17 @@ export default function SignupPage() {
       setPasswordErrors(result.errors);
     } else {
       setPasswordErrors([]);
+    }
+  }
+
+  async function handleGoogleSignup() {
+    setError('');
+    setGoogleLoading(true);
+    const result = await signInWithGoogle();
+    // If we get here, it means the redirect failed
+    setGoogleLoading(false);
+    if (result.error) {
+      setError(result.error.message);
     }
   }
 
@@ -59,8 +71,6 @@ export default function SignupPage() {
     if (result.error) {
       setError(result.error.message);
     } else {
-      // No session yet — email confirmation is required.
-      // Profile creation happens in /auth/callback after the user clicks the link.
       router.push('/verify-email?email=' + encodeURIComponent(email));
     }
   }
@@ -82,6 +92,35 @@ export default function SignupPage() {
               {error}
             </Alert>
           )}
+
+          <div className={styles.methodGroup}>
+            <button
+              type="button"
+              className={styles.methodButton}
+              onClick={handleGoogleSignup}
+              disabled={googleLoading}
+            >
+              <span className={styles.methodIcon}>🔵</span>
+              <span className={styles.methodLabel}>
+                {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={styles.methodButton}
+              onClick={() => router.push('/auth/phone')}
+            >
+              <span className={styles.methodIcon}>📱</span>
+              <span className={styles.methodLabel}>Continue with Phone</span>
+            </button>
+          </div>
+
+          <div className={styles.divider}>
+            <span className={styles.dividerLine} />
+            <span className={styles.dividerLabel}>or sign up with email</span>
+            <span className={styles.dividerLine} />
+          </div>
 
           <form onSubmit={handleSubmit}>
             <Stack gap="sm">

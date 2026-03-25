@@ -8,6 +8,7 @@ const signupMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   useRouterMock: vi.fn(),
   signUpWithEmailMock: vi.fn(),
+  signInWithGoogleMock: vi.fn(),
   validateEmailMock: vi.fn(),
   validatePasswordMock: vi.fn(),
   validateFullNameMock: vi.fn(),
@@ -15,7 +16,7 @@ const signupMocks = vi.hoisted(() => ({
 
 vi.mock('../hooks/useAuth', () => ({ useAuth: signupMocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: signupMocks.useRouterMock }));
-vi.mock('../lib/auth', () => ({ signUpWithEmail: signupMocks.signUpWithEmailMock }));
+vi.mock('../lib/auth', () => ({ signUpWithEmail: signupMocks.signUpWithEmailMock, signInWithGoogle: signupMocks.signInWithGoogleMock }));
 vi.mock('@nusa/shared', async () => {
   const actual = await vi.importActual<object>('@nusa/shared');
   return {
@@ -48,6 +49,7 @@ describe('SignupPage', () => {
     signupMocks.validateFullNameMock.mockReturnValue(true);
     signupMocks.validateEmailMock.mockReturnValue(true);
     signupMocks.validatePasswordMock.mockReturnValue({ isValid: true, errors: [] });
+    signupMocks.signInWithGoogleMock.mockResolvedValue({});
   });
 
   it('renders the signup form', () => {
@@ -167,5 +169,41 @@ describe('SignupPage', () => {
       expect(btn.hasAttribute('disabled')).toBe(true);
       expect(btn.getAttribute('data-loading')).toBe('true');
     });
+  });
+
+  it('renders Google and Phone signup buttons', () => {
+    render(<SignupPage />);
+    expect(screen.getByText('Continue with Google')).toBeDefined();
+    expect(screen.getByText('Continue with Phone')).toBeDefined();
+  });
+
+  it('calls signInWithGoogle when Google button is clicked', async () => {
+    render(<SignupPage />);
+    fireEvent.click(screen.getByText('Continue with Google'));
+    await waitFor(() => {
+      expect(signupMocks.signInWithGoogleMock).toHaveBeenCalled();
+    });
+  });
+
+  it('shows error when Google sign-in fails', async () => {
+    signupMocks.signInWithGoogleMock.mockResolvedValue({
+      error: new Error('Provider not enabled'),
+    });
+    render(<SignupPage />);
+    fireEvent.click(screen.getByText('Continue with Google'));
+    await waitFor(() => {
+      expect(screen.getByText('Provider not enabled')).toBeDefined();
+    });
+  });
+
+  it('navigates to /auth/phone when Phone button is clicked', () => {
+    render(<SignupPage />);
+    fireEvent.click(screen.getByText('Continue with Phone'));
+    expect(mockPush).toHaveBeenCalledWith('/auth/phone');
+  });
+
+  it('shows divider text for email option', () => {
+    render(<SignupPage />);
+    expect(screen.getByText('or sign up with email')).toBeDefined();
   });
 });

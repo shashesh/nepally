@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Alert, Button, PasswordInput, Stack, TextInput } from '@mantine/core';
 import { validateEmail } from '@nusa/shared';
-import { signInWithEmail } from '../lib/auth';
+import { signInWithEmail, signInWithGoogle } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import styles from '../styles/Auth.module.css';
 
@@ -15,11 +15,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Redirect if already logged in
   if (user) {
     router.replace('/feed');
     return null;
+  }
+
+  async function handleGoogleSignIn() {
+    setError('');
+    setGoogleLoading(true);
+    const result = await signInWithGoogle();
+    setGoogleLoading(false);
+    if (result.error) {
+      setError(result.error.message);
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -64,6 +75,35 @@ export default function LoginPage() {
               {error}
             </Alert>
           )}
+
+          <div className={styles.methodGroup}>
+            <button
+              type="button"
+              className={styles.methodButton}
+              onClick={handleGoogleSignIn}
+              disabled={googleLoading}
+            >
+              <span className={styles.methodIcon}>🔵</span>
+              <span className={styles.methodLabel}>
+                {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={styles.methodButton}
+              onClick={() => router.push('/auth/phone')}
+            >
+              <span className={styles.methodIcon}>📱</span>
+              <span className={styles.methodLabel}>Continue with Phone</span>
+            </button>
+          </div>
+
+          <div className={styles.divider}>
+            <span className={styles.dividerLine} />
+            <span className={styles.dividerLabel}>or sign in with email</span>
+            <span className={styles.dividerLine} />
+          </div>
 
           <form onSubmit={handleSubmit}>
             <Stack gap="sm">

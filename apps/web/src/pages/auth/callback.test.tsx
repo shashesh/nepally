@@ -8,6 +8,7 @@ const callbackMocks = vi.hoisted(() => ({
   onAuthStateChangeMock: vi.fn(),
   createUserProfileMock: vi.fn(),
   markEmailVerifiedMock: vi.fn(),
+  markGoogleVerifiedMock: vi.fn(),
   getUserByIdMock: vi.fn(),
 }));
 
@@ -26,6 +27,7 @@ vi.mock('../../lib/supabase', () => ({
 vi.mock('@nusa/shared', () => ({
   createUserProfile: callbackMocks.createUserProfileMock,
   markEmailVerified: callbackMocks.markEmailVerifiedMock,
+  markGoogleVerified: callbackMocks.markGoogleVerifiedMock,
   getUserById: callbackMocks.getUserByIdMock,
 }));
 
@@ -67,6 +69,7 @@ describe('AuthCallbackPage', () => {
     }));
     callbackMocks.createUserProfileMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
     callbackMocks.markEmailVerifiedMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
+    callbackMocks.markGoogleVerifiedMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
     callbackMocks.getUserByIdMock.mockResolvedValue({ data: null, error: { message: 'Not found' } });
   });
 
@@ -197,5 +200,44 @@ describe('AuthCallbackPage', () => {
     const { unmount } = render(<AuthCallbackPage />);
     unmount();
     expect(mockUnsubscribe).toHaveBeenCalled();
+  });
+
+  it('calls markGoogleVerified instead of markEmailVerified for Google provider', async () => {
+    let capturedCallback: ((event: AuthChangeEvent, session: Session | null) => void) | null = null;
+
+    callbackMocks.onAuthStateChangeMock.mockImplementation(
+      (cb: (event: AuthChangeEvent, session: Session | null) => void) => {
+        capturedCallback = cb;
+        return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
+      }
+    );
+
+    callbackMocks.getUserByIdMock
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: null }, error: null });
+
+    render(<AuthCallbackPage />);
+
+    const googleSession = {
+      user: {
+        id: 'user-123',
+        email: 'test@gmail.com',
+        user_metadata: { full_name: 'Google User' },
+        app_metadata: { provider: 'google' },
+      },
+    } as unknown as Session;
+
+    await act(async () => {
+      capturedCallback!('SIGNED_IN', googleSession);
+    });
+
+    await waitFor(() => {
+      expect(callbackMocks.markGoogleVerifiedMock).toHaveBeenCalledWith(
+        expect.anything(),
+        'user-123'
+      );
+      expect(callbackMocks.markEmailVerifiedMock).not.toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith('/onboarding/zip');
+    });
   });
 });
