@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cleanPhone,
   cleanZipCode,
   validateEmail,
   validateFullName,
@@ -34,8 +33,4 @@ describe('validators utils', () => {
     expect(cleanZipCode('123')).toBe('123');
   });
 
-  it('cleans phone input to 10 digits', () => {
-    expect(cleanPhone('(469) 555-1212 ext 999')).toBe('4695551212');
-    expect(cleanPhone('555')).toBe('555');
-  });
 });

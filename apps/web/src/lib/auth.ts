@@ -1,9 +1,33 @@
 /**
- * Email auth functions for web.
+ * Auth functions for web.
  * Uses the platform-specific supabase client from lib/supabase.ts.
  */
 import { supabase } from './supabase';
-import type { EmailAuthResult } from '@nusa/shared';
+import type { EmailAuthResult, GoogleAuthResult } from '@nusa/shared';
+
+export async function signInWithGoogle(): Promise<GoogleAuthResult> {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) throw error;
+    if (!data.url) throw new Error('No OAuth URL returned');
+
+    // Supabase will redirect the browser to Google, then back to /auth/callback
+    window.location.href = data.url;
+
+    // This return is unreachable in practice (browser navigates away),
+    // but satisfies the type contract.
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Google sign-in failed'),
+    };
+  }
+}
 
 export async function signUpWithEmail(
   email: string,

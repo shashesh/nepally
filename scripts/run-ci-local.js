@@ -16,8 +16,11 @@ const steps = [
   { name: 'Lint', command: 'npm', args: ['run', 'lint'] },
   { name: 'Lint guards', command: 'npm', args: ['run', 'lint:guards'] },
   { name: 'Type check', command: 'npm', args: ['run', 'type-check'] },
-  { name: 'Unit tests', command: 'npm', args: ['run', 'test'] },
-  { name: 'Coverage', command: 'npm', args: ['run', 'test:coverage'] },
+  // Use test:ci / test:coverage:ci to match GitHub CI exactly:
+  // mobile tests run with --ci --runInBand (serial, single process).
+  // This exposes timer/act()-scope leaks that parallel execution hides.
+  { name: 'Unit tests (CI mode)', command: 'npm', args: ['run', 'test:ci'] },
+  { name: 'Coverage (CI mode)', command: 'npm', args: ['run', 'test:coverage:ci'] },
   {
     name: 'Web E2E tests',
     command: 'npm',

@@ -23,7 +23,7 @@ NUSA (Nepalese United Support Alliance) is a utility-first community platform de
 ### Trust & Safety System
 The platform uses a multi-tiered account system:
 - **Level 0 (New)**: View-only or 1 post/day limit
-- **Level 1 (Verified)**: Phone/social media verified, full posting rights
+- **Level 1 (Verified)**: Email/Google verified, full posting rights
 - **Level 2 (Contributor)**: High engagement/vouched, elevated visibility
 
 ### Tag-Based Post Engine (Reddit-Style)
@@ -70,7 +70,7 @@ Everything else → packages/shared/
 - **Types & Interfaces** (`src/types/`) — ALL data models (User, Post, Message, etc.)
 - **API Functions** (`src/api/`) — ALL Supabase query logic (CRUD, subscriptions)
 - **Validation Schemas** (`src/validation/`) — ALL Zod schemas for forms
-- **Utilities** (`src/utils/`) — Date formatting, phone formatting, ZIP validation, etc.
+- **Utilities** (`src/utils/`) — Date formatting, ZIP validation, etc.
 - **Constants** (`src/constants/`) — Enums, config objects, trust levels, post categories
 - **Business Logic** (`src/logic/`) — Trust level calculation, expiry logic, etc.
 
@@ -163,7 +163,7 @@ When using `apply_migration` (Supabase MCP tool), the SQL runs on the live DB. T
 - **Mobile**: React Native + Expo 54 (iOS & Android)
 - **Web**: Next.js 15 (TypeScript)
 - **Backend**: Supabase (PostgreSQL with real-time subscriptions, RLS, Edge Functions)
-- **Auth**: Supabase Auth (phone SMS, email, Google OAuth)
+- **Auth**: Supabase Auth (email, Google OAuth)
 - **Storage**: Supabase Storage (photos, CDN)
 - **Location**: Static ZIP-to-Metro dataset (HUD USPS Crosswalk, zero API costs)
 - **Language**: TypeScript across all packages

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { createUserProfile, markEmailVerified, getUserById } from '@nusa/shared';
+import { createUserProfile, markEmailVerified, markGoogleVerified, getUserById } from '@nusa/shared';
 import styles from '../../styles/Auth.module.css';
 
 type CallbackState = 'verifying' | 'error';
@@ -25,6 +25,7 @@ export default function AuthCallbackPage() {
       const { user } = session;
       const email = user.email ?? '';
       const fullName = (user.user_metadata?.full_name as string | undefined) ?? '';
+      const provider = user.app_metadata?.provider;
 
       // Check if profile already exists (e.g. returning user via magic link)
       const { data: existingProfile } = await getUserById(supabase, user.id);
@@ -33,7 +34,12 @@ export default function AuthCallbackPage() {
         await createUserProfile(supabase, user.id, email, fullName);
       }
 
-      await markEmailVerified(supabase, user.id);
+      // Mark the appropriate verification based on the auth provider
+      if (provider === 'google') {
+        await markGoogleVerified(supabase, user.id);
+      } else {
+        await markEmailVerified(supabase, user.id);
+      }
 
       // Route based on onboarding state
       const { data: profile } = await getUserById(supabase, user.id);
@@ -44,17 +50,24 @@ export default function AuthCallbackPage() {
       }
     }
 
-    // detectSessionInUrl: true on the web client means Supabase parses the
-    // hash fragment automatically and fires SIGNED_IN when the token is valid.
+    // Listen for auth state changes (e.g. email magic-link token in URL hash).
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
           await handleVerifiedSession(session);
         }
       }
     );
 
-    // Fallback: if no SIGNED_IN fires within the timeout, show an error.
+    // Also check for an existing session immediately — OAuth redirects
+    // (Google) may have already exchanged the code before this component mounts.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        handleVerifiedSession(session);
+      }
+    });
+
+    // Fallback: if nothing resolves within the timeout, show an error.
     const timeout = setTimeout(() => {
       if (!settled) {
         settled = true;

@@ -53,7 +53,7 @@ test.describe('Signup flow', () => {
     await expect(page.getByRole('list')).toBeVisible();
   });
 
-  test('already existing email shows error from API', async ({ page }) => {
+  test('already existing email redirects to login with info message', async ({ page }) => {
     test.slow();
 
     await page.route('**/auth/v1/signup**', async (route) => {
@@ -71,6 +71,8 @@ test.describe('Signup flow', () => {
     await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
 
-    await expect(page.getByText(/already registered/i)).toBeVisible();
+    // Should redirect to login page with info message
+    await expect(page).toHaveURL(/\/login\?reason=existing-account/);
+    await expect(page.getByText(/account with this email already exists/i)).toBeVisible();
   });
 });

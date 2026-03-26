@@ -50,10 +50,3 @@ export function validateFullName(name: string): boolean {
 export function cleanZipCode(input: string): string {
   return input.replace(/\D/g, '').slice(0, 5);
 }
-
-/**
- * Clean phone number input (digits only, max 10)
- */
-export function cleanPhone(input: string): string {
-  return input.replace(/\D/g, '').slice(0, 10);
-}

@@ -4,6 +4,7 @@ import {
   createUserProfile,
   getUserById,
   markEmailVerified,
+  markGoogleVerified,
   resendVerificationEmail,
   updateUserProfile,
 } from './users';
@@ -96,7 +97,7 @@ describe('users api', () => {
     });
   });
 
-  it('marks email as verified', async () => {
+  it('marks email as verified and promotes trust level from 0', async () => {
     const query = {
       update: vi.fn(),
       eq: vi.fn(),
@@ -107,7 +108,13 @@ describe('users api', () => {
     query.update.mockReturnValue(query);
     query.eq.mockReturnValue(query);
     query.select.mockReturnValue(query);
-    query.single.mockResolvedValue({
+    // First single(): fetch current trust_level
+    query.single.mockResolvedValueOnce({
+      data: { trust_level: 0 },
+      error: null,
+    });
+    // Second single(): update result
+    query.single.mockResolvedValueOnce({
       data: { id: 'user-3', email_verified: true, trust_level: 1 },
       error: null,
     });
@@ -121,6 +128,39 @@ describe('users api', () => {
     expect(result.error).toBeUndefined();
     expect(query.update).toHaveBeenCalledWith(
       expect.objectContaining({ email_verified: true, trust_level: 1 })
+    );
+  });
+
+  it('does not demote trust level when marking email verified on a contributor', async () => {
+    const query = {
+      update: vi.fn(),
+      eq: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn(),
+    };
+
+    query.update.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.select.mockReturnValue(query);
+    // Contributor with trust_level 2
+    query.single.mockResolvedValueOnce({
+      data: { trust_level: 2 },
+      error: null,
+    });
+    query.single.mockResolvedValueOnce({
+      data: { id: 'user-3', email_verified: true, trust_level: 2 },
+      error: null,
+    });
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as SupabaseClient;
+
+    const result = await markEmailVerified(supabase, 'user-3');
+
+    expect(result.error).toBeUndefined();
+    expect(query.update).toHaveBeenCalledWith(
+      expect.not.objectContaining({ trust_level: expect.anything() })
     );
   });
 
@@ -177,5 +217,95 @@ describe('users api', () => {
 
     expect(result.error).toBeDefined();
     expect(result.error?.message).toBe('Rate limited');
+  });
+
+  it('marks Google as verified and promotes trust level from 0', async () => {
+    const query = {
+      update: vi.fn(),
+      eq: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn(),
+    };
+
+    query.update.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.select.mockReturnValue(query);
+    query.single.mockResolvedValueOnce({
+      data: { trust_level: 0 },
+      error: null,
+    });
+    query.single.mockResolvedValueOnce({
+      data: { id: 'user-5', google_verified: true, trust_level: 1 },
+      error: null,
+    });
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as SupabaseClient;
+
+    const result = await markGoogleVerified(supabase, 'user-5');
+
+    expect(result.error).toBeUndefined();
+    expect(query.update).toHaveBeenCalledWith(
+      expect.objectContaining({ google_verified: true, trust_level: 1 })
+    );
+  });
+
+  it('does not demote trust level when marking Google verified on a contributor', async () => {
+    const query = {
+      update: vi.fn(),
+      eq: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn(),
+    };
+
+    query.update.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.select.mockReturnValue(query);
+    query.single.mockResolvedValueOnce({
+      data: { trust_level: 2 },
+      error: null,
+    });
+    query.single.mockResolvedValueOnce({
+      data: { id: 'user-5', google_verified: true, trust_level: 2 },
+      error: null,
+    });
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as SupabaseClient;
+
+    const result = await markGoogleVerified(supabase, 'user-5');
+
+    expect(result.error).toBeUndefined();
+    expect(query.update).toHaveBeenCalledWith(
+      expect.not.objectContaining({ trust_level: expect.anything() })
+    );
+  });
+
+  it('returns error when markGoogleVerified DB call fails', async () => {
+    const query = {
+      update: vi.fn(),
+      eq: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn(),
+    };
+
+    query.update.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.select.mockReturnValue(query);
+    query.single.mockResolvedValue({
+      data: null,
+      error: new Error('DB error'),
+    });
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as SupabaseClient;
+
+    const result = await markGoogleVerified(supabase, 'user-5');
+
+    expect(result.error).toBeDefined();
+    expect(result.data).toBeUndefined();
   });
 });

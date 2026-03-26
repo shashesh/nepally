@@ -104,20 +104,34 @@ export async function updateUserProfile(
 }
 
 /**
- * Mark a user's email as verified (called after OTP/link verification)
+ * Mark a user's email as verified (called after OTP/link verification).
+ * Only promotes trust_level to 1 if currently lower — never demotes.
  */
 export async function markEmailVerified(
   supabase: SupabaseClient,
   userId: string
 ): Promise<UserResult> {
   try {
+    const { data: current, error: fetchError } = await supabase
+      .from('users')
+      .select('trust_level')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const updates: Record<string, unknown> = {
+      email_verified: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (!current || current.trust_level < 1) {
+      updates.trust_level = 1;
+    }
+
     const { data, error } = await supabase
       .from('users')
-      .update({
-        email_verified: true,
-        trust_level: 1,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', userId)
       .select()
       .single();
@@ -154,6 +168,52 @@ export async function resendVerificationEmail(
       error: error instanceof Error
         ? error
         : new Error('Failed to resend verification email'),
+    };
+  }
+}
+
+/**
+ * Mark a user's Google account as verified and promote trust level.
+ * Only promotes trust_level to 1 if currently lower — never demotes.
+ */
+export async function markGoogleVerified(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<UserResult> {
+  try {
+    const { data: current, error: fetchError } = await supabase
+      .from('users')
+      .select('trust_level')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const updates: Record<string, unknown> = {
+      google_verified: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (!current || current.trust_level < 1) {
+      updates.trust_level = 1;
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) throw new Error('Failed to mark Google verified');
+
+    return { data: data as User };
+  } catch (error) {
+    return {
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to mark Google verified'),
     };
   }
 }

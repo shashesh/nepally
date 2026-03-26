@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const authMocks = vi.hoisted(() => ({
   signUpMock: vi.fn(),
   signInWithPasswordMock: vi.fn(),
   signOutMock: vi.fn(),
+  signInWithOAuthMock: vi.fn(),
   createUserProfileMock: vi.fn(),
 }));
 
@@ -13,6 +14,7 @@ vi.mock('./supabase', () => ({
       signUp: authMocks.signUpMock,
       signInWithPassword: authMocks.signInWithPasswordMock,
       signOut: authMocks.signOutMock,
+      signInWithOAuth: authMocks.signInWithOAuthMock,
     },
   },
 }));
@@ -25,7 +27,7 @@ vi.mock('@nusa/shared', async () => {
   };
 });
 
-import { signUpWithEmail, signInWithEmail, signOut } from './auth';
+import { signUpWithEmail, signInWithEmail, signOut, signInWithGoogle } from './auth';
 
 describe('signUpWithEmail', () => {
   beforeEach(() => {
@@ -148,3 +150,62 @@ describe('signOut', () => {
     expect(result.error?.message).toBe('Sign out failed');
   });
 });
+
+describe('signInWithGoogle', () => {
+  const originalLocation = window.location;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'location', {
+      value: { origin: 'http://localhost:3000', href: '' },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it('redirects browser to the OAuth URL on success', async () => {
+    authMocks.signInWithOAuthMock.mockResolvedValue({
+      data: { url: 'https://accounts.google.com/o/oauth2/...' },
+      error: null,
+    });
+
+    await signInWithGoogle();
+
+    expect(authMocks.signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'http://localhost:3000/auth/callback' },
+    });
+    expect(window.location.href).toBe('https://accounts.google.com/o/oauth2/...');
+  });
+
+  it('returns error when OAuth provider fails', async () => {
+    authMocks.signInWithOAuthMock.mockResolvedValue({
+      data: { url: null },
+      error: new Error('Provider not enabled'),
+    });
+
+    const result = await signInWithGoogle();
+
+    expect(result.error?.message).toBe('Provider not enabled');
+  });
+
+  it('returns error when no URL is returned', async () => {
+    authMocks.signInWithOAuthMock.mockResolvedValue({
+      data: { url: null },
+      error: null,
+    });
+
+    const result = await signInWithGoogle();
+
+    expect(result.error?.message).toBe('No OAuth URL returned');
+  });
+});
+

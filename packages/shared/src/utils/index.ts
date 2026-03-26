@@ -3,7 +3,6 @@
  */
 
 export * from './date';
-export * from './phone';
 export * from './zip';
 export * from './validators';
 export * from './location';

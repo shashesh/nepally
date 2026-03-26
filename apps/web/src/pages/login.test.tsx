@@ -6,6 +6,7 @@ const loginMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   useRouterMock: vi.fn(),
   signInWithEmailMock: vi.fn(),
+  signInWithGoogleMock: vi.fn(),
   validateEmailMock: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ vi.mock('next/router', () => ({
 
 vi.mock('../lib/auth', () => ({
   signInWithEmail: loginMocks.signInWithEmailMock,
+  signInWithGoogle: loginMocks.signInWithGoogleMock,
 }));
 
 vi.mock('@nusa/shared', async () => {
@@ -50,12 +52,15 @@ describe('LoginPage', () => {
     loginMocks.useRouterMock.mockReturnValue({
       push: mockPush,
       replace: mockReplace,
+      query: {},
+      isReady: true,
     });
     loginMocks.useAuthMock.mockReturnValue({
       user: null,
       refreshUser: mockRefreshUser,
     });
     loginMocks.validateEmailMock.mockReturnValue(true);
+    loginMocks.signInWithGoogleMock.mockResolvedValue({});
   });
 
   it('renders the login form', () => {
@@ -176,5 +181,47 @@ describe('LoginPage', () => {
       expect(btn.hasAttribute('disabled')).toBe(true);
       expect(btn.getAttribute('data-loading')).toBe('true');
     });
+  });
+
+  it('renders Google sign-in button without phone option', () => {
+    render(<LoginPage />);
+    expect(screen.getByText('Continue with Google')).toBeDefined();
+    expect(screen.queryByText('Continue with Phone')).toBeNull();
+  });
+
+  it('calls signInWithGoogle when Google button is clicked', async () => {
+    render(<LoginPage />);
+    fireEvent.click(screen.getByText('Continue with Google'));
+    await waitFor(() => {
+      expect(loginMocks.signInWithGoogleMock).toHaveBeenCalled();
+    });
+  });
+
+  it('shows error when Google sign-in fails', async () => {
+    loginMocks.signInWithGoogleMock.mockResolvedValue({
+      error: new Error('Provider not enabled'),
+    });
+    render(<LoginPage />);
+    fireEvent.click(screen.getByText('Continue with Google'));
+    await waitFor(() => {
+      expect(screen.getByText('Provider not enabled')).toBeDefined();
+    });
+  });
+
+  it('shows email divider text', () => {
+    render(<LoginPage />);
+    expect(screen.getByText('or sign in with email')).toBeDefined();
+  });
+
+  it('shows info message when redirected with reason=existing-account', () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { reason: 'existing-account', email: 'test@example.com' },
+      isReady: true,
+    });
+    render(<LoginPage />);
+    expect(screen.getByText(/account with this email already exists/i)).toBeDefined();
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('test@example.com');
   });
 });

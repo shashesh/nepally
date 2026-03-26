@@ -8,6 +8,7 @@ const signupMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   useRouterMock: vi.fn(),
   signUpWithEmailMock: vi.fn(),
+  signInWithGoogleMock: vi.fn(),
   validateEmailMock: vi.fn(),
   validatePasswordMock: vi.fn(),
   validateFullNameMock: vi.fn(),
@@ -15,7 +16,7 @@ const signupMocks = vi.hoisted(() => ({
 
 vi.mock('../hooks/useAuth', () => ({ useAuth: signupMocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: signupMocks.useRouterMock }));
-vi.mock('../lib/auth', () => ({ signUpWithEmail: signupMocks.signUpWithEmailMock }));
+vi.mock('../lib/auth', () => ({ signUpWithEmail: signupMocks.signUpWithEmailMock, signInWithGoogle: signupMocks.signInWithGoogleMock }));
 vi.mock('@nusa/shared', async () => {
   const actual = await vi.importActual<object>('@nusa/shared');
   return {
@@ -48,6 +49,7 @@ describe('SignupPage', () => {
     signupMocks.validateFullNameMock.mockReturnValue(true);
     signupMocks.validateEmailMock.mockReturnValue(true);
     signupMocks.validatePasswordMock.mockReturnValue({ isValid: true, errors: [] });
+    signupMocks.signInWithGoogleMock.mockResolvedValue({});
   });
 
   it('renders the signup form', () => {
@@ -129,6 +131,20 @@ describe('SignupPage', () => {
     });
   });
 
+  it('redirects to login with reason when email is already registered', async () => {
+    signupMocks.signUpWithEmailMock.mockResolvedValue({
+      error: new Error('User already registered'),
+    });
+    render(<SignupPage />);
+    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'google@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/login?reason=existing-account&email=google%40example.com');
+    });
+  });
+
   it('redirects to /verify-email on successful signup', async () => {
     signupMocks.signUpWithEmailMock.mockResolvedValue({ user: { id: 'user-1' } });
     render(<SignupPage />);
@@ -167,5 +183,35 @@ describe('SignupPage', () => {
       expect(btn.hasAttribute('disabled')).toBe(true);
       expect(btn.getAttribute('data-loading')).toBe('true');
     });
+  });
+
+  it('renders Google signup button without phone option', () => {
+    render(<SignupPage />);
+    expect(screen.getByText('Continue with Google')).toBeDefined();
+    expect(screen.queryByText('Continue with Phone')).toBeNull();
+  });
+
+  it('calls signInWithGoogle when Google button is clicked', async () => {
+    render(<SignupPage />);
+    fireEvent.click(screen.getByText('Continue with Google'));
+    await waitFor(() => {
+      expect(signupMocks.signInWithGoogleMock).toHaveBeenCalled();
+    });
+  });
+
+  it('shows error when Google sign-in fails', async () => {
+    signupMocks.signInWithGoogleMock.mockResolvedValue({
+      error: new Error('Provider not enabled'),
+    });
+    render(<SignupPage />);
+    fireEvent.click(screen.getByText('Continue with Google'));
+    await waitFor(() => {
+      expect(screen.getByText('Provider not enabled')).toBeDefined();
+    });
+  });
+
+  it('shows divider text for email option', () => {
+    render(<SignupPage />);
+    expect(screen.getByText('or sign up with email')).toBeDefined();
   });
 });

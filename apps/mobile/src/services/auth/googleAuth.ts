@@ -7,32 +7,36 @@ WebBrowser.maybeCompleteAuthSession();
 
 /**
  * Sign up/in with Google OAuth
- * Uses Expo's AuthSession for native OAuth flow
+ * Uses Expo's WebBrowser + Supabase PKCE flow for native OAuth
  */
 export async function signInWithGoogle(): Promise<GoogleAuthResult> {
   try {
-    // Create redirect URL
     const redirectUrl = AuthSession.makeRedirectUri({
       scheme: 'nusa',
       path: 'auth/callback',
     });
 
-    // Start OAuth flow with Supabase
-    const { error } = await supabase.auth.signInWithOAuth({
+    // Get the OAuth URL from Supabase without opening browser
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: redirectUrl,
-        skipBrowserRedirect: false,
+        skipBrowserRedirect: true,
       },
     });
 
     if (error) throw error;
+    if (!data.url) throw new Error('No OAuth URL returned');
 
-    // For now, return a mock user until we fully implement the OAuth callback
-    // TODO: Complete OAuth callback handling in a future commit
-    return {
-      error: new Error('Google OAuth setup incomplete - implement callback handling'),
-    };
+    // Open browser for user to authenticate
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+    if (result.type !== 'success') {
+      return { error: new Error('Google sign-in was cancelled') };
+    }
+
+    // Extract session params from the callback URL
+    return await handleGoogleAuthCallback(result.url);
   } catch (error) {
     return {
       error: error instanceof Error ? error : new Error('Google sign-in failed'),

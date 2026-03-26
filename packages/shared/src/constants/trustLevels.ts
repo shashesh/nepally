@@ -31,11 +31,11 @@ export const TRUST_LEVELS: Record<TrustLevel, TrustLevelConfig> = {
   [TrustLevel.VERIFIED]: {
     level: TrustLevel.VERIFIED,
     name: 'Verified',
-    description: 'Phone or social media verified',
+    description: 'Email or Google verified',
     postsPerDay: 10,
     canPostEmergency: true,
     canVerifyEmergency: false,
-    requirements: ['Phone verification', 'OR social media verification'],
+    requirements: ['Email verification', 'OR Google sign-in'],
   },
   [TrustLevel.CONTRIBUTOR]: {
     level: TrustLevel.CONTRIBUTOR,
