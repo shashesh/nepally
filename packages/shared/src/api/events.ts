@@ -67,6 +67,32 @@ export async function getEventsByMetro(
 }
 
 /**
+ * Get only future/upcoming events for a metro area (local + global), ascending by start_date.
+ * Excludes removed and past events.
+ */
+export async function getUpcomingEventsByMetro(
+  supabase: SupabaseClient,
+  metroId: string,
+  limit = 50
+): Promise<EventsResult> {
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select(EVENT_SELECT)
+      .neq('status', 'removed')
+      .gte('start_date', new Date().toISOString())
+      .or(`metro_area_id.eq.${metroId},is_global.eq.true`)
+      .order('start_date', { ascending: true })
+      .limit(limit);
+
+    if (error) throw error;
+    return { data: (data || []) as Event[] };
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('Failed to fetch upcoming events') };
+  }
+}
+
+/**
  * Get a single event by ID, with organizer info joined.
  */
 export async function getEventById(

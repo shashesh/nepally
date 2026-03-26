@@ -377,10 +377,11 @@ test.describe('Create Event page', () => {
     await page.getByPlaceholder("Tell people about your event...").fill('Long enough description here for test.');
     await page.getByRole('button', { name: /Cultural/i }).click();
     await page.getByPlaceholder('e.g. Dallas Convention Center').fill('Some Venue');
-    const futureLocal = new Date(Date.now() + 48 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 16);
-    await page.locator('input[type="datetime-local"]').first().fill(futureLocal);
+    const future = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    await page.locator('#event-start-date').fill(future.toISOString().slice(0, 10));
+    await page.locator('#event-start-time').fill(
+      `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`
+    );
 
     await expect(page.getByRole('button', { name: 'Create Event' })).toBeDisabled({ timeout: 5_000 });
   });
@@ -394,11 +395,12 @@ test.describe('Create Event page', () => {
     await page.getByRole('button', { name: /Cultural/i }).click();
     await page.getByPlaceholder('e.g. Dallas Convention Center').fill('Dallas Convention Center');
 
-    // Set start date (datetime-local)
-    const futureLocal = new Date(Date.now() + 48 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 16);
-    await page.locator('input[type="datetime-local"]').first().fill(futureLocal);
+    // Set start date + time (separate inputs)
+    const future = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    await page.locator('#event-start-date').fill(future.toISOString().slice(0, 10));
+    await page.locator('#event-start-time').fill(
+      `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`
+    );
 
     await page.getByRole('button', { name: 'Create Event' }).click();
 

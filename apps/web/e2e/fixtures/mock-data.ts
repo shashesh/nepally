@@ -1,4 +1,4 @@
-import type { User, Post, Tag } from '@nusa/shared';
+import type { User, Post, Tag, Event } from '@nusa/shared';
 
 export const MOCK_USER_ID = 'e2e-user-00000000-0000-0000-0000-000000000001';
 export const MOCK_USER_EMAIL = 'e2e-test@nusa.app';
@@ -164,6 +164,63 @@ export const MOCK_POST_OTHER_AUTHOR: Post = {
     profile_photo: null,
   },
   tags: [MOCK_TAGS[2]],
+};
+
+const FUTURE_1 = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+const FUTURE_2 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+const PAST_EVENT = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+export const MOCK_UPCOMING_EVENTS: Event[] = [
+  {
+    id: 'event-feed-001',
+    title: 'Dashain Celebration 2026',
+    description: 'Annual Dashain celebration with cultural programs.',
+    event_type: 'cultural',
+    start_date: FUTURE_1,
+    location_name: 'Central Park, NYC',
+    metro_area_id: MOCK_METRO_ID,
+    is_global: false,
+    organizer_id: 'other-author-0000-0000-0000-000000000002',
+    rsvp_count: 12,
+    rsvp_visibility: 'public',
+    status: 'active',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'event-feed-002',
+    title: 'Tech Networking Night',
+    description: 'Connect with Nepali professionals in the area.',
+    event_type: 'career',
+    start_date: FUTURE_2,
+    location_name: 'Google Pier 57',
+    metro_area_id: MOCK_METRO_ID,
+    is_global: false,
+    organizer_id: 'other-author-0000-0000-0000-000000000002',
+    rsvp_count: 25,
+    rsvp_visibility: 'public',
+    status: 'active',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
+/** A past event — should NOT appear in the upcoming events widget */
+export const MOCK_PAST_EVENT: Event = {
+  id: 'event-feed-past-001',
+  title: 'Past Cultural Festival',
+  description: 'This event already happened.',
+  event_type: 'cultural',
+  start_date: PAST_EVENT,
+  location_name: 'Community Hall',
+  metro_area_id: MOCK_METRO_ID,
+  is_global: false,
+  organizer_id: 'other-author-0000-0000-0000-000000000002',
+  rsvp_count: 0,
+  rsvp_visibility: 'public',
+  status: 'active',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 };
 
 export const MOCK_ZIP_METRO = [

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Center, Switch, Text } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -34,8 +34,8 @@ interface FormState {
   title: string;
   description: string;
   event_type: EventType | '';
-  start_date: string;
-  end_date: string;
+  start_date: string; // Local datetime: YYYY-MM-DDTHH:mm
+  end_date: string;   // Local datetime: YYYY-MM-DDTHH:mm
   location_name: string;
   location_address: string;
   photo_url: string;
@@ -56,6 +56,42 @@ const EMPTY: FormState = {
   is_global: false,
 };
 
+/** Convert an ISO 8601 / UTC string to a local YYYY-MM-DDTHH:mm string for form display */
+function isoToLocalDatetime(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day}T${h}:${min}`;
+}
+
+/** Extract the date portion (YYYY-MM-DD) from a local datetime string */
+function getDatePart(dt: string): string {
+  return dt && dt.length >= 10 ? dt.slice(0, 10) : '';
+}
+
+/** Extract the time portion (HH:mm) from a local datetime string */
+function getTimePart(dt: string): string {
+  return dt && dt.length >= 16 ? dt.slice(11, 16) : '';
+}
+
+/** Combine separate date and time strings into YYYY-MM-DDTHH:mm */
+function combineDateAndTime(date: string, time: string): string {
+  if (!date) return '';
+  return `${date}T${time || '00:00'}`;
+}
+
+/** Convert a local datetime string to ISO 8601 (UTC) for database storage */
+function localToIso(localDt: string): string {
+  if (!localDt) return '';
+  const d = new Date(localDt);
+  return isNaN(d.getTime()) ? '' : d.toISOString();
+}
+
 export default function CreateEventPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -68,6 +104,7 @@ export default function CreateEventPage() {
   const [loadingEdit, setLoadingEdit] = useState(isEditMode);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Ref that always holds the current preview URL so the unmount cleanup can revoke it
   const selectedPhotoPreviewRef = useRef<string | null>(null);
@@ -79,6 +116,15 @@ export default function CreateEventPage() {
   const metroId = user?.metro_area_id ?? '';
   const trustLevel = user?.trust_level ?? 0;
   const isPremium = user?.is_premium ?? false;
+
+  // Minimum date for start date picker (today in local time, not UTC)
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, []);
 
   useEffect(() => {
     if (!user) { router.replace('/login'); return; }
@@ -95,8 +141,8 @@ export default function CreateEventPage() {
           title: e.title,
           description: e.description,
           event_type: e.event_type,
-          start_date: e.start_date,
-          end_date: e.end_date ?? '',
+          start_date: isoToLocalDatetime(e.start_date),
+          end_date: e.end_date ? isoToLocalDatetime(e.end_date) : '',
           location_name: e.location_name,
           location_address: e.location_address ?? '',
           photo_url: e.photo_url ?? '',
@@ -121,6 +167,7 @@ export default function CreateEventPage() {
     <K extends keyof FormState>(key: K, value: FormState[K]) => {
       setForm((prev) => ({ ...prev, [key]: value }));
       setErrors((prev) => ({ ...prev, [key]: undefined }));
+      setFormError(null);
     },
     []
   );
@@ -149,11 +196,16 @@ export default function CreateEventPage() {
     return true;
   }, [form, isEditMode]);
 
-  const normalizeDateTimeLocal = useCallback((value: string): string => {
-    if (!value) return '';
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
-  }, []);
+  const handleDateChange = useCallback((field: 'start_date' | 'end_date', dateStr: string) => {
+    const currentTime = getTimePart(form[field]);
+    setField(field, combineDateAndTime(dateStr, currentTime));
+  }, [form, setField]);
+
+  const handleTimeChange = useCallback((field: 'start_date' | 'end_date', timeStr: string) => {
+    const currentDate = getDatePart(form[field]);
+    if (!currentDate) return; // date must be set first
+    setField(field, combineDateAndTime(currentDate, timeStr));
+  }, [form, setField]);
 
   const handlePhotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -162,12 +214,13 @@ export default function CreateEventPage() {
 
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowed.includes(file.type)) {
-      alert('Unsupported image type. Allowed: JPG, PNG, WEBP');
+      setFormError('Unsupported image type. Please use JPG, PNG, or WEBP.');
       return;
     }
 
     if (file.size > MAX_EVENT_PHOTO_BYTES) {
-      alert('Event photo must be 2MB or smaller');
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      setFormError(`Image is too large (${sizeMB} MB). Maximum allowed size is 2 MB.`);
       return;
     }
 
@@ -175,6 +228,7 @@ export default function CreateEventPage() {
       URL.revokeObjectURL(selectedPhotoPreview);
     }
 
+    setFormError(null);
     setSelectedPhoto(file);
     setSelectedPhotoPreview(URL.createObjectURL(file));
     setField('photo_url', '');
@@ -192,6 +246,7 @@ export default function CreateEventPage() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      setFormError(null);
       if (!validate() || submitting) return;
       setSubmitting(true);
 
@@ -207,7 +262,7 @@ export default function CreateEventPage() {
         });
         if (uploadResult.error || !uploadResult.url) {
           setSubmitting(false);
-          alert(uploadResult.error?.message || 'Failed to upload event photo');
+          setFormError(uploadResult.error?.message || 'Failed to upload event photo. Please try again.');
           return;
         }
         uploadedPhotoUrl = uploadResult.url;
@@ -217,13 +272,17 @@ export default function CreateEventPage() {
         ? uploadedPhotoUrl
         : form.photo_url || undefined;
 
+      // Convert local datetime strings to ISO (UTC) for database storage
+      const startDateIso = localToIso(form.start_date);
+      const endDateIso = form.end_date ? localToIso(form.end_date) : undefined;
+
       if (isEditMode) {
         const result = await updateEvent(supabase, edit as string, {
           title: form.title,
           description: form.description,
           event_type: form.event_type as EventType,
-          start_date: form.start_date,
-          end_date: form.end_date || undefined,
+          start_date: startDateIso,
+          end_date: endDateIso,
           location_name: form.location_name,
           location_address: form.location_address || undefined,
           photo_url: resolvedPhotoUrl,
@@ -231,15 +290,15 @@ export default function CreateEventPage() {
           is_global: form.is_global,
         });
         setSubmitting(false);
-        if (result.error) { alert(result.error.message); return; }
+        if (result.error) { setFormError(result.error.message); return; }
         router.push(`/events/${edit}`);
       } else {
         const result = await createEvent(supabase, {
           title: form.title,
           description: form.description,
           event_type: form.event_type as EventType,
-          start_date: form.start_date,
-          end_date: form.end_date || undefined,
+          start_date: startDateIso,
+          end_date: endDateIso,
           location_name: form.location_name,
           location_address: form.location_address || undefined,
           photo_url: resolvedPhotoUrl,
@@ -249,7 +308,7 @@ export default function CreateEventPage() {
           metro_area_id: metroId,
         });
         setSubmitting(false);
-        if (result.error) { alert(result.error.message); return; }
+        if (result.error) { setFormError(result.error.message); return; }
         if (result.data) router.push(`/events/${result.data.id}`);
       }
     },
@@ -323,29 +382,61 @@ export default function CreateEventPage() {
               {errors.event_type && <Text c="red" size="xs" component="span">{errors.event_type}</Text>}
             </div>
 
-            {/* Start Date */}
+            {/* Start Date & Time — split into separate date + time inputs */}
             <div className={styles.fieldGroup}>
-              <label className={styles.label} htmlFor="event-start-date">Start Date & Time *</label>
-              <input
-                id="event-start-date"
-                type="datetime-local"
-                className={`${styles.input} ${errors.start_date ? styles.inputError : ''}`}
-                value={form.start_date ? form.start_date.slice(0, 16) : ''}
-                onChange={(e) => setField('start_date', normalizeDateTimeLocal(e.target.value))}
-              />
+              <label className={styles.label}>Start Date & Time *</label>
+              <div className={styles.dateTimeRow}>
+                <div className={styles.dateTimeField}>
+                  <input
+                    id="event-start-date"
+                    type="date"
+                    aria-label="Start date"
+                    className={`${styles.input} ${errors.start_date ? styles.inputError : ''}`}
+                    value={getDatePart(form.start_date)}
+                    min={todayStr}
+                    onChange={(e) => handleDateChange('start_date', e.target.value)}
+                  />
+                </div>
+                <div className={styles.dateTimeField}>
+                  <input
+                    id="event-start-time"
+                    type="time"
+                    aria-label="Start time"
+                    className={`${styles.input} ${errors.start_date ? styles.inputError : ''}`}
+                    value={getTimePart(form.start_date)}
+                    onChange={(e) => handleTimeChange('start_date', e.target.value)}
+                  />
+                </div>
+              </div>
               {errors.start_date && <Text c="red" size="xs" component="span">{errors.start_date}</Text>}
             </div>
 
-            {/* End Date */}
+            {/* End Date & Time (optional) — split into separate date + time inputs */}
             <div className={styles.fieldGroup}>
-              <label className={styles.label} htmlFor="event-end-date">End Date & Time (optional)</label>
-              <input
-                id="event-end-date"
-                type="datetime-local"
-                className={`${styles.input} ${errors.end_date ? styles.inputError : ''}`}
-                value={form.end_date ? form.end_date.slice(0, 16) : ''}
-                onChange={(e) => setField('end_date', normalizeDateTimeLocal(e.target.value))}
-              />
+              <label className={styles.label}>End Date & Time (optional)</label>
+              <div className={styles.dateTimeRow}>
+                <div className={styles.dateTimeField}>
+                  <input
+                    id="event-end-date"
+                    type="date"
+                    aria-label="End date"
+                    className={`${styles.input} ${errors.end_date ? styles.inputError : ''}`}
+                    value={getDatePart(form.end_date)}
+                    min={getDatePart(form.start_date) || todayStr}
+                    onChange={(e) => handleDateChange('end_date', e.target.value)}
+                  />
+                </div>
+                <div className={styles.dateTimeField}>
+                  <input
+                    id="event-end-time"
+                    type="time"
+                    aria-label="End time"
+                    className={`${styles.input} ${errors.end_date ? styles.inputError : ''}`}
+                    value={getTimePart(form.end_date)}
+                    onChange={(e) => handleTimeChange('end_date', e.target.value)}
+                  />
+                </div>
+              </div>
               {errors.end_date && <Text c="red" size="xs" component="span">{errors.end_date}</Text>}
             </div>
 
@@ -469,6 +560,14 @@ export default function CreateEventPage() {
                     onChange={(e) => setField('is_global', e.currentTarget.checked)}
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Inline error banner */}
+            {formError && (
+              <div className={styles.errorBanner} role="alert">
+                <span>{formError}</span>
+                <button type="button" className={styles.errorDismiss} onClick={() => setFormError(null)} aria-label="Dismiss error">×</button>
               </div>
             )}
 

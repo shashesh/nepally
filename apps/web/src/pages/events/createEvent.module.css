@@ -86,9 +86,43 @@
   box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.16);
 }
 
-.input[type='datetime-local']::-webkit-calendar-picker-indicator {
+.input[type='date']::-webkit-calendar-picker-indicator,
+.input[type='time']::-webkit-calendar-picker-indicator {
   opacity: 0.75;
   cursor: pointer;
+}
+
+.dateTimeRow {
+  display: flex;
+  gap: 10px;
+}
+
+.dateTimeField {
+  flex: 1;
+}
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #FFF5F5;
+  border: 1px solid #FEB2B2;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #C53030;
+}
+
+.errorDismiss {
+  background: none;
+  border: none;
+  color: #C53030;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .inputError {

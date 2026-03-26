@@ -137,11 +137,17 @@ describe('CreateEventPage', () => {
       target: { value: 'Dallas Convention Center' },
     });
 
-    // Fill start_date (datetime-local input)
-    const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-    const dateInput = document.querySelector('input[type="datetime-local"]');
+    // Fill start_date (separate date + time inputs)
+    const future = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const futureDateStr = future.toISOString().slice(0, 10);
+    const futureTimeStr = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`;
+    const dateInput = document.getElementById('event-start-date');
+    const timeInput = document.getElementById('event-start-time');
     if (dateInput) {
-      fireEvent.change(dateInput, { target: { value: futureDate } });
+      fireEvent.change(dateInput, { target: { value: futureDateStr } });
+    }
+    if (timeInput) {
+      fireEvent.change(timeInput, { target: { value: futureTimeStr } });
     }
 
     fireEvent.click(screen.getByRole('button', { name: /Create Event/ }));

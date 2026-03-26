@@ -4,6 +4,7 @@ import {
   MOCK_TAGS,
   MOCK_POSTS,
   MOCK_POST_OTHER_AUTHOR,
+  MOCK_UPCOMING_EVENTS,
   MOCK_ZIP_METRO,
   makeFakeSession,
   MOCK_USER_ID,
@@ -118,6 +119,20 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
   // Message unread counts (Layout top bar)
   await page.route('**/rest/v1/conversation_participants**', async (route) => {
     await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify([]) });
+  });
+
+  // Events (upcoming events widget on feed sidebar)
+  await page.route('**/rest/v1/events**', async (route) => {
+    const method = route.request().method();
+    if (method === 'GET') {
+      await route.fulfill({
+        status: 200,
+        headers: JSON_HEADERS,
+        body: JSON.stringify(MOCK_UPCOMING_EVENTS),
+      });
+    } else {
+      await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify({}) });
+    }
   });
 
   // ZIP → Metro lookup

@@ -23,6 +23,7 @@ const feedMocks = vi.hoisted(() => ({
   deletePostMock: vi.fn(),
   getOrCreateConversationMock: vi.fn(),
   createReportMock: vi.fn(),
+  getUpcomingEventsByMetroMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
   notificationsShowMock: vi.fn(),
 }));
@@ -45,6 +46,7 @@ vi.mock('@nusa/shared', async () => {
     deletePost: feedMocks.deletePostMock,
     getOrCreateConversation: feedMocks.getOrCreateConversationMock,
     createReport: feedMocks.createReportMock,
+    getUpcomingEventsByMetro: feedMocks.getUpcomingEventsByMetroMock,
     formatRelativeTime: feedMocks.formatRelativeTimeMock,
     TAG_EMOJI: { housing: '🏠', jobs: '💼' },
   };
@@ -124,6 +126,7 @@ describe('FeedPage', () => {
     feedMocks.savePostMock.mockResolvedValue({});
     feedMocks.unsavePostMock.mockResolvedValue({});
     feedMocks.createReportMock.mockResolvedValue({ data: { id: 'report-1' } });
+    feedMocks.getUpcomingEventsByMetroMock.mockResolvedValue({ data: [] });
   });
 
   it('redirects to /login when user is not logged in', async () => {
@@ -497,6 +500,102 @@ describe('FeedPage', () => {
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/users/user-2');
+    });
+  });
+
+  describe('Upcoming Events widget', () => {
+    const futureDate1 = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+    const futureDate2 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const mockEvents = [
+      {
+        id: 'event-1',
+        title: 'Dashain Celebration 2026',
+        location_name: 'Central Park, NYC',
+        start_date: futureDate1,
+        event_type: 'cultural',
+        status: 'active',
+      },
+      {
+        id: 'event-2',
+        title: 'Tech Networking Night',
+        location_name: 'Google Pier 57',
+        start_date: futureDate2,
+        event_type: 'career',
+        status: 'active',
+      },
+    ];
+
+    it('renders upcoming events when API returns events', async () => {
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+      feedMocks.getUpcomingEventsByMetroMock.mockResolvedValue({ data: mockEvents });
+      render(<FeedPage />);
+
+      await waitFor(() => expect(screen.getByText('Upcoming Events')).toBeDefined());
+      expect(screen.getByText('Dashain Celebration 2026')).toBeDefined();
+      expect(screen.getByText('Central Park, NYC')).toBeDefined();
+      expect(screen.getByText('Tech Networking Night')).toBeDefined();
+      expect(screen.getByText('Google Pier 57')).toBeDefined();
+    });
+
+    it('renders View All link pointing to /events', async () => {
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+      feedMocks.getUpcomingEventsByMetroMock.mockResolvedValue({ data: mockEvents });
+      render(<FeedPage />);
+
+      await waitFor(() => expect(screen.getByText('View All')).toBeDefined());
+      const viewAllLink = screen.getByText('View All');
+      expect(viewAllLink.closest('a')?.getAttribute('href')).toBe('/events');
+    });
+
+    it('renders event date block with month and day', async () => {
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+      feedMocks.getUpcomingEventsByMetroMock.mockResolvedValue({ data: mockEvents });
+      render(<FeedPage />);
+
+      await waitFor(() => expect(screen.getByText('Dashain Celebration 2026')).toBeDefined());
+
+      const eventDate = new Date(futureDate1);
+      const expectedMonth = eventDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+      const expectedDay = eventDate.getDate().toString().padStart(2, '0');
+
+      expect(screen.getByText(expectedMonth)).toBeDefined();
+      expect(screen.getByText(expectedDay)).toBeDefined();
+    });
+
+    it('event cards link to event detail pages', async () => {
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+      feedMocks.getUpcomingEventsByMetroMock.mockResolvedValue({ data: mockEvents });
+      render(<FeedPage />);
+
+      await waitFor(() => expect(screen.getByText('Dashain Celebration 2026')).toBeDefined());
+
+      const eventLink = screen.getByText('Dashain Celebration 2026').closest('a');
+      expect(eventLink?.getAttribute('href')).toBe('/events/event-1');
+    });
+
+    it('does not render events widget when no upcoming events', async () => {
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+      feedMocks.getUpcomingEventsByMetroMock.mockResolvedValue({ data: [] });
+      render(<FeedPage />);
+
+      // Wait for the page to settle — sponsored section should still render
+      await waitFor(() => expect(screen.getByText('Sponsor Spotlight')).toBeDefined());
+      expect(screen.queryByText('Upcoming Events')).toBeNull();
+    });
+
+    it('calls getUpcomingEventsByMetro with metro area ID and limit 3', async () => {
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+      feedMocks.getUpcomingEventsByMetroMock.mockResolvedValue({ data: [] });
+      render(<FeedPage />);
+
+      await waitFor(() => {
+        expect(feedMocks.getUpcomingEventsByMetroMock).toHaveBeenCalledWith(
+          expect.anything(), // supabase client
+          '19100',
+          3
+        );
+      });
     });
   });
 });
