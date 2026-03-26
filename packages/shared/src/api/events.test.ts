@@ -8,6 +8,7 @@ import {
   getEventById,
   getEventsByMetro,
   getEventsByOrganizer,
+  getUpcomingEventsByMetro,
   getUserRsvps,
   hasUserRsvp,
   rsvpToEvent,
@@ -78,6 +79,101 @@ describe('getEventsByMetro', () => {
 
     const result = await getEventsByMetro(supabase, '19100');
     expect(result.data).toEqual([]);
+  });
+});
+
+describe('getUpcomingEventsByMetro', () => {
+  it('returns upcoming events for a metro', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [MOCK_EVENT], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUpcomingEventsByMetro(supabase, '19100');
+    expect(result.error).toBeUndefined();
+    expect(result.data).toHaveLength(1);
+    expect(result.data?.[0].id).toBe('event-1');
+  });
+
+  it('applies gte filter on start_date to exclude past events', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getUpcomingEventsByMetro(supabase, '19100');
+    expect(chain.gte).toHaveBeenCalledWith('start_date', expect.any(String));
+  });
+
+  it('passes custom limit to supabase', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getUpcomingEventsByMetro(supabase, '19100', 3);
+    expect(chain.limit).toHaveBeenCalledWith(3);
+  });
+
+  it('returns error on supabase failure', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUpcomingEventsByMetro(supabase, '19100');
+    expect(result.error).toBeDefined();
+    expect(result.data).toBeUndefined();
+  });
+
+  it('returns empty array when no upcoming events', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUpcomingEventsByMetro(supabase, '19100');
+    expect(result.data).toEqual([]);
+  });
+
+  it('wraps non-Error throws in a descriptive Error', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockRejectedValue('string error'),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUpcomingEventsByMetro(supabase, '19100');
+    expect(result.error?.message).toBe('Failed to fetch upcoming events');
   });
 });
 

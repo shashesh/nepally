@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { injectAuthSession } from '../fixtures/auth';
 import { mockSupabaseLoggedIn } from '../helpers/supabase-mock';
-import { MOCK_POSTS, MOCK_POST_OTHER_AUTHOR, MOCK_TAGS } from '../fixtures/mock-data';
+import { MOCK_POSTS, MOCK_POST_OTHER_AUTHOR, MOCK_TAGS, MOCK_UPCOMING_EVENTS } from '../fixtures/mock-data';
 
 test.describe('Feed page', () => {
   test.beforeEach(async ({ page }) => {
@@ -84,5 +84,68 @@ test.describe('Feed page', () => {
 
     // A toast should appear confirming the action
     await expect(page.getByText(/Post saved\.|Post unsaved\./)).toBeVisible({ timeout: 5_000 });
+  });
+});
+
+test.describe('Feed sidebar — Upcoming Events widget', () => {
+  test.beforeEach(async ({ page }) => {
+    await injectAuthSession(page);
+    await mockSupabaseLoggedIn(page);
+  });
+
+  test('shows Upcoming Events heading and View All link', async ({ page }) => {
+    await page.goto('/feed');
+    await expect(page.getByRole('heading', { name: /upcoming events/i })).toBeVisible({ timeout: 10_000 });
+    const viewAllLink = page.getByRole('link', { name: /view all/i });
+    await expect(viewAllLink).toBeVisible();
+    await expect(viewAllLink).toHaveAttribute('href', '/events');
+  });
+
+  test('displays upcoming event titles and locations', async ({ page }) => {
+    await page.goto('/feed');
+    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].location_name)).toBeVisible();
+    await expect(page.getByText(MOCK_UPCOMING_EVENTS[1].title)).toBeVisible();
+    await expect(page.getByText(MOCK_UPCOMING_EVENTS[1].location_name)).toBeVisible();
+  });
+
+  test('event cards show formatted date with month and day', async ({ page }) => {
+    await page.goto('/feed');
+    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
+
+    // The date block should contain the day number from the first event
+    const eventDate = new Date(MOCK_UPCOMING_EVENTS[0].start_date);
+    const day = eventDate.getDate().toString().padStart(2, '0');
+    await expect(page.getByText(day).first()).toBeVisible();
+  });
+
+  test('event cards link to the event detail page', async ({ page }) => {
+    await page.goto('/feed');
+    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
+
+    const eventLink = page.locator(`a[href="/events/${MOCK_UPCOMING_EVENTS[0].id}"]`);
+    await expect(eventLink).toBeVisible();
+  });
+
+  test('does not show past events in the widget', async ({ page }) => {
+    await page.goto('/feed');
+    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
+
+    // The past event title should not appear — the API filters it out
+    await expect(page.getByText('Past Cultural Festival')).not.toBeVisible();
+  });
+
+  test('Sponsor Spotlight appears above Upcoming Events', async ({ page }) => {
+    await page.goto('/feed');
+    await expect(page.getByText('Sponsor Spotlight')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /upcoming events/i })).toBeVisible();
+
+    // Verify ordering: Sponsored section should come before events widget in DOM
+    const aside = page.locator('aside');
+    const sponsoredBox = aside.getByText('Sponsor Spotlight');
+    const eventsHeading = aside.getByRole('heading', { name: /upcoming events/i });
+    const sponsoredTop = await sponsoredBox.boundingBox();
+    const eventsTop = await eventsHeading.boundingBox();
+    expect(sponsoredTop!.y).toBeLessThan(eventsTop!.y);
   });
 });

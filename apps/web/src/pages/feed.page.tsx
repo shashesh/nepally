@@ -20,9 +20,10 @@ import {
   getOrCreateConversation,
   createReport,
   formatRelativeTime,
+  getUpcomingEventsByMetro,
   TAG_EMOJI,
 } from '@nusa/shared';
-import type { Post, Tag } from '@nusa/shared';
+import type { Post, Tag, Event } from '@nusa/shared';
 import TagFilterBar from '../components/TagFilterBar';
 import Avatar from '../components/Avatar';
 import ReportPostModal from '../components/ReportPostModal';
@@ -51,6 +52,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
   const [reportModalPostId, setReportModalPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const latestLoadRequestId = useRef(0);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -234,6 +236,16 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       });
     }
   }, [user]);
+
+  // Load upcoming events for sidebar
+  useEffect(() => {
+    if (!metroAreaId) return;
+    getUpcomingEventsByMetro(supabase, metroAreaId, 3).then((result) => {
+      if (result.data) {
+        setUpcomingEvents(result.data);
+      }
+    });
+  }, [metroAreaId]);
 
   function showSaveToast(message: string) {
     notifications.show({ message, autoClose: 2500 });
@@ -483,12 +495,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       description: 'Promote a trusted local business to your metro feed.',
       cta: 'Learn more',
     },
-    {
-      id: 'event-1',
-      title: 'Community Events',
-      description: 'Highlight upcoming events and community gatherings near you.',
-      cta: 'See opportunities',
-    },
   ];
 
   return (
@@ -616,6 +622,40 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               </article>
             ))}
           </div>
+
+          {upcomingEvents.length > 0 && (
+            <div className={styles.eventsWidget}>
+              <div className={styles.eventsWidgetHeader}>
+                <h2 className={styles.eventsWidgetTitle}>Upcoming Events</h2>
+                <Link href="/events" className={styles.eventsWidgetViewAll}>
+                  View All
+                </Link>
+              </div>
+              <div className={styles.eventsWidgetList}>
+                {upcomingEvents.map((event) => {
+                  const eventDate = new Date(event.start_date);
+                  const month = eventDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                  const day = eventDate.getDate().toString().padStart(2, '0');
+                  return (
+                    <Link
+                      key={event.id}
+                      href={`/events/${event.id}`}
+                      className={styles.eventsWidgetCard}
+                    >
+                      <div className={styles.eventsWidgetDate}>
+                        <span className={styles.eventsWidgetMonth}>{month}</span>
+                        <span className={styles.eventsWidgetDay}>{day}</span>
+                      </div>
+                      <div className={styles.eventsWidgetInfo}>
+                        <span className={styles.eventsWidgetName}>{event.title}</span>
+                        <span className={styles.eventsWidgetLocation}>{event.location_name}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </aside>
 
         {lightboxPhotos.length > 0 && (
