@@ -103,14 +103,6 @@ export default function LoginPage() {
               </span>
             </button>
 
-            <button
-              type="button"
-              className={styles.methodButton}
-              onClick={() => router.push('/auth/phone')}
-            >
-              <span className={styles.methodIcon}>📱</span>
-              <span className={styles.methodLabel}>Continue with Phone</span>
-            </button>
           </div>
 
           <div className={styles.divider}>

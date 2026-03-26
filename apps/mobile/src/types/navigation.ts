@@ -14,11 +14,6 @@ export type OnboardingStackParamList = {
     userId: string;
     fullName: string;
   };
-  PhoneEntry: undefined;
-  PhoneVerification: {
-    phone: string;
-    fullName: string;
-  };
   LocationPermission: {
     userId: string;
   };

@@ -78,23 +78,13 @@ describe('SignupMethodScreen', () => {
     mockMarkGoogleVerified.mockResolvedValue({ data: { id: 'user-1' }, error: null });
   });
 
-  it('renders all three signup options without Coming Soon text', () => {
+  it('renders Google and Email signup options', () => {
     const { getByText, queryByText } = renderScreen();
 
     expect(getByText('Continue with Google')).toBeTruthy();
-    expect(getByText('Continue with Phone')).toBeTruthy();
     expect(getByText('Continue with Email')).toBeTruthy();
-    expect(queryByText('Coming soon')).toBeNull();
+    expect(queryByText('Continue with Phone')).toBeNull();
     expect(getByText('Quick and secure')).toBeTruthy();
-    expect(getByText('Verify via SMS code')).toBeTruthy();
-  });
-
-  it('navigates to PhoneEntry when Phone option is pressed', () => {
-    const { getByText } = renderScreen();
-
-    fireEvent.press(getByText('Continue with Phone'));
-
-    expect(mockNavigate).toHaveBeenCalledWith('PhoneEntry');
   });
 
   it('navigates to EmailSignup when Email option is pressed', () => {

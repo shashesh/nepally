@@ -85,10 +85,6 @@ export function SignupMethodScreen() {
     }
   };
 
-  const handlePhoneSignup = () => {
-    navigation.navigate('PhoneEntry');
-  };
-
   const handleEmailSignup = () => {
     navigation.navigate('EmailSignup', { mode: 'signup' });
   };
@@ -120,19 +116,6 @@ export function SignupMethodScreen() {
             <View style={styles.optionContent}>
               <Text style={styles.optionLabel}>Continue with Google</Text>
               <Text style={styles.optionSubtext}>Quick and secure</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.optionCard}
-            onPress={handlePhoneSignup}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="call" size={24} color={colors.success} />
-            <View style={styles.optionContent}>
-              <Text style={styles.optionLabel}>Continue with Phone</Text>
-              <Text style={styles.optionSubtext}>Verify via SMS code</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
           </TouchableOpacity>

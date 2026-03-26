@@ -185,10 +185,10 @@ describe('SignupPage', () => {
     });
   });
 
-  it('renders Google and Phone signup buttons', () => {
+  it('renders Google signup button without phone option', () => {
     render(<SignupPage />);
     expect(screen.getByText('Continue with Google')).toBeDefined();
-    expect(screen.getByText('Continue with Phone')).toBeDefined();
+    expect(screen.queryByText('Continue with Phone')).toBeNull();
   });
 
   it('calls signInWithGoogle when Google button is clicked', async () => {
@@ -208,12 +208,6 @@ describe('SignupPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Provider not enabled')).toBeDefined();
     });
-  });
-
-  it('navigates to /auth/phone when Phone button is clicked', () => {
-    render(<SignupPage />);
-    fireEvent.click(screen.getByText('Continue with Phone'));
-    expect(mockPush).toHaveBeenCalledWith('/auth/phone');
   });
 
   it('shows divider text for email option', () => {

@@ -5,8 +5,6 @@ const authMocks = vi.hoisted(() => ({
   signInWithPasswordMock: vi.fn(),
   signOutMock: vi.fn(),
   signInWithOAuthMock: vi.fn(),
-  signInWithOtpMock: vi.fn(),
-  verifyOtpMock: vi.fn(),
   createUserProfileMock: vi.fn(),
 }));
 
@@ -17,8 +15,6 @@ vi.mock('./supabase', () => ({
       signInWithPassword: authMocks.signInWithPasswordMock,
       signOut: authMocks.signOutMock,
       signInWithOAuth: authMocks.signInWithOAuthMock,
-      signInWithOtp: authMocks.signInWithOtpMock,
-      verifyOtp: authMocks.verifyOtpMock,
     },
   },
 }));
@@ -31,7 +27,7 @@ vi.mock('@nusa/shared', async () => {
   };
 });
 
-import { signUpWithEmail, signInWithEmail, signOut, signInWithGoogle, sendPhoneOTP, verifyPhoneOTP } from './auth';
+import { signUpWithEmail, signInWithEmail, signOut, signInWithGoogle } from './auth';
 
 describe('signUpWithEmail', () => {
   beforeEach(() => {
@@ -213,69 +209,3 @@ describe('signInWithGoogle', () => {
   });
 });
 
-describe('sendPhoneOTP', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('returns success when OTP is sent', async () => {
-    authMocks.signInWithOtpMock.mockResolvedValue({ error: null });
-
-    const result = await sendPhoneOTP('+12125551234');
-
-    expect(result.success).toBe(true);
-    expect(authMocks.signInWithOtpMock).toHaveBeenCalledWith({ phone: '+12125551234' });
-  });
-
-  it('returns friendly error for unsupported provider', async () => {
-    authMocks.signInWithOtpMock.mockResolvedValue({
-      error: new Error('Unsupported phone provider'),
-    });
-
-    const result = await sendPhoneOTP('+12125551234');
-
-    expect(result.success).toBe(false);
-    expect(result.error?.message).toContain('Phone auth is not configured');
-  });
-
-  it('returns error on failure', async () => {
-    authMocks.signInWithOtpMock.mockResolvedValue({
-      error: new Error('Rate limit exceeded'),
-    });
-
-    const result = await sendPhoneOTP('+12125551234');
-
-    expect(result.success).toBe(false);
-    expect(result.error?.message).toBe('Rate limit exceeded');
-  });
-});
-
-describe('verifyPhoneOTP', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('returns success when OTP is verified', async () => {
-    authMocks.verifyOtpMock.mockResolvedValue({ error: null });
-
-    const result = await verifyPhoneOTP('+12125551234', '123456');
-
-    expect(result.success).toBe(true);
-    expect(authMocks.verifyOtpMock).toHaveBeenCalledWith({
-      phone: '+12125551234',
-      token: '123456',
-      type: 'sms',
-    });
-  });
-
-  it('returns error when verification fails', async () => {
-    authMocks.verifyOtpMock.mockResolvedValue({
-      error: new Error('Invalid OTP'),
-    });
-
-    const result = await verifyPhoneOTP('+12125551234', '000000');
-
-    expect(result.success).toBe(false);
-    expect(result.error?.message).toBe('Invalid OTP');
-  });
-});

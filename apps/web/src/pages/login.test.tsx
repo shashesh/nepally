@@ -182,10 +182,10 @@ describe('LoginPage', () => {
     });
   });
 
-  it('renders Google and Phone sign-in buttons', () => {
+  it('renders Google sign-in button without phone option', () => {
     render(<LoginPage />);
     expect(screen.getByText('Continue with Google')).toBeDefined();
-    expect(screen.getByText('Continue with Phone')).toBeDefined();
+    expect(screen.queryByText('Continue with Phone')).toBeNull();
   });
 
   it('calls signInWithGoogle when Google button is clicked', async () => {
@@ -205,12 +205,6 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Provider not enabled')).toBeDefined();
     });
-  });
-
-  it('navigates to /auth/phone when Phone button is clicked', () => {
-    render(<LoginPage />);
-    fireEvent.click(screen.getByText('Continue with Phone'));
-    expect(mockPush).toHaveBeenCalledWith('/auth/phone');
   });
 
   it('shows email divider text', () => {

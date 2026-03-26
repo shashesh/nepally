@@ -74,7 +74,3 @@ export interface GoogleAuthResult {
   error?: Error;
 }
 
-export interface PhoneAuthResult {
-  success: boolean;
-  error?: Error;
-}
