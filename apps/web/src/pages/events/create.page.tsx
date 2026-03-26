@@ -117,8 +117,14 @@ export default function CreateEventPage() {
   const trustLevel = user?.trust_level ?? 0;
   const isPremium = user?.is_premium ?? false;
 
-  // Minimum date for start date picker (today)
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  // Minimum date for start date picker (today in local time, not UTC)
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, []);
 
   useEffect(() => {
     if (!user) { router.replace('/login'); return; }

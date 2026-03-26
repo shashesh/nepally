@@ -240,7 +240,9 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   // Load upcoming events for sidebar
   useEffect(() => {
     if (!metroAreaId) return;
-    getUpcomingEventsByMetro(supabase, metroAreaId, 3).then((result) => {
+    const requestedMetro = metroAreaId;
+    getUpcomingEventsByMetro(supabase, requestedMetro, 3).then((result) => {
+      if (requestedMetro !== metroAreaId) return; // stale response guard
       if (result.data) {
         setUpcomingEvents(result.data);
       }
