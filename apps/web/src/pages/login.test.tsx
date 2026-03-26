@@ -53,6 +53,7 @@ describe('LoginPage', () => {
       push: mockPush,
       replace: mockReplace,
       query: {},
+      isReady: true,
     });
     loginMocks.useAuthMock.mockReturnValue({
       user: null,
@@ -217,6 +218,7 @@ describe('LoginPage', () => {
       push: mockPush,
       replace: mockReplace,
       query: { reason: 'existing-account', email: 'test@example.com' },
+      isReady: true,
     });
     render(<LoginPage />);
     expect(screen.getByText(/account with this email already exists/i)).toBeDefined();

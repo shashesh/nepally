@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { OnboardingStackParamList } from '../../types/navigation';
 import { supabase } from '../../config/supabase';
-import { createUserProfile, markGoogleVerified } from '@nusa/shared';
+import { createUserProfile, markGoogleVerified, getUserById } from '@nusa/shared';
 import { AuthContext } from '../../contexts/AuthContext';
 import { signInWithGoogle } from '../../services/auth/googleAuth';
 import { colors } from '../../styles/colors';
@@ -44,6 +44,11 @@ export function SignupMethodScreen() {
       const email = result.user.email;
       const fullName = result.user.full_name || 'Google User';
 
+      if (!email) {
+        Alert.alert('Error', 'No email address returned from Google. Please try again or use email signup.');
+        return;
+      }
+
       // Create profile if new user (will fail silently for existing users)
       const profileResult = await createUserProfile(supabase, userId, email, fullName);
       if (profileResult.error) {
@@ -56,7 +61,7 @@ export function SignupMethodScreen() {
         }
       }
 
-      // Mark Google verified → trust_level: 1
+      // Mark Google verified — only promotes trust_level, never demotes
       const verifyResult = await markGoogleVerified(supabase, userId);
       if (verifyResult.error) {
         console.error('markGoogleVerified error:', verifyResult.error);
@@ -65,13 +70,9 @@ export function SignupMethodScreen() {
       await refreshUser();
 
       // Check if user already has metro_area set (returning user)
-      const { data: userData } = await supabase
-        .from('users')
-        .select('metro_area_id')
-        .eq('id', userId)
-        .single();
+      const userResult = await getUserById(supabase, userId);
 
-      if (userData?.metro_area_id) {
+      if (userResult.data?.metro_area_id) {
         // Returning user with location — AuthContext will route to Main
         return;
       }

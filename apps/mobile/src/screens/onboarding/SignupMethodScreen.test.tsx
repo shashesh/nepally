@@ -10,18 +10,16 @@ jest.mock('../../services/auth/googleAuth', () => ({
 
 const mockCreateUserProfile = jest.fn();
 const mockMarkGoogleVerified = jest.fn();
+const mockGetUserById = jest.fn();
 
 jest.mock('@nusa/shared', () => ({
   createUserProfile: (...args: Parameters<typeof mockCreateUserProfile>) => mockCreateUserProfile(...args),
   markGoogleVerified: (...args: Parameters<typeof mockMarkGoogleVerified>) => mockMarkGoogleVerified(...args),
+  getUserById: (...args: Parameters<typeof mockGetUserById>) => mockGetUserById(...args),
 }));
 
-const mockFrom = jest.fn();
-
 jest.mock('../../config/supabase', () => ({
-  supabase: {
-    from: (...args: Parameters<typeof mockFrom>) => mockFrom(...args),
-  },
+  supabase: {},
 }));
 
 const mockRefreshUser = jest.fn();
@@ -58,6 +56,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { SignupMethodScreen } from './SignupMethodScreen';
 import { AuthContext } from '../../contexts/AuthContext';
@@ -76,6 +75,7 @@ describe('SignupMethodScreen', () => {
     mockRefreshUser.mockResolvedValue(undefined);
     mockCreateUserProfile.mockResolvedValue({ data: { id: 'user-1' }, error: null });
     mockMarkGoogleVerified.mockResolvedValue({ data: { id: 'user-1' }, error: null });
+    mockGetUserById.mockResolvedValue({ data: { metro_area_id: null }, error: null });
   });
 
   it('renders Google and Email signup options', () => {
@@ -108,12 +108,7 @@ describe('SignupMethodScreen', () => {
       user: { id: 'user-1', email: 'test@google.com', full_name: 'Google User' },
     });
 
-    const query = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({ data: { metro_area_id: null }, error: null }),
-    };
-    mockFrom.mockReturnValue(query);
+    mockGetUserById.mockResolvedValueOnce({ data: { metro_area_id: null }, error: null });
 
     const { getByText } = renderScreen();
 
@@ -125,6 +120,28 @@ describe('SignupMethodScreen', () => {
       expect(mockMarkGoogleVerified).toHaveBeenCalledWith(expect.anything(), 'user-1');
       expect(mockNavigate).toHaveBeenCalledWith('LocationPermission', { userId: 'user-1' });
     });
+  });
+
+  it('shows error when Google returns empty email', async () => {
+    mockSignInWithGoogle.mockResolvedValueOnce({
+      user: { id: 'user-1', email: '', full_name: 'Google User' },
+    });
+
+    const mockAlert = jest.spyOn(Alert, 'alert');
+
+    const { getByText } = renderScreen();
+
+    fireEvent.press(getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(mockAlert).toHaveBeenCalledWith(
+        'Error',
+        'No email address returned from Google. Please try again or use email signup.'
+      );
+    });
+
+    expect(mockCreateUserProfile).not.toHaveBeenCalled();
+    mockAlert.mockRestore();
   });
 
   it('does not navigate when Google sign-in is cancelled', async () => {
@@ -149,12 +166,7 @@ describe('SignupMethodScreen', () => {
     });
 
     // Returning user with metro already set
-    const query = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({ data: { metro_area_id: 'metro-1' }, error: null }),
-    };
-    mockFrom.mockReturnValue(query);
+    mockGetUserById.mockResolvedValueOnce({ data: { metro_area_id: 'metro-1' }, error: null });
 
     const { getByText } = renderScreen();
 

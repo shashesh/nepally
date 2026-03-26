@@ -11,19 +11,23 @@ import styles from '../styles/Auth.module.css';
 export default function LoginPage() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
-  const [email, setEmail] = useState((router.query.email as string) ?? '');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Show contextual message based on redirect reason
+  // Sync email and info from query params once router is ready
   React.useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.email) {
+      setEmail(router.query.email as string);
+    }
     if (router.query.reason === 'existing-account') {
       setInfo('An account with this email already exists. If you signed up with Google, use the Google button below to sign in.');
     }
-  }, [router.query.reason]);
+  }, [router.isReady, router.query.email, router.query.reason]);
 
   // Redirect if already logged in
   if (user) {
