@@ -14,8 +14,7 @@ body {
 
 body {
   color: var(--color-text-primary);
-  background: var(--gradient-bg);
-  background-attachment: fixed;
+  background: var(--color-bg);
   min-height: 100vh;
   font-family: var(--font-family);
   font-size: var(--font-size-body);

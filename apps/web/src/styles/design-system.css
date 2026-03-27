@@ -1,16 +1,16 @@
 /*
  * NUSA Design System — CSS Custom Properties
- * Source of truth: docs/wireframes/00-design-system-foundation.md
+ * Source of truth: "The Curated Connection" design system
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 
 :root {
   /* ── Colors ─────────────────────────────── */
-  --color-primary: #0E5F9C;
-  --color-primary-dark: #0A4674;
-  --color-primary-light: #3C82B7;
-  --color-primary-rgb: 14, 95, 156;
+  --color-primary: #00408b;
+  --color-primary-dark: #002f66;
+  --color-primary-light: #0057b7;
+  --color-primary-rgb: 0, 64, 139;
   --color-secondary: #F7941D;
   --color-secondary-dark: #D97D0B;
   --color-secondary-light: #FDE7C7;
@@ -21,48 +21,53 @@
   --color-error: #C62828;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #0E5F9C 0%, #1a7fd4 100%);
-  --gradient-primary-hover: linear-gradient(135deg, #0A4674 0%, #0E5F9C 100%);
+  --gradient-primary: linear-gradient(135deg, #00408b 0%, #0057b7 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #002f66 0%, #00408b 100%);
   --gradient-secondary: linear-gradient(135deg, #F7941D 0%, #f5b942 100%);
-  --gradient-bg: linear-gradient(145deg, #EEF5FF 0%, #F0F9FF 55%, #F5F0FF 100%);
+  --gradient-bg: #f7f9fb;
 
-  /* Neutrals */
-  --color-bg: #EEF5FF;
-  --color-surface: #FFFFFF;
-  --color-text-primary: #1A2332;
-  --color-text-secondary: #64748B;
-  --color-text-tertiary: #94A3B8;
-  --color-border: rgba(14, 95, 156, 0.12);
-  --color-border-solid: #D9E3EE;
+  /* Neutrals / Surface Hierarchy */
+  --color-bg: #f7f9fb;
+  --color-surface: #ffffff;
+  --color-surface-low: #f2f4f6;
+  --color-surface-container: #ebeef1;
+  --color-text-primary: #1a1d21;
+  --color-text-secondary: #5f6368;
+  --color-text-tertiary: #9aa0a6;
+  --color-border: rgba(0, 64, 139, 0.10);
+  --color-border-solid: #e0e3e8;
   --color-disabled: #CBD5E1;
 
   /* Trust level colors */
   --color-trust-new: #94A3B8;
   --color-trust-verified: #2E7D32;
-  --color-trust-contributor: #0E5F9C;
+  --color-trust-contributor: #00408b;
 
   /* Banner colors */
   --color-banner-bg: #FFF4E8;
   --color-banner-text: #B76400;
 
   /* Glassmorphism tokens */
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-bg-strong: rgba(255, 255, 255, 0.88);
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-bg-strong: rgba(255, 255, 255, 0.94);
   --glass-bg-card: rgba(255, 255, 255, 0.78);
-  --glass-blur: blur(20px) saturate(1.8);
-  --glass-blur-sm: blur(12px) saturate(1.5);
+  --glass-blur: blur(20px) saturate(1.6);
+  --glass-blur-sm: blur(12px) saturate(1.4);
   --glass-border: 1px solid rgba(255, 255, 255, 0.5);
-  --glass-border-card: 1px solid rgba(14, 95, 156, 0.10);
+  --glass-border-card: none;
+
+  /* Ghost borders — max 15% opacity */
+  --ghost-border: 1px solid rgba(0, 64, 139, 0.08);
 
   /* ── Typography ─────────────────────────── */
-  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
 
   --font-size-h1: 2.25rem;    /* 36px */
   --font-size-h2: 1.5rem;     /* 24px */
   --font-size-h3: 1.25rem;    /* 20px */
-  --font-size-body: 1rem;     /* 16px */
-  --font-size-small: 0.875rem; /* 14px */
+  --font-size-body: 0.9375rem; /* 15px */
+  --font-size-small: 0.8125rem; /* 13px */
   --font-size-caption: 0.75rem; /* 12px */
 
   --font-weight-regular: 400;
@@ -72,7 +77,7 @@
   --font-weight-extrabold: 800;
 
   --line-height-tight: 1.2;
-  --line-height-normal: 1.6;
+  --line-height-normal: 1.55;
   --line-height-relaxed: 1.75;
 
   /* ── Spacing (8pt grid) ─────────────────── */
@@ -86,42 +91,42 @@
 
   /* ── Borders & Radius ───────────────────── */
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
-  /* ── Shadows ────────────────────────────── */
-  --shadow-sm: 0 2px 8px rgba(14, 95, 156, 0.06), 0 1px 2px rgba(14, 95, 156, 0.04);
-  --shadow-md: 0 4px 20px rgba(14, 95, 156, 0.10), 0 2px 6px rgba(14, 95, 156, 0.06);
-  --shadow-lg: 0 8px 40px rgba(14, 95, 156, 0.14), 0 4px 16px rgba(14, 95, 156, 0.08);
-  --shadow-glass: 0 8px 32px rgba(14, 95, 156, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  /* ── Shadows (ambient, tinted with primary) */
+  --shadow-sm: 0 1px 3px rgba(0, 64, 139, 0.04), 0 1px 2px rgba(0, 64, 139, 0.03);
+  --shadow-md: 0 4px 16px rgba(0, 64, 139, 0.07), 0 2px 4px rgba(0, 64, 139, 0.04);
+  --shadow-lg: 0 8px 32px rgba(0, 64, 139, 0.10), 0 4px 12px rgba(0, 64, 139, 0.05);
+  --shadow-glass: 0 4px 24px rgba(0, 64, 139, 0.06);
 
   /* ── Layout ─────────────────────────────── */
   --max-width: 1200px;
   --content-width: 800px;
   --sidebar-width: 300px;
-  --nav-height: 64px;
+  --nav-height: 60px;
 
   /* ── Component tokens ───────────────────── */
-  --input-height: 56px;
-  --button-height: 48px;
-  --card-padding: var(--space-s);
+  --input-height: 48px;
+  --button-height: 44px;
+  --card-padding: 1.25rem;
 
-  --surface-rail-bg: var(--glass-bg-strong);
-  --surface-rail-blur: var(--glass-blur-sm);
-  --surface-rail-border: var(--glass-border);
-  --surface-rail-shadow: 2px 0 24px rgba(14, 95, 156, 0.06);
+  --surface-rail-bg: var(--color-surface);
+  --surface-rail-blur: none;
+  --surface-rail-border: none;
+  --surface-rail-shadow: none;
 
   --surface-topbar-bg: var(--glass-bg);
   --surface-topbar-blur: var(--glass-blur);
-  --surface-topbar-border: var(--glass-border);
-  --surface-topbar-shadow: var(--shadow-glass);
+  --surface-topbar-border: 1px solid rgba(0, 64, 139, 0.06);
+  --surface-topbar-shadow: 0 1px 4px rgba(0, 64, 139, 0.04);
 
   --surface-nav-bg: var(--glass-bg);
   --surface-nav-blur: var(--glass-blur);
-  --surface-nav-border: var(--glass-border);
-  --surface-nav-shadow: var(--shadow-glass);
+  --surface-nav-border: 1px solid rgba(0, 64, 139, 0.06);
+  --surface-nav-shadow: 0 1px 4px rgba(0, 64, 139, 0.04);
 
   --dropdown-bg: var(--color-surface);
   --dropdown-border: 1px solid var(--color-border-solid);

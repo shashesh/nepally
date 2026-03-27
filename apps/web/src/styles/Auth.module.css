@@ -4,13 +4,11 @@
 }
 
 .authCard {
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  border: var(--glass-border);
-  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  border: var(--ghost-border);
+  border-radius: var(--radius-lg);
   padding: var(--space-l);
-  box-shadow: var(--shadow-lg), var(--shadow-glass);
+  box-shadow: var(--shadow-lg);
 }
 
 .authTitle {

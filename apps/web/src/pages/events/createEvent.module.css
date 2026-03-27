@@ -339,10 +339,8 @@
     z-index: 5;
     margin: 0 -16px -16px;
     padding: 10px 16px;
-    border-top: 1px solid #DDE6F2;
-    background: rgba(255, 255, 255, 0.97);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
+    border-top: 1px solid var(--color-border-solid);
+    background: var(--color-surface);
     gap: 8px;
   }
 }

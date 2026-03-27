@@ -97,6 +97,7 @@ describe('Layout', () => {
     layoutMocks.realtimeSubscriptions.length = 0;
     layoutMocks.useRouterMock.mockReturnValue({
       pathname: '/',
+      query: {},
       push: mockPush,
       replace: mockReplace,
     });
@@ -148,7 +149,7 @@ describe('Layout', () => {
 
     it('does not render sidebar nav or LocationSwitcher', () => {
       render(<Layout>Content</Layout>);
-      expect(screen.queryByText('Home')).toBeNull();
+      expect(screen.queryByText('Feed')).toBeNull();
       expect(screen.queryByTestId('location-switcher')).toBeNull();
     });
   });
@@ -182,16 +183,23 @@ describe('Layout', () => {
       });
     });
 
-    it('renders sidebar nav links (Home, Events, Marketplace)', () => {
+    it('renders sidebar nav links (Feed, Events, Marketplace) and tag links', () => {
       render(<Layout>Content</Layout>);
-      expect(screen.getByText('Home')).toBeDefined();
+      expect(screen.getByText('Feed')).toBeDefined();
       expect(screen.getByText('Events')).toBeDefined();
       expect(screen.getByText('Marketplace')).toBeDefined();
+      // Tag links in sidebar
+      expect(screen.getByText('Housing')).toBeDefined();
+      expect(screen.getByText('Jobs')).toBeDefined();
+      expect(screen.getByText('Help')).toBeDefined();
+      expect(screen.getByText('Question')).toBeDefined();
+      expect(screen.getByText('Emergency')).toBeDefined();
+      expect(screen.getByText('Discussion')).toBeDefined();
     });
 
-    it('shows Post button when trust_level >= 1', () => {
+    it('shows Create Post button when trust_level >= 1', () => {
       render(<Layout>Content</Layout>);
-      expect(screen.getByText('Post')).toBeDefined();
+      expect(screen.getByText(/Create Post/)).toBeDefined();
     });
 
     it('shows Verify to Post when trust_level is 0', () => {

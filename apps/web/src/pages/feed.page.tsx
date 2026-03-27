@@ -12,7 +12,6 @@ import { supabase } from '../lib/supabase';
 import {
   getPostsByMetroArea,
   deletePost,
-  getTags,
   getUserLikedPostIds,
   getUserSavedPostIds,
   savePost,
@@ -22,9 +21,9 @@ import {
   formatRelativeTime,
   getUpcomingEventsByMetro,
   TAG_EMOJI,
+  TAG_COLORS,
 } from '@nusa/shared';
-import type { Post, Tag, Event } from '@nusa/shared';
-import TagFilterBar from '../components/TagFilterBar';
+import type { Post, Event } from '@nusa/shared';
 import Avatar from '../components/Avatar';
 import ReportPostModal from '../components/ReportPostModal';
 import styles from '../styles/Feed.module.css';
@@ -56,18 +55,10 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const latestLoadRequestId = useRef(0);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Tag-based filtering (multi-select)
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  // Tag-based filtering (multi-select) — set via sidebar nav links
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
   const pageTitle = routeBasePath === '/' ? 'Home - NUSA' : 'Feed - NUSA';
   const queryTags = router.query.tags;
-
-  // Load tags on mount
-  useEffect(() => {
-    getTags(supabase).then((result) => {
-      if (result.data) setAvailableTags(result.data);
-    });
-  }, []);
 
   // Parse tag filters from URL query
   useEffect(() => {
@@ -493,9 +484,17 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const sponsoredItems = [
     {
       id: 'biz-1',
-      title: 'Sponsor Spotlight',
-      description: 'Promote a trusted local business to your metro feed.',
-      cta: 'Learn more',
+      title: 'Himalayan Kitchen',
+      description: 'Authentic Nepali cuisine in the heart of your city. Order online or dine in!',
+      cta: 'Visit Website',
+      label: 'AD',
+    },
+    {
+      id: 'biz-2',
+      title: 'Nepal Travel Co.',
+      description: 'Book affordable flights to Kathmandu. Special diaspora fares available now.',
+      cta: 'Learn More',
+      label: 'AD',
     },
   ];
 
@@ -522,11 +521,13 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               </div>
             )}
 
-            <div className={styles.feedHeader}>
-              <h1 className={styles.feedTitle}>Community Feed</h1>
-            </div>
-
             <div className={styles.composerCard}>
+              <Avatar
+                name={user.full_name || '?'}
+                photoUrl={user.profile_photo}
+                trustLevel={user.trust_level}
+                size="medium"
+              />
               <Link
                 href={user.trust_level >= 1 ? '/posts/create' : '/profile'}
                 className={styles.composerInputLink}
@@ -544,13 +545,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 </Link>
               )}
             </div>
-
-            <TagFilterBar
-              tags={availableTags}
-              selectedSlugs={selectedTagSlugs}
-              onTagToggle={handleTagChipToggle}
-              onAllPress={handleAllChip}
-            />
 
             {loading ? (
               <Stack data-testid="feed-loading" gap="md">
@@ -618,9 +612,14 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
           <div className={styles.sponsoredList}>
             {sponsoredItems.map((item) => (
               <article key={item.id} className={styles.sponsoredCard}>
-                <h3 className={styles.sponsoredCardTitle}>{item.title}</h3>
-                <p className={styles.sponsoredCardText}>{item.description}</p>
-                <Button variant="subtle" size="compact-sm">{item.cta}</Button>
+                <div className={styles.sponsoredCardImagePlaceholder}>
+                  <span className={styles.sponsoredAdLabel}>{item.label}</span>
+                </div>
+                <div className={styles.sponsoredCardBody}>
+                  <h3 className={styles.sponsoredCardTitle}>{item.title}</h3>
+                  <p className={styles.sponsoredCardText}>{item.description}</p>
+                  <Button variant="subtle" size="compact-sm">{item.cta}</Button>
+                </div>
               </article>
             ))}
           </div>
@@ -634,18 +633,26 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 </Link>
               </div>
               <div className={styles.eventsWidgetList}>
-                {upcomingEvents.map((event) => {
+                {upcomingEvents.map((event, eventIndex) => {
                   const eventDate = new Date(event.start_date);
                   const month = eventDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
                   const day = eventDate.getDate().toString().padStart(2, '0');
+                  const dateColorClasses = [
+                    { date: styles.eventsWidgetDateBlue, month: styles.eventsWidgetMonthBlue },
+                    { date: styles.eventsWidgetDateAmber, month: styles.eventsWidgetMonthAmber },
+                    { date: styles.eventsWidgetDateTeal, month: styles.eventsWidgetMonthTeal },
+                    { date: styles.eventsWidgetDatePurple, month: styles.eventsWidgetMonthPurple },
+                    { date: styles.eventsWidgetDateRose, month: styles.eventsWidgetMonthRose },
+                  ];
+                  const colorVariant = dateColorClasses[eventIndex % dateColorClasses.length];
                   return (
                     <Link
                       key={event.id}
                       href={`/events/${event.id}`}
                       className={styles.eventsWidgetCard}
                     >
-                      <div className={styles.eventsWidgetDate}>
-                        <span className={styles.eventsWidgetMonth}>{month}</span>
+                      <div className={`${styles.eventsWidgetDate} ${colorVariant.date}`}>
+                        <span className={`${styles.eventsWidgetMonth} ${colorVariant.month}`}>{month}</span>
                         <span className={styles.eventsWidgetDay}>{day}</span>
                       </div>
                       <div className={styles.eventsWidgetInfo}>
@@ -930,8 +937,28 @@ function PostCard({
           <div className={styles.postAuthorName}>
             {post.author?.full_name || 'Anonymous'}
           </div>
-          <div className={styles.postTimestamp}>
-            {formatRelativeTime(new Date(post.created_at))}
+          <div className={styles.postTimestampRow}>
+            <span className={styles.postTimestamp}>
+              {formatRelativeTime(new Date(post.created_at))}
+            </span>
+            {post.tags && post.tags.length > 0 && (
+              <>
+                <span className={styles.postTimestampDot}>·</span>
+                {post.tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className={styles.postTagBadge}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onTagClick(tag.slug);
+                    }}
+                  >
+                    {tag.name.toUpperCase()}
+                  </span>
+                ))}
+              </>
+            )}
           </div>
         </div>
         <div className={styles.postHeaderRight}>
@@ -1070,47 +1097,41 @@ function PostCard({
         </div>
       )}
 
-      {/* Tag pills */}
-      {post.tags && post.tags.length > 0 && (
-        <div className={styles.tagRow}>
-          {post.tags.map((tag) => {
-            const emoji = TAG_EMOJI[tag.slug] || '';
-            return (
-              <span
-                key={tag.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onTagClick(tag.slug);
-                }}
-                className={styles.tagPill}
-              >
-                {emoji ? `${emoji} ${tag.name}` : tag.name}
-              </span>
-            );
-          })}
-        </div>
-      )}
-
       <div className={styles.postFooter}>
-        <span className={styles.postStat}>
-          {liked ? '❤️' : '🤍'} {post.likes_count || 0}
-        </span>
-        <span className={styles.postStat}>💬 {post.comments_count || 0}</span>
-        <span className={styles.postStat}>👁 {post.views_count || 0}</span>
-        {onSaveToggle && (
+        <div className={styles.postFooterLeft}>
+          <span className={styles.postStat}>
+            <svg className={styles.postStatIcon} width="20" height="20" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            <span className={styles.postStatCount}>{post.likes_count || 0}</span>
+          </span>
+          <span className={styles.postStat}>
+            <svg className={styles.postStatIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <span className={styles.postStatCount}>{post.comments_count || 0}</span>
+          </span>
           <button
-            className={`${styles.postStatSaveBtn} ${saved ? styles.postStatSaved : ''}`}
+            className={styles.postShareBtn}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onSaveToggle();
+              onSharePost(post);
             }}
-            aria-label={saved ? 'Unsave post' : 'Save post'}
+            aria-label="Share post"
           >
-            {saved ? '🔖' : '🏷️'}
+            <svg className={styles.postStatIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
           </button>
-        )}
+        </div>
+        <span className={styles.postViewDetails}>
+          View Details &rarr;
+        </span>
       </div>
     </Link>
   );
