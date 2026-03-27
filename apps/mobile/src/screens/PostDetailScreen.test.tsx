@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import PostDetailScreen from './PostDetailScreen';
-import { likePost } from '@nusa/shared';
+import { likePost } from '@nepally/shared';
 
 const mockUseRoute = jest.fn();
 const mockUseNavigation = jest.fn();
@@ -45,7 +45,7 @@ jest.mock('../config/supabase', () => ({
   supabase: {},
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getPostById: jest.fn(async () => ({
     data: {
       id: 'post-1',

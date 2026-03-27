@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { createUserProfile, markEmailVerified, markGoogleVerified, getUserById } from '@nusa/shared';
+import { createUserProfile, markEmailVerified, markGoogleVerified, getUserById } from '@nepally/shared';
 import styles from '../../styles/Auth.module.css';
 
 type CallbackState = 'verifying' | 'error';
@@ -85,7 +85,7 @@ export default function AuthCallbackPage() {
     return (
       <>
         <Head>
-          <title>Verification Failed - NUSA</title>
+          <title>Verification Failed - Nepally</title>
         </Head>
         <div className={styles.authPage}>
           <div className={styles.authCard}>
@@ -111,7 +111,7 @@ export default function AuthCallbackPage() {
   return (
     <>
       <Head>
-        <title>Verifying Email - NUSA</title>
+        <title>Verifying Email - Nepally</title>
       </Head>
       <div className={styles.authPage}>
         <div className={styles.authCard}>

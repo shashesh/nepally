@@ -19,7 +19,7 @@ import {
   TrustLevel,
   type Event,
   type EventRsvp,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import EventTypeBadge from '../../components/events/EventTypeBadge';
 import RsvpButton from '../../components/events/RsvpButton';
 import AttendeeList from '../../components/events/AttendeeList';
@@ -217,7 +217,7 @@ export default function EventDetailPage() {
   return (
     <>
       <Head>
-        <title>{event.title} - NUSA Events</title>
+        <title>{event.title} - Nepally Events</title>
       </Head>
       <div className={styles.page}>
         <div className={styles.container}>

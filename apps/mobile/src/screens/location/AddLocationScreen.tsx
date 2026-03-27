@@ -19,8 +19,8 @@ import {
   isValidZipCode,
   addSavedLocation,
   SUGGESTED_LOCATION_LABELS,
-} from '@nusa/shared';
-import type { MetroArea } from '@nusa/shared';
+} from '@nepally/shared';
+import type { MetroArea } from '@nepally/shared';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';

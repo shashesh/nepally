@@ -1,4 +1,4 @@
-# NUSA Mobile Assets
+# Nepally Mobile Assets
 
 This directory contains app icons, splash screens, and other assets.
 
@@ -12,24 +12,24 @@ This directory contains app icons, splash screens, and other assets.
 ## Temporary Placeholders
 
 For development, we're using simple colored placeholders.
-Replace these with actual NUSA branded assets before production.
+Replace these with actual Nepally branded assets before production.
 
 ## Icon Requirements
 
 ### icon.png
 - Size: 1024x1024px
-- Background: NUSA Blue (#1565C0)
-- Text: "NUSA" in white
+- Background: Nepally Blue (#1565C0)
+- Text: "Nepally" in white
 
 ### adaptive-icon.png
 - Size: 1024x1024px
 - Safe area: 432x432px circle in center (Android will crop to circle)
 - Background: White
-- Foreground: NUSA logo
+- Foreground: Nepally logo
 
 ### splash.png
 - Size: 1284x2778px (or use 2048x2048px for universal)
-- Background: NUSA Blue (#1565C0)
+- Background: Nepally Blue (#1565C0)
 - Logo centered
 
 ## Creating Icons

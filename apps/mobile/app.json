@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "NUSA",
+    "name": "Nepally",
     "slug": "nusa-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -34,16 +34,16 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "NUSA uses your location to show community posts near you.",
-          "locationAlwaysPermission": "NUSA uses your location to show community posts near you.",
-          "locationWhenInUsePermission": "NUSA uses your location to show community posts near you."
+          "locationAlwaysAndWhenInUsePermission": "Nepally uses your location to show community posts near you.",
+          "locationAlwaysPermission": "Nepally uses your location to show community posts near you.",
+          "locationWhenInUsePermission": "Nepally uses your location to show community posts near you."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "NUSA needs access to your photos to set a profile picture.",
-          "cameraPermission": "NUSA needs access to your camera to take a profile photo."
+          "photosPermission": "Nepally needs access to your photos to set a profile picture.",
+          "cameraPermission": "Nepally needs access to your camera to take a profile photo."
         }
       ],
       [

@@ -14,8 +14,8 @@ import { Avatar } from '../Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
-import type { Tag } from '@nusa/shared';
-import { TAG_EMOJI, TAG_COLORS, DEFAULT_TAG_COLOR } from '@nusa/shared';
+import type { Tag } from '@nepally/shared';
+import { TAG_EMOJI, TAG_COLORS, DEFAULT_TAG_COLOR } from '@nepally/shared';
 
 interface PostCardProps {
   title: string;

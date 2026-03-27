@@ -9,8 +9,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { TAG_EMOJI } from '@nusa/shared';
-import type { Tag } from '@nusa/shared';
+import { TAG_EMOJI } from '@nepally/shared';
+import type { Tag } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';

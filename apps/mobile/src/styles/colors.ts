@@ -1,5 +1,5 @@
 /**
- * NUSA Color Palette
+ * Nepally Color Palette
  * Based on Design System Foundation v1.0
  * @see docs/wireframes/00-design-system-foundation.md
  */

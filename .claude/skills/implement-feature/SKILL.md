@@ -69,14 +69,14 @@ For each target platform:
 
 ### Mobile (`apps/mobile/`)
 - Create screens in `src/screens/[category]/`
-- Build components importing types/validation/API from `@nusa/shared`
+- Build components importing types/validation/API from `@nepally/shared`
 - Use `StyleSheet.create()` for all styles (never inline)
 - Add navigation to appropriate navigator
 - Add tests in `src/**/*.test.tsx`
 
 ### Web (`apps/web/`)
 - Create pages in `src/pages/`
-- Build components importing from `@nusa/shared`
+- Build components importing from `@nepally/shared`
 - Use CSS Modules for all styles (never inline `style={{}}`)
 - Add tests in `src/**/*.test.tsx`
 
@@ -89,7 +89,7 @@ Match wireframes: layout, spacing tokens, colors, all interactive states (defaul
 Before marking complete:
 - [ ] All types/API/validation/utils/constants in `packages/shared/` (none in `apps/`)
 - [ ] `packages/shared/src/index.ts` exports all new code
-- [ ] Apps import from `@nusa/shared` only
+- [ ] Apps import from `@nepally/shared` only
 - [ ] `packages/shared/` has zero platform-specific imports
 - [ ] Implementation matches wireframes and journey flow
 - [ ] All interactive states and error cases handled

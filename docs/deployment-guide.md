@@ -1,10 +1,10 @@
 # Deployment Guide
 
-Complete guide for deploying NUSA mobile and web applications to production.
+Complete guide for deploying Nepally mobile and web applications to production.
 
 ## Overview
 
-NUSA deploys to three platforms:
+Nepally deploys to three platforms:
 1. **Web App** → Vercel
 2. **iOS App** → Apple App Store
 3. **Android App** → Google Play Store
@@ -344,7 +344,7 @@ You'll need:
 
 1. Go to [App Store Connect](https://appstoreconnect.apple.com/)
 2. Create new app:
-   - **Name:** NUSA
+   - **Name:** Nepally
    - **Bundle ID:** `com.nusa.app`
    - **SKU:** `nusa-app`
    - **User Access:** Full Access
@@ -364,7 +364,7 @@ You'll need:
 
 1. Go to [Google Play Console](https://play.google.com/console/)
 2. Create new app:
-   - **App name:** NUSA
+   - **App name:** Nepally
    - **Default language:** English (US)
    - **App or game:** App
    - **Free or paid:** Free
@@ -381,7 +381,7 @@ You'll need:
 ### App Description Template
 
 ```
-NUSA - US-Nepal Help Network
+Nepally - US-Nepal Help Network
 
 Your community platform for the Nepalese diaspora in the USA.
 
@@ -403,7 +403,7 @@ All content is organized by metro area, so you see what's relevant to you.
 🔒 TRUST & SAFETY
 Verified users, moderator-approved emergency alerts, and community reporting.
 
-Join the NUSA community today!
+Join the Nepally community today!
 ```
 
 ### 7. Over-the-Air (OTA) Updates

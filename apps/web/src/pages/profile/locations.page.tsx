@@ -15,8 +15,8 @@ import {
   isValidZipCode,
   MAX_SAVED_LOCATIONS_PREMIUM,
   SUGGESTED_LOCATION_LABELS,
-} from '@nusa/shared';
-import type { SavedLocation, MetroArea } from '@nusa/shared';
+} from '@nepally/shared';
+import type { SavedLocation, MetroArea } from '@nepally/shared';
 import styles from '../../styles/ManageLocations.module.css';
 
 export default function ManageLocationsPage() {
@@ -122,7 +122,7 @@ export default function ManageLocationsPage() {
   return (
     <>
       <Head>
-        <title>Manage Locations - NUSA</title>
+        <title>Manage Locations - Nepally</title>
       </Head>
       <div className={styles.container}>
         <div className={styles.header}>

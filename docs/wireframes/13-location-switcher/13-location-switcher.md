@@ -45,7 +45,7 @@ The location switcher is triggered by tapping the metro name in the home screen 
 #### Web Header
 
 ::: nav
-**NUSA** &emsp; 📍 Dallas-Fort Worth ▼ {.location-dropdown}
+**Nepally** &emsp; 📍 Dallas-Fort Worth ▼ {.location-dropdown}
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Home {.location-label}
 &emsp;&emsp;&emsp;&emsp;&emsp;&emsp; [🔍 Search...___] &emsp; 🔔 {.icon-button} &nbsp; [Avatar]{.avatar}
 :::

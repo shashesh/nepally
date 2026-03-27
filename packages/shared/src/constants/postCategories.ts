@@ -1,6 +1,6 @@
 /**
  * @deprecated Post categories have been replaced by the tag system.
- * Use `@nusa/shared` Tag types and the tags API instead.
+ * Use `@nepally/shared` Tag types and the tags API instead.
  * See: docs/decisions/2026-02-17-post-tags-redesign-and-premium.md
  *
  * This file is kept temporarily for backward-compatibility during migration.

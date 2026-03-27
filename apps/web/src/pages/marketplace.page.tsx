@@ -20,7 +20,7 @@ export default function MarketplacePage() {
   return (
     <>
       <Head>
-        <title>Marketplace - NUSA</title>
+        <title>Marketplace - Nepally</title>
       </Head>
       <div className={styles.container}>
         <div className={styles.iconCircle}>

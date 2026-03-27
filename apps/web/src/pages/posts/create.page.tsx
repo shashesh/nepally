@@ -19,8 +19,8 @@ import {
   MAX_POST_PHOTO_BYTES,
   uploadPostPhotos,
   validatePostPhotoFile,
-} from '@nusa/shared';
-import type { Tag } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Tag } from '@nepally/shared';
 import styles from '../../styles/CreatePost.module.css';
 
 const TITLE_MAX = 150;
@@ -506,7 +506,7 @@ export default function CreatePostPage() {
   return (
     <>
       <Head>
-        <title>{isEditing ? 'Edit Post - NUSA' : 'Create Post - NUSA'}</title>
+        <title>{isEditing ? 'Edit Post - Nepally' : 'Create Post - Nepally'}</title>
       </Head>
       <div className={styles.container}>
         {/* Header */}

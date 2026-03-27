@@ -8,7 +8,7 @@
 
 ## Context
 
-The original NUSA post system was designed as a "Smart Post Engine" with 4 rigid categories (Housing, Jobs, Emergency, Travel), each with mandatory structured fields, category-specific validation, and auto-expiry rules. While this ensured high-quality structured data, it:
+The original Nepally post system was designed as a "Smart Post Engine" with 4 rigid categories (Housing, Jobs, Emergency, Travel), each with mandatory structured fields, category-specific validation, and auto-expiry rules. While this ensured high-quality structured data, it:
 
 1. **Limited content variety** — users couldn't post general questions, discussions, or political topics
 2. **Created high friction** — each category had 5-10 mandatory fields, making posting slow

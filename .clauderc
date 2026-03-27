@@ -1,4 +1,4 @@
-# Claude Code Configuration for NUSA Project
+# Claude Code Configuration for Nepally Project
 
 # This file configures how Claude Code behaves in this repository
 # Learn more: https://docs.claude.ai/claude-code/configuration
@@ -47,7 +47,7 @@
 
 6. **Shared-First Code Architecture (MANDATORY)**
    - ALL non-UI code (types, API calls, validation, utils, constants) MUST live in `packages/shared/`
-   - `apps/mobile/` and `apps/web/` MUST import from `@nusa/shared` — NEVER redefine locally
+   - `apps/mobile/` and `apps/web/` MUST import from `@nepally/shared` — NEVER redefine locally
    - `packages/shared/` MUST NOT import from `react-native`, `expo-*`, or `next`
    - If the same type/function/constant exists in more than one place, it belongs in `packages/shared/`
    - Always read `docs/code-sharing-guide.md` and `docs/monorepo-structure.md` before implementing
@@ -82,8 +82,8 @@ When implementing features, ALWAYS follow this sequence:
    - Shared API functions in `packages/shared/src/api/` (dependency injection pattern)
    - Shared utils/constants in `packages/shared/src/utils/` and `constants/`
    - Update `packages/shared/src/index.ts` exports
-   - Mobile UI: screens, components, navigation importing from `@nusa/shared`
-   - Web UI: pages, components importing from `@nusa/shared`
+   - Mobile UI: screens, components, navigation importing from `@nepally/shared`
+   - Web UI: pages, components importing from `@nepally/shared`
    - Handle all error cases from documentation
 
 5. **Validation** (Before marking complete)

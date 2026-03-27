@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { TAG_EMOJI } from '@nusa/shared';
-import type { Tag } from '@nusa/shared';
+import { TAG_EMOJI } from '@nepally/shared';
+import type { Tag } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 

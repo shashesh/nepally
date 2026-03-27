@@ -2,7 +2,7 @@
 
 > **Screen:** 04 | **Status:** Draft | **Updated:** 2026-02-19
 > **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 9
-> **Story:** As a new user who just entered my ZIP code, I want confirmation that NUSA mapped me to the correct metro area so I know I'll see relevant local posts.
+> **Story:** As a new user who just entered my ZIP code, I want confirmation that Nepally mapped me to the correct metro area so I know I'll see relevant local posts.
 
 ---
 
@@ -200,7 +200,7 @@ Join 12,503 verified members in your area
 **Scenario:** API doesn't return member count or count is 0
 **Behavior:**
 - Show alternative text: "Be among the first members in your area"
-- Or: "You're all set! Let's explore NUSA"
+- Or: "You're all set! Let's explore Nepally"
 - Still show checkmark and metro name
 
 ### Edge Case: Very Long Metro Area Name

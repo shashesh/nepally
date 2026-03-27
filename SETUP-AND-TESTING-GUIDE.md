@@ -1,4 +1,4 @@
-# Complete Setup & Testing Guide for NUSA Apps
+# Complete Setup & Testing Guide for Nepally Apps
 
 ## Prerequisites
 
@@ -214,7 +214,7 @@ npm run dev
 ### Complete Onboarding Journey (Mobile)
 
 1. **Welcome Screen** ✓
-   - Should see NUSA logo, tagline, Sign Up button
+   - Should see Nepally logo, tagline, Sign Up button
    - Tap "Sign Up"
 
 2. **Signup Method Screen** ✓

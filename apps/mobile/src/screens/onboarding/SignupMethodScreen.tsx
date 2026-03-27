@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { OnboardingStackParamList } from '../../types/navigation';
 import { supabase } from '../../config/supabase';
-import { createUserProfile, markGoogleVerified, getUserById } from '@nusa/shared';
+import { createUserProfile, markGoogleVerified, getUserById } from '@nepally/shared';
 import { AuthContext } from '../../contexts/AuthContext';
 import { signInWithGoogle } from '../../services/auth/googleAuth';
 import { colors } from '../../styles/colors';

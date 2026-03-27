@@ -1,7 +1,7 @@
-# Copilot Instructions for NUSA Monorepo
+# Copilot Instructions for Nepally Monorepo
 
 ## Architecture You Must Respect
-- NUSA is an npm-workspaces monorepo: `apps/mobile`, `apps/web`, `packages/shared`.
+- Nepally is an npm-workspaces monorepo: `apps/mobile`, `apps/web`, `packages/shared`.
 - Product behavior is metro-first (`metro_area_id` + ZIP mapping), and post feed behavior is metro-scoped + optional global.
 - Backend is Supabase; each app owns its Supabase client and injects it into shared API functions.
 - Posts are tag-based (title + description + `1-3` tags), not category-form-heavy.
@@ -11,7 +11,7 @@
 - Keep platform code in apps only:
   - `apps/mobile`: React Native UI, navigation, AsyncStorage/Expo APIs.
   - `apps/web`: Next.js `src/pages`, web UI, CSS Modules, browser routing.
-- Never duplicate shared types/logic in app code; import from `@nusa/shared`.
+- Never duplicate shared types/logic in app code; import from `@nepally/shared`.
 - Shared types stay `snake_case` to match Supabase rows directly.
 
 ## Key Integration Patterns

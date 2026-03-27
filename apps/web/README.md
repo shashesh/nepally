@@ -1,6 +1,6 @@
-# NUSA Web App (Next.js)
+# Nepally Web App (Next.js)
 
-This is the web application for NUSA, built with Next.js and React.
+This is the web application for Nepally, built with Next.js and React.
 
 ## Tech Stack
 
@@ -49,7 +49,7 @@ src/
 - **Static Site Generation (SSG)** - For faster page loads
 - **TypeScript** - Type-safe code
 - **CSS Modules** - Scoped styling
-- **Shared Package** - Imports business logic from @nusa/shared
+- **Shared Package** - Imports business logic from @nepally/shared
 - **Vercel Deployment** - Optimized for Vercel hosting
 
 ## SEO Optimization

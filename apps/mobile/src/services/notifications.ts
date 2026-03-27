@@ -1,10 +1,10 @@
 import * as Notifications from 'expo-notifications';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { registerDeviceToken } from '@nusa/shared';
+import { registerDeviceToken } from '@nepally/shared';
 
 /**
  * Requests push notification permission and registers the Expo push token
- * with the NUSA backend via the shared registerDeviceToken API.
+ * with the Nepally backend via the shared registerDeviceToken API.
  *
  * Returns true if registration succeeded, false if permission was denied
  * or registration failed.

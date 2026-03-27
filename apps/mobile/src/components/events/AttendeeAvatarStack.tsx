@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { type EventRsvp } from '@nusa/shared';
+import { type EventRsvp } from '@nepally/shared';
 import { Avatar } from '../Avatar';
 import { colors } from '../../styles/colors';
 

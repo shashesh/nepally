@@ -19,7 +19,7 @@ import {
   EVENT_TYPE_ICONS,
   TrustLevel,
   type EventType,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import styles from './createEvent.module.css';
 
 const TYPE_ACTIVE_CLASS: Record<EventType, string> = {
@@ -336,7 +336,7 @@ export default function CreateEventPage() {
   return (
     <>
       <Head>
-        <title>{isEditMode ? 'Edit Event' : 'Create Event'} - NUSA</title>
+        <title>{isEditMode ? 'Edit Event' : 'Create Event'} - Nepally</title>
       </Head>
       <div className={styles.page}>
         <div className={styles.container}>

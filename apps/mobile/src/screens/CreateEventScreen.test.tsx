@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { createEvent, getEventById } from '@nusa/shared';
+import { createEvent, getEventById } from '@nepally/shared';
 import CreateEventScreen from './CreateEventScreen';
 
 jest.mock('@react-native-community/datetimepicker', () => {
@@ -66,7 +66,7 @@ type CreateEventLikeInput = {
   location_name?: string;
 };
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   createEvent: jest.fn(async () => ({ data: { id: 'new-event-1' } })),
   updateEvent: jest.fn(async () => ({ data: { id: 'edit-event-1' } })),
   getEventById: jest.fn(async () => ({ data: null })),

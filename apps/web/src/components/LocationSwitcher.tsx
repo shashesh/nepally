@@ -10,8 +10,8 @@ import {
   IconSettings,
 } from '@tabler/icons-react';
 import { useLocation } from '../hooks/useLocation';
-import { getShortMetroName, hasMetroChanged, MAX_SAVED_LOCATIONS_PREMIUM } from '@nusa/shared';
-import type { SavedLocation } from '@nusa/shared';
+import { getShortMetroName, hasMetroChanged, MAX_SAVED_LOCATIONS_PREMIUM } from '@nepally/shared';
+import type { SavedLocation } from '@nepally/shared';
 import styles from './LocationSwitcher.module.css';
 
 export default function LocationSwitcher() {

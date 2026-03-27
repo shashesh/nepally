@@ -196,7 +196,7 @@ Run this before closing the feature. It checks:
 2. No Supabase query logic living in `apps/` instead of `packages/shared/src/api/`
 3. No duplicated validation schemas or constants
 4. `packages/shared/` has no platform-specific imports (`react-native`, `expo-*`, `next`)
-5. Apps correctly import from `@nusa/shared`
+5. Apps correctly import from `@nepally/shared`
 6. All new modules exported from `packages/shared/src/index.ts`
 7. New logic has unit tests
 

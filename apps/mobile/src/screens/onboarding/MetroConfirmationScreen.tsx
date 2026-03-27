@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { useMetroArea } from '../../hooks/useMetroArea';
 import { useAuth } from '../../hooks/useAuth';
-import { addSavedLocation } from '@nusa/shared';
+import { addSavedLocation } from '@nepally/shared';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';

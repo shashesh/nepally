@@ -8,7 +8,7 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate }),
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   formatPublicName: (name: string) => {
     const parts = name.trim().split(' ');
     if (parts.length < 2) return parts[0];

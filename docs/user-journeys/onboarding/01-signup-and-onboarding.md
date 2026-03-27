@@ -8,14 +8,14 @@
 
 ## Journey Overview
 
-**Goal:** Enable a new user to discover NUSA, create an account, and get mapped to their local metro area so they can start browsing relevant community posts.
+**Goal:** Enable a new user to discover Nepally, create an account, and get mapped to their local metro area so they can start browsing relevant community posts.
 
 **Trigger:** User needs housing/roommate and searches for community resources, or receives recommendation from friend.
 
 **Success Criteria:**
 - User successfully creates account
 - User's ZIP code is mapped to correct metro area
-- User understands what NUSA is and sees local feed
+- User understands what Nepally is and sees local feed
 - User is ready to browse posts (Level 0) or verify account (Journey #02)
 
 **Estimated Duration:** 5-10 minutes (thorough onboarding with context and education)
@@ -42,12 +42,12 @@
 **Primary Device:** iPhone 13
 **Language:** Fluent in English and Nepali
 
-**Context:** Priya is overwhelmed by Facebook groups with too much noise and spam. She saw someone post about NUSA in a "Nepali Students in DFW" Facebook group, mentioning it's specifically for the Nepali community with verified listings. She's looking for:
+**Context:** Priya is overwhelmed by Facebook groups with too much noise and spam. She saw someone post about Nepally in a "Nepali Students in DFW" Facebook group, mentioning it's specifically for the Nepali community with verified listings. She's looking for:
 1. A safe, affordable room near UT Dallas campus
 2. Ideally a Nepali roommate who understands her culture
 3. Trustworthy information without scams
 
-**Pain Points Before NUSA:**
+**Pain Points Before Nepally:**
 - Facebook groups have 1000s of posts, hard to filter local Dallas posts
 - Many scam/spam posts offering "too good to be true" deals
 - No way to verify if posters are real or trustworthy
@@ -55,21 +55,21 @@
 
 ## Step-by-Step Journey
 
-### Phase 1: Discovery (How Priya Finds NUSA)
+### Phase 1: Discovery (How Priya Finds Nepally)
 
 #### Step 1: Discovery via Facebook Recommendation
 **User Action:** Priya is scrolling through "Nepali Students in DFW" Facebook group looking for housing posts.
 
-**System Response:** N/A (happens on Facebook, not in NUSA app yet)
+**System Response:** N/A (happens on Facebook, not in Nepally app yet)
 
 **User Sees:**
-- A post from someone saying: "Found my roommate through NUSA app! So much better than these Facebook groups. Only shows Dallas area posts and people are verified ✓"
-- Post has 15 likes and 8 comments asking "what's NUSA?"
+- A post from someone saying: "Found my roommate through Nepally app! So much better than these Facebook groups. Only shows Dallas area posts and people are verified ✓"
+- Post has 15 likes and 8 comments asking "what's Nepally?"
 
 **Duration:** 30 seconds (reading the post)
 
 **User Thoughts:**
-- "Hmm, NUSA app? Never heard of it"
+- "Hmm, Nepally app? Never heard of it"
 - "Only Dallas posts? That would save me so much time"
 - "Verified people... that sounds safer than random FB accounts"
 
@@ -81,14 +81,14 @@
 
 ---
 
-#### Step 2: Search for NUSA in App Store
-**User Action:** Priya opens iOS App Store, searches "NUSA Nepal"
+#### Step 2: Search for Nepally in App Store
+**User Action:** Priya opens iOS App Store, searches "Nepally Nepal"
 
-**System Response:** App Store shows NUSA app listing
+**System Response:** App Store shows Nepally app listing
 
 **User Sees:**
-- **App Icon:** NUSA logo
-- **Title:** "NUSA - Nepalese United Support Alliance"
+- **App Icon:** Nepally logo
+- **Title:** "Nepally - Nepalese United Support Alliance"
 - **Subtitle:** "Community platform for Nepali diaspora in USA"
 - **Rating:** 4.7 stars (156 reviews)
 - **Category:** Social Networking
@@ -119,7 +119,7 @@
 
 **User Sees:**
 - Download progress bar
-- "NUSA" app icon appears on home screen
+- "Nepally" app icon appears on home screen
 - "OPEN" button becomes active
 
 **Duration:** 30 seconds (download time varies by connection speed)
@@ -136,12 +136,12 @@
 ### Phase 2: First Launch & Account Creation
 
 #### Step 4: Launch App - Welcome Screen
-**User Action:** Taps "OPEN" or taps NUSA icon on home screen
+**User Action:** Taps "OPEN" or taps Nepally icon on home screen
 
 **System Response:** App launches, shows welcome/splash screen
 
 **User Sees:**
-- **NUSA logo** (large, centered)
+- **Nepally logo** (large, centered)
 - **Tagline:** "Your Local Nepali Community in the USA"
 - **Brief intro text:** "Find housing, jobs, and emergency help from verified community members in your metro area."
 - **Two buttons:**
@@ -201,7 +201,7 @@
 
 **System Response:**
 - Redirect to Google OAuth consent screen
-- Shows permissions: "NUSA wants to access: Your name, email address, profile picture"
+- Shows permissions: "Nepally wants to access: Your name, email address, profile picture"
 
 **User Sees:**
 - Google account picker (if multiple accounts)
@@ -215,13 +215,13 @@
 - "I'll use my personal Gmail, not my university email"
 
 **Pain Points:**
-- **Concern:** "What will NUSA do with my email?"
+- **Concern:** "What will Nepally do with my email?"
 - **Severity:** Medium (trust issue for new users)
 - **Mitigation:** Permission screen is standard Google OAuth, builds trust
 
 **Validation/Constraints:**
 - Must approve Google permissions to continue
-- Redirects back to NUSA app after approval
+- Redirects back to Nepally app after approval
 
 ---
 
@@ -229,7 +229,7 @@
 **User Action:** Taps "Allow" on Google permission screen
 
 **System Response:**
-- Redirect back to NUSA app
+- Redirect back to Nepally app
 - Show loading indicator: "Creating your account..."
 - Create user record in Supabase with:
   - Auth UID from Google
@@ -333,9 +333,9 @@
 
 ---
 
-### Phase 4: Onboarding Flow - Understanding NUSA
+### Phase 4: Onboarding Flow - Understanding Nepally
 
-#### Step 10: Quick Tutorial - What is NUSA?
+#### Step 10: Quick Tutorial - What is Nepally?
 **User Action:** Taps "Continue" from metro confirmation
 
 **System Response:** Show first onboarding tutorial card
@@ -481,7 +481,7 @@
 ## Success State
 
 **What User Sees:**
-- NUSA home screen with local Dallas-Fort Worth housing posts
+- Nepally home screen with local Dallas-Fort Worth housing posts
 - Level 0 banner indicating next step (verification)
 - Active community with recent posts
 
@@ -592,14 +592,14 @@ At Home Screen:
 | 1 | Facebook post discovery | Facebook (external) | None | None |
 | 2 | App Store search | iOS App Store | None | None |
 | 3 | Download app | iOS App Store | Apple ID auth | App installed |
-| 4 | First launch | NUSA app | Device info | Session started |
-| 5 | Signup method selection | NUSA app | User choice | None yet |
+| 4 | First launch | Nepally app | Device info | Session started |
+| 5 | Signup method selection | Nepally app | User choice | None yet |
 | 6 | Google OAuth | Google (external) | Gmail account | OAuth token |
 | 7 | Account created | Supabase | Email, name, photo | User record created |
-| 8 | ZIP code entry | NUSA app | User input (5 digits) | ZIP in draft |
+| 8 | ZIP code entry | Nepally app | User input (5 digits) | ZIP in draft |
 | 9 | Metro mapping | Supabase function | ZIP → Metro query | metro_area_id saved |
-| 10-12 | Tutorial cards | NUSA app | Swipe/tap actions | Onboarding completed |
-| 13 | Home screen (success) | NUSA app | Metro area posts query | Session active |
+| 10-12 | Tutorial cards | Nepally app | Swipe/tap actions | Onboarding completed |
+| 13 | Home screen (success) | Nepally app | Metro area posts query | Session active |
 
 ---
 
@@ -670,7 +670,7 @@ At Home Screen:
      - Or: "Don't know your ZIP? Look it up" link to USPS ZIP lookup
 
 5. **Pain Point: OAuth Permission Concern**
-   - **Description:** User worries about what NUSA will do with their Google data
+   - **Description:** User worries about what Nepally will do with their Google data
    - **Impact:** Medium
    - **Frequency:** 30% of privacy-conscious users
    - **Affected Users:** Privacy-conscious users
@@ -715,7 +715,7 @@ At Home Screen:
   - Measure: (Users who start verification within 5 min) / (Users who complete onboarding) × 100
 
 - [ ] **User Satisfaction:** Post-onboarding survey (optional popup after 1 week)
-  - Question: "How easy was it to get started with NUSA?" (1-5 scale)
+  - Question: "How easy was it to get started with Nepally?" (1-5 scale)
   - Target: Average rating > 4.0
 
 ---
@@ -833,7 +833,7 @@ At Home Screen:
          ▼
 ┌─────────────────┐
 │   App Store     │
-│  (Search NUSA)  │
+│  (Search Nepally)  │
 └────────┬────────┘
          │
          ▼
@@ -1006,7 +1006,7 @@ At Home Screen:
 
 ### Assumptions
 
-1. **User has smartphone** - iOS or Android device capable of running NUSA app
+1. **User has smartphone** - iOS or Android device capable of running Nepally app
 2. **User has internet** - WiFi or cellular data for app download and signup
 3. **User is in US** - Has valid US ZIP code
 4. **User understands English** - App is currently English-only (Nepali support in future?)

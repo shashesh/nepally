@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
-import { getUserSettings, upsertUserSettings } from '@nusa/shared';
-import type { UserSettings, NotifyChatPref, NotifyLikesPref } from '@nusa/shared';
+import { getUserSettings, upsertUserSettings } from '@nepally/shared';
+import type { UserSettings, NotifyChatPref, NotifyLikesPref } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 

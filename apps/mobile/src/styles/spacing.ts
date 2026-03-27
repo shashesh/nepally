@@ -1,5 +1,5 @@
 /**
- * NUSA Spacing System (8pt Grid)
+ * Nepally Spacing System (8pt Grid)
  * Based on Design System Foundation v1.0
  * All values are multiples of 8 for consistency
  * @see docs/wireframes/00-design-system-foundation.md

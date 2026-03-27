@@ -1,12 +1,12 @@
 import { createTheme, MantineColorsTuple } from '@mantine/core';
 
 /**
- * NUSA Mantine Theme
+ * Nepally Mantine Theme
  *
  * Maps existing design-system.css tokens into Mantine's theme system.
  * The CSS custom properties in design-system.css remain the source of truth
  * for custom/layout styles. This theme ensures Mantine components
- * visually match the NUSA design language.
+ * visually match the Nepally design language.
  */
 
 // Primary palette: shades built from --color-primary (#0E5F9C)
@@ -113,7 +113,7 @@ export const nusaTheme = createTheme({
   white: '#FFFFFF',
   black: '#1A2332', // --color-text-primary
 
-  // Components — override defaults to match NUSA design
+  // Components — override defaults to match Nepally design
   components: {
     Button: {
       defaultProps: {

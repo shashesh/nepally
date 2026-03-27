@@ -12,10 +12,10 @@ jest.mock('../utils/storage', () => ({
   getMetroArea: (...args: unknown[]) => mockGetMetroAreaCached(...args),
 }));
 
-import { getMetroByZip, updateUserLocation } from '@nusa/shared';
-import type { User } from '@nusa/shared';
+import { getMetroByZip, updateUserLocation } from '@nepally/shared';
+import type { User } from '@nepally/shared';
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getMetroByZip: jest.fn().mockResolvedValue({ data: undefined }),
   updateUserLocation: jest.fn().mockResolvedValue({ data: undefined }),
 }));

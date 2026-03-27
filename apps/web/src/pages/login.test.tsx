@@ -23,8 +23,8 @@ vi.mock('../lib/auth', () => ({
   signInWithGoogle: loginMocks.signInWithGoogleMock,
 }));
 
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     validateEmail: loginMocks.validateEmailMock,

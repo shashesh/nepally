@@ -1,10 +1,10 @@
-# NUSA User Journeys - Phase 1
+# Nepally User Journeys - Phase 1
 
 **Last Updated:** 2026-03-10
 **Total Journeys:** 14
 **Status:** Planning
 
-This document indexes all user journeys for the NUSA app. Each journey documents a specific user flow from start to finish, including pain points, decision trees, and success metrics.
+This document indexes all user journeys for the Nepally app. Each journey documents a specific user flow from start to finish, including pain points, decision trees, and success metrics.
 
 ---
 
@@ -23,7 +23,7 @@ Journeys are organized into **6 categories** based on user intent:
 
 | Category | Journey Count | Purpose |
 |----------|---------------|---------|
-| **Onboarding** | 2 | Getting started with NUSA |
+| **Onboarding** | 2 | Getting started with Nepally |
 | **Post Creation** | 4 | Creating housing, job, emergency, and travel posts |
 | **Discovery** | 3 | Finding posts, responding, and discovering events |
 | **Communication** | 1 | In-app chat and messaging |
@@ -41,7 +41,7 @@ Journeys are organized into **6 categories** based on user intent:
 | 01 | **Signup and Onboarding** | New User (Level 0) | 🚧 Draft | [onboarding/01-signup-and-onboarding.md](./onboarding/01-signup-and-onboarding.md) |
 | 02 | **Trust Level Verification** | New User (Level 0 → Level 1) | 📝 Not Started | [onboarding/02-trust-level-verification.md](./onboarding/02-trust-level-verification.md) |
 
-**Purpose:** These journeys cover how new users discover NUSA, create accounts, verify their identity, and become trusted members of the community.
+**Purpose:** These journeys cover how new users discover Nepally, create accounts, verify their identity, and become trusted members of the community.
 
 **Key Features:**
 - ZIP code to metro area mapping

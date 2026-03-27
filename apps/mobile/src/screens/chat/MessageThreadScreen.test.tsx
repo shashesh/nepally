@@ -24,7 +24,7 @@ jest.mock('../../config/supabase', () => ({
   supabase: {},
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getMessages: (...args: unknown[]) => mockGetMessages(...args),
   sendMessage: jest.fn(async () => ({ data: null })),
   markAsRead: jest.fn(async () => ({})),

@@ -30,8 +30,8 @@ import {
   subscribeToMessages,
   blockUser,
   TrustLevel,
-} from '@nusa/shared';
-import type { ChatMessage } from '@nusa/shared';
+} from '@nepally/shared';
+import type { ChatMessage } from '@nepally/shared';
 import { ChatStackParamList } from '../../types/navigation';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';

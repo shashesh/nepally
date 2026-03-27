@@ -1,4 +1,4 @@
-# NUSA Skills Reference
+# Nepally Skills Reference
 
 ## Available Skills
 

@@ -1,12 +1,12 @@
 /**
  * Browser geolocation wrapper for web platform
  */
-import { getMetroByZip } from '@nusa/shared';
+import { getMetroByZip } from '@nepally/shared';
 import type {
   LocationPermissionStatus,
   GpsCoordinates,
   LocationDetectionResult,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import { supabase } from './supabase';
 
 /**
@@ -71,7 +71,7 @@ export async function reverseGeocodeToZip(
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1`,
       {
-        headers: { 'User-Agent': 'NUSA-Community-App' },
+        headers: { 'User-Agent': 'Nepally-Community-App' },
       }
     );
 

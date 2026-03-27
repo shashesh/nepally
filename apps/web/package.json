@@ -1,5 +1,5 @@
 {
-  "name": "@nusa/web",
+  "name": "@nepally/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -19,7 +19,7 @@
     "@mantine/form": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
     "@mantine/notifications": "^8.3.18",
-    "@nusa/shared": "*",
+    "@nepally/shared": "*",
     "@supabase/supabase-js": "^2.43.0",
     "@tabler/icons-react": "^3.40.0",
     "next": "^15.5.12",

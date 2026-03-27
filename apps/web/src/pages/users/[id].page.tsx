@@ -14,8 +14,8 @@ import {
   getOrCreateConversation,
   formatRelativeTime,
   formatPublicName,
-} from '@nusa/shared';
-import type { User, Post, TrustLevel, Event } from '@nusa/shared';
+} from '@nepally/shared';
+import type { User, Post, TrustLevel, Event } from '@nepally/shared';
 import Avatar from '../../components/Avatar';
 import styles from '../../styles/PublicProfile.module.css';
 
@@ -122,7 +122,7 @@ export default function PublicProfilePage() {
   if (loading) {
     return (
       <>
-        <Head><title>Profile - NUSA</title></Head>
+        <Head><title>Profile - Nepally</title></Head>
         <Center p="xl"><Text c="dimmed">Loading profile...</Text></Center>
       </>
     );
@@ -131,7 +131,7 @@ export default function PublicProfilePage() {
   if (error || !profileUser) {
     return (
       <>
-        <Head><title>Profile - NUSA</title></Head>
+        <Head><title>Profile - Nepally</title></Head>
         <Center p="xl"><Text c="red">{error || 'Profile not found.'}</Text></Center>
       </>
     );
@@ -214,7 +214,7 @@ export default function PublicProfilePage() {
   return (
     <>
       <Head>
-        <title>{publicName} - NUSA</title>
+        <title>{publicName} - Nepally</title>
       </Head>
       <div className={styles.profilePage}>
         <div className={styles.profileCard}>

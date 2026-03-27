@@ -1,7 +1,7 @@
 {
-  "name": "@nusa/shared",
+  "name": "@nepally/shared",
   "version": "1.0.0",
-  "description": "Shared TypeScript code for NUSA mobile and web apps",
+  "description": "Shared TypeScript code for Nepally mobile and web apps",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

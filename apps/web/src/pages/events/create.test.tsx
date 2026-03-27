@@ -22,7 +22,7 @@ vi.mock('next/link', () => ({
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
-vi.mock('@nusa/shared', () => ({
+vi.mock('@nepally/shared', () => ({
   createEvent: vi.fn(async () => ({ data: { id: 'new-event' } })),
   updateEvent: vi.fn(async () => ({ data: { id: 'edit-event' } })),
   getEventById: vi.fn(async () => ({ data: null })),
@@ -123,7 +123,7 @@ describe('CreateEventPage', () => {
   });
 
   it('calls createEvent with valid form data', async () => {
-    const { createEvent } = await import('@nusa/shared');
+    const { createEvent } = await import('@nepally/shared');
     render(React.createElement(CreateEventPage));
 
     fireEvent.change(screen.getByPlaceholderText('e.g. Dashain Celebration 2026'), {

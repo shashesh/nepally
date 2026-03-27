@@ -32,7 +32,7 @@ export function WelcomeScreen() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>NUSA</Text>
+            <Text style={styles.logoText}>Nepally</Text>
           </View>
         </View>
 

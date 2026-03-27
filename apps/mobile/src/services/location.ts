@@ -3,12 +3,12 @@
  * Wraps GPS access, reverse geocoding, and the full detection pipeline
  */
 import * as Location from 'expo-location';
-import { getMetroByZip } from '@nusa/shared';
+import { getMetroByZip } from '@nepally/shared';
 import type {
   LocationPermissionStatus,
   GpsCoordinates,
   LocationDetectionResult,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import { supabase } from '../config/supabase';
 
 /**

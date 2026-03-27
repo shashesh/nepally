@@ -1,4 +1,4 @@
-# NUSA Design System Foundation
+# Nepally Design System Foundation
 
 > **Document:** 00 | **Version:** 1.0 | **Status:** Draft | **Updated:** 2026-02-19
 
@@ -7,7 +7,7 @@
 ## Brand Identity
 
 ### Mission Alignment
-NUSA is a **utility-first community platform** that must feel:
+Nepally is a **utility-first community platform** that must feel:
 - **Trustworthy** - Users need to feel safe sharing housing/emergency info
 - **Culturally Connected** - Resonate with Nepali diaspora without being stereotypical
 - **Simple & Familiar** - Like WhatsApp simplicity + Nextdoor community feel
@@ -127,7 +127,7 @@ Use multiples of 8 for consistency:
 
 #### Primary Button
 
-[Continue to NUSA]*
+[Continue to Nepally]*
 
 - **Font:** 17pt Semibold, White text
 - **Background:** #1565C0 (Primary Blue)
@@ -143,7 +143,7 @@ Use multiples of 8 for consistency:
 | Disabled | Gray background (#BDBDBD), white text |
 | Loading | Spinner inside button, text hidden |
 
-[Continue to NUSA]{state:disabled}
+[Continue to Nepally]{state:disabled}
 
 #### Secondary Button (Outline)
 
@@ -414,7 +414,7 @@ Dismissible: [✕]{.secondary}
 - **From WhatsApp:** Minimalist design, familiar chat patterns
 - **From Airbnb:** Verification flow, clear photo guidelines
 
-### What Makes NUSA Unique
+### What Makes Nepally Unique
 - Metro-first location model (not neighborhood or city)
 - 3-tier trust system (Level 0, 1, 2)
 - Tag-based post engine (Reddit-style)

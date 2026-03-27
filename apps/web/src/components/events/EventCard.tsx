@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, Badge, Text, Group } from '@mantine/core';
-import { formatPublicName, type Event } from '@nusa/shared';
+import { formatPublicName, type Event } from '@nepally/shared';
 import Avatar from '../Avatar';
 import EventTypeBadge from './EventTypeBadge';
 import styles from './EventCard.module.css';

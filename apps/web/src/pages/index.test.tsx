@@ -32,7 +32,7 @@ describe('Home (index page)', () => {
   it('returns null while auth is loading', () => {
     indexMocks.useAuthMock.mockReturnValue({ user: null, loading: true });
     render(React.createElement(Home));
-    expect(screen.queryByText('Welcome to NUSA')).toBeNull();
+    expect(screen.queryByText('Welcome to Nepally')).toBeNull();
     expect(screen.queryByTestId('feed-page')).toBeNull();
   });
 
@@ -45,7 +45,7 @@ describe('Home (index page)', () => {
   it('renders the landing page heading when logged out', () => {
     indexMocks.useAuthMock.mockReturnValue({ user: null, loading: false });
     render(React.createElement(Home));
-    expect(screen.getByText('Welcome to NUSA')).toBeDefined();
+    expect(screen.getByText('Welcome to Nepally')).toBeDefined();
     expect(screen.getByText('Nepalese United Support Alliance')).toBeDefined();
   });
 

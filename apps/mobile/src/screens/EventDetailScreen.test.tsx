@@ -9,8 +9,8 @@ import {
   unrsvpFromEvent,
   cancelEvent,
   deleteEvent,
-} from '@nusa/shared';
-import type { Event, EventRsvp } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Event, EventRsvp } from '@nepally/shared';
 import EventDetailScreen from './EventDetailScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -96,7 +96,7 @@ const MOCK_ATTENDEES: EventRsvp[] = [
   },
 ];
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getEventById: jest.fn(async () => ({ data: null })),
   getEventAttendees: jest.fn(async () => ({ data: [] })),
   hasUserRsvp: jest.fn(async () => ({ data: false })),

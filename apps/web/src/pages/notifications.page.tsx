@@ -12,8 +12,8 @@ import {
   markAllNotificationsRead,
   deleteNotification,
   resolveNotificationRouteTarget,
-} from '@nusa/shared';
-import type { Notification } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Notification } from '@nepally/shared';
 import styles from '../styles/Notifications.module.css';
 
 const PAGE_SIZE = 20;
@@ -199,7 +199,7 @@ export default function NotificationsPage() {
   return (
     <>
       <Head>
-        <title>Notifications — NUSA</title>
+        <title>Notifications — Nepally</title>
       </Head>
 
       <div className={styles.shell}>

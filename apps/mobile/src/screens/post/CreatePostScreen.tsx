@@ -35,8 +35,8 @@ import {
   MAX_TAGS_PER_POST,
   MAX_PHOTOS_PER_POST,
   uploadPostPhotos,
-} from '@nusa/shared';
-import type { Tag } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Tag } from '@nepally/shared';
 import { supabase } from '../../config/supabase';
 import { savePostDraft, loadPostDraft, clearPostDraft } from '../../utils/storage';
 import type { PostDraft } from '../../utils/storage';
@@ -353,7 +353,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
 
     Alert.alert(
       'Photo Library Access Required',
-      'NUSA needs photo library access so you can attach images to your post.',
+      'Nepally needs photo library access so you can attach images to your post.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Open Settings', onPress: () => Linking.openSettings() },

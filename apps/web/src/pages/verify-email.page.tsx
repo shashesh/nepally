@@ -70,7 +70,7 @@ export default function VerifyEmailPage() {
   return (
     <>
       <Head>
-        <title>Verify Your Email - NUSA</title>
+        <title>Verify Your Email - Nepally</title>
       </Head>
       <div className={styles.authPage}>
         <div className={styles.authCard}>

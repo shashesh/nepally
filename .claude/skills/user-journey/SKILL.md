@@ -58,7 +58,7 @@ Use this structure (fill in content based on the specific journey):
 - Assumptions & Open Questions
 ```
 
-## Step 3: Review Against NUSA Principles
+## Step 3: Review Against Nepally Principles
 
 Validate: Metro-first model, trust level enforcement, safety protocols, minimal data collection, accessibility, platform parity.
 

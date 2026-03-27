@@ -3,7 +3,7 @@
  * Uses the platform-specific supabase client from lib/supabase.ts.
  */
 import { supabase } from './supabase';
-import type { EmailAuthResult, GoogleAuthResult } from '@nusa/shared';
+import type { EmailAuthResult, GoogleAuthResult } from '@nepally/shared';
 
 export async function signInWithGoogle(): Promise<GoogleAuthResult> {
   try {

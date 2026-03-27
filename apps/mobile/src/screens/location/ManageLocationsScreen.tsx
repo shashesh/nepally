@@ -19,8 +19,8 @@ import {
   deleteSavedLocation,
   setDefaultSavedLocation,
   MAX_SAVED_LOCATIONS_PREMIUM,
-} from '@nusa/shared';
-import type { SavedLocation } from '@nusa/shared';
+} from '@nepally/shared';
+import type { SavedLocation } from '@nepally/shared';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';

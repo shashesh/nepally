@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { getUserSettings, upsertUserSettings } from '@nusa/shared';
-import type { UserSettings, NotifyChatPref, NotifyLikesPref } from '@nusa/shared';
+import { getUserSettings, upsertUserSettings } from '@nepally/shared';
+import type { UserSettings, NotifyChatPref, NotifyLikesPref } from '@nepally/shared';
 import styles from '../../styles/NotificationPreferences.module.css';
 
 const DEFAULT_SETTINGS: Omit<UserSettings, 'user_id'> = {
@@ -71,7 +71,7 @@ export default function NotificationPreferencesPage() {
   return (
     <>
       <Head>
-        <title>Notification Preferences — NUSA</title>
+        <title>Notification Preferences — Nepally</title>
       </Head>
 
       <div className={styles.shell}>

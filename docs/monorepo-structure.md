@@ -1,10 +1,10 @@
-# NUSA Monorepo Structure
+# Nepally Monorepo Structure
 
-This document explains the organization of the NUSA codebase.
+This document explains the organization of the Nepally codebase.
 
 ## Overview
 
-NUSA uses a **monorepo** structure powered by **npm workspaces**. This means all related projects (mobile app, web app, shared code) live in one repository.
+Nepally uses a **monorepo** structure powered by **npm workspaces**. This means all related projects (mobile app, web app, shared code) live in one repository.
 
 ## Directory Structure
 
@@ -175,10 +175,10 @@ npm run format
 
 ## Package Linking
 
-Workspaces are automatically linked. When you import `@nusa/shared`:
+Workspaces are automatically linked. When you import `@nepally/shared`:
 
 ```typescript
-import { PostCategory } from '@nusa/shared';
+import { PostCategory } from '@nepally/shared';
 ```
 
 npm resolves it to `packages/shared` (no need for `npm link`).
@@ -199,7 +199,7 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 3. Update `package.json`:
    ```json
    {
-     "name": "@nusa/admin",
+     "name": "@nepally/admin",
      "version": "1.0.0",
      "private": true,
      ...
@@ -228,7 +228,7 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 3. Update `package.json`:
    ```json
    {
-     "name": "@nusa/ui-mobile",
+     "name": "@nepally/ui-mobile",
      "version": "1.0.0",
      "main": "dist/index.js",
      "types": "dist/index.d.ts",
@@ -332,7 +332,7 @@ See `.github/workflows/ci.yml` for details.
 
 ## Troubleshooting
 
-### Issue: Module not found `@nusa/shared`
+### Issue: Module not found `@nepally/shared`
 
 **Solution:** Build the shared package:
 ```bash
@@ -367,7 +367,7 @@ npm install
    import { Post } from '../../../packages/shared/src/types/post';
 
    // ✅ Good
-   import { Post } from '@nusa/shared';
+   import { Post } from '@nepally/shared';
    ```
 
 2. **Keep shared package pure**
@@ -380,7 +380,7 @@ npm install
    - Use `*` for internal dependencies
 
 4. **Document breaking changes**
-   - If you change `@nusa/shared`, update CHANGELOG.md
+   - If you change `@nepally/shared`, update CHANGELOG.md
    - Test both mobile and web apps after changes
 
 ## Future Expansion

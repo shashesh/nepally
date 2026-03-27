@@ -16,7 +16,7 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getShortMetroName: (name: string) => name,
   MAX_SAVED_LOCATIONS_PREMIUM: 5,
   hasMetroChanged: (a: string, b: string) => a !== b,

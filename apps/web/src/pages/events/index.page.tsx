@@ -13,7 +13,7 @@ import {
   TrustLevel,
   type Event,
   type EventType,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import EventCard from '../../components/events/EventCard';
 import styles from './events.module.css';
 
@@ -81,7 +81,7 @@ export default function EventsPage() {
   return (
     <>
       <Head>
-        <title>Events - NUSA</title>
+        <title>Events - Nepally</title>
       </Head>
       <div className={styles.page}>
         <div className={styles.container}>

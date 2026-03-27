@@ -86,7 +86,7 @@ export function LocationPermissionScreen() {
 
         {/* Headline */}
         <Text style={styles.headline}>
-          NUSA works best with{'\n'}your location
+          Nepally works best with{'\n'}your location
         </Text>
 
         {/* Body Text */}

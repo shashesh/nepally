@@ -17,8 +17,8 @@ const signupMocks = vi.hoisted(() => ({
 vi.mock('../hooks/useAuth', () => ({ useAuth: signupMocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: signupMocks.useRouterMock }));
 vi.mock('../lib/auth', () => ({ signUpWithEmail: signupMocks.signUpWithEmailMock, signInWithGoogle: signupMocks.signInWithGoogleMock }));
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     validateEmail: signupMocks.validateEmailMock,
@@ -54,7 +54,7 @@ describe('SignupPage', () => {
 
   it('renders the signup form', () => {
     render(<SignupPage />);
-    expect(screen.getByText('Join NUSA')).toBeDefined();
+    expect(screen.getByText('Join Nepally')).toBeDefined();
     expect(screen.getByLabelText('Full Name')).toBeDefined();
     expect(screen.getByLabelText('Email')).toBeDefined();
     expect(screen.getByLabelText('Password')).toBeDefined();

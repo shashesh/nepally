@@ -9,14 +9,14 @@
 
 ## Decision
 
-The "Facebook Bridge" feature (automated ingestion of NUSA Facebook group posts into the app) has been **removed from Phase 1 entirely**. The app will launch relying on organic user-generated content instead.
+The "Facebook Bridge" feature (automated ingestion of Nepally Facebook group posts into the app) has been **removed from Phase 1 entirely**. The app will launch relying on organic user-generated content instead.
 
 ---
 
 ## Context
 
 The original Phase 1 roadmap included:
-> "FB-to-App Sync: Automated ingestion of current NUSA Facebook posts to ensure the app is 'full' on Day 1"
+> "FB-to-App Sync: Automated ingestion of current Nepally Facebook posts to ensure the app is 'full' on Day 1"
 
 This was intended to solve the cold-start problem by leveraging existing Facebook community content, providing immediate value to early users.
 
@@ -58,7 +58,7 @@ This was intended to solve the cold-start problem by leveraging existing Faceboo
    - FB-ingested posts have no associated users (initially)
    - Cannot assign trust levels (Level 0/1/2)
    - Undermines Phase 1 goal of "establishing a safe environment"
-   - Would need generic "NUSA Facebook (Unverified)" attribution
+   - Would need generic "Nepally Facebook (Unverified)" attribution
 
 ### Timeline Impact
 
@@ -71,7 +71,7 @@ This was intended to solve the cold-start problem by leveraging existing Faceboo
 - Facebook ToS violations could result in:
   - Cease and desist letter
   - Legal action
-  - Reputational damage to NUSA brand
+  - Reputational damage to Nepally brand
 - No clear path to authorized API access without Facebook partnership
 
 ---
@@ -149,7 +149,7 @@ After evaluating alternatives, the decision was made to **remove the Facebook Br
    - Targeted outreach to 5 initial metro areas
    - Community leads encourage local users to post
    - Early adopters become advocates
-   - Word-of-mouth within existing NUSA Facebook community
+   - Word-of-mouth within existing Nepally Facebook community
 
 5. **Timeline Savings:** Removing FB Bridge reduces Phase 1 timeline from 4-6 months to 3.5-4.5 months despite adding chat and photos
 
@@ -191,7 +191,7 @@ After evaluating alternatives, the decision was made to **remove the Facebook Br
 ⚠️ **Slower Initial Growth**
 - No "instant" content library
 - Requires more effort to attract first users
-- **Mitigation:** Leverage existing NUSA Facebook group for targeted outreach
+- **Mitigation:** Leverage existing Nepally Facebook group for targeted outreach
 
 ⚠️ **Higher User Acquisition Cost**
 - Need to actively recruit early adopters
@@ -202,7 +202,7 @@ After evaluating alternatives, the decision was made to **remove the Facebook Br
 
 - **Phase 2/3 Revisit:** If app reaches 10,000+ users, could explore official Meta partnership
 - **User-Initiated Import:** Allow users to manually paste their own FB post text and convert to structured post (user owns content, no ToS violation)
-- **Cross-Posting Tool:** Let users create once, post to both NUSA app and FB group simultaneously
+- **Cross-Posting Tool:** Let users create once, post to both Nepally app and FB group simultaneously
 
 ---
 
@@ -231,7 +231,7 @@ After evaluating alternatives, the decision was made to **remove the Facebook Br
 
 ### Communication Plan
 
-- Notify NUSA Facebook moderators of decision
+- Notify Nepally Facebook moderators of decision
 - Explain organic growth strategy to community
 - Recruit 50-100 beta users per metro who commit to creating initial content
 - Frame as "quality over quantity" positioning

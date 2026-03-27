@@ -1,8 +1,8 @@
-# NUSA Technology Versions
+# Nepally Technology Versions
 
 **Last Updated:** 2026-02-24
 
-This document serves as the single source of truth for all technology versions used in the NUSA project.
+This document serves as the single source of truth for all technology versions used in the Nepally project.
 
 ## Core Dependencies
 

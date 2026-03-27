@@ -19,7 +19,7 @@ jest.mock('../../config/supabase', () => ({
 const mockCreateUserProfile = jest.fn();
 const mockMarkEmailVerified = jest.fn();
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   createUserProfile: (...args: Parameters<typeof mockCreateUserProfile>) => mockCreateUserProfile(...args),
   markEmailVerified: (...args: Parameters<typeof mockMarkEmailVerified>) => mockMarkEmailVerified(...args),
 }));

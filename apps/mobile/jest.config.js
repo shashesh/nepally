@@ -4,7 +4,7 @@ module.exports = {
   testMatch: ['**/*.test.ts', '**/*.test.tsx'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
-    '^@nusa/shared$': '<rootDir>/../../packages/shared/src/index.ts',
+    '^@nepally/shared$': '<rootDir>/../../packages/shared/src/index.ts',
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
@@ -20,6 +20,6 @@ module.exports = {
     },
   },
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@nusa/shared))',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@nepally/shared))',
   ],
 };

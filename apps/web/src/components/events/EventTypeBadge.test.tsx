@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '../../test-utils';
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('@nusa/shared', () => ({
+vi.mock('@nepally/shared', () => ({
   EVENT_TYPE_ICONS: {
     cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌',
   },

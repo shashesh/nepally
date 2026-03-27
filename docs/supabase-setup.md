@@ -1,6 +1,6 @@
 # Supabase Setup Guide
 
-Comprehensive guide for setting up Supabase for the NUSA project.
+Comprehensive guide for setting up Supabase for the Nepally project.
 
 ## Supabase Project Creation
 
@@ -10,7 +10,7 @@ Comprehensive guide for setting up Supabase for the NUSA project.
 2. Click "New project"
 3. Select your organization or create one
 4. Enter project details:
-   - **Name**: NUSA (or your preferred name)
+   - **Name**: Nepally (or your preferred name)
    - **Database Password**: Generate a strong password and save it securely
    - **Region**: Choose closest to your users (e.g., `us-east-1`)
    - **Pricing Plan**: Start with Free tier (upgrade later as needed)

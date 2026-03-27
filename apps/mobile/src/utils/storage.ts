@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../config/constants';
-import type { ActiveLocation, LocationSnooze, PermissionBannerState } from '@nusa/shared';
+import type { ActiveLocation, LocationSnooze, PermissionBannerState } from '@nepally/shared';
 
 /**
  * AsyncStorage utility functions

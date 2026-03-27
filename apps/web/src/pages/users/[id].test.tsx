@@ -30,8 +30,8 @@ vi.mock('next/router', () => ({ useRouter: profilePageMocks.useRouterMock }));
 vi.mock('../../lib/supabase', () => ({
   supabase: { from: profilePageMocks.supabaseFromMock },
 }));
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     getUserById: profilePageMocks.getUserByIdMock,

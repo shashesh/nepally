@@ -1,6 +1,6 @@
 # Documentation
 
-This directory contains detailed documentation for the NUSA project.
+This directory contains detailed documentation for the Nepally project.
 
 ## Guides
 

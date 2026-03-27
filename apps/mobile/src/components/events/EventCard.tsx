@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { formatPublicName, type Event } from '@nusa/shared';
+import { formatPublicName, type Event } from '@nepally/shared';
 import { Avatar } from '../Avatar';
 import { EventTypeBadge } from './EventTypeBadge';
 import { colors } from '../../styles/colors';

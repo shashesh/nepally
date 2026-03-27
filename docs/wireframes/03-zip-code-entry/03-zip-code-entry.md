@@ -2,13 +2,13 @@
 
 > **Screen:** 03 | **Status:** Draft | **Updated:** 2026-02-19
 > **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 8
-> **Story:** As a new user who just created an account, I want to enter my ZIP code so NUSA can show me posts in my local metro area.
+> **Story:** As a new user who just created an account, I want to enter my ZIP code so Nepally can show me posts in my local metro area.
 
 ---
 
 ## Screen Purpose
 
-This screen captures the user's ZIP code to map them to their local US Census Metro Area. This is critical for NUSA's metro-first location model, ensuring users only see relevant local content.
+This screen captures the user's ZIP code to map them to their local US Census Metro Area. This is critical for Nepally's metro-first location model, ensuring users only see relevant local content.
 
 **Key Goals:**
 - Collect ZIP code for metro area mapping

@@ -15,8 +15,8 @@ import {
   uploadProfilePhoto,
   deleteProfilePhoto,
   updateUserProfile,
-} from '@nusa/shared';
-import type { Post, TrustLevel } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Post, TrustLevel } from '@nepally/shared';
 import Avatar from '../components/Avatar';
 import styles from '../styles/Profile.module.css';
 
@@ -377,7 +377,7 @@ export default function ProfilePage() {
   return (
     <>
       <Head>
-        <title>Profile - NUSA</title>
+        <title>Profile - Nepally</title>
       </Head>
       <div className={styles.profilePage}>
         {menuOpen && (

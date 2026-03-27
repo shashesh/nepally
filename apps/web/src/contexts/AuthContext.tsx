@@ -2,8 +2,8 @@
 
 import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { getUserById } from '@nusa/shared';
-import type { User } from '@nusa/shared';
+import { getUserById } from '@nepally/shared';
+import type { User } from '@nepally/shared';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { requestWebPushPermission } from '../lib/webPush';
 

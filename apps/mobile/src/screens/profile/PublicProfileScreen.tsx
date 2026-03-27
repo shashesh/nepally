@@ -24,8 +24,8 @@ import {
   getOrCreateConversation,
   formatRelativeTime,
   formatPublicName,
-} from '@nusa/shared';
-import type { User, Post, Event } from '@nusa/shared';
+} from '@nepally/shared';
+import type { User, Post, Event } from '@nepally/shared';
 import { Avatar } from '../../components/Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';

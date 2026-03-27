@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NUSA (Nepalese United Support Alliance) is a utility-first community platform for the Nepalese diaspora in the USA. Structured, location-based services for housing, jobs, emergencies, and travel coordination. Cross-platform monorepo: React Native (Expo 54) + Next.js 15, backed by Supabase. See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
+Nepally (US Nepal Help Network) is a utility-first community platform for the Nepalese diaspora in the USA. Structured, location-based services for housing, jobs, emergencies, and travel coordination. Cross-platform monorepo: React Native (Expo 54) + Next.js 15, backed by Supabase. See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 
 ## Core Architecture Principles
 
@@ -41,7 +41,7 @@ Everything else                        → packages/shared/
 - **`apps/web/`**: Next.js pages, React components, CSS Modules, localStorage config
 - Shared API functions accept `SupabaseClient` as parameter (dependency injection)
 - Shared types use **snake_case** matching Supabase column names
-- `apps/` MUST import from `@nusa/shared` — NEVER redefine types/validation/API/constants locally
+- `apps/` MUST import from `@nepally/shared` — NEVER redefine types/validation/API/constants locally
 - `packages/shared/` MUST NOT import from `react-native`, `expo-*`, `next`, or any platform package
 - Before implementing features, read `docs/code-sharing-guide.md` and `docs/monorepo-structure.md`
 

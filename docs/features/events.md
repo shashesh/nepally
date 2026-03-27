@@ -21,7 +21,7 @@ Nepalese diaspora community members currently rely on Facebook groups and WhatsA
 2. **Coordination friction**: No native RSVP or reminder system. Organizers cannot gauge attendance in advance.
 3. **Creation barrier**: Only group admins can post events on Facebook. Verified community members have no independent channel.
 
-NUSA's metro-first location model makes it uniquely positioned to surface the right local events to the right users without algorithm-based noise.
+Nepally's metro-first location model makes it uniquely positioned to surface the right local events to the right users without algorithm-based noise.
 
 ---
 

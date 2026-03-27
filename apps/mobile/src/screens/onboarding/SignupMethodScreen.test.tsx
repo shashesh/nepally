@@ -12,7 +12,7 @@ const mockCreateUserProfile = jest.fn();
 const mockMarkGoogleVerified = jest.fn();
 const mockGetUserById = jest.fn();
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   createUserProfile: (...args: Parameters<typeof mockCreateUserProfile>) => mockCreateUserProfile(...args),
   markGoogleVerified: (...args: Parameters<typeof mockMarkGoogleVerified>) => mockMarkGoogleVerified(...args),
   getUserById: (...args: Parameters<typeof mockGetUserById>) => mockGetUserById(...args),

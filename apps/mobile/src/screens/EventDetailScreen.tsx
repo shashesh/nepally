@@ -27,7 +27,7 @@ import {
   TrustLevel,
   type Event,
   type EventRsvp,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../config/supabase';
 import { EventTypeBadge } from '../components/events/EventTypeBadge';

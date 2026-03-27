@@ -2,13 +2,13 @@
 
 > **Screen:** 01 | **Status:** Draft | **Updated:** 2026-02-19
 > **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 4
-> **Story:** As a new user launching NUSA for the first time, I want to understand what the app is about and easily sign up or log in.
+> **Story:** As a new user launching Nepally for the first time, I want to understand what the app is about and easily sign up or log in.
 
 ---
 
 ## Screen Purpose
 
-The Welcome Screen is the first screen users see after launching NUSA. It introduces the app's purpose, establishes trust through clear messaging, and provides entry points for signup or login.
+The Welcome Screen is the first screen users see after launching Nepally. It introduces the app's purpose, establishes trust through clear messaging, and provides entry points for signup or login.
 
 **Key Goals:**
 - Establish brand identity and mission (utility-first community platform)
@@ -21,7 +21,7 @@ The Welcome Screen is the first screen users see after launching NUSA. It introd
 ## Visual Wireframe
 
 ::: hero
-![NUSA Logo](assets/nusa-logo.png)
+![Nepally Logo](assets/nusa-logo.png)
 
 # Your Local Nepali Community in the USA
 
@@ -49,7 +49,7 @@ No internet connection. Please check your connection and try again.
 
 ## Component Specifications
 
-### 1. NUSA Logo
+### 1. Nepally Logo
 
 | Property | iOS | Android |
 |----------|-----|---------|
@@ -60,7 +60,7 @@ No internet connection. Please check your connection and try again.
 - Transparent background, full-color
 - Recognizable at small size
 - First-launch animation: fade in + scale 0.9→1.0 (300ms, ease-out)
-- **a11y:** Alt text "NUSA logo", not interactive
+- **a11y:** Alt text "Nepally logo", not interactive
 
 ---
 
@@ -108,7 +108,7 @@ No internet connection. Please check your connection and try again.
 - Focused (Android): 2px darker border
 
 **Interaction:** Tap → Navigate to Screen 02 (Signup Method Selection) + haptic (iOS)
-**a11y:** Label "Sign Up", Hint "Create a new NUSA account", min touch target 44pt/48dp
+**a11y:** Label "Sign Up", Hint "Create a new Nepally account", min touch target 44pt/48dp
 
 ---
 
@@ -155,7 +155,7 @@ No internet connection. Please check your connection and try again.
 |---|---------|--------|---------------|
 | 1 | Safe area / Status bar | Auto | — |
 | 2 | Top padding | 48px/dp | — |
-| 3 | NUSA Logo | 80px/dp | 24px/dp |
+| 3 | Nepally Logo | 80px/dp | 24px/dp |
 | 4 | Tagline | ~60px (2 lines) | 16px/dp |
 | 5 | Value proposition | ~75px (3 lines) | 48px/dp |
 | 6 | Sign Up button | 48px / 56dp | 16px/dp |
@@ -227,7 +227,7 @@ No internet connection. Please check your connection and try again.
 ## Accessibility
 
 ### Screen Reader Order
-1. "NUSA logo"
+1. "Nepally logo"
 2. "Your Local Nepali Community in the USA"
 3. "Find housing, jobs, and emergency help from verified community members in your metro area."
 4. "Sign Up" button

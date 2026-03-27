@@ -1,6 +1,6 @@
-# NUSA - Nepalese United Support Alliance
+# Nepally - US Nepal Help Network
 
-A utility-first community platform for the Nepalese diaspora in the USA, providing structured, location-based services for housing, jobs, emergencies, and travel coordination.
+A utility-first community platform for the Nepali diaspora in the USA, providing structured, location-based services for housing, jobs, emergencies, and travel coordination.
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for full version details.
 ## Repository Structure
 
 ```
-nusa/
+nepally/
 ├── apps/
 │   ├── mobile/          # React Native mobile app (Expo)
 │   └── web/             # Next.js web app
@@ -94,9 +94,9 @@ See [Monorepo Structure](./docs/monorepo-structure.md) for details.
 
 CI runs on GitHub Actions. All jobs run on `ubuntu-latest` with Node 20.
 
-[![CI](https://github.com/shashesh/nusa/actions/workflows/ci.yml/badge.svg)](https://github.com/shashesh/nusa/actions/workflows/ci.yml)
-[![Deploy Dev](https://github.com/shashesh/nusa/actions/workflows/deploy-vercel-dev.yml/badge.svg)](https://github.com/shashesh/nusa/actions/workflows/deploy-vercel-dev.yml)
-[![Deploy Prod](https://github.com/shashesh/nusa/actions/workflows/deploy-vercel-prod.yml/badge.svg)](https://github.com/shashesh/nusa/actions/workflows/deploy-vercel-prod.yml)
+[![CI](https://github.com/shashesh/nepally/actions/workflows/ci.yml/badge.svg)](https://github.com/shashesh/nepally/actions/workflows/ci.yml)
+[![Deploy Dev](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-dev.yml/badge.svg)](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-dev.yml)
+[![Deploy Prod](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-prod.yml/badge.svg)](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-prod.yml)
 
 ### Automatic (on PR merge to `master`)
 

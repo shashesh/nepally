@@ -2,7 +2,7 @@
  * Platform-specific constants (AsyncStorage keys)
  *
  * App-wide constants like APP_CONFIG, POST_CATEGORIES, TRUST_LEVELS, POST_EXPIRY_DAYS
- * are now in @nusa/shared — import from there.
+ * are now in @nepally/shared — import from there.
  */
 
 export const STORAGE_KEYS = {

@@ -22,7 +22,7 @@
       "@/*": [
         "./src/*"
       ],
-      "@nusa/shared": [
+      "@nepally/shared": [
         "../../packages/shared/src"
       ]
     },

@@ -1,4 +1,4 @@
--- NUSA Seed Data
+-- Nepally Seed Data
 -- Initial data required for the application to function.
 
 -- =====================================================

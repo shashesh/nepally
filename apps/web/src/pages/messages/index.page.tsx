@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { getConversations, formatRelativeTime } from '@nusa/shared';
-import type { ConversationWithParticipant } from '@nusa/shared';
+import { getConversations, formatRelativeTime } from '@nepally/shared';
+import type { ConversationWithParticipant } from '@nepally/shared';
 import Avatar from '../../components/Avatar';
 import styles from '../../styles/Messages.module.css';
 
@@ -56,7 +56,7 @@ export default function MessagesPage() {
   return (
     <>
       <Head>
-        <title>Messages - NUSA</title>
+        <title>Messages - Nepally</title>
       </Head>
       <div className={styles.messagesPage}>
         <h1 className={styles.pageTitle}>Messages</h1>

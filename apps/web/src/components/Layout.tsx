@@ -38,8 +38,8 @@ import {
   deleteNotification,
   resolveNotificationRouteTarget,
   SIDEBAR_TAGS,
-} from '@nusa/shared';
-import type { Notification } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Notification } from '@nepally/shared';
 import LocationSwitcher from './LocationSwitcher';
 import Avatar from './Avatar';
 import styles from './Layout.module.css';
@@ -309,7 +309,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className={styles.appShell}>
         <header className={styles.topBar}>
           <div className={styles.topBarLeft}>
-            <Link href="/" className={styles.topBarBrand}>NUSA</Link>
+            <Link href="/" className={styles.topBarBrand}>Nepally</Link>
           </div>
 
           <div className={styles.topBarLocationAnchor}>
@@ -570,7 +570,7 @@ export default function Layout({ children }: LayoutProps) {
                   Help Center
                 </Link>
               </nav>
-              <div className={styles.sidebarFooterCopy}>&copy; {new Date().getFullYear()} NUSA Community</div>
+              <div className={styles.sidebarFooterCopy}>&copy; {new Date().getFullYear()} Nepally Community</div>
             </div>
           </aside>
 
@@ -587,7 +587,7 @@ export default function Layout({ children }: LayoutProps) {
       <nav className={styles.nav}>
         <div className={styles.navInner}>
           <Link href="/" className={styles.logo}>
-            NUSA
+            Nepally
           </Link>
           <div className={styles.navAuth}>
             <Button variant="outline" component={Link} href="/login" radius="xl">

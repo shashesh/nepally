@@ -26,7 +26,7 @@ vi.mock('../../lib/supabase', () => ({
   },
 }));
 
-vi.mock('@nusa/shared', () => ({
+vi.mock('@nepally/shared', () => ({
   createUserProfile: callbackMocks.createUserProfileMock,
   markEmailVerified: callbackMocks.markEmailVerifiedMock,
   markGoogleVerified: callbackMocks.markGoogleVerifiedMock,

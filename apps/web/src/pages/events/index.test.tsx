@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getEventsByMetro } from '@nusa/shared';
+import { getEventsByMetro } from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -43,7 +43,7 @@ const mockEvents = [
   },
 ];
 
-vi.mock('@nusa/shared', () => ({
+vi.mock('@nepally/shared', () => ({
   getEventsByMetro: vi.fn(async () => ({ data: mockEvents })),
   getUserRsvps: vi.fn(async () => ({ data: [] })),
   EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],

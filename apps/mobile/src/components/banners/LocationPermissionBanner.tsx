@@ -11,7 +11,7 @@ import {
   shouldShowPermissionBanner,
   PERMISSION_BANNER_MAX_SHOWS,
   PERMISSION_BANNER_COOLDOWN_DAYS,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import { getLocationPermissionStatus } from '../../services/location';
 import {
   getPermissionBannerState,

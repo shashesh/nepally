@@ -330,7 +330,7 @@ This email is already registered. Please log in or use a different account.
 ### Google Account Picker (Multiple Accounts)
 - **Scenario:** User has multiple Google accounts on device
 - **Behavior:** Google OAuth shows account picker automatically; user selects which account; proceed with selected account
-- **Note:** Handled by Google, not NUSA UI
+- **Note:** Handled by Google, not Nepally UI
 
 ### Very Small Screen (iPhone SE 1st gen, 320×568px)
 - **Behavior:** Reduce option card height to 48px; reduce font sizes slightly (15pt/14sp main labels); reduce spacing between cards to 12px; all content still visible and tappable
