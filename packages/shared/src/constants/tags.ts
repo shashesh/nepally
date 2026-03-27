@@ -56,6 +56,6 @@ export const SIDEBAR_TAGS: ReadonlyArray<{ slug: string; name: string; emoji: st
   { slug: 'jobs', name: 'Jobs', emoji: '💼', icon: 'briefcase' },
   { slug: 'help', name: 'Help', emoji: '🤝', icon: 'heart-handshake' },
   { slug: 'question', name: 'Question', emoji: '❓', icon: 'help-circle' },
-  { slug: 'emergency', name: 'Emergency', emoji: '🚨', icon: 'alert-triangle' },
   { slug: 'discussion', name: 'Discussion', emoji: '💬', icon: 'message-circle' },
+  { slug: 'emergency', name: 'Emergency', emoji: '🚨', icon: 'alert-triangle' },
 ] as const;

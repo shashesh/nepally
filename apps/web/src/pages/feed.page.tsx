@@ -20,8 +20,6 @@ import {
   createReport,
   formatRelativeTime,
   getUpcomingEventsByMetro,
-  TAG_EMOJI,
-  TAG_COLORS,
 } from '@nusa/shared';
 import type { Post, Event } from '@nusa/shared';
 import Avatar from '../components/Avatar';
@@ -411,11 +409,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       router.replace({ pathname: routeBasePath, query }, undefined, { shallow: true });
       return next;
     });
-  }
-
-  function handleAllChip() {
-    setSelectedTagSlugs([]);
-    router.replace({ pathname: routeBasePath }, undefined, { shallow: true });
   }
 
   function handleRetryLoad() {
@@ -945,7 +938,8 @@ function PostCard({
               <>
                 <span className={styles.postTimestampDot}>·</span>
                 {post.tags.map((tag) => (
-                  <span
+                  <button
+                    type="button"
                     key={tag.id}
                     className={styles.postTagBadge}
                     onClick={(e) => {
@@ -955,7 +949,7 @@ function PostCard({
                     }}
                   >
                     {tag.name.toUpperCase()}
-                  </span>
+                  </button>
                 ))}
               </>
             )}

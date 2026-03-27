@@ -49,7 +49,7 @@ function getInitials(name: string): string {
 export default function Avatar({
   name,
   photoUrl,
-  trustLevel = 0,
+  trustLevel: _trustLevel = 0,
   size = 'medium',
 }: AvatarProps) {
   const placeholderColor = !photoUrl ? getColorFromName(name) : undefined;
