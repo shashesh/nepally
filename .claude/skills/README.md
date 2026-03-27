@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # Nepally Skills Reference
+=======
+# NUSA Skills Reference
+>>>>>>> origin/master
 
 ## Available Skills
 
