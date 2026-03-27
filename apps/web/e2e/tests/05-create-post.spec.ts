@@ -49,14 +49,15 @@ test.describe('Create post page', () => {
     await page.goto('/posts/create');
 
     // Wait for tags to load
-    await expect(page.getByText(MOCK_TAGS[0].name)).toBeVisible({ timeout: 10_000 });
+    const housingTagBtn = page.getByRole('button', { name: new RegExp(`${MOCK_TAGS[0].name} tag`, 'i') });
+    await expect(housingTagBtn).toBeVisible({ timeout: 10_000 });
 
     // Fill the form
     await page.getByPlaceholder(/what.*about/i).fill('This is a valid test post title');
     await page.getByPlaceholder(/write your post/i).fill('This is the body of the post with enough content to pass validation.');
 
     // Select a tag
-    await page.getByText(MOCK_TAGS[0].name).click();
+    await housingTagBtn.click();
 
     // Submit
     const postBtn = page.getByRole('button', { name: /^post$/i });

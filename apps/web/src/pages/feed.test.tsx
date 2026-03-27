@@ -2,12 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type MockTagFilterBarProps = {
-  tags: Array<{ id: string; slug: string; name: string }>;
-  selectedSlugs: string[];
-  onTagToggle: (slug: string) => void;
-  onAllPress: () => void;
-};
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
 
 const feedMocks = vi.hoisted(() => ({
@@ -15,7 +9,7 @@ const feedMocks = vi.hoisted(() => ({
   useLocationMock: vi.fn(),
   useRouterMock: vi.fn(),
   getPostsByMetroAreaMock: vi.fn(),
-  getTagsMock: vi.fn(),
+
   getUserLikedPostIdsMock: vi.fn(),
   getUserSavedPostIdsMock: vi.fn(),
   savePostMock: vi.fn(),
@@ -38,7 +32,6 @@ vi.mock('@nusa/shared', async () => {
   return {
     ...actual,
     getPostsByMetroArea: feedMocks.getPostsByMetroAreaMock,
-    getTags: feedMocks.getTagsMock,
     getUserLikedPostIds: feedMocks.getUserLikedPostIdsMock,
     getUserSavedPostIds: feedMocks.getUserSavedPostIdsMock,
     savePost: feedMocks.savePostMock,
@@ -51,15 +44,7 @@ vi.mock('@nusa/shared', async () => {
     TAG_EMOJI: { housing: '🏠', jobs: '💼' },
   };
 });
-vi.mock('../components/TagFilterBar', () => ({
-  default: ({ tags, selectedSlugs: _selectedSlugs, onTagToggle, onAllPress }: MockTagFilterBarProps) =>
-    React.createElement('div', { 'data-testid': 'tag-filter-bar' },
-      React.createElement('button', { onClick: onAllPress }, 'All'),
-      tags.map((t) =>
-        React.createElement('button', { key: t.id, onClick: () => onTagToggle(t.slug) }, t.name)
-      )
-    ),
-}));
+
 vi.mock('../components/Avatar', () => ({
   default: ({ name }: { name: string }) =>
     React.createElement('div', { 'data-testid': 'avatar' }, name),
@@ -120,7 +105,7 @@ describe('FeedPage', () => {
     });
     feedMocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
     feedMocks.useLocationMock.mockReturnValue({ activeLocation: mockActiveLocation });
-    feedMocks.getTagsMock.mockResolvedValue({ data: [] });
+
     feedMocks.getUserLikedPostIdsMock.mockResolvedValue({ data: [] });
     feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: [] });
     feedMocks.savePostMock.mockResolvedValue({});
@@ -205,18 +190,7 @@ describe('FeedPage', () => {
     });
   });
 
-  it('renders the TagFilterBar', async () => {
-    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
-    feedMocks.getTagsMock.mockResolvedValue({
-      data: [{ id: 'tag-1', slug: 'housing', name: 'Housing' }],
-    });
-    render(<FeedPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('tag-filter-bar')).toBeDefined();
-    });
-  });
-
-  it('passes selected tag slugs from URL query to tag filter', async () => {
+  it('fetches posts filtered by tag slug from URL query', async () => {
     feedMocks.useRouterMock.mockReturnValue({
       replace: mockReplace,
       push: mockPush,
@@ -224,40 +198,12 @@ describe('FeedPage', () => {
       isReady: true,
     });
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
-    feedMocks.getTagsMock.mockResolvedValue({
-      data: [{ id: 'tag-1', slug: 'housing', name: 'Housing' }],
-    });
     render(<FeedPage />);
-    // Posts should be fetched with the housing filter
     await waitFor(() => {
       expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenCalledWith(
         expect.anything(),
         '19100',
         ['housing'],
-        50
-      );
-    });
-  });
-
-  it('refetches posts with no filter when All tag is pressed', async () => {
-    feedMocks.useRouterMock.mockReturnValue({
-      replace: mockReplace,
-      push: mockPush,
-      query: { tags: 'housing' },
-      isReady: true,
-    });
-    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
-    feedMocks.getTagsMock.mockResolvedValue({
-      data: [{ id: 'tag-1', slug: 'housing', name: 'Housing' }],
-    });
-    render(<FeedPage />);
-    await waitFor(() => expect(screen.getByText('All')).toBeDefined());
-    fireEvent.click(screen.getByText('All'));
-    await waitFor(() => {
-      expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenCalledWith(
-        expect.anything(),
-        '19100',
-        undefined,
         50
       );
     });
@@ -299,31 +245,38 @@ describe('FeedPage', () => {
 
   // ─── Save feature tests ───────────────────────────────────
 
-  it('renders save button for non-own post', async () => {
+  it('shows Save Post option in post menu for non-own post', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
     await waitFor(() => {
-      // mockPosts[0].author_id = 'user-2', current user = 'user-1' → save button shows
-      expect(screen.getByLabelText('Save post')).toBeDefined();
+      expect(screen.getByText('Save Post')).toBeDefined();
     });
   });
 
-  it('does not render save button for own post', async () => {
+  it('does not show Save Post option for own post', async () => {
     const ownPost = { ...mockPosts[0], author_id: 'user-1' };
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [ownPost] });
     render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
     await waitFor(() => {
-      expect(screen.queryByLabelText('Save post')).toBeNull();
-      expect(screen.queryByLabelText('Unsave post')).toBeNull();
+      // Own post menu shows Edit/Delete, not Save
+      expect(screen.queryByText('Save Post')).toBeNull();
     });
   });
 
-  it('calls savePost when save button is clicked', async () => {
+  it('calls savePost when Save Post menu item is clicked', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
-    await waitFor(() => expect(screen.getByLabelText('Save post')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    fireEvent.click(screen.getByLabelText('Save post'));
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Save Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Save Post'));
 
     await waitFor(() => {
       expect(feedMocks.savePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
@@ -333,9 +286,11 @@ describe('FeedPage', () => {
   it('shows "Post saved." toast after saving', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
-    await waitFor(() => expect(screen.getByLabelText('Save post')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    fireEvent.click(screen.getByLabelText('Save post'));
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Save Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Save Post'));
 
     await waitFor(() => {
       expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
@@ -344,26 +299,33 @@ describe('FeedPage', () => {
     });
   });
 
-  it('optimistically toggles save button to unsave after clicking save', async () => {
+  it('shows Unsave Post in menu after saving', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
-    await waitFor(() => expect(screen.getByLabelText('Save post')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    fireEvent.click(screen.getByLabelText('Save post'));
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Save Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Save Post'));
+
+    // Re-open menu to check updated text
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+    fireEvent.click(screen.getByLabelText('Post options'));
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Unsave post')).toBeDefined();
+      expect(screen.getByText('Unsave Post')).toBeDefined();
     });
   });
 
-  it('calls unsavePost when save toggled off', async () => {
-    // Start with the post already saved
+  it('calls unsavePost when Unsave Post menu item is clicked', async () => {
     feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
-    await waitFor(() => expect(screen.getByLabelText('Unsave post')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    fireEvent.click(screen.getByLabelText('Unsave post'));
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Unsave Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Unsave Post'));
 
     await waitFor(() => {
       expect(feedMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
@@ -374,9 +336,11 @@ describe('FeedPage', () => {
     feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
-    await waitFor(() => expect(screen.getByLabelText('Unsave post')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    fireEvent.click(screen.getByLabelText('Unsave post'));
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Unsave Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Unsave Post'));
 
     await waitFor(() => {
       expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
@@ -389,36 +353,17 @@ describe('FeedPage', () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     feedMocks.savePostMock.mockResolvedValue({ error: new Error('network error') });
     render(<FeedPage />);
-    await waitFor(() => expect(screen.getByLabelText('Save post')).toBeDefined());
-
-    fireEvent.click(screen.getByLabelText('Save post'));
-
-    await waitFor(() => {
-      // Should revert back to unsaved state
-      expect(screen.getByLabelText('Save post')).toBeDefined();
-    });
-  });
-
-  it('shows "Save Post" option in post menu for non-own post', async () => {
-    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
-    render(<FeedPage />);
     await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Save Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Save Post'));
+
+    // Re-open menu to verify it reverted back
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
     fireEvent.click(screen.getByLabelText('Post options'));
     await waitFor(() => {
       expect(screen.getByText('Save Post')).toBeDefined();
-    });
-  });
-
-  it('shows "Unsave Post" in post menu when post is already saved', async () => {
-    feedMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
-    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
-    render(<FeedPage />);
-    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
-
-    fireEvent.click(screen.getByLabelText('Post options'));
-    await waitFor(() => {
-      expect(screen.getByText('Unsave Post')).toBeDefined();
     });
   });
 
@@ -480,7 +425,10 @@ describe('FeedPage', () => {
     await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
     // mockPosts[0].author_id = 'user-2', current user = 'user-1' → non-own post
-    fireEvent.click(screen.getByTestId('avatar'));
+    // First avatar is the composer, second is the post card author
+    const avatars = screen.getAllByTestId('avatar');
+    const postAvatar = avatars.find(el => el.textContent === 'Bikal Shrestha');
+    fireEvent.click(postAvatar!);
 
     await waitFor(() => {
       expect(screen.getByText('View Profile')).toBeDefined();
@@ -493,7 +441,9 @@ describe('FeedPage', () => {
     render(<FeedPage />);
     await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    fireEvent.click(screen.getByTestId('avatar'));
+    const avatars = screen.getAllByTestId('avatar');
+    const postAvatar = avatars.find(el => el.textContent === 'Bikal Shrestha');
+    fireEvent.click(postAvatar!);
     await waitFor(() => expect(screen.getByText('View Profile')).toBeDefined());
 
     fireEvent.click(screen.getByText('View Profile'));
@@ -580,7 +530,7 @@ describe('FeedPage', () => {
       render(<FeedPage />);
 
       // Wait for the page to settle — sponsored section should still render
-      await waitFor(() => expect(screen.getByText('Sponsor Spotlight')).toBeDefined());
+      await waitFor(() => expect(screen.getByText('Himalayan Kitchen')).toBeDefined());
       expect(screen.queryByText('Upcoming Events')).toBeNull();
     });
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '../test-utils';
 import { describe, expect, it } from 'vitest';
-import Avatar from './Avatar';
+import Avatar, { getColorFromName } from './Avatar';
 
 describe('Avatar', () => {
   describe('with photoUrl', () => {
@@ -46,6 +46,28 @@ describe('Avatar', () => {
     it('renders without size and trustLevel props (uses defaults)', () => {
       render(<Avatar name="Default User" />);
       expect(screen.getByText('DU')).toBeDefined();
+    });
+  });
+
+  describe('getColorFromName', () => {
+    it('returns same color for same name', () => {
+      expect(getColorFromName('Alice')).toBe(getColorFromName('Alice'));
+    });
+
+    it('returns different colors for different names', () => {
+      const colors = new Set([
+        getColorFromName('Alice'),
+        getColorFromName('Bob'),
+        getColorFromName('Charlie'),
+        getColorFromName('Diana'),
+        getColorFromName('Eve'),
+      ]);
+      expect(colors.size).toBeGreaterThan(1);
+    });
+
+    it('returns a valid hex color string', () => {
+      const color = getColorFromName('Test');
+      expect(color).toMatch(/^#[0-9A-Fa-f]{6}$/);
     });
   });
 });

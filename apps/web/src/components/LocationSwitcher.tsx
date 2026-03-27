@@ -1,6 +1,14 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import { Badge, Menu, Text, UnstyledButton } from '@mantine/core';
+import {
+  IconMapPinFilled,
+  IconChevronDown,
+  IconCheck,
+  IconChevronRight,
+  IconPlus,
+  IconSettings,
+} from '@tabler/icons-react';
 import { useLocation } from '../hooks/useLocation';
 import { getShortMetroName, hasMetroChanged, MAX_SAVED_LOCATIONS_PREMIUM } from '@nusa/shared';
 import type { SavedLocation } from '@nusa/shared';
@@ -59,11 +67,11 @@ export default function LocationSwitcher() {
           className={styles.locationTrigger}
           aria-label={`Current location: ${activeLocation.metro_name}. Tap to switch locations`}
         >
-          <span className={styles.locationIcon}>📍</span>
-          <Text size="sm" fw={700} truncate maw={200}>
+          <IconMapPinFilled size={16} className={styles.locationPinIcon} />
+          <Text size="sm" fw={600} truncate maw={200}>
             {getShortMetroName(activeLocation.metro_name)}
           </Text>
-          <Text size="xs" c="dimmed">▼</Text>
+          <IconChevronDown size={14} stroke={2.5} className={styles.locationChevron} />
           {activeLocation.is_temporary && (
             <Badge variant="light" color="orange" size="xs">Visiting</Badge>
           )}
@@ -90,9 +98,7 @@ export default function LocationSwitcher() {
               }
               rightSection={
                 isActive ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--mantine-color-nusaPrimary-6)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <IconCheck size={16} stroke={3} color="var(--mantine-color-nusaPrimary-6)" />
                 ) : null
               }
             >
@@ -109,11 +115,7 @@ export default function LocationSwitcher() {
             <Menu.Item
               onClick={handleSelectDetected}
               leftSection={<Text size="sm">📡</Text>}
-              rightSection={
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              }
+              rightSection={<IconChevronRight size={16} />}
             >
               <Text size="xs" c="dimmed">You&apos;re currently near</Text>
               <Text size="sm" fw={600} c="nusaPrimary.6">
@@ -129,12 +131,7 @@ export default function LocationSwitcher() {
         {savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
           <Menu.Item
             onClick={() => router.push('/profile/locations?add=true')}
-            leftSection={
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--mantine-color-nusaPrimary-6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            }
+            leftSection={<IconPlus size={16} color="var(--mantine-color-nusaPrimary-6)" />}
             c="nusaPrimary.6"
           >
             Add a Location
@@ -143,12 +140,7 @@ export default function LocationSwitcher() {
 
         <Menu.Item
           onClick={() => router.push('/profile/locations')}
-          leftSection={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          }
+          leftSection={<IconSettings size={16} />}
           c="dimmed"
         >
           Manage Locations

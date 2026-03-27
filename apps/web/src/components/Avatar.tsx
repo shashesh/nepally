@@ -1,6 +1,5 @@
 import React from 'react';
 import { Avatar as MantineAvatar } from '@mantine/core';
-import styles from './Avatar.module.css';
 
 type AvatarSize = 'small' | 'medium' | 'large' | 'xlarge';
 
@@ -18,11 +17,26 @@ const SIZE_MAP: Record<AvatarSize, number> = {
   xlarge: 80,
 };
 
-const TRUST_CLASSES: Record<number, string> = {
-  0: styles.trustLevel0,
-  1: styles.trustLevel1,
-  2: styles.trustLevel2,
-};
+const AVATAR_COLORS = [
+  '#5B8EC9', // Soft blue
+  '#4BA3A3', // Teal
+  '#6B9E78', // Sage
+  '#C4915E', // Amber
+  '#C47A82', // Rose
+  '#8B7EC7', // Lavender
+  '#7B8FA1', // Slate
+  '#D08770', // Coral
+  '#9B7653', // Warm brown
+  '#6C8EAD', // Steel blue
+];
+
+export function getColorFromName(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -35,10 +49,10 @@ function getInitials(name: string): string {
 export default function Avatar({
   name,
   photoUrl,
-  trustLevel = 0,
+  trustLevel: _trustLevel = 0,
   size = 'medium',
 }: AvatarProps) {
-  const trustClass = !photoUrl ? (TRUST_CLASSES[trustLevel] ?? TRUST_CLASSES[0]) : undefined;
+  const placeholderColor = !photoUrl ? getColorFromName(name) : undefined;
 
   return (
     <MantineAvatar
@@ -46,7 +60,7 @@ export default function Avatar({
       alt={`${name}'s avatar`}
       size={SIZE_MAP[size]}
       radius="xl"
-      className={trustClass}
+      color={placeholderColor}
     >
       {getInitials(name)}
     </MantineAvatar>

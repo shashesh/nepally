@@ -1,15 +1,1 @@
-/* Trust level background overrides for Mantine Avatar placeholder */
-.trustLevel0 {
-  --avatar-bg: #E0E0E0;
-  --avatar-color: white;
-}
-
-.trustLevel1 {
-  --avatar-bg: #4A90E2;
-  --avatar-color: white;
-}
-
-.trustLevel2 {
-  --avatar-bg: #7B61FF;
-  --avatar-color: white;
-}
+/* Avatar placeholder styling handled via Mantine color prop with name-based colors */

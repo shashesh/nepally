@@ -6,24 +6,64 @@
 
 .appShell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   background: transparent;
 }
 
+.appBody {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
 .leftRail {
-  background: var(--surface-rail-bg);
-  -webkit-backdrop-filter: var(--surface-rail-blur);
-  backdrop-filter: var(--surface-rail-blur);
-  border-right: var(--surface-rail-border);
+  background: transparent;
   padding: var(--space-m) var(--space-s);
   display: flex;
   flex-direction: column;
-  gap: var(--space-m);
+  gap: var(--space-s);
   position: sticky;
-  top: 0;
-  height: 100vh;
-  box-shadow: var(--surface-rail-shadow);
+  top: var(--nav-height);
+  height: calc(100vh - var(--nav-height));
+  overflow-y: auto;
+}
+
+/* ── Sidebar Brand ────────────────────────── */
+.sidebarBrand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-xs);
+  text-decoration: none;
+  margin-bottom: var(--space-xs);
+}
+
+.sidebarBrandRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebarBrandIcon {
+  flex-shrink: 0;
+}
+
+.sidebarBrandLogo {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: -0.04em;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.sidebarBrandSubtitle {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+  line-height: 1.2;
 }
 
 .logo {
@@ -53,39 +93,43 @@
 .sidebarLink {
   display: inline-flex;
   align-items: center;
-  min-height: 42px;
+  gap: var(--space-xs);
+  min-height: 38px;
   padding: 0 var(--space-s);
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   text-decoration: none;
-  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast);
   position: relative;
 }
 
 .sidebarLink:hover {
-  background: rgba(var(--color-primary-rgb), 0.08);
-  color: var(--color-primary);
+  background: var(--color-surface-low);
+  color: var(--color-text-primary);
   text-decoration: none;
-  transform: translateX(3px);
+}
+
+.sidebarLinkIcon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.sidebarLinkActive .sidebarLinkIcon {
+  opacity: 1;
+}
+
+.sidebarLinkEmoji {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .sidebarLinkActive {
   color: var(--color-primary);
-  background: rgba(var(--color-primary-rgb), 0.1);
-  font-weight: var(--font-weight-bold);
-}
-
-.sidebarLinkActive::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 20%;
-  height: 60%;
-  width: 3px;
-  background: var(--gradient-primary);
-  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  background: rgba(var(--color-primary-rgb), 0.08);
+  font-weight: var(--font-weight-semibold);
 }
 
 .sidebarPostBtn,
@@ -105,13 +149,13 @@
 .sidebarPostBtn {
   background: var(--gradient-primary);
   color: var(--color-surface);
-  box-shadow: 0 4px 16px rgba(14, 95, 156, 0.28);
+  box-shadow: var(--shadow-md);
 }
 
 .sidebarPostBtn:hover {
   background: var(--gradient-primary-hover);
   text-decoration: none;
-  box-shadow: 0 6px 24px rgba(14, 95, 156, 0.38);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-1px);
 }
 
@@ -126,6 +170,61 @@
   text-decoration: none;
 }
 
+/* ── Sidebar Footer ───────────────────────── */
+.sidebarFooter {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sidebarFooterDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0 var(--space-xs) var(--space-s);
+}
+
+.sidebarFooterNav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.sidebarFooterLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 32px;
+  padding: 0 var(--space-s);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebarFooterLink:hover {
+  background: var(--color-surface-low);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.sidebarFooterIcon {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.sidebarFooterLink:hover .sidebarFooterIcon {
+  opacity: 0.75;
+}
+
+.sidebarFooterCopy {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  padding: var(--space-xs) var(--space-s) 0;
+  opacity: 0.6;
+}
+
 .contentShell {
   min-width: 0;
   display: flex;
@@ -136,34 +235,82 @@
 /* ── Glassmorphism Top Bar ───────────────── */
 .topBar {
   height: var(--nav-height);
-  background: var(--surface-topbar-bg);
-  -webkit-backdrop-filter: var(--surface-topbar-blur);
-  backdrop-filter: var(--surface-topbar-blur);
-  border-bottom: var(--surface-topbar-border);
-  box-shadow: var(--surface-topbar-shadow);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-solid);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-s);
-  padding: 0 var(--space-m);
+  padding: 0 var(--space-l);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
-.locationSection {
-  display: inline-flex;
+/* ── Top Bar Sections ─────────────────────── */
+.topBarLeft {
+  display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-s);
   min-width: 0;
 }
 
-.locationLabel {
+.topBarBrand {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: -0.04em;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.topBarLocationAnchor {
+  position: absolute;
+  left: calc(220px + var(--space-m));
+  display: flex;
+  align-items: center;
+}
+
+.topBarSearch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 220px;
+  height: 38px;
+  padding: 0 var(--space-s);
+  border: 1px solid var(--color-border-solid);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-low);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.topBarSearch:focus-within {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.10);
+}
+
+.topBarSearchIcon {
+  flex-shrink: 0;
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+}
+
+.topBarSearchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: var(--font-size-small);
+  color: var(--color-text-primary);
+  min-width: 0;
+}
+
+.topBarSearchInput::placeholder {
+  color: var(--color-text-tertiary);
 }
 
 /* ── Glassmorphism Nav (logged-out) ─────── */
@@ -263,7 +410,7 @@
 
 
 @media (max-width: 980px) {
-  .appShell {
+  .appBody {
     grid-template-columns: 1fr;
   }
 
@@ -279,7 +426,11 @@
     padding: 0 var(--space-s);
   }
 
-  .locationLabel {
+  .topBarLocationAnchor {
+    position: static;
+  }
+
+  .topBarSearch {
     display: none;
   }
 }
@@ -478,3 +629,16 @@
 .notifSeeAll:hover {
   text-decoration: underline;
 }
+
+/* ── Sidebar tag icon colors ── */
+.sidebarTagIconHousing { color: #4CAF50; }
+.sidebarTagIconJobs { color: #2196F3; }
+.sidebarTagIconHelp { color: #FF9800; }
+.sidebarTagIconQuestion { color: #9C27B0; }
+.sidebarTagIconEmergency { color: #DC143C; }
+.sidebarTagIconDiscussion { color: #00BCD4; }
+
+/* ── Notification type icon colors ── */
+.notifIconMessage { color: var(--color-primary); }
+.notifIconEmergency { color: var(--color-accent-red); }
+.notifIconDefault { color: var(--color-secondary); }
