@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Unauthenticated access', () => {
   test('visiting / shows landing page', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: /welcome to nusa/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /welcome to nepally/i })).toBeVisible();
   });
 
   test('visiting /feed redirects to /login', async ({ page }) => {
@@ -27,7 +27,7 @@ test.describe('Unauthenticated access', () => {
 
   test('signup page renders correctly', async ({ page }) => {
     await page.goto('/signup');
-    await expect(page.getByRole('heading', { name: /join nusa/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /join nepally/i })).toBeVisible();
     await expect(page.getByLabel('Full Name')).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password', { exact: true })).toBeVisible();

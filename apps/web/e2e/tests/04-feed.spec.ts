@@ -52,7 +52,7 @@ test.describe('Feed page', () => {
 
   test('feed page has correct title', async ({ page }) => {
     await page.goto('/feed');
-    await expect(page).toHaveTitle(/feed.*nusa|nusa.*feed/i);
+    await expect(page).toHaveTitle(/feed.*nepally|nepally.*feed/i);
   });
 
   test('save button is visible for non-own post', async ({ page }) => {

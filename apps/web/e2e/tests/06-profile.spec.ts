@@ -31,7 +31,7 @@ test.describe('Profile page', () => {
   test('profile page has correct title', async ({ page }) => {
     await page.goto('/profile');
 
-    await expect(page).toHaveTitle(/profile.*nusa|nusa.*profile/i);
+    await expect(page).toHaveTitle(/profile.*nepally|nepally.*profile/i);
   });
 
   test('navigating to /profile from feed works', async ({ page }) => {
