@@ -19,8 +19,8 @@ vi.mock('./supabase', () => ({
   },
 }));
 
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     createUserProfile: authMocks.createUserProfileMock,

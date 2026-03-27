@@ -56,12 +56,12 @@ jest.mock('../../config/supabase', () => {
   };
 });
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getNotifications: (...args: unknown[]) => mockGetNotifications(...args),
   markNotificationRead: (...args: unknown[]) => mockMarkNotificationRead(...args),
   markAllNotificationsRead: (...args: unknown[]) => mockMarkAllNotificationsRead(...args),
   deleteNotification: (...args: unknown[]) => mockDeleteNotification(...args),
-  resolveNotificationRouteTarget: jest.requireActual('@nusa/shared').resolveNotificationRouteTarget,
+  resolveNotificationRouteTarget: jest.requireActual('@nepally/shared').resolveNotificationRouteTarget,
 }));
 
 function baseNotification(overrides: Record<string, unknown> = {}) {

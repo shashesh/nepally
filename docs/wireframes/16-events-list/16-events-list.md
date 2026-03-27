@@ -328,7 +328,7 @@ Try a different type or check back later.
 ### State 10: Web Layout (Desktop)
 
 ::: nav
-[[ :logo: NUSA | Events | Home | Marketplace | [Create Event]* | :user: Profile ]]
+[[ :logo: Nepally | Events | Home | Marketplace | [Create Event]* | :user: Profile ]]
 :::
 
 ## Events {.grid-2}

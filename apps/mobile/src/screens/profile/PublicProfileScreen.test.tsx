@@ -42,7 +42,7 @@ jest.mock('../../components/Avatar', () => ({
   Avatar: () => null,
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getUserById: (...args: Parameters<typeof mockGetUserById>) => mockGetUserById(...args),
   getPostsByAuthorId: (...args: Parameters<typeof mockGetPostsByAuthorId>) =>
     mockGetPostsByAuthorId(...args),

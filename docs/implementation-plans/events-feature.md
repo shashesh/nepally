@@ -100,7 +100,7 @@ Replace the "Coming Soon" Events tab placeholder (on both mobile and web) with a
 - Web: CSS Modules only — no inline `style={{}}`.
 - All shared API functions use dependency injection (`supabase: SupabaseClient` as first param).
 - Shared types use `snake_case` matching Supabase column names.
-- Import from `@nusa/shared` in both platforms — never redefine locally.
+- Import from `@nepally/shared` in both platforms — never redefine locally.
 - Tests added for every new shared function and every new screen.
 
 ---
@@ -156,7 +156,7 @@ Replace the "Coming Soon" Events tab placeholder (on both mobile and web) with a
 - TypeScript compilation: `npm run type-check --workspace=packages/shared`
 
 **Exit Criteria**
-- Types exported from `@nusa/shared` without TS errors
+- Types exported from `@nepally/shared` without TS errors
 
 **Status Update Rule**
 - Set to `In Progress` before coding. Set to `Completed` after type-check passes.
@@ -190,7 +190,7 @@ Color tokens from wireframe spec:
 - TypeScript compilation passes
 
 **Exit Criteria**
-- Constants exported from `@nusa/shared`; both platforms can import without redefining colors
+- Constants exported from `@nepally/shared`; both platforms can import without redefining colors
 
 **Status Update Rule**
 - Set to `In Progress` before coding. Set to `Completed` after type-check passes.
@@ -217,7 +217,7 @@ Color tokens from wireframe spec:
 - `npm run test --workspace=packages/shared`
 
 **Exit Criteria**
-- All validation tests pass; schemas exported from `@nusa/shared`
+- All validation tests pass; schemas exported from `@nepally/shared`
 
 **Status Update Rule**
 - Set to `In Progress` before coding. Set to `Completed` after tests pass.
@@ -260,7 +260,7 @@ In `packages/shared/src/api/storage.ts`:
 - `npm run test:coverage --workspace=packages/shared`
 
 **Exit Criteria**
-- All API function tests pass; functions exported from `@nusa/shared`
+- All API function tests pass; functions exported from `@nepally/shared`
 
 **Status Update Rule**
 - Set to `In Progress` before coding. Set to `Completed` after tests pass.
@@ -306,7 +306,7 @@ export type EventsStackParamList = {
 - `RsvpButton.tsx` — handles all states: default ("RSVP — I'm Going"), going ("Going ✓" + "Can't make it"), past (disabled "Event Has Passed"), cancelled (hidden), organizer ("You're the organizer"), level0 (disabled "Verify to RSVP")
 - `AttendeeAvatarStack.tsx` — up to 5 overlapping 24px avatar circles + "+N" label
 
-All use `StyleSheet.create()`. Import types/constants from `@nusa/shared`. Reuse existing `Avatar` component.
+All use `StyleSheet.create()`. Import types/constants from `@nepally/shared`. Reuse existing `Avatar` component.
 
 **File Changes**
 - `apps/mobile/src/components/events/EventTypeBadge.tsx` — **CREATE**
@@ -515,7 +515,7 @@ CSS Modules for each page.
 - `RsvpButton.tsx` + `RsvpButton.module.css` — all RSVP states, accessible
 - `AttendeeList.tsx` + `AttendeeList.module.css` — modal dialog with scrollable list
 
-All import types/constants from `@nusa/shared`. CSS Modules only — no inline `style={{}}`.
+All import types/constants from `@nepally/shared`. CSS Modules only — no inline `style={{}}`.
 
 **File Changes**
 - `apps/web/src/components/events/EventCard.tsx` + `.module.css` — **CREATE**

@@ -1,5 +1,5 @@
 /**
- * NUSA Typography Scale
+ * Nepally Typography Scale
  * Based on Design System Foundation v1.0
  * Platform-specific fonts: San Francisco (iOS) / Roboto (Android)
  * @see docs/wireframes/00-design-system-foundation.md

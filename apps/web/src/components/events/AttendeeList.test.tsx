@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent } from '../../test-utils';
 import { describe, it, expect, vi } from 'vitest';
-import type { EventRsvp } from '@nusa/shared';
+import type { EventRsvp } from '@nepally/shared';
 
-vi.mock('@nusa/shared', () => ({
+vi.mock('@nepally/shared', () => ({
   formatPublicName: (name: string) => {
     const parts = name.trim().split(' ');
     if (parts.length < 2) return parts[0];

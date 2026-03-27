@@ -7,7 +7,7 @@
  *   Generate a key pair with: npx web-push generate-vapid-keys
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { registerDeviceToken, removeDeviceToken } from '@nusa/shared';
+import { registerDeviceToken, removeDeviceToken } from '@nepally/shared';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
 

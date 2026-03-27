@@ -1,5 +1,5 @@
 import { supabase } from '../../config/supabase';
-import type { EmailAuthResult } from '@nusa/shared';
+import type { EmailAuthResult } from '@nepally/shared';
 
 /**
  * Sign up with email and password

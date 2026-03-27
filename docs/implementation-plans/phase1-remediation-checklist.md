@@ -28,7 +28,7 @@
 | ID | Priority | Workstream | Task | Owner | Status | Target Sprint | Last Updated | Notes |
 |----|----------|------------|------|-------|--------|---------------|--------------|-------|
 | SEC-01 | P0 | Security | Verify and enforce chat RLS in live environment; add CI security smoke test for cross-user isolation | TBD | Completed | Sprint 1 | 2026-03-23 | Migration + local secret-backed smoke run passed; CI workflow job intentionally removed |
-| MOD-01 | P0 | Moderation | Implement shared reports API in packages/shared (create, list, resolve) | TBD | Completed | Sprint 1 | 2026-03-23 | Shared reports API + unit tests added in @nusa/shared |
+| MOD-01 | P0 | Moderation | Implement shared reports API in packages/shared (create, list, resolve) | TBD | Completed | Sprint 1 | 2026-03-23 | Shared reports API + unit tests added in @nepally/shared |
 | MOD-02 | P0 | Moderation | Wire Report Post actions in mobile/web to real report submissions | TBD | Completed | Sprint 1 | 2026-03-23 | Mobile/web report actions now submit via shared createReport API |
 | NOTIF-01 | P0 | Notifications | Register device/browser tokens in real app lifecycle (mobile + web) | TBD | Completed | Sprint 2 | 2026-03-23 | Auth lifecycle wiring + tests completed for mobile and web |
 | NOTIF-02 | P0 | Notifications | Complete and deploy push delivery path (edge function wiring, trigger strategy, web VAPID delivery) | TBD | In Progress | Sprint 2 | 2026-03-23 | Edge function VAPID delivery + DB trigger path added; deployment validation pending secrets/live env |

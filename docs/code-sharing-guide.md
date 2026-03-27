@@ -68,7 +68,7 @@ export type CreatePostInput = z.infer<typeof createPostSchema>;
 **Usage in apps:**
 ```typescript
 // Mobile or web
-import { createPostSchema } from '@nusa/shared';
+import { createPostSchema } from '@nepally/shared';
 
 const result = createPostSchema.safeParse(formData);
 if (!result.success) {
@@ -279,7 +279,7 @@ export const createPostSchema = z.object({
 **Mobile UI:**
 ```typescript
 // apps/mobile/src/screens/CreatePostScreen.tsx
-import { createPostSchema } from '@nusa/shared';
+import { createPostSchema } from '@nepally/shared';
 
 export function CreatePostScreen() {
   const [formData, setFormData] = useState({});
@@ -305,7 +305,7 @@ export function CreatePostScreen() {
 **Web UI:**
 ```typescript
 // apps/web/src/pages/posts/create.tsx
-import { createPostSchema } from '@nusa/shared';
+import { createPostSchema } from '@nepally/shared';
 
 export default function CreatePost() {
   const [formData, setFormData] = useState({});
@@ -341,7 +341,7 @@ export async function getPostsByMetro(metroId: string): Promise<Post[]> {
 **Mobile hook:**
 ```typescript
 // apps/mobile/src/hooks/usePosts.ts
-import { getPostsByMetro } from '@nusa/shared';
+import { getPostsByMetro } from '@nepally/shared';
 
 export function usePosts(metroId: string) {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -358,7 +358,7 @@ export function usePosts(metroId: string) {
 **Web hook:**
 ```typescript
 // apps/web/src/hooks/usePosts.ts
-import { getPostsByMetro } from '@nusa/shared';
+import { getPostsByMetro } from '@nepally/shared';
 
 // Same implementation as mobile!
 export function usePosts(metroId: string) {

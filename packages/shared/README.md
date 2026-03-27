@@ -1,6 +1,6 @@
-# @nusa/shared
+# @nepally/shared
 
-Shared TypeScript code for NUSA mobile and web applications.
+Shared TypeScript code for Nepally mobile and web applications.
 
 ## Structure
 
@@ -19,13 +19,13 @@ src/
 ### In Mobile App (React Native)
 
 ```typescript
-import { PostCategory, housingPostSchema, formatDate } from '@nusa/shared';
+import { PostCategory, housingPostSchema, formatDate } from '@nepally/shared';
 ```
 
 ### In Web App (Next.js)
 
 ```typescript
-import { User, TrustLevel, isValidZipCode } from '@nusa/shared';
+import { User, TrustLevel, isValidZipCode } from '@nepally/shared';
 ```
 
 ## Development

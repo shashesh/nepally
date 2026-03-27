@@ -49,7 +49,7 @@ jest.mock('../hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-// --- @nusa/shared mock ---
+// --- @nepally/shared mock ---
 import {
   getSavedLocations,
   addSavedLocation,
@@ -57,9 +57,9 @@ import {
   hasMetroChanged,
   createSnoozeEntry,
   updateUserLocation,
-} from '@nusa/shared';
+} from '@nepally/shared';
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getSavedLocations: jest.fn().mockResolvedValue({ data: [], error: null }),
   addSavedLocation: jest.fn().mockResolvedValue({ data: null, error: null }),
   isMetroSnoozed: jest.fn().mockReturnValue(false),

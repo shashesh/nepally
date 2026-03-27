@@ -5,7 +5,7 @@ import {
   EVENT_TYPE_ICONS,
   EVENT_TYPE_LABELS,
   type EventType,
-} from '@nusa/shared';
+} from '@nepally/shared';
 
 interface Props {
   type: EventType;

@@ -40,7 +40,7 @@ jest.mock('../../hooks/useMetroArea', () => ({
   })),
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   updateUserProfile: jest.fn().mockResolvedValue({ data: null, error: null }),
   uploadProfilePhoto: jest.fn().mockResolvedValue({ data: null, error: null }),
   deleteProfilePhoto: jest.fn().mockResolvedValue({ data: null, error: null }),

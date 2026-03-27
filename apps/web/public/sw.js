@@ -1,9 +1,9 @@
-/* NUSA Service Worker — Web Push notifications */
+/* Nepally Service Worker — Web Push notifications */
 
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {};
   event.waitUntil(
-    self.registration.showNotification(data.title ?? 'NUSA', {
+    self.registration.showNotification(data.title ?? 'Nepally', {
       body: data.body ?? '',
       icon: '/icon.png',
       badge: '/icon.png',

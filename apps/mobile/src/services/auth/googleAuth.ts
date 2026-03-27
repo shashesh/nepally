@@ -1,7 +1,7 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../../config/supabase';
-import type { GoogleAuthResult } from '@nusa/shared';
+import type { GoogleAuthResult } from '@nepally/shared';
 
 WebBrowser.maybeCompleteAuthSession();
 

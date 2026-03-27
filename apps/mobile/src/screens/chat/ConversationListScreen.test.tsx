@@ -30,7 +30,7 @@ jest.mock('../../config/supabase', () => ({
   supabase: {},
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getConversations: (...args: unknown[]) => mockGetConversations(...args),
 }));
 

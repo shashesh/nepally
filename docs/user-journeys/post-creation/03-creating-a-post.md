@@ -34,7 +34,7 @@
 
 **Name:** Anita Rai
 **Age:** 31 years old
-**Background:** Nurse working at a Dallas hospital. Looking for a Nepali roommate because she's moving to a new apartment. She's a verified NUSA user (Level 1).
+**Background:** Nurse working at a Dallas hospital. Looking for a Nepali roommate because she's moving to a new apartment. She's a verified Nepally user (Level 1).
 
 **Metro:** Dallas-Fort Worth-Arlington, TX
 **Trust Level:** 1 (Verified)

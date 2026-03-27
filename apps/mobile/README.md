@@ -1,6 +1,6 @@
-# NUSA Mobile App
+# Nepally Mobile App
 
-React Native mobile application for the NUSA platform (Nepalese United Support Alliance).
+React Native mobile application for the Nepally platform (Nepalese United Support Alliance).
 
 ## Setup
 
@@ -177,4 +177,4 @@ See main repository README for contribution guidelines.
 
 ## License
 
-Proprietary - NUSA Platform
+Proprietary - Nepally Platform

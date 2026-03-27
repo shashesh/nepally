@@ -19,7 +19,7 @@ import {
   TrustLevel,
   type Event,
   type EventType,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../config/supabase';
 import { EventCard } from '../components/events/EventCard';

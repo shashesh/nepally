@@ -30,8 +30,8 @@ vi.mock('../lib/supabase', () => ({
     auth: { resetPasswordForEmail: profileMocks.resetPasswordForEmailMock },
   },
 }));
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     getPostsByAuthorId: profileMocks.getPostsByAuthorIdMock,

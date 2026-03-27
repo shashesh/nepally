@@ -12,7 +12,7 @@ beforeAll(() => {
 });
 afterAll(() => { console.error = originalError; });
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   EVENT_TYPE_COLORS: {
     cultural:  { text: '#E65100', background: '#FFF3E0' },
     religious: { text: '#6A1B9A', background: '#F3E5F5' },

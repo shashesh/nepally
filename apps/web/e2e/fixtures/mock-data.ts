@@ -1,4 +1,4 @@
-import type { User, Post, Tag, Event } from '@nusa/shared';
+import type { User, Post, Tag, Event } from '@nepally/shared';
 
 export const MOCK_USER_ID = 'e2e-user-00000000-0000-0000-0000-000000000001';
 export const MOCK_USER_EMAIL = 'e2e-test@nusa.app';

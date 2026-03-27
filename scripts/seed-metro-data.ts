@@ -250,7 +250,7 @@ async function insertZipMappings(mappings: ZipMapping[]) {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  console.log("=== NUSA Metro Area Seeding Script ===\n");
+  console.log("=== Nepally Metro Area Seeding Script ===\n");
 
   // 1. Fetch all metro areas from Census
   const metros = await fetchMetroAreas();

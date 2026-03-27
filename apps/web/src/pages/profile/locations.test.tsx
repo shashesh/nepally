@@ -19,8 +19,8 @@ vi.mock('../../hooks/useAuth', () => ({ useAuth: locationsMocks.useAuthMock }));
 vi.mock('../../hooks/useLocation', () => ({ useLocation: locationsMocks.useLocationMock }));
 vi.mock('next/router', () => ({ useRouter: locationsMocks.useRouterMock }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     updateSavedLocation: locationsMocks.updateSavedLocationMock,

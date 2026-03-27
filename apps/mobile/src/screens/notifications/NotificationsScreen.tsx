@@ -19,8 +19,8 @@ import {
   markAllNotificationsRead,
   deleteNotification,
   resolveNotificationRouteTarget,
-} from '@nusa/shared';
-import type { Notification } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Notification } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import type { HomeStackParamList } from '../../types/navigation';
 import { colors } from '../../styles/colors';

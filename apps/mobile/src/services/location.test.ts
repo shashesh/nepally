@@ -14,7 +14,7 @@ jest.mock('expo-location', () => ({
   },
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   __esModule: true,
   getMetroByZip: jest.fn(),
 }));
@@ -31,7 +31,7 @@ import {
   reverseGeocodeToZip,
 } from './location';
 import * as Location from 'expo-location';
-import { getMetroByZip } from '@nusa/shared';
+import { getMetroByZip } from '@nepally/shared';
 
 describe('location service', () => {
   beforeEach(() => {

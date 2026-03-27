@@ -1,4 +1,4 @@
--- NUSA Storage Configuration
+-- Nepally Storage Configuration
 -- Supabase Storage buckets and RLS policies.
 -- Separate from schema because it targets the storage subsystem.
 

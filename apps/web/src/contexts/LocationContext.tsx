@@ -9,13 +9,13 @@ import {
   hasMetroChanged,
   createSnoozeEntry,
   updateUserLocation,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import type {
   ActiveLocation,
   LocationDetectionResult,
   SavedLocation,
   LocationSnooze,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import {
   requestLocationPermission,
   detectLocationMetro,

@@ -29,8 +29,8 @@ const postDetailMocks = vi.hoisted(() => ({
 vi.mock('../../hooks/useAuth', () => ({ useAuth: postDetailMocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: postDetailMocks.useRouterMock }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     getPostById: postDetailMocks.getPostByIdMock,

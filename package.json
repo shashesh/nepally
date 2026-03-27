@@ -1,8 +1,8 @@
 {
-  "name": "nusa-monorepo",
+  "name": "nepally-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "NUSA - Nepalese United Support Alliance monorepo",
+  "description": "Nepally - US Nepal Help Network monorepo",
   "workspaces": [
     "apps/*",
     "packages/*"

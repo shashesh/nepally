@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { getMetroByZip, updateUserLocation } from '@nusa/shared';
-import type { MetroArea } from '@nusa/shared';
+import { getMetroByZip, updateUserLocation } from '@nepally/shared';
+import type { MetroArea } from '@nepally/shared';
 import { saveMetroArea, getMetroArea as getCachedMetroArea } from '../utils/storage';
 import { supabase } from '../config/supabase';
 

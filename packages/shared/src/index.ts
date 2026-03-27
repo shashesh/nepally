@@ -1,5 +1,5 @@
 /**
- * Main entry point for @nusa/shared package
+ * Main entry point for @nepally/shared package
  * Export all types, constants, utilities, API functions, and validation schemas
  */
 

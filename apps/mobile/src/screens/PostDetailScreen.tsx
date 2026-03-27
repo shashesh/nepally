@@ -52,8 +52,8 @@ import {
   TAG_EMOJI,
   TAG_COLORS,
   DEFAULT_TAG_COLOR,
-} from '@nusa/shared';
-import type { Post, PostComment } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Post, PostComment } from '@nepally/shared';
 import { Avatar } from '../components/Avatar';
 import { HomeStackParamList } from '../types/navigation';
 import { supabase } from '../config/supabase';

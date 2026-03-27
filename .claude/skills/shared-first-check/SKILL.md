@@ -24,8 +24,8 @@ Search for `export const` and `export enum` in both `apps/` and `packages/shared
 ### 5. Shared Package Purity
 Search for imports from `react-native`, `expo-*`, `@react-native/*`, `next` in `packages/shared/src/`. Any found = violation.
 
-### 6. @nusa/shared Import Usage
-Verify apps actually import from `@nusa/shared`. Zero imports in an app with implemented features = violation.
+### 6. @nepally/shared Import Usage
+Verify apps actually import from `@nepally/shared`. Zero imports in an app with implemented features = violation.
 
 ### 7. Index.ts Exports
 Read `packages/shared/src/index.ts` — modules in subdirectories that aren't re-exported = violation.
@@ -43,7 +43,7 @@ SHARED-FIRST ARCHITECTURE COMPLIANCE REPORT
 3. Validation Placement:    PASS | FAIL (N violations)
 4. Constants Duplication:   PASS | FAIL (N violations)
 5. Shared Package Purity:   PASS | FAIL (N violations)
-6. @nusa/shared Imports:    PASS | FAIL
+6. @nepally/shared Imports:    PASS | FAIL
 7. Index.ts Exports:        PASS | FAIL (N missing)
 8. Testing Compliance:      PASS | FAIL (N gaps)
 

@@ -8,7 +8,7 @@
 
 The `packages/shared/src/types/` directory originally defined interfaces using camelCase (e.g., `authorId`, `metroAreaId`, `expiryDate`). Meanwhile, the mobile app independently defined its own types using snake_case (e.g., `author_id`, `metro_area_id`, `expiry_date`) to match Supabase database column names.
 
-This divergence meant the shared types were unusable — the mobile app couldn't import them because the property names didn't match what Supabase actually returned. As a result, the mobile app defined its own parallel type system and never imported from `@nusa/shared`.
+This divergence meant the shared types were unusable — the mobile app couldn't import them because the property names didn't match what Supabase actually returned. As a result, the mobile app defined its own parallel type system and never imported from `@nepally/shared`.
 
 ## Decision
 

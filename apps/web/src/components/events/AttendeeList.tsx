@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, Group, Text, Stack, Loader, Center } from '@mantine/core';
-import { formatPublicName, type EventRsvp } from '@nusa/shared';
+import { formatPublicName, type EventRsvp } from '@nepally/shared';
 import Avatar from '../Avatar';
 
 interface Props {

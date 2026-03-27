@@ -38,7 +38,7 @@
 
 **Name:** Anita Shrestha
 **Age:** 25
-**Background:** Just moved to Phoenix from Nepal 2 months ago. Downloaded NUSA to find housing and connect with the local Nepali community.
+**Background:** Just moved to Phoenix from Nepal 2 months ago. Downloaded Nepally to find housing and connect with the local Nepali community.
 **Device:** Samsung Galaxy A54 (Android)
 **Metro:** Phoenix-Mesa-Chandler, AZ
 
@@ -48,9 +48,9 @@
 
 **Screen:** Location Permission Screen (new)
 **User sees:**
-- NUSA logo at top
+- Nepally logo at top
 - Map pin illustration
-- Headline: "NUSA works best with your location"
+- Headline: "Nepally works best with your location"
 - Body text: "We use your location to show you community posts, housing, jobs, and events near you. Your exact location is never shared — we only use it to determine your metro area."
 - Primary button: "Enable Location"
 - Secondary link: "Not Now"
@@ -59,7 +59,7 @@
 
 **System response:**
 - Native Android location permission dialog appears
-- "Allow NUSA to access this device's location?"
+- "Allow Nepally to access this device's location?"
 - Options: "While using the app" / "Only this time" / "Don't allow"
 
 **User action:** Selects "While using the app"
@@ -160,7 +160,7 @@
 #### Step 3b (alternate): User taps "Turn On"
 
 **System response:**
-- iOS: Opens app Settings page (deep link to NUSA in iOS Settings)
+- iOS: Opens app Settings page (deep link to Nepally in iOS Settings)
 - User enables location permission in system settings
 - On return to app: GPS check runs, location detected
 - If detected metro matches stored metro: no action needed
@@ -174,7 +174,7 @@
 
 **Name:** Rajesh Thapa
 **Age:** 28
-**Background:** Lives in Dallas, traveling to Houston for a weekend visit. Has NUSA with location enabled.
+**Background:** Lives in Dallas, traveling to Houston for a weekend visit. Has Nepally with location enabled.
 **Device:** iPhone 14
 **Home Metro:** Dallas-Fort Worth-Arlington, TX (CBSA: 19100)
 **Current GPS Metro:** Houston-The Woodlands-Sugar Land, TX (CBSA: 26420)
@@ -183,7 +183,7 @@
 
 #### Step 1: App Open — Location Detection
 
-**Trigger:** Rajesh opens NUSA while in Houston
+**Trigger:** Rajesh opens Nepally while in Houston
 
 **System behavior (invisible to user):**
 1. App opens → foreground detection hook fires
@@ -338,7 +338,7 @@
 
 **Name:** Suman Rai
 **Age:** 35
-**Background:** Uses NUSA on his laptop at work. Prefers the web version.
+**Background:** Uses Nepally on his laptop at work. Prefers the web version.
 **Browser:** Chrome on Windows
 **Metro:** Chicago-Naperville-Elgin, IL
 
@@ -389,7 +389,7 @@
 | Scenario | Behavior |
 |----------|----------|
 | GPS disabled at OS level | Treat as permission denied — use stored location + reminder banner |
-| GPS returns coordinates in non-US location | Show: "NUSA is currently available in the US only. Showing your saved location." |
+| GPS returns coordinates in non-US location | Show: "Nepally is currently available in the US only. Showing your saved location." |
 | Network error during reverse geocode | Silently fail — use cached/stored location, retry on next app open |
 | User has 5 saved locations and tries to add more | "You've reached the maximum of 5 saved locations. Remove one to add a new location." |
 | User's only saved location is deleted (shouldn't happen) | Create a new default from their `users.metro_area_id` |

@@ -43,8 +43,8 @@ import {
   savePost,
   unsavePost,
   TrustLevel,
-} from '@nusa/shared';
-import type { Post, Tag } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Post, Tag } from '@nepally/shared';
 import { isBannerDismissed, saveBannerDismissed } from '../utils/storage';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';

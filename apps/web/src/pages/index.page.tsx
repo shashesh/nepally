@@ -18,7 +18,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>NUSA - Nepalese United Support Alliance</title>
+        <title>Nepally - Nepalese United Support Alliance</title>
         <meta
           name="description"
           content="Community platform for the Nepalese diaspora in the USA. Find housing, jobs, emergency help, and travel companions."
@@ -27,7 +27,7 @@ export default function Home() {
       </Head>
 
       <div className={styles.container}>
-        <h1 className={styles.title}>Welcome to NUSA</h1>
+        <h1 className={styles.title}>Welcome to Nepally</h1>
         <p className={styles.subtitle}>Nepalese United Support Alliance</p>
         <p className={styles.description}>
           Your community platform for housing, jobs, emergencies, and travel coordination.

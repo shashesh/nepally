@@ -26,8 +26,8 @@ import {
   getSavedPostsByUserId,
   unsavePost,
   formatRelativeTime,
-} from '@nusa/shared';
-import type { Post } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Post } from '@nepally/shared';
 import { Avatar } from '../../components/Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';

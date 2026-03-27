@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent, act } from '@testing-library/react-native';
-import { getEventsByMetro } from '@nusa/shared';
-import type { Event } from '@nusa/shared';
+import { getEventsByMetro } from '@nepally/shared';
+import type { Event } from '@nepally/shared';
 import EventsScreen from './EventsScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -78,7 +78,7 @@ const PAST_EVENT: Event = {
   start_date: PAST,
 };
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getEventsByMetro: jest.fn(async () => ({ data: [] })),
   getUserRsvps: jest.fn(async () => ({ data: [] })),
   EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],

@@ -12,8 +12,8 @@ import {
   markAsRead,
   subscribeToMessages,
   formatRelativeTime,
-} from '@nusa/shared';
-import type { ChatMessage } from '@nusa/shared';
+} from '@nepally/shared';
+import type { ChatMessage } from '@nepally/shared';
 import Avatar from '../../components/Avatar';
 import styles from '../../styles/Messages.module.css';
 
@@ -188,7 +188,7 @@ export default function MessageThreadPage() {
   return (
     <>
       <Head>
-        <title>Chat - NUSA</title>
+        <title>Chat - Nepally</title>
       </Head>
       <div className={styles.threadPage}>
         <div className={styles.threadHeader}>

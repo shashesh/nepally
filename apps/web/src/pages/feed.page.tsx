@@ -20,8 +20,8 @@ import {
   createReport,
   formatRelativeTime,
   getUpcomingEventsByMetro,
-} from '@nusa/shared';
-import type { Post, Event } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Post, Event } from '@nepally/shared';
 import Avatar from '../components/Avatar';
 import ReportPostModal from '../components/ReportPostModal';
 import styles from '../styles/Feed.module.css';
@@ -55,7 +55,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
   // Tag-based filtering (multi-select) — set via sidebar nav links
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
-  const pageTitle = routeBasePath === '/' ? 'Home - NUSA' : 'Feed - NUSA';
+  const pageTitle = routeBasePath === '/' ? 'Home - Nepally' : 'Feed - Nepally';
   const queryTags = router.query.tags;
 
   // Parse tag filters from URL query

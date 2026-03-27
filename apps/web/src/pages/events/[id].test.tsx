@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getEventById } from '@nusa/shared';
-import type { Event } from '@nusa/shared';
+import { getEventById } from '@nepally/shared';
+import type { Event } from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -39,7 +39,7 @@ const MOCK_EVENT: Event = {
   organizer: { id: 'user-1', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
-vi.mock('@nusa/shared', () => ({
+vi.mock('@nepally/shared', () => ({
   getEventById: vi.fn(async () => ({ data: MOCK_EVENT })),
   getEventAttendees: vi.fn(async () => ({ data: [] })),
   hasUserRsvp: vi.fn(async () => ({ data: false })),
@@ -123,7 +123,7 @@ describe('EventDetailPage', () => {
   });
 
   it('toggles RSVP on button click and re-syncs from server', async () => {
-    const { getEventById, hasUserRsvp, rsvpToEvent } = await import('@nusa/shared');
+    const { getEventById, hasUserRsvp, rsvpToEvent } = await import('@nepally/shared');
     render(React.createElement(EventDetailPage));
     await waitFor(() => screen.getByText('RSVP'));
     fireEvent.click(screen.getByText('RSVP'));
@@ -135,7 +135,7 @@ describe('EventDetailPage', () => {
   });
 
   it('creates a conversation and navigates when Message Organizer is clicked', async () => {
-    const { getOrCreateConversation } = await import('@nusa/shared');
+    const { getOrCreateConversation } = await import('@nepally/shared');
     render(React.createElement(EventDetailPage));
 
     await waitFor(() => {

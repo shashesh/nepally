@@ -21,8 +21,8 @@ vi.mock('next/router', () => ({ useRouter: threadMocks.useRouterMock }));
 vi.mock('../../lib/supabase', () => ({
   supabase: { removeChannel: threadMocks.removeChannelMock },
 }));
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     getConversations: threadMocks.getConversationsMock,

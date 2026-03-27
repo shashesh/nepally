@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../buttons/PrimaryButton';
-import { getShortMetroName } from '@nusa/shared';
-import type { LocationDetectionResult, ActiveLocation } from '@nusa/shared';
+import { getShortMetroName } from '@nepally/shared';
+import type { LocationDetectionResult, ActiveLocation } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 

@@ -2,8 +2,8 @@ import React, { useState, FormEvent } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { Button, Text } from '@mantine/core';
-import { isValidZipCode, cleanZipCode, getMetroByZip, updateUserLocation, addSavedLocation } from '@nusa/shared';
-import type { MetroArea } from '@nusa/shared';
+import { isValidZipCode, cleanZipCode, getMetroByZip, updateUserLocation, addSavedLocation } from '@nepally/shared';
+import type { MetroArea } from '@nepally/shared';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { detectLocationMetro } from '../../lib/location';
@@ -93,7 +93,7 @@ export default function ZipCodePage() {
   return (
     <>
       <Head>
-        <title>Set Your Location - NUSA</title>
+        <title>Set Your Location - Nepally</title>
       </Head>
       <div className={styles.authPage}>
         <div className={styles.authCard}>

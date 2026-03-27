@@ -70,7 +70,7 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 **Content:**
 - App logo/branding
 - Illustration of a map pin or community
-- Headline: "NUSA works best with your location"
+- Headline: "Nepally works best with your location"
 - Body: "We use your location to show you community posts, housing, jobs, and events near you. Your exact location is never shared — we only use it to determine your metro area."
 - Primary CTA: "Enable Location" → triggers native OS permission dialog
 - Secondary CTA: "Not Now" → skips to manual ZIP code onboarding

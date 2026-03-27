@@ -1,10 +1,10 @@
 # Database Schema
 
-Complete PostgreSQL database schema for NUSA using Supabase.
+Complete PostgreSQL database schema for Nepally using Supabase.
 
 ## Overview
 
-NUSA uses **PostgreSQL** via Supabase, a relational database with powerful querying capabilities, real-time subscriptions, and Row Level Security (RLS) for data protection.
+Nepally uses **PostgreSQL** via Supabase, a relational database with powerful querying capabilities, real-time subscriptions, and Row Level Security (RLS) for data protection.
 
 ### Tables
 

@@ -32,7 +32,7 @@ const createPlaceholderImage = (filename, color = '1565C0') => {
   // In production, you'd use actual PNG files
   const svg = `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
   <rect width="1024" height="1024" fill="#${color}"/>
-  <text x="512" y="512" font-size="200" fill="white" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-weight="bold">NUSA</text>
+  <text x="512" y="512" font-size="200" fill="white" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-weight="bold">Nepally</text>
 </svg>`;
 
   // For development, we'll just create a minimal PNG

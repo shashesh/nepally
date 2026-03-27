@@ -189,7 +189,7 @@ test.describe('Events list page', () => {
 
   test('shows page title', async ({ page }) => {
     await page.goto('/events');
-    await expect(page).toHaveTitle(/Events.*NUSA|NUSA.*Events/i, { timeout: 10_000 });
+    await expect(page).toHaveTitle(/Events.*Nepally|Nepally.*Events/i, { timeout: 10_000 });
   });
 
   test('shows Create Event link for Level 1 user', async ({ page }) => {
@@ -418,9 +418,9 @@ test.describe('Create Event page', () => {
     await expect(page.getByText('🌐 Make Global')).not.toBeVisible({ timeout: 10_000 });
   });
 
-  test('page title is "Create Event - NUSA"', async ({ page }) => {
+  test('page title is "Create Event - Nepally"', async ({ page }) => {
     await page.goto('/events/create');
-    await expect(page).toHaveTitle(/Create Event.*NUSA|NUSA.*Create Event/i, { timeout: 10_000 });
+    await expect(page).toHaveTitle(/Create Event.*Nepally|Nepally.*Create Event/i, { timeout: 10_000 });
   });
 });
 

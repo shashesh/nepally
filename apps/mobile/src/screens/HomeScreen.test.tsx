@@ -37,7 +37,7 @@ jest.mock('../hooks/useLocation', () => ({
   useLocation: () => mockUseLocation(),
 }));
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getPostsByMetroArea: (...args: unknown[]) => mockGetPostsByMetroArea(...args),
   getTags: jest.fn().mockResolvedValue({ data: [], error: null }),
   getUserLikedPostIds: jest.fn().mockResolvedValue({ data: [], error: null }),

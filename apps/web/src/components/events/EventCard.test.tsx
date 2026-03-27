@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
 
-vi.mock('@nusa/shared', () => ({
+vi.mock('@nepally/shared', () => ({
   formatPublicName: (name: string) => {
     const parts = name.trim().split(' ');
     if (parts.length < 2) return parts[0];

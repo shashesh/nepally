@@ -1,4 +1,4 @@
--- NUSA Complete Database Schema
+-- Nepally Complete Database Schema
 -- Consolidated from 7 incremental migrations into a single clean file
 -- representing the final correct state of the database.
 --

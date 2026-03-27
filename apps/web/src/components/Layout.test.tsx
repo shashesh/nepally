@@ -54,8 +54,8 @@ vi.mock('../lib/supabase', () => ({
   },
 }));
 
-vi.mock('@nusa/shared', async () => {
-  const actual = await vi.importActual<object>('@nusa/shared');
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
     getTotalUnreadCount: layoutMocks.getTotalUnreadCountMock,
@@ -137,9 +137,9 @@ describe('Layout', () => {
       expect(screen.getByText('Sign Up')).toBeDefined();
     });
 
-    it('renders NUSA logo', () => {
+    it('renders Nepally logo', () => {
       render(<Layout>Content</Layout>);
-      expect(screen.getByText('NUSA')).toBeDefined();
+      expect(screen.getByText('Nepally')).toBeDefined();
     });
 
     it('renders children', () => {

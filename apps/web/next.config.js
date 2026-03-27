@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@nusa/shared'],
+  transpilePackages: ['@nepally/shared'],
 
   // Only treat *.page.tsx/ts/jsx/js files as Next.js routes.
   // This prevents colocated *.test.tsx files in src/pages/ from being

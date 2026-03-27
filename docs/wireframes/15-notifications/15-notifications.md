@@ -342,7 +342,7 @@ Get notified when someone messages you, comments on your post, or when there's a
 
 ::: alert error
 :warning: **Notifications are disabled**
-Enable them in Settings → NUSA to receive messages and emergency alerts.
+Enable them in Settings → Nepally to receive messages and emergency alerts.
 
 [Open Settings]  [Dismiss]
 :::
@@ -354,7 +354,7 @@ Enable them in Settings → NUSA to receive messages and emergency alerts.
 ::: modal
 ## :bell: Enable Push Notifications
 
-NUSA wants to send you push notifications for:
+Nepally wants to send you push notifications for:
 - Chat messages when the app is closed
 - Emergency alerts in your metro area
 
@@ -602,8 +602,8 @@ Verified metro-wide emergency broadcasts
 ### Primary Flow — Receiving a Chat Notification (Web Push)
 1. User has browser open (different tab or minimized)
 2. Service worker receives push event via Web Push API
-3. Browser shows OS notification: "NUSA — Rajan Thapa: Hey, is the room..."
-4. User clicks → browser focuses NUSA tab → navigates to `/messages/:conversationId`
+3. Browser shows OS notification: "Nepally — Rajan Thapa: Hey, is the room..."
+4. User clicks → browser focuses Nepally tab → navigates to `/messages/:conversationId`
 5. Notification marked as read
 
 ### Primary Flow — In-App Bell Dropdown (Web)

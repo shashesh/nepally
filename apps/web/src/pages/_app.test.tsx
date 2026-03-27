@@ -60,10 +60,10 @@ describe('App', () => {
     render(
       React.createElement(App, {
         Component: TestPage,
-        pageProps: { greeting: 'Hello NUSA' },
+        pageProps: { greeting: 'Hello Nepally' },
         router: {} as AppProps['router'],
       })
     );
-    expect(screen.getByText('Hello NUSA')).toBeDefined();
+    expect(screen.getByText('Hello Nepally')).toBeDefined();
   });
 });

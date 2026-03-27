@@ -31,7 +31,7 @@ import {
   EVENT_TYPE_COLORS,
   EVENT_TYPE_ICONS,
   type EventType,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
@@ -339,7 +339,7 @@ export default function CreateEventScreen() {
 
     Alert.alert(
       'Photo Library Access Required',
-      'NUSA needs photo library access so you can upload an event photo.',
+      'Nepally needs photo library access so you can upload an event photo.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Open Settings', onPress: () => Linking.openSettings() },

@@ -25,8 +25,8 @@ import {
   formatRelativeTime,
   logClientEvent,
   TAG_EMOJI,
-} from '@nusa/shared';
-import type { Post, PostComment } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Post, PostComment } from '@nepally/shared';
 import Avatar from '../../components/Avatar';
 import ReportPostModal from '../../components/ReportPostModal';
 import styles from '../../styles/PostDetail.module.css';
@@ -533,7 +533,7 @@ export default function PostDetailPage() {
   return (
     <>
       <Head>
-        <title>{post.title} - NUSA</title>
+        <title>{post.title} - Nepally</title>
       </Head>
       <div className={styles.postPage}>
         <Link href="/feed" className={styles.backLink}>

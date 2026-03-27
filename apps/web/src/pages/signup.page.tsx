@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Alert, Button, List, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
-import { validateEmail, validatePassword, validateFullName } from '@nusa/shared';
+import { validateEmail, validatePassword, validateFullName } from '@nepally/shared';
 import { signUpWithEmail, signInWithGoogle } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import styles from '../styles/Auth.module.css';
@@ -83,11 +83,11 @@ export default function SignupPage() {
   return (
     <>
       <Head>
-        <title>Sign Up - NUSA</title>
+        <title>Sign Up - Nepally</title>
       </Head>
       <div className={styles.authPage}>
         <div className={styles.authCard}>
-          <h1 className={styles.authTitle}>Join NUSA</h1>
+          <h1 className={styles.authTitle}>Join Nepally</h1>
           <p className={styles.authSubtitle}>
             Create your account to connect with the community
           </p>

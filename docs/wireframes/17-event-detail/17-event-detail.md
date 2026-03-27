@@ -418,7 +418,7 @@ Remove your RSVP for **Teej Festival 2026**?
 ### State 12: Web Layout (Desktop)
 
 ::: nav
-[[ :logo: NUSA | Events | Home | Marketplace | :user: Profile ]]
+[[ :logo: Nepally | Events | Home | Marketplace | :user: Profile ]]
 :::
 
 [[ Events > Teej Festival 2026 ]]

@@ -3,7 +3,7 @@
  */
 
 export const APP_CONFIG = {
-  name: 'NUSA',
+  name: 'Nepally',
   version: '1.0.0',
   minPasswordLength: 8,
   zipCodeLength: 5,

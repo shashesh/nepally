@@ -10,7 +10,7 @@
 
 ## Screen Purpose
 
-This is a custom pre-permission screen shown before the native OS location dialog. It explains why NUSA needs location access in plain, reassuring language. Shown only once (first app launch, before onboarding). This is NOT the native OS dialog — it's a branded screen that prepares the user.
+This is a custom pre-permission screen shown before the native OS location dialog. It explains why Nepally needs location access in plain, reassuring language. Shown only once (first app launch, before onboarding). This is NOT the native OS dialog — it's a branded screen that prepares the user.
 
 **Key Goals:**
 - Build trust by explaining location usage transparently
@@ -27,7 +27,7 @@ This is a custom pre-permission screen shown before the native OS location dialo
 ::: hero
 ![Map Pin Illustration](assets/location-map-pin.png)
 
-# NUSA works best with your location
+# Nepally works best with your location
 
 We use your location to show you community posts, housing, jobs, and events near you.
 
@@ -45,7 +45,7 @@ We use your location to show you community posts, housing, jobs, and events near
 ::: card
 ![Map Pin Illustration](assets/location-map-pin.png)
 
-# NUSA works best with your location
+# Nepally works best with your location
 
 We use your location to show you community posts, housing, jobs, and events near you.
 
@@ -65,7 +65,7 @@ We use your location to show you community posts, housing, jobs, and events near
 ::: hero
 ![Map Pin Illustration](assets/location-map-pin.png)
 
-# NUSA works best with your location
+# Nepally works best with your location
 
 We use your location to show you community posts, housing, jobs, and events near you.
 
@@ -88,7 +88,7 @@ Enter your ZIP code instead.
 ::: hero
 ![Map Pin Illustration](assets/location-map-pin.png)
 
-# NUSA works best with your location
+# Nepally works best with your location
 
 We use your location to show you community posts, housing, jobs, and events near you.
 
@@ -118,7 +118,7 @@ We use your location to show you community posts, housing, jobs, and events near
 
 | Property | Value |
 |----------|-------|
-| **Text** | "NUSA works best with your location" |
+| **Text** | "Nepally works best with your location" |
 | **Font size** | 28px (mobile), 24px (web) |
 | **Font weight** | Bold (700) |
 | **Color** | `colors.text.primary` |
@@ -234,7 +234,7 @@ We use your location to show you community posts, housing, jobs, and events near
 
 ### Screen Reader Order
 1. "Map illustration" (decorative)
-2. "NUSA works best with your location"
+2. "Nepally works best with your location"
 3. Body text (location usage explanation)
 4. Privacy assurance line
 5. "Enable Location" button

@@ -29,10 +29,10 @@ import {
   getTags,
   getPostById,
   createPost,
-} from '@nusa/shared';
-import type { Tag } from '@nusa/shared';
+} from '@nepally/shared';
+import type { Tag } from '@nepally/shared';
 
-jest.mock('@nusa/shared', () => ({
+jest.mock('@nepally/shared', () => ({
   getTags: jest.fn().mockResolvedValue({ data: [] }),
   getPostById: jest.fn().mockResolvedValue({ data: null }),
   createPost: jest.fn().mockResolvedValue({ data: { id: 'new-post-1' } }),

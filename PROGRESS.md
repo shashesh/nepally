@@ -1,4 +1,4 @@
-# NUSA Development Progress
+# Nepally Development Progress
 
 **Last Updated:** 2026-03-10
 

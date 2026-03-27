@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../config/supabase';
-import { APP_CONFIG } from '@nusa/shared';
+import { APP_CONFIG } from '@nepally/shared';
 import { AuthContext } from '../../contexts/AuthContext';
 import { markOnboardingComplete } from '../../utils/storage';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';

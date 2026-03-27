@@ -23,7 +23,7 @@ import {
   uploadProfilePhoto,
   deleteProfilePhoto,
   APP_CONFIG,
-} from '@nusa/shared';
+} from '@nepally/shared';
 import { saveMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
 import { Avatar } from '../../components/Avatar';
@@ -89,7 +89,7 @@ export function EditProfileScreen() {
       const permissionName = type === 'camera' ? 'Camera' : 'Photo Library';
       Alert.alert(
         `${permissionName} Access Required`,
-        `NUSA needs ${permissionName.toLowerCase()} access to set your profile photo. Please enable it in Settings.`,
+        `Nepally needs ${permissionName.toLowerCase()} access to set your profile photo. Please enable it in Settings.`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Open Settings', onPress: () => Linking.openSettings() },

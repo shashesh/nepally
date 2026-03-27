@@ -34,7 +34,7 @@
 
 **Name:** Rajesh Thapa
 **Age:** 28 years old
-**Background:** Software engineer who moved to Dallas 1 year ago. Looking for a Nepali roommate because his current roommate is moving out next month. Active in the community, already verified on NUSA (Level 1).
+**Background:** Software engineer who moved to Dallas 1 year ago. Looking for a Nepali roommate because his current roommate is moving out next month. Active in the community, already verified on Nepally (Level 1).
 
 **Metro:** Dallas-Fort Worth-Arlington, TX
 **Trust Level:** 1 (Verified)
@@ -42,7 +42,7 @@
 **Primary Device:** iPhone 14
 **Language:** Fluent in English and Nepali
 
-**Context:** Rajesh is sitting in his living room on Sunday morning, browsing NUSA to find housing posts. He wants to find someone looking for a roommate in his apartment complex or nearby. He also wants to check the credibility of posts by seeing who posted them and what others think (likes, comments).
+**Context:** Rajesh is sitting in his living room on Sunday morning, browsing Nepally to find housing posts. He wants to find someone looking for a roommate in his apartment complex or nearby. He also wants to check the credibility of posts by seeing who posted them and what others think (likes, comments).
 
 **Goals:**
 1. Find a reliable Nepali roommate
@@ -55,7 +55,7 @@
 ### Phase 1: Opening App and Viewing Enhanced Home Feed
 
 #### Step 1: Open App and Land on Home Screen
-**User Action:** Rajesh opens the NUSA app from his iPhone home screen.
+**User Action:** Rajesh opens the Nepally app from his iPhone home screen.
 
 **System Response:** App loads and displays Home screen with enhanced post feed.
 
