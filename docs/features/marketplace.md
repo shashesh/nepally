@@ -1,231 +1,166 @@
 # Feature: Marketplace
 
-**Status:** Phase 1 (Documentation Only - Implementation Deferred)
-**Last Updated:** 2026-02-19
-**Priority:** Medium
+**Status:** Phase 1 MVP Implemented
+**Last Updated:** 2026-03-27
+**Priority:** High
 
 ---
 
 ## Overview
 
-The Marketplace feature serves as a dedicated space for businesses, services, and classified ads within the Nepalese diaspora community. It separates commercial content from peer-to-peer community posts, providing a cleaner experience for both consumers and business owners.
+The Marketplace is a Craigslist/FB Marketplace-style listing system where businesses and individuals can advertise services, products, and businesses to the local Nepali diaspora community. The marketplace is separate from the peer-to-peer post system: posts are person-to-person; marketplace is business/service-oriented.
 
 ---
 
-## Purpose
+## Key Decisions
 
-- **Business Promotion:** Give local Nepalese businesses visibility within the community
-- **Service Discovery:** Help community members find trusted Nepalese-owned services
-- **Revenue Foundation:** Establish infrastructure for future paid promotions (Phase 3)
-- **Content Separation:** Keep commercial content separate from community discussions
-
----
-
-## MVP Scope (Phase 1 Documentation)
-
-### Business Listings
-- Browse local businesses and services
-- View business details: name, category, description, contact
-- See business location and operating hours
-- Filter by business category
-
-### Business Categories
-- Restaurants & Food
-- Grocery & Markets
-- Professional Services (Legal, Tax, Immigration)
-- Health & Wellness
-- Education & Tutoring
-- Transportation
-- Beauty & Personal Care
-- Home Services
-- Other
-
-### Display
-- Grid or list view of business cards
-- Business cards showing: name, category, rating (future), location
-- "Coming Soon" placeholder in Phase 1 implementation
-
-### Future Features (Post-MVP)
-- Business profile creation and management
-- Review and rating system
-- Photo galleries for businesses
-- Verified business badge
-- Paid promotion tiers
-- Analytics dashboard for business owners
-- Appointment booking integration
-- Deal/coupon posting
+- **Core Model:** Individual listings (not persistent business profiles)
+- **Seller Types:** Both Business and Individual (toggle)
+- **Contact Flow:** In-app chat as primary action
+- **Categories:** 12 Nepali-tailored categories
+- **Expiration:** Universal soft expiry (90 days without refresh = deprioritized)
+- **Scope:** Metro-area scoped (multi-metro/global = Phase 3 paid feature)
+- **Moderation:** Auto-publish + community reporting (using existing reports infra)
+- **Trust Level:** Level 1+ required to create; Level 0 can browse/save/contact
+- **Engagement:** Save/bookmark + Contact only (no likes, comments, reviews)
+- **My Listings:** Accessible from both profile tab and marketplace screen
 
 ---
 
-## User Stories
+## Categories (12)
 
-### As a community member, I want to:
-- Find Nepalese restaurants and grocery stores in my area
-- Discover professional services (lawyers, accountants, consultants)
-- Read reviews before visiting a business
-- Contact businesses directly through the app
-
-### As a business owner (future), I want to:
-- Create a profile for my business
-- Showcase my products/services with photos
-- Receive and respond to customer inquiries
-- Track views and engagement on my listing
-- Promote my business to reach more customers
-
-### As a premium user, I want to:
-- See businesses across all my saved locations
-- Access exclusive deals from partner businesses
+1. Food & Restaurants (🍜)
+2. Grocery & Specialty (🛒)
+3. Professional Services (💼)
+4. Immigration & Legal (⚖️)
+5. Remittance & Finance (💸)
+6. Health & Wellness (🏥)
+7. Education & Tutoring (🎓)
+8. Transportation (🚗)
+9. Home Services (🏠)
+10. Beauty & Wellness (💇)
+11. Cultural Services (🎭)
+12. Other (📦)
 
 ---
 
 ## Data Model
 
-```typescript
-interface Business {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  subcategory?: string;
-  metro_area_id: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  hours?: BusinessHours;
-  photos: string[];
-  owner_id: string;
-  is_verified: boolean;
-  is_premium_listing: boolean;
-  rating_average: number;
-  review_count: number;
-  created_at: string;
-  updated_at: string;
-}
+### Tables
+- **`marketplace_categories`** — Seeded reference table (12 categories)
+- **`marketplace_listings`** — Core listing data with structured fields
+- **`saved_listings`** — User bookmark junction table
 
-interface BusinessHours {
-  monday?: { open: string; close: string };
-  tuesday?: { open: string; close: string };
-  wednesday?: { open: string; close: string };
-  thursday?: { open: string; close: string };
-  friday?: { open: string; close: string };
-  saturday?: { open: string; close: string };
-  sunday?: { open: string; close: string };
-}
+### Enums
+- `listing_type`: business, individual
+- `listing_status`: active, inactive, removed
+- `item_condition`: new, used
 
-interface Review {
-  id: string;
-  business_id: string;
-  user_id: string;
-  rating: number; // 1-5
-  comment: string;
-  photos?: string[];
-  created_at: string;
-  updated_at: string;
-}
-```
+### Key Fields (marketplace_listings)
+- `owner_id`, `metro_area_id`, `category_id`
+- `listing_type`, `status`, `title`, `description`, `photos`
+- `price` (free-form text)
+- Business fields: `business_name`, `address`, `business_hours`, `website_url`
+- Individual fields: `item_condition`
+- Contact: `phone`, `email`
+- Counters: `views_count`, `saves_count`, `contacts_count`
+- `refreshed_at` — for soft expiry (90-day threshold)
+
+### Migration
+- File: `supabase/migrations/014_marketplace.sql`
+- Includes: tables, enums, indexes (including GIN full-text search), RLS policies, triggers, RPC functions, seed data
 
 ---
 
-## UI/UX
+## Screens & Pages
 
-### Navigation
-- Marketplace tab in bottom navigation bar
-- Icon: `storefront-outline` (Ionicons)
-- Position: 5th tab (Home, Post, Events, Marketplace, Profile)
+### Mobile (React Native)
+All in `apps/mobile/src/screens/marketplace/`:
+- **MarketplaceHomeScreen** — Category grid, search bar, recent listings, FAB for creating
+- **MarketplaceCategoryScreen** — Category-filtered listing list with search and pagination
+- **ListingDetailScreen** — Full listing view, photo carousel, structured fields, Contact/Save actions
+- **CreateListingScreen** — Create/edit form with Business/Individual toggle, Zod validation
+- **MyListingsScreen** — User's listings with status badges, refresh/deactivate/delete actions
 
-### Marketplace Screen
-- Header: "Marketplace" with metro area context
-- Category filter chips or tabs
-- Search bar for business name/keyword
-- Business cards in grid or list layout
-- Empty state for no businesses in area
+### Web (Next.js)
+All in `apps/web/src/pages/marketplace/`:
+- **index.page.tsx** — Marketplace home with category grid, search, recent listings
+- **[category].page.tsx** — Category filtered view, supports search mode
+- **listing/[id].page.tsx** — Full listing detail page
+- **create.page.tsx** — Create/edit listing form
+- **my-listings.page.tsx** — My listings management page
 
-### Business Card Design
-- Business name (bold, primary text)
-- Category badge
-- Star rating + review count (future)
-- Location/distance
-- Thumbnail photo
-
-### Business Detail Screen (future)
-- Full business information
-- Photo gallery
-- Reviews section
-- Contact actions (Call, Message, Directions)
-- Share business button
+### Profile Integration
+Both mobile and web profile pages include a "Listings" tab showing the user's marketplace listings alongside their posts and saved posts.
 
 ---
 
-## Technical Considerations
+## Shared Package
 
-### Database
-- New `businesses` table with RLS policies
-- `business_categories` reference table
-- `reviews` table for ratings
-- Full-text search index on business name/description
+All business logic in `packages/shared/`:
+- **Types:** `src/types/marketplace.ts`
+- **Constants:** `src/constants/marketplace.ts` (categories config, limits, labels)
+- **Validation:** `src/validation/marketplace.ts` (Zod schemas: `createListingSchema`, `updateListingSchema`)
+- **API:** `src/api/marketplace.ts` (16 functions accepting `SupabaseClient` via DI)
 
-### API Endpoints
-- `GET /businesses?metro_area_id={id}&category={cat}` - List businesses
-- `GET /businesses/{id}` - Get business details
-- `POST /businesses` - Create business listing (future)
-- `GET /businesses/{id}/reviews` - Get reviews
-- `POST /businesses/{id}/reviews` - Submit review (future)
-
-### Search
-- Full-text search on business name, description, category
-- Location-based filtering by metro area
-- Future: Distance-based search using coordinates
-
----
-
-## Phase 1 Implementation
-
-For Phase 1, the Marketplace tab will show a "Coming Soon" placeholder screen with:
-- Illustration indicating the feature is in development
-- Brief description: "Discover local Nepalese businesses and services"
-- Optional interest form for business owners who want to be listed
-
----
-
-## Revenue Model (Phase 3)
-
-### Free Listings
-- Basic business profile
-- Standard placement in search results
-- Contact information display
-
-### Premium Listings
-- Featured placement in search results
-- Enhanced profile with more photos
-- Analytics dashboard
-- Priority customer support
-
-### Promoted Listings
-- Top-of-category placement
-- Cross-metro visibility
-- Banner ads in relevant sections
+### API Functions
+| Function | Purpose |
+|----------|---------|
+| `getCategories` | Fetch all categories sorted by sort_order |
+| `getListingsByMetro` | Active listings for metro area (with filters) |
+| `getListingById` | Single listing with owner/category joins |
+| `getListingsByOwner` | Owner's listings for My Listings / profile |
+| `createListing` | Create new listing |
+| `updateListing` | Update listing fields |
+| `deactivateListing` | Set status = inactive |
+| `reactivateListing` | Set status = active, reset refreshed_at |
+| `deleteListing` | Soft delete (status = removed) |
+| `refreshListing` | Reset refreshed_at to now() |
+| `saveListing` | Bookmark a listing (idempotent) |
+| `unsaveListing` | Remove bookmark |
+| `getUserSavedListingIds` | Get saved listing IDs for a user |
+| `getSavedListingsByUser` | Full saved listings with details |
+| `incrementListingViews` | Non-critical view counter |
+| `incrementListingContacts` | Contact counter |
 
 ---
 
-## Success Metrics
+## Phasing
 
-### Phase 1
-- [ ] Marketplace tab visible in navigation
-- [ ] "Coming Soon" placeholder renders correctly
-- [ ] No navigation errors
+### Phase 1 (Implemented)
+- Full CRUD for listings
+- Category browsing and search
+- Save/bookmark listings
+- Contact via in-app chat
+- My Listings management
+- Profile integration (Listings tab)
+- Soft expiry (90 days)
 
-### Future Phases
-- [ ] 100+ business listings per major metro
-- [ ] 50% of businesses receive at least 1 review
-- [ ] 20% of users browse Marketplace weekly
-- [ ] 10% conversion from browse to contact
-- [ ] Revenue from premium/promoted listings (Phase 3)
+### Phase 2 (Planned)
+- Nepali-Owned badge
+- Community Favorites
+- Share to social
+- Listing Analytics dashboard
+
+### Phase 3 (Planned)
+- Promote to feed (native feed card)
+- Sponsored sidebar section
+- Multi-metro / global listings (paid)
+- Payment integration
+
+---
+
+## Test Coverage
+
+- **Shared validation:** 42 tests (`packages/shared/src/validation/marketplace.test.ts`)
+- **Shared API:** 50 tests (`packages/shared/src/api/marketplace.test.ts`)
+- **Mobile screens:** 5 tests (`apps/mobile/src/screens/marketplace/MarketplaceHomeScreen.test.tsx`)
+- **Web pages:** 6 tests (`apps/web/src/pages/marketplace/index.test.tsx`)
 
 ---
 
 ## Related Documentation
 
-- [Home Screen Wireframe](../wireframes/06-home-screen-level-0.md) - Bottom navigation context
-- [Product Roadmap](../../product-roadmap.md) - Phase planning
-- [Peer vs Business Distinction](../../product-roadmap.md#b-peer-vs-business-distinction) - Business profiles context
+- [Product Roadmap](../../product-roadmap.md) — Phase planning
+- [Code Sharing Guide](../code-sharing-guide.md) — Shared-first architecture
+- [Database Schema](../database-schema.md) — Full schema reference

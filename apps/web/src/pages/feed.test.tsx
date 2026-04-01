@@ -509,8 +509,10 @@ describe('FeedPage', () => {
       const expectedMonth = eventDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
       const expectedDay = eventDate.getDate().toString().padStart(2, '0');
 
-      expect(screen.getByText(expectedMonth)).toBeDefined();
-      expect(screen.getByText(expectedDay)).toBeDefined();
+      // Query within the first event card to avoid multiple matches
+      const firstEventCard = screen.getByText('Dashain Celebration 2026').closest('a');
+      expect(firstEventCard?.textContent).toContain(expectedMonth);
+      expect(firstEventCard?.textContent).toContain(expectedDay);
     });
 
     it('event cards link to event detail pages', async () => {

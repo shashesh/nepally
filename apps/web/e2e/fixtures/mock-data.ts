@@ -1,4 +1,4 @@
-import type { User, Post, Tag, Event } from '@nepally/shared';
+import type { User, Post, Tag, Event, MarketplaceCategory, MarketplaceListing } from '@nepally/shared';
 
 export const MOCK_USER_ID = 'e2e-user-00000000-0000-0000-0000-000000000001';
 export const MOCK_USER_EMAIL = 'e2e-test@nusa.app';
@@ -231,6 +231,112 @@ export const MOCK_ZIP_METRO = [
     state: 'NY',
     city: 'New York',
   },
+];
+
+export const MOCK_MARKETPLACE_CATEGORIES: MarketplaceCategory[] = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Food & Restaurants',
+    slug: 'food-restaurants',
+    emoji: '🍜',
+    icon: 'restaurant',
+    color: '#FF6B35',
+    sort_order: 1,
+    created_at: '2025-01-01T00:00:00Z',
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    name: 'Professional Services',
+    slug: 'professional-services',
+    emoji: '💼',
+    icon: 'briefcase',
+    color: '#2196F3',
+    sort_order: 2,
+    created_at: '2025-01-01T00:00:00Z',
+  },
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    name: 'Other',
+    slug: 'other',
+    emoji: '📦',
+    icon: 'cube',
+    color: '#9E9E9E',
+    sort_order: 3,
+    created_at: '2025-01-01T00:00:00Z',
+  },
+];
+
+export const MOCK_MARKETPLACE_LISTING_OWN_ACTIVE: MarketplaceListing = {
+  id: 'mp-listing-own-active-001',
+  owner_id: MOCK_USER_ID,
+  metro_area_id: MOCK_METRO_ID,
+  category_id: MOCK_MARKETPLACE_CATEGORIES[0].id,
+  listing_type: 'business',
+  status: 'active',
+  title: 'Everest Momo Catering',
+  description: 'Fresh momo and Nepali catering for family and community events.',
+  photos: [],
+  price: '$12 per plate',
+  business_name: 'Everest Momo Catering',
+  address: 'Queens, NY',
+  business_hours: null,
+  item_condition: null,
+  phone: '555-111-2222',
+  email: 'hello@everestmomo.test',
+  website_url: 'https://everestmomo.test',
+  views_count: 31,
+  saves_count: 6,
+  contacts_count: 4,
+  is_global: false,
+  refreshed_at: new Date().toISOString(),
+  created_at: '2025-06-01T00:00:00Z',
+  updated_at: '2025-06-01T00:00:00Z',
+  category: MOCK_MARKETPLACE_CATEGORIES[0],
+  owner: {
+    id: MOCK_USER_ID,
+    full_name: MOCK_USER_PROFILE.full_name,
+    trust_level: MOCK_USER_PROFILE.trust_level,
+    profile_photo: null,
+  },
+};
+
+export const MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE: MarketplaceListing = {
+  id: 'mp-listing-other-active-001',
+  owner_id: 'marketplace-other-user-0001',
+  metro_area_id: MOCK_METRO_ID,
+  category_id: MOCK_MARKETPLACE_CATEGORIES[1].id,
+  listing_type: 'individual',
+  status: 'active',
+  title: 'Resume Review + Interview Prep',
+  description: 'Professional resume editing and mock interview coaching.',
+  photos: [],
+  price: '$40/session',
+  business_name: null,
+  address: null,
+  business_hours: null,
+  item_condition: 'used',
+  phone: '555-333-4444',
+  email: 'coach@example.test',
+  website_url: null,
+  views_count: 17,
+  saves_count: 2,
+  contacts_count: 1,
+  is_global: false,
+  refreshed_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  created_at: '2025-06-03T00:00:00Z',
+  updated_at: '2025-06-03T00:00:00Z',
+  category: MOCK_MARKETPLACE_CATEGORIES[1],
+  owner: {
+    id: 'marketplace-other-user-0001',
+    full_name: 'Sita Gurung',
+    trust_level: 1,
+    profile_photo: null,
+  },
+};
+
+export const MOCK_MARKETPLACE_LISTINGS: MarketplaceListing[] = [
+  MOCK_MARKETPLACE_LISTING_OWN_ACTIVE,
+  MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE,
 ];
 
 /** Minimal fake Supabase JWT session structure */

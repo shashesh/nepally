@@ -16,6 +16,21 @@ test.describe('Unauthenticated access', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
+  test('visiting /marketplace redirects to /login', async ({ page }) => {
+    await page.goto('/marketplace');
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('visiting /marketplace/create redirects to /login', async ({ page }) => {
+    await page.goto('/marketplace/create');
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('visiting /marketplace/my-listings redirects to /login', async ({ page }) => {
+    await page.goto('/marketplace/my-listings');
+    await expect(page).toHaveURL(/\/login/);
+  });
+
   test('login page renders correctly', async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
