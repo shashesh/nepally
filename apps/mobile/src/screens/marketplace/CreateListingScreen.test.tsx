@@ -103,16 +103,10 @@ async function renderAndSettle() {
 
 describe('CreateListingScreen', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.clearAllMocks();
     setAuthUser();
     mockGetCategories.mockResolvedValue({ data: MOCK_CATEGORIES });
     mockSafeParse.mockReturnValue({ success: true, data: {} });
-  });
-
-  afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('renders "Create Listing" title and submit button', async () => {
