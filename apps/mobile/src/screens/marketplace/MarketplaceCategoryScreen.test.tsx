@@ -3,14 +3,13 @@ import { render, act } from '@testing-library/react-native';
 import { getListingsByMetro } from '@nepally/shared';
 import MarketplaceCategoryScreen from './MarketplaceCategoryScreen';
 
-jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-
 jest.mock('react-native-safe-area-context', () => {
   const mockReact = jest.requireActual('react');
   const { View: mockView } = jest.requireActual('react-native');
   return {
     SafeAreaView: ({ children }: { children: unknown }) =>
       mockReact.createElement(mockView, null, children),
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   };
 });
 
