@@ -88,10 +88,10 @@ const MOCK_LISTING = {
 };
 
 async function renderAndSettle() {
-  const utils = render(<MarketplaceHomeScreen />);
-  await act(async () => {});
-  await act(async () => {});
-  await act(async () => {});
+  let utils!: ReturnType<typeof render>;
+  await act(async () => {
+    utils = render(<MarketplaceHomeScreen />);
+  });
   return utils;
 }
 
