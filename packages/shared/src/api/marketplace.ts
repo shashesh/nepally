@@ -91,10 +91,9 @@ export async function getListingsByMetro(
       query = query.eq('category.slug', filters.categorySlug);
     }
 
-    // Full-text search on title + description
+    // Full-text search on title + description (uses generated search_vector column + GIN index)
     if (filters.searchQuery && filters.searchQuery.trim().length > 0) {
-      const searchTerms = filters.searchQuery.trim().split(/\s+/).join(' & ');
-      query = query.textSearch('title', searchTerms, { type: 'websearch' });
+      query = query.textSearch('search_vector', filters.searchQuery.trim(), { type: 'websearch' });
     }
 
     const { data, error } = await query;

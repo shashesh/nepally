@@ -127,12 +127,17 @@
   gap: var(--space-s);
 }
 
-.listingThumb {
+.listingThumbWrapper {
+  position: relative;
   width: 100%;
   height: 120px;
-  object-fit: cover;
   border-radius: 8px;
+  overflow: hidden;
   margin-bottom: 10px;
+}
+
+.listingThumb {
+  object-fit: cover;
 }
 
 .listingThumbPlaceholder {

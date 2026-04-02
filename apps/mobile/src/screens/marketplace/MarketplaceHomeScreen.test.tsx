@@ -99,10 +99,16 @@ async function renderAndSettle() {
 
 describe('MarketplaceHomeScreen', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     setAuthUser();
     mockGetCategories.mockResolvedValue({ data: [MOCK_CATEGORY] });
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('renders the Marketplace title', async () => {

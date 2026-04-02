@@ -12,6 +12,7 @@ import {
   validatePostPhotoFile,
 } from '../validation/post';
 import {
+  ALLOWED_LISTING_PHOTO_MIME_TYPES,
   LISTING_PHOTOS_BUCKET,
   MAX_LISTING_PHOTO_BYTES,
   MAX_PHOTOS_PER_LISTING,
@@ -292,8 +293,7 @@ export async function uploadListingPhoto(
       return { error: new Error('Listing photo must be 2MB or smaller') };
     }
 
-    const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!ALLOWED_MIME_TYPES.includes(input.mime_type)) {
+    if (!(ALLOWED_LISTING_PHOTO_MIME_TYPES as readonly string[]).includes(input.mime_type)) {
       return { error: new Error('Unsupported image type') };
     }
 

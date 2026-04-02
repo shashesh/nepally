@@ -17,7 +17,7 @@ The Marketplace is a Craigslist/FB Marketplace-style listing system where busine
 - **Core Model:** Individual listings (not persistent business profiles)
 - **Seller Types:** Both Business and Individual (toggle)
 - **Contact Flow:** In-app chat as primary action
-- **Categories:** 12 Nepali-tailored categories
+- **Categories:** 5 Nepali-tailored categories (consolidated from original 12)
 - **Expiration:** Universal soft expiry (90 days without refresh = deprioritized)
 - **Scope:** Metro-area scoped (multi-metro/global = Phase 3 paid feature)
 - **Moderation:** Auto-publish + community reporting (using existing reports infra)
@@ -27,27 +27,22 @@ The Marketplace is a Craigslist/FB Marketplace-style listing system where busine
 
 ---
 
-## Categories (12)
+## Categories (5)
 
-1. Food & Restaurants (🍜)
-2. Grocery & Specialty (🛒)
-3. Professional Services (💼)
-4. Immigration & Legal (⚖️)
-5. Remittance & Finance (💸)
-6. Health & Wellness (🏥)
-7. Education & Tutoring (🎓)
-8. Transportation (🚗)
-9. Home Services (🏠)
-10. Beauty & Wellness (💇)
-11. Cultural Services (🎭)
-12. Other (📦)
+Consolidated from 12 original categories via `016_consolidate_marketplace_categories.sql`.
+
+1. Food & Restaurants (🍜) — includes grocery & specialty
+2. Immigration & Legal (⚖️)
+3. Professional Services (💼) — includes health, education, home services, transportation, beauty, cultural
+4. Remittance & Finance (💸)
+5. Other (📦)
 
 ---
 
 ## Data Model
 
 ### Tables
-- **`marketplace_categories`** — Seeded reference table (12 categories)
+- **`marketplace_categories`** — Seeded reference table (5 categories)
 - **`marketplace_listings`** — Core listing data with structured fields
 - **`saved_listings`** — User bookmark junction table
 

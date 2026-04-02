@@ -14,6 +14,7 @@ import {
 } from '../fixtures/mock-data';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
+type MarketplaceListingRow = (typeof MOCK_MARKETPLACE_LISTINGS)[number];
 
 function expectsSingleObject(route: Route): boolean {
   const acceptHeader = route.request().headers()['accept'];
@@ -35,34 +36,34 @@ function buildMarketplaceState() {
   };
 }
 
-function filterMarketplaceListingsByRequest(requestUrl: string, listings: Array<Record<string, unknown>>) {
+function filterMarketplaceListingsByRequest<T extends object>(requestUrl: string, listings: T[]): T[] {
   const url = new URL(requestUrl);
   const params = url.searchParams;
   let filtered = [...listings];
 
   const idEq = params.get('id')?.replace('eq.', '');
-  if (idEq) filtered = filtered.filter((listing) => listing.id === idEq);
+  if (idEq) filtered = filtered.filter((listing) => (listing as { id?: string }).id === idEq);
 
   const ownerEq = params.get('owner_id')?.replace('eq.', '');
-  if (ownerEq) filtered = filtered.filter((listing) => listing.owner_id === ownerEq);
+  if (ownerEq) filtered = filtered.filter((listing) => (listing as { owner_id?: string }).owner_id === ownerEq);
 
   const metroEq = params.get('metro_area_id')?.replace('eq.', '');
-  if (metroEq) filtered = filtered.filter((listing) => listing.metro_area_id === metroEq);
+  if (metroEq) filtered = filtered.filter((listing) => (listing as { metro_area_id?: string }).metro_area_id === metroEq);
 
   const statusParam = params.get('status');
   if (statusParam?.startsWith('eq.')) {
     const statusEq = statusParam.replace('eq.', '');
-    filtered = filtered.filter((listing) => listing.status === statusEq);
+    filtered = filtered.filter((listing) => (listing as { status?: string }).status === statusEq);
   }
   if (statusParam?.startsWith('neq.')) {
     const statusNeq = statusParam.replace('neq.', '');
-    filtered = filtered.filter((listing) => listing.status !== statusNeq);
+    filtered = filtered.filter((listing) => (listing as { status?: string }).status !== statusNeq);
   }
 
   const categorySlugEq = params.get('category.slug')?.replace('eq.', '');
   if (categorySlugEq) {
     filtered = filtered.filter((listing) => {
-      const category = listing.category as { slug?: string } | undefined;
+        const category = (listing as { category?: { slug?: string } | null }).category;
       return category?.slug === categorySlugEq;
     });
   }
@@ -72,7 +73,8 @@ function filterMarketplaceListingsByRequest(requestUrl: string, listings: Array<
     const searchPart = titleSearchRaw.split('.').slice(1).join('.').replace(/&/g, ' ').trim().toLowerCase();
     if (searchPart.length > 0) {
       filtered = filtered.filter((listing) => {
-        const haystack = `${String(listing.title ?? '')} ${String(listing.description ?? '')}`.toLowerCase();
+        const item = listing as { title?: string; description?: string };
+        const haystack = `${String(item.title ?? '')} ${String(item.description ?? '')}`.toLowerCase();
         return haystack.includes(searchPart);
       });
     }
@@ -198,20 +200,35 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
     }
 
     if (method === 'POST') {
-      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      const payload = route.request().postDataJSON() as Partial<MarketplaceListingRow> & Record<string, unknown>;
       const categoryId = String(payload.category_id ?? '');
       const category = marketplaceState.categories.find((item) => item.id === categoryId) ?? null;
-      const createdListing = {
-        ...payload,
+      const createdListing: MarketplaceListingRow = {
         id: `mp-listing-created-${marketplaceState.listings.length + 1}`,
+        owner_id: String(payload.owner_id ?? MOCK_USER_ID),
+        metro_area_id: String(payload.metro_area_id ?? MOCK_USER_PROFILE.metro_area_id ?? ''),
+        category_id: categoryId,
+        listing_type: (payload.listing_type ?? 'individual') as MarketplaceListingRow['listing_type'],
         status: 'active',
+        title: String(payload.title ?? ''),
+        description: String(payload.description ?? ''),
+        photos: Array.isArray(payload.photos) ? (payload.photos as string[]) : [],
+        price: payload.price != null ? String(payload.price) : null,
+        business_name: payload.business_name != null ? String(payload.business_name) : null,
+        address: payload.address != null ? String(payload.address) : null,
+        business_hours: (payload.business_hours as MarketplaceListingRow['business_hours']) ?? null,
+        item_condition: (payload.item_condition as MarketplaceListingRow['item_condition']) ?? null,
+        phone: payload.phone != null ? String(payload.phone) : null,
+        email: payload.email != null ? String(payload.email) : null,
+        website_url: payload.website_url != null ? String(payload.website_url) : null,
+        is_global: Boolean(payload.is_global ?? false),
         views_count: 0,
         saves_count: 0,
         contacts_count: 0,
         refreshed_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        category,
+        ...(category ? { category } : {}),
         owner: {
           id: MOCK_USER_ID,
           full_name: MOCK_USER_PROFILE.full_name,
@@ -230,15 +247,15 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
     }
 
     if (method === 'PATCH') {
-      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      const payload = route.request().postDataJSON() as Partial<MarketplaceListingRow>;
       const listingId = new URL(route.request().url()).searchParams.get('id')?.replace('eq.', '');
       const targetIndex = marketplaceState.listings.findIndex((listing) => listing.id === listingId);
       if (targetIndex >= 0) {
-        const current = marketplaceState.listings[targetIndex] as Record<string, unknown>;
-        const nextCategoryId = payload.category_id ? String(payload.category_id) : String(current.category_id ?? '');
-        const nextCategory = marketplaceState.categories.find((item) => item.id === nextCategoryId) ?? current.category ?? null;
+        const current = marketplaceState.listings[targetIndex];
+        const nextCategoryId = payload.category_id ? String(payload.category_id) : String(current.category_id);
+        const nextCategory = marketplaceState.categories.find((item) => item.id === nextCategoryId) ?? current.category;
 
-        const updated = {
+        const updated: MarketplaceListingRow = {
           ...current,
           ...payload,
           category: nextCategory,

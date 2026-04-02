@@ -45,6 +45,14 @@ export const LISTING_PHOTOS_BUCKET = 'listing-photos';
 /** Max listing photo size: 2 MB */
 export const MAX_LISTING_PHOTO_BYTES = 2 * 1024 * 1024;
 
+/** Allowed MIME types for listing photos */
+export const ALLOWED_LISTING_PHOTO_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+] as const;
+
 /** Listing type labels for display */
 export const LISTING_TYPE_LABELS: Record<string, string> = {
   business: 'Business',

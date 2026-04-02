@@ -94,9 +94,15 @@ async function renderAndSettle() {
 
 describe('MarketplaceCategoryScreen', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     setAuthUser();
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('renders the category name in the header', async () => {

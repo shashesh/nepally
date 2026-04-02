@@ -104,9 +104,15 @@ async function renderAndSettle() {
 
 describe('MyListingsScreen', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     setAuthUser();
     mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('renders "My Listings" header', async () => {

@@ -107,10 +107,16 @@ async function renderAndSettle() {
 
 describe('ListingDetailScreen', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     setAuthUser();
     mockGetListingById.mockResolvedValue({ data: MOCK_LISTING } as never);
     mockGetUserSavedListingIds.mockResolvedValue({ data: [] });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('renders the listing title', async () => {

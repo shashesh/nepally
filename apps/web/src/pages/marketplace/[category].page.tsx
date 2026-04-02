@@ -44,12 +44,12 @@ export default function MarketplaceCategoryPage() {
     setLoading(true);
     const result = await getListingsByMetro(supabase, metroId, {
       categorySlug: isSearch ? undefined : slug,
-      searchQuery: isSearch ? query : localSearch || undefined,
+      searchQuery: localSearch || undefined,
       limit: PAGE_SIZE,
     });
     if (result.data) setListings(result.data);
     setLoading(false);
-  }, [metroId, slug, query, localSearch, isSearch, router.isReady]);
+  }, [metroId, slug, localSearch, isSearch, router.isReady]);
 
   useEffect(() => {
     fetchListings();
@@ -58,9 +58,16 @@ export default function MarketplaceCategoryPage() {
   const handleSearch = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
+      if (isSearch) {
+        router.replace(
+          { pathname: router.pathname, query: { ...router.query, q: localSearch } },
+          undefined,
+          { shallow: true }
+        );
+      }
       fetchListings();
     },
-    [fetchListings]
+    [fetchListings, isSearch, localSearch, router]
   );
 
   if (!user) return null;

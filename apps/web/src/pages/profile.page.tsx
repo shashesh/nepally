@@ -410,7 +410,9 @@ export default function ProfilePage() {
           return (
             <Link key={listing.id} href={`/marketplace/listing/${listing.id}`} className={styles.postItem}>
               {listing.photos.length > 0 ? (
-                <Image src={listing.photos[0]} alt={listing.title} className={styles.listingThumb} fill style={{ objectFit: 'cover' }} />
+                <div className={styles.listingThumbWrapper}>
+                  <Image src={listing.photos[0]} alt={listing.title} className={styles.listingThumb} fill />
+                </div>
               ) : (
                 <div className={styles.listingThumbPlaceholder}>
                   {listing.category?.emoji ?? '📦'}

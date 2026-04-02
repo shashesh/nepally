@@ -153,7 +153,7 @@ describe('getListingsByMetro', () => {
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
     await getListingsByMetro(supabase, 'metro-1', { searchQuery: 'momo' });
-    expect(chain.textSearch).toHaveBeenCalledWith('title', 'momo', { type: 'websearch' });
+    expect(chain.textSearch).toHaveBeenCalledWith('search_vector', 'momo', { type: 'websearch' });
   });
 
   it('filters out null-category listings when categorySlug used', async () => {
