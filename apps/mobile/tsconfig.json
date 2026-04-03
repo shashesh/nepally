@@ -4,6 +4,11 @@
     "module": "ESNext",
     "strict": true,
     "jsx": "react-native",
+    "types": [
+      "jest",
+      "react",
+      "react-native"
+    ],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
