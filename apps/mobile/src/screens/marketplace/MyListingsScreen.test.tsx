@@ -3,6 +3,8 @@ import { render, act } from '@testing-library/react-native';
 import { getListingsByOwner } from '@nepally/shared';
 import MyListingsScreen from './MyListingsScreen';
 
+jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
 jest.mock('react-native-safe-area-context', () => {
   const mockReact = jest.requireActual('react');
   const { View: mockView } = jest.requireActual('react-native');

@@ -55,24 +55,29 @@ export default function ListingDetailScreen() {
 
   useEffect(() => {
     async function fetchData() {
-      const listingResult = await getListingById(supabase, listingId);
+      try {
+        const listingResult = await getListingById(supabase, listingId);
 
-      if (listingResult.data) {
-        setListing(listingResult.data);
-        incrementListingViews(supabase, listingId);
-      }
-
-      if (user) {
-        const savedResult = await getUserSavedListingIds(supabase, user.id);
-        if (savedResult.data) {
-          setIsSaved(savedResult.data.includes(listingId));
+        if (listingResult.data) {
+          setListing(listingResult.data);
+          await incrementListingViews(supabase, listingId);
         }
-      }
 
-      setLoading(false);
+        if (user) {
+          const savedResult = await getUserSavedListingIds(supabase, user.id);
+          if (savedResult.data) {
+            setIsSaved(savedResult.data.includes(listingId));
+          }
+        }
+      } catch {
+        // Silently handle fetch errors — listing will remain null and
+        // the "not found" UI will be shown.
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
-  }, [listingId, user]);
+  }, [listingId, user?.id]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
