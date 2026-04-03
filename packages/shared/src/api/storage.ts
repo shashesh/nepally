@@ -11,6 +11,12 @@ import {
   validatePostPhotoCount,
   validatePostPhotoFile,
 } from '../validation/post';
+import {
+  ALLOWED_LISTING_PHOTO_MIME_TYPES,
+  LISTING_PHOTOS_BUCKET,
+  MAX_LISTING_PHOTO_BYTES,
+  MAX_PHOTOS_PER_LISTING,
+} from '../constants/marketplace';
 
 const AVATARS_BUCKET = 'avatars';
 const EVENT_PHOTOS_BUCKET = 'event-photos';
@@ -262,6 +268,109 @@ export async function uploadEventPhoto(
   } catch (error) {
     return {
       error: error instanceof Error ? error : new Error('Failed to upload event photo'),
+    };
+  }
+}
+
+export interface ListingPhotoUploadInput {
+  user_id: string;
+  file_data: ArrayBuffer | Uint8Array;
+  mime_type: string;
+  size_bytes: number;
+  file_name?: string;
+}
+
+/**
+ * Upload a single listing photo to Supabase Storage (listing-photos bucket).
+ * Returns a public URL and storage path for optional cleanup.
+ */
+export async function uploadListingPhoto(
+  supabase: SupabaseClient,
+  input: ListingPhotoUploadInput
+): Promise<{ url?: string; path?: string; error?: Error }> {
+  try {
+    if (input.size_bytes > MAX_LISTING_PHOTO_BYTES) {
+      return { error: new Error('Listing photo must be 2MB or smaller') };
+    }
+
+    if (!(ALLOWED_LISTING_PHOTO_MIME_TYPES as readonly string[]).includes(input.mime_type)) {
+      return { error: new Error('Unsupported image type') };
+    }
+
+    const extension = getExtensionFromMimeType(input.mime_type);
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).slice(2, 10);
+    const baseName = input.file_name
+      ? sanitizeFileName(input.file_name).replace(/\.[a-zA-Z0-9]+$/, '').slice(0, 40)
+      : 'listing';
+    const filePath = `${input.user_id}/${timestamp}-${random}-${baseName}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(LISTING_PHOTOS_BUCKET)
+      .upload(filePath, input.file_data, {
+        contentType: input.mime_type,
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from(LISTING_PHOTOS_BUCKET)
+      .getPublicUrl(filePath);
+
+    return { url: urlData.publicUrl, path: filePath };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to upload listing photo'),
+    };
+  }
+}
+
+/**
+ * Upload multiple listing photos with count validation.
+ */
+export async function uploadListingPhotos(
+  supabase: SupabaseClient,
+  photos: ListingPhotoUploadInput[]
+): Promise<{ urls?: string[]; paths?: string[]; error?: Error }> {
+  if (photos.length > MAX_PHOTOS_PER_LISTING) {
+    return { error: new Error(`Maximum ${MAX_PHOTOS_PER_LISTING} photos per listing`) };
+  }
+
+  const urls: string[] = [];
+  const paths: string[] = [];
+
+  for (const photo of photos) {
+    const result = await uploadListingPhoto(supabase, photo);
+    if (result.error || !result.url || !result.path) {
+      return { error: result.error || new Error('Failed to upload listing photo') };
+    }
+    urls.push(result.url);
+    paths.push(result.path);
+  }
+
+  return { urls, paths };
+}
+
+/**
+ * Best-effort cleanup for uploaded listing photos.
+ */
+export async function deleteListingPhotos(
+  supabase: SupabaseClient,
+  paths: string[]
+): Promise<{ error?: Error }> {
+  if (paths.length === 0) return {};
+
+  try {
+    const { error } = await supabase.storage
+      .from(LISTING_PHOTOS_BUCKET)
+      .remove(paths);
+
+    if (error) throw error;
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to delete listing photos'),
     };
   }
 }

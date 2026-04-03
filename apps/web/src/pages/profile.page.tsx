@@ -3,6 +3,7 @@ import { ActionIcon, Badge, Button, Center, Text, UnstyledButton } from '@mantin
 import { notifications } from '@mantine/notifications';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
@@ -16,11 +17,12 @@ import {
   deleteProfilePhoto,
   updateUserProfile,
 } from '@nepally/shared';
-import type { Post, TrustLevel } from '@nepally/shared';
+import type { Post, TrustLevel, MarketplaceListing } from '@nepally/shared';
+import { getListingsByOwner, LISTING_SOFT_EXPIRY_DAYS } from '@nepally/shared';
 import Avatar from '../components/Avatar';
 import styles from '../styles/Profile.module.css';
 
-type ProfileTab = 'posts' | 'saved' | 'about';
+type ProfileTab = 'posts' | 'listings' | 'saved' | 'about';
 
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
@@ -40,8 +42,10 @@ export default function ProfilePage() {
   const [unsaveMenuId, setUnsaveMenuId] = useState<string | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [userListings, setUserListings] = useState<MarketplaceListing[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [savedLoading, setSavedLoading] = useState(false);
+  const [listingsLoading, setListingsLoading] = useState(false);
   const [postsError, setPostsError] = useState<string | null>(null);
   const [savedError, setSavedError] = useState<string | null>(null);
   const userId = user?.id ?? null;
@@ -93,8 +97,17 @@ export default function ProfilePage() {
       setSavedLoading(false);
     }
 
+    async function loadUserListings() {
+      setListingsLoading(true);
+      const result = await getListingsByOwner(supabase, currentUserId, 30);
+      if (!isMounted) return;
+      setUserListings(result.data || []);
+      setListingsLoading(false);
+    }
+
     loadUserPosts();
     loadSavedPosts();
+    loadUserListings();
 
     return () => {
       isMounted = false;
@@ -374,6 +387,64 @@ export default function ProfilePage() {
     );
   }
 
+  function renderListingsList() {
+    if (listingsLoading) return <Center p="xl"><Text c="dimmed">Loading...</Text></Center>;
+    if (userListings.length === 0) return <Center p="xl"><Text c="dimmed">No marketplace listings yet.</Text></Center>;
+
+    return (
+      <div className={styles.postList}>
+        {userListings.map((listing) => {
+          const statusColor =
+            listing.status === 'active' ? '#2E7D32' :
+            listing.status === 'inactive' ? '#F57C00' : '#C62828';
+          const statusBg =
+            listing.status === 'active' ? '#E8F5E9' :
+            listing.status === 'inactive' ? '#FFF3E0' : '#FFEBEE';
+          const daysUntilExpiry = Math.max(
+            0,
+            LISTING_SOFT_EXPIRY_DAYS -
+              Math.floor((Date.now() - new Date(listing.refreshed_at).getTime()) / (1000 * 60 * 60 * 24))
+          );
+          const isExpiringSoon = daysUntilExpiry <= 14 && listing.status === 'active';
+
+          return (
+            <Link key={listing.id} href={`/marketplace/listing/${listing.id}`} className={styles.postItem}>
+              {listing.photos.length > 0 ? (
+                <div className={styles.listingThumbWrapper}>
+                  <Image src={listing.photos[0]} alt={listing.title} className={styles.listingThumb} fill />
+                </div>
+              ) : (
+                <div className={styles.listingThumbPlaceholder}>
+                  {listing.category?.emoji ?? '📦'}
+                </div>
+              )}
+              <div className={styles.postItemTop}>
+                <span className={styles.postItemTitle}>{listing.title}</span>
+                <Badge variant="light" styles={{ root: { backgroundColor: statusBg, color: statusColor } }}>
+                  {listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}
+                </Badge>
+              </div>
+              <div className={styles.postItemMeta}>
+                <span>{listing.category?.emoji} {listing.category?.name}</span>
+                {listing.price && <span className={styles.listingPrice}>{listing.price}</span>}
+              </div>
+              <div className={styles.postItemMeta}>
+                <span>{listing.views_count} views</span>
+                <span>{listing.saves_count} saves</span>
+                <span>{listing.contacts_count} contacts</span>
+              </div>
+              {isExpiringSoon && (
+                <div className={styles.listingExpiry}>
+                  Expires in {daysUntilExpiry} days
+                </div>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <>
       <Head>
@@ -501,6 +572,13 @@ export default function ProfilePage() {
             </button>
             <button
               type="button"
+              className={`${styles.menuTab} ${activeTab === 'listings' ? styles.menuTabActive : ''}`}
+              onClick={() => setActiveTab('listings')}
+            >
+              Listings
+            </button>
+            <button
+              type="button"
               className={`${styles.menuTab} ${activeTab === 'saved' ? styles.menuTabActive : ''}`}
               onClick={() => setActiveTab('saved')}
             >
@@ -518,6 +596,8 @@ export default function ProfilePage() {
           <div className={styles.tabContent}>
             {activeTab === 'posts' &&
               renderPostList(userPosts, postsLoading, postsError, 'You have not created any posts yet.')}
+
+            {activeTab === 'listings' && renderListingsList()}
 
             {activeTab === 'saved' && renderSavedPostList()}
 

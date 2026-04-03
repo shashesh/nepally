@@ -16,3 +16,4 @@ export * from './userSettings';
 export * from './deviceTokens';
 export * from './events';
 export * from './reports';
+export * from './marketplace';

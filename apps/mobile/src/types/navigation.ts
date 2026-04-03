@@ -88,8 +88,11 @@ export type EventsStackParamList = {
  * Marketplace stack parameter list
  */
 export type MarketplaceStackParamList = {
-  MarketplaceMain: undefined;
-  // Future: BusinessDetail: { businessId: string };
+  MarketplaceHome: undefined;
+  MarketplaceCategory: { categorySlug: string; categoryName: string };
+  ListingDetail: { listingId: string };
+  CreateListing: { editListingId?: string } | undefined;
+  MyListings: undefined;
 };
 
 /**

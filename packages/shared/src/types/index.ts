@@ -10,3 +10,4 @@ export * from './location';
 export * from './notification';
 export * from './events';
 export * from './report';
+export * from './marketplace';

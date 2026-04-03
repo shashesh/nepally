@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -27,7 +28,8 @@ import {
   unsavePost,
   formatRelativeTime,
 } from '@nepally/shared';
-import type { Post } from '@nepally/shared';
+import type { Post, MarketplaceListing } from '@nepally/shared';
+import { getListingsByOwner, LISTING_SOFT_EXPIRY_DAYS } from '@nepally/shared';
 import { Avatar } from '../../components/Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
@@ -56,9 +58,11 @@ export function ProfileScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
   const menuButtonRef = useRef<View>(null);
-  const [activeTab, setActiveTab] = useState<'posts' | 'saved' | 'about'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'listings' | 'saved' | 'about'>('posts');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [userListings, setUserListings] = useState<MarketplaceListing[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(false);
   const [postsLoading, setPostsLoading] = useState(false);
   const [savedLoading, setSavedLoading] = useState(false);
   const [postsError, setPostsError] = useState<string | null>(null);
@@ -112,8 +116,17 @@ export function ProfileScreen() {
       setSavedLoading(false);
     }
 
+    async function loadUserListings() {
+      setListingsLoading(true);
+      const result = await getListingsByOwner(supabase, currentUserId, 30);
+      if (!isMounted) return;
+      setUserListings(result.data || []);
+      setListingsLoading(false);
+    }
+
     loadUserPosts();
     loadSavedPosts();
+    loadUserListings();
 
     return () => {
       isMounted = false;
@@ -246,6 +259,76 @@ export function ProfileScreen() {
             </View>
           </View>
         ))}
+      </View>
+    );
+  }
+
+  function renderListingsTab() {
+    if (listingsLoading) {
+      return <Text style={styles.tabMessage}>Loading...</Text>;
+    }
+    if (userListings.length === 0) {
+      return <Text style={styles.tabMessage}>No marketplace listings yet.</Text>;
+    }
+
+    return (
+      <View style={styles.postList}>
+        {userListings.map((listing) => {
+          const statusColor =
+            listing.status === 'active' ? '#2E7D32' :
+            listing.status === 'inactive' ? '#F57C00' : '#C62828';
+          const statusBg =
+            listing.status === 'active' ? '#E8F5E9' :
+            listing.status === 'inactive' ? '#FFF3E0' : '#FFEBEE';
+          const daysUntilExpiry = Math.max(
+            0,
+            LISTING_SOFT_EXPIRY_DAYS -
+              Math.floor((Date.now() - new Date(listing.refreshed_at).getTime()) / (1000 * 60 * 60 * 24))
+          );
+
+          return (
+            <TouchableOpacity
+              key={listing.id}
+              style={styles.postItem}
+              onPress={() => navigation.getParent()?.navigate('Marketplace', {
+                screen: 'ListingDetail',
+                params: { listingId: listing.id },
+              })}
+            >
+              {listing.photos.length > 0 ? (
+                <Image source={{ uri: listing.photos[0] }} style={styles.listingThumb} />
+              ) : (
+                <View style={[styles.listingThumbPlaceholder, { backgroundColor: (listing.category?.color ?? '#9E9E9E') + '20' }]}>
+                  <Text style={styles.listingThumbEmoji}>{listing.category?.emoji ?? '📦'}</Text>
+                </View>
+              )}
+              <View style={styles.postItemHeader}>
+                <Text style={styles.postItemTitle} numberOfLines={1}>
+                  {listing.title}
+                </Text>
+                <View style={[styles.listingStatusBadge, { backgroundColor: statusBg }]}>
+                  <Text style={[styles.listingStatusText, { color: statusColor }]}>
+                    {listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.postMetaRow}>
+                <Text style={styles.postMetaText}>{listing.category?.emoji} {listing.category?.name}</Text>
+                {listing.price ? <Text style={styles.postMetaText}>{listing.price}</Text> : null}
+              </View>
+              <View style={styles.postMetaRow}>
+                <Text style={styles.postMetaText}>{listing.views_count} views</Text>
+                <Text style={styles.postMetaText}>{listing.saves_count} saves</Text>
+                <Text style={styles.postMetaText}>{listing.contacts_count} contacts</Text>
+              </View>
+              {daysUntilExpiry <= 14 && listing.status === 'active' && (
+                <Text style={styles.listingExpiryWarning}>
+                  Expires in {daysUntilExpiry} days
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     );
   }
@@ -384,6 +467,15 @@ export function ProfileScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'listings' ? styles.tabButtonActive : null]}
+              onPress={() => setActiveTab('listings')}
+            >
+              <Text style={[styles.tabButtonText, activeTab === 'listings' ? styles.tabButtonTextActive : null]}>
+                Listings
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[styles.tabButton, activeTab === 'saved' ? styles.tabButtonActive : null]}
               onPress={() => setActiveTab('saved')}
             >
@@ -403,6 +495,7 @@ export function ProfileScreen() {
           </View>
 
           {activeTab === 'posts' && renderPosts(userPosts, postsLoading, postsError, 'You have not created any posts yet.')}
+          {activeTab === 'listings' && renderListingsTab()}
           {activeTab === 'saved' && renderSavedPostsTab()}
 
           {activeTab === 'about' && (
@@ -424,6 +517,10 @@ export function ProfileScreen() {
               <View style={styles.aboutRow}>
                 <Text style={styles.aboutLabel}>Posts</Text>
                 <Text style={styles.aboutValue}>{userPosts.length}</Text>
+              </View>
+              <View style={styles.aboutRow}>
+                <Text style={styles.aboutLabel}>Listings</Text>
+                <Text style={styles.aboutValue}>{userListings.length}</Text>
               </View>
               <View style={styles.aboutRow}>
                 <Text style={styles.aboutLabel}>Saved Posts</Text>
@@ -694,6 +791,38 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.primary,
     fontWeight: '600',
+  },
+  listingThumb: {
+    width: '100%',
+    height: 120,
+    borderRadius: borderRadius.input,
+    resizeMode: 'cover',
+    marginBottom: spacing.s,
+  },
+  listingThumbPlaceholder: {
+    width: '100%',
+    height: 80,
+    borderRadius: borderRadius.input,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.s,
+  },
+  listingThumbEmoji: {
+    fontSize: 32,
+  },
+  listingStatusBadge: {
+    borderRadius: borderRadius.badge,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 3,
+  },
+  listingStatusText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  listingExpiryWarning: {
+    ...typography.caption,
+    color: '#F57C00',
+    marginTop: spacing.xs,
   },
   saveToast: {
     position: 'absolute',

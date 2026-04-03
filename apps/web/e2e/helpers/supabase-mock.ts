@@ -6,12 +6,15 @@ import {
   MOCK_POST_OTHER_AUTHOR,
   MOCK_UPCOMING_EVENTS,
   MOCK_ZIP_METRO,
+  MOCK_MARKETPLACE_CATEGORIES,
+  MOCK_MARKETPLACE_LISTINGS,
   makeFakeSession,
   MOCK_USER_ID,
   MOCK_USER_EMAIL,
 } from '../fixtures/mock-data';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
+type MarketplaceListingRow = (typeof MOCK_MARKETPLACE_LISTINGS)[number];
 
 function expectsSingleObject(route: Route): boolean {
   const acceptHeader = route.request().headers()['accept'];
@@ -25,11 +28,68 @@ function buildMockPostRows() {
   }));
 }
 
+function buildMarketplaceState() {
+  return {
+    categories: structuredClone(MOCK_MARKETPLACE_CATEGORIES),
+    listings: structuredClone(MOCK_MARKETPLACE_LISTINGS),
+    savedListingIds: [] as string[],
+  };
+}
+
+function filterMarketplaceListingsByRequest<T extends object>(requestUrl: string, listings: T[]): T[] {
+  const url = new URL(requestUrl);
+  const params = url.searchParams;
+  let filtered = [...listings];
+
+  const idEq = params.get('id')?.replace('eq.', '');
+  if (idEq) filtered = filtered.filter((listing) => (listing as { id?: string }).id === idEq);
+
+  const ownerEq = params.get('owner_id')?.replace('eq.', '');
+  if (ownerEq) filtered = filtered.filter((listing) => (listing as { owner_id?: string }).owner_id === ownerEq);
+
+  const metroEq = params.get('metro_area_id')?.replace('eq.', '');
+  if (metroEq) filtered = filtered.filter((listing) => (listing as { metro_area_id?: string }).metro_area_id === metroEq);
+
+  const statusParam = params.get('status');
+  if (statusParam?.startsWith('eq.')) {
+    const statusEq = statusParam.replace('eq.', '');
+    filtered = filtered.filter((listing) => (listing as { status?: string }).status === statusEq);
+  }
+  if (statusParam?.startsWith('neq.')) {
+    const statusNeq = statusParam.replace('neq.', '');
+    filtered = filtered.filter((listing) => (listing as { status?: string }).status !== statusNeq);
+  }
+
+  const categorySlugEq = params.get('category.slug')?.replace('eq.', '');
+  if (categorySlugEq) {
+    filtered = filtered.filter((listing) => {
+        const category = (listing as { category?: { slug?: string } | null }).category;
+      return category?.slug === categorySlugEq;
+    });
+  }
+
+  const titleSearchRaw = params.get('title');
+  if (titleSearchRaw && titleSearchRaw.includes('.')) {
+    const searchPart = titleSearchRaw.split('.').slice(1).join('.').replace(/&/g, ' ').trim().toLowerCase();
+    if (searchPart.length > 0) {
+      filtered = filtered.filter((listing) => {
+        const item = listing as { title?: string; description?: string };
+        const haystack = `${String(item.title ?? '')} ${String(item.description ?? '')}`.toLowerCase();
+        return haystack.includes(searchPart);
+      });
+    }
+  }
+
+  return filtered;
+}
+
 /**
  * Intercepts all Supabase REST + Auth calls for a fully authenticated session.
  * Call BEFORE page.goto(). Already-authenticated flow — no sign-in request needed.
  */
 export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
+  const marketplaceState = buildMarketplaceState();
+
   // Auth: getSession / getUser
   await page.route('**/auth/v1/token**', async (route) => {
     const session = makeFakeSession();
@@ -114,6 +174,155 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
       // DELETE
       await route.fulfill({ status: 204, headers: JSON_HEADERS, body: '' });
     }
+  });
+
+  // Marketplace categories
+  await page.route('**/rest/v1/marketplace_categories**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: JSON_HEADERS,
+      body: JSON.stringify(marketplaceState.categories),
+    });
+  });
+
+  // Marketplace listings
+  await page.route('**/rest/v1/marketplace_listings**', async (route) => {
+    const method = route.request().method();
+
+    if (method === 'GET') {
+      const listings = filterMarketplaceListingsByRequest(route.request().url(), marketplaceState.listings);
+      await route.fulfill({
+        status: 200,
+        headers: JSON_HEADERS,
+        body: JSON.stringify(expectsSingleObject(route) ? listings[0] ?? null : listings),
+      });
+      return;
+    }
+
+    if (method === 'POST') {
+      const payload = route.request().postDataJSON() as Partial<MarketplaceListingRow> & Record<string, unknown>;
+      const categoryId = String(payload.category_id ?? '');
+      const category = marketplaceState.categories.find((item) => item.id === categoryId) ?? null;
+      const createdListing: MarketplaceListingRow = {
+        id: `mp-listing-created-${marketplaceState.listings.length + 1}`,
+        owner_id: String(payload.owner_id ?? MOCK_USER_ID),
+        metro_area_id: String(payload.metro_area_id ?? MOCK_USER_PROFILE.metro_area_id ?? ''),
+        category_id: categoryId,
+        listing_type: (payload.listing_type ?? 'individual') as MarketplaceListingRow['listing_type'],
+        status: 'active',
+        title: String(payload.title ?? ''),
+        description: String(payload.description ?? ''),
+        photos: Array.isArray(payload.photos) ? (payload.photos as string[]) : [],
+        price: payload.price != null ? String(payload.price) : null,
+        business_name: payload.business_name != null ? String(payload.business_name) : null,
+        address: payload.address != null ? String(payload.address) : null,
+        business_hours: (payload.business_hours as MarketplaceListingRow['business_hours']) ?? null,
+        item_condition: (payload.item_condition as MarketplaceListingRow['item_condition']) ?? null,
+        phone: payload.phone != null ? String(payload.phone) : null,
+        email: payload.email != null ? String(payload.email) : null,
+        website_url: payload.website_url != null ? String(payload.website_url) : null,
+        is_global: Boolean(payload.is_global ?? false),
+        views_count: 0,
+        saves_count: 0,
+        contacts_count: 0,
+        refreshed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...(category ? { category } : {}),
+        owner: {
+          id: MOCK_USER_ID,
+          full_name: MOCK_USER_PROFILE.full_name,
+          trust_level: MOCK_USER_PROFILE.trust_level,
+          profile_photo: null,
+        },
+      };
+
+      marketplaceState.listings.unshift(createdListing);
+      await route.fulfill({
+        status: 201,
+        headers: JSON_HEADERS,
+        body: JSON.stringify(expectsSingleObject(route) ? createdListing : [createdListing]),
+      });
+      return;
+    }
+
+    if (method === 'PATCH') {
+      const payload = route.request().postDataJSON() as Partial<MarketplaceListingRow>;
+      const listingId = new URL(route.request().url()).searchParams.get('id')?.replace('eq.', '');
+      const targetIndex = marketplaceState.listings.findIndex((listing) => listing.id === listingId);
+      if (targetIndex >= 0) {
+        const current = marketplaceState.listings[targetIndex];
+        const nextCategoryId = payload.category_id ? String(payload.category_id) : String(current.category_id);
+        const nextCategory = marketplaceState.categories.find((item) => item.id === nextCategoryId) ?? current.category;
+
+        const updated: MarketplaceListingRow = {
+          ...current,
+          ...payload,
+          category: nextCategory,
+          updated_at: new Date().toISOString(),
+        };
+        marketplaceState.listings[targetIndex] = updated;
+
+        await route.fulfill({
+          status: 200,
+          headers: JSON_HEADERS,
+          body: JSON.stringify(expectsSingleObject(route) ? updated : [updated]),
+        });
+        return;
+      }
+
+      await route.fulfill({ status: 404, headers: JSON_HEADERS, body: JSON.stringify({}) });
+      return;
+    }
+
+    await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify({}) });
+  });
+
+  // Saved listings (bookmarking)
+  await page.route('**/rest/v1/saved_listings**', async (route) => {
+    const method = route.request().method();
+
+    if (method === 'GET') {
+      const params = new URL(route.request().url()).searchParams;
+      const userId = params.get('user_id')?.replace('eq.', '') ?? MOCK_USER_ID;
+      if (userId !== MOCK_USER_ID) {
+        await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify([]) });
+        return;
+      }
+
+      const rows = marketplaceState.savedListingIds.map((listingId) => ({ listing_id: listingId }));
+      await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify(rows) });
+      return;
+    }
+
+    if (method === 'POST') {
+      const payload = route.request().postDataJSON() as { listing_id?: string };
+      if (payload.listing_id && !marketplaceState.savedListingIds.includes(payload.listing_id)) {
+        marketplaceState.savedListingIds.push(payload.listing_id);
+      }
+      await route.fulfill({ status: 201, headers: JSON_HEADERS, body: JSON.stringify({}) });
+      return;
+    }
+
+    if (method === 'DELETE') {
+      const params = new URL(route.request().url()).searchParams;
+      const listingId = params.get('listing_id')?.replace('eq.', '');
+      if (listingId) {
+        marketplaceState.savedListingIds = marketplaceState.savedListingIds.filter((item) => item !== listingId);
+      }
+      await route.fulfill({ status: 204, headers: JSON_HEADERS, body: '' });
+      return;
+    }
+
+    await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify({}) });
+  });
+
+  // Marketplace engagement RPCs
+  await page.route('**/rest/v1/rpc/increment_listing_views**', async (route) => {
+    await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify({}) });
+  });
+  await page.route('**/rest/v1/rpc/increment_listing_contacts**', async (route) => {
+    await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify({}) });
   });
 
   // Message unread counts (Layout top bar)
