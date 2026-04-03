@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import { getListingsByMetro } from '@nepally/shared';
 import MarketplaceCategoryScreen from './MarketplaceCategoryScreen';
 
@@ -87,36 +87,27 @@ jest.mock('@nepally/shared', () => ({
 
 const mockGetListingsByMetro = getListingsByMetro as jest.MockedFunction<typeof getListingsByMetro>;
 
-function setAuthUser(overrides: Record<string, unknown> = {}) {
-  mockUseAuth.mockReturnValue({
-    user: { id: 'user-1', trust_level: 1, metro_area_id: 'metro-1', ...overrides },
-  });
-}
-
-const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve, 0));
-
-async function renderAndSettle() {
-  const utils = render(<MarketplaceCategoryScreen />);
-  await act(async () => {
-    await flushMicrotasks();
-  });
-  return utils;
-}
-
 describe('MarketplaceCategoryScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setAuthUser();
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1', trust_level: 1, metro_area_id: 'metro-1' },
+    });
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
   });
 
   it('renders the category name in the header', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('Food & Restaurants')).toBeTruthy();
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
+    });
   });
 
   it('calls getListingsByMetro with category slug filter', async () => {
-    await renderAndSettle();
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
+    });
     expect(mockGetListingsByMetro).toHaveBeenCalledWith(
       expect.anything(),
       'metro-1',
@@ -125,33 +116,41 @@ describe('MarketplaceCategoryScreen', () => {
   });
 
   it('renders listings from API', async () => {
-    const { getAllByText } = await renderAndSettle();
-    // Title and business_name are both "Himalayan Kitchen"
-    expect(getAllByText('Himalayan Kitchen').length).toBeGreaterThanOrEqual(1);
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getAllByText('Himalayan Kitchen').length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   it('shows empty state when no listings', async () => {
     mockGetListingsByMetro.mockResolvedValue({ data: [] });
-    const { getByText } = await renderAndSettle();
-    expect(getByText('No listings in this category yet')).toBeTruthy();
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('No listings in this category yet')).toBeTruthy();
+    });
   });
 
   it('shows search input with category-specific placeholder', async () => {
-    const { getByPlaceholderText } = await renderAndSettle();
-    expect(getByPlaceholderText(/Search in Food & Restaurants/)).toBeTruthy();
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Search in Food & Restaurants/)).toBeTruthy();
+    });
   });
 
   it('renders back button area', async () => {
-    // The back button uses TouchableOpacity which renders as accessible View
-    const { getByText } = await renderAndSettle();
-    // Verify the header with category name renders (back button is adjacent)
-    expect(getByText('Food & Restaurants')).toBeTruthy();
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
+    });
   });
 
   it('skips fetch when metroId is empty', async () => {
     mockUseAuth.mockReturnValue({ user: { id: 'user-1', metro_area_id: '' } });
     mockGetListingsByMetro.mockClear();
-    await renderAndSettle();
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
+    });
     expect(mockGetListingsByMetro).not.toHaveBeenCalled();
   });
 });

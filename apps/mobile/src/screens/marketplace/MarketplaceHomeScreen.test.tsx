@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import { getCategories, getListingsByMetro } from '@nepally/shared';
 import MarketplaceHomeScreen from './MarketplaceHomeScreen';
 
@@ -49,12 +49,6 @@ jest.mock('@nepally/shared', () => ({
 const mockGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
 const mockGetListingsByMetro = getListingsByMetro as jest.MockedFunction<typeof getListingsByMetro>;
 
-function setAuthUser(overrides: Record<string, unknown> = {}) {
-  mockUseAuth.mockReturnValue({
-    user: { id: 'user-1', trust_level: 1, metro_area_id: 'metro-1', ...overrides },
-  });
-}
-
 const MOCK_CATEGORY = {
   id: 'cat-1',
   name: 'Food & Restaurants',
@@ -96,36 +90,35 @@ const MOCK_LISTING = {
   owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
-const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve, 0));
-
-async function renderAndSettle() {
-  const utils = render(<MarketplaceHomeScreen />);
-  await act(async () => {
-    await flushMicrotasks();
-  });
-  return utils;
-}
-
 describe('MarketplaceHomeScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setAuthUser();
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1', trust_level: 1, metro_area_id: 'metro-1' },
+    });
     mockGetCategories.mockResolvedValue({ data: [MOCK_CATEGORY] });
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
   });
 
   it('renders the Marketplace title', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('Marketplace')).toBeTruthy();
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Marketplace')).toBeTruthy();
+    });
   });
 
   it('shows category grid', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('Food & Restaurants')).toBeTruthy();
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
+    });
   });
 
   it('calls getListingsByMetro on mount', async () => {
-    await renderAndSettle();
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Marketplace')).toBeTruthy();
+    });
     expect(mockGetListingsByMetro).toHaveBeenCalledWith(
       expect.anything(),
       'metro-1',
@@ -134,13 +127,17 @@ describe('MarketplaceHomeScreen', () => {
   });
 
   it('shows search input', async () => {
-    const { getByPlaceholderText } = await renderAndSettle();
-    expect(getByPlaceholderText(/search/i)).toBeTruthy();
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/search/i)).toBeTruthy();
+    });
   });
 
   it('renders the screen even when user is null (data fetch is skipped)', async () => {
     mockUseAuth.mockReturnValue({ user: null });
-    const { getByText } = await renderAndSettle();
-    expect(getByText('Marketplace')).toBeTruthy();
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Marketplace')).toBeTruthy();
+    });
   });
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import { getListingsByOwner } from '@nepally/shared';
 import MyListingsScreen from './MyListingsScreen';
 
@@ -90,96 +90,108 @@ jest.mock('@nepally/shared', () => ({
 
 const mockGetListingsByOwner = getListingsByOwner as jest.MockedFunction<typeof getListingsByOwner>;
 
-function setAuthUser(overrides: Record<string, unknown> = {}) {
-  mockUseAuth.mockReturnValue({
-    user: { id: 'user-1', trust_level: 1, metro_area_id: 'metro-1', ...overrides },
-  });
-}
-
-const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve, 0));
-
-async function renderAndSettle() {
-  const utils = render(<MyListingsScreen />);
-  await act(async () => {
-    await flushMicrotasks();
-  });
-  return utils;
-}
-
 describe('MyListingsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setAuthUser();
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1', trust_level: 1, metro_area_id: 'metro-1' },
+    });
     mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
   });
 
   it('renders "My Listings" header', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('My Listings')).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Listings')).toBeTruthy();
+    });
   });
 
   it('fetches listings for the current user', async () => {
-    await renderAndSettle();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Listings')).toBeTruthy();
+    });
     expect(mockGetListingsByOwner).toHaveBeenCalledWith(expect.anything(), 'user-1');
   });
 
   it('renders listing title', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('My Restaurant')).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Restaurant')).toBeTruthy();
+    });
   });
 
   it('renders status badge', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('Active')).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Active')).toBeTruthy();
+    });
   });
 
   it('renders stats for each listing', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('50 views')).toBeTruthy();
-    expect(getByText('10 saves')).toBeTruthy();
-    expect(getByText('5 contacts')).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('50 views')).toBeTruthy();
+    });
+    expect(screen.getByText('10 saves')).toBeTruthy();
+    expect(screen.getByText('5 contacts')).toBeTruthy();
   });
 
   it('shows empty state when no listings', async () => {
     mockGetListingsByOwner.mockResolvedValue({ data: [] });
-    const { getByText } = await renderAndSettle();
-    expect(getByText("You haven't created any listings yet")).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("You haven't created any listings yet")).toBeTruthy();
+    });
   });
 
   it('shows "Create your first listing" button in empty state', async () => {
     mockGetListingsByOwner.mockResolvedValue({ data: [] });
-    const { getByText } = await renderAndSettle();
-    expect(getByText('Create your first listing')).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Create your first listing')).toBeTruthy();
+    });
   });
 
   it('renders action buttons for active listings', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('Edit')).toBeTruthy();
-    expect(getByText('Refresh')).toBeTruthy();
-    expect(getByText('Deactivate')).toBeTruthy();
-    expect(getByText('Delete')).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+    expect(screen.getByText('Refresh')).toBeTruthy();
+    expect(screen.getByText('Deactivate')).toBeTruthy();
+    expect(screen.getByText('Delete')).toBeTruthy();
   });
 
   it('shows Reactivate instead of Deactivate for inactive listings', async () => {
     mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'inactive' })] });
-    const { getByText, queryByText } = await renderAndSettle();
-    expect(getByText('Reactivate')).toBeTruthy();
-    expect(queryByText('Deactivate')).toBeNull();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Reactivate')).toBeTruthy();
+    });
+    expect(screen.queryByText('Deactivate')).toBeNull();
   });
 
   it('renders inactive status badge', async () => {
     mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'inactive' })] });
-    const { getByText } = await renderAndSettle();
-    expect(getByText('Inactive')).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Inactive')).toBeTruthy();
+    });
   });
 
   it('renders header with My Listings and back area', async () => {
-    const { getByText } = await renderAndSettle();
-    expect(getByText('My Listings')).toBeTruthy();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Listings')).toBeTruthy();
+    });
   });
 
   it('registers focus listener for re-fetching', async () => {
-    await renderAndSettle();
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Listings')).toBeTruthy();
+    });
     expect(mockAddListener).toHaveBeenCalledWith('focus', expect.any(Function));
   });
 });
