@@ -1,12 +1,13 @@
 import React from 'react';
 import { render, act, fireEvent } from '@testing-library/react-native';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { getCategories, createListing } from '@nepally/shared';
 import CreateListingScreen from './CreateListingScreen';
 
+jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
 jest.mock('react-native-safe-area-context', () => {
-  const mockReact = jest.requireActual<typeof import('react')>('react');
-  const { View: mockView } = jest.requireActual<typeof import('react-native')>('react-native');
+  const mockReact = jest.requireActual('react');
+  const { View: mockView } = jest.requireActual('react-native');
   return {
     SafeAreaView: ({ children }: { children: React.ReactNode }) =>
       mockReact.createElement(mockView, null, children),

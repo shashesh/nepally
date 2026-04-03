@@ -3,6 +3,15 @@ import { render, act } from '@testing-library/react-native';
 import { getCategories, getListingsByMetro } from '@nepally/shared';
 import MarketplaceHomeScreen from './MarketplaceHomeScreen';
 
+jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+jest.mock('../../components/marketplace/ListingCard', () => ({
+  ListingCard: ({ listing }: { listing: { title: string } }) => {
+    const { Text } = jest.requireActual('react-native');
+    const ReactActual = jest.requireActual('react');
+    return ReactActual.createElement(Text, null, listing.title);
+  },
+}));
+
 jest.mock('react-native-safe-area-context', () => {
   const mockReact = jest.requireActual('react');
   const { View: mockView } = jest.requireActual('react-native');
