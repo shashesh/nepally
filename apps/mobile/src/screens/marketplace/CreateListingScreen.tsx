@@ -85,6 +85,8 @@ export default function CreateListingScreen() {
   const totalPhotos = existingPhotoUrls.length + newPhotos.length;
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
         const [catResult, editResult] = await Promise.all([
@@ -92,30 +94,34 @@ export default function CreateListingScreen() {
           editListingId ? getListingById(supabase, editListingId) : Promise.resolve({ data: null }),
         ]);
 
+        if (cancelled) return;
+
         if (catResult.data) setCategories(catResult.data);
 
         if (editResult.data) {
-            const l = editResult.data;
-            setListingType(l.listing_type);
-            setTitle(l.title);
-            setDescription(l.description);
-            setCategoryId(l.category_id);
-            setPrice(l.price ?? '');
-            setBusinessName(l.business_name ?? '');
-            setAddress(l.address ?? '');
-            setPhone(l.phone ?? '');
-            setEmail(l.email ?? '');
-            setWebsiteUrl(l.website_url ?? '');
-            setItemCondition(l.item_condition ?? undefined);
-            setExistingPhotoUrls(l.photos ?? []);
+          const l = editResult.data;
+          setListingType(l.listing_type);
+          setTitle(l.title);
+          setDescription(l.description);
+          setCategoryId(l.category_id);
+          setPrice(l.price ?? '');
+          setBusinessName(l.business_name ?? '');
+          setAddress(l.address ?? '');
+          setPhone(l.phone ?? '');
+          setEmail(l.email ?? '');
+          setWebsiteUrl(l.website_url ?? '');
+          setItemCondition(l.item_condition ?? undefined);
+          setExistingPhotoUrls(l.photos ?? []);
         }
       } catch {
         // Silently handle — empty categories / missing listing will
         // surface in the UI naturally.
       } finally {
-        if (editListingId) setLoading(false);
+        if (!cancelled && editListingId) setLoading(false);
       }
     })();
+
+    return () => { cancelled = true; };
   }, [editListingId]);
 
   const requestLibraryPermission = async (): Promise<boolean> => {

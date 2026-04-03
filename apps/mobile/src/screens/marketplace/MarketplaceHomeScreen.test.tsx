@@ -1,23 +1,28 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import { getCategories, getListingsByMetro } from '@nepally/shared';
 import MarketplaceHomeScreen from './MarketplaceHomeScreen';
 
+// ---------------------------------------------------------------------------
+// Mocks — local @expo/vector-icons mock is mandatory for CI (React 19 compat)
+// ---------------------------------------------------------------------------
+
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
 jest.mock('../../components/marketplace/ListingCard', () => ({
   ListingCard: ({ listing }: { listing: { title: string } }) => {
     const { Text } = jest.requireActual('react-native');
-    const ReactActual = jest.requireActual('react');
-    return ReactActual.createElement(Text, null, listing.title);
+    const ReactLocal = jest.requireActual('react');
+    return ReactLocal.createElement(Text, null, listing.title);
   },
 }));
 
 jest.mock('react-native-safe-area-context', () => {
-  const mockReact = jest.requireActual('react');
-  const { View: mockView } = jest.requireActual('react-native');
+  const ReactLocal = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
   return {
-    SafeAreaView: ({ children }: { children: unknown }) =>
-      mockReact.createElement(mockView, null, children),
+    SafeAreaView: ({ children }: { children?: React.ReactNode }) =>
+      ReactLocal.createElement(View, null, children),
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   };
 });
@@ -35,6 +40,10 @@ jest.mock('../../hooks/useAuth', () => ({
 
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
 
+// ---------------------------------------------------------------------------
+// Shared mock
+// ---------------------------------------------------------------------------
+
 jest.mock('@nepally/shared', () => ({
   getCategories: jest.fn(async () => ({ data: [] })),
   getListingsByMetro: jest.fn(async () => ({ data: [] })),
@@ -48,6 +57,10 @@ jest.mock('@nepally/shared', () => ({
 
 const mockGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
 const mockGetListingsByMetro = getListingsByMetro as jest.MockedFunction<typeof getListingsByMetro>;
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
 
 const MOCK_CATEGORY = {
   id: 'cat-1',
@@ -90,40 +103,27 @@ const MOCK_LISTING = {
   owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
+// ---------------------------------------------------------------------------
+// Tests — render() + waitFor() only; NEVER use act() (hangs on CI)
+// ---------------------------------------------------------------------------
+
 describe('MarketplaceHomeScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({
-      user: { id: 'user-1', trust_level: 1, metro_area_id: 'metro-1' },
+      user: { id: 'user-1', full_name: 'Test User', trust_level: 1, metro_area_id: 'metro-1' },
     });
     mockGetCategories.mockResolvedValue({ data: [MOCK_CATEGORY] });
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
   });
+
+  // -- Header & layout ---------------------------------------------------------
 
   it('renders the Marketplace title', async () => {
     const screen = render(<MarketplaceHomeScreen />);
     await waitFor(() => {
       expect(screen.getByText('Marketplace')).toBeTruthy();
     });
-  });
-
-  it('shows category grid', async () => {
-    const screen = render(<MarketplaceHomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
-    });
-  });
-
-  it('calls getListingsByMetro on mount', async () => {
-    const screen = render(<MarketplaceHomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Marketplace')).toBeTruthy();
-    });
-    expect(mockGetListingsByMetro).toHaveBeenCalledWith(
-      expect.anything(),
-      'metro-1',
-      expect.objectContaining({ limit: expect.any(Number) })
-    );
   });
 
   it('shows search input', async () => {
@@ -133,11 +133,123 @@ describe('MarketplaceHomeScreen', () => {
     });
   });
 
-  it('renders the screen even when user is null (data fetch is skipped)', async () => {
+  // -- Categories --------------------------------------------------------------
+
+  it('shows category chips after load', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
+    });
+  });
+
+  it('renders Categories section title', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Categories')).toBeTruthy();
+    });
+  });
+
+  // -- Listings ----------------------------------------------------------------
+
+  it('calls getListingsByMetro on mount', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Marketplace')).toBeTruthy();
+    });
+    expect(mockGetListingsByMetro).toHaveBeenCalledWith(
+      expect.anything(),
+      'metro-1',
+      expect.objectContaining({ limit: expect.any(Number) }),
+    );
+  });
+
+  it('renders recent listings', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+    expect(screen.getByText('Recently Added')).toBeTruthy();
+  });
+
+  // -- Empty state -------------------------------------------------------------
+
+  it('shows empty state when no listings', async () => {
+    mockGetListingsByMetro.mockResolvedValue({ data: [] });
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('No listings in your area yet')).toBeTruthy();
+    });
+  });
+
+  // -- No user / no metro_area_id ----------------------------------------------
+
+  it('renders when user is null (data fetch is skipped)', async () => {
     mockUseAuth.mockReturnValue({ user: null });
     const screen = render(<MarketplaceHomeScreen />);
     await waitFor(() => {
       expect(screen.getByText('Marketplace')).toBeTruthy();
     });
+    // Should not have fetched any data
+    expect(mockGetListingsByMetro).not.toHaveBeenCalled();
+  });
+
+  it('skips fetch when metro_area_id is empty string', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1', full_name: 'Test User', trust_level: 1, metro_area_id: '' },
+    });
+    mockGetListingsByMetro.mockClear();
+    mockGetCategories.mockClear();
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Marketplace')).toBeTruthy();
+    });
+    expect(mockGetListingsByMetro).not.toHaveBeenCalled();
+    expect(mockGetCategories).not.toHaveBeenCalled();
+  });
+
+  // -- Trust level gating: FAB & My Listings -----------------------------------
+
+  it('does not show FAB for Level 0 (new) user', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1', full_name: 'Test User', trust_level: 0, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Marketplace')).toBeTruthy();
+    });
+    // FAB renders Ionicons (mocked to null), so just verify the "Create the first listing"
+    // button only appears for verified users in empty state
+    expect(screen.queryByText('Create the first listing')).toBeNull();
+  });
+
+  // -- Search ------------------------------------------------------------------
+
+  it('navigates to search results on search submit', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/search/i)).toBeTruthy();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    fireEvent.changeText(searchInput, 'momo');
+    fireEvent(searchInput, 'submitEditing');
+
+    expect(mockNavigate).toHaveBeenCalledWith('MarketplaceCategory', {
+      categorySlug: '__search__',
+      categoryName: 'Search: momo',
+    });
+  });
+
+  it('does not navigate when search query is empty', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/search/i)).toBeTruthy();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    fireEvent.changeText(searchInput, '   ');
+    fireEvent(searchInput, 'submitEditing');
+
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

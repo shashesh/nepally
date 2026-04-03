@@ -44,6 +44,7 @@ export default function ListingDetailScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { user } = useAuth();
+  const userId = user?.id;
 
   const { listingId } = route.params;
 
@@ -54,30 +55,36 @@ export default function ListingDetailScreen() {
   const [photoIndex, setPhotoIndex] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
         const [listingResult, savedResult] = await Promise.all([
           getListingById(supabase, listingId),
-          user ? getUserSavedListingIds(supabase, user.id) : Promise.resolve({ data: null as string[] | null }),
+          userId
+            ? getUserSavedListingIds(supabase, userId)
+            : Promise.resolve({ data: null as string[] | null }),
         ]);
+
+        if (cancelled) return;
 
         if (listingResult.data) {
           setListing(listingResult.data);
-          // Fire-and-forget — no need to block UI for a view counter
-          incrementListingViews(supabase, listingId);
+          void incrementListingViews(supabase, listingId);
         }
 
         if (savedResult.data) {
           setIsSaved(savedResult.data.includes(listingId));
         }
       } catch {
-        // Silently handle fetch errors — listing will remain null and
-        // the "not found" UI will be shown.
+        // Silently handle — listing stays null → "not found" UI shown.
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [listingId, user?.id]);
+
+    return () => { cancelled = true; };
+  }, [listingId, userId]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -93,7 +100,7 @@ export default function ListingDetailScreen() {
 
   const handleContact = useCallback(async () => {
     if (!listing?.owner || !user) return;
-    incrementListingContacts(supabase, listingId);
+    void incrementListingContacts(supabase, listingId);
     const result = await getOrCreateConversation(
       supabase,
       user.id,

@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
-import { getListingsByOwner } from '@nepally/shared';
+import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { getListingsByOwner, deactivateListing, reactivateListing, deleteListing, refreshListing } from '@nepally/shared';
 import MyListingsScreen from './MyListingsScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -9,7 +10,7 @@ jest.mock('react-native-safe-area-context', () => {
   const mockReact = jest.requireActual('react');
   const { View: mockView } = jest.requireActual('react-native');
   return {
-    SafeAreaView: ({ children }: { children: unknown }) =>
+    SafeAreaView: ({ children }: { children?: React.ReactNode }) =>
       mockReact.createElement(mockView, null, children),
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   };
@@ -89,6 +90,10 @@ jest.mock('@nepally/shared', () => ({
 }));
 
 const mockGetListingsByOwner = getListingsByOwner as jest.MockedFunction<typeof getListingsByOwner>;
+const mockDeactivateListing = deactivateListing as jest.MockedFunction<typeof deactivateListing>;
+const mockReactivateListing = reactivateListing as jest.MockedFunction<typeof reactivateListing>;
+const mockDeleteListing = deleteListing as jest.MockedFunction<typeof deleteListing>;
+const mockRefreshListing = refreshListing as jest.MockedFunction<typeof refreshListing>;
 
 describe('MyListingsScreen', () => {
   beforeEach(() => {
@@ -193,5 +198,147 @@ describe('MyListingsScreen', () => {
       expect(screen.getByText('My Listings')).toBeTruthy();
     });
     expect(mockAddListener).toHaveBeenCalledWith('focus', expect.any(Function));
+  });
+
+  it('renders removed status badge', async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'removed' })] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Removed')).toBeTruthy();
+    });
+  });
+
+  it('hides Refresh and Deactivate for removed listings', async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'removed' })] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Removed')).toBeTruthy();
+    });
+    expect(screen.queryByText('Refresh')).toBeNull();
+    expect(screen.queryByText('Deactivate')).toBeNull();
+    expect(screen.queryByText('Reactivate')).toBeNull();
+  });
+
+  it('shows expiry warning for listings expiring within 14 days', async () => {
+    const nearExpiry = new Date();
+    nearExpiry.setDate(nearExpiry.getDate() - 80); // 80 days old → 10 days left
+    mockGetListingsByOwner.mockResolvedValue({
+      data: [makeListing({ refreshed_at: nearExpiry.toISOString() })],
+    });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText(/Expires in \d+ days/)).toBeTruthy();
+    });
+  });
+
+  it('renders listing price', async () => {
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('$15')).toBeTruthy();
+    });
+  });
+
+  it('renders listing with photo thumbnail', async () => {
+    mockGetListingsByOwner.mockResolvedValue({
+      data: [makeListing({ photos: ['https://example.com/photo.jpg'] })],
+    });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Restaurant')).toBeTruthy();
+    });
+  });
+
+  it('skips fetch when user is null', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Listings')).toBeTruthy();
+    });
+    expect(mockGetListingsByOwner).not.toHaveBeenCalled();
+  });
+
+  it('handles fetch error gracefully', async () => {
+    mockGetListingsByOwner.mockRejectedValue(new Error('Network error'));
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("You haven't created any listings yet")).toBeTruthy();
+    });
+  });
+
+  it('calls refreshListing when Refresh is pressed', async () => {
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Refresh'));
+    await waitFor(() => {
+      expect(mockRefreshListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
+    });
+  });
+
+  it('calls deleteListing after confirming Delete alert', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Delete'));
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Delete Listing',
+      expect.any(String),
+      expect.any(Array)
+    );
+    // Invoke the destructive confirm callback
+    const buttons = alertSpy.mock.calls[0][2] as Array<{ text: string; onPress?: () => void }>;
+    const confirmBtn = buttons.find(b => b.text === 'Delete');
+    confirmBtn?.onPress?.();
+    await waitFor(() => {
+      expect(mockDeleteListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
+    });
+    alertSpy.mockRestore();
+  });
+
+  it('calls deactivateListing after confirming Deactivate alert', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Deactivate')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Deactivate'));
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Deactivate Listing',
+      expect.any(String),
+      expect.any(Array)
+    );
+    // Invoke the confirm callback
+    const buttons = alertSpy.mock.calls[0][2] as Array<{ text: string; onPress?: () => void }>;
+    const confirmBtn = buttons.find(b => b.text === 'Deactivate');
+    confirmBtn?.onPress?.();
+    await waitFor(() => {
+      expect(mockDeactivateListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
+    });
+    alertSpy.mockRestore();
+  });
+
+  it('calls reactivateListing when Reactivate is pressed', async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'inactive' })] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Reactivate')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Reactivate'));
+    await waitFor(() => {
+      expect(mockReactivateListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
+    });
+  });
+
+  it('navigates to CreateListing on empty-state button press', async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Create your first listing')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Create your first listing'));
+    expect(mockNavigate).toHaveBeenCalledWith('CreateListing');
   });
 });

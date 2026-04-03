@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -49,6 +49,11 @@ export default function MarketplaceCategoryScreen() {
   );
 
   const metroId = user?.metro_area_id ?? '';
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const fetchListings = useCallback(
     async (offset = 0, isRefresh = false) => {
@@ -65,6 +70,8 @@ export default function MarketplaceCategoryScreen() {
           offset,
         });
 
+        if (!mountedRef.current) return;
+
         if (result.data) {
           if (isRefresh || offset === 0) {
             setListings(result.data);
@@ -76,9 +83,11 @@ export default function MarketplaceCategoryScreen() {
       } catch {
         // Silently handle — empty listings will surface in the UI.
       } finally {
-        setLoading(false);
-        setRefreshing(false);
-        setLoadingMore(false);
+        if (mountedRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+          setLoadingMore(false);
+        }
       }
     },
     [metroId, categorySlug, searchQuery, isSearchMode]

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -43,6 +43,11 @@ export default function MarketplaceHomeScreen() {
 
   const metroId = user?.metro_area_id ?? '';
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!metroId) {
@@ -56,13 +61,17 @@ export default function MarketplaceHomeScreen() {
         getListingsByMetro(supabase, metroId, { limit: 10 }),
       ]);
 
+      if (!mountedRef.current) return;
+
       if (catResult.data) setCategories(catResult.data);
       if (listingsResult.data) setRecentListings(listingsResult.data);
     } catch {
       // Silently handle — empty state will surface in the UI.
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (mountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [metroId]);
 

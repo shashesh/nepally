@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -41,26 +41,35 @@ const STATUS_CONFIG = {
 export default function MyListingsScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
+  const mountedRef = useRef(true);
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const fetchListings = useCallback(async () => {
     if (!user) {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
       return;
     }
     try {
       const result = await getListingsByOwner(supabase, user.id);
-      if (result.data) setListings(result.data);
+      if (mountedRef.current && result.data) setListings(result.data);
     } catch {
       // Silently handle — empty state will surface in the UI.
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (mountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, [user?.id]);
+  }, [user]);
 
   useEffect(() => {
     fetchListings();
