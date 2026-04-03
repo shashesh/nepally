@@ -130,7 +130,7 @@ export default function MyListingsScreen() {
       const daysUntilExpiry = Math.max(
         0,
         LISTING_SOFT_EXPIRY_DAYS -
-          Math.floor((Date.now() - new Date(item.refreshed_at).getTime()) / (1000 * 60 * 60 * 24))
+        Math.floor((Date.now() - new Date(item.refreshed_at).getTime()) / (1000 * 60 * 60 * 24))
       );
       const isExpiringSoon = daysUntilExpiry <= 14 && item.status === 'active';
 
@@ -237,6 +237,12 @@ export default function MyListingsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>My Listings</Text>
+        </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.main} />
         </View>
