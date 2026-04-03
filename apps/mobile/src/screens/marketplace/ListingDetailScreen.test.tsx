@@ -98,10 +98,13 @@ function setAuthUser(overrides: Record<string, unknown> = {}) {
   });
 }
 
+const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve, 0));
+
 async function renderAndSettle() {
   const utils = render(<ListingDetailScreen />);
-  await act(async () => {});
-  await act(async () => {});
+  await act(async () => {
+    await flushMicrotasks();
+  });
   return utils;
 }
 

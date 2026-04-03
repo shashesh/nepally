@@ -54,20 +54,21 @@ export default function ListingDetailScreen() {
   const [photoIndex, setPhotoIndex] = useState(0);
 
   useEffect(() => {
-    async function fetchData() {
+    (async () => {
       try {
-        const listingResult = await getListingById(supabase, listingId);
+        const [listingResult, savedResult] = await Promise.all([
+          getListingById(supabase, listingId),
+          user ? getUserSavedListingIds(supabase, user.id) : Promise.resolve({ data: null as string[] | null }),
+        ]);
 
         if (listingResult.data) {
           setListing(listingResult.data);
-          await incrementListingViews(supabase, listingId);
+          // Fire-and-forget — no need to block UI for a view counter
+          incrementListingViews(supabase, listingId);
         }
 
-        if (user) {
-          const savedResult = await getUserSavedListingIds(supabase, user.id);
-          if (savedResult.data) {
-            setIsSaved(savedResult.data.includes(listingId));
-          }
+        if (savedResult.data) {
+          setIsSaved(savedResult.data.includes(listingId));
         }
       } catch {
         // Silently handle fetch errors — listing will remain null and
@@ -75,8 +76,7 @@ export default function ListingDetailScreen() {
       } finally {
         setLoading(false);
       }
-    }
-    fetchData();
+    })();
   }, [listingId, user?.id]);
 
   const handleSave = useCallback(async () => {

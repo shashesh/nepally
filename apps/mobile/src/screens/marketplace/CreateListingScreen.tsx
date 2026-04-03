@@ -85,15 +85,17 @@ export default function CreateListingScreen() {
   const totalPhotos = existingPhotoUrls.length + newPhotos.length;
 
   useEffect(() => {
-    async function init() {
+    (async () => {
       try {
-        const catResult = await getCategories(supabase);
+        const [catResult, editResult] = await Promise.all([
+          getCategories(supabase),
+          editListingId ? getListingById(supabase, editListingId) : Promise.resolve({ data: null }),
+        ]);
+
         if (catResult.data) setCategories(catResult.data);
 
-        if (editListingId) {
-          const result = await getListingById(supabase, editListingId);
-          if (result.data) {
-            const l = result.data;
+        if (editResult.data) {
+            const l = editResult.data;
             setListingType(l.listing_type);
             setTitle(l.title);
             setDescription(l.description);
@@ -106,7 +108,6 @@ export default function CreateListingScreen() {
             setWebsiteUrl(l.website_url ?? '');
             setItemCondition(l.item_condition ?? undefined);
             setExistingPhotoUrls(l.photos ?? []);
-          }
         }
       } catch {
         // Silently handle — empty categories / missing listing will
@@ -114,8 +115,7 @@ export default function CreateListingScreen() {
       } finally {
         if (editListingId) setLoading(false);
       }
-    }
-    init();
+    })();
   }, [editListingId]);
 
   const requestLibraryPermission = async (): Promise<boolean> => {

@@ -96,10 +96,13 @@ const MOCK_LISTING = {
   owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
+const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve, 0));
+
 async function renderAndSettle() {
   const utils = render(<MarketplaceHomeScreen />);
-  await act(async () => {});
-  await act(async () => {});
+  await act(async () => {
+    await flushMicrotasks();
+  });
   return utils;
 }
 

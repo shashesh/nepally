@@ -95,10 +95,13 @@ function setAuthUser(overrides: Record<string, unknown> = {}) {
   });
 }
 
+const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve, 0));
+
 async function renderAndSettle() {
   const utils = render(<CreateListingScreen />);
-  await act(async () => {});
-  await act(async () => {});
+  await act(async () => {
+    await flushMicrotasks();
+  });
   return utils;
 }
 
@@ -155,7 +158,9 @@ describe('CreateListingScreen', () => {
 
     // Press submit (last "Create Listing" text is the button)
     fireEvent.press(getAllByText('Create Listing')[1]);
-    await act(async () => {});
+    await act(async () => {
+      await flushMicrotasks();
+    });
 
     expect(getByText('Title is required')).toBeTruthy();
     expect(getByText('Description is required')).toBeTruthy();
@@ -172,8 +177,9 @@ describe('CreateListingScreen', () => {
     fireEvent.changeText(getByPlaceholderText('Describe your listing in detail...'), 'Test description');
 
     fireEvent.press(getAllByText('Create Listing')[1]);
-    await act(async () => {});
-    await act(async () => {});
+    await act(async () => {
+      await flushMicrotasks();
+    });
 
     expect(mockGoBack).toHaveBeenCalled();
   });
