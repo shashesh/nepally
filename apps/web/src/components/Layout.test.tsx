@@ -494,7 +494,9 @@ describe('Layout', () => {
       await waitFor(() => {
         expect(layoutMocks.deleteNotificationMock).toHaveBeenCalledWith(expect.anything(), 'notif-delete');
       });
-      expect(screen.queryByText('Delete me')).toBeNull();
+      await waitFor(() => {
+        expect(screen.queryByText('Delete me')).toBeNull();
+      });
     });
 
     it('keeps notification in dropdown when delete fails', async () => {
