@@ -94,10 +94,9 @@ function setAuthUser(overrides: Record<string, unknown> = {}) {
 }
 
 async function renderAndSettle() {
-  let utils!: ReturnType<typeof render>;
-  await act(async () => {
-    utils = render(<CreateListingScreen />);
-  });
+  const utils = render(<CreateListingScreen />);
+  await act(async () => {});
+  await act(async () => {});
   return utils;
 }
 

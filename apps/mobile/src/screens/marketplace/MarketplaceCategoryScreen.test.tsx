@@ -85,10 +85,9 @@ function setAuthUser(overrides: Record<string, unknown> = {}) {
 }
 
 async function renderAndSettle() {
-  let utils!: ReturnType<typeof render>;
-  await act(async () => {
-    utils = render(<MarketplaceCategoryScreen />);
-  });
+  const utils = render(<MarketplaceCategoryScreen />);
+  await act(async () => {});
+  await act(async () => {});
   return utils;
 }
 
