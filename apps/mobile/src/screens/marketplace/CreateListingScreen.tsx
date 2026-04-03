@@ -86,27 +86,33 @@ export default function CreateListingScreen() {
 
   useEffect(() => {
     async function init() {
-      const catResult = await getCategories(supabase);
-      if (catResult.data) setCategories(catResult.data);
+      try {
+        const catResult = await getCategories(supabase);
+        if (catResult.data) setCategories(catResult.data);
 
-      if (editListingId) {
-        const result = await getListingById(supabase, editListingId);
-        if (result.data) {
-          const l = result.data;
-          setListingType(l.listing_type);
-          setTitle(l.title);
-          setDescription(l.description);
-          setCategoryId(l.category_id);
-          setPrice(l.price ?? '');
-          setBusinessName(l.business_name ?? '');
-          setAddress(l.address ?? '');
-          setPhone(l.phone ?? '');
-          setEmail(l.email ?? '');
-          setWebsiteUrl(l.website_url ?? '');
-          setItemCondition(l.item_condition ?? undefined);
-          setExistingPhotoUrls(l.photos ?? []);
+        if (editListingId) {
+          const result = await getListingById(supabase, editListingId);
+          if (result.data) {
+            const l = result.data;
+            setListingType(l.listing_type);
+            setTitle(l.title);
+            setDescription(l.description);
+            setCategoryId(l.category_id);
+            setPrice(l.price ?? '');
+            setBusinessName(l.business_name ?? '');
+            setAddress(l.address ?? '');
+            setPhone(l.phone ?? '');
+            setEmail(l.email ?? '');
+            setWebsiteUrl(l.website_url ?? '');
+            setItemCondition(l.item_condition ?? undefined);
+            setExistingPhotoUrls(l.photos ?? []);
+          }
         }
-        setLoading(false);
+      } catch {
+        // Silently handle — empty categories / missing listing will
+        // surface in the UI naturally.
+      } finally {
+        if (editListingId) setLoading(false);
       }
     }
     init();

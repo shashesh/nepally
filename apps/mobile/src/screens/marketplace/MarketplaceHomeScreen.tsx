@@ -50,15 +50,20 @@ export default function MarketplaceHomeScreen() {
       return;
     }
 
-    const [catResult, listingsResult] = await Promise.all([
-      getCategories(supabase),
-      getListingsByMetro(supabase, metroId, { limit: 10 }),
-    ]);
+    try {
+      const [catResult, listingsResult] = await Promise.all([
+        getCategories(supabase),
+        getListingsByMetro(supabase, metroId, { limit: 10 }),
+      ]);
 
-    if (catResult.data) setCategories(catResult.data);
-    if (listingsResult.data) setRecentListings(listingsResult.data);
-    setLoading(false);
-    setRefreshing(false);
+      if (catResult.data) setCategories(catResult.data);
+      if (listingsResult.data) setRecentListings(listingsResult.data);
+    } catch {
+      // Silently handle — empty state will surface in the UI.
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [metroId]);
 
   useEffect(() => {

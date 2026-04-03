@@ -57,24 +57,29 @@ export default function MarketplaceCategoryScreen() {
         return;
       }
 
-      const result = await getListingsByMetro(supabase, metroId, {
-        categorySlug: isSearchMode ? undefined : categorySlug,
-        searchQuery: isSearchMode || searchQuery ? searchQuery : undefined,
-        limit: PAGE_SIZE,
-        offset,
-      });
+      try {
+        const result = await getListingsByMetro(supabase, metroId, {
+          categorySlug: isSearchMode ? undefined : categorySlug,
+          searchQuery: isSearchMode || searchQuery ? searchQuery : undefined,
+          limit: PAGE_SIZE,
+          offset,
+        });
 
-      if (result.data) {
-        if (isRefresh || offset === 0) {
-          setListings(result.data);
-        } else {
-          setListings((prev) => [...prev, ...result.data!]);
+        if (result.data) {
+          if (isRefresh || offset === 0) {
+            setListings(result.data);
+          } else {
+            setListings((prev) => [...prev, ...result.data!]);
+          }
+          setHasMore(result.data.length === PAGE_SIZE);
         }
-        setHasMore(result.data.length === PAGE_SIZE);
+      } catch {
+        // Silently handle — empty listings will surface in the UI.
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
       }
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
     },
     [metroId, categorySlug, searchQuery, isSearchMode]
   );

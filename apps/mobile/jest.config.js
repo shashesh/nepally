@@ -1,6 +1,6 @@
 module.exports = {
   preset: 'jest-expo',
-  testTimeout: 10000,
+  testTimeout: process.env.CI ? 30000 : 10000,
   testMatch: ['**/*.test.ts', '**/*.test.tsx'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {

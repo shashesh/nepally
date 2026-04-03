@@ -51,11 +51,16 @@ export default function MyListingsScreen() {
       setLoading(false);
       return;
     }
-    const result = await getListingsByOwner(supabase, user.id);
-    if (result.data) setListings(result.data);
-    setLoading(false);
-    setRefreshing(false);
-  }, [user]);
+    try {
+      const result = await getListingsByOwner(supabase, user.id);
+      if (result.data) setListings(result.data);
+    } catch {
+      // Silently handle — empty state will surface in the UI.
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     fetchListings();
