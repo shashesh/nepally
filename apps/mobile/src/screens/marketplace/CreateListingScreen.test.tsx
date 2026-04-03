@@ -1,9 +1,7 @@
 import React from 'react';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { render, act, fireEvent } from '@testing-library/react-native';
 import { getCategories, createListing } from '@nepally/shared';
 import CreateListingScreen from './CreateListingScreen';
-
-jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 jest.mock('react-native-safe-area-context', () => {
   const mockReact = jest.requireActual('react');
@@ -89,6 +87,13 @@ jest.mock('@nepally/shared', () => ({
 const mockGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
 const mockCreateListing = createListing as jest.MockedFunction<typeof createListing>;
 
+async function renderAndFlush() {
+  const screen = render(<CreateListingScreen />);
+  await act(async () => {});
+  await act(async () => {});
+  return screen;
+}
+
 describe('CreateListingScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -100,41 +105,31 @@ describe('CreateListingScreen', () => {
   });
 
   it('renders "Create Listing" title and submit button', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Create Listing').length).toBe(2);
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getAllByText('Create Listing').length).toBe(2);
   });
 
   it('renders listing type toggles', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Business')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Business')).toBeTruthy();
     expect(screen.getByText('Individual')).toBeTruthy();
   });
 
   it('loads and renders categories', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Food & Restaurants')).toBeTruthy();
     expect(screen.getByText('Professional Services')).toBeTruthy();
   });
 
   it('renders form fields', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('What are you listing?')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByPlaceholderText('What are you listing?')).toBeTruthy();
     expect(screen.getByPlaceholderText('Describe your listing in detail...')).toBeTruthy();
   });
 
   it('renders business-specific fields when listing type is business', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Your business name')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByPlaceholderText('Your business name')).toBeTruthy();
     expect(screen.getByPlaceholderText('Business address')).toBeTruthy();
   });
 
@@ -149,50 +144,39 @@ describe('CreateListingScreen', () => {
       },
     });
 
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Create Listing').length).toBe(2);
-    });
+    const screen = await renderAndFlush();
 
     // Press submit (last "Create Listing" text is the button)
     fireEvent.press(screen.getAllByText('Create Listing')[1]);
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(screen.getByText('Title is required')).toBeTruthy();
-      expect(screen.getByText('Description is required')).toBeTruthy();
-    });
+    expect(screen.getByText('Title is required')).toBeTruthy();
+    expect(screen.getByText('Description is required')).toBeTruthy();
   });
 
   it('submits successfully and navigates back', async () => {
     mockSafeParse.mockReturnValue({ success: true, data: {} });
     mockCreateListing.mockResolvedValue({ data: { id: 'new-1' } } as never);
 
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('What are you listing?')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
 
     fireEvent.changeText(screen.getByPlaceholderText('What are you listing?'), 'Test Title');
     fireEvent.changeText(screen.getByPlaceholderText('Describe your listing in detail...'), 'Test description');
 
     fireEvent.press(screen.getAllByText('Create Listing')[1]);
+    await act(async () => {});
+    await act(async () => {});
 
-    await waitFor(() => {
-      expect(mockGoBack).toHaveBeenCalled();
-    });
+    expect(mockGoBack).toHaveBeenCalled();
   });
 
   it('shows photo counter', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('0/5 photos added')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('0/5 photos added')).toBeTruthy();
   });
 
   it('renders the header with close and title', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Create Listing').length).toBe(2);
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getAllByText('Create Listing').length).toBe(2);
   });
 });

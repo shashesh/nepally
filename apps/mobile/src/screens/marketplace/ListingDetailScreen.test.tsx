@@ -1,13 +1,11 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { render, act } from '@testing-library/react-native';
 import {
   getListingById,
   getUserSavedListingIds,
   incrementListingViews,
 } from '@nepally/shared';
 import ListingDetailScreen from './ListingDetailScreen';
-
-jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 jest.mock('react-native-safe-area-context', () => {
   const mockReact = jest.requireActual('react');
@@ -92,6 +90,13 @@ jest.mock('@nepally/shared', () => ({
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
 const mockGetUserSavedListingIds = getUserSavedListingIds as jest.MockedFunction<typeof getUserSavedListingIds>;
 
+async function renderAndFlush() {
+  const screen = render(<ListingDetailScreen />);
+  await act(async () => {});
+  await act(async () => {});
+  return screen;
+}
+
 describe('ListingDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -103,105 +108,78 @@ describe('ListingDetailScreen', () => {
   });
 
   it('renders the listing title', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
   });
 
   it('renders the listing description', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Authentic Nepali food and drinks.')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Authentic Nepali food and drinks.')).toBeTruthy();
   });
 
   it('renders the listing price', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('$15-25')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('$15-25')).toBeTruthy();
   });
 
   it('renders business details section for business listings', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Business Details')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Business Details')).toBeTruthy();
     expect(screen.getByText('Himalayan Kitchen LLC')).toBeTruthy();
     expect(screen.getByText('123 Main St')).toBeTruthy();
     expect(screen.getByText('555-1234')).toBeTruthy();
   });
 
   it('renders owner info', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Asha Kumar')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Asha Kumar')).toBeTruthy();
     expect(screen.getByText('Posted by')).toBeTruthy();
   });
 
   it('renders stats', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('10 views')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('10 views')).toBeTruthy();
     expect(screen.getByText('3 saves')).toBeTruthy();
   });
 
   it('increments views on mount', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
-    });
+    await renderAndFlush();
     expect(incrementListingViews).toHaveBeenCalledWith(expect.anything(), 'listing-1');
   });
 
   it('shows "Listing not found" when listing is null', async () => {
     mockGetListingById.mockResolvedValue({ data: null } as never);
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Listing not found')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Listing not found')).toBeTruthy();
   });
 
   it('shows Contact button when user is not the owner', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Contact')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Contact')).toBeTruthy();
   });
 
   it('shows Edit button when user is the owner', async () => {
     mockUseAuth.mockReturnValue({
       user: { id: 'user-2', trust_level: 1, metro_area_id: 'metro-1' },
     });
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Edit Listing')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Edit Listing')).toBeTruthy();
   });
 
   it('renders save and contact action bar for non-owner', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Contact')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Contact')).toBeTruthy();
   });
 
   it('renders business hours', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Hours')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('Hours')).toBeTruthy();
     expect(screen.getByText('Monday')).toBeTruthy();
     expect(screen.getByText('9:00 - 17:00')).toBeTruthy();
   });
 
   it('shows placeholder emoji when no photos and has category', async () => {
-    const screen = render(<ListingDetailScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('🍜')).toBeTruthy();
-    });
+    const screen = await renderAndFlush();
+    expect(screen.getByText('🍜')).toBeTruthy();
   });
 });
