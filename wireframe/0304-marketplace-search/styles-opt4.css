@@ -1,0 +1,171 @@
+/* === Option 4: Filter Toolbar — Clean & Polished Variants === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- Shared browser chrome (both variants) --- */
+#frame-opt4.clean .browser-dots span:nth-child(1),
+#frame-opt4.polished .browser-dots span:nth-child(1) { background: #ff5f57; }
+#frame-opt4.clean .browser-dots span:nth-child(2),
+#frame-opt4.polished .browser-dots span:nth-child(2) { background: #febc2e; }
+#frame-opt4.clean .browser-dots span:nth-child(3),
+#frame-opt4.polished .browser-dots span:nth-child(3) { background: #28c840; }
+#frame-opt4.clean .browser-chrome,
+#frame-opt4.polished .browser-chrome { background: #f7f9fb; border-bottom-color: rgba(0,64,139,0.08); }
+#frame-opt4.clean .browser-url,
+#frame-opt4.polished .browser-url { color: #5f6368; }
+#frame-opt4.clean .wf-marker,
+#frame-opt4.polished .wf-marker { display: none; }
+
+/* --- CLEAN VARIANT --- */
+#frame-opt4.clean { border-color: rgba(0,64,139,0.10); }
+#frame-opt4.clean .ms-status-bar { color: #1A2332; }
+#frame-opt4.clean .ms-nav-header { border-bottom: 1px solid rgba(0,64,139,0.06); }
+#frame-opt4.clean .ms-nav-title { color: #1A2332; }
+#frame-opt4.clean .ms-nav-icon { color: #1565C0; }
+/* Toolbar */
+#frame-opt4.clean .ms-toolbar { border-bottom-color: rgba(0,64,139,0.10); background: #fff; }
+#frame-opt4.clean .ms-toolbar-search { background: #f7f9fb; border: 1px solid rgba(0,64,139,0.10); }
+#frame-opt4.clean .ms-toolbar-input { color: #1A2332; }
+#frame-opt4.clean .ms-toolbar-input::placeholder { color: #9aa0a6; }
+#frame-opt4.clean .ms-search-icon { color: #757575; }
+/* Segmented controls */
+#frame-opt4.clean .ms-seg { color: #757575; border-bottom-color: transparent; }
+#frame-opt4.clean .ms-seg:hover { color: #1A2332; }
+#frame-opt4.clean .ms-seg.active { color: #1565C0; font-weight: 600; border-bottom-color: #1565C0; }
+#frame-opt4.clean .ms-toolbar-sort { color: #9aa0a6; }
+#frame-opt4.clean .ms-sort-value { color: #1A2332; }
+#frame-opt4.clean .ms-results-info { color: #757575; }
+/* Cards */
+#frame-opt4.clean .ms-vcard { border-color: rgba(0,64,139,0.10); }
+#frame-opt4.clean .ms-vcard-img { background: #E3F2FD; }
+#frame-opt4.clean .ms-vcard-badge-top { background: #fff; border-color: rgba(0,64,139,0.10); color: #F7941D; font-weight: 600; }
+#frame-opt4.clean .ms-vcard-save { background: #fff; border-color: rgba(0,64,139,0.10); color: #757575; }
+#frame-opt4.clean .ms-vcard-row strong { color: #1A2332; }
+#frame-opt4.clean .ms-listing-price { color: #1565C0; }
+#frame-opt4.clean .ms-badge { background: #E3F2FD; color: #1565C0; }
+#frame-opt4.clean .ms-social-proof { color: #2E7D32; }
+#frame-opt4.clean .ms-btn-primary { background: #1565C0; color: #fff; }
+#frame-opt4.clean .ms-btn-primary:hover { background: #104D99; }
+/* Tab bar */
+#frame-opt4.clean .ms-tab-bar { border-top-color: rgba(0,64,139,0.08); background: #fff; }
+#frame-opt4.clean .ms-tab-item { color: #9aa0a6; }
+#frame-opt4.clean .ms-tab-item.active { color: #1565C0; }
+
+/* --- POLISHED VARIANT --- */
+#frame-opt4.polished { border-color: rgba(0,64,139,0.12); }
+#frame-opt4.polished .browser-url { font-family: 'Inter', sans-serif; }
+#frame-opt4.polished .browser-content { font-family: 'Inter', sans-serif; }
+#frame-opt4.polished .ms-status-bar { color: #1A2332; }
+#frame-opt4.polished .ms-nav-header { border-bottom: 1px solid rgba(0,64,139,0.06); }
+#frame-opt4.polished .ms-nav-title { color: #1A2332; font-weight: 700; }
+#frame-opt4.polished .ms-nav-icon { color: #1565C0; transition: color 150ms ease-out; }
+#frame-opt4.polished .ms-nav-icon:hover { color: #104D99; }
+/* Toolbar with gradient accent line */
+#frame-opt4.polished .ms-toolbar {
+  border-bottom-color: rgba(0,64,139,0.10);
+  background: #fff;
+  position: relative;
+}
+#frame-opt4.polished .ms-toolbar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 2px;
+  background: linear-gradient(90deg, #1565C0, #F7941D);
+  border-radius: 1px;
+}
+#frame-opt4.polished .ms-toolbar-search {
+  background: #f7f9fb;
+  border: 1px solid rgba(0,64,139,0.10);
+  box-shadow: 0 1px 3px rgba(0,64,139,0.04);
+  transition: box-shadow 200ms ease-out, border-color 200ms ease-out;
+}
+#frame-opt4.polished .ms-toolbar-search:focus-within {
+  border-color: #1565C0;
+  box-shadow: 0 0 0 3px rgba(21,101,192,0.10);
+}
+#frame-opt4.polished .ms-toolbar-input { color: #1A2332; }
+#frame-opt4.polished .ms-toolbar-input::placeholder { color: #9aa0a6; }
+#frame-opt4.polished .ms-search-icon { color: #757575; }
+/* Segmented controls */
+#frame-opt4.polished .ms-seg {
+  color: #757575;
+  border-bottom-color: transparent;
+  transition: color 150ms ease-out, border-bottom-color 150ms ease-out;
+}
+#frame-opt4.polished .ms-seg:hover { color: #1A2332; }
+#frame-opt4.polished .ms-seg.active { color: #1565C0; font-weight: 600; border-bottom-color: #1565C0; }
+#frame-opt4.polished .ms-toolbar-sort { color: #9aa0a6; }
+#frame-opt4.polished .ms-sort-value { color: #1A2332; transition: color 150ms ease-out; }
+#frame-opt4.polished .ms-sort-value:hover { color: #1565C0; }
+#frame-opt4.polished .ms-results-info { color: #757575; }
+/* Cards */
+#frame-opt4.polished .ms-vcard {
+  border-color: rgba(0,64,139,0.08);
+  box-shadow: 0 1px 3px rgba(0,64,139,0.04), 0 1px 2px rgba(0,64,139,0.03);
+  transition: box-shadow 200ms ease-out, transform 200ms ease-out;
+}
+#frame-opt4.polished .ms-vcard:hover {
+  box-shadow: 0 4px 16px rgba(0,64,139,0.07), 0 2px 4px rgba(0,64,139,0.04);
+  transform: translateY(-1px);
+}
+#frame-opt4.polished .ms-vcard-img { background: linear-gradient(135deg, #E3F2FD, #f7f9fb); }
+#frame-opt4.polished .ms-vcard-badge-top {
+  background: linear-gradient(135deg, #FDE7C7, #fff);
+  border-color: rgba(247,148,29,0.20);
+  color: #F7941D; font-weight: 600;
+  box-shadow: 0 1px 3px rgba(247,148,29,0.10);
+}
+#frame-opt4.polished .ms-vcard-save {
+  background: #fff; border-color: rgba(0,64,139,0.10); color: #757575;
+  transition: background 150ms ease-out, color 150ms ease-out;
+}
+#frame-opt4.polished .ms-vcard-save:hover { background: #E3F2FD; color: #1565C0; }
+#frame-opt4.polished .ms-vcard-row strong { color: #1A2332; font-weight: 600; }
+#frame-opt4.polished .ms-listing-price { color: #1565C0; font-weight: 700; }
+#frame-opt4.polished .ms-badge { background: #E3F2FD; color: #1565C0; font-weight: 500; }
+#frame-opt4.polished .ms-social-proof { color: #2E7D32; }
+/* Primary button */
+#frame-opt4.polished .ms-btn-primary {
+  background: linear-gradient(135deg, #1565C0, #104D99);
+  color: #fff; font-weight: 600;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.18);
+  transition: box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+#frame-opt4.polished .ms-btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(21,101,192,0.25);
+  transform: translateY(-1px);
+}
+#frame-opt4.polished .ms-btn-primary:active { transform: scale(0.98); }
+/* Tab bar */
+#frame-opt4.polished .ms-tab-bar {
+  border-top-color: rgba(0,64,139,0.08);
+  background: #fff;
+  box-shadow: 0 -1px 3px rgba(0,64,139,0.04);
+}
+#frame-opt4.polished .ms-tab-item { color: #9aa0a6; transition: color 150ms ease-out; }
+#frame-opt4.polished .ms-tab-item.active { color: #1565C0; }
+
+/* Entrance animations — Polished only */
+@media (prefers-reduced-motion: no-preference) {
+  #frame-opt4.polished .ms-vcard { animation: opt4CardIn 300ms ease-out both; }
+  #frame-opt4.polished .ms-vcard:nth-child(2) { animation-delay: 50ms; }
+  #frame-opt4.polished .ms-vcard:nth-child(3) { animation-delay: 100ms; }
+  #frame-opt4.polished .ms-toolbar { animation: opt4ToolbarIn 250ms ease-out both; }
+  @keyframes opt4CardIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes opt4ToolbarIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* --- Self-reveal: hide badge, color sub-tabs --- */
+#frame-opt4-tabs .sub-tab-badge { display: none; }
+#frame-opt4-tabs .sub-tab-btn[data-variant="clean"] { color: #64B5F6; }
+#frame-opt4-tabs .sub-tab-btn[data-variant="clean"]:hover { color: #1E88E5; }
+#frame-opt4-tabs .sub-tab-btn[data-variant="clean"].active { color: #1565C0; border-bottom-color: #1565C0; }
+#frame-opt4-tabs .sub-tab-btn[data-variant="polished"] { color: #81C784; }
+#frame-opt4-tabs .sub-tab-btn[data-variant="polished"]:hover { color: #43A047; }
+#frame-opt4-tabs .sub-tab-btn[data-variant="polished"].active { color: #2E7D32; border-bottom-color: #2E7D32; }

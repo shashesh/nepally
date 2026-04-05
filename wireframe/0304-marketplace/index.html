@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace — DDMM Wireframes</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-opt1.css">
+  <link rel="stylesheet" href="styles-opt2.css">
+  <link rel="stylesheet" href="styles-opt3.css">
+  <link rel="stylesheet" href="styles-opt4.css">
+  <link rel="stylesheet" href="styles-opt5.css">
+</head>
+<body>
+
+<div class="completion-banner" id="completion-banner" style="display:none;">
+  ✦ Visual designs complete — all options now have Clean + Polished variants
+  <button onclick="this.parentElement.style.display='none'" style="float:right;background:none;border:none;cursor:pointer;font-size:16px;">×</button>
+</div>
+
+<div class="page-wrapper">
+
+  <div class="title-bar">
+    <span><span id="feature-name">Marketplace</span> — <span id="project-name">Nepally</span></span>
+    <span class="rec">★ Recommended: Option <span id="rec-number">3</span></span>
+  </div>
+
+  <nav class="main-tabs">
+    <button class="tab-btn active" data-tab="option-1">1: Classic Grid</button>
+    <button class="tab-btn" data-tab="option-2">2: Search Hero</button>
+    <button class="tab-btn" data-tab="option-3">3: Visual Cards</button>
+    <button class="tab-btn" data-tab="option-4">4: Split Browse</button>
+    <button class="tab-btn" data-tab="option-5">5: Feed Style</button>
+    <button class="tab-btn" data-tab="summary">Summary</button>
+  </nav>
+
+  <!-- ===== OPTION 1 ===== -->
+  <div class="option-panel active" id="option-1">
+    <h2>Option 1: <span class="opt-name">Classic Grid</span></h2>
+    <p class="option-description">Matches the existing Nepally marketplace layout — search bar, category grid, and listing cards in a familiar vertical scroll.</p>
+    <div class="sub-tab-bar" id="frame-opt1-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch1"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch1)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint1"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint1)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond1"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond1)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame wireframe" id="frame-opt1">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">yourapp.com/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mp-header">
+          <h1 class="mp-title">Marketplace</h1>
+          <div class="mp-header-actions">
+            <button class="mp-btn-outline">My Listings</button>
+            <button class="mp-btn-primary">+ Create Listing</button>
+          </div>
+        </div>
+        <div class="mp-search">
+          <span class="mp-search-icon">&#9906;</span>
+          <input type="text" placeholder="Search marketplace..." class="mp-search-input">
+        </div>
+        <h2 class="mp-section-title">Categories</h2>
+        <div class="mp-cat-grid">
+          <div class="mp-cat-card"><span class="mp-cat-emoji">&#127837;</span><span class="mp-cat-label">Food &amp; Restaurants</span></div>
+          <div class="mp-cat-card"><span class="mp-cat-emoji">&#9878;</span><span class="mp-cat-label">Immigration &amp; Legal</span></div>
+          <div class="mp-cat-card"><span class="mp-cat-emoji">&#128188;</span><span class="mp-cat-label">Professional Services</span></div>
+          <div class="mp-cat-card"><span class="mp-cat-emoji">&#128176;</span><span class="mp-cat-label">Remittance &amp; Finance</span></div>
+          <div class="mp-cat-card"><span class="mp-cat-emoji">&#128230;</span><span class="mp-cat-label">Other</span></div>
+        </div>
+        <h2 class="mp-section-title">Recently Added <span class="wf-marker">&#9312;</span></h2>
+        <div class="mp-listing-row">
+          <div class="mp-listing-thumb"></div>
+          <div class="mp-listing-info">
+            <strong>Get Prettified with Neeha</strong>
+            <span class="mp-listing-badge">Professional Services</span>
+            <span class="mp-listing-type">Business</span>
+            <div class="mp-listing-price">Starting at $150</div>
+            <div class="mp-listing-meta">11 views &middot; 0 saves</div>
+          </div>
+        </div>
+        <div class="mp-listing-row">
+          <div class="mp-listing-thumb"></div>
+          <div class="mp-listing-info">
+            <strong>Himalayan Kitchen Catering</strong>
+            <span class="mp-listing-badge">Food &amp; Restaurants</span>
+            <span class="mp-listing-type">Business</span>
+            <div class="mp-listing-price">Starting at $200</div>
+            <div class="mp-listing-meta">8 views &middot; 2 saves</div>
+          </div>
+        </div>
+        <div class="mp-listing-row">
+          <div class="mp-listing-thumb"></div>
+          <div class="mp-listing-info">
+            <strong>Nepali Tax &amp; Accounting</strong>
+            <span class="mp-listing-badge">Remittance &amp; Finance</span>
+            <span class="mp-listing-type">Business</span>
+            <div class="mp-listing-price">Starting at $75</div>
+            <div class="mp-listing-meta">15 views &middot; 4 saves</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Recently Added section uses the same listing card pattern as the current app — familiar but passive; users must scroll to discover.</li>
+        <li>&#9313; Category grid mirrors existing emoji-icon cards. Safe baseline but categories compete equally for attention with no conversion weighting.</li>
+        <li>&#9314; "Create Listing" CTA in header is consistent with existing patterns but may be missed on scroll.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION 2 ===== -->
+  <div class="option-panel" id="option-2">
+    <h2>Option 2: <span class="opt-name">Search Hero</span></h2>
+    <p class="option-description">A prominent search bar with trending queries and featured listings drives users directly to high-intent actions.</p>
+    <div class="sub-tab-bar" id="frame-opt2-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch2"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch2)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint2"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint2)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond2"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond2)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame wireframe" id="frame-opt2">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">yourapp.com/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mp-hero-search">
+          <h1 class="mp-hero-title">Find Nepali services near you <span class="wf-marker">&#9312;</span></h1>
+          <div class="mp-hero-bar">
+            <input type="text" placeholder="Try &quot;catering&quot;, &quot;tax help&quot;, &quot;immigration lawyer&quot;..." class="mp-hero-input">
+            <button class="mp-btn-primary">Search</button>
+          </div>
+          <div class="mp-trending">
+            <span class="mp-trending-label">Trending:</span>
+            <a href="#" class="mp-trending-tag">Momo Catering</a>
+            <a href="#" class="mp-trending-tag">Tax Filing</a>
+            <a href="#" class="mp-trending-tag">Bridal Makeup</a>
+            <a href="#" class="mp-trending-tag">Legal Consultation</a>
+          </div>
+        </div>
+        <div class="mp-featured-banner">
+          <span class="mp-featured-label">&#9733; Featured</span>
+          <button class="mp-btn-outline mp-btn-sm">Promote your listing</button>
+        </div>
+        <div class="mp-featured-grid">
+          <div class="mp-featured-card">
+            <div class="mp-featured-img"></div>
+            <div class="mp-featured-body">
+              <strong>Get Prettified with Neeha</strong>
+              <div class="mp-listing-badge">Professional Services</div>
+              <div class="mp-listing-price">Starting at $150</div>
+              <div class="mp-social-proof">&#9733; Verified Seller &middot; 11 views</div>
+              <button class="mp-btn-primary mp-btn-full">Contact Seller</button>
+            </div>
+          </div>
+          <div class="mp-featured-card">
+            <div class="mp-featured-img"></div>
+            <div class="mp-featured-body">
+              <strong>Himalayan Kitchen Catering</strong>
+              <div class="mp-listing-badge">Food &amp; Restaurants</div>
+              <div class="mp-listing-price">Starting at $200</div>
+              <div class="mp-social-proof">&#9733; Verified Seller &middot; 8 views</div>
+              <button class="mp-btn-primary mp-btn-full">Contact Seller</button>
+            </div>
+          </div>
+        </div>
+        <h2 class="mp-section-title">Browse by Category <span class="wf-marker">&#9313;</span></h2>
+        <div class="mp-cat-pills">
+          <a href="#" class="mp-pill active">All</a>
+          <a href="#" class="mp-pill">Food &amp; Restaurants</a>
+          <a href="#" class="mp-pill">Immigration &amp; Legal</a>
+          <a href="#" class="mp-pill">Professional Services</a>
+          <a href="#" class="mp-pill">Remittance &amp; Finance</a>
+        </div>
+        <div class="mp-cta-banner">
+          <span>Have a service to offer? Reach your local Nepali community.</span>
+          <button class="mp-btn-primary">+ Create Listing</button>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Hero search with contextual placeholder reduces time-to-intent — users land and immediately act. Trending tags provide fallback discovery.</li>
+        <li>&#9313; Category pills replace the grid, saving vertical space and keeping listings visible above the fold.</li>
+        <li>&#9314; Featured section with "Contact Seller" CTA directly on cards converts passive browsing into action.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION 3 ===== -->
+  <div class="option-panel" id="option-3">
+    <h2>Option 3: <span class="opt-name">Visual Cards</span></h2>
+    <p class="option-description">Image-forward card grid with inline CTAs, social proof badges, and quick-contact overlays to maximize listing engagement.</p>
+    <div class="sub-tab-bar" id="frame-opt3-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch3"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch3)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint3"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint3)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond3"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond3)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame wireframe" id="frame-opt3">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">yourapp.com/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mp-header">
+          <h1 class="mp-title">Marketplace</h1>
+          <button class="mp-btn-primary">+ Create Listing</button>
+        </div>
+        <div class="mp-filter-bar">
+          <select class="mp-select"><option>All Categories</option></select>
+          <select class="mp-select"><option>Sort: Newest</option></select>
+          <div class="mp-search mp-search-compact">
+            <span class="mp-search-icon">&#9906;</span>
+            <input type="text" placeholder="Search..." class="mp-search-input">
+          </div>
+        </div>
+        <div class="mp-visual-grid">
+          <div class="mp-vcard">
+            <div class="mp-vcard-img">
+              <span class="mp-vcard-badge-top">&#9733; Featured</span>
+              <span class="mp-vcard-save">&#9776;</span>
+            </div>
+            <div class="mp-vcard-body">
+              <div class="mp-vcard-row">
+                <strong>Get Prettified with Neeha</strong>
+                <span class="mp-listing-price">$150+</span>
+              </div>
+              <div class="mp-listing-badge">Professional Services</div>
+              <div class="mp-vcard-proof">&#10003; Verified &middot; 11 views &middot; 1 contact <span class="wf-marker">&#9312;</span></div>
+              <button class="mp-btn-primary mp-btn-full">Contact Seller</button>
+            </div>
+          </div>
+          <div class="mp-vcard">
+            <div class="mp-vcard-img"></div>
+            <div class="mp-vcard-body">
+              <div class="mp-vcard-row">
+                <strong>Himalayan Kitchen Catering</strong>
+                <span class="mp-listing-price">$200+</span>
+              </div>
+              <div class="mp-listing-badge">Food &amp; Restaurants</div>
+              <div class="mp-vcard-proof">&#10003; Verified &middot; 8 views &middot; 2 contacts</div>
+              <button class="mp-btn-primary mp-btn-full">Contact Seller</button>
+            </div>
+          </div>
+          <div class="mp-vcard">
+            <div class="mp-vcard-img"></div>
+            <div class="mp-vcard-body">
+              <div class="mp-vcard-row">
+                <strong>Nepali Tax &amp; Accounting</strong>
+                <span class="mp-listing-price">$75+</span>
+              </div>
+              <div class="mp-listing-badge">Remittance &amp; Finance</div>
+              <div class="mp-vcard-proof">&#10003; Verified &middot; 15 views &middot; 4 contacts</div>
+              <button class="mp-btn-primary mp-btn-full">Contact Seller</button>
+            </div>
+          </div>
+          <div class="mp-vcard">
+            <div class="mp-vcard-img"></div>
+            <div class="mp-vcard-body">
+              <div class="mp-vcard-row">
+                <strong>Visa &amp; Green Card Help</strong>
+                <span class="mp-listing-price">$300+</span>
+              </div>
+              <div class="mp-listing-badge">Immigration &amp; Legal</div>
+              <div class="mp-vcard-proof">&#10003; Verified &middot; 22 views &middot; 6 contacts <span class="wf-marker">&#9313;</span></div>
+              <button class="mp-btn-primary mp-btn-full">Contact Seller</button>
+            </div>
+          </div>
+        </div>
+        <div class="mp-cta-banner">
+          <span>Reach the Nepali community in Atlanta &mdash; list your service for free.</span>
+          <button class="mp-btn-primary">+ Create Listing</button>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Social proof line (verified + views + contacts) builds trust and creates urgency — "others are contacting this seller."</li>
+        <li>&#9313; Full-width "Contact Seller" CTA on every card removes friction — no need to navigate to a detail page first.</li>
+        <li>&#9314; Filter bar with category dropdown + sort + search keeps browsing efficient without hiding listings behind a category wall.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION 4 ===== -->
+  <div class="option-panel" id="option-4">
+    <h2>Option 4: <span class="opt-name">Split Browse</span></h2>
+    <p class="option-description">Category sidebar paired with a results panel lets users filter and compare listings without losing context.</p>
+    <div class="sub-tab-bar" id="frame-opt4-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch4"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch4)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint4"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint4)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond4"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond4)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame wireframe" id="frame-opt4">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">yourapp.com/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mp-split">
+          <aside class="mp-sidebar">
+            <h3 class="mp-sidebar-title">Categories</h3>
+            <a href="#" class="mp-sidebar-link active">All Listings <span class="mp-count">4</span></a>
+            <a href="#" class="mp-sidebar-link">Food &amp; Restaurants <span class="mp-count">1</span></a>
+            <a href="#" class="mp-sidebar-link">Immigration &amp; Legal <span class="mp-count">1</span></a>
+            <a href="#" class="mp-sidebar-link">Professional Services <span class="mp-count">1</span></a>
+            <a href="#" class="mp-sidebar-link">Remittance &amp; Finance <span class="mp-count">1</span></a>
+            <a href="#" class="mp-sidebar-link">Other <span class="mp-count">0</span></a>
+            <div class="mp-sidebar-cta">
+              <button class="mp-btn-primary mp-btn-full">+ Create Listing</button>
+              <p class="mp-sidebar-hint">Free for all verified members</p>
+            </div>
+          </aside>
+          <div class="mp-results">
+            <div class="mp-results-header">
+              <div class="mp-search mp-search-compact">
+                <span class="mp-search-icon">&#9906;</span>
+                <input type="text" placeholder="Search listings..." class="mp-search-input">
+              </div>
+              <select class="mp-select" title="Sort order"><option>Sort: Newest</option></select>
+            </div>
+            <div class="mp-results-count">4 listings in Atlanta <span class="wf-marker">&#9312;</span></div>
+            <div class="mp-result-item">
+              <div class="mp-result-thumb"></div>
+              <div class="mp-result-info">
+                <strong>Get Prettified with Neeha</strong>
+                <div class="mp-listing-badge">Professional Services</div>
+                <div class="mp-listing-price">Starting at $150</div>
+                <div class="mp-social-proof">&#10003; Verified &middot; 11 views</div>
+              </div>
+              <button class="mp-btn-primary mp-btn-contact">Contact</button>
+            </div>
+            <div class="mp-result-item">
+              <div class="mp-result-thumb"></div>
+              <div class="mp-result-info">
+                <strong>Himalayan Kitchen Catering</strong>
+                <div class="mp-listing-badge">Food &amp; Restaurants</div>
+                <div class="mp-listing-price">Starting at $200</div>
+                <div class="mp-social-proof">&#10003; Verified &middot; 8 views</div>
+              </div>
+              <button class="mp-btn-primary mp-btn-contact">Contact</button>
+            </div>
+            <div class="mp-result-item">
+              <div class="mp-result-thumb"></div>
+              <div class="mp-result-info">
+                <strong>Nepali Tax &amp; Accounting</strong>
+                <div class="mp-listing-badge">Remittance &amp; Finance</div>
+                <div class="mp-listing-price">Starting at $75</div>
+                <div class="mp-social-proof">&#10003; Verified &middot; 15 views</div>
+              </div>
+              <button class="mp-btn-primary mp-btn-contact">Contact <span class="wf-marker">&#9313;</span></button>
+            </div>
+            <div class="mp-result-item">
+              <div class="mp-result-thumb"></div>
+              <div class="mp-result-info">
+                <strong>Visa &amp; Green Card Help</strong>
+                <div class="mp-listing-badge">Immigration &amp; Legal</div>
+                <div class="mp-listing-price">Starting at $300</div>
+                <div class="mp-social-proof">&#10003; Verified &middot; 22 views</div>
+              </div>
+              <button class="mp-btn-primary mp-btn-contact">Contact</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Results count with metro name ("4 listings in Atlanta") reinforces local relevance — users know these are nearby services.</li>
+        <li>&#9313; Persistent "Contact" button on every row keeps conversion action always visible without needing to open listing details.</li>
+        <li>&#9314; Sidebar category counts act as information scent — users can see where listings exist before clicking.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION 5 ===== -->
+  <div class="option-panel" id="option-5">
+    <h2>Option 5: <span class="opt-name">Feed Style</span></h2>
+    <p class="option-description">Social-media-style vertical feed with inline action buttons, seller profiles, and recommendation sections to drive organic discovery.</p>
+    <div class="sub-tab-bar" id="frame-opt5-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch5"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch5)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint5"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint5)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond5"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond5)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame wireframe" id="frame-opt5">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">yourapp.com/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mp-header">
+          <h1 class="mp-title">Marketplace</h1>
+          <button class="mp-btn-primary">+ Create Listing</button>
+        </div>
+        <div class="mp-cat-pills">
+          <a href="#" class="mp-pill active">For You</a>
+          <a href="#" class="mp-pill">Food</a>
+          <a href="#" class="mp-pill">Legal</a>
+          <a href="#" class="mp-pill">Services</a>
+          <a href="#" class="mp-pill">Finance</a>
+        </div>
+        <div class="mp-feed-card">
+          <div class="mp-feed-seller">
+            <div class="mp-avatar">NP</div>
+            <div>
+              <strong>Neeha Pandey</strong> <span class="mp-verified-badge">&#10003;</span>
+              <div class="mp-feed-meta">Professional Services &middot; 3 days ago</div>
+            </div>
+          </div>
+          <div class="mp-feed-img"></div>
+          <div class="mp-feed-body">
+            <div class="mp-feed-title-row">
+              <strong>Get Prettified with Neeha</strong>
+              <span class="mp-listing-price">$150+</span>
+            </div>
+            <p class="mp-feed-desc">Bridal and event makeup by certified artist. Serving Atlanta metro. Book now for spring events! <span class="wf-marker">&#9312;</span></p>
+            <div class="mp-feed-actions">
+              <button class="mp-btn-primary">Contact Seller</button>
+              <button class="mp-btn-outline">Save</button>
+              <button class="mp-btn-outline">Share</button>
+            </div>
+          </div>
+        </div>
+        <div class="mp-feed-card">
+          <div class="mp-feed-seller">
+            <div class="mp-avatar">RK</div>
+            <div>
+              <strong>Ram Karki</strong> <span class="mp-verified-badge">&#10003;</span>
+              <div class="mp-feed-meta">Food &amp; Restaurants &middot; 1 week ago</div>
+            </div>
+          </div>
+          <div class="mp-feed-img"></div>
+          <div class="mp-feed-body">
+            <div class="mp-feed-title-row">
+              <strong>Himalayan Kitchen Catering</strong>
+              <span class="mp-listing-price">$200+</span>
+            </div>
+            <p class="mp-feed-desc">Authentic Nepali and Indian catering for parties. Momo, dal bhat, biryani, and more. <span class="wf-marker">&#9313;</span></p>
+            <div class="mp-feed-actions">
+              <button class="mp-btn-primary">Contact Seller</button>
+              <button class="mp-btn-outline">Save</button>
+              <button class="mp-btn-outline">Share</button>
+            </div>
+          </div>
+        </div>
+        <div class="mp-recommend-section">
+          <h3 class="mp-section-title">Popular in Atlanta</h3>
+          <div class="mp-recommend-row">
+            <div class="mp-recommend-chip">
+              <div class="mp-rec-thumb"></div>
+              <span>Nepali Tax Help</span>
+            </div>
+            <div class="mp-recommend-chip">
+              <div class="mp-rec-thumb"></div>
+              <span>Visa Consultation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Rich listing descriptions in feed format encourage browsing — users consume listings like social posts, increasing time on page and organic contact.</li>
+        <li>&#9313; Seller avatar + name + verification builds personal trust — users feel like they're connecting with a person, not a listing.</li>
+        <li>&#9314; "Popular in Atlanta" recommendation section at the bottom drives further exploration and reduces bounce.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY ===== -->
+  <div class="option-panel" id="summary">
+    <h2>Summary — Optimizing for Conversions</h2>
+    <table class="mp-summary-table">
+      <thead>
+        <tr><th>Option</th><th>Approach</th><th>Conversion Score</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1: Classic Grid</strong></td><td>Existing layout — categories + list</td><td>&#9733;&#9733;&#9734;&#9734;&#9734;</td></tr>
+        <tr><td><strong>2: Search Hero</strong></td><td>Intent-driven search with featured listings</td><td>&#9733;&#9733;&#9733;&#9733;&#9734;</td></tr>
+        <tr class="mp-recommended"><td><strong>3: Visual Cards &#9733;</strong></td><td>Image-forward grid with inline CTAs + social proof</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td></tr>
+        <tr><td><strong>4: Split Browse</strong></td><td>Sidebar filtering with persistent contact buttons</td><td>&#9733;&#9733;&#9733;&#9733;&#9734;</td></tr>
+        <tr><td><strong>5: Feed Style</strong></td><td>Social feed with seller profiles and recommendations</td><td>&#9733;&#9733;&#9733;&#9734;&#9734;</td></tr>
+      </tbody>
+    </table>
+    <div class="mp-recommendation">
+      <strong>Recommendation: Option 3 (Visual Cards)</strong> — The image-forward grid with social proof ("11 views, 1 contact") and full-width "Contact Seller" CTAs on every card creates the shortest path from browse to action. Combined with filter controls that keep listings visible above the fold, this layout maximizes both discovery and conversion without requiring users to open detail pages.
+    </div>
+  </div>
+
+</div>
+
+<footer class="skill-footer">
+  This design was crafted by the <a href="https://github.com/Magdoub/claude-wireframe-skill">Wireframe skill</a> — follow on GitHub
+</footer>
+
+<script>
+(function() {
+  // Main tab switching
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  var panels = document.querySelectorAll('.option-panel');
+  tabBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      tabBtns.forEach(function(b) { b.classList.remove('active'); });
+      panels.forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var target = document.getElementById(btn.dataset.tab);
+      if (target) target.classList.add('active');
+    });
+  });
+
+  // Sub-tab switching
+  var subBtns = document.querySelectorAll('.sub-tab-btn');
+  subBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var frameId = btn.dataset.frame;
+      var siblings = btn.parentElement.querySelectorAll('.sub-tab-btn');
+      siblings.forEach(function(s) { s.classList.remove('active'); });
+      btn.classList.add('active');
+      var frame = document.getElementById(frameId);
+      if (frame) {
+        frame.classList.remove('wireframe', 'clean', 'polished');
+        frame.classList.add(btn.dataset.variant);
+      }
+    });
+  });
+
+  // Completion banner — one-time load check
+  window.addEventListener('load', function() {
+    var badges = document.querySelectorAll('.sub-tab-badge');
+    var anyVisible = false;
+    badges.forEach(function(b) {
+      if (getComputedStyle(b).display !== 'none') anyVisible = true;
+    });
+    if (!anyVisible && badges.length > 0) {
+      var banner = document.getElementById('completion-banner');
+      if (banner) {
+        banner.style.display = 'block';
+        setTimeout(function() { banner.style.display = 'none'; }, 8000);
+      }
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,409 @@
+/* Marketplace Mobile — Wireframe Content CSS */
+
+/* Status Bar */
+.mm-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #000;
+}
+.mm-status-icons { font-size: 10px; letter-spacing: 4px; }
+
+/* Nav Header */
+.mm-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px 12px;
+}
+.mm-nav-title { font-size: 20px; font-weight: 700; color: #000; }
+.mm-nav-icon { font-size: 18px; color: #333; cursor: pointer; }
+
+/* Search Bar */
+.mm-search-bar {
+  display: flex;
+  align-items: center;
+  margin: 0 16px 12px;
+  padding: 10px 12px;
+  background: #eee;
+  border-radius: 10px;
+  gap: 8px;
+}
+.mm-search-icon { font-size: 14px; }
+.mm-search-placeholder { font-size: 14px; color: #999; }
+
+/* Chip Row */
+.mm-chip-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 12px;
+  overflow-x: auto;
+}
+.mm-chip {
+  padding: 6px 14px;
+  border: 1px solid #ccc;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mm-chip:hover { background: #eee; }
+.mm-chip.active { background: #333; color: #fff; border-color: #333; }
+
+/* Section Header */
+.mm-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+}
+.mm-section-title { font-size: 15px; font-weight: 700; color: #000; }
+.mm-see-all { font-size: 13px; color: #666; text-decoration: none; }
+.mm-see-all:hover { color: #000; }
+
+/* Badges */
+.mm-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #eee;
+  border-radius: 10px;
+  color: #666;
+}
+
+/* Listing Price */
+.mm-listing-price { font-size: 14px; font-weight: 600; color: #000; }
+.mm-listing-meta { font-size: 11px; color: #999; margin-top: 2px; }
+
+/* Social Proof */
+.mm-social-proof { font-size: 11px; color: #666; margin: 4px 0; }
+
+/* Buttons */
+.mm-btn-primary {
+  background: #333;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mm-btn-primary:hover { background: #000; }
+.mm-btn-outline {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mm-btn-outline:hover { background: #eee; }
+.mm-btn-full { width: 100%; }
+.mm-btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mm-btn-sm:hover { background: #000; }
+
+/* === OPTION 1: Classic Grid === */
+.mm-listing-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #eee;
+}
+.mm-listing-thumb {
+  width: 72px;
+  height: 72px;
+  background: #eee;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.mm-listing-info { flex: 1; min-width: 0; }
+.mm-listing-info strong { font-size: 14px; color: #000; display: block; margin-bottom: 4px; }
+
+/* FAB */
+.mm-fab {
+  position: absolute;
+  bottom: 70px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  background: #333;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.mm-fab:hover { background: #000; }
+
+/* === OPTION 2: Search Hero === */
+.mm-hero-section {
+  text-align: center;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #eee;
+}
+.mm-hero-heading { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 12px; }
+.mm-hero-search-bar {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: #eee;
+  border-radius: 10px;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mm-trending { font-size: 12px; color: #999; }
+.mm-trending-label { margin-right: 4px; }
+.mm-trending-tag { color: #666; text-decoration: none; margin-right: 6px; font-size: 12px; }
+.mm-trending-tag:hover { color: #000; text-decoration: underline; }
+
+/* Horizontal Scroll */
+.mm-horizontal-scroll {
+  display: flex;
+  gap: 12px;
+  padding: 0 16px 12px;
+  overflow-x: auto;
+}
+
+/* Featured Card (Opt 2) */
+.mm-featured-card {
+  min-width: 200px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.mm-featured-img { height: 80px; background: #eee; }
+.mm-featured-body { padding: 10px; }
+.mm-featured-body strong { font-size: 13px; color: #000; display: block; margin-bottom: 4px; }
+
+/* CTA Banner */
+.mm-cta-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #eee;
+  border-radius: 8px;
+  margin: 8px 16px 12px;
+  font-size: 12px;
+  color: #333;
+}
+
+/* === OPTION 3: Visual Cards === */
+.mm-filter-bar {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+.mm-filter-select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #333;
+  background: #fff;
+  cursor: pointer;
+}
+.mm-vcard {
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0 16px 12px;
+}
+.mm-vcard-img { height: 120px; background: #eee; position: relative; }
+.mm-vcard-badge-top {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: #333;
+}
+.mm-vcard-save {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #fff;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+.mm-vcard-body { padding: 12px; }
+.mm-vcard-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.mm-vcard-row strong { font-size: 14px; color: #000; }
+
+/* === OPTION 4: Tab Filter === */
+.mm-seg-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 16px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid #eee;
+}
+.mm-seg-tab {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.mm-seg-tab:hover { color: #333; }
+.mm-seg-tab.active { color: #000; font-weight: 600; border-bottom-color: #000; }
+.mm-seg-count { font-size: 11px; color: #999; margin-left: 2px; }
+
+.mm-results-info {
+  padding: 4px 16px 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+/* Compact Row */
+.mm-compact-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #eee;
+}
+.mm-compact-thumb {
+  width: 52px;
+  height: 52px;
+  background: #eee;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.mm-compact-info { flex: 1; min-width: 0; }
+.mm-compact-info strong { font-size: 13px; color: #000; display: block; margin-bottom: 2px; }
+.mm-compact-action { text-align: right; flex-shrink: 0; }
+
+/* === OPTION 5: Feed Style === */
+.mm-feed-card {
+  border-bottom: 1px solid #eee;
+  margin-bottom: 4px;
+}
+.mm-feed-seller {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+}
+.mm-avatar {
+  width: 36px;
+  height: 36px;
+  background: #ccc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+.mm-feed-seller-info { flex: 1; }
+.mm-feed-seller-info strong { font-size: 14px; color: #000; }
+.mm-verified { font-size: 12px; color: #666; }
+.mm-feed-meta { font-size: 11px; color: #999; }
+.mm-feed-img { height: 160px; background: #eee; }
+.mm-feed-body { padding: 12px 16px; }
+.mm-feed-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.mm-feed-title-row strong { font-size: 15px; color: #000; }
+.mm-feed-desc { font-size: 13px; color: #666; margin: 0 0 10px; line-height: 1.4; }
+.mm-feed-actions { display: flex; gap: 8px; }
+
+/* Recommend Chips */
+.mm-recommend-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mm-recommend-chip:hover { background: #eee; }
+.mm-rec-thumb { width: 32px; height: 32px; background: #eee; border-radius: 6px; flex-shrink: 0; }
+
+/* Bottom Tab Bar */
+.mm-tab-bar {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 6px 0 8px;
+  border-top: 1px solid #eee;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+}
+.mm-tab-item {
+  text-align: center;
+  font-size: 16px;
+  color: #999;
+  cursor: pointer;
+  line-height: 1.2;
+}
+.mm-tab-item span { font-size: 10px; display: block; margin-top: 2px; }
+.mm-tab-item.active { color: #000; }
+
+/* Summary Table */
+.mm-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.mm-summary-table th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 2px solid #000;
+  font-weight: 600;
+  color: #000;
+}
+.mm-summary-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+.mm-recommended { background: #eee; }
+.mm-recommendation {
+  padding: 14px 16px;
+  background: #eee;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+}

@@ -1,0 +1,225 @@
+/* Option 5: Feed Style — Clean & Polished variants */
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap');
+
+/* ── Hide wireframe markers in color variants ── */
+#frame-opt5.clean .wf-marker,
+#frame-opt5.polished .wf-marker { display: none; }
+
+/* ══════════════════════════════════════════════
+   CLEAN — Nepally palette, system fonts, solid fills
+   ══════════════════════════════════════════════ */
+
+/* Browser chrome */
+#frame-opt5.clean .browser-chrome { background: #edf4fc; border-bottom-color: rgba(0,64,139,0.1); }
+#frame-opt5.clean .browser-dots span:nth-child(1) { background: #ff5f57; }
+#frame-opt5.clean .browser-dots span:nth-child(2) { background: #febc2e; }
+#frame-opt5.clean .browser-dots span:nth-child(3) { background: #28c840; }
+#frame-opt5.clean .browser-url { border-color: rgba(0,64,139,0.12); color: #5f6368; }
+
+/* Content area */
+#frame-opt5.clean .browser-content { background: #f7f9fb; }
+
+/* Header */
+#frame-opt5.clean .mp-title { color: #00408b; }
+
+/* Primary button */
+#frame-opt5.clean .mp-btn-primary {
+  background: #1565C0; color: #fff;
+  transition: background 150ms ease-out;
+}
+#frame-opt5.clean .mp-btn-primary:hover { background: #104D99; }
+
+/* Outline button */
+#frame-opt5.clean .mp-btn-outline {
+  border-color: rgba(0,64,139,0.18); color: #1565C0;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+#frame-opt5.clean .mp-btn-outline:hover { background: #e3f2fd; border-color: #1565C0; }
+
+/* Category pills */
+#frame-opt5.clean .mp-pill { border-color: rgba(0,64,139,0.15); color: #5f6368; transition: background 150ms ease-out; }
+#frame-opt5.clean .mp-pill:hover { background: #e3f2fd; color: #1565C0; }
+#frame-opt5.clean .mp-pill.active { background: #1565C0; color: #fff; border-color: #1565C0; }
+
+/* Feed card */
+#frame-opt5.clean .mp-feed-card {
+  background: #fff; border-color: rgba(0,64,139,0.08);
+  box-shadow: 0 1px 3px rgba(0,64,139,0.04);
+  transition: box-shadow 150ms ease-out;
+}
+#frame-opt5.clean .mp-feed-card:hover { box-shadow: 0 4px 12px rgba(0,64,139,0.08); }
+
+/* Avatar */
+#frame-opt5.clean .mp-avatar { background: #00408b; color: #fff; }
+
+/* Verified badge */
+#frame-opt5.clean .mp-verified-badge { color: #2E7D32; font-weight: 600; }
+
+/* Feed meta & description */
+#frame-opt5.clean .mp-feed-meta { color: #757575; }
+#frame-opt5.clean .mp-feed-title-row strong { color: #1A2332; }
+#frame-opt5.clean .mp-feed-desc { color: #5f6368; }
+
+/* Price */
+#frame-opt5.clean .mp-listing-price { color: #1565C0; font-weight: 700; }
+
+/* Feed image placeholder */
+#frame-opt5.clean .mp-feed-img { background: #e3f2fd; }
+
+/* Recommend section */
+#frame-opt5.clean .mp-section-title { color: #00408b; }
+#frame-opt5.clean .mp-recommend-chip {
+  border-color: rgba(0,64,139,0.12); color: #1A2332;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+#frame-opt5.clean .mp-recommend-chip:hover { background: #e3f2fd; border-color: #1565C0; }
+#frame-opt5.clean .mp-rec-thumb { background: #d6e8f7; }
+
+/* ══════════════════════════════════════════════
+   POLISHED — Google Font, gradients, shadows, motion
+   ══════════════════════════════════════════════ */
+
+/* Browser chrome */
+#frame-opt5.polished .browser-chrome {
+  background: linear-gradient(135deg, #f0f6ff 0%, #fefaf4 100%);
+  border-bottom-color: rgba(0,64,139,0.08);
+}
+#frame-opt5.polished .browser-dots span:nth-child(1) { background: #ff5f57; }
+#frame-opt5.polished .browser-dots span:nth-child(2) { background: #febc2e; }
+#frame-opt5.polished .browser-dots span:nth-child(3) { background: #28c840; }
+#frame-opt5.polished .browser-url { border-color: rgba(0,64,139,0.1); color: #6b5b4f; }
+
+/* Content area */
+#frame-opt5.polished .browser-content {
+  background: linear-gradient(180deg, #faf8f5 0%, #f5f0eb 100%);
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Header */
+#frame-opt5.polished .mp-title { color: #00408b; font-family: inherit; font-weight: 700; }
+
+/* Primary button */
+#frame-opt5.polished .mp-btn-primary {
+  background: linear-gradient(135deg, #1565C0, #1976D2);
+  color: #fff; font-family: inherit; font-weight: 600;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.25);
+  transition: box-shadow 200ms ease-out, background 200ms ease-out;
+}
+#frame-opt5.polished .mp-btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(21,101,192,0.35);
+}
+
+/* Outline button */
+#frame-opt5.polished .mp-btn-outline {
+  border-color: rgba(107,91,79,0.18); color: #6b5b4f; font-family: inherit;
+  transition: background 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+}
+#frame-opt5.polished .mp-btn-outline:hover {
+  background: #fff; border-color: #d4a574;
+  box-shadow: 0 2px 6px rgba(212,165,116,0.15);
+}
+
+/* Category pills */
+#frame-opt5.polished .mp-pill {
+  border-color: rgba(107,91,79,0.15); color: #6b5b4f; font-family: inherit;
+  transition: background 200ms ease-out, box-shadow 200ms ease-out, color 200ms ease-out;
+}
+#frame-opt5.polished .mp-pill:hover {
+  background: #fff; color: #00408b;
+  box-shadow: 0 2px 8px rgba(107,91,79,0.1);
+}
+#frame-opt5.polished .mp-pill.active {
+  background: linear-gradient(135deg, #1565C0, #1976D2);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.2);
+}
+
+/* Feed card */
+#frame-opt5.polished .mp-feed-card {
+  background: #fff; border-color: rgba(107,91,79,0.06);
+  box-shadow: 0 2px 8px rgba(107,91,79,0.08);
+  transition: box-shadow 200ms ease-out;
+}
+#frame-opt5.polished .mp-feed-card:hover {
+  box-shadow: 0 8px 24px rgba(107,91,79,0.12);
+}
+
+/* Avatar with warm accent */
+#frame-opt5.polished .mp-avatar {
+  background: linear-gradient(135deg, #00408b, #1565C0);
+  color: #fff; font-family: inherit;
+  box-shadow: 0 2px 6px rgba(0,64,139,0.2);
+}
+
+/* Verified badge */
+#frame-opt5.polished .mp-verified-badge { color: #2E7D32; font-weight: 700; }
+
+/* Feed meta & text */
+#frame-opt5.polished .mp-feed-seller strong { font-family: inherit; color: #1a1a1a; }
+#frame-opt5.polished .mp-feed-meta { color: #6b5b4f; font-family: inherit; }
+#frame-opt5.polished .mp-feed-title-row strong { color: #1a1a1a; font-family: inherit; }
+#frame-opt5.polished .mp-feed-desc { color: #6b5b4f; font-family: inherit; }
+
+/* Price with orange accent */
+#frame-opt5.polished .mp-listing-price { color: #F7941D; font-weight: 700; font-family: inherit; }
+
+/* Feed image placeholder — warm tint */
+#frame-opt5.polished .mp-feed-img { background: linear-gradient(135deg, #e8f0fa 0%, #fde7c7 100%); }
+
+/* Decorative accent on feed card — warm left border */
+#frame-opt5.polished .mp-feed-card::before {
+  content: '';
+  position: absolute;
+  top: 12px; bottom: 12px; left: 0; width: 3px;
+  background: linear-gradient(180deg, #F7941D, #d4a574);
+  border-radius: 0 3px 3px 0;
+}
+#frame-opt5.polished .mp-feed-card { position: relative; }
+
+/* Recommend section */
+#frame-opt5.polished .mp-section-title { color: #00408b; font-family: inherit; font-weight: 700; }
+#frame-opt5.polished .mp-recommend-chip {
+  border-color: rgba(107,91,79,0.1); color: #1a1a1a; font-family: inherit;
+  transition: background 200ms ease-out, box-shadow 200ms ease-out;
+}
+#frame-opt5.polished .mp-recommend-chip:hover {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(107,91,79,0.1);
+}
+#frame-opt5.polished .mp-rec-thumb {
+  background: linear-gradient(135deg, #e3f2fd, #fde7c7);
+}
+
+/* Polished decorative: subtle dot accent on recommend section title */
+#frame-opt5.polished .mp-recommend-section .mp-section-title::after {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: #F7941D;
+  border-radius: 50%;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ── Staggered entrance animation (Polished only) ── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes opt5FadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  #frame-opt5.polished .mp-cat-pills { animation: opt5FadeUp 200ms ease-out both; }
+  #frame-opt5.polished .mp-feed-card:nth-child(1) { animation: opt5FadeUp 200ms ease-out 50ms both; }
+  #frame-opt5.polished .mp-feed-card:nth-child(2) { animation: opt5FadeUp 200ms ease-out 100ms both; }
+  #frame-opt5.polished .mp-recommend-section { animation: opt5FadeUp 200ms ease-out 150ms both; }
+}
+
+/* ══════════════════════════════════════════════
+   Self-reveal tab coloring (N=5)
+   ══════════════════════════════════════════════ */
+#frame-opt5-tabs .sub-tab-badge { display: none; }
+#frame-opt5-tabs .sub-tab-btn[data-variant="clean"] { color: #64B5F6; }
+#frame-opt5-tabs .sub-tab-btn[data-variant="clean"]:hover { color: #1E88E5; }
+#frame-opt5-tabs .sub-tab-btn[data-variant="clean"].active { color: #1565C0; border-bottom-color: #1565C0; }
+#frame-opt5-tabs .sub-tab-btn[data-variant="polished"] { color: #81C784; }
+#frame-opt5-tabs .sub-tab-btn[data-variant="polished"]:hover { color: #43A047; }
+#frame-opt5-tabs .sub-tab-btn[data-variant="polished"].active { color: #2E7D32; border-bottom-color: #2E7D32; }
