@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace Mobile — 0304 Wireframes</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-opt1.css">
+  <link rel="stylesheet" href="styles-opt2.css">
+  <link rel="stylesheet" href="styles-opt3.css">
+  <link rel="stylesheet" href="styles-opt4.css">
+  <link rel="stylesheet" href="styles-opt5.css">
+</head>
+<body>
+
+<div class="completion-banner" id="completion-banner" style="display:none;">
+  ✦ Visual designs complete — all options now have Clean + Polished variants
+  <button onclick="this.parentElement.style.display='none'" style="float:right;background:none;border:none;cursor:pointer;font-size:16px;">×</button>
+</div>
+
+<div class="page-wrapper">
+
+  <div class="title-bar">
+    <span><span id="feature-name">Marketplace Mobile</span> — <span id="project-name">Nepally</span></span>
+    <span class="rec">★ Recommended: Option <span id="rec-number">3</span></span>
+  </div>
+
+  <nav class="main-tabs">
+    <button class="tab-btn active" data-tab="option-1">1: Classic Grid</button>
+    <button class="tab-btn" data-tab="option-2">2: Search Hero</button>
+    <button class="tab-btn" data-tab="option-3">3: Visual Cards</button>
+    <button class="tab-btn" data-tab="option-4">4: Tab Filter</button>
+    <button class="tab-btn" data-tab="option-5">5: Feed Style</button>
+    <button class="tab-btn" data-tab="summary">Summary</button>
+  </nav>
+
+  <!-- ===== OPTION 1 ===== -->
+  <div class="option-panel active" id="option-1">
+    <h2>Option 1: <span class="opt-name">Classic Grid</span></h2>
+    <p class="option-description">Mirrors the existing Nepally mobile patterns — search bar, scrollable category chips, and listing cards in a vertical scroll with bottom tab bar.</p>
+    <div class="sub-tab-bar" id="frame-opt1-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch1"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch1)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint1"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint1)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond1"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond1)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame mobile-frame wireframe" id="frame-opt1">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">nepally.us/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <!-- Status Bar -->
+        <div class="mm-status-bar">
+          <span>9:41</span>
+          <span class="mm-status-icons">● ● ●</span>
+        </div>
+        <!-- Nav Header -->
+        <div class="mm-nav-header">
+          <span class="mm-nav-title">Marketplace</span>
+          <span class="mm-nav-icon">&#9906;</span>
+        </div>
+        <!-- Search -->
+        <div class="mm-search-bar">
+          <span class="mm-search-icon">&#128269;</span>
+          <span class="mm-search-placeholder">Search marketplace...</span>
+        </div>
+        <!-- Category Chips -->
+        <div class="mm-chip-row">
+          <span class="mm-chip active">All</span>
+          <span class="mm-chip">&#127837; Food</span>
+          <span class="mm-chip">&#9878; Legal</span>
+          <span class="mm-chip">&#128188; Services</span>
+          <span class="mm-chip">&#128176; Finance</span>
+        </div>
+        <!-- Section Title -->
+        <div class="mm-section-header">
+          <span class="mm-section-title">Recently Added <span class="wf-marker">&#9312;</span></span>
+        </div>
+        <!-- Listing Cards -->
+        <div class="mm-listing-card">
+          <div class="mm-listing-thumb"></div>
+          <div class="mm-listing-info">
+            <strong>Get Prettified with Neeha</strong>
+            <span class="mm-badge">Professional Services</span>
+            <div class="mm-listing-price">Starting at $150</div>
+            <div class="mm-listing-meta">11 views &middot; 0 saves</div>
+          </div>
+        </div>
+        <div class="mm-listing-card">
+          <div class="mm-listing-thumb"></div>
+          <div class="mm-listing-info">
+            <strong>Himalayan Kitchen Catering</strong>
+            <span class="mm-badge">Food &amp; Restaurants</span>
+            <div class="mm-listing-price">Starting at $200</div>
+            <div class="mm-listing-meta">8 views &middot; 2 saves</div>
+          </div>
+        </div>
+        <div class="mm-listing-card">
+          <div class="mm-listing-thumb"></div>
+          <div class="mm-listing-info">
+            <strong>Nepali Tax &amp; Accounting</strong>
+            <span class="mm-badge">Remittance &amp; Finance</span>
+            <div class="mm-listing-price">Starting at $75</div>
+            <div class="mm-listing-meta">15 views &middot; 4 saves</div>
+          </div>
+        </div>
+        <!-- FAB -->
+        <div class="mm-fab">+ <span class="wf-marker">&#9313;</span></div>
+        <!-- Bottom Tab Bar -->
+        <div class="mm-tab-bar">
+          <div class="mm-tab-item">&#9750;<br><span>Home</span></div>
+          <div class="mm-tab-item">&#9998;<br><span>Post</span></div>
+          <div class="mm-tab-item">&#128197;<br><span>Events</span></div>
+          <div class="mm-tab-item active">&#128722;<br><span>Marketplace</span></div>
+          <div class="mm-tab-item">&#128100;<br><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Horizontal scrollable category chips match the existing mobile pattern. Familiar but passive — users must scroll vertically to discover listings.</li>
+        <li>&#9313; FAB (Floating Action Button) for "Create Listing" keeps the CTA always accessible without cluttering the header. Consistent with mobile OS conventions.</li>
+        <li>&#9314; Bottom tab bar with Marketplace active tab mirrors the existing 5-tab navigation structure.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION 2 ===== -->
+  <div class="option-panel" id="option-2">
+    <h2>Option 2: <span class="opt-name">Search Hero</span></h2>
+    <p class="option-description">Full-screen search hero with trending tags and swipeable featured cards drives immediate high-intent action on mobile.</p>
+    <div class="sub-tab-bar" id="frame-opt2-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch2"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch2)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint2"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint2)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond2"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond2)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame mobile-frame wireframe" id="frame-opt2">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">nepally.us/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mm-status-bar">
+          <span>9:41</span>
+          <span class="mm-status-icons">● ● ●</span>
+        </div>
+        <div class="mm-nav-header">
+          <span class="mm-nav-title">Marketplace</span>
+        </div>
+        <!-- Hero Search -->
+        <div class="mm-hero-section">
+          <div class="mm-hero-heading">Find Nepali services near you <span class="wf-marker">&#9312;</span></div>
+          <div class="mm-hero-search-bar">
+            <span class="mm-search-icon">&#128269;</span>
+            <span class="mm-search-placeholder">Try "catering", "tax help"...</span>
+          </div>
+          <div class="mm-trending">
+            <span class="mm-trending-label">Trending:</span>
+            <a href="#" class="mm-trending-tag">Momo Catering</a>
+            <a href="#" class="mm-trending-tag">Tax Filing</a>
+            <a href="#" class="mm-trending-tag">Bridal Makeup</a>
+          </div>
+        </div>
+        <!-- Featured Section -->
+        <div class="mm-section-header">
+          <span class="mm-section-title">&#9733; Featured</span>
+          <a href="#" class="mm-see-all">See all</a>
+        </div>
+        <div class="mm-horizontal-scroll">
+          <div class="mm-featured-card">
+            <div class="mm-featured-img"></div>
+            <div class="mm-featured-body">
+              <strong>Get Prettified with Neeha</strong>
+              <span class="mm-badge">Professional Services</span>
+              <div class="mm-listing-price">$150+</div>
+              <div class="mm-social-proof">&#9733; Verified &middot; 11 views</div>
+              <button class="mm-btn-primary mm-btn-full">Contact Seller <span class="wf-marker">&#9313;</span></button>
+            </div>
+          </div>
+          <div class="mm-featured-card">
+            <div class="mm-featured-img"></div>
+            <div class="mm-featured-body">
+              <strong>Himalayan Kitchen</strong>
+              <span class="mm-badge">Food &amp; Restaurants</span>
+              <div class="mm-listing-price">$200+</div>
+              <div class="mm-social-proof">&#9733; Verified &middot; 8 views</div>
+              <button class="mm-btn-primary mm-btn-full">Contact Seller</button>
+            </div>
+          </div>
+        </div>
+        <!-- CTA Banner -->
+        <div class="mm-cta-banner">
+          <span>Have a service to offer?</span>
+          <button class="mm-btn-primary">+ Create Listing</button>
+        </div>
+        <!-- Bottom Tab Bar -->
+        <div class="mm-tab-bar">
+          <div class="mm-tab-item">&#9750;<br><span>Home</span></div>
+          <div class="mm-tab-item">&#9998;<br><span>Post</span></div>
+          <div class="mm-tab-item">&#128197;<br><span>Events</span></div>
+          <div class="mm-tab-item active">&#128722;<br><span>Marketplace</span></div>
+          <div class="mm-tab-item">&#128100;<br><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Hero search dominates the viewport — on mobile, this creates a strong "search-first" mental model. Trending tags below provide one-tap discovery fallback.</li>
+        <li>&#9313; Horizontally scrollable featured cards with inline "Contact Seller" CTA convert passive scrollers. Swipe gesture feels native on mobile.</li>
+        <li>&#9314; CTA banner at bottom catches users who scroll past featured — secondary conversion opportunity before tab bar.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION 3 ===== -->
+  <div class="option-panel" id="option-3">
+    <h2>Option 3: <span class="opt-name">Visual Cards</span></h2>
+    <p class="option-description">Full-width image cards with overlay badges, social proof, and prominent contact CTAs optimized for thumb-friendly mobile interaction.</p>
+    <div class="sub-tab-bar" id="frame-opt3-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch3"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch3)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint3"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint3)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond3"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond3)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame mobile-frame wireframe" id="frame-opt3">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">nepally.us/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mm-status-bar">
+          <span>9:41</span>
+          <span class="mm-status-icons">● ● ●</span>
+        </div>
+        <div class="mm-nav-header">
+          <span class="mm-nav-title">Marketplace</span>
+          <span class="mm-nav-icon">&#9906;</span>
+        </div>
+        <!-- Filter Bar -->
+        <div class="mm-filter-bar">
+          <div class="mm-filter-select">All Categories &#9660;</div>
+          <div class="mm-filter-select">Newest &#9660;</div>
+        </div>
+        <!-- Visual Card 1 -->
+        <div class="mm-vcard">
+          <div class="mm-vcard-img">
+            <span class="mm-vcard-badge-top">&#9733; Featured</span>
+            <span class="mm-vcard-save">&#9776;</span>
+          </div>
+          <div class="mm-vcard-body">
+            <div class="mm-vcard-row">
+              <strong>Get Prettified with Neeha</strong>
+              <span class="mm-listing-price">$150+</span>
+            </div>
+            <span class="mm-badge">Professional Services</span>
+            <div class="mm-social-proof">&#10003; Verified &middot; 11 views &middot; 1 contact <span class="wf-marker">&#9312;</span></div>
+            <button class="mm-btn-primary mm-btn-full">Contact Seller</button>
+          </div>
+        </div>
+        <!-- Visual Card 2 -->
+        <div class="mm-vcard">
+          <div class="mm-vcard-img"></div>
+          <div class="mm-vcard-body">
+            <div class="mm-vcard-row">
+              <strong>Himalayan Kitchen Catering</strong>
+              <span class="mm-listing-price">$200+</span>
+            </div>
+            <span class="mm-badge">Food &amp; Restaurants</span>
+            <div class="mm-social-proof">&#10003; Verified &middot; 8 views &middot; 2 contacts</div>
+            <button class="mm-btn-primary mm-btn-full">Contact Seller <span class="wf-marker">&#9313;</span></button>
+          </div>
+        </div>
+        <!-- Visual Card 3 -->
+        <div class="mm-vcard">
+          <div class="mm-vcard-img"></div>
+          <div class="mm-vcard-body">
+            <div class="mm-vcard-row">
+              <strong>Nepali Tax &amp; Accounting</strong>
+              <span class="mm-listing-price">$75+</span>
+            </div>
+            <span class="mm-badge">Remittance &amp; Finance</span>
+            <div class="mm-social-proof">&#10003; Verified &middot; 15 views &middot; 4 contacts</div>
+            <button class="mm-btn-primary mm-btn-full">Contact Seller</button>
+          </div>
+        </div>
+        <!-- CTA -->
+        <div class="mm-cta-banner">
+          <span>List your service for free</span>
+          <button class="mm-btn-primary">+ Create</button>
+        </div>
+        <!-- Bottom Tab Bar -->
+        <div class="mm-tab-bar">
+          <div class="mm-tab-item">&#9750;<br><span>Home</span></div>
+          <div class="mm-tab-item">&#9998;<br><span>Post</span></div>
+          <div class="mm-tab-item">&#128197;<br><span>Events</span></div>
+          <div class="mm-tab-item active">&#128722;<br><span>Marketplace</span></div>
+          <div class="mm-tab-item">&#128100;<br><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Social proof line (verified + views + contacts) drives urgency on mobile where attention is fleeting — "others are contacting this seller" creates FOMO.</li>
+        <li>&#9313; Full-width "Contact Seller" CTA on every card is thumb-friendly (48px+ touch target) and eliminates the need to open detail pages for conversion.</li>
+        <li>&#9314; Filter dropdowns at top keep category browsing accessible without consuming vertical space like a chip row.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION 4 ===== -->
+  <div class="option-panel" id="option-4">
+    <h2>Option 4: <span class="opt-name">Tab Filter</span></h2>
+    <p class="option-description">Sticky top tabs replace sidebar navigation — users swipe between category views with results count and compact listing rows.</p>
+    <div class="sub-tab-bar" id="frame-opt4-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch4"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch4)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint4"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint4)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond4"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond4)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame mobile-frame wireframe" id="frame-opt4">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">nepally.us/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mm-status-bar">
+          <span>9:41</span>
+          <span class="mm-status-icons">● ● ●</span>
+        </div>
+        <div class="mm-nav-header">
+          <span class="mm-nav-title">Marketplace</span>
+          <span class="mm-nav-icon">&#9906;</span>
+        </div>
+        <!-- Search -->
+        <div class="mm-search-bar">
+          <span class="mm-search-icon">&#128269;</span>
+          <span class="mm-search-placeholder">Search listings...</span>
+        </div>
+        <!-- Segmented Category Tabs -->
+        <div class="mm-seg-tabs">
+          <span class="mm-seg-tab active">All <span class="mm-seg-count">4</span></span>
+          <span class="mm-seg-tab">Food <span class="mm-seg-count">1</span></span>
+          <span class="mm-seg-tab">Legal <span class="mm-seg-count">1</span></span>
+          <span class="mm-seg-tab">Services <span class="mm-seg-count">1</span></span>
+          <span class="mm-seg-tab">Finance <span class="mm-seg-count">1</span></span>
+        </div>
+        <!-- Results Info -->
+        <div class="mm-results-info">4 listings in Atlanta <span class="wf-marker">&#9312;</span></div>
+        <!-- Compact Listing Rows -->
+        <div class="mm-compact-row">
+          <div class="mm-compact-thumb"></div>
+          <div class="mm-compact-info">
+            <strong>Get Prettified with Neeha</strong>
+            <span class="mm-badge">Professional Services</span>
+            <div class="mm-social-proof">&#10003; Verified &middot; 11 views</div>
+          </div>
+          <div class="mm-compact-action">
+            <div class="mm-listing-price">$150+</div>
+            <button class="mm-btn-sm">Contact <span class="wf-marker">&#9313;</span></button>
+          </div>
+        </div>
+        <div class="mm-compact-row">
+          <div class="mm-compact-thumb"></div>
+          <div class="mm-compact-info">
+            <strong>Himalayan Kitchen</strong>
+            <span class="mm-badge">Food &amp; Restaurants</span>
+            <div class="mm-social-proof">&#10003; Verified &middot; 8 views</div>
+          </div>
+          <div class="mm-compact-action">
+            <div class="mm-listing-price">$200+</div>
+            <button class="mm-btn-sm">Contact</button>
+          </div>
+        </div>
+        <div class="mm-compact-row">
+          <div class="mm-compact-thumb"></div>
+          <div class="mm-compact-info">
+            <strong>Nepali Tax &amp; Accounting</strong>
+            <span class="mm-badge">Remittance &amp; Finance</span>
+            <div class="mm-social-proof">&#10003; Verified &middot; 15 views</div>
+          </div>
+          <div class="mm-compact-action">
+            <div class="mm-listing-price">$75+</div>
+            <button class="mm-btn-sm">Contact</button>
+          </div>
+        </div>
+        <div class="mm-compact-row">
+          <div class="mm-compact-thumb"></div>
+          <div class="mm-compact-info">
+            <strong>Visa &amp; Green Card Help</strong>
+            <span class="mm-badge">Immigration &amp; Legal</span>
+            <div class="mm-social-proof">&#10003; Verified &middot; 22 views</div>
+          </div>
+          <div class="mm-compact-action">
+            <div class="mm-listing-price">$300+</div>
+            <button class="mm-btn-sm">Contact</button>
+          </div>
+        </div>
+        <!-- Sidebar CTA -->
+        <div class="mm-cta-banner">
+          <span>Free for verified members</span>
+          <button class="mm-btn-primary">+ Create Listing</button>
+        </div>
+        <!-- Bottom Tab Bar -->
+        <div class="mm-tab-bar">
+          <div class="mm-tab-item">&#9750;<br><span>Home</span></div>
+          <div class="mm-tab-item">&#9998;<br><span>Post</span></div>
+          <div class="mm-tab-item">&#128197;<br><span>Events</span></div>
+          <div class="mm-tab-item active">&#128722;<br><span>Marketplace</span></div>
+          <div class="mm-tab-item">&#128100;<br><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Results count with metro name ("4 listings in Atlanta") reinforces local relevance — users know these are nearby services. Category tabs with counts provide at-a-glance information scent.</li>
+        <li>&#9313; Compact row layout with inline "Contact" button fits more listings above the fold — critical on mobile where every pixel matters for conversion.</li>
+        <li>&#9314; Horizontal scrollable segmented tabs replace the desktop sidebar, maintaining filter functionality in a mobile-native pattern (similar to iOS segment control).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION 5 ===== -->
+  <div class="option-panel" id="option-5">
+    <h2>Option 5: <span class="opt-name">Feed Style</span></h2>
+    <p class="option-description">Social-media-style vertical feed with seller avatars, full-width images, and action buttons to drive organic discovery and trust.</p>
+    <div class="sub-tab-bar" id="frame-opt5-tabs">
+      <button class="sub-tab-btn active" data-variant="wireframe" data-frame="frame-opt5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTsketch5"><g fill="#555" stroke="#fff" stroke-linejoin="round" stroke-width="4"><rect width="36" height="36" x="6" y="6" rx="3"/><path stroke-linecap="round" d="M18.6 16h10.8l3.6 4.706L24 32l-9-11.294z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTsketch5)"/></svg>
+        <span class="sub-tab-label">Wireframe</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="clean" data-frame="frame-opt5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTpaint5"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="m15.536 22.898l9.899 9.9m-9.899-9.9L7.05 31.383a7 7 0 1 0 9.9 9.9l8.485-8.486m-9.899 0l-4.243 4.243"/><path fill="#555" d="m25.435 32.797l14.907-6.432c2.688-1.16 3.809-4.379 2.086-6.745C38.264 13.903 32.65 8.89 28.51 5.823c-2.29-1.696-5.33-.64-6.46 1.975l-6.514 15.1z"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTpaint5)"/></svg>
+        <span class="sub-tab-label">Clean</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+      <button class="sub-tab-btn" data-variant="polished" data-frame="frame-opt5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48"><defs><mask id="ipTdiamond5"><path fill="#555" stroke="#fff" stroke-width="4" d="M5.939 13.934L23.036 4.53a2 2 0 0 1 1.928 0l17.097 9.404a2 2 0 0 1 .683 2.888l-17.098 24.79a2 2 0 0 1-3.292 0L5.256 16.823a2 2 0 0 1 .683-2.888Z"/></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTdiamond5)"/></svg>
+        <span class="sub-tab-label">Polished</span>
+        <span class="sub-tab-badge">generating...</span>
+      </button>
+    </div>
+    <div class="browser-frame mobile-frame wireframe" id="frame-opt5">
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">nepally.us/marketplace</div>
+        <div class="browser-controls">─ □ ✕</div>
+      </div>
+      <div class="browser-content">
+        <div class="mm-status-bar">
+          <span>9:41</span>
+          <span class="mm-status-icons">● ● ●</span>
+        </div>
+        <div class="mm-nav-header">
+          <span class="mm-nav-title">Marketplace</span>
+          <span class="mm-nav-icon">+</span>
+        </div>
+        <!-- Category Pills -->
+        <div class="mm-chip-row">
+          <span class="mm-chip active">For You</span>
+          <span class="mm-chip">Food</span>
+          <span class="mm-chip">Legal</span>
+          <span class="mm-chip">Services</span>
+          <span class="mm-chip">Finance</span>
+        </div>
+        <!-- Feed Card 1 -->
+        <div class="mm-feed-card">
+          <div class="mm-feed-seller">
+            <div class="mm-avatar">NP</div>
+            <div class="mm-feed-seller-info">
+              <strong>Neeha Pandey</strong> <span class="mm-verified">&#10003;</span>
+              <div class="mm-feed-meta">Professional Services &middot; 3d ago</div>
+            </div>
+          </div>
+          <div class="mm-feed-img"></div>
+          <div class="mm-feed-body">
+            <div class="mm-feed-title-row">
+              <strong>Get Prettified with Neeha</strong>
+              <span class="mm-listing-price">$150+</span>
+            </div>
+            <p class="mm-feed-desc">Bridal and event makeup by certified artist. Serving Atlanta metro. <span class="wf-marker">&#9312;</span></p>
+            <div class="mm-feed-actions">
+              <button class="mm-btn-primary">Contact</button>
+              <button class="mm-btn-outline">Save</button>
+              <button class="mm-btn-outline">Share</button>
+            </div>
+          </div>
+        </div>
+        <!-- Feed Card 2 -->
+        <div class="mm-feed-card">
+          <div class="mm-feed-seller">
+            <div class="mm-avatar">RK</div>
+            <div class="mm-feed-seller-info">
+              <strong>Ram Karki</strong> <span class="mm-verified">&#10003;</span>
+              <div class="mm-feed-meta">Food &amp; Restaurants &middot; 1w ago</div>
+            </div>
+          </div>
+          <div class="mm-feed-img"></div>
+          <div class="mm-feed-body">
+            <div class="mm-feed-title-row">
+              <strong>Himalayan Kitchen Catering</strong>
+              <span class="mm-listing-price">$200+</span>
+            </div>
+            <p class="mm-feed-desc">Authentic Nepali and Indian catering. Momo, dal bhat, biryani, and more. <span class="wf-marker">&#9313;</span></p>
+            <div class="mm-feed-actions">
+              <button class="mm-btn-primary">Contact</button>
+              <button class="mm-btn-outline">Save</button>
+              <button class="mm-btn-outline">Share</button>
+            </div>
+          </div>
+        </div>
+        <!-- Popular Section -->
+        <div class="mm-section-header">
+          <span class="mm-section-title">Popular in Atlanta</span>
+        </div>
+        <div class="mm-horizontal-scroll">
+          <div class="mm-recommend-chip">
+            <div class="mm-rec-thumb"></div>
+            <span>Nepali Tax Help</span>
+          </div>
+          <div class="mm-recommend-chip">
+            <div class="mm-rec-thumb"></div>
+            <span>Visa Consultation</span>
+          </div>
+          <div class="mm-recommend-chip">
+            <div class="mm-rec-thumb"></div>
+            <span>Bridal Makeup</span>
+          </div>
+        </div>
+        <!-- Bottom Tab Bar -->
+        <div class="mm-tab-bar">
+          <div class="mm-tab-item">&#9750;<br><span>Home</span></div>
+          <div class="mm-tab-item">&#9998;<br><span>Post</span></div>
+          <div class="mm-tab-item">&#128197;<br><span>Events</span></div>
+          <div class="mm-tab-item active">&#128722;<br><span>Marketplace</span></div>
+          <div class="mm-tab-item">&#128100;<br><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <h3>UX Notes</h3>
+      <ul>
+        <li>&#9312; Feed-style listing descriptions encourage scrolling — users consume listings like Instagram/social posts, increasing time on page and organic contact conversion.</li>
+        <li>&#9313; Seller avatar + name + verification builds personal trust on mobile where screen intimacy is higher — users feel connected to a person, not just a listing.</li>
+        <li>&#9314; "Popular in Atlanta" horizontal recommendation carousel at bottom drives further exploration with a native-feeling swipe gesture.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY ===== -->
+  <div class="option-panel" id="summary">
+    <h2>Summary — Optimizing for Conversions (Mobile)</h2>
+    <table class="mm-summary-table">
+      <thead>
+        <tr><th>Option</th><th>Mobile Approach</th><th>Conversion Score</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1: Classic Grid</strong></td><td>Existing layout — chips + list + FAB</td><td>&#9733;&#9733;&#9734;&#9734;&#9734;</td></tr>
+        <tr><td><strong>2: Search Hero</strong></td><td>Hero search + swipeable featured cards</td><td>&#9733;&#9733;&#9733;&#9733;&#9734;</td></tr>
+        <tr class="mm-recommended"><td><strong>3: Visual Cards &#9733;</strong></td><td>Full-width cards + inline CTAs + social proof</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td></tr>
+        <tr><td><strong>4: Tab Filter</strong></td><td>Segmented tabs + compact rows + inline contact</td><td>&#9733;&#9733;&#9733;&#9733;&#9734;</td></tr>
+        <tr><td><strong>5: Feed Style</strong></td><td>Social feed + seller profiles + recommendations</td><td>&#9733;&#9733;&#9733;&#9734;&#9734;</td></tr>
+      </tbody>
+    </table>
+    <div class="mm-recommendation">
+      <strong>Recommendation: Option 3 (Visual Cards)</strong> — Full-width image cards with social proof ("11 views, 1 contact") and prominent "Contact Seller" CTAs create the shortest path from browse to action on mobile. The thumb-friendly 48px+ tap targets and stacked card layout maximize conversion in a single-hand scrolling context. Filter dropdowns keep category browsing accessible without consuming precious vertical real estate.
+    </div>
+  </div>
+
+</div>
+
+<footer class="skill-footer">
+  This design was crafted by the <a href="https://github.com/Magdoub/claude-wireframe-skill">Wireframe skill</a> — follow on GitHub
+</footer>
+
+<script>
+(function() {
+  // Main tab switching
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  var panels = document.querySelectorAll('.option-panel');
+  tabBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      tabBtns.forEach(function(b) { b.classList.remove('active'); });
+      panels.forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var target = document.getElementById(btn.dataset.tab);
+      if (target) target.classList.add('active');
+    });
+  });
+
+  // Sub-tab switching
+  var subBtns = document.querySelectorAll('.sub-tab-btn');
+  subBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var frameId = btn.dataset.frame;
+      var siblings = btn.parentElement.querySelectorAll('.sub-tab-btn');
+      siblings.forEach(function(s) { s.classList.remove('active'); });
+      btn.classList.add('active');
+      var frame = document.getElementById(frameId);
+      if (frame) {
+        frame.classList.remove('wireframe', 'clean', 'polished');
+        frame.classList.add(btn.dataset.variant);
+      }
+    });
+  });
+
+  // Completion banner — one-time load check
+  window.addEventListener('load', function() {
+    var badges = document.querySelectorAll('.sub-tab-badge');
+    var anyVisible = false;
+    badges.forEach(function(b) {
+      if (getComputedStyle(b).display !== 'none') anyVisible = true;
+    });
+    if (!anyVisible && badges.length > 0) {
+      var banner = document.getElementById('completion-banner');
+      if (banner) {
+        banner.style.display = 'block';
+        setTimeout(function() { banner.style.display = 'none'; }, 8000);
+      }
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

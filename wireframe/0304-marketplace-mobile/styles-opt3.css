@@ -1,0 +1,117 @@
+/* ============================================
+   Option 3: Visual Cards — Clean + Polished
+   Brand: #1565C0 / #00408b / #F7941D / #2E7D32
+   Budget: <=200 lines
+   ============================================ */
+
+/* --- CLEAN VARIANT --- */
+
+/* Browser chrome */
+.clean#frame-opt3 .browser-dots span:nth-child(1) { background: #e8b4b8; }
+.clean#frame-opt3 .browser-dots span:nth-child(2) { background: #e8dbb4; }
+.clean#frame-opt3 .browser-dots span:nth-child(3) { background: #b4d8b0; }
+.clean#frame-opt3 .browser-chrome { background: #f8f9fb; border-color: rgba(0,64,139,0.08); }
+.clean#frame-opt3 .browser-url { color: #5f6368; }
+
+/* Status bar & nav */
+.clean#frame-opt3 .mm-nav-title { color: #1A2332; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.clean#frame-opt3 .mm-nav-icon { color: #1565C0; }
+
+/* Filter bar */
+.clean#frame-opt3 .mm-filter-select { border-color: rgba(0,64,139,0.12); color: #1A2332; background: #fff; }
+
+/* Visual cards */
+.clean#frame-opt3 .mm-vcard { border-color: rgba(0,64,139,0.08); box-shadow: 0 1px 3px rgba(0,64,139,0.04), 0 1px 2px rgba(0,64,139,0.03); }
+.clean#frame-opt3 .mm-vcard-img { background: #e8edf3; }
+.clean#frame-opt3 .mm-vcard-badge-top { background: #fff; border-color: rgba(0,64,139,0.10); color: #F7941D; font-weight: 600; }
+.clean#frame-opt3 .mm-vcard-save { border-color: rgba(0,64,139,0.10); background: #fff; color: #5f6368; }
+.clean#frame-opt3 .mm-vcard-row strong { color: #1A2332; font-weight: 600; }
+.clean#frame-opt3 .mm-listing-price { color: #1565C0; font-weight: 600; }
+
+/* Badges */
+.clean#frame-opt3 .mm-badge { background: #E3F2FD; color: #1565C0; }
+
+/* Social proof */
+.clean#frame-opt3 .mm-social-proof { color: #2E7D32; }
+
+/* Buttons */
+.clean#frame-opt3 .mm-btn-primary { background: #1565C0; color: #fff; transition: background 150ms ease-out; }
+.clean#frame-opt3 .mm-btn-primary:hover { background: #104D99; }
+
+/* CTA banner */
+.clean#frame-opt3 .mm-cta-banner { background: #f0f4f9; color: #1A2332; border-color: rgba(0,64,139,0.06); }
+
+/* Tab bar */
+.clean#frame-opt3 .mm-tab-bar { border-color: rgba(0,64,139,0.06); background: #fff; }
+.clean#frame-opt3 .mm-tab-item { color: #9aa0a6; }
+.clean#frame-opt3 .mm-tab-item.active { color: #1565C0; }
+
+/* Hide wireframe markers */
+.clean#frame-opt3 .wf-marker { border-color: transparent; background: transparent; color: transparent; }
+
+
+/* --- POLISHED VARIANT --- */
+
+/* Browser chrome */
+.polished#frame-opt3 .browser-dots span:nth-child(1) { background: #FF5F57; }
+.polished#frame-opt3 .browser-dots span:nth-child(2) { background: #FFBD2E; }
+.polished#frame-opt3 .browser-dots span:nth-child(3) { background: #27C93F; }
+.polished#frame-opt3 .browser-chrome { background: #f7f9fb; border-color: rgba(0,64,139,0.10); }
+.polished#frame-opt3 .browser-url { color: #5f6368; }
+
+/* Status bar & nav */
+.polished#frame-opt3 .mm-nav-title { color: #00408b; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.polished#frame-opt3 .mm-nav-icon { color: #F7941D; }
+
+/* Filter bar */
+.polished#frame-opt3 .mm-filter-select { border-color: rgba(0,64,139,0.15); color: #00408b; font-weight: 600; background: #fff; box-shadow: 0 1px 3px rgba(0,64,139,0.06); transition: box-shadow 150ms ease-out; }
+
+/* Visual cards — stronger presence */
+.polished#frame-opt3 .mm-vcard { border-color: rgba(0,64,139,0.10); box-shadow: 0 4px 16px rgba(0,64,139,0.07), 0 2px 4px rgba(0,64,139,0.04); transition: box-shadow 200ms ease-out; }
+.polished#frame-opt3 .mm-vcard-img { background: linear-gradient(135deg, #E3F2FD 0%, #d6e8f7 100%); }
+.polished#frame-opt3 .mm-vcard-badge-top { background: linear-gradient(135deg, #FDE7C7 0%, #fff3e0 100%); border-color: #F7941D; color: #e07800; font-weight: 600; }
+.polished#frame-opt3 .mm-vcard-save { border-color: rgba(0,64,139,0.12); background: #fff; color: #1565C0; box-shadow: 0 1px 3px rgba(0,64,139,0.08); transition: box-shadow 150ms ease-out; }
+.polished#frame-opt3 .mm-vcard-row strong { color: #00408b; font-weight: 700; }
+.polished#frame-opt3 .mm-listing-price { color: #1565C0; font-weight: 700; }
+
+/* Badges */
+.polished#frame-opt3 .mm-badge { background: linear-gradient(135deg, #E3F2FD, #bbdefb); color: #00408b; font-weight: 600; }
+
+/* Social proof */
+.polished#frame-opt3 .mm-social-proof { color: #2E7D32; font-weight: 600; }
+
+/* Buttons — gradient CTA */
+.polished#frame-opt3 .mm-btn-primary { background: linear-gradient(135deg, #1565C0, #00408b); color: #fff; font-weight: 600; box-shadow: 0 2px 8px rgba(21,101,192,0.25); transition: box-shadow 200ms ease-out, background 200ms ease-out; }
+.polished#frame-opt3 .mm-btn-primary:hover { background: linear-gradient(135deg, #1976D2, #1565C0); box-shadow: 0 4px 12px rgba(21,101,192,0.35); }
+
+/* CTA banner */
+.polished#frame-opt3 .mm-cta-banner { background: linear-gradient(135deg, #E3F2FD 0%, #f0f4f9 100%); color: #00408b; font-weight: 600; box-shadow: 0 1px 4px rgba(0,64,139,0.06); }
+
+/* Tab bar */
+.polished#frame-opt3 .mm-tab-bar { border-color: rgba(0,64,139,0.08); background: #fff; box-shadow: 0 -1px 4px rgba(0,64,139,0.04); }
+.polished#frame-opt3 .mm-tab-item { color: #9aa0a6; transition: color 150ms ease-out; }
+.polished#frame-opt3 .mm-tab-item.active { color: #1565C0; }
+
+/* Hide wireframe markers */
+.polished#frame-opt3 .wf-marker { border-color: transparent; background: transparent; color: transparent; }
+
+/* Entrance animations (polished only) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes opt3CardEnter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .polished#frame-opt3 .mm-vcard:nth-child(1) { animation: opt3CardEnter 300ms ease-out both; }
+  .polished#frame-opt3 .mm-vcard:nth-child(2) { animation: opt3CardEnter 300ms ease-out 50ms both; }
+  .polished#frame-opt3 .mm-vcard:nth-child(3) { animation: opt3CardEnter 300ms ease-out 100ms both; }
+  .polished#frame-opt3 .mm-filter-select { animation: opt3CardEnter 200ms ease-out both; }
+}
+
+/* --- Self-reveal: hide badge, color sub-tabs --- */
+#frame-opt3-tabs .sub-tab-badge { display: none; }
+#frame-opt3-tabs .sub-tab-btn[data-variant="clean"] { color: #64B5F6; }
+#frame-opt3-tabs .sub-tab-btn[data-variant="clean"]:hover { color: #1E88E5; }
+#frame-opt3-tabs .sub-tab-btn[data-variant="clean"].active { color: #1565C0; border-bottom-color: #1565C0; }
+#frame-opt3-tabs .sub-tab-btn[data-variant="polished"] { color: #81C784; }
+#frame-opt3-tabs .sub-tab-btn[data-variant="polished"]:hover { color: #43A047; }
+#frame-opt3-tabs .sub-tab-btn[data-variant="polished"].active { color: #2E7D32; border-bottom-color: #2E7D32; }
