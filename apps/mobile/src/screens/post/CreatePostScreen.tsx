@@ -11,9 +11,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
-  Image,
   Linking,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -790,7 +790,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
 
                   return (
                     <View key={`${isExisting ? 'existing' : 'new'}-${photoUrl}-${index}`} style={styles.photoPreviewItem}>
-                      <Image source={{ uri: photoUrl }} style={styles.photoPreviewImage} resizeMode="cover" />
+                      <Image source={photoUrl} style={styles.photoPreviewImage} contentFit="cover" />
                       <TouchableOpacity
                         style={styles.photoRemoveButton}
                         onPress={() => {

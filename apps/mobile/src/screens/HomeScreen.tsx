@@ -205,8 +205,7 @@ export default function HomeScreen() {
       } else {
         setPosts([]);
       }
-    } catch (error) {
-      console.error('Failed to load posts:', error);
+    } catch {
       setPosts([]);
       setLoadError('Could not load posts. Please check your connection and try again.');
     } finally {
@@ -318,7 +317,7 @@ export default function HomeScreen() {
     ])
   );
 
-  const showSaveToast = (message: string) => {
+  const showSaveToast = useCallback((message: string) => {
     setSaveToast(message);
     saveToastOpacity.setValue(1);
     if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
@@ -329,9 +328,9 @@ export default function HomeScreen() {
         useNativeDriver: true,
       }).start(() => setSaveToast(null));
     }, 2200);
-  };
+  }, [saveToastOpacity]);
 
-  const handleSaveFromCard = async (post: Post) => {
+  const handleSaveFromCard = useCallback(async (post: Post) => {
     const wasSaved = savedPostIds.has(post.id);
 
     setSavedPostIds((prev) => {
@@ -356,7 +355,7 @@ export default function HomeScreen() {
     } else {
       showSaveToast(wasSaved ? 'Post unsaved.' : 'Post saved.');
     }
-  };
+  }, [savedPostIds, showSaveToast]);
 
   const handleMoreSave = async () => {
     if (!morePost) return;
@@ -388,11 +387,19 @@ export default function HomeScreen() {
     }
   };
 
-  const handleLikePress = async (post: Post) => {
+  const handleVerifyPress = useCallback(() => {
+    Alert.alert(
+      'Verification Required',
+      'Complete your profile verification to unlock this feature.',
+      [{ text: 'OK' }]
+    );
+  }, []);
+
+  const handleLikePress = useCallback(async (post: Post) => {
     if (isLevel0) {
       Alert.alert(
         'Verify to Like',
-        'Please verify your phone number to like posts.',
+        'Please verify your account to like posts.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Verify Now', onPress: handleVerifyPress },
@@ -437,35 +444,27 @@ export default function HomeScreen() {
       );
       Alert.alert('Error', 'Failed to update like. Please try again.');
     }
-  };
+  }, [isLevel0, likedPostIds, handleVerifyPress]);
 
-  const handleCommentPress = (post: Post) => {
+  const handleCommentPress = useCallback((post: Post) => {
     navigation.navigate('PostDetail', { postId: post.id });
-  };
+  }, [navigation]);
 
-  const handleVerifyPress = () => {
-    Alert.alert(
-      'Phone Verification',
-      'Phone verification will be implemented in Journey #02',
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handlePostPress = (post: Post) => {
+  const handlePostPress = useCallback((post: Post) => {
     navigation.navigate('PostDetail', { postId: post.id });
-  };
+  }, [navigation]);
 
-  const handleAvatarViewProfile = (authorId: string) => {
+  const handleAvatarViewProfile = useCallback((authorId: string) => {
     navigation.navigate('PublicProfileView', { userId: authorId });
-  };
+  }, [navigation]);
 
-  const handleAvatarChat = async (post: Post) => {
+  const handleAvatarChat = useCallback(async (post: Post) => {
     if (!user || !post.author) return;
 
     if (isLevel0) {
       Alert.alert(
         'Verify to Message',
-        'Please verify your phone number to message others.',
+        'Please verify your account to message others.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Verify Now', onPress: handleVerifyPress },
@@ -495,11 +494,11 @@ export default function HomeScreen() {
     } else if (result.error) {
       Alert.alert('Error', 'Failed to start conversation. Please try again.');
     }
-  };
+  }, [user, isLevel0, navigation, handleVerifyPress]);
 
-  const handleMorePress = (post: Post) => {
+  const handleMorePress = useCallback((post: Post) => {
     setMorePost(post);
-  };
+  }, []);
 
   const handleMoreEdit = () => {
     if (!morePost) return;
@@ -584,7 +583,7 @@ export default function HomeScreen() {
     if (isLevel0) {
       Alert.alert(
         'Verify to Post',
-        'Please verify your phone number to create posts.',
+        'Please verify your account to create posts.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Verify Now', onPress: handleVerifyPress },
@@ -595,33 +594,81 @@ export default function HomeScreen() {
     }
   };
 
-  const handleTagChipPress = (slug: string) => {
+  const handleTagChipPress = useCallback((slug: string) => {
     setSelectedTagSlugs((prev) => {
       if (prev.includes(slug)) {
         return prev.filter((s) => s !== slug);
       }
       return [...prev, slug];
     });
-  };
+  }, []);
 
-  const handleAllChipPress = () => {
+  const handleAllChipPress = useCallback(() => {
     setSelectedTagSlugs([]);
-  };
+  }, []);
 
-  const handleMessagesPress = () => {
+  const handleMessagesPress = useCallback(() => {
     // Navigate to Chat/Conversations screen
     navigation.getParent()?.navigate('Chat', {
       screen: 'ConversationList',
     });
-  };
+  }, [navigation]);
 
-  const handleSearchPress = () => {
+  const handleSearchPress = useCallback(() => {
     Alert.alert('Coming Soon', 'Search will be available in a future update.');
-  };
+  }, []);
 
-  const handleNotificationsPress = () => {
+  const handleNotificationsPress = useCallback(() => {
     navigation.navigate('Notifications');
-  };
+  }, [navigation]);
+
+  const PostDivider = useCallback(() => <View style={styles.postDivider} />, []);
+  const postKeyExtractor = useCallback((item: Post) => item.id, []);
+
+  const renderPostItem = useCallback(
+    ({ item }: { item: Post }) => (
+      <PostCard
+        title={item.title}
+        description={item.description}
+        timestamp={item.created_at}
+        imageUrls={item.photos}
+        tags={item.tags}
+        isGlobal={item.is_global}
+        isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
+        authorName={item.author?.full_name}
+        authorPhotoUrl={item.author?.profile_photo}
+        authorTrustLevel={item.author?.trust_level ?? 0}
+        likesCount={item.likes_count ?? 0}
+        commentsCount={item.comments_count ?? 0}
+        isLiked={likedPostIds.has(item.id)}
+        isSaved={savedPostIds.has(item.id)}
+        onPress={() => handlePostPress(item)}
+        onLikePress={() => handleLikePress(item)}
+        onCommentPress={() => handleCommentPress(item)}
+        onSavePress={item.author_id !== user?.id ? () => handleSaveFromCard(item) : undefined}
+        authorId={item.author_id}
+        currentUserId={user?.id}
+        onTagPress={handleTagChipPress}
+        onAvatarViewProfile={() => handleAvatarViewProfile(item.author_id)}
+        onAvatarChat={() => handleAvatarChat(item)}
+        onMorePress={() => handleMorePress(item)}
+        onMediaPress={() => handlePostPress(item)}
+      />
+    ),
+    [
+      likedPostIds,
+      savedPostIds,
+      user?.id,
+      handlePostPress,
+      handleLikePress,
+      handleCommentPress,
+      handleSaveFromCard,
+      handleTagChipPress,
+      handleAvatarViewProfile,
+      handleAvatarChat,
+      handleMorePress,
+    ]
+  );
 
   const renderCreatePostBanner = () => {
     const firstName = user?.full_name?.split(' ')[0] || 'there';
@@ -787,38 +834,10 @@ export default function HomeScreen() {
         <FlatList
           ref={flatListRef}
           data={posts}
-          renderItem={({ item }) => (
-            <PostCard
-              title={item.title}
-              description={item.description}
-              timestamp={item.created_at}
-              imageUrls={item.photos}
-              tags={item.tags}
-              isGlobal={item.is_global}
-              isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
-              authorName={item.author?.full_name}
-              authorPhotoUrl={item.author?.profile_photo}
-              authorTrustLevel={item.author?.trust_level ?? 0}
-              likesCount={item.likes_count ?? 0}
-              commentsCount={item.comments_count ?? 0}
-              isLiked={likedPostIds.has(item.id)}
-              isSaved={savedPostIds.has(item.id)}
-              onPress={() => handlePostPress(item)}
-              onLikePress={() => handleLikePress(item)}
-              onCommentPress={() => handleCommentPress(item)}
-              onSavePress={item.author_id !== user?.id ? () => handleSaveFromCard(item) : undefined}
-              authorId={item.author_id}
-              currentUserId={user?.id}
-              onTagPress={handleTagChipPress}
-              onAvatarViewProfile={() => handleAvatarViewProfile(item.author_id)}
-              onAvatarChat={() => handleAvatarChat(item)}
-              onMorePress={() => handleMorePress(item)}
-              onMediaPress={() => handlePostPress(item)}
-            />
-          )}
-          keyExtractor={(item) => item.id}
+          renderItem={renderPostItem}
+          keyExtractor={postKeyExtractor}
           contentContainerStyle={styles.postsContent}
-          ItemSeparatorComponent={() => <View style={styles.postDivider} />}
+          ItemSeparatorComponent={PostDivider}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

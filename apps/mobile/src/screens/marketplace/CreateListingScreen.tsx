@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Image,
   StyleSheet,
   Linking,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -323,7 +323,7 @@ export default function CreateListingScreen() {
             {/* Existing photos (edit mode) */}
             {existingPhotoUrls.map((url, index) => (
               <View key={`existing-${index}`} style={styles.photoThumb}>
-                <Image source={{ uri: url }} style={styles.photoThumbImage} />
+                <Image source={url} style={styles.photoThumbImage} contentFit="cover" />
                 <TouchableOpacity
                   style={styles.photoRemoveBtn}
                   onPress={() => handleRemoveExistingPhoto(index)}
@@ -335,7 +335,7 @@ export default function CreateListingScreen() {
             {/* Newly picked photos */}
             {newPhotos.map((photo, index) => (
               <View key={`new-${index}`} style={styles.photoThumb}>
-                <Image source={{ uri: photo.uri }} style={styles.photoThumbImage} />
+                <Image source={photo.uri} style={styles.photoThumbImage} contentFit="cover" />
                 <TouchableOpacity
                   style={styles.photoRemoveBtn}
                   onPress={() => handleRemoveNewPhoto(index)}

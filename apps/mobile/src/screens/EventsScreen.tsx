@@ -228,7 +228,7 @@ export default function EventsScreen() {
     [userResponses, canInteract, handleResponseChange]
   );
 
-  const renderHeader = () =>
+  const renderHeader = useCallback(() =>
     isLevel0 && !level0DismissedBanner ? (
       <View style={styles.level0Banner}>
         <Text style={styles.level0BannerText}>
@@ -238,7 +238,9 @@ export default function EventsScreen() {
           <Text style={styles.level0BannerDismiss}>✕</Text>
         </TouchableOpacity>
       </View>
-    ) : null;
+    ) : null,
+    [isLevel0, level0DismissedBanner]
+  );
 
   const getEmptyTitle = () => {
     if (filters.query) return `No events matching "${filters.query}"`;

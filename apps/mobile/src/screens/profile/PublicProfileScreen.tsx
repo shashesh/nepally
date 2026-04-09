@@ -24,6 +24,7 @@ import {
   getOrCreateConversation,
   formatRelativeTime,
   formatPublicName,
+  getTrustLabel,
 } from '@nepally/shared';
 import type { User, Post, Event } from '@nepally/shared';
 import { Avatar } from '../../components/Avatar';
@@ -33,19 +34,6 @@ import { spacing, borderRadius } from '../../styles/spacing';
 
 type Navigation = NativeStackNavigationProp<HomeStackParamList, 'PublicProfileView'>;
 type Route = RouteProp<HomeStackParamList, 'PublicProfileView'>;
-
-function getTrustLabel(level: number): string {
-  switch (level) {
-    case TrustLevel.NEW:
-      return 'New Member';
-    case TrustLevel.VERIFIED:
-      return 'Verified';
-    case TrustLevel.CONTRIBUTOR:
-      return 'Contributor';
-    default:
-      return 'Unknown';
-  }
-}
 
 export default function PublicProfileScreen() {
   const navigation = useNavigation<Navigation>();

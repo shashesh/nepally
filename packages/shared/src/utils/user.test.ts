@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formatPublicName } from './user';
+import { formatPublicName, getTrustLabel } from './user';
+import { TrustLevel } from '../constants/trustLevels';
 
 describe('formatPublicName', () => {
   it('returns "Firstname L." for a two-part name', () => {
@@ -24,5 +25,24 @@ describe('formatPublicName', () => {
 
   it('uppercases the last initial', () => {
     expect(formatPublicName('anjali sharma')).toBe('anjali S.');
+  });
+});
+
+describe('getTrustLabel', () => {
+  it('returns "New Member" for TrustLevel.NEW', () => {
+    expect(getTrustLabel(TrustLevel.NEW)).toBe('New Member');
+  });
+
+  it('returns "Verified" for TrustLevel.VERIFIED', () => {
+    expect(getTrustLabel(TrustLevel.VERIFIED)).toBe('Verified');
+  });
+
+  it('returns "Contributor" for TrustLevel.CONTRIBUTOR', () => {
+    expect(getTrustLabel(TrustLevel.CONTRIBUTOR)).toBe('Contributor');
+  });
+
+  it('returns "Unknown" for an unrecognized level', () => {
+    expect(getTrustLabel(99)).toBe('Unknown');
+    expect(getTrustLabel(-1)).toBe('Unknown');
   });
 });

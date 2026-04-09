@@ -4,12 +4,12 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -200,7 +200,7 @@ export default function ListingDetailScreen() {
               }}
             >
               {listing.photos.map((photo, index) => (
-                <Image key={index} source={{ uri: photo }} style={styles.photo} />
+                <Image key={index} source={photo} style={styles.photo} contentFit="cover" />
               ))}
             </ScrollView>
             {listing.photos.length > 1 && (

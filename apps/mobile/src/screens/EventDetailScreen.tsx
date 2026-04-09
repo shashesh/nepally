@@ -4,13 +4,13 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   Alert,
   ActivityIndicator,
   Modal,
   FlatList,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -321,7 +321,7 @@ export default function EventDetailScreen() {
 
         {/* Hero Image */}
         {event.photo_url ? (
-          <Image source={{ uri: event.photo_url }} style={styles.hero} />
+          <Image source={event.photo_url} style={styles.hero} contentFit="cover" />
         ) : (
           <View style={[styles.hero, styles.heroPlaceholder]}>
             <Text style={styles.heroEmoji}>📅</Text>

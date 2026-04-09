@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { MarketplaceListing } from '@nepally/shared';
 import { colors } from '../../styles/colors';
@@ -13,7 +14,7 @@ interface ListingCardProps {
   width?: number;
 }
 
-export function ListingCard({ listing, onPress, width }: ListingCardProps) {
+export const ListingCard = React.memo(function ListingCard({ listing, onPress, width }: ListingCardProps) {
   const categoryColor = listing.category?.color ?? '#9E9E9E';
   const categoryEmoji = listing.category?.emoji ?? '📦';
   const categoryName = listing.category?.name ?? 'Other';
@@ -28,7 +29,7 @@ export function ListingCard({ listing, onPress, width }: ListingCardProps) {
     >
       {/* Image / gradient placeholder */}
       {firstPhoto ? (
-        <Image source={{ uri: firstPhoto }} style={styles.image} />
+        <Image source={firstPhoto} style={styles.image} contentFit="cover" />
       ) : (
         <LinearGradient
           colors={[categoryColor + '33', categoryColor]}
@@ -73,7 +74,7 @@ export function ListingCard({ listing, onPress, width }: ListingCardProps) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -87,7 +88,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 160,
-    resizeMode: 'cover',
   },
   imagePlaceholder: {
     width: '100%',

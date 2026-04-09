@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -14,6 +13,7 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +27,7 @@ import {
   getSavedPostsByUserId,
   unsavePost,
   formatRelativeTime,
+  getTrustLabel,
 } from '@nepally/shared';
 import type { Post, MarketplaceListing } from '@nepally/shared';
 import { getListingsByOwner, LISTING_SOFT_EXPIRY_DAYS } from '@nepally/shared';
@@ -36,19 +37,6 @@ import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
 
 type Navigation = NativeStackNavigationProp<ProfileStackParamList, 'ProfileView'>;
-
-function getTrustLabel(level: number): string {
-  switch (level) {
-    case TrustLevel.NEW:
-      return 'New Member';
-    case TrustLevel.VERIFIED:
-      return 'Verified';
-    case TrustLevel.CONTRIBUTOR:
-      return 'Contributor';
-    default:
-      return 'Unknown';
-  }
-}
 
 export function ProfileScreen() {
   const navigation = useNavigation<Navigation>();
@@ -296,7 +284,7 @@ export function ProfileScreen() {
               })}
             >
               {listing.photos.length > 0 ? (
-                <Image source={{ uri: listing.photos[0] }} style={styles.listingThumb} />
+                <Image source={listing.photos[0]} style={styles.listingThumb} contentFit="cover" />
               ) : (
                 <View style={[styles.listingThumbPlaceholder, { backgroundColor: (listing.category?.color ?? '#9E9E9E') + '20' }]}>
                   <Text style={styles.listingThumbEmoji}>{listing.category?.emoji ?? '📦'}</Text>
