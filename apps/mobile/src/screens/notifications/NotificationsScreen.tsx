@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   AppState,
   SectionList,
   StatusBar,
@@ -179,6 +180,7 @@ export function NotificationsScreen() {
   const handleDismiss = useCallback(async (notifId: string) => {
     const result = await deleteNotification(supabase, notifId);
     if (result.error) {
+      Alert.alert('Error', 'Could not dismiss notification. Please try again.');
       return;
     }
     setNotifications((prev) => prev.filter((n) => n.id !== notifId));
