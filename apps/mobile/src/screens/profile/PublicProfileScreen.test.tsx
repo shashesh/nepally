@@ -58,6 +58,10 @@ jest.mock('@nepally/shared', () => ({
     return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
   },
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
+  getTrustLabel: (level: number) => {
+    const labels: Record<number, string> = { 0: 'New Member', 1: 'Verified', 2: 'Contributor' };
+    return labels[level] ?? 'Unknown';
+  },
 }));
 
 const mockProfileUser = {

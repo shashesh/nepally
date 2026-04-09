@@ -8,11 +8,11 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
-  Image,
   Linking,
   Platform,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -544,8 +544,9 @@ export default function CreateEventScreen() {
           {(selectedPhoto || form.photo_url) ? (
             <View style={styles.photoCard}>
               <Image
-                source={{ uri: selectedPhoto?.uri ?? form.photo_url }}
+                source={selectedPhoto?.uri ?? form.photo_url}
                 style={styles.photoPreview}
+                contentFit="cover"
               />
               <View style={styles.photoActions}>
                 <TouchableOpacity style={styles.photoActionButton} onPress={handlePickPhoto}>

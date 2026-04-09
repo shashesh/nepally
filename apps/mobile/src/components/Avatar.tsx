@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { colors } from '../styles/colors';
 import { sanitizeMediaUri } from '../utils/mediaUrl';
 
@@ -61,9 +62,10 @@ export const Avatar: React.FC<AvatarProps> = ({
   if (safePhotoUrl) {
     return (
       <Image
-        source={{ uri: safePhotoUrl }}
+        source={safePhotoUrl}
         style={[styles.image, containerStyle]}
-        defaultSource={undefined}
+        contentFit="cover"
+        transition={200}
       />
     );
   }

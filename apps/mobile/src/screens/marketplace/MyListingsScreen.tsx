@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   FlatList,
   TouchableOpacity,
   RefreshControl,
@@ -10,6 +9,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -142,7 +142,7 @@ export default function MyListingsScreen() {
         >
           {/* Photo thumbnail */}
           {item.photos.length > 0 ? (
-            <Image source={{ uri: item.photos[0] }} style={styles.thumbnail} />
+            <Image source={item.photos[0]} style={styles.thumbnail} contentFit="cover" />
           ) : (
             <View style={[styles.thumbnailPlaceholder, { backgroundColor: (item.category?.color ?? '#9E9E9E') + '20' }]}>
               <Text style={styles.thumbnailEmoji}>{item.category?.emoji ?? '📦'}</Text>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -36,6 +36,24 @@ export function ListingStrip({
   maxItems = 10,
   cardWidth = DEFAULT_CARD_WIDTH,
 }: ListingStripProps) {
+  const listingKeyExtractor = useCallback(
+    (item: MarketplaceListing) => item.id,
+    []
+  );
+
+  const renderListingItem = useCallback(
+    ({ item }: { item: MarketplaceListing }) => (
+      <View style={[styles.item, { width: cardWidth }]}>
+        <ListingCard
+          listing={item}
+          width={cardWidth}
+          onPress={() => onItemPress(item)}
+        />
+      </View>
+    ),
+    [cardWidth, onItemPress]
+  );
+
   if (listings.length === 0) return null;
 
   const visible = listings.slice(0, maxItems);
@@ -59,16 +77,8 @@ export function ListingStrip({
       <FlatList
         horizontal
         data={visible}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.item, { width: cardWidth }]}>
-            <ListingCard
-              listing={item}
-              width={cardWidth}
-              onPress={() => onItemPress(item)}
-            />
-          </View>
-        )}
+        keyExtractor={listingKeyExtractor}
+        renderItem={renderListingItem}
         ListFooterComponent={
           showShowAll ? (
             <TouchableOpacity

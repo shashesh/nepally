@@ -28,7 +28,7 @@ function formatTime(dateStr: string): string {
   });
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   text,
   timestamp,
   isSent,
@@ -92,7 +92,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       {bubble}
     </View>
   );
-};
+});
+
+MessageBubble.displayName = 'MessageBubble';
 
 const styles = StyleSheet.create({
   wrapper: {

@@ -17,6 +17,18 @@ export function formatRelativeTime(date: Date): string {
   return date.toLocaleDateString();
 }
 
+/**
+ * Format a number for compact display (e.g. 1234 → "1.2K")
+ */
+export function formatCount(count: number): string {
+  if (count < 1000) return String(count);
+  if (count < 10000) {
+    const k = (count / 1000).toFixed(1);
+    return k.endsWith('.0') ? `${Math.floor(count / 1000)}K` : `${k}K`;
+  }
+  return `${Math.floor(count / 1000)}K`;
+}
+
 export function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
     year: 'numeric',

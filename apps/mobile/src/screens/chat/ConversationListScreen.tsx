@@ -53,7 +53,7 @@ export default function ConversationListScreen() {
     loadConversations();
   };
 
-  const handleConversationPress = (conv: ConversationWithParticipant) => {
+  const handleConversationPress = useCallback((conv: ConversationWithParticipant) => {
     navigation.navigate('MessageThread', {
       conversationId: conv.id,
       otherUserId: conv.other_user_id,
@@ -61,13 +61,32 @@ export default function ConversationListScreen() {
       otherUserTrustLevel: conv.other_user_trust_level ?? 0,
       otherUserPhotoUrl: conv.other_user_photo,
     });
-  };
+  }, [navigation]);
 
-  const handleBrowsePosts = () => {
-    // Navigate to Home tab
+  const handleBrowsePosts = useCallback(() => {
     const parent = navigation.getParent();
     parent?.navigate('Home');
-  };
+  }, [navigation]);
+
+  const conversationKeyExtractor = useCallback(
+    (item: ConversationWithParticipant) => item.id,
+    []
+  );
+
+  const renderConversationItem = useCallback(
+    ({ item }: { item: ConversationWithParticipant }) => (
+      <ConversationItem
+        otherUserName={item.other_user_name}
+        otherUserPhoto={item.other_user_photo}
+        otherUserTrustLevel={item.other_user_trust_level}
+        lastMessage={item.last_message}
+        lastMessageTime={item.last_message_time}
+        unreadCount={item.unread_count}
+        onPress={() => handleConversationPress(item)}
+      />
+    ),
+    [handleConversationPress]
+  );
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -92,18 +111,8 @@ export default function ConversationListScreen() {
 
       <FlatList
         data={conversations}
-        renderItem={({ item }) => (
-          <ConversationItem
-            otherUserName={item.other_user_name}
-            otherUserPhoto={item.other_user_photo}
-            otherUserTrustLevel={item.other_user_trust_level}
-            lastMessage={item.last_message}
-            lastMessageTime={item.last_message_time}
-            unreadCount={item.unread_count}
-            onPress={() => handleConversationPress(item)}
-          />
-        )}
-        keyExtractor={(item) => item.id}
+        renderItem={renderConversationItem}
+        keyExtractor={conversationKeyExtractor}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

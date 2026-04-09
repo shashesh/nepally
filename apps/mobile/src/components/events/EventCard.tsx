@@ -3,12 +3,12 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   Modal,
   Pressable,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { formatPublicName, type Event, type RsvpStatus } from '@nepally/shared';
@@ -54,7 +54,7 @@ function formatCount(n: number, singular: string, plural: string): string {
   return `${n} ${plural}`;
 }
 
-export const EventCard: React.FC<Props> = ({
+export const EventCard: React.FC<Props> = React.memo(({
   event,
   past = false,
   userResponse = null,
@@ -93,7 +93,7 @@ export const EventCard: React.FC<Props> = ({
         {/* Cover image */}
         <View style={styles.cover}>
           {event.photo_url ? (
-            <Image source={{ uri: event.photo_url }} style={styles.coverImage} />
+            <Image source={event.photo_url} style={styles.coverImage} contentFit="cover" />
           ) : (
             <View style={styles.coverPlaceholder}>
               <Text style={styles.coverEmoji}>📅</Text>
@@ -222,7 +222,9 @@ export const EventCard: React.FC<Props> = ({
       </Modal>
     </>
   );
-};
+});
+
+EventCard.displayName = 'EventCard';
 
 const COVER_HEIGHT = 180;
 
@@ -246,7 +248,6 @@ const styles = StyleSheet.create({
   coverImage: {
     width: '100%',
     height: COVER_HEIGHT,
-    resizeMode: 'cover',
   },
   coverPlaceholder: {
     flex: 1,

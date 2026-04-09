@@ -14,6 +14,7 @@ import { Avatar } from '../Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
+import { formatRelativeTime } from '@nepally/shared';
 
 interface ConversationItemProps {
   otherUserName: string;
@@ -25,23 +26,7 @@ interface ConversationItemProps {
   onPress: () => void;
 }
 
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHr = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMin < 1) return 'now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return date.toLocaleDateString('en-US', { weekday: 'short' });
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-export const ConversationItem: React.FC<ConversationItemProps> = ({
+export const ConversationItem: React.FC<ConversationItemProps> = React.memo(({
   otherUserName,
   otherUserPhoto,
   otherUserTrustLevel,
@@ -111,7 +96,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
             </Text>
             {lastMessageTime && (
               <Text style={styles.timestamp}>
-                {formatRelativeTime(lastMessageTime)}
+                {formatRelativeTime(new Date(lastMessageTime))}
               </Text>
             )}
           </View>
@@ -160,7 +145,9 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
       </Modal>
     </>
   );
-};
+});
+
+ConversationItem.displayName = 'ConversationItem';
 
 const styles = StyleSheet.create({
   container: {

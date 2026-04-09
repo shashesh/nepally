@@ -14,11 +14,11 @@ import {
   Share,
   Modal,
   Pressable,
-  Image,
   Animated,
   findNodeHandle,
   useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import {
   PinchGestureHandler,
   PanGestureHandler,
@@ -298,7 +298,7 @@ function PinchableLightboxImage({
             ]}
           >
             <Pressable style={styles.lightboxImage} onPress={handlePress}>
-              <Image source={{ uri }} style={styles.lightboxImage} resizeMode="contain" />
+              <Image source={uri} style={styles.lightboxImage} contentFit="contain" />
             </Pressable>
           </Animated.View>
         </PinchGestureHandler>
@@ -819,7 +819,7 @@ export default function PostDetailScreen() {
             <View style={styles.detailMediaWrap}>
               {postPhotos.length === 1 && (
                 <TouchableOpacity activeOpacity={0.9} onPress={() => handleOpenLightbox(0)}>
-                  <Image source={{ uri: postPhotos[0] }} style={[styles.detailMediaSingle, { width: contentWidth }]} resizeMode="cover" />
+                  <Image source={postPhotos[0]} style={[styles.detailMediaSingle, { width: contentWidth }]} contentFit="cover" />
                 </TouchableOpacity>
               )}
 
@@ -827,7 +827,7 @@ export default function PostDetailScreen() {
                 <View style={[styles.detailMediaRow, { gap: 2 }]}>
                   {postPhotos.map((url, i) => (
                     <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => handleOpenLightbox(i)}>
-                      <Image source={{ uri: url }} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} resizeMode="cover" />
+                      <Image source={url} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} contentFit="cover" />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -840,12 +840,12 @@ export default function PostDetailScreen() {
                 return (
                   <View style={[styles.detailMediaRow, { gap: 2 }]}>
                     <TouchableOpacity activeOpacity={0.9} onPress={() => handleOpenLightbox(0)}>
-                      <Image source={{ uri: postPhotos[0] }} style={{ width: leftW, height: h }} resizeMode="cover" />
+                      <Image source={postPhotos[0]} style={{ width: leftW, height: h }} contentFit="cover" />
                     </TouchableOpacity>
                     <View style={[styles.detailMediaCol, { gap: 2 }]}>
                       {[1, 2].map((i) => (
                         <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => handleOpenLightbox(i)}>
-                          <Image source={{ uri: postPhotos[i] }} style={{ width: rightW, height: (h - 2) / 2 }} resizeMode="cover" />
+                          <Image source={postPhotos[i]} style={{ width: rightW, height: (h - 2) / 2 }} contentFit="cover" />
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -858,14 +858,14 @@ export default function PostDetailScreen() {
                   <View style={[styles.detailMediaRow, { gap: 2 }]}>
                     {[0, 1].map((i) => (
                       <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => handleOpenLightbox(i)}>
-                        <Image source={{ uri: postPhotos[i] }} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} resizeMode="cover" />
+                        <Image source={postPhotos[i]} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} contentFit="cover" />
                       </TouchableOpacity>
                     ))}
                   </View>
                   <View style={[styles.detailMediaRow, { gap: 2 }]}>
                     {[2, 3].map((i) => (
                       <TouchableOpacity key={i} activeOpacity={0.9} style={{ position: 'relative' }} onPress={() => handleOpenLightbox(i)}>
-                        <Image source={{ uri: postPhotos[i] }} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} resizeMode="cover" />
+                        <Image source={postPhotos[i]} style={{ width: (contentWidth - 2) / 2, height: (contentWidth - 2) / 2 }} contentFit="cover" />
                         {i === 3 && extraPhotoCount > 0 && (
                           <View style={styles.detailMediaOverlay}>
                             <Text style={styles.detailMediaOverlayText}>+{extraPhotoCount}</Text>

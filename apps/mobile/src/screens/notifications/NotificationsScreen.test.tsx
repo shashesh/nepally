@@ -203,21 +203,14 @@ describe('NotificationsScreen', () => {
     });
     mockDeleteNotification.mockResolvedValue({ error: new Error('RLS delete blocked') });
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
     const { getByText, getByLabelText } = await renderAndSettle();
 
     fireEvent.press(getByLabelText('Dismiss notification'));
 
     await waitFor(() => {
       expect(mockDeleteNotification).toHaveBeenCalledWith(expect.anything(), 'notif-delete-fail');
-      expect(errorSpy).toHaveBeenCalledWith(
-        'Failed to delete notification:',
-        expect.any(Error)
-      );
     });
+    // Notification should remain visible when delete fails
     expect(getByText('Delete should fail')).toBeTruthy();
-
-    errorSpy.mockRestore();
   });
 });

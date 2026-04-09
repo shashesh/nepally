@@ -179,7 +179,6 @@ export function NotificationsScreen() {
   const handleDismiss = useCallback(async (notifId: string) => {
     const result = await deleteNotification(supabase, notifId);
     if (result.error) {
-      console.error('Failed to delete notification:', result.error);
       return;
     }
     setNotifications((prev) => prev.filter((n) => n.id !== notifId));

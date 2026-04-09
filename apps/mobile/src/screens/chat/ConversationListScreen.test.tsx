@@ -32,6 +32,7 @@ jest.mock('../../config/supabase', () => ({
 
 jest.mock('@nepally/shared', () => ({
   getConversations: (...args: unknown[]) => mockGetConversations(...args),
+  formatRelativeTime: () => '2h ago',
 }));
 
 describe('ConversationListScreen', () => {

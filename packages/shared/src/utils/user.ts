@@ -2,6 +2,24 @@
  * User utility functions
  */
 
+import { TrustLevel } from '../constants/trustLevels';
+
+/**
+ * Returns a human-readable label for a trust level.
+ */
+export function getTrustLabel(level: number): string {
+  switch (level) {
+    case TrustLevel.NEW:
+      return 'New Member';
+    case TrustLevel.VERIFIED:
+      return 'Verified';
+    case TrustLevel.CONTRIBUTOR:
+      return 'Contributor';
+    default:
+      return 'Unknown';
+  }
+}
+
 /**
  * Formats a full name for public display: "Shashank Kumar" → "Shashank K."
  * Preserves privacy by showing only the first letter of the last name.
