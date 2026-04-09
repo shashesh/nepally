@@ -98,6 +98,7 @@ const mockUserEvents = [
     organizer_id: 'profile-user',
     photo_url: null,
     rsvp_count: 18,
+    interested_count: 0,
     rsvp_visibility: 'public',
     status: 'active',
     created_at: '2026-03-01T12:00:00Z',

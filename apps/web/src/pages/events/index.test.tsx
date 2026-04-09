@@ -29,7 +29,7 @@ const mockEvents = [
     id: 'e1', title: 'Dashain Celebration', description: 'Cultural event',
     event_type: 'cultural', start_date: FUTURE, location_name: 'Dallas Convention Center',
     metro_area_id: '19100', is_global: false, organizer_id: 'u1',
-    rsvp_count: 5, rsvp_visibility: 'public', status: 'active',
+    rsvp_count: 5, interested_count: 10, rsvp_visibility: 'public', status: 'active',
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     organizer: { id: 'u1', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
   },
@@ -37,7 +37,7 @@ const mockEvents = [
     id: 'e2', title: 'Career Networking Night', description: 'Career event',
     event_type: 'career', start_date: FUTURE, location_name: 'Tech Hub',
     metro_area_id: '19100', is_global: false, organizer_id: 'u2',
-    rsvp_count: 12, rsvp_visibility: 'public', status: 'active',
+    rsvp_count: 12, interested_count: 30, rsvp_visibility: 'public', status: 'active',
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     organizer: { id: 'u2', full_name: 'Rohan Shrestha', trust_level: 1, profile_photo: null },
   },
@@ -45,7 +45,9 @@ const mockEvents = [
 
 vi.mock('@nepally/shared', () => ({
   getEventsByMetro: vi.fn(async () => ({ data: mockEvents })),
-  getUserRsvps: vi.fn(async () => ({ data: [] })),
+  getUserEventResponses: vi.fn(async () => ({ data: {} })),
+  setEventResponse: vi.fn(async () => ({})),
+  removeEventResponse: vi.fn(async () => ({})),
   EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],
   EVENT_TYPE_LABELS: { cultural: 'Cultural', religious: 'Religious', social: 'Social', career: 'Career', other: 'Other' },
   EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
@@ -104,8 +106,7 @@ describe('EventsPage', () => {
     render(React.createElement(EventsPage));
     await waitFor(() => screen.getByText('Dashain Celebration'));
 
-    // Click Career filter chip
-    fireEvent.click(screen.getAllByText('💼 Career')[0]);
+    fireEvent.click(screen.getByRole('button', { name: '💼 Career' }));
     await waitFor(() => {
       expect(screen.queryByText('Dashain Celebration')).toBeNull();
       expect(screen.getByText('Career Networking Night')).toBeDefined();
@@ -117,9 +118,45 @@ describe('EventsPage', () => {
     render(React.createElement(EventsPage));
     await waitFor(() => screen.getByText('Dashain Celebration'));
 
-    fireEvent.click(screen.getAllByText('🎉 Social')[0]);
+    fireEvent.click(screen.getByRole('button', { name: '🎉 Social' }));
     await waitFor(() => {
       expect(screen.getByText('No Social events')).toBeDefined();
+    });
+  });
+
+  it('renders the search input', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: '19100' } });
+    render(React.createElement(EventsPage));
+    await waitFor(() => screen.getByText('Dashain Celebration'));
+    expect(screen.getByRole('searchbox', { name: 'Search events' })).toBeDefined();
+  });
+
+  it('filters events by search query', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: '19100' } });
+    render(React.createElement(EventsPage));
+    await waitFor(() => screen.getByText('Dashain Celebration'));
+
+    const input = screen.getByRole('searchbox', { name: 'Search events' });
+    fireEvent.change(input, { target: { value: 'Dashain' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Career Networking Night')).toBeNull();
+      expect(screen.getByText('Dashain Celebration')).toBeDefined();
+    });
+  });
+
+  it('shows query-specific empty state when search matches nothing', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: '19100' } });
+    render(React.createElement(EventsPage));
+    await waitFor(() => screen.getByText('Dashain Celebration'));
+
+    const input = screen.getByRole('searchbox', { name: 'Search events' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.change(input, { target: { value: 'zzznomatch' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(screen.getByText('No events matching "zzznomatch"')).toBeDefined();
     });
   });
 

@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  ScrollView,
   RefreshControl,
   StyleSheet,
 } from 'react-native';
@@ -13,16 +12,20 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   getEventsByMetro,
-  EVENT_TYPES,
+  getUserEventResponses,
+  setEventResponse,
+  removeEventResponse,
   EVENT_TYPE_LABELS,
-  EVENT_TYPE_ICONS,
   TrustLevel,
   type Event,
   type EventType,
+  type RsvpStatus,
+  type UserEventResponses,
 } from '@nepally/shared';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../config/supabase';
 import { EventCard } from '../components/events/EventCard';
+import { EventFilterBar, type EventFilterBarValue } from '../components/events/EventFilterBar';
 import { colors } from '../styles/colors';
 import { spacing, borderRadius } from '../styles/spacing';
 import { typography } from '../styles/typography';
@@ -30,12 +33,7 @@ import type { EventsStackParamList } from '../types/navigation';
 
 type Nav = NativeStackNavigationProp<EventsStackParamList>;
 
-type FilterChip = 'all' | EventType;
-
-const FILTER_CHIPS: { key: FilterChip; label: string; icon: string }[] = [
-  { key: 'all', label: 'All', icon: '🗓️' },
-  ...EVENT_TYPES.map((t) => ({ key: t as FilterChip, label: EVENT_TYPE_LABELS[t], icon: EVENT_TYPE_ICONS[t] })),
-];
+const DEFAULT_FILTERS: EventFilterBarValue = { type: 'all', query: '' };
 
 export default function EventsScreen() {
   const navigation = useNavigation<Nav>();
@@ -45,12 +43,21 @@ export default function EventsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterChip>('all');
+  const [filters, setFilters] = useState<EventFilterBarValue>(DEFAULT_FILTERS);
   const [level0DismissedBanner, setLevel0DismissedBanner] = useState(false);
+  const [userResponses, setUserResponses] = useState<UserEventResponses>({});
 
   const metroId = user?.metro_area_id ?? '';
   const isLevel0 = (user?.trust_level ?? 0) < TrustLevel.VERIFIED;
   const canCreate = !isLevel0;
+  const canInteract = !isLevel0;
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const fetchEvents = useCallback(async () => {
     if (!metroId) {
@@ -59,6 +66,7 @@ export default function EventsScreen() {
     }
     setError(null);
     const result = await getEventsByMetro(supabase, metroId);
+    if (!mountedRef.current) return;
     if (result.error) {
       setError(result.error.message);
     } else {
@@ -68,21 +76,107 @@ export default function EventsScreen() {
     setRefreshing(false);
   }, [metroId]);
 
+  const fetchUserResponses = useCallback(async () => {
+    if (!user?.id) return;
+    const result = await getUserEventResponses(supabase, user.id);
+    if (!mountedRef.current) return;
+    if (!result.error && result.data) {
+      setUserResponses(result.data);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  useEffect(() => {
+    fetchUserResponses();
+  }, [fetchUserResponses]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchEvents();
   }, [fetchEvents]);
 
+  const handleResponseChange = useCallback(
+    async (eventId: string, status: RsvpStatus | null) => {
+      if (!user?.id) return;
+
+      const previous = userResponses[eventId] ?? null;
+
+      // Optimistic update: update counts and response map immediately
+      setUserResponses((prev) => {
+        const next = { ...prev };
+        if (status === null) {
+          delete next[eventId];
+        } else {
+          next[eventId] = status;
+        }
+        return next;
+      });
+
+      setEvents((prev) =>
+        prev.map((e) => {
+          if (e.id !== eventId) return e;
+          let { rsvp_count, interested_count } = e;
+
+          // Remove old response counter
+          if (previous === 'going') rsvp_count = Math.max(0, rsvp_count - 1);
+          if (previous === 'interested') interested_count = Math.max(0, interested_count - 1);
+
+          // Add new response counter
+          if (status === 'going') rsvp_count += 1;
+          if (status === 'interested') interested_count += 1;
+
+          return { ...e, rsvp_count, interested_count };
+        })
+      );
+
+      // Persist to DB
+      const result = status === null
+        ? await removeEventResponse(supabase, eventId, user.id)
+        : await setEventResponse(supabase, eventId, user.id, status);
+
+      if (result.error) {
+        // Roll back on failure
+        if (!mountedRef.current) return;
+        setUserResponses((prev) => {
+          const next = { ...prev };
+          if (previous === null) {
+            delete next[eventId];
+          } else {
+            next[eventId] = previous;
+          }
+          return next;
+        });
+        setEvents((prev) =>
+          prev.map((e) => {
+            if (e.id !== eventId) return e;
+            let { rsvp_count, interested_count } = e;
+            if (status === 'going') rsvp_count = Math.max(0, rsvp_count - 1);
+            if (status === 'interested') interested_count = Math.max(0, interested_count - 1);
+            if (previous === 'going') rsvp_count += 1;
+            if (previous === 'interested') interested_count += 1;
+            return { ...e, rsvp_count, interested_count };
+          })
+        );
+      }
+    },
+    [user?.id, userResponses]
+  );
+
   const { upcoming, past } = useMemo(() => {
     const now = new Date();
-    const filtered =
-      activeFilter === 'all'
-        ? events
-        : events.filter((e) => e.event_type === activeFilter);
+    const q = filters.query.toLowerCase().trim();
+
+    const filtered = events.filter((e) => {
+      const matchesType = filters.type === 'all' || e.event_type === filters.type;
+      const matchesQuery =
+        !q ||
+        e.title.toLowerCase().includes(q) ||
+        e.location_name.toLowerCase().includes(q);
+      return matchesType && matchesQuery;
+    });
 
     const upcoming: Event[] = [];
     const past: Event[] = [];
@@ -96,7 +190,7 @@ export default function EventsScreen() {
       }
     }
     return { upcoming, past };
-  }, [events, activeFilter]);
+  }, [events, filters]);
 
   const listData = useMemo(() => {
     const items: Array<{ type: 'event'; event: Event; past: boolean } | { type: 'divider' }> = [];
@@ -121,60 +215,35 @@ export default function EventsScreen() {
           </View>
         );
       }
-      return <EventCard event={item.event} past={item.past} />;
+      return (
+        <EventCard
+          event={item.event}
+          past={item.past}
+          userResponse={userResponses[item.event.id] ?? null}
+          canInteract={canInteract}
+          onResponseChange={handleResponseChange}
+        />
+      );
     },
-    []
+    [userResponses, canInteract, handleResponseChange]
   );
 
-  const renderHeader = () => (
-    <>
-      {/* Level 0 banner */}
-      {isLevel0 && !level0DismissedBanner && (
-        <View style={styles.level0Banner}>
-          <Text style={styles.level0BannerText}>
-            Verify your phone to RSVP and create events.
-          </Text>
-          <TouchableOpacity onPress={() => setLevel0DismissedBanner(true)}>
-            <Text style={styles.level0BannerDismiss}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-        style={styles.filterScroll}
-      >
-        {FILTER_CHIPS.map((chip) => (
-          <TouchableOpacity
-            key={chip.key}
-            style={[styles.chip, activeFilter === chip.key && styles.chipActive]}
-            onPress={() => setActiveFilter(chip.key)}
-          >
-            <Text style={[styles.chipText, activeFilter === chip.key && styles.chipTextActive]}>
-              {chip.icon} {chip.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </>
-  );
-
-  const renderEmpty = () => {
-    if (loading) return null;
-    return (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyIcon}>📅</Text>
-        <Text style={styles.emptyTitle}>
-          {activeFilter === 'all'
-            ? 'No upcoming events'
-            : `No ${EVENT_TYPE_LABELS[activeFilter as EventType]} events`}
+  const renderHeader = () =>
+    isLevel0 && !level0DismissedBanner ? (
+      <View style={styles.level0Banner}>
+        <Text style={styles.level0BannerText}>
+          Verify your account to RSVP and create events.
         </Text>
-        <Text style={styles.emptySubtitle}>Check back soon!</Text>
+        <TouchableOpacity onPress={() => setLevel0DismissedBanner(true)}>
+          <Text style={styles.level0BannerDismiss}>✕</Text>
+        </TouchableOpacity>
       </View>
-    );
+    ) : null;
+
+  const getEmptyTitle = () => {
+    if (filters.query) return `No events matching "${filters.query}"`;
+    if (filters.type !== 'all') return `No ${EVENT_TYPE_LABELS[filters.type as EventType]} events`;
+    return 'No upcoming events';
   };
 
   return (
@@ -192,6 +261,8 @@ export default function EventsScreen() {
         ) : null}
       </View>
 
+      <EventFilterBar value={filters} onChange={setFilters} />
+
       {loading ? (
         <View style={styles.loadingContainer}>
           {[1, 2, 3].map((n) => (
@@ -201,7 +272,13 @@ export default function EventsScreen() {
       ) : error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => { setLoading(true); fetchEvents(); }}>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setLoading(true);
+              fetchEvents();
+            }}
+          >
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -213,7 +290,13 @@ export default function EventsScreen() {
           }
           renderItem={renderItem}
           ListHeaderComponent={renderHeader}
-          ListEmptyComponent={renderEmpty}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>📅</Text>
+              <Text style={styles.emptyTitle}>{getEmptyTitle()}</Text>
+              <Text style={styles.emptySubtitle}>Check back soon!</Text>
+            </View>
+          }
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           contentContainerStyle={listData.length === 0 ? styles.flatListEmpty : undefined}
         />
@@ -272,38 +355,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 8,
   },
-  filterScroll: {
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  filterRow: {
-    paddingHorizontal: spacing.s,
-    paddingVertical: spacing.xs,
-    gap: 8,
-    flexDirection: 'row',
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-  },
-  chipActive: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
-  },
-  chipText: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: colors.white,
-    fontWeight: '600',
-  },
   divider: {
     paddingHorizontal: spacing.s,
     paddingTop: spacing.m,
@@ -322,7 +373,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   skeletonCard: {
-    height: 90,
+    height: 240,
     backgroundColor: colors.border,
     borderRadius: 12,
     opacity: 0.5,

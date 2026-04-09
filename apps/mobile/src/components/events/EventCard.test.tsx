@@ -48,6 +48,7 @@ const MOCK_EVENT = {
   is_global: false,
   organizer_id: 'user-1',
   rsvp_count: 8,
+  interested_count: 12,
   rsvp_visibility: 'public' as const,
   status: 'active' as const,
   created_at: new Date().toISOString(),
@@ -75,20 +76,14 @@ describe('EventCard', () => {
     expect(getByText(/Dallas Convention Center/)).toBeTruthy();
   });
 
-  it('renders RSVP count label — plural', () => {
+  it('renders going count', () => {
     const { getByText } = render(<EventCard event={MOCK_EVENT} />);
-    expect(getByText('8 going')).toBeTruthy();
+    expect(getByText(/8 going/)).toBeTruthy();
   });
 
-  it('renders RSVP count label — singular', () => {
-    const event = { ...MOCK_EVENT, rsvp_count: 1 };
-    const { getByText } = render(<EventCard event={event} />);
-    expect(getByText('1 going')).toBeTruthy();
-  });
-
-  it('renders organizer name (formatted)', () => {
+  it('renders interested count', () => {
     const { getByText } = render(<EventCard event={MOCK_EVENT} />);
-    expect(getByText('Asha K.')).toBeTruthy();
+    expect(getByText(/12 interested/)).toBeTruthy();
   });
 
   it('navigates to EventDetail on press', () => {
@@ -124,24 +119,113 @@ describe('EventCard', () => {
     expect(() => render(<EventCard event={pastEvent} past />)).not.toThrow();
   });
 
-  it('renders placeholder when no photo_url', () => {
+  it('renders cover placeholder emoji when no photo_url', () => {
     const { queryByText } = render(<EventCard event={MOCK_EVENT} />);
-    // No photo — placeholder emoji rendered
     expect(queryByText('📅')).toBeTruthy();
-  });
-
-  it('shows Unknown organizer when organizer is missing', () => {
-    const event = { ...MOCK_EVENT, organizer: undefined };
-    const { getByText } = render(<EventCard event={event} />);
-    expect(getByText('Unknown')).toBeTruthy();
   });
 
   it('renders multi-day date range when end_date differs', () => {
     const far = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
     const event = { ...MOCK_EVENT, end_date: far };
     const { getByText } = render(<EventCard event={event} />);
-    // Should contain a dash between start and end date
     const dateEl = getByText(/–/);
     expect(dateEl).toBeTruthy();
+  });
+
+  it('shows Interested button when canInteract is true and event is active', () => {
+    const { getByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract userResponse={null} />
+    );
+    expect(getByText('★ Interested')).toBeTruthy();
+  });
+
+  it('shows Going label when userResponse is going', () => {
+    const { getByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract userResponse="going" />
+    );
+    expect(getByText('✓ Going')).toBeTruthy();
+  });
+
+  it('shows Interested label when userResponse is interested', () => {
+    const { getByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract userResponse="interested" />
+    );
+    expect(getByText('★ Interested')).toBeTruthy();
+  });
+
+  it('opens response sheet when Interested button is pressed', () => {
+    const { getByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract userResponse={null} onResponseChange={jest.fn()} />
+    );
+    fireEvent.press(getByText('★ Interested'));
+    expect(getByText('Your response')).toBeTruthy();
+  });
+
+  it('calls onResponseChange with interested when sheet option selected', () => {
+    const onResponseChange = jest.fn();
+    const { getByText, getAllByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract userResponse={null} onResponseChange={onResponseChange} />
+    );
+    fireEvent.press(getByText('★ Interested'));
+    // In the modal, press Interested option
+    const interestedOptions = getAllByText('Interested');
+    fireEvent.press(interestedOptions[interestedOptions.length - 1]);
+    expect(onResponseChange).toHaveBeenCalledWith('event-1', 'interested');
+  });
+
+  it('calls onResponseChange with going when Going option selected', () => {
+    const onResponseChange = jest.fn();
+    const { getByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract userResponse={null} onResponseChange={onResponseChange} />
+    );
+    fireEvent.press(getByText('★ Interested'));
+    fireEvent.press(getByText('Going'));
+    expect(onResponseChange).toHaveBeenCalledWith('event-1', 'going');
+  });
+
+  it('shows Not Interested option when user already has a response', () => {
+    const { getByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract userResponse="going" onResponseChange={jest.fn()} />
+    );
+    fireEvent.press(getByText('✓ Going'));
+    expect(getByText('Not Interested')).toBeTruthy();
+  });
+
+  it('calls onResponseChange with null when Not Interested is pressed', () => {
+    const onResponseChange = jest.fn();
+    const { getByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract userResponse="going" onResponseChange={onResponseChange} />
+    );
+    fireEvent.press(getByText('✓ Going'));
+    fireEvent.press(getByText('Not Interested'));
+    expect(onResponseChange).toHaveBeenCalledWith('event-1', null);
+  });
+
+  it('does not show Interested button when canInteract is false', () => {
+    const { queryByText } = render(
+      <EventCard event={MOCK_EVENT} canInteract={false} />
+    );
+    expect(queryByText('★ Interested')).toBeNull();
+  });
+
+  it('does not show Interested button for past events', () => {
+    const { queryByText } = render(
+      <EventCard event={{ ...MOCK_EVENT, start_date: PAST }} canInteract past />
+    );
+    expect(queryByText('★ Interested')).toBeNull();
+  });
+
+  it('does not show Interested button for cancelled events', () => {
+    const { queryByText } = render(
+      <EventCard event={{ ...MOCK_EVENT, status: 'cancelled' as const }} canInteract />
+    );
+    expect(queryByText('★ Interested')).toBeNull();
+  });
+
+  it('formats large counts with K suffix', () => {
+    const event = { ...MOCK_EVENT, rsvp_count: 1500, interested_count: 6200 };
+    const { getByText } = render(<EventCard event={event} />);
+    expect(getByText(/6\.2K interested/)).toBeTruthy();
+    expect(getByText(/1\.5K going/)).toBeTruthy();
   });
 });

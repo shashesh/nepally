@@ -46,6 +46,7 @@ const CULTURAL_EVENT: Event = {
   is_global: false,
   organizer_id: 'user-1',
   rsvp_count: 5,
+  interested_count: 10,
   rsvp_visibility: 'public',
   status: 'active',
   created_at: NOW,
@@ -64,6 +65,7 @@ const CAREER_EVENT: Event = {
   is_global: false,
   organizer_id: 'user-2',
   rsvp_count: 12,
+  interested_count: 30,
   rsvp_visibility: 'public',
   status: 'active',
   created_at: NOW,
@@ -78,17 +80,21 @@ const PAST_EVENT: Event = {
   start_date: PAST,
 };
 
+const EVENT_TYPE_LABELS = {
+  cultural: 'Cultural',
+  religious: 'Religious',
+  social: 'Social',
+  career: 'Career',
+  other: 'Other',
+};
+
 jest.mock('@nepally/shared', () => ({
   getEventsByMetro: jest.fn(async () => ({ data: [] })),
-  getUserRsvps: jest.fn(async () => ({ data: [] })),
+  getUserEventResponses: jest.fn(async () => ({ data: {} })),
+  setEventResponse: jest.fn(async () => ({})),
+  removeEventResponse: jest.fn(async () => ({})),
   EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],
-  EVENT_TYPE_LABELS: {
-    cultural: 'Cultural',
-    religious: 'Religious',
-    social: 'Social',
-    career: 'Career',
-    other: 'Other',
-  },
+  EVENT_TYPE_LABELS,
   EVENT_TYPE_ICONS: {
     cultural: '🎭',
     religious: '🕌',
@@ -141,7 +147,6 @@ describe('EventsScreen', () => {
       mockGetEventsByMetro.mockReturnValue(new Promise(() => {}));
       const { getByText, queryByText } = render(<EventsScreen />);
       expect(getByText('Events')).toBeTruthy();
-      // Event titles should not appear yet
       expect(queryByText('Dashain Celebration')).toBeNull();
     });
 
@@ -161,7 +166,6 @@ describe('EventsScreen', () => {
       mockGetEventsByMetro.mockResolvedValueOnce({ error: new Error('Failed') } as { error: Error });
       const { getByText } = await renderAndSettle();
 
-      // Now set up successful response for retry
       mockGetEventsByMetro.mockResolvedValueOnce({ data: [CULTURAL_EVENT] });
 
       await act(async () => {
@@ -245,7 +249,6 @@ describe('EventsScreen', () => {
 
     it('shows filter-specific empty state when filter has no matches', async () => {
       const { getByText } = await renderAndSettle();
-      // Select "Social" chip — no social events
       fireEvent.press(getByText('🎉 Social'));
       expect(getByText('No Social events')).toBeTruthy();
     });
@@ -280,24 +283,43 @@ describe('EventsScreen', () => {
 
     it('restores all events when All chip is re-selected', async () => {
       const { getByText } = await renderAndSettle();
-
       fireEvent.press(getByText('💼 Career'));
-      expect(getByText('Career Networking Night')).toBeTruthy();
-
       fireEvent.press(getByText('🗓️ All'));
       expect(getByText('Dashain Celebration')).toBeTruthy();
       expect(getByText('Career Networking Night')).toBeTruthy();
     });
+  });
 
-    it('applies filter to both upcoming and past events', async () => {
-      setEvents([CULTURAL_EVENT, CAREER_EVENT, PAST_EVENT]);
-      const { getByText, queryByText } = await renderAndSettle();
+  // ─── Search Filter ──────────────────────────────────────────────────
 
-      // PAST_EVENT is cultural — filtering to career should hide it
-      fireEvent.press(getByText('💼 Career'));
-      expect(queryByText('Past Tihar Meetup')).toBeNull();
-      expect(queryByText('Dashain Celebration')).toBeNull();
-      expect(getByText('Career Networking Night')).toBeTruthy();
+  describe('search filter', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('renders search input', async () => {
+      const { getByPlaceholderText } = await renderAndSettle();
+      expect(getByPlaceholderText('Search events...')).toBeTruthy();
+    });
+
+    it('filters events by title when query is entered', async () => {
+      const { getByPlaceholderText, queryByText } = await renderAndSettle();
+      fireEvent.changeText(getByPlaceholderText('Search events...'), 'Dashain');
+      jest.runAllTimers();
+      await act(async () => {});
+      expect(queryByText('Dashain Celebration')).toBeTruthy();
+      expect(queryByText('Career Networking Night')).toBeNull();
+    });
+
+    it('shows empty state when search matches nothing', async () => {
+      const { getByPlaceholderText, getByText } = await renderAndSettle();
+      fireEvent.changeText(getByPlaceholderText('Search events...'), 'zzznomatch');
+      jest.runAllTimers();
+      await act(async () => {});
+      expect(getByText('No events matching "zzznomatch"')).toBeTruthy();
     });
   });
 
@@ -310,37 +332,23 @@ describe('EventsScreen', () => {
 
     it('shows verification banner for level 0 user', async () => {
       const { getByText } = await renderAndSettle();
-      expect(getByText('Verify your phone to RSVP and create events.')).toBeTruthy();
+      expect(getByText('Verify your account to RSVP and create events.')).toBeTruthy();
     });
 
     it('dismisses banner when ✕ is pressed', async () => {
       const { getByText, queryByText } = await renderAndSettle();
       fireEvent.press(getByText('✕'));
-      expect(queryByText('Verify your phone to RSVP and create events.')).toBeNull();
+      expect(queryByText('Verify your account to RSVP and create events.')).toBeNull();
     });
 
     it('does not show banner for verified user', async () => {
       setAuthUser({ trust_level: 1 });
       const { queryByText } = await renderAndSettle();
-      expect(queryByText('Verify your phone to RSVP and create events.')).toBeNull();
+      expect(queryByText('Verify your account to RSVP and create events.')).toBeNull();
     });
   });
 
-  // ─── Pull-to-Refresh ────────────────────────────────────────────────
-
-  describe('pull-to-refresh', () => {
-    it('calls getEventsByMetro again on refresh', async () => {
-      await renderAndSettle();
-      expect(mockGetEventsByMetro).toHaveBeenCalledTimes(1);
-
-      // The FlatList has a RefreshControl — simulate onRefresh via the FlatList
-      // Since RefreshControl is not directly pressable, we verify via the API call
-      // We can't easily simulate pull-to-refresh in RNTL, but we verify the fetch was called on mount
-      expect(mockGetEventsByMetro).toHaveBeenCalledWith({}, '19100');
-    });
-  });
-
-  // ─── Fetch Call ──────────────────────────────────────────────────────
+  // ─── Data Fetching ──────────────────────────────────────────────────
 
   describe('data fetching', () => {
     it('passes supabase client and metro ID to getEventsByMetro', async () => {

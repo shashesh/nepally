@@ -1,49 +1,168 @@
-/* EventCard — layout-only styles (Mantine handles colors, badges, text) */
+/* EventCard — vertical square card for 3-column grid layout */
+
 .card {
+  display: flex;
+  flex-direction: column;
   text-decoration: none;
   color: inherit;
-  transition: box-shadow var(--transition-fast);
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
 .card:hover {
-  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
 .cardPast {
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
-.row {
-  display: flex;
-  flex-direction: row;
-}
-
-.thumbnail {
-  width: 110px;
-  min-height: 110px;
-  object-fit: cover;
+/* ── Cover image ── */
+.cover {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
   flex-shrink: 0;
 }
 
-.thumbnailPlaceholder {
-  width: 110px;
-  min-height: 110px;
-  background-color: var(--color-secondary-light);
+.coverImage {
+  object-fit: cover;
+}
+
+.coverPlaceholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
-  flex-shrink: 0;
+  font-size: 44px;
 }
 
-.content {
+.badges {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* ── Body ── */
+.body {
+  padding: 12px 14px 8px;
   flex: 1;
-  padding: var(--space-xs) 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #212121;
+  line-height: 1.35;
 }
 
 .titlePast {
-  color: var(--color-text-secondary);
+  color: #9e9e9e;
+}
+
+.meta {
+  font-size: 12px;
+  color: #757575;
+  line-height: 1.4;
+}
+
+.counts {
+  font-size: 12px;
+  color: #757575;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* ── Footer ── */
+.footer {
+  padding: 8px 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #f0f0f0;
+  gap: 8px;
+}
+
+.organizer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.organizerName {
+  min-width: 0;
+}
+
+/* ── Response buttons ── */
+.responseGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.responseBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1.5px solid #1976D2;
+  background: transparent;
+  color: #1976D2;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+  white-space: nowrap;
+}
+
+.responseBtn:hover {
+  background: #E3F2FD;
+}
+
+.responseBtnActive {
+  background: #1976D2;
+  color: #fff;
+}
+
+.responseBtnActive:hover {
+  background: #1565C0;
+}
+
+.chevron {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.secondaryBtn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1.5px solid #e0e0e0;
+  background: transparent;
+  color: #616161;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease;
+  white-space: nowrap;
+}
+
+.secondaryBtn:hover {
+  background: #f5f5f5;
 }

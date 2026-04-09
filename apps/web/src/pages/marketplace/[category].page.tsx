@@ -1,35 +1,56 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
+import { useCachedCategories } from '../../hooks/useCachedCategories';
 import { supabase } from '../../lib/supabase';
 import {
   getListingsByMetro,
   MARKETPLACE_CATEGORIES,
+  type ListingSortBy,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { ListingCard } from '../../components/marketplace/ListingCard';
+import { FilterBar, type FilterBarValue } from '../../components/marketplace/FilterBar';
 import styles from './marketplace.module.css';
 
 const PAGE_SIZE = 20;
 
+function parseSort(raw: string | string[] | undefined): ListingSortBy {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  switch (v) {
+    case 'oldest':
+    case 'featured':
+    case 'price_asc':
+    case 'price_desc':
+      return v;
+    default:
+      return 'newest';
+  }
+}
+
+function readQueryParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? '';
+  return value ?? '';
+}
+
 export default function MarketplaceCategoryPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { category: categorySlug, q: searchQuery } = router.query;
 
-  const slug = typeof categorySlug === 'string' ? categorySlug : '';
-  const query = typeof searchQuery === 'string' ? searchQuery : '';
+  const slug = readQueryParam(router.query.category);
+  const q = readQueryParam(router.query.q);
+  const sort = parseSort(router.query.sort);
   const isSearch = slug === 'search';
 
   const categoryConfig = MARKETPLACE_CATEGORIES.find((c) => c.slug === slug);
-  const pageTitle = isSearch ? `Search: ${query}` : categoryConfig?.name ?? 'Category';
+  const pageTitle = isSearch ? `Search: ${q}` : categoryConfig?.name ?? 'Category';
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [localSearch, setLocalSearch] = useState(query);
+  const categories = useCachedCategories();
 
   const metroId = user?.metro_area_id ?? '';
 
@@ -44,30 +65,40 @@ export default function MarketplaceCategoryPage() {
     setLoading(true);
     const result = await getListingsByMetro(supabase, metroId, {
       categorySlug: isSearch ? undefined : slug,
-      searchQuery: localSearch || undefined,
+      searchQuery: q || undefined,
+      sortBy: sort,
       limit: PAGE_SIZE,
     });
     if (result.data) setListings(result.data);
     setLoading(false);
-  }, [metroId, slug, localSearch, isSearch, router.isReady]);
+  }, [metroId, slug, q, sort, isSearch, router.isReady]);
 
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
 
-  const handleSearch = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      if (isSearch) {
-        router.replace(
-          { pathname: router.pathname, query: { ...router.query, q: localSearch } },
-          undefined,
-          { shallow: true }
-        );
+  const filterValue: FilterBarValue = useMemo(
+    () => ({ category: isSearch ? '' : slug, sort, query: q }),
+    [isSearch, slug, sort, q]
+  );
+
+  const handleFilterChange = useCallback(
+    (next: FilterBarValue) => {
+      // If user changes category via the FilterBar (only possible in search mode),
+      // navigate to that category. Otherwise update the current route's query.
+      if (isSearch && next.category) {
+        const params: Record<string, string> = {};
+        if (next.sort !== 'newest') params.sort = next.sort;
+        if (next.query) params.q = next.query;
+        router.push({ pathname: `/marketplace/${next.category}`, query: params }, undefined, { shallow: true });
+        return;
       }
-      fetchListings();
+      const query: Record<string, string> = { category: slug };
+      if (next.sort !== 'newest') query.sort = next.sort;
+      if (next.query) query.q = next.query;
+      router.push({ pathname: '/marketplace/[category]', query }, undefined, { shallow: true });
     },
-    [fetchListings, isSearch, localSearch, router]
+    [router, slug, isSearch]
   );
 
   if (!user) return null;
@@ -86,24 +117,17 @@ export default function MarketplaceCategoryPage() {
           {categoryConfig?.emoji} {pageTitle}
         </h1>
 
-        {/* Search */}
-        <form className={styles.searchContainer} onSubmit={handleSearch}>
-          <div className={styles.searchWrapper}>
-            <span className={styles.searchIcon}>🔍</span>
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder={isSearch ? 'Search marketplace...' : `Search in ${pageTitle}...`}
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-            />
-          </div>
-        </form>
+        <FilterBar
+          categories={categories}
+          value={filterValue}
+          onChange={handleFilterChange}
+          lockedCategory={isSearch ? undefined : slug}
+        />
 
         {loading ? (
           <div className={styles.listingGrid}>
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} height={120} radius="md" />
+              <Skeleton key={i} height={360} radius="md" />
             ))}
           </div>
         ) : listings.length > 0 ? (
@@ -116,7 +140,7 @@ export default function MarketplaceCategoryPage() {
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🔍</div>
             <div className={styles.emptyText}>
-              {localSearch ? 'No listings match your search' : 'No listings in this category yet'}
+              {q ? 'No listings match your search' : 'No listings in this category yet'}
             </div>
           </div>
         )}

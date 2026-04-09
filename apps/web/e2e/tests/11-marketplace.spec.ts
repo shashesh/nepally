@@ -16,8 +16,11 @@ test.describe('Marketplace full feature flow', () => {
     await page.goto('/marketplace');
 
     await expect(page.getByRole('heading', { name: /^marketplace$/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('a[href="/marketplace/food-restaurants"]').first()).toBeVisible();
-    await expect(page.getByText(MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title)).toBeVisible();
+    await expect(page.getByRole('textbox', { name: /^category$/i })).toBeVisible();
+    await expect(page.getByRole('region', { name: /recently added/i })).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: /recently added/i }).getByText(MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title)
+    ).toBeVisible();
     await expect(page.getByRole('button', { name: /create listing/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /my listings/i })).toBeVisible();
   });
@@ -28,7 +31,7 @@ test.describe('Marketplace full feature flow', () => {
     await page.getByPlaceholder(/search marketplace/i).fill('resume review');
     await page.getByPlaceholder(/search marketplace/i).press('Enter');
 
-    await expect(page).toHaveURL(/\/marketplace\/search\?q=resume%20review/);
+    await expect(page).toHaveURL(/\/marketplace\?q=resume/);
     await expect(page.getByRole('heading', { name: /search: resume review/i })).toBeVisible();
   });
 
@@ -71,7 +74,7 @@ test.describe('Marketplace full feature flow', () => {
     await page.getByRole('button', { name: /^create listing$/i }).click();
 
     await expect(page).toHaveURL(/\/marketplace$/);
-    await expect(page.getByText(createdTitle)).toBeVisible();
+    await expect(page.getByText(createdTitle).first()).toBeVisible();
   });
 
   test('my listings supports deactivate, reactivate, and delete actions', async ({ page }) => {

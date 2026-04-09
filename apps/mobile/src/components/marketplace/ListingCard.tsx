@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { MarketplaceListing } from '@nepally/shared';
-import { LISTING_TYPE_LABELS } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
@@ -10,62 +9,66 @@ import { typography } from '../../styles/typography';
 interface ListingCardProps {
   listing: MarketplaceListing;
   onPress: () => void;
+  /** Optional width override for use inside horizontal strips */
+  width?: number;
 }
 
-export function ListingCard({ listing, onPress }: ListingCardProps) {
+export function ListingCard({ listing, onPress, width }: ListingCardProps) {
   const categoryColor = listing.category?.color ?? '#9E9E9E';
   const categoryEmoji = listing.category?.emoji ?? '📦';
   const categoryName = listing.category?.name ?? 'Other';
+  const isVerifiedSeller = (listing.owner?.trust_level ?? 0) >= 1;
+  const [firstPhoto] = listing.photos;
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      {/* Photo */}
-      {listing.photos.length > 0 ? (
-        <Image source={{ uri: listing.photos[0] }} style={styles.photo} />
+    <TouchableOpacity
+      style={[styles.card, width != null ? { width } : null]}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      {/* Image / gradient placeholder */}
+      {firstPhoto ? (
+        <Image source={{ uri: firstPhoto }} style={styles.image} />
       ) : (
-        <View style={[styles.photoPlaceholder, { backgroundColor: categoryColor + '20' }]}>
-          <Text style={styles.photoPlaceholderEmoji}>{categoryEmoji}</Text>
-        </View>
+        <LinearGradient
+          colors={[categoryColor + '33', categoryColor]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.imagePlaceholder}
+        >
+          <Text style={styles.placeholderEmoji}>{categoryEmoji}</Text>
+        </LinearGradient>
       )}
 
-      {/* Content */}
-      <View style={styles.content}>
+      {/* Body */}
+      <View style={styles.body}>
+        <View style={[styles.categoryChip, { backgroundColor: categoryColor + '22' }]}>
+          <Text style={[styles.categoryChipText, { color: categoryColor }]}>
+            {categoryEmoji} {categoryName}
+          </Text>
+        </View>
+
         <Text style={styles.title} numberOfLines={2}>
           {listing.title}
         </Text>
 
+        {listing.price && (
+          <Text style={styles.price}>Starting at {listing.price}</Text>
+        )}
+
         <View style={styles.metaRow}>
-          <View style={[styles.categoryBadge, { backgroundColor: categoryColor + '20' }]}>
-            <Text style={[styles.categoryBadgeText, { color: categoryColor }]}>
-              {categoryEmoji} {categoryName}
-            </Text>
-          </View>
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeBadgeText}>
-              {LISTING_TYPE_LABELS[listing.listing_type]}
-            </Text>
-          </View>
+          {isVerifiedSeller && (
+            <>
+              <Text style={styles.verifiedStar}>★</Text>
+              <Text style={styles.metaText}>Verified Seller</Text>
+              <Text style={styles.metaDot}>·</Text>
+            </>
+          )}
+          <Text style={styles.metaText}>{listing.views_count} views</Text>
         </View>
 
-        {listing.price && (
-          <Text style={styles.price}>{listing.price}</Text>
-        )}
-
-        {listing.business_name && (
-          <Text style={styles.businessName} numberOfLines={1}>
-            {listing.business_name}
-          </Text>
-        )}
-
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Ionicons name="eye-outline" size={14} color={colors.text.tertiary} />
-            <Text style={styles.statText}>{listing.views_count}</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons name="bookmark-outline" size={14} color={colors.text.tertiary} />
-            <Text style={styles.statText}>{listing.saves_count}</Text>
-          </View>
+        <View style={styles.contactBtn}>
+          <Text style={styles.contactBtnText}>Contact Seller</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -76,86 +79,85 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.card,
-    marginHorizontal: spacing.m,
-    marginBottom: spacing.s,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
-    flexDirection: 'row',
+    overflow: 'hidden',
+    marginBottom: spacing.s,
   },
-  photo: {
-    width: 100,
-    height: 100,
+  image: {
+    width: '100%',
+    height: 160,
     resizeMode: 'cover',
   },
-  photoPlaceholder: {
-    width: 100,
-    height: 100,
+  imagePlaceholder: {
+    width: '100%',
+    height: 160,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  photoPlaceholderEmoji: {
-    fontSize: 32,
+  placeholderEmoji: {
+    fontSize: 48,
   },
-  content: {
-    flex: 1,
+  body: {
     padding: spacing.s,
-    justifyContent: 'space-between',
+    gap: 6,
+  },
+  categoryChip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  categoryChipText: {
+    ...typography.caption,
+    fontSize: 11,
+    fontWeight: '600',
   },
   title: {
     ...typography.body,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: colors.text.primary,
-    marginBottom: 4,
+    lineHeight: 20,
+  },
+  price: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text.primary,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: 4,
-  },
-  categoryBadge: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: borderRadius.badge,
-  },
-  categoryBadgeText: {
-    ...typography.caption,
-    fontSize: 11,
-  },
-  typeBadge: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: borderRadius.badge,
-    backgroundColor: colors.background,
-  },
-  typeBadgeText: {
-    ...typography.caption,
-    fontSize: 11,
-    color: colors.text.secondary,
-  },
-  price: {
-    ...typography.body,
-    fontWeight: '700',
-    color: colors.primary.main,
-    marginBottom: 2,
-  },
-  businessName: {
-    ...typography.caption,
-    color: colors.text.secondary,
-    marginBottom: 2,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.m,
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 4,
   },
-  statText: {
+  verifiedStar: {
+    fontSize: 12,
+    color: '#2E7D32',
+    fontWeight: '700',
+  },
+  metaText: {
     ...typography.caption,
+    fontSize: 12,
+    color: colors.text.secondary,
+  },
+  metaDot: {
+    ...typography.caption,
+    fontSize: 12,
     color: colors.text.tertiary,
+  },
+  contactBtn: {
+    marginTop: 4,
+    backgroundColor: colors.primary.main,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  contactBtnText: {
+    ...typography.body,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white,
   },
 });

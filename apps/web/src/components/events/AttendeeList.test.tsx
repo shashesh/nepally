@@ -22,6 +22,7 @@ const makeRsvp = (id: string, name: string) => ({
   id,
   event_id: 'event-1',
   user_id: `user-${id}`,
+  status: 'going' as const,
   created_at: new Date().toISOString(),
   user: { id: `user-${id}`, full_name: name, trust_level: 1, profile_photo: null },
 });
@@ -63,6 +64,7 @@ describe('AttendeeList (web)', () => {
       id: 'rsvp-x',
       event_id: 'event-1',
       user_id: 'user-x',
+      status: 'going' as const,
       created_at: new Date().toISOString(),
       user: undefined,
     };

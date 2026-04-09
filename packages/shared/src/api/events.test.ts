@@ -9,9 +9,12 @@ import {
   getEventsByMetro,
   getEventsByOrganizer,
   getUpcomingEventsByMetro,
+  getUserEventResponses,
   getUserRsvps,
   hasUserRsvp,
+  removeEventResponse,
   rsvpToEvent,
+  setEventResponse,
   unrsvpFromEvent,
   updateEvent,
 } from './events';
@@ -29,6 +32,7 @@ const MOCK_EVENT = {
   is_global: false,
   organizer_id: 'user-1',
   rsvp_count: 0,
+  interested_count: 0,
   rsvp_visibility: 'public',
   status: 'active',
   created_at: new Date().toISOString(),
@@ -356,24 +360,18 @@ describe('cancelEvent / deleteEvent', () => {
 });
 
 describe('rsvpToEvent / unrsvpFromEvent', () => {
-  it('rsvpToEvent inserts an RSVP', async () => {
+  it('rsvpToEvent upserts a going response', async () => {
     const chain = {
-      insert: vi.fn().mockResolvedValue({ error: null }),
+      upsert: vi.fn().mockResolvedValue({ error: null }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
     const result = await rsvpToEvent(supabase, 'event-1', 'user-2');
     expect(result.error).toBeUndefined();
-  });
-
-  it('rsvpToEvent treats duplicate RSVP as success', async () => {
-    const chain = {
-      insert: vi.fn().mockResolvedValue({ error: { code: '23505' } }),
-    };
-    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
-
-    const result = await rsvpToEvent(supabase, 'event-1', 'user-2');
-    expect(result.error).toBeUndefined();
+    expect(chain.upsert).toHaveBeenCalledWith(
+      { event_id: 'event-1', user_id: 'user-2', status: 'going' },
+      { onConflict: 'event_id,user_id' }
+    );
   });
 
   it('unrsvpFromEvent deletes an RSVP', async () => {
@@ -381,12 +379,107 @@ describe('rsvpToEvent / unrsvpFromEvent', () => {
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
     };
-    // last eq resolves
     chain.eq.mockReturnValueOnce(chain).mockResolvedValueOnce({ error: null });
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
     const result = await unrsvpFromEvent(supabase, 'event-1', 'user-2');
     expect(result.error).toBeUndefined();
+  });
+});
+
+describe('setEventResponse', () => {
+  it('upserts a going response', async () => {
+    const chain = {
+      upsert: vi.fn().mockResolvedValue({ error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await setEventResponse(supabase, 'event-1', 'user-1', 'going');
+    expect(result.error).toBeUndefined();
+    expect(chain.upsert).toHaveBeenCalledWith(
+      { event_id: 'event-1', user_id: 'user-1', status: 'going' },
+      { onConflict: 'event_id,user_id' }
+    );
+  });
+
+  it('upserts an interested response', async () => {
+    const chain = {
+      upsert: vi.fn().mockResolvedValue({ error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await setEventResponse(supabase, 'event-1', 'user-1', 'interested');
+    expect(result.error).toBeUndefined();
+    expect(chain.upsert).toHaveBeenCalledWith(
+      { event_id: 'event-1', user_id: 'user-1', status: 'interested' },
+      { onConflict: 'event_id,user_id' }
+    );
+  });
+
+  it('returns error on supabase failure', async () => {
+    const chain = {
+      upsert: vi.fn().mockResolvedValue({ error: new Error('DB error') }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await setEventResponse(supabase, 'event-1', 'user-1', 'going');
+    expect(result.error).toBeDefined();
+  });
+});
+
+describe('removeEventResponse', () => {
+  it('delegates to unrsvpFromEvent (deletes row)', async () => {
+    const chain = {
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+    };
+    chain.eq.mockReturnValueOnce(chain).mockResolvedValueOnce({ error: null });
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await removeEventResponse(supabase, 'event-1', 'user-1');
+    expect(result.error).toBeUndefined();
+  });
+});
+
+describe('getUserEventResponses', () => {
+  it('returns a map of eventId → status', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({
+        data: [
+          { event_id: 'event-1', status: 'going' },
+          { event_id: 'event-2', status: 'interested' },
+        ],
+        error: null,
+      }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUserEventResponses(supabase, 'user-1');
+    expect(result.error).toBeUndefined();
+    expect(result.data).toEqual({ 'event-1': 'going', 'event-2': 'interested' });
+  });
+
+  it('returns empty map when user has no responses', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUserEventResponses(supabase, 'user-1');
+    expect(result.data).toEqual({});
+  });
+
+  it('returns error on supabase failure', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUserEventResponses(supabase, 'user-1');
+    expect(result.error).toBeDefined();
   });
 });
 
@@ -614,9 +707,9 @@ describe('unrsvpFromEvent — additional paths', () => {
 });
 
 describe('rsvpToEvent — additional paths', () => {
-  it('returns error on non-duplicate supabase failure', async () => {
+  it('returns error on supabase failure', async () => {
     const chain = {
-      insert: vi.fn().mockResolvedValue({ error: { code: '42501', message: 'Permission denied' } }),
+      upsert: vi.fn().mockResolvedValue({ error: { code: '42501', message: 'Permission denied' } }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 

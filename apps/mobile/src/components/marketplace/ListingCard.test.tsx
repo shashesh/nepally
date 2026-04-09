@@ -3,10 +3,12 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { ListingCard } from './ListingCard';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+jest.mock('expo-linear-gradient', () => {
+  const { View } = jest.requireActual('react-native');
+  return { LinearGradient: View };
+});
 
-jest.mock('@nepally/shared', () => ({
-  LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
-}));
+jest.mock('@nepally/shared', () => ({}));
 
 const MOCK_CATEGORY = {
   id: 'cat-1',
@@ -40,6 +42,8 @@ function makeListing(overrides: Record<string, unknown> = {}) {
     item_condition: null,
     business_hours: null,
     is_global: false,
+    is_featured: false,
+    trending_score: 24,
     views_count: 10,
     saves_count: 3,
     contacts_count: 1,
@@ -54,62 +58,74 @@ function makeListing(overrides: Record<string, unknown> = {}) {
 
 describe('ListingCard', () => {
   it('renders the listing title', () => {
-    const { getAllByText } = render(
-      <ListingCard listing={makeListing()} onPress={jest.fn()} />
-    );
-    // Title and business_name are both "Himalayan Kitchen"
-    expect(getAllByText('Himalayan Kitchen').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('renders category badge', () => {
     const { getByText } = render(
       <ListingCard listing={makeListing()} onPress={jest.fn()} />
     );
-    expect(getByText(/Food & Restaurants/)).toBeTruthy();
+    expect(getByText('Himalayan Kitchen')).toBeTruthy();
   });
 
-  it('renders listing type label', () => {
+  it('renders category chip with emoji and name', () => {
     const { getByText } = render(
       <ListingCard listing={makeListing()} onPress={jest.fn()} />
     );
-    expect(getByText('Business')).toBeTruthy();
+    expect(getByText(/🍜 Food & Restaurants/)).toBeTruthy();
   });
 
-  it('renders price when present', () => {
+  it('renders price with "Starting at" prefix when present', () => {
     const { getByText } = render(
       <ListingCard listing={makeListing({ price: '$20' })} onPress={jest.fn()} />
     );
-    expect(getByText('$20')).toBeTruthy();
+    expect(getByText('Starting at $20')).toBeTruthy();
   });
 
-  it('does not render price when null', () => {
+  it('does not render price row when null', () => {
     const { queryByText } = render(
       <ListingCard listing={makeListing({ price: null })} onPress={jest.fn()} />
     );
-    expect(queryByText('$15-25')).toBeNull();
+    expect(queryByText(/Starting at/)).toBeNull();
   });
 
-  it('renders business name when present', () => {
+  it('renders verified seller star when owner trust_level >= 1', () => {
     const { getByText } = render(
-      <ListingCard listing={makeListing({ business_name: 'My Biz' })} onPress={jest.fn()} />
+      <ListingCard listing={makeListing()} onPress={jest.fn()} />
     );
-    expect(getByText('My Biz')).toBeTruthy();
+    expect(getByText('★')).toBeTruthy();
+    expect(getByText('Verified Seller')).toBeTruthy();
   });
 
-  it('renders views and saves counts', () => {
-    const { getByText } = render(
-      <ListingCard listing={makeListing({ views_count: 42, saves_count: 7 })} onPress={jest.fn()} />
+  it('hides verified seller when owner trust_level is 0', () => {
+    const { queryByText } = render(
+      <ListingCard
+        listing={makeListing({
+          owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 0, profile_photo: null },
+        })}
+        onPress={jest.fn()}
+      />
     );
-    expect(getByText('42')).toBeTruthy();
-    expect(getByText('7')).toBeTruthy();
+    expect(queryByText('Verified Seller')).toBeNull();
+    expect(queryByText('★')).toBeNull();
+  });
+
+  it('renders views count', () => {
+    const { getByText } = render(
+      <ListingCard listing={makeListing({ views_count: 42 })} onPress={jest.fn()} />
+    );
+    expect(getByText('42 views')).toBeTruthy();
+  });
+
+  it('renders Contact Seller CTA', () => {
+    const { getByText } = render(
+      <ListingCard listing={makeListing()} onPress={jest.fn()} />
+    );
+    expect(getByText('Contact Seller')).toBeTruthy();
   });
 
   it('calls onPress when card is pressed', () => {
     const onPress = jest.fn();
-    const { getAllByText } = render(
+    const { getByText } = render(
       <ListingCard listing={makeListing()} onPress={onPress} />
     );
-    fireEvent.press(getAllByText('Himalayan Kitchen')[0]);
+    fireEvent.press(getByText('Himalayan Kitchen'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 

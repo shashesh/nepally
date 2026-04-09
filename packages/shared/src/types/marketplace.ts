@@ -10,6 +10,14 @@ export type ListingStatus = 'active' | 'inactive' | 'removed';
 
 export type ItemCondition = 'new' | 'used';
 
+/**
+ * Sort options for marketplace listing queries.
+ * - `newest` / `oldest`: by refreshed_at
+ * - `featured`: is_featured DESC, then refreshed_at DESC
+ * - `price_asc` / `price_desc`: by price (TEXT column — lexicographic sort; see note in api/marketplace.ts)
+ */
+export type ListingSortBy = 'newest' | 'oldest' | 'featured' | 'price_asc' | 'price_desc';
+
 export interface BusinessHours {
   monday?: { open: string; close: string };
   tuesday?: { open: string; close: string };
@@ -59,6 +67,9 @@ export interface MarketplaceListing {
   views_count: number;
   saves_count: number;
   contacts_count: number;
+  // Discovery surfaces (migration 018)
+  is_featured: boolean;
+  trending_score: number;
   // Soft expiry
   refreshed_at: string;
   // Timestamps
