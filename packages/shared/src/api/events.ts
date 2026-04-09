@@ -9,6 +9,8 @@ import type {
   EventsResult,
   EventRsvp,
   EventRsvpsResult,
+  RsvpStatus,
+  UserEventResponses,
 } from '../types/events';
 import type { CreateEventInput, UpdateEventInput } from '../validation/events';
 
@@ -27,6 +29,7 @@ type AttendeeRow = {
   id: string;
   event_id: string;
   user_id: string;
+  status: RsvpStatus;
   created_at: string;
   user?: {
     id: string;
@@ -160,6 +163,7 @@ export async function getEventAttendees(
         id,
         event_id,
         user_id,
+        status,
         created_at,
         user:users!event_rsvps_user_id_fkey (
           id,
@@ -179,6 +183,7 @@ export async function getEventAttendees(
         id: row.id,
         event_id: row.event_id,
         user_id: row.user_id,
+        status: row.status,
         created_at: row.created_at,
         user: user
           ? {
@@ -331,30 +336,53 @@ export async function deleteEvent(
 }
 
 /**
- * RSVP a user to an event. Inserts into event_rsvps.
+ * RSVP a user to an event as "going". Inserts into event_rsvps with status='going'.
  * Trigger in DB increments events.rsvp_count automatically.
+ * Idempotent: duplicate inserts are treated as success.
  */
 export async function rsvpToEvent(
   supabase: SupabaseClient,
   eventId: string,
   userId: string
 ): Promise<{ error?: Error }> {
+  return setEventResponse(supabase, eventId, userId, 'going');
+}
+
+/**
+ * Set or change a user's response to an event (going | interested).
+ * Uses UPSERT so switching between statuses works correctly.
+ * Triggers in DB keep rsvp_count and interested_count in sync.
+ */
+export async function setEventResponse(
+  supabase: SupabaseClient,
+  eventId: string,
+  userId: string,
+  status: RsvpStatus
+): Promise<{ error?: Error }> {
   try {
     const { error } = await supabase
       .from('event_rsvps')
-      .insert({ event_id: eventId, user_id: userId });
-
-    // RSVP should behave as idempotent. If the row already exists,
-    // treat it as success so UI state remains consistent.
-    if ((error as { code?: string } | null)?.code === '23505') {
-      return {};
-    }
+      .upsert(
+        { event_id: eventId, user_id: userId, status },
+        { onConflict: 'event_id,user_id' }
+      );
 
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to RSVP') };
+    return { error: error instanceof Error ? error : new Error('Failed to set event response') };
   }
+}
+
+/**
+ * Remove a user's response from an event (clears both going and interested).
+ */
+export async function removeEventResponse(
+  supabase: SupabaseClient,
+  eventId: string,
+  userId: string
+): Promise<{ error?: Error }> {
+  return unrsvpFromEvent(supabase, eventId, userId);
 }
 
 /**
@@ -398,6 +426,32 @@ export async function getUserRsvps(
     return { data: (data || []).map((row: { event_id: string }) => row.event_id) };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch user RSVPs') };
+  }
+}
+
+/**
+ * Get all event responses for a user as a map of eventId → status.
+ * Used to hydrate Interested/Going button states across all cards.
+ */
+export async function getUserEventResponses(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ data?: UserEventResponses; error?: Error }> {
+  try {
+    const { data, error } = await supabase
+      .from('event_rsvps')
+      .select('event_id, status')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    const map: UserEventResponses = {};
+    for (const row of data || []) {
+      map[(row as { event_id: string; status: RsvpStatus }).event_id] =
+        (row as { event_id: string; status: RsvpStatus }).status;
+    }
+    return { data: map };
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('Failed to fetch event responses') };
   }
 }
 

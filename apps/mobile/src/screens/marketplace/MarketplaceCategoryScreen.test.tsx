@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
-import { getListingsByMetro } from '@nepally/shared';
+import { getCategories, getListingsByMetro } from '@nepally/shared';
 import MarketplaceCategoryScreen from './MarketplaceCategoryScreen';
 
 // ---------------------------------------------------------------------------
@@ -16,6 +16,54 @@ jest.mock('../../components/marketplace/ListingCard', () => ({
     return ReactLocal.createElement(Text, null, listing.title);
   },
 }));
+
+jest.mock('../../components/marketplace/FilterBar', () => {
+  const { View, Text, TextInput, TouchableOpacity } = jest.requireActual('react-native');
+  const ReactLocal = jest.requireActual('react');
+  type MockValue = { category: string; sort: string; query: string };
+  return {
+    FilterBar: ({
+      value,
+      onChange,
+      lockedCategory,
+    }: {
+      value: MockValue;
+      onChange: (v: MockValue) => void;
+      lockedCategory?: string;
+    }) => {
+      return ReactLocal.createElement(
+        View,
+        { accessibilityLabel: 'filter-bar' },
+        ReactLocal.createElement(Text, null, `locked:${lockedCategory ?? 'none'}`),
+        ReactLocal.createElement(Text, null, `category:${value.category}`),
+        ReactLocal.createElement(Text, null, `sort:${value.sort}`),
+        ReactLocal.createElement(Text, null, `query:${value.query}`),
+        ReactLocal.createElement(
+          TouchableOpacity,
+          {
+            accessibilityLabel: 'mock-set-sort-price-asc',
+            onPress: () => onChange({ ...value, sort: 'price_asc' }),
+          },
+          ReactLocal.createElement(Text, null, 'SetSortAsc')
+        ),
+        ReactLocal.createElement(TextInput, {
+          accessibilityLabel: 'mock-search',
+          placeholder: 'Search...',
+          value: value.query,
+          onChangeText: (q: string) => onChange({ ...value, query: q }),
+        }),
+        ReactLocal.createElement(
+          TouchableOpacity,
+          {
+            accessibilityLabel: 'mock-set-category-professional',
+            onPress: () => onChange({ ...value, category: 'professional-services' }),
+          },
+          ReactLocal.createElement(Text, null, 'SetCategoryPro')
+        )
+      );
+    },
+  };
+});
 
 jest.mock('react-native-safe-area-context', () => {
   const ReactLocal = jest.requireActual('react');
@@ -49,16 +97,17 @@ jest.mock('../../config/supabase', () => ({ supabase: {} }));
 
 jest.mock('@nepally/shared', () => ({
   getListingsByMetro: jest.fn(async () => ({ data: [] })),
-  LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
+  getCategories: jest.fn(async () => ({ data: [] })),
 }));
 
 const mockGetListingsByMetro = getListingsByMetro as jest.MockedFunction<typeof getListingsByMetro>;
+const mockGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_CATEGORY = {
+const FOOD_CATEGORY = {
   id: 'cat-1',
   name: 'Food & Restaurants',
   slug: 'food-restaurants',
@@ -67,7 +116,19 @@ const MOCK_CATEGORY = {
   color: '#FF6B35',
   description: 'Nepali restaurants',
   sort_order: 1,
-  created_at: new Date().toISOString(),
+  created_at: '2025-01-01T00:00:00Z',
+};
+
+const PRO_CATEGORY = {
+  id: 'cat-2',
+  name: 'Professional Services',
+  slug: 'professional-services',
+  emoji: '💼',
+  icon: 'briefcase',
+  color: '#2196F3',
+  description: null,
+  sort_order: 2,
+  created_at: '2025-01-01T00:00:00Z',
 };
 
 const MOCK_LISTING = {
@@ -89,18 +150,20 @@ const MOCK_LISTING = {
   item_condition: null,
   business_hours: null,
   is_global: false,
+  is_featured: false,
+  trending_score: 10,
   views_count: 10,
   saves_count: 3,
   contacts_count: 1,
-  refreshed_at: new Date().toISOString(),
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  category: MOCK_CATEGORY,
+  refreshed_at: '2025-01-01T00:00:00Z',
+  created_at: '2025-01-01T00:00:00Z',
+  updated_at: '2025-01-01T00:00:00Z',
+  category: FOOD_CATEGORY,
   owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
 // ---------------------------------------------------------------------------
-// Tests — render() + waitFor() only; NEVER use act() (hangs on CI)
+// Tests
 // ---------------------------------------------------------------------------
 
 describe('MarketplaceCategoryScreen', () => {
@@ -113,10 +176,9 @@ describe('MarketplaceCategoryScreen', () => {
       categorySlug: 'food-restaurants',
       categoryName: 'Food & Restaurants',
     });
+    mockGetCategories.mockResolvedValue({ data: [FOOD_CATEGORY, PRO_CATEGORY] });
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
   });
-
-  // -- Header & layout ---------------------------------------------------------
 
   it('renders the category name in the header', async () => {
     const screen = render(<MarketplaceCategoryScreen />);
@@ -125,35 +187,31 @@ describe('MarketplaceCategoryScreen', () => {
     });
   });
 
-  it('shows search input with category-specific placeholder', async () => {
+  it('renders FilterBar with category locked', async () => {
     const screen = render(<MarketplaceCategoryScreen />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Search in Food & Restaurants/)).toBeTruthy();
+      expect(screen.getByText('locked:food-restaurants')).toBeTruthy();
     });
+    expect(screen.getByText('category:food-restaurants')).toBeTruthy();
   });
 
-  // -- Data fetching -----------------------------------------------------------
-
-  it('calls getListingsByMetro with category slug filter', async () => {
-    const screen = render(<MarketplaceCategoryScreen />);
+  it('calls getListingsByMetro with category slug + default sort', async () => {
+    render(<MarketplaceCategoryScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
+      expect(mockGetListingsByMetro).toHaveBeenCalledWith(
+        expect.anything(),
+        'metro-1',
+        expect.objectContaining({ categorySlug: 'food-restaurants', sortBy: 'newest' })
+      );
     });
-    expect(mockGetListingsByMetro).toHaveBeenCalledWith(
-      expect.anything(),
-      'metro-1',
-      expect.objectContaining({ categorySlug: 'food-restaurants' }),
-    );
   });
 
   it('renders listings from API', async () => {
     const screen = render(<MarketplaceCategoryScreen />);
     await waitFor(() => {
-      expect(screen.getAllByText('Himalayan Kitchen').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
     });
   });
-
-  // -- Empty state -------------------------------------------------------------
 
   it('shows empty state when no listings', async () => {
     mockGetListingsByMetro.mockResolvedValue({ data: [] });
@@ -163,19 +221,32 @@ describe('MarketplaceCategoryScreen', () => {
     });
   });
 
-  // -- No metro_area_id --------------------------------------------------------
-
-  it('skips fetch when metroId is empty', async () => {
-    mockUseAuth.mockReturnValue({ user: { id: 'user-1', metro_area_id: '' } });
-    mockGetListingsByMetro.mockClear();
+  it('re-fetches when sort is changed via FilterBar', async () => {
     const screen = render(<MarketplaceCategoryScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
+      expect(screen.getByText('sort:newest')).toBeTruthy();
     });
-    expect(mockGetListingsByMetro).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByLabelText('mock-set-sort-price-asc'));
+    await waitFor(() => {
+      expect(mockGetListingsByMetro).toHaveBeenCalledWith(
+        expect.anything(),
+        'metro-1',
+        expect.objectContaining({ sortBy: 'price_asc' })
+      );
+    });
   });
 
-  // -- Search mode -------------------------------------------------------------
+  it('changing category navigates to the new category', async () => {
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByLabelText('mock-set-category-professional'));
+    expect(mockNavigate).toHaveBeenCalledWith('MarketplaceCategory', {
+      categorySlug: 'professional-services',
+      categoryName: 'Professional Services',
+    });
+  });
 
   it('renders "Search Results" header in search mode', async () => {
     mockRouteParams.mockReturnValue({
@@ -188,18 +259,18 @@ describe('MarketplaceCategoryScreen', () => {
     });
   });
 
-  it('shows generic search placeholder in search mode', async () => {
+  it('does NOT lock category in search mode', async () => {
     mockRouteParams.mockReturnValue({
       categorySlug: '__search__',
       categoryName: 'Search: biryani',
     });
     const screen = render(<MarketplaceCategoryScreen />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Search marketplace...')).toBeTruthy();
+      expect(screen.getByText('locked:none')).toBeTruthy();
     });
   });
 
-  it('passes searchQuery instead of categorySlug in search mode', async () => {
+  it('passes search query from route in search mode', async () => {
     mockRouteParams.mockReturnValue({
       categorySlug: '__search__',
       categoryName: 'Search: biryani',
@@ -209,38 +280,25 @@ describe('MarketplaceCategoryScreen', () => {
       expect(mockGetListingsByMetro).toHaveBeenCalledWith(
         expect.anything(),
         'metro-1',
-        expect.objectContaining({ categorySlug: undefined, searchQuery: 'biryani' }),
+        expect.objectContaining({ searchQuery: 'biryani' })
       );
     });
   });
 
-  // -- Search submission -------------------------------------------------------
-
-  it('re-fetches when search is submitted', async () => {
+  it('skips fetch when metroId is empty', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'user-1', metro_area_id: '' } });
+    mockGetListingsByMetro.mockClear();
     const screen = render(<MarketplaceCategoryScreen />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Search in Food & Restaurants/)).toBeTruthy();
+      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
     });
-
-    const searchInput = screen.getByPlaceholderText(/Search in Food & Restaurants/);
-    fireEvent.changeText(searchInput, 'momo');
-    fireEvent(searchInput, 'submitEditing');
-
-    await waitFor(() => {
-      // Should have been called at least twice: initial + after search
-      expect(mockGetListingsByMetro.mock.calls.length).toBeGreaterThanOrEqual(2);
-    });
+    expect(mockGetListingsByMetro).not.toHaveBeenCalled();
   });
 
-  // -- Navigation --------------------------------------------------------------
-
-  it('navigates to listing detail on card press', async () => {
-    const screen = render(<MarketplaceCategoryScreen />);
+  it('loads categories for FilterBar', async () => {
+    render(<MarketplaceCategoryScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+      expect(mockGetCategories).toHaveBeenCalled();
     });
-    // ListingCard mock renders just the title text; the onPress is handled by
-    // the component wrapping ListingCard, so we verify navigate params via the mock
-    expect(mockGetListingsByMetro).toHaveBeenCalled();
   });
 });

@@ -67,6 +67,8 @@ function makeListing(overrides: Record<string, unknown> = {}) {
     item_condition: null,
     business_hours: null,
     is_global: false,
+    is_featured: false,
+    trending_score: 0,
     views_count: 50,
     saves_count: 10,
     contacts_count: 5,

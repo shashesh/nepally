@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  TextInput,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -15,16 +14,19 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  getCategories,
   getListingsByMetro,
+  type MarketplaceCategory,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
-import { spacing, borderRadius } from '../../styles/spacing';
+import { spacing } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 import type { MarketplaceStackParamList } from '../../types/navigation';
 import { ListingCard } from '../../components/marketplace/ListingCard';
+import { FilterBar, type FilterBarValue } from '../../components/marketplace/FilterBar';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
 type Route = RouteProp<MarketplaceStackParamList, 'MarketplaceCategory'>;
@@ -39,20 +41,38 @@ export default function MarketplaceCategoryScreen() {
   const { categorySlug, categoryName } = route.params;
   const isSearchMode = categorySlug === '__search__';
 
+  const initialQuery = isSearchMode ? categoryName.replace('Search: ', '') : '';
+  const [filters, setFilters] = useState<FilterBarValue>({
+    category: isSearchMode ? '' : categorySlug,
+    sort: 'newest',
+    query: initialQuery,
+  });
+  const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(
-    isSearchMode ? categoryName.replace('Search: ', '') : ''
-  );
 
   const metroId = user?.metro_area_id ?? '';
   const mountedRef = useRef(true);
 
   useEffect(() => {
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Load categories for FilterBar display
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result = await getCategories(supabase);
+      if (!cancelled && result.data) setCategories(result.data);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const fetchListings = useCallback(
@@ -64,8 +84,9 @@ export default function MarketplaceCategoryScreen() {
 
       try {
         const result = await getListingsByMetro(supabase, metroId, {
-          categorySlug: isSearchMode ? undefined : categorySlug,
-          searchQuery: isSearchMode || searchQuery ? searchQuery : undefined,
+          categorySlug: filters.category || undefined,
+          searchQuery: filters.query || undefined,
+          sortBy: filters.sort,
           limit: PAGE_SIZE,
           offset,
         });
@@ -90,11 +111,12 @@ export default function MarketplaceCategoryScreen() {
         }
       }
     },
-    [metroId, categorySlug, searchQuery, isSearchMode]
+    [metroId, filters]
   );
 
   useEffect(() => {
-    fetchListings();
+    setLoading(true);
+    fetchListings(0, true);
   }, [fetchListings]);
 
   const onRefresh = useCallback(() => {
@@ -109,17 +131,33 @@ export default function MarketplaceCategoryScreen() {
     }
   }, [loadingMore, hasMore, listings.length, fetchListings]);
 
-  const handleSearch = useCallback(() => {
-    setLoading(true);
-    setListings([]);
-    fetchListings(0, true);
-  }, [fetchListings]);
+  const handleFilterChange = useCallback(
+    (next: FilterBarValue) => {
+      // In non-search mode, if user chooses a different category, navigate to that category.
+      if (!isSearchMode && next.category && next.category !== filters.category) {
+        const cat = categories.find((c) => c.slug === next.category);
+        if (cat) {
+          navigation.navigate('MarketplaceCategory', {
+            categorySlug: cat.slug,
+            categoryName: cat.name,
+          });
+          return;
+        }
+      }
+      setFilters(next);
+    },
+    [isSearchMode, filters.category, categories, navigation]
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityLabel="Go back"
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
@@ -127,21 +165,12 @@ export default function MarketplaceCategoryScreen() {
         </Text>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color={colors.text.secondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={isSearchMode ? 'Search marketplace...' : `Search in ${categoryName}...`}
-            placeholderTextColor={colors.text.tertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
-            returnKeyType="search"
-          />
-        </View>
-      </View>
+      <FilterBar
+        categories={categories}
+        value={filters}
+        onChange={handleFilterChange}
+        lockedCategory={isSearchMode ? undefined : categorySlug}
+      />
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -172,7 +201,7 @@ export default function MarketplaceCategoryScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="search-outline" size={48} color={colors.text.tertiary} />
               <Text style={styles.emptyText}>
-                {searchQuery ? 'No listings match your search' : 'No listings in this category yet'}
+                {filters.query ? 'No listings match your search' : 'No listings in this category yet'}
               </Text>
             </View>
           }
@@ -205,32 +234,13 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     flex: 1,
   },
-  searchContainer: {
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    backgroundColor: colors.white,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.input,
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    gap: spacing.s,
-  },
-  searchInput: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text.primary,
-    padding: 0,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   listContent: {
+    paddingHorizontal: spacing.m,
     paddingTop: spacing.s,
     paddingBottom: spacing.xl,
   },

@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { type MarketplaceListing, LISTING_TYPE_LABELS } from '@nepally/shared';
+import { type MarketplaceListing } from '@nepally/shared';
 import styles from '../../pages/marketplace/marketplace.module.css';
 
 const CATEGORY_THEME_CLASS_BY_SLUG: Record<string, string> = {
@@ -9,6 +9,13 @@ const CATEGORY_THEME_CLASS_BY_SLUG: Record<string, string> = {
   'professional-services': styles.categoryThemeProfessionalServices,
   'immigration-legal': styles.categoryThemeImmigrationLegal,
   'remittance-finance': styles.categoryThemeRemittanceFinance,
+  'grocery-specialty': styles.categoryThemeGrocerySpecialty,
+  'health-wellness': styles.categoryThemeHealthWellness,
+  'education-tutoring': styles.categoryThemeEducationTutoring,
+  transportation: styles.categoryThemeTransportation,
+  'home-services': styles.categoryThemeHomeServices,
+  'beauty-wellness': styles.categoryThemeBeautyWellness,
+  'cultural-services': styles.categoryThemeCulturalServices,
   other: styles.categoryThemeOther,
 };
 
@@ -19,46 +26,48 @@ interface ListingCardProps {
 export function ListingCard({ listing }: ListingCardProps) {
   const categoryThemeClass =
     CATEGORY_THEME_CLASS_BY_SLUG[listing.category?.slug ?? ''] ?? styles.categoryThemeOther;
+  const isVerifiedSeller = (listing.owner?.trust_level ?? 0) >= 1;
+  const hasPhoto = listing.photos.length > 0;
 
   return (
     <Link
       href={`/marketplace/listing/${listing.id}`}
-      className={`${styles.listingCard} ${categoryThemeClass}`}
+      className={`${styles.featuredCard} ${categoryThemeClass}`}
     >
-      {listing.photos.length > 0 ? (
+      {hasPhoto ? (
         <Image
           src={listing.photos[0]}
           alt={listing.title}
-          className={styles.listingPhoto}
-          width={120}
-          height={120}
+          className={styles.cardImage}
+          width={400}
+          height={200}
         />
       ) : (
-        <div className={styles.listingPhotoPlaceholder}>
-          {listing.category?.emoji ?? '📦'}
+        <div className={styles.cardImagePlaceholder}>
+          <span className={styles.cardImagePlaceholderEmoji}>
+            {listing.category?.emoji ?? '📦'}
+          </span>
         </div>
       )}
-      <div className={styles.listingContent}>
-        <div>
-          <div className={styles.listingTitle}>{listing.title}</div>
-          <div className={styles.listingMeta}>
-            <span
-              className={styles.badge}
-            >
-              {listing.category?.emoji} {listing.category?.name}
-            </span>
-            <span className={styles.badgeType}>
-              {LISTING_TYPE_LABELS[listing.listing_type]}
-            </span>
-          </div>
+      <div className={styles.cardBody}>
+        <div className={styles.cardCategoryChip}>
+          {listing.category?.emoji} {listing.category?.name ?? 'Other'}
         </div>
+        <div className={styles.cardTitle}>{listing.title}</div>
         {listing.price && (
-          <div className={styles.listingPrice}>{listing.price}</div>
+          <div className={styles.cardPrice}>Starting at {listing.price}</div>
         )}
-        <div className={styles.listingStats}>
+        <div className={styles.cardMetaLine}>
+          {isVerifiedSeller && (
+            <>
+              <span className={styles.verifiedStar}>★</span>
+              <span>Verified Seller</span>
+              <span className={styles.metaDot}>·</span>
+            </>
+          )}
           <span>{listing.views_count} views</span>
-          <span>{listing.saves_count} saves</span>
         </div>
+        <span className={styles.contactSellerBtn}>Contact Seller</span>
       </div>
     </Link>
   );

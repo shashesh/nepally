@@ -14,9 +14,7 @@ vi.mock('next/image', () => ({
     React.createElement('img', { src, alt, className }),
 }));
 
-vi.mock('@nepally/shared', () => ({
-  LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
-}));
+vi.mock('@nepally/shared', () => ({}));
 
 vi.mock('../../pages/marketplace/marketplace.module.css', () => ({
   default: new Proxy({}, { get: (_target, prop) => `mock-${String(prop)}` }),
@@ -59,6 +57,8 @@ function makeListing(overrides: Record<string, unknown> = {}) {
     views_count: 10,
     saves_count: 3,
     contacts_count: 1,
+    is_featured: false,
+    trending_score: 24,
     refreshed_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -74,30 +74,47 @@ describe('ListingCard (web)', () => {
     expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
   });
 
-  it('renders category badge', () => {
+  it('renders category chip', () => {
     render(React.createElement(ListingCard, { listing: makeListing() }));
     expect(screen.getByText(/Food & Restaurants/)).toBeDefined();
   });
 
-  it('renders listing type label', () => {
-    render(React.createElement(ListingCard, { listing: makeListing() }));
-    expect(screen.getByText('Business')).toBeDefined();
-  });
-
-  it('renders price when present', () => {
+  it('renders price with "Starting at" prefix when present', () => {
     render(React.createElement(ListingCard, { listing: makeListing({ price: '$20' }) }));
-    expect(screen.getByText('$20')).toBeDefined();
+    expect(screen.getByText('Starting at $20')).toBeDefined();
   });
 
-  it('does not render price when null', () => {
+  it('does not render price row when null', () => {
     render(React.createElement(ListingCard, { listing: makeListing({ price: null }) }));
-    expect(screen.queryByText('$15-25')).toBeNull();
+    expect(screen.queryByText(/Starting at/)).toBeNull();
   });
 
-  it('renders views and saves counts', () => {
-    render(React.createElement(ListingCard, { listing: makeListing({ views_count: 42, saves_count: 7 }) }));
+  it('renders views count in meta line', () => {
+    render(React.createElement(ListingCard, { listing: makeListing({ views_count: 42 }) }));
     expect(screen.getByText('42 views')).toBeDefined();
-    expect(screen.getByText('7 saves')).toBeDefined();
+  });
+
+  it('renders verified star when owner trust_level >= 1', () => {
+    render(React.createElement(ListingCard, { listing: makeListing() }));
+    expect(screen.getByText('Verified Seller')).toBeDefined();
+    expect(screen.getByText('★')).toBeDefined();
+  });
+
+  it('hides verified star when owner trust_level < 1', () => {
+    render(
+      React.createElement(ListingCard, {
+        listing: makeListing({
+          owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 0, profile_photo: null },
+        }),
+      })
+    );
+    expect(screen.queryByText('Verified Seller')).toBeNull();
+    expect(screen.queryByText('★')).toBeNull();
+  });
+
+  it('renders Contact Seller CTA', () => {
+    render(React.createElement(ListingCard, { listing: makeListing() }));
+    expect(screen.getByText('Contact Seller')).toBeDefined();
   });
 
   it('links to the correct listing detail page', () => {
@@ -106,7 +123,7 @@ describe('ListingCard (web)', () => {
     expect(link.getAttribute('href')).toBe('/marketplace/listing/listing-1');
   });
 
-  it('shows placeholder emoji when no photos', () => {
+  it('shows gradient placeholder emoji when no photos', () => {
     render(React.createElement(ListingCard, { listing: makeListing({ photos: [] }) }));
     expect(screen.getByText('🍜')).toBeDefined();
   });

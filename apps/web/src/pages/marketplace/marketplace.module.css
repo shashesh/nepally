@@ -113,8 +113,14 @@
 /* Listing Card */
 .listingGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .listingGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .listingCard {
@@ -735,6 +741,114 @@
   font-size: 12px;
   color: var(--color-text-tertiary, #9E9E9E);
   margin: 0;
+}
+
+/* Redesigned Listing Card (stacked, gradient placeholder, Contact Seller CTA) */
+.featuredCard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 14px;
+  overflow: hidden;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.featuredCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.cardImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.cardImagePlaceholder {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--category-bg, #e3f2fd) 0%, var(--category-color, #1565C0) 180%);
+}
+
+.cardImagePlaceholderEmoji {
+  font-size: 56px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+}
+
+.cardBody {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardCategoryChip {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: var(--category-bg, #f5f5f5);
+  color: var(--category-color, #9E9E9E);
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary, #212121);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardPrice {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary, #212121);
+}
+
+.cardMetaLine {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #757575);
+}
+
+.verifiedStar {
+  color: #2E7D32;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.metaDot {
+  color: var(--color-text-tertiary, #9E9E9E);
+}
+
+.contactSellerBtn {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  transition: opacity 0.15s;
+}
+
+.contactSellerBtn:hover {
+  opacity: 0.92;
 }
 
 @media (max-width: 768px) {

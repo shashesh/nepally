@@ -4,9 +4,9 @@
 }
 
 .container {
-  max-width: 1100px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 24px 24px;
 }
 
 .header {
@@ -23,111 +23,36 @@
   margin: 0;
 }
 
-.layout {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.sidebar {
-  width: 200px;
-  flex-shrink: 0;
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
-
-@media (max-width: 1024px) {
-  .sidebar {
-    display: none;
-  }
-}
-
-.sidebarTitle {
-  font-size: 13px;
-  font-weight: 700;
-  color: #9E9E9E;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin: 0 0 12px;
-}
-
-.filterOption {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  font-size: 14px;
-  color: #212121;
-  transition: background 0.1s;
-}
-
-.filterOption:hover {
-  background: #F5F5F5;
-}
-
-.filterOptionActive {
-  background: #E3F2FD;
-  color: #1565C0;
-  font-weight: 600;
-}
-
-/* Mobile filter chips */
-.mobileFilters {
-  display: none;
-  overflow-x: auto;
-  gap: 8px;
-  padding-bottom: 16px;
-  margin-bottom: 8px;
-}
-
-@media (max-width: 1024px) {
-  .mobileFilters {
-    display: flex;
-  }
-}
-
-.mobileChip {
-  padding: 7px 14px;
-  border-radius: 16px;
-  border: 1.5px solid #E0E0E0;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  color: #757575;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.1s, color 0.1s;
-}
-
-.mobileChipActive {
-  background: #1565C0;
-  border-color: #1565C0;
-  color: #fff;
-  font-weight: 600;
-}
-
 .feed {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 860px) {
+  .feed {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .feed {
+    grid-template-columns: 1fr;
+  }
 }
 
 .divider {
+  grid-column: 1 / -1;
   padding: 8px 0 4px;
   font-size: 12px;
   font-weight: 700;
   color: #9E9E9E;
   text-transform: uppercase;
   letter-spacing: 0.8px;
+}
+
+.emptyStateWrapper {
+  grid-column: 1 / -1;
 }
 
 .emptyState {
@@ -174,3 +99,13 @@
   align-items: center;
 }
 
+.level0BannerClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #E65100;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 2px 6px;
+  line-height: 1;
+}

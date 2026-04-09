@@ -225,6 +225,8 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
         views_count: 0,
         saves_count: 0,
         contacts_count: 0,
+        is_featured: false,
+        trending_score: 0,
         refreshed_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

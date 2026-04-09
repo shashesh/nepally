@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, CloseButton, Skeleton, Text } from '@mantine/core';
+import { Button, Skeleton, Text } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -7,22 +7,21 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import {
   getEventsByMetro,
-  EVENT_TYPES,
+  getUserEventResponses,
+  setEventResponse,
+  removeEventResponse,
   EVENT_TYPE_LABELS,
-  EVENT_TYPE_ICONS,
   TrustLevel,
   type Event,
   type EventType,
+  type RsvpStatus,
+  type UserEventResponses,
 } from '@nepally/shared';
 import EventCard from '../../components/events/EventCard';
+import { EventFilterBar, type EventFilterBarValue } from '../../components/events/EventFilterBar';
 import styles from './events.module.css';
 
-type FilterKey = 'all' | EventType;
-
-const FILTERS: { key: FilterKey; label: string; icon: string }[] = [
-  { key: 'all', label: 'All', icon: '🗓️' },
-  ...EVENT_TYPES.map((t) => ({ key: t as FilterKey, label: EVENT_TYPE_LABELS[t], icon: EVENT_TYPE_ICONS[t] })),
-];
+const DEFAULT_FILTERS: EventFilterBarValue = { type: 'all', query: '' };
 
 export default function EventsPage() {
   const router = useRouter();
@@ -31,13 +30,15 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [filters, setFilters] = useState<EventFilterBarValue>(DEFAULT_FILTERS);
   const [level0BannerVisible, setLevel0BannerVisible] = useState(true);
+  const [userResponses, setUserResponses] = useState<UserEventResponses>({});
 
   const metroId = user?.metro_area_id ?? '';
   const trustLevel = user?.trust_level ?? 0;
   const isLevel0 = trustLevel < TrustLevel.VERIFIED;
   const canCreate = !isLevel0;
+  const canInteract = !isLevel0;
 
   useEffect(() => {
     if (!user) {
@@ -45,27 +46,103 @@ export default function EventsPage() {
     }
   }, [user, router]);
 
-  const fetchEvents = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     if (!metroId) { setLoading(false); return; }
     setError(null);
-    const result = await getEventsByMetro(supabase, metroId);
-    if (result.error) {
-      setError(result.error.message);
+    const [eventsRes, responsesRes] = await Promise.all([
+      getEventsByMetro(supabase, metroId),
+      user?.id ? getUserEventResponses(supabase, user.id) : Promise.resolve({ data: {} as UserEventResponses, error: undefined }),
+    ]);
+    if (eventsRes.error) {
+      setError(eventsRes.error.message);
     } else {
-      setEvents(result.data ?? []);
+      setEvents(eventsRes.data ?? []);
+    }
+    if (!responsesRes.error && responsesRes.data) {
+      setUserResponses(responsesRes.data);
     }
     setLoading(false);
-  }, [metroId]);
+  }, [metroId, user?.id]);
 
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    fetchAll();
+  }, [fetchAll]);
+
+  const handleResponseChange = useCallback(
+    async (eventId: string, status: RsvpStatus | null) => {
+      if (!user?.id) return;
+
+      // Capture previous atomically inside the updater — removes userResponses from deps
+      // so this callback is stable and doesn't cause all EventCards to re-render on each RSVP.
+      let previous: RsvpStatus | null = null;
+      setUserResponses((prev) => {
+        previous = prev[eventId] ?? null;
+        const next = { ...prev };
+        if (status === null) {
+          delete next[eventId];
+        } else {
+          next[eventId] = status;
+        }
+        return next;
+      });
+
+      setEvents((prev) =>
+        prev.map((e) => {
+          if (e.id !== eventId) return e;
+          let { rsvp_count, interested_count } = e;
+          if (previous === 'going') rsvp_count = Math.max(0, rsvp_count - 1);
+          if (previous === 'interested') interested_count = Math.max(0, interested_count - 1);
+          if (status === 'going') rsvp_count += 1;
+          if (status === 'interested') interested_count += 1;
+          return { ...e, rsvp_count, interested_count };
+        })
+      );
+
+      // Persist to DB
+      const result = status === null
+        ? await removeEventResponse(supabase, eventId, user.id)
+        : await setEventResponse(supabase, eventId, user.id, status);
+
+      if (result.error) {
+        // Roll back on failure
+        setUserResponses((prev) => {
+          const next = { ...prev };
+          if (previous === null) {
+            delete next[eventId];
+          } else {
+            next[eventId] = previous;
+          }
+          return next;
+        });
+        setEvents((prev) =>
+          prev.map((e) => {
+            if (e.id !== eventId) return e;
+            let { rsvp_count, interested_count } = e;
+            if (status === 'going') rsvp_count = Math.max(0, rsvp_count - 1);
+            if (status === 'interested') interested_count = Math.max(0, interested_count - 1);
+            if (previous === 'going') rsvp_count += 1;
+            if (previous === 'interested') interested_count += 1;
+            return { ...e, rsvp_count, interested_count };
+          })
+        );
+      }
+    },
+    [user?.id]
+  );
 
   const { upcoming, past } = useMemo(() => {
     const now = new Date();
-    const filtered = activeFilter === 'all'
-      ? events
-      : events.filter((e) => e.event_type === activeFilter);
+    const q = filters.query.toLowerCase().trim();
+
+    const filtered = events.filter((e) => {
+      const matchesType = filters.type === 'all' || e.event_type === filters.type;
+      const matchesQuery =
+        !q ||
+        e.title.toLowerCase().includes(q) ||
+        e.location_name.toLowerCase().includes(q);
+      return matchesType && matchesQuery;
+    });
+
     const upcoming: Event[] = [];
     const past: Event[] = [];
     for (const e of filtered) {
@@ -74,7 +151,13 @@ export default function EventsPage() {
       else past.push(e);
     }
     return { upcoming, past };
-  }, [events, activeFilter]);
+  }, [events, filters]);
+
+  const getEmptyTitle = () => {
+    if (filters.query) return `No events matching "${filters.query}"`;
+    if (filters.type !== 'all') return `No ${EVENT_TYPE_LABELS[filters.type as EventType]} events`;
+    return 'No upcoming events';
+  };
 
   if (!user) return null;
 
@@ -99,73 +182,71 @@ export default function EventsPage() {
           {isLevel0 && level0BannerVisible && (
             <div className={styles.level0Banner}>
               <span>Verify your account to RSVP and create events.</span>
-              <CloseButton size="xs" onClick={() => setLevel0BannerVisible(false)} />
+              <button
+                type="button"
+                className={styles.level0BannerClose}
+                onClick={() => setLevel0BannerVisible(false)}
+                aria-label="Dismiss banner"
+              >
+                ✕
+              </button>
             </div>
           )}
 
-          {/* Mobile filter chips */}
-          <div className={styles.mobileFilters}>
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                className={`${styles.mobileChip} ${activeFilter === f.key ? styles.mobileChipActive : ''}`}
-                onClick={() => setActiveFilter(f.key)}
-              >
-                {f.icon} {f.label}
-              </button>
-            ))}
-          </div>
+          <EventFilterBar value={filters} onChange={setFilters} />
 
-          <div className={styles.layout}>
-            {/* Sidebar (desktop) */}
-            <aside className={styles.sidebar}>
-              <p className={styles.sidebarTitle}>Filter by Type</p>
-              {FILTERS.map((f) => (
-                <button
-                  key={f.key}
-                  className={`${styles.filterOption} ${activeFilter === f.key ? styles.filterOptionActive : ''}`}
-                  onClick={() => setActiveFilter(f.key)}
-                >
-                  {f.icon} {f.label}
-                </button>
-              ))}
-            </aside>
-
-            {/* Feed */}
-            <div className={styles.feed}>
-              {loading ? (
-                <>
-                  <Skeleton height={120} radius="md" mb="sm" />
-                  <Skeleton height={120} radius="md" mb="sm" />
-                  <Skeleton height={120} radius="md" mb="sm" />
-                </>
-              ) : error ? (
-                <div className={styles.errorContainer}>
-                  <Text c="red" size="sm">{error}</Text>
-                  <Button mt="sm" onClick={() => { setLoading(true); fetchEvents(); }}>
-                    Retry
-                  </Button>
-                </div>
-              ) : upcoming.length === 0 && past.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <span className={styles.emptyIcon}>📅</span>
-                  <h2 className={styles.emptyTitle}>
-                    {activeFilter === 'all' ? 'No upcoming events' : `No ${EVENT_TYPE_LABELS[activeFilter as EventType]} events`}
-                  </h2>
-                  <p className={styles.emptySubtitle}>Check back soon!</p>
-                </div>
-              ) : (
-                <>
-                  {upcoming.map((e) => <EventCard key={e.id} event={e} />)}
-                  {past.length > 0 && (
-                    <>
-                      <div className={styles.divider}>Past Events</div>
-                      {past.map((e) => <EventCard key={e.id} event={e} past />)}
-                    </>
-                  )}
-                </>
-              )}
-            </div>
+          {/* Feed */}
+          <div className={styles.feed}>
+            {loading ? (
+              <>
+                <Skeleton height={280} radius="md" />
+                <Skeleton height={280} radius="md" />
+                <Skeleton height={280} radius="md" />
+                <Skeleton height={280} radius="md" />
+                <Skeleton height={280} radius="md" />
+                <Skeleton height={280} radius="md" />
+              </>
+            ) : error ? (
+              <div className={`${styles.emptyStateWrapper} ${styles.errorContainer}`}>
+                <Text c="red" size="sm">{error}</Text>
+                <Button mt="sm" onClick={() => { setLoading(true); fetchAll(); }}>
+                  Retry
+                </Button>
+              </div>
+            ) : upcoming.length === 0 && past.length === 0 ? (
+              <div className={`${styles.emptyStateWrapper} ${styles.emptyState}`}>
+                <span className={styles.emptyIcon}>📅</span>
+                <h2 className={styles.emptyTitle}>{getEmptyTitle()}</h2>
+                <p className={styles.emptySubtitle}>Check back soon!</p>
+              </div>
+            ) : (
+              <>
+                {upcoming.map((e) => (
+                  <EventCard
+                    key={e.id}
+                    event={e}
+                    userResponse={userResponses[e.id] ?? null}
+                    canInteract={canInteract}
+                    onResponseChange={handleResponseChange}
+                  />
+                ))}
+                {past.length > 0 && (
+                  <>
+                    <div className={styles.divider}>Past Events</div>
+                    {past.map((e) => (
+                      <EventCard
+                        key={e.id}
+                        event={e}
+                        past
+                        userResponse={userResponses[e.id] ?? null}
+                        canInteract={canInteract}
+                        onResponseChange={handleResponseChange}
+                      />
+                    ))}
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

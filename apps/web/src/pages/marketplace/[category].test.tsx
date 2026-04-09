@@ -1,7 +1,6 @@
 import React from 'react';
-import { render, screen, waitFor } from '../../test-utils';
+import { render, screen, waitFor, fireEvent, act } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getListingsByMetro } from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -10,9 +9,12 @@ type MockSkeletonProps = { height?: number; radius?: string };
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useRouter: vi.fn(),
+  getListingsByMetro: vi.fn(),
+  useCachedCategories: vi.fn(),
 }));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
+vi.mock('../../hooks/useCachedCategories', () => ({ useCachedCategories: mocks.useCachedCategories }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
 vi.mock('next/head', () => ({
   default: ({ children }: MockHeadProps) => React.createElement(React.Fragment, null, children),
@@ -30,7 +32,32 @@ vi.mock('@mantine/core', async (importOriginal) => {
   return {
     ...actual,
     Skeleton: ({ height }: MockSkeletonProps) =>
-      React.createElement('div', { 'data-testid': 'skeleton', style: { height } }),
+      React.createElement('div', { 'data-testid': 'skeleton', 'data-height': height }),
+    Select: ({
+      value,
+      onChange,
+      disabled,
+      'aria-label': ariaLabel,
+      data,
+    }: {
+      value: string;
+      onChange: (v: string | null) => void;
+      disabled?: boolean;
+      'aria-label'?: string;
+      data: { value: string; label: string }[];
+    }) =>
+      React.createElement(
+        'select',
+        {
+          'aria-label': ariaLabel,
+          value,
+          disabled,
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
+        },
+        data.map((opt) =>
+          React.createElement('option', { key: opt.value, value: opt.value }, opt.label)
+        )
+      ),
   };
 });
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
@@ -43,6 +70,7 @@ const MOCK_CATEGORY = {
   icon: 'restaurant',
   color: '#FF6B35',
   sort_order: 1,
+  description: null,
   created_at: new Date().toISOString(),
 };
 
@@ -58,9 +86,18 @@ const MOCK_LISTING = {
   photos: [],
   price: '$15-25',
   business_name: 'Himalayan Kitchen',
+  address: null,
+  phone: null,
+  email: null,
+  website_url: null,
+  item_condition: null,
+  business_hours: null,
   views_count: 10,
   saves_count: 3,
   contacts_count: 1,
+  is_featured: false,
+  trending_score: 24,
+  is_global: false,
   refreshed_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -69,102 +106,141 @@ const MOCK_LISTING = {
 };
 
 vi.mock('@nepally/shared', () => ({
-  getListingsByMetro: vi.fn(async () => ({ data: [MOCK_LISTING] })),
+  getListingsByMetro: mocks.getListingsByMetro,
   MARKETPLACE_CATEGORIES: [
     { slug: 'food-restaurants', name: 'Food & Restaurants', emoji: '🍜', icon: 'restaurant', color: '#FF6B35' },
     { slug: 'professional-services', name: 'Professional Services', emoji: '💼', icon: 'briefcase', color: '#2196F3' },
   ],
-  LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
 }));
 
 import MarketplaceCategoryPage from './[category].page';
 
-const mockGetListingsByMetro = getListingsByMetro as ReturnType<typeof vi.fn>;
+const AUTHED_USER = { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' };
+
+function buildRouter(query: Record<string, string> = { category: 'food-restaurants' }) {
+  return {
+    replace: vi.fn(),
+    push: vi.fn(),
+    query,
+    pathname: '/marketplace/[category]',
+    isReady: true,
+  };
+}
 
 describe('MarketplaceCategoryPage', () => {
-  const mockReplace = vi.fn();
-  const mockPush = vi.fn();
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.useRouter.mockReturnValue({
-      replace: mockReplace,
-      push: mockPush,
-      query: { category: 'food-restaurants' },
-      isReady: true,
-    });
+    mocks.getListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
+    mocks.useCachedCategories.mockReturnValue([MOCK_CATEGORY]);
   });
 
   it('redirects to /login when not logged in', async () => {
+    const router = buildRouter();
     mocks.useAuth.mockReturnValue({ user: null });
+    mocks.useRouter.mockReturnValue(router);
     render(React.createElement(MarketplaceCategoryPage));
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/login'));
   });
 
   it('renders category page title', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceCategoryPage));
     await waitFor(() => {
-      expect(screen.getByText(/Food & Restaurants/)).toBeDefined();
+      expect(screen.getByRole('heading', { name: /Food & Restaurants/ })).toBeDefined();
     });
   });
 
   it('renders listings', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceCategoryPage));
     await waitFor(() => {
       expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
     });
   });
 
-  it('calls getListingsByMetro with category slug', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+  it('calls getListingsByMetro with category slug and default sort', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceCategoryPage));
     await waitFor(() => {
-      expect(mockGetListingsByMetro).toHaveBeenCalledWith(
+      expect(mocks.getListingsByMetro).toHaveBeenCalledWith(
         expect.anything(),
         'metro-1',
-        expect.objectContaining({ categorySlug: 'food-restaurants' })
+        expect.objectContaining({ categorySlug: 'food-restaurants', sortBy: 'newest' })
       );
     });
   });
 
   it('shows empty state when no listings', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByMetro.mockResolvedValue({ data: [] });
+    mocks.getListingsByMetro.mockResolvedValue({ data: [] });
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceCategoryPage));
     await waitFor(() => {
       expect(screen.getByText('No listings in this category yet')).toBeDefined();
     });
   });
 
-  it('shows search input', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+  it('FilterBar has category pre-selected and locked', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceCategoryPage));
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Search in Food & Restaurants/)).toBeDefined();
-    });
+    await waitFor(() => expect(screen.getByLabelText('Category')).toBeDefined());
+    const select = screen.getByLabelText('Category') as HTMLSelectElement;
+    expect(select.value).toBe('food-restaurants');
+    expect(select.disabled).toBe(true);
   });
 
   it('shows back link to marketplace', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceCategoryPage));
     await waitFor(() => {
       expect(screen.getByText(/Back to Marketplace/)).toBeDefined();
     });
   });
 
-  it('handles search mode with slug "__search__" equivalent', async () => {
-    mocks.useRouter.mockReturnValue({
-      replace: mockReplace,
-      push: mockPush,
-      query: { category: 'search', q: 'momo' },
-      isReady: true,
-    });
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+  it('handles search mode (slug=search)', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'search', q: 'momo' }));
     render(React.createElement(MarketplaceCategoryPage));
     await waitFor(() => {
-      expect(screen.getByText(/Search: momo/)).toBeDefined();
+      expect(screen.getByRole('heading', { name: /Search: momo/ })).toBeDefined();
     });
+    // In search mode, category select is NOT locked
+    const select = screen.getByLabelText('Category') as HTMLSelectElement;
+    expect(select.disabled).toBe(false);
+  });
+
+  it('passes sort param from query to getListingsByMetro', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants', sort: 'price_asc' }));
+    render(React.createElement(MarketplaceCategoryPage));
+    await waitFor(() => {
+      expect(mocks.getListingsByMetro).toHaveBeenCalledWith(
+        expect.anything(),
+        'metro-1',
+        expect.objectContaining({ sortBy: 'price_asc' })
+      );
+    });
+  });
+
+  it('changing sort updates URL query', async () => {
+    const router = buildRouter();
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(router);
+    render(React.createElement(MarketplaceCategoryPage));
+    await waitFor(() => expect(screen.getByLabelText('Sort')).toBeDefined());
+    const sortSelect = screen.getByLabelText('Sort') as HTMLSelectElement;
+    await act(async () => {
+      fireEvent.change(sortSelect, { target: { value: 'price_asc' } });
+    });
+    expect(router.push).toHaveBeenCalledWith(
+      { pathname: '/marketplace/[category]', query: { category: 'food-restaurants', sort: 'price_asc' } },
+      undefined,
+      { shallow: true }
+    );
   });
 });

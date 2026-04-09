@@ -10,6 +10,7 @@ import type {
   ListingsResult,
   CategoriesResult,
   SavedListingsResult,
+  ListingSortBy,
 } from '../types/marketplace';
 import type { CreateListingInput, UpdateListingInput } from '../validation/marketplace';
 
@@ -61,13 +62,42 @@ export async function getCategories(
 export interface ListingFilters {
   categorySlug?: string;
   searchQuery?: string;
+  sortBy?: ListingSortBy;
   limit?: number;
   offset?: number;
 }
 
 /**
- * Get active listings for a metro area, ordered by refreshed_at (fresh first).
- * Supports category filtering and full-text search.
+ * Apply a `sortBy` value to a Supabase query builder.
+ *
+ * NOTE: `price` is a TEXT column (e.g., "$15-25", "Negotiable"), so price sort is
+ * lexicographic for MVP. Follow-up: add a `price_cents INTEGER` column + migration
+ * parsing `price` into cents, then sort on that.
+ */
+function applySortBy<T extends { order: (col: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) => T }>(
+  query: T,
+  sortBy: ListingSortBy
+): T {
+  switch (sortBy) {
+    case 'oldest':
+      return query.order('refreshed_at', { ascending: true });
+    case 'featured':
+      return query
+        .order('is_featured', { ascending: false })
+        .order('refreshed_at', { ascending: false });
+    case 'price_asc':
+      return query.order('price', { ascending: true, nullsFirst: false });
+    case 'price_desc':
+      return query.order('price', { ascending: false, nullsFirst: false });
+    case 'newest':
+    default:
+      return query.order('refreshed_at', { ascending: false });
+  }
+}
+
+/**
+ * Get active listings for a metro area, ordered by refreshed_at (fresh first) by default.
+ * Supports category filtering, full-text search, and configurable sort.
  */
 export async function getListingsByMetro(
   supabase: SupabaseClient,
@@ -77,14 +107,15 @@ export async function getListingsByMetro(
   try {
     const limit = filters.limit ?? 20;
     const offset = filters.offset ?? 0;
+    const sortBy: ListingSortBy = filters.sortBy ?? 'newest';
 
     let query = supabase
       .from('marketplace_listings')
       .select(LISTING_SELECT)
       .eq('status', 'active')
-      .eq('metro_area_id', metroId)
-      .order('refreshed_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .eq('metro_area_id', metroId);
+
+    query = applySortBy(query, sortBy).range(offset, offset + limit - 1);
 
     // Filter by category slug (requires a join filter)
     if (filters.categorySlug) {
@@ -110,6 +141,70 @@ export async function getListingsByMetro(
     return { data: listings };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch listings') };
+  }
+}
+
+export interface StripOptions {
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Fetch featured active listings in a metro, ordered by refreshed_at DESC.
+ * Uses the partial index `idx_marketplace_listings_featured`.
+ */
+export async function getFeaturedListings(
+  supabase: SupabaseClient,
+  metroId: string,
+  opts: StripOptions = {}
+): Promise<ListingsResult> {
+  try {
+    const limit = opts.limit ?? 10;
+    const offset = opts.offset ?? 0;
+
+    const { data, error } = await supabase
+      .from('marketplace_listings')
+      .select(LISTING_SELECT)
+      .eq('status', 'active')
+      .eq('metro_area_id', metroId)
+      .eq('is_featured', true)
+      .order('refreshed_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    return { data: (data || []) as MarketplaceListing[] };
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('Failed to fetch featured listings') };
+  }
+}
+
+/**
+ * Fetch trending active listings in a metro, ordered by `trending_score` DESC
+ * (views + saves*3 + contacts*5), tiebroken by refreshed_at.
+ * Uses the partial index `idx_marketplace_listings_trending`.
+ */
+export async function getTrendingListings(
+  supabase: SupabaseClient,
+  metroId: string,
+  opts: StripOptions = {}
+): Promise<ListingsResult> {
+  try {
+    const limit = opts.limit ?? 10;
+    const offset = opts.offset ?? 0;
+
+    const { data, error } = await supabase
+      .from('marketplace_listings')
+      .select(LISTING_SELECT)
+      .eq('status', 'active')
+      .eq('metro_area_id', metroId)
+      .order('trending_score', { ascending: false })
+      .order('refreshed_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    return { data: (data || []) as MarketplaceListing[] };
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('Failed to fetch trending listings') };
   }
 }
 

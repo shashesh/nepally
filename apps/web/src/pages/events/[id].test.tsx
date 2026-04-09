@@ -33,7 +33,7 @@ const MOCK_EVENT: Event = {
   location_name: 'Dallas Convention Center',
   location_address: '650 S Griffin St, Dallas, TX',
   metro_area_id: '19100', is_global: false,
-  organizer_id: 'user-1', rsvp_count: 8,
+  organizer_id: 'user-1', rsvp_count: 8, interested_count: 15,
   rsvp_visibility: 'public', status: 'active',
   created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   organizer: { id: 'user-1', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },

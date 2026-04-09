@@ -10,6 +10,8 @@ export type EventStatus = 'active' | 'cancelled' | 'removed';
 
 export type RsvpVisibility = 'public' | 'private';
 
+export type RsvpStatus = 'going' | 'interested';
+
 export interface Event {
   id: string;
   title: string;
@@ -24,6 +26,7 @@ export interface Event {
   organizer_id: string;
   photo_url?: string;
   rsvp_count: number;
+  interested_count: number;
   rsvp_visibility: RsvpVisibility;
   status: EventStatus;
   created_at: string;
@@ -35,6 +38,7 @@ export interface EventRsvp {
   id: string;
   event_id: string;
   user_id: string;
+  status: RsvpStatus;
   created_at: string;
   user?: Pick<User, 'id' | 'full_name' | 'trust_level' | 'profile_photo'>;
 }
@@ -54,3 +58,6 @@ export interface EventRsvpsResult {
   data?: EventRsvp[];
   error?: Error;
 }
+
+/** Map of event_id → user's current response status */
+export type UserEventResponses = Record<string, RsvpStatus>;

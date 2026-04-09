@@ -1,22 +1,22 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
-  ScrollView,
   TouchableOpacity,
-  TextInput,
   RefreshControl,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getCategories,
+  getFeaturedListings,
   getListingsByMetro,
+  getTrendingListings,
   TrustLevel,
   type MarketplaceCategory,
   type MarketplaceListing,
@@ -28,43 +28,80 @@ import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 import type { MarketplaceStackParamList } from '../../types/navigation';
 import { ListingCard } from '../../components/marketplace/ListingCard';
+import { FilterBar, type FilterBarValue } from '../../components/marketplace/FilterBar';
+import { ListingStrip } from '../../components/marketplace/ListingStrip';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
+
+const STRIP_LIMIT = 10;
+const GRID_LIMIT = 20;
+
+const DEFAULT_FILTERS: FilterBarValue = {
+  category: '',
+  sort: 'newest',
+  query: '',
+};
 
 export default function MarketplaceHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
 
+  const [filters, setFilters] = useState<FilterBarValue>(DEFAULT_FILTERS);
   const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
-  const [recentListings, setRecentListings] = useState<MarketplaceListing[]>([]);
+  const [featured, setFeatured] = useState<MarketplaceListing[]>([]);
+  const [recent, setRecent] = useState<MarketplaceListing[]>([]);
+  const [trending, setTrending] = useState<MarketplaceListing[]>([]);
+  const [allListings, setAllListings] = useState<MarketplaceListing[]>([]);
+  const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const metroId = user?.metro_area_id ?? '';
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
   const mountedRef = useRef(true);
 
+  useFocusEffect(
+    useCallback(() => {
+      setFilters(DEFAULT_FILTERS);
+    }, [])
+  );
+
+  const isFiltered = useMemo(
+    () =>
+      Boolean(filters.category) ||
+      filters.sort !== 'newest' ||
+      Boolean(filters.query),
+    [filters]
+  );
+
   useEffect(() => {
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
-  const fetchData = useCallback(async () => {
+  const fetchHomeData = useCallback(async () => {
     if (!metroId) {
       setLoading(false);
       return;
     }
-
     try {
-      const [catResult, listingsResult] = await Promise.all([
-        getCategories(supabase),
-        getListingsByMetro(supabase, metroId, { limit: 10 }),
-      ]);
+      const [catResult, featuredResult, recentResult, trendingResult, allResult] =
+        await Promise.all([
+          getCategories(supabase),
+          getFeaturedListings(supabase, metroId, { limit: STRIP_LIMIT }),
+          getListingsByMetro(supabase, metroId, { limit: STRIP_LIMIT, sortBy: 'newest' }),
+          getTrendingListings(supabase, metroId, { limit: STRIP_LIMIT }),
+          getListingsByMetro(supabase, metroId, { limit: GRID_LIMIT }),
+        ]);
 
       if (!mountedRef.current) return;
 
       if (catResult.data) setCategories(catResult.data);
-      if (listingsResult.data) setRecentListings(listingsResult.data);
+      if (featuredResult.data) setFeatured(featuredResult.data);
+      if (recentResult.data) setRecent(recentResult.data);
+      if (trendingResult.data) setTrending(trendingResult.data);
+      if (allResult.data) setAllListings(allResult.data);
     } catch {
       // Silently handle — empty state will surface in the UI.
     } finally {
@@ -75,65 +112,87 @@ export default function MarketplaceHomeScreen() {
     }
   }, [metroId]);
 
+  const fetchFiltered = useCallback(async () => {
+    if (!metroId) return;
+    try {
+      const result = await getListingsByMetro(supabase, metroId, {
+        categorySlug: filters.category || undefined,
+        searchQuery: filters.query || undefined,
+        sortBy: filters.sort,
+        limit: GRID_LIMIT,
+      });
+      if (!mountedRef.current) return;
+      if (result.data) setFilteredListings(result.data);
+    } catch {
+      // Silently handle.
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
+  }, [metroId, filters]);
+
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    setLoading(true);
+    if (isFiltered) {
+      fetchFiltered();
+    } else {
+      fetchHomeData();
+    }
+  }, [isFiltered, fetchFiltered, fetchHomeData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchData();
-  }, [fetchData]);
-
-  const handleSearch = useCallback(() => {
-    if (searchQuery.trim().length > 0) {
-      navigation.navigate('MarketplaceCategory', {
-        categorySlug: '__search__',
-        categoryName: `Search: ${searchQuery.trim()}`,
-      });
+    if (isFiltered) {
+      fetchFiltered();
+    } else {
+      fetchHomeData();
     }
-  }, [navigation, searchQuery]);
+  }, [isFiltered, fetchFiltered, fetchHomeData]);
 
-  const renderCategoryChip = useCallback(
-    (item: MarketplaceCategory) => (
-      <TouchableOpacity
-        key={item.id}
-        style={[styles.categoryChip, { borderColor: item.color ?? '#9E9E9E' }]}
-        onPress={() =>
-          navigation.navigate('MarketplaceCategory', {
-            categorySlug: item.slug,
-            categoryName: item.name,
-          })
-        }
-        activeOpacity={0.7}
-      >
-        <View style={[styles.categoryChipIcon, { backgroundColor: (item.color ?? '#9E9E9E') + '20' }]}>
-          <Text style={styles.categoryChipEmoji}>{item.emoji ?? '📦'}</Text>
-        </View>
-        <Text style={styles.categoryChipText}>{item.name}</Text>
-      </TouchableOpacity>
-    ),
+  const handleItemPress = useCallback(
+    (listing: MarketplaceListing) => {
+      navigation.navigate('ListingDetail', { listingId: listing.id });
+    },
     [navigation]
   );
+
+  const handleShowAll = useCallback(
+    (sortBy: FilterBarValue['sort']) => {
+      setFilters({ category: '', sort: sortBy, query: '' });
+    },
+    []
+  );
+
+  const onShowAllFeatured = useCallback(() => handleShowAll('featured'), [handleShowAll]);
+  const onShowAllNewest = useCallback(() => handleShowAll('newest'), [handleShowAll]);
+  // Trending uses newest sort; the server already orders by trending_score for the strip
+  const onShowAllTrending = useCallback(() => handleShowAll('newest'), [handleShowAll]);
 
   const renderListingItem = useCallback(
     ({ item }: { item: MarketplaceListing }) => (
-      <ListingCard
-        listing={item}
-        onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
-      />
+      <ListingCard listing={item} onPress={() => handleItemPress(item)} />
     ),
-    [navigation]
+    [handleItemPress]
   );
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Marketplace</Text>
+        </View>
+        <FilterBar categories={categories} value={filters} onChange={setFilters} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.main} />
         </View>
       </SafeAreaView>
     );
   }
+
+  const gridData = isFiltered ? filteredListings : allListings;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -145,6 +204,7 @@ export default function MarketplaceHomeScreen() {
             <TouchableOpacity
               style={styles.myListingsButton}
               onPress={() => navigation.navigate('MyListings')}
+              accessibilityLabel="My Listings"
             >
               <Ionicons name="list-outline" size={22} color={colors.primary.main} />
             </TouchableOpacity>
@@ -152,8 +212,10 @@ export default function MarketplaceHomeScreen() {
         </View>
       </View>
 
+      <FilterBar categories={categories} value={filters} onChange={setFilters} />
+
       <FlatList
-        data={recentListings}
+        data={gridData}
         keyExtractor={(item) => item.id}
         renderItem={renderListingItem}
         refreshControl={
@@ -161,48 +223,56 @@ export default function MarketplaceHomeScreen() {
         }
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
-          <>
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <View style={styles.searchBar}>
-                <Ionicons name="search" size={20} color={colors.text.secondary} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search marketplace..."
-                  placeholderTextColor={colors.text.tertiary}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  onSubmitEditing={handleSearch}
-                  returnKeyType="search"
-                />
-              </View>
-            </View>
-
-            {/* Category Chips */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Categories</Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScroll}
+          isFiltered ? (
+            <TouchableOpacity
+              style={styles.backToHome}
+              onPress={() => setFilters(DEFAULT_FILTERS)}
+              accessibilityLabel="Back to Marketplace"
             >
-              {categories.map(renderCategoryChip)}
-            </ScrollView>
-
-            {/* Recent Listings Header */}
-            {recentListings.length > 0 && (
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recently Added</Text>
-              </View>
-            )}
-          </>
+              <Ionicons name="chevron-back" size={16} color={colors.primary.main} />
+              <Text style={styles.backToHomeText}>Back to Marketplace</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <ListingStrip
+                title="Featured"
+                titleIcon="⭐"
+                listings={featured}
+                onItemPress={handleItemPress}
+                onShowAll={onShowAllFeatured}
+                maxItems={STRIP_LIMIT}
+              />
+              <ListingStrip
+                title="Recently Added"
+                titleIcon="🆕"
+                listings={recent}
+                onItemPress={handleItemPress}
+                onShowAll={onShowAllNewest}
+                maxItems={STRIP_LIMIT}
+              />
+              <ListingStrip
+                title="Trending"
+                titleIcon="🔥"
+                listings={trending}
+                onItemPress={handleItemPress}
+                onShowAll={onShowAllTrending}
+                maxItems={STRIP_LIMIT}
+              />
+              {allListings.length > 0 && (
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>All Listings</Text>
+                </View>
+              )}
+            </>
+          )
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="storefront-outline" size={48} color={colors.text.tertiary} />
-            <Text style={styles.emptyText}>No listings in your area yet</Text>
-            {canCreate && (
+            <Text style={styles.emptyText}>
+              {isFiltered ? 'No listings match your filters' : 'No listings in your area yet'}
+            </Text>
+            {!isFiltered && canCreate && (
               <TouchableOpacity
                 style={styles.createButton}
                 onPress={() => navigation.navigate('CreateListing')}
@@ -220,6 +290,7 @@ export default function MarketplaceHomeScreen() {
           style={styles.fab}
           onPress={() => navigation.navigate('CreateListing')}
           activeOpacity={0.8}
+          accessibilityLabel="Create listing"
         >
           <Ionicons name="add" size={28} color={colors.white} />
         </TouchableOpacity>
@@ -248,6 +319,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  backToHome: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: spacing.m,
+    paddingBottom: spacing.s,
+  },
+  backToHomeText: {
+    ...typography.body,
+    color: colors.primary.main,
+    fontWeight: '500',
+  },
   headerTitle: {
     ...typography.h2,
     color: colors.text.primary,
@@ -261,65 +343,17 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   listContent: {
+    paddingHorizontal: spacing.m,
     paddingBottom: 80,
   },
-  searchContainer: {
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    backgroundColor: colors.white,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.input,
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    gap: spacing.s,
-  },
-  searchInput: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text.primary,
-    padding: 0,
-  },
   sectionHeader: {
-    paddingHorizontal: spacing.m,
     paddingTop: spacing.m,
     paddingBottom: spacing.s,
+    marginHorizontal: -spacing.m,
+    paddingHorizontal: spacing.m,
   },
   sectionTitle: {
     ...typography.h3,
-    color: colors.text.primary,
-  },
-  categoryScroll: {
-    paddingHorizontal: spacing.s,
-    paddingBottom: spacing.xs,
-    gap: spacing.xs,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.s,
-    gap: spacing.xxs,
-  },
-  categoryChipIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryChipEmoji: {
-    fontSize: 14,
-  },
-  categoryChipText: {
-    ...typography.caption,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   emptyContainer: {

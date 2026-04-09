@@ -17,6 +17,8 @@ import {
   getSavedListingsByUser,
   incrementListingViews,
   incrementListingContacts,
+  getFeaturedListings,
+  getTrendingListings,
 } from './marketplace';
 
 const MOCK_CATEGORY = {
@@ -51,6 +53,8 @@ const MOCK_LISTING = {
   views_count: 10,
   saves_count: 3,
   contacts_count: 1,
+  is_featured: false,
+  trending_score: 24,
   refreshed_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -172,6 +176,164 @@ describe('getListingsByMetro', () => {
     const result = await getListingsByMetro(supabase, 'metro-1', { categorySlug: 'food-restaurants' });
     expect(result.data).toHaveLength(1);
     expect(result.data?.[0].id).toBe('listing-1');
+  });
+
+  it('defaults to newest sort (refreshed_at DESC)', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getListingsByMetro(supabase, 'metro-1');
+    expect(chain.order).toHaveBeenCalledWith('refreshed_at', { ascending: false });
+  });
+
+  it('applies oldest sort (refreshed_at ASC)', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getListingsByMetro(supabase, 'metro-1', { sortBy: 'oldest' });
+    expect(chain.order).toHaveBeenCalledWith('refreshed_at', { ascending: true });
+  });
+
+  it('applies featured sort (is_featured DESC, refreshed_at DESC)', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getListingsByMetro(supabase, 'metro-1', { sortBy: 'featured' });
+    expect(chain.order).toHaveBeenCalledWith('is_featured', { ascending: false });
+    expect(chain.order).toHaveBeenCalledWith('refreshed_at', { ascending: false });
+  });
+
+  it('applies price_asc sort (price ASC, nulls last)', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getListingsByMetro(supabase, 'metro-1', { sortBy: 'price_asc' });
+    expect(chain.order).toHaveBeenCalledWith('price', { ascending: true, nullsFirst: false });
+  });
+
+  it('applies price_desc sort (price DESC, nulls last)', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getListingsByMetro(supabase, 'metro-1', { sortBy: 'price_desc' });
+    expect(chain.order).toHaveBeenCalledWith('price', { ascending: false, nullsFirst: false });
+  });
+});
+
+// ─── getFeaturedListings ────────────────────────────────────────────────────
+
+describe('getFeaturedListings', () => {
+  it('filters by is_featured = true and status = active', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [MOCK_LISTING], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getFeaturedListings(supabase, 'metro-1');
+    expect(result.data).toHaveLength(1);
+    expect(chain.eq).toHaveBeenCalledWith('status', 'active');
+    expect(chain.eq).toHaveBeenCalledWith('metro_area_id', 'metro-1');
+    expect(chain.eq).toHaveBeenCalledWith('is_featured', true);
+    expect(chain.order).toHaveBeenCalledWith('refreshed_at', { ascending: false });
+  });
+
+  it('respects custom limit', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getFeaturedListings(supabase, 'metro-1', { limit: 5 });
+    expect(chain.range).toHaveBeenCalledWith(0, 4);
+  });
+
+  it('returns error on supabase failure', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getFeaturedListings(supabase, 'metro-1');
+    expect(result.error).toBeDefined();
+  });
+});
+
+// ─── getTrendingListings ────────────────────────────────────────────────────
+
+describe('getTrendingListings', () => {
+  it('orders by trending_score DESC then refreshed_at DESC', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [MOCK_LISTING], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getTrendingListings(supabase, 'metro-1');
+    expect(result.data).toHaveLength(1);
+    expect(chain.order).toHaveBeenCalledWith('trending_score', { ascending: false });
+    expect(chain.order).toHaveBeenCalledWith('refreshed_at', { ascending: false });
+  });
+
+  it('respects custom limit and offset', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getTrendingListings(supabase, 'metro-1', { limit: 5, offset: 10 });
+    expect(chain.range).toHaveBeenCalledWith(10, 14);
+  });
+
+  it('returns error on supabase failure', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getTrendingListings(supabase, 'metro-1');
+    expect(result.error).toBeDefined();
   });
 });
 
