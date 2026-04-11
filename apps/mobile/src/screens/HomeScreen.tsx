@@ -225,9 +225,7 @@ export default function HomeScreen() {
         setPosts([]);
         setHasMorePosts(false);
       }
-      if (sponsoredResult.data) {
-        setSponsoredFeedItems(sponsoredResult.data);
-      }
+      setSponsoredFeedItems(sponsoredResult.data ?? []);
     } catch {
       setPosts([]);
       setHasMorePosts(false);
