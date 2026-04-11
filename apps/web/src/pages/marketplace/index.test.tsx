@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   getListingsByMetro: vi.fn(),
   getFeaturedListings: vi.fn(),
   getTrendingListings: vi.fn(),
+  getStickyBusinessListings: vi.fn(),
   useCachedCategories: vi.fn(),
 }));
 
@@ -117,6 +118,7 @@ vi.mock('@nepally/shared', () => ({
   getListingsByMetro: mocks.getListingsByMetro,
   getFeaturedListings: mocks.getFeaturedListings,
   getTrendingListings: mocks.getTrendingListings,
+  getStickyBusinessListings: mocks.getStickyBusinessListings,
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
 }));
 
@@ -146,6 +148,7 @@ describe('MarketplaceIndexPage', () => {
     mocks.getTrendingListings.mockResolvedValue({
       data: [{ ...MOCK_LISTING, id: 'trend-1', title: 'Trending Listing' }],
     });
+    mocks.getStickyBusinessListings.mockResolvedValue({ data: [] });
   });
 
   it('redirects to /login when not logged in', async () => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Skeleton } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -10,9 +10,11 @@ import {
   getListingsByMetro,
   getFeaturedListings,
   getTrendingListings,
+  getStickyBusinessListings,
   TrustLevel,
   type ListingSortBy,
   type MarketplaceListing,
+  type SponsoredListing,
 } from '@nepally/shared';
 import { ListingCard } from '../../components/marketplace/ListingCard';
 import { FilterBar, type FilterBarValue } from '../../components/marketplace/FilterBar';
@@ -62,7 +64,12 @@ export default function MarketplaceIndexPage() {
   const [recent, setRecent] = useState<MarketplaceListing[]>([]);
   const [trending, setTrending] = useState<MarketplaceListing[]>([]);
   const [gridListings, setGridListings] = useState<MarketplaceListing[]>([]);
+  const [sponsoredListings, setSponsoredListings] = useState<SponsoredListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const loadSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const metroId = user?.metro_area_id ?? '';
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
@@ -73,47 +80,117 @@ export default function MarketplaceIndexPage() {
     }
   }, [user, router]);
 
+  const fetchGridPage = useCallback(
+    async (offset: number) => {
+      if (isFiltered) {
+        if (view === 'featured' && !category && !q && sort === 'newest') {
+          return getFeaturedListings(supabase, metroId, { limit: GRID_LIMIT, offset });
+        }
+        if (view === 'trending' && !category && !q && sort === 'newest') {
+          return getTrendingListings(supabase, metroId, { limit: GRID_LIMIT, offset });
+        }
+        return getListingsByMetro(supabase, metroId, {
+          categorySlug: category || undefined,
+          searchQuery: q || undefined,
+          sortBy: sort,
+          limit: GRID_LIMIT,
+          offset,
+        });
+      }
+      return getListingsByMetro(supabase, metroId, {
+        sortBy: 'newest',
+        limit: GRID_LIMIT,
+        offset,
+      });
+    },
+    [isFiltered, view, category, q, sort, metroId]
+  );
+
   const fetchData = useCallback(async () => {
     if (!metroId || !router.isReady) return;
     setLoading(true);
 
     if (isFiltered) {
-      // Filtered / Show-All state: fetch a single unified grid
-      let result;
-      if (view === 'featured' && !category && !q && sort === 'newest') {
-        result = await getFeaturedListings(supabase, metroId, { limit: GRID_LIMIT });
-      } else if (view === 'trending' && !category && !q && sort === 'newest') {
-        result = await getTrendingListings(supabase, metroId, { limit: GRID_LIMIT });
+      const result = await fetchGridPage(0);
+      if (result.data) {
+        setGridListings(result.data);
+        setHasMore(Boolean(result.hasMore));
       } else {
-        result = await getListingsByMetro(supabase, metroId, {
-          categorySlug: category || undefined,
-          searchQuery: q || undefined,
-          sortBy: sort,
-          limit: GRID_LIMIT,
-        });
+        setGridListings([]);
+        setHasMore(false);
       }
-      if (result.data) setGridListings(result.data);
       setLoading(false);
       return;
     }
 
-    // Home state: fetch three strips + unified "All Listings" grid in parallel
-    const [featRes, recentRes, trendRes, allRes] = await Promise.all([
+    // Home state: fetch three strips + sponsored + unified "All Listings" grid in parallel
+    const [featRes, recentRes, trendRes, allRes, sponsoredRes] = await Promise.all([
       getFeaturedListings(supabase, metroId, { limit: STRIP_LIMIT }),
       getListingsByMetro(supabase, metroId, { sortBy: 'newest', limit: STRIP_LIMIT }),
       getTrendingListings(supabase, metroId, { limit: STRIP_LIMIT }),
       getListingsByMetro(supabase, metroId, { sortBy: 'newest', limit: GRID_LIMIT }),
+      getStickyBusinessListings(supabase, metroId, { limit: 5 }),
     ]);
     if (featRes.data) setFeatured(featRes.data);
     if (recentRes.data) setRecent(recentRes.data);
     if (trendRes.data) setTrending(trendRes.data);
-    if (allRes.data) setGridListings(allRes.data);
+    if (allRes.data) {
+      setGridListings(allRes.data);
+      setHasMore(Boolean(allRes.hasMore));
+    } else {
+      setHasMore(false);
+    }
+    if (sponsoredRes.data) setSponsoredListings(sponsoredRes.data);
     setLoading(false);
-  }, [metroId, router.isReady, isFiltered, category, sort, q, view]);
+  }, [metroId, router.isReady, isFiltered, fetchGridPage]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const loadMoreListings = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    if (!metroId || !hasMore || loading) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const result = await fetchGridPage(gridListings.length);
+      if (result.data) {
+        setGridListings((prev) => {
+          const seen = new Set(prev.map((l) => l.id));
+          const next = [...prev];
+          for (const l of result.data!) {
+            if (!seen.has(l.id)) next.push(l);
+          }
+          return next;
+        });
+        setHasMore(Boolean(result.hasMore));
+      } else {
+        setHasMore(false);
+      }
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [metroId, hasMore, loading, fetchGridPage, gridListings.length]);
+
+  useEffect(() => {
+    const node = loadSentinelRef.current;
+    if (!node) return;
+    if (!hasMore || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMoreListings();
+        }
+      },
+      { rootMargin: '400px 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadMoreListings]);
 
   const filterValue: FilterBarValue = useMemo(
     () => ({ category, sort, query: q }),
@@ -164,6 +241,14 @@ export default function MarketplaceIndexPage() {
 
         {!isFiltered && (
           <>
+            {sponsoredListings.length > 0 && (
+              <ListingStrip
+                title="Sponsored"
+                titleIcon="📢"
+                listings={sponsoredListings.map((s) => s.listing)}
+                maxItems={5}
+              />
+            )}
             <ListingStrip
               title="Featured"
               titleIcon="⭐"
@@ -199,11 +284,21 @@ export default function MarketplaceIndexPage() {
             ))}
           </div>
         ) : gridListings.length > 0 ? (
-          <div className={styles.listingGrid}>
-            {gridListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
+          <>
+            <div className={styles.listingGrid}>
+              {gridListings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+            {hasMore && (
+              <div ref={loadSentinelRef} className={styles.loadSentinel} aria-hidden="true" />
+            )}
+            {loadingMore && (
+              <div className={styles.footerLoader} data-testid="marketplace-loading-more">
+                <Skeleton height={120} radius="md" />
+              </div>
+            )}
+          </>
         ) : (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🏪</div>

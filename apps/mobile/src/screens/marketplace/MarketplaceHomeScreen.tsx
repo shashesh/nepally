@@ -17,9 +17,11 @@ import {
   getFeaturedListings,
   getListingsByMetro,
   getTrendingListings,
+  getStickyBusinessListings,
   TrustLevel,
   type MarketplaceCategory,
   type MarketplaceListing,
+  type SponsoredListing,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
@@ -53,8 +55,13 @@ export default function MarketplaceHomeScreen() {
   const [trending, setTrending] = useState<MarketplaceListing[]>([]);
   const [allListings, setAllListings] = useState<MarketplaceListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>([]);
+  const [sponsoredListings, setSponsoredListings] = useState<SponsoredListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasMoreAll, setHasMoreAll] = useState(false);
+  const [hasMoreFiltered, setHasMoreFiltered] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
 
   const metroId = user?.metro_area_id ?? '';
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
@@ -86,13 +93,14 @@ export default function MarketplaceHomeScreen() {
       return;
     }
     try {
-      const [catResult, featuredResult, recentResult, trendingResult, allResult] =
+      const [catResult, featuredResult, recentResult, trendingResult, allResult, sponsoredResult] =
         await Promise.all([
           getCategories(supabase),
           getFeaturedListings(supabase, metroId, { limit: STRIP_LIMIT }),
           getListingsByMetro(supabase, metroId, { limit: STRIP_LIMIT, sortBy: 'newest' }),
           getTrendingListings(supabase, metroId, { limit: STRIP_LIMIT }),
           getListingsByMetro(supabase, metroId, { limit: GRID_LIMIT }),
+          getStickyBusinessListings(supabase, metroId, { limit: 5 }),
         ]);
 
       if (!mountedRef.current) return;
@@ -101,7 +109,13 @@ export default function MarketplaceHomeScreen() {
       if (featuredResult.data) setFeatured(featuredResult.data);
       if (recentResult.data) setRecent(recentResult.data);
       if (trendingResult.data) setTrending(trendingResult.data);
-      if (allResult.data) setAllListings(allResult.data);
+      if (allResult.data) {
+        setAllListings(allResult.data);
+        setHasMoreAll(Boolean(allResult.hasMore));
+      } else {
+        setHasMoreAll(false);
+      }
+      if (sponsoredResult.data) setSponsoredListings(sponsoredResult.data);
     } catch {
       // Silently handle — empty state will surface in the UI.
     } finally {
@@ -120,9 +134,15 @@ export default function MarketplaceHomeScreen() {
         searchQuery: filters.query || undefined,
         sortBy: filters.sort,
         limit: GRID_LIMIT,
+        offset: 0,
       });
       if (!mountedRef.current) return;
-      if (result.data) setFilteredListings(result.data);
+      if (result.data) {
+        setFilteredListings(result.data);
+        setHasMoreFiltered(Boolean(result.hasMore));
+      } else {
+        setHasMoreFiltered(false);
+      }
     } catch {
       // Silently handle.
     } finally {
@@ -132,6 +152,61 @@ export default function MarketplaceHomeScreen() {
       }
     }
   }, [metroId, filters]);
+
+  const loadMoreListings = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    if (!metroId || loading || refreshing) return;
+
+    const currentList = isFiltered ? filteredListings : allListings;
+    const hasMore = isFiltered ? hasMoreFiltered : hasMoreAll;
+    if (!hasMore) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const result = await getListingsByMetro(supabase, metroId, {
+        categorySlug: isFiltered ? (filters.category || undefined) : undefined,
+        searchQuery: isFiltered ? (filters.query || undefined) : undefined,
+        sortBy: isFiltered ? filters.sort : 'newest',
+        limit: GRID_LIMIT,
+        offset: currentList.length,
+      });
+      if (!mountedRef.current) return;
+      if (result.data) {
+        const appender = (prev: MarketplaceListing[]) => {
+          const seen = new Set(prev.map((l) => l.id));
+          const next = [...prev];
+          for (const l of result.data!) {
+            if (!seen.has(l.id)) next.push(l);
+          }
+          return next;
+        };
+        if (isFiltered) {
+          setFilteredListings(appender);
+          setHasMoreFiltered(Boolean(result.hasMore));
+        } else {
+          setAllListings(appender);
+          setHasMoreAll(Boolean(result.hasMore));
+        }
+      } else {
+        if (isFiltered) setHasMoreFiltered(false);
+        else setHasMoreAll(false);
+      }
+    } finally {
+      loadingMoreRef.current = false;
+      if (mountedRef.current) setLoadingMore(false);
+    }
+  }, [
+    metroId,
+    loading,
+    refreshing,
+    isFiltered,
+    filteredListings,
+    allListings,
+    hasMoreFiltered,
+    hasMoreAll,
+    filters,
+  ]);
 
   useEffect(() => {
     setLoading(true);
@@ -234,6 +309,16 @@ export default function MarketplaceHomeScreen() {
             </TouchableOpacity>
           ) : (
             <>
+              {sponsoredListings.length > 0 && (
+                <ListingStrip
+                  title="Sponsored"
+                  titleIcon="📢"
+                  listings={sponsoredListings.map((s) => s.listing)}
+                  onItemPress={handleItemPress}
+                  onShowAll={() => {}}
+                  maxItems={5}
+                />
+              )}
               <ListingStrip
                 title="Featured"
                 titleIcon="⭐"
@@ -281,6 +366,15 @@ export default function MarketplaceHomeScreen() {
               </TouchableOpacity>
             )}
           </View>
+        }
+        onEndReached={loadMoreListings}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator size="small" color={colors.primary.main} />
+            </View>
+          ) : null
         }
       />
 
@@ -345,6 +439,10 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: spacing.m,
     paddingBottom: 80,
+  },
+  footerLoader: {
+    paddingVertical: spacing.m,
+    alignItems: 'center',
   },
   sectionHeader: {
     paddingTop: spacing.m,

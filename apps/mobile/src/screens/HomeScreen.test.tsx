@@ -51,6 +51,9 @@ jest.mock('@nepally/shared', () => ({
   getOrCreateConversation: jest.fn().mockResolvedValue({ data: null, error: null }),
   savePost: jest.fn().mockResolvedValue({ error: null }),
   unsavePost: jest.fn().mockResolvedValue({ error: null }),
+  getSponsoredFeedListings: jest.fn().mockResolvedValue({ data: [], error: null }),
+  interleaveSponsoredItems: <P, S>(posts: P[], _sponsored: S[], _opts: unknown) => posts,
+  SPONSORED_FEED_INJECTION_INTERVAL: 5,
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
 }));
 

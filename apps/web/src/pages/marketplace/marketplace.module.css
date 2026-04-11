@@ -745,6 +745,7 @@
 
 /* Redesigned Listing Card (stacked, gradient placeholder, Contact Seller CTA) */
 .featuredCard {
+  position: relative;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-border, #e0e0e0);
@@ -849,6 +850,31 @@
 
 .contactSellerBtn:hover {
   opacity: 0.92;
+}
+
+/* Sponsored badge */
+.sponsoredBadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.loadSentinel {
+  width: 100%;
+  height: 1px;
+}
+
+.footerLoader {
+  padding: 16px 0;
 }
 
 @media (max-width: 768px) {

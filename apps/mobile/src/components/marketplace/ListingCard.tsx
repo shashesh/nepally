@@ -12,9 +12,11 @@ interface ListingCardProps {
   onPress: () => void;
   /** Optional width override for use inside horizontal strips */
   width?: number;
+  /** Show a "Sponsored" badge overlay */
+  sponsored?: boolean;
 }
 
-export const ListingCard = React.memo(function ListingCard({ listing, onPress, width }: ListingCardProps) {
+export const ListingCard = React.memo(function ListingCard({ listing, onPress, width, sponsored }: ListingCardProps) {
   const categoryColor = listing.category?.color ?? '#9E9E9E';
   const categoryEmoji = listing.category?.emoji ?? '📦';
   const categoryName = listing.category?.name ?? 'Other';
@@ -39,6 +41,13 @@ export const ListingCard = React.memo(function ListingCard({ listing, onPress, w
         >
           <Text style={styles.placeholderEmoji}>{categoryEmoji}</Text>
         </LinearGradient>
+      )}
+
+      {/* Sponsored badge */}
+      {sponsored && (
+        <View style={styles.sponsoredBadge}>
+          <Text style={styles.sponsoredBadgeText}>Sponsored</Text>
+        </View>
       )}
 
       {/* Body */}
@@ -159,5 +168,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: colors.white,
+  },
+  sponsoredBadge: {
+    position: 'absolute',
+    top: spacing.xs,
+    left: spacing.xs,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 1,
+  },
+  sponsoredBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.white,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

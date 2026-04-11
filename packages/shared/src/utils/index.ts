@@ -10,3 +10,4 @@ export * from './comments';
 export * from './clientLogger';
 export * from './user';
 export * from './notificationRouting';
+export * from './sponsoredFeed';

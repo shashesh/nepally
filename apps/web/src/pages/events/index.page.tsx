@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Skeleton, Text } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ import { EventFilterBar, type EventFilterBarValue } from '../../components/event
 import styles from './events.module.css';
 
 const DEFAULT_FILTERS: EventFilterBarValue = { type: 'all', query: '' };
+const EVENTS_PAGE_SIZE = 20;
 
 export default function EventsPage() {
   const router = useRouter();
@@ -33,6 +34,10 @@ export default function EventsPage() {
   const [filters, setFilters] = useState<EventFilterBarValue>(DEFAULT_FILTERS);
   const [level0BannerVisible, setLevel0BannerVisible] = useState(true);
   const [userResponses, setUserResponses] = useState<UserEventResponses>({});
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const loadSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const metroId = user?.metro_area_id ?? '';
   const trustLevel = user?.trust_level ?? 0;
@@ -50,13 +55,15 @@ export default function EventsPage() {
     if (!metroId) { setLoading(false); return; }
     setError(null);
     const [eventsRes, responsesRes] = await Promise.all([
-      getEventsByMetro(supabase, metroId),
+      getEventsByMetro(supabase, metroId, EVENTS_PAGE_SIZE, 0),
       user?.id ? getUserEventResponses(supabase, user.id) : Promise.resolve({ data: {} as UserEventResponses, error: undefined }),
     ]);
     if (eventsRes.error) {
       setError(eventsRes.error.message);
+      setHasMore(false);
     } else {
       setEvents(eventsRes.data ?? []);
+      setHasMore(Boolean(eventsRes.hasMore));
     }
     if (!responsesRes.error && responsesRes.data) {
       setUserResponses(responsesRes.data);
@@ -67,6 +74,55 @@ export default function EventsPage() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  const loadMoreEvents = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    if (!metroId || !hasMore || loading) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const result = await getEventsByMetro(
+        supabase,
+        metroId,
+        EVENTS_PAGE_SIZE,
+        events.length
+      );
+      if (result.data) {
+        setEvents((prev) => {
+          const seen = new Set(prev.map((e) => e.id));
+          const next = [...prev];
+          for (const e of result.data!) {
+            if (!seen.has(e.id)) next.push(e);
+          }
+          return next;
+        });
+        setHasMore(Boolean(result.hasMore));
+      } else {
+        setHasMore(false);
+      }
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [metroId, hasMore, loading, events.length]);
+
+  useEffect(() => {
+    const node = loadSentinelRef.current;
+    if (!node) return;
+    if (!hasMore || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMoreEvents();
+        }
+      },
+      { rootMargin: '400px 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadMoreEvents]);
 
   const handleResponseChange = useCallback(
     async (eventId: string, status: RsvpStatus | null) => {
@@ -244,6 +300,14 @@ export default function EventsPage() {
                       />
                     ))}
                   </>
+                )}
+                {hasMore && (
+                  <div ref={loadSentinelRef} className={styles.loadSentinel} aria-hidden="true" />
+                )}
+                {loadingMore && (
+                  <div className={styles.footerLoader} data-testid="events-loading-more">
+                    <Skeleton height={120} radius="md" />
+                  </div>
                 )}
               </>
             )}

@@ -284,6 +284,9 @@ export default function ListingDetailPage() {
             <Link href={`/marketplace/create?edit=${listing.id}`}>
               <Button variant="outline">Edit Listing</Button>
             </Link>
+            <Link href={`/marketplace/listing/promote/${listing.id}`}>
+              <Button>Promote</Button>
+            </Link>
           </div>
         )}
       </div>

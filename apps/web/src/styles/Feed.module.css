@@ -184,6 +184,54 @@
   margin-bottom: var(--space-xs);
 }
 
+/* ── Inline sponsored feed card (interleaved in main post stream) ────── */
+.inlineSponsoredCard {
+  display: block;
+  padding: var(--space-m);
+  background: var(--color-surface);
+  border: var(--ghost-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.inlineSponsoredCard:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.inlineSponsoredLabel {
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.inlineSponsoredTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-xxs);
+  letter-spacing: -0.01em;
+}
+
+.inlineSponsoredDescription {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-xs);
+  line-height: 1.4;
+}
+
+.inlineSponsoredPrice {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
 
 /* ── Category Tabs ───────────────────────── */
 .tabs {
@@ -1015,3 +1063,16 @@
   }
 }
 
+
+.feedLoadSentinel {
+  width: 100%;
+  height: 1px;
+}
+
+.feedFooterLoader {
+  padding: 16px 20px;
+  border: 1px solid var(--mantine-color-gray-2, #e9ecef);
+  border-radius: 12px;
+  background: #ffffff;
+  margin-top: 12px;
+}

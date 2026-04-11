@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -34,6 +35,7 @@ import type { EventsStackParamList } from '../types/navigation';
 type Nav = NativeStackNavigationProp<EventsStackParamList>;
 
 const DEFAULT_FILTERS: EventFilterBarValue = { type: 'all', query: '' };
+const EVENTS_PAGE_SIZE = 20;
 
 export default function EventsScreen() {
   const navigation = useNavigation<Nav>();
@@ -46,6 +48,9 @@ export default function EventsScreen() {
   const [filters, setFilters] = useState<EventFilterBarValue>(DEFAULT_FILTERS);
   const [level0DismissedBanner, setLevel0DismissedBanner] = useState(false);
   const [userResponses, setUserResponses] = useState<UserEventResponses>({});
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
 
   const metroId = user?.metro_area_id ?? '';
   const isLevel0 = (user?.trust_level ?? 0) < TrustLevel.VERIFIED;
@@ -65,16 +70,51 @@ export default function EventsScreen() {
       return;
     }
     setError(null);
-    const result = await getEventsByMetro(supabase, metroId);
+    const result = await getEventsByMetro(supabase, metroId, EVENTS_PAGE_SIZE, 0);
     if (!mountedRef.current) return;
     if (result.error) {
       setError(result.error.message);
+      setHasMore(false);
     } else {
       setEvents(result.data ?? []);
+      setHasMore(Boolean(result.hasMore));
     }
     setLoading(false);
     setRefreshing(false);
   }, [metroId]);
+
+  const loadMoreEvents = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    if (!metroId || !hasMore || loading || refreshing) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const result = await getEventsByMetro(
+        supabase,
+        metroId,
+        EVENTS_PAGE_SIZE,
+        events.length
+      );
+      if (!mountedRef.current) return;
+      if (result.data) {
+        setEvents((prev) => {
+          const seen = new Set(prev.map((e) => e.id));
+          const next = [...prev];
+          for (const e of result.data!) {
+            if (!seen.has(e.id)) next.push(e);
+          }
+          return next;
+        });
+        setHasMore(Boolean(result.hasMore));
+      } else {
+        setHasMore(false);
+      }
+    } finally {
+      loadingMoreRef.current = false;
+      if (mountedRef.current) setLoadingMore(false);
+    }
+  }, [metroId, hasMore, loading, refreshing, events.length]);
 
   const fetchUserResponses = useCallback(async () => {
     if (!user?.id) return;
@@ -301,6 +341,15 @@ export default function EventsScreen() {
           }
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           contentContainerStyle={listData.length === 0 ? styles.flatListEmpty : undefined}
+          onEndReached={loadMoreEvents}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.primary.main} />
+              </View>
+            ) : null
+          }
         />
       )}
     </SafeAreaView>
@@ -424,5 +473,9 @@ const styles = StyleSheet.create({
   },
   flatListEmpty: {
     flexGrow: 1,
+  },
+  footerLoader: {
+    paddingVertical: spacing.m,
+    alignItems: 'center',
   },
 });

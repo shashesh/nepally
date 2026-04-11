@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   Share,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ import { LocationPermissionBanner } from '../components/banners/LocationPermissi
 import { LocationChangeSheet } from '../components/location/LocationChangeSheet';
 import { LocationSwitcherSheet } from '../components/location/LocationSwitcherSheet';
 import { PostCard } from '../components/cards/PostCard';
+import { ListingCard } from '../components/marketplace/ListingCard';
 import { SkeletonPostCard } from '../components/cards/SkeletonPostCard';
 import { TagFilterBar } from '../components/filters/TagFilterBar';
 import { PostMoreSheet } from '../components/sheets/PostMoreSheet';
@@ -42,9 +44,16 @@ import {
   getUserSavedPostIds,
   savePost,
   unsavePost,
+  getSponsoredFeedListings,
+  interleaveSponsoredItems,
+  SPONSORED_FEED_INJECTION_INTERVAL,
   TrustLevel,
 } from '@nepally/shared';
-import type { Post, Tag } from '@nepally/shared';
+import type { Post, Tag, SponsoredListing } from '@nepally/shared';
+
+type FeedEntry =
+  | { kind: 'post'; post: Post }
+  | { kind: 'sponsored'; sponsored: SponsoredListing };
 import { isBannerDismissed, saveBannerDismissed } from '../utils/storage';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
@@ -77,10 +86,15 @@ export default function HomeScreen() {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
 
+  const FEED_PAGE_SIZE = 20;
   const [posts, setPosts] = useState<Post[]>([]);
+  const [sponsoredFeedItems, setSponsoredFeedItems] = useState<SponsoredListing[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
+  const loadingMoreRef = useRef(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
@@ -189,6 +203,7 @@ export default function HomeScreen() {
   const loadPosts = useCallback(async () => {
     if (!metroAreaId) {
       setPosts([]);
+      setHasMorePosts(false);
       setLoadError(null);
       setInitialLoading(false);
       return;
@@ -198,21 +213,74 @@ export default function HomeScreen() {
       setLoadError(null);
       setNewPostsCount(0);
       const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
-      const result = await getPostsByMetroArea(supabase, metroAreaId!, slugs);
+      const [result, sponsoredResult] = await Promise.all([
+        getPostsByMetroArea(supabase, metroAreaId!, slugs, FEED_PAGE_SIZE, 0),
+        getSponsoredFeedListings(supabase, metroAreaId!, { limit: 5 }),
+      ]);
 
       if (result.data) {
         setPosts(result.data);
+        setHasMorePosts(Boolean(result.hasMore));
       } else {
         setPosts([]);
+        setHasMorePosts(false);
+      }
+      if (sponsoredResult.data) {
+        setSponsoredFeedItems(sponsoredResult.data);
       }
     } catch {
       setPosts([]);
+      setHasMorePosts(false);
       setLoadError('Could not load posts. Please check your connection and try again.');
     } finally {
       setInitialLoading(false);
       setRefreshing(false);
     }
   }, [metroAreaId, selectedTagSlugs]);
+
+  const loadMorePosts = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    if (!metroAreaId || !hasMorePosts || initialLoading || refreshing) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMorePosts(true);
+    try {
+      const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
+      const result = await getPostsByMetroArea(
+        supabase,
+        metroAreaId,
+        slugs,
+        FEED_PAGE_SIZE,
+        posts.length
+      );
+      if (result.data) {
+        // De-dupe in case realtime inserted a row between fetches.
+        setPosts((prev) => {
+          const seen = new Set(prev.map((p) => p.id));
+          const next = [...prev];
+          for (const p of result.data!) {
+            if (!seen.has(p.id)) next.push(p);
+          }
+          return next;
+        });
+        setHasMorePosts(Boolean(result.hasMore));
+      } else {
+        setHasMorePosts(false);
+      }
+    } catch {
+      // Silent failure on pagination — keep existing posts visible.
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMorePosts(false);
+    }
+  }, [
+    metroAreaId,
+    hasMorePosts,
+    initialLoading,
+    refreshing,
+    selectedTagSlugs,
+    posts.length,
+  ]);
 
   const loadPostsRef = useRef(loadPosts);
 
@@ -623,38 +691,78 @@ export default function HomeScreen() {
   }, [navigation]);
 
   const PostDivider = useCallback(() => <View style={styles.postDivider} />, []);
-  const postKeyExtractor = useCallback((item: Post) => item.id, []);
+  const feedKeyExtractor = useCallback(
+    (entry: FeedEntry) =>
+      entry.kind === 'post' ? `post-${entry.post.id}` : `sponsored-${entry.sponsored.id}`,
+    []
+  );
 
-  const renderPostItem = useCallback(
-    ({ item }: { item: Post }) => (
-      <PostCard
-        title={item.title}
-        description={item.description}
-        timestamp={item.created_at}
-        imageUrls={item.photos}
-        tags={item.tags}
-        isGlobal={item.is_global}
-        isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
-        authorName={item.author?.full_name}
-        authorPhotoUrl={item.author?.profile_photo}
-        authorTrustLevel={item.author?.trust_level ?? 0}
-        likesCount={item.likes_count ?? 0}
-        commentsCount={item.comments_count ?? 0}
-        isLiked={likedPostIds.has(item.id)}
-        isSaved={savedPostIds.has(item.id)}
-        onPress={() => handlePostPress(item)}
-        onLikePress={() => handleLikePress(item)}
-        onCommentPress={() => handleCommentPress(item)}
-        onSavePress={item.author_id !== user?.id ? () => handleSaveFromCard(item) : undefined}
-        authorId={item.author_id}
-        currentUserId={user?.id}
-        onTagPress={handleTagChipPress}
-        onAvatarViewProfile={() => handleAvatarViewProfile(item.author_id)}
-        onAvatarChat={() => handleAvatarChat(item)}
-        onMorePress={() => handleMorePress(item)}
-        onMediaPress={() => handlePostPress(item)}
-      />
-    ),
+  const handleSponsoredPress = useCallback(
+    (listingId: string) => {
+      navigation.getParent()?.navigate('Marketplace', {
+        screen: 'ListingDetail',
+        params: { listingId },
+      });
+    },
+    [navigation]
+  );
+
+  const feedEntries: FeedEntry[] = useMemo(() => {
+    const postEntries: FeedEntry[] = posts.map((post) => ({ kind: 'post', post }));
+    const sponsoredEntries: FeedEntry[] = sponsoredFeedItems.map((sponsored) => ({
+      kind: 'sponsored',
+      sponsored,
+    }));
+    return interleaveSponsoredItems(postEntries, sponsoredEntries, {
+      interval: SPONSORED_FEED_INJECTION_INTERVAL,
+    });
+  }, [posts, sponsoredFeedItems]);
+
+  const renderFeedEntry = useCallback(
+    ({ item: entry }: { item: FeedEntry }) => {
+      if (entry.kind === 'sponsored') {
+        return (
+          <View style={styles.sponsoredWrapper}>
+            <ListingCard
+              listing={entry.sponsored.listing}
+              sponsored
+              onPress={() => handleSponsoredPress(entry.sponsored.listing.id)}
+            />
+          </View>
+        );
+      }
+
+      const item = entry.post;
+      return (
+        <PostCard
+          title={item.title}
+          description={item.description}
+          timestamp={item.created_at}
+          imageUrls={item.photos}
+          tags={item.tags}
+          isGlobal={item.is_global}
+          isVerified={(item.author?.trust_level ?? 0) >= TrustLevel.VERIFIED}
+          authorName={item.author?.full_name}
+          authorPhotoUrl={item.author?.profile_photo}
+          authorTrustLevel={item.author?.trust_level ?? 0}
+          likesCount={item.likes_count ?? 0}
+          commentsCount={item.comments_count ?? 0}
+          isLiked={likedPostIds.has(item.id)}
+          isSaved={savedPostIds.has(item.id)}
+          onPress={() => handlePostPress(item)}
+          onLikePress={() => handleLikePress(item)}
+          onCommentPress={() => handleCommentPress(item)}
+          onSavePress={item.author_id !== user?.id ? () => handleSaveFromCard(item) : undefined}
+          authorId={item.author_id}
+          currentUserId={user?.id}
+          onTagPress={handleTagChipPress}
+          onAvatarViewProfile={() => handleAvatarViewProfile(item.author_id)}
+          onAvatarChat={() => handleAvatarChat(item)}
+          onMorePress={() => handleMorePress(item)}
+          onMediaPress={() => handlePostPress(item)}
+        />
+      );
+    },
     [
       likedPostIds,
       savedPostIds,
@@ -667,6 +775,7 @@ export default function HomeScreen() {
       handleAvatarViewProfile,
       handleAvatarChat,
       handleMorePress,
+      handleSponsoredPress,
     ]
   );
 
@@ -833,9 +942,9 @@ export default function HomeScreen() {
       <View style={styles.feedContainer}>
         <FlatList
           ref={flatListRef}
-          data={posts}
-          renderItem={renderPostItem}
-          keyExtractor={postKeyExtractor}
+          data={feedEntries}
+          renderItem={renderFeedEntry}
+          keyExtractor={feedKeyExtractor}
           contentContainerStyle={styles.postsContent}
           ItemSeparatorComponent={PostDivider}
           refreshControl={
@@ -845,8 +954,17 @@ export default function HomeScreen() {
               tintColor={colors.primary.main}
             />
           }
-          ListHeaderComponent={renderCreatePostBanner}
+          ListHeaderComponent={renderCreatePostBanner()}
           ListEmptyComponent={initialLoading ? renderLoadingState : loadError ? renderErrorState : renderEmptyState}
+          onEndReached={loadMorePosts}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMorePosts ? (
+              <View style={styles.feedFooterLoader}>
+                <ActivityIndicator size="small" color={colors.primary.main} />
+              </View>
+            ) : null
+          }
         />
 
         {/* New Posts Pill */}
@@ -1049,9 +1167,19 @@ const styles = StyleSheet.create({
   postsContent: {
     paddingBottom: 80,
   },
+  feedFooterLoader: {
+    paddingVertical: spacing.m,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   postDivider: {
     height: 8,
     backgroundColor: colors.background,
+  },
+  sponsoredWrapper: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.s,
+    backgroundColor: colors.white,
   },
   newPostsPill: {
     position: 'absolute',

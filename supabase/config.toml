@@ -82,6 +82,15 @@ secret = ""
 [functions.send-push-notification]
 verify_jwt = true
 
+[functions.create-promotion-checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.expire-promotions]
+verify_jwt = false
+
 # Auth rate limits
 [auth.rate_limit]
 # Number of requests allowed per minute for password recovery endpoints

@@ -106,6 +106,7 @@ export interface PostCommentThread {
 export interface PostsResult {
   data?: Post[];
   error?: Error;
+  hasMore?: boolean;
 }
 
 export interface PostResult {

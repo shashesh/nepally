@@ -204,7 +204,8 @@ describe('FeedPage', () => {
         expect.anything(),
         '19100',
         ['housing'],
-        50
+        20,
+        0
       );
     });
   });

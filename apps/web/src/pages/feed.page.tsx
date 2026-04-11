@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,8 +20,16 @@ import {
   createReport,
   formatRelativeTime,
   getUpcomingEventsByMetro,
+  getSponsoredFeedListings,
+  getStickyBusinessListings,
+  interleaveSponsoredItems,
+  SPONSORED_FEED_INJECTION_INTERVAL,
 } from '@nepally/shared';
-import type { Post, Event } from '@nepally/shared';
+import type { Post, Event, SponsoredListing } from '@nepally/shared';
+
+type FeedEntry =
+  | { kind: 'post'; post: Post }
+  | { kind: 'sponsored'; sponsored: SponsoredListing };
 import Avatar from '../components/Avatar';
 import ReportPostModal from '../components/ReportPostModal';
 import styles from '../styles/Feed.module.css';
@@ -37,11 +45,16 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { activeLocation } = useLocation();
+  const FEED_PAGE_SIZE = 20;
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const loadSentinelRef = useRef<HTMLDivElement | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -50,6 +63,8 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [reportModalPostId, setReportModalPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [stickyListings, setStickyListings] = useState<SponsoredListing[]>([]);
+  const [sponsoredFeedListings, setSponsoredFeedListings] = useState<SponsoredListing[]>([]);
   const latestLoadRequestId = useRef(0);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -157,7 +172,8 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
         supabase,
         metroAreaId,
         slugs,
-        50
+        FEED_PAGE_SIZE,
+        0
       );
       const timeoutPromise = new Promise<{ error: Error }>((resolve) => {
         timeoutId = setTimeout(
@@ -174,25 +190,30 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
       if (!result || typeof result !== 'object') {
         setPosts([]);
+        setHasMorePosts(false);
         setLoadError('Could not load posts. Please check your connection and try again.');
         return;
       }
 
       if ('error' in result && result.error) {
         setPosts([]);
+        setHasMorePosts(false);
         setLoadError('Could not load posts. Please check your connection and try again.');
         return;
       }
 
       if ('data' in result && result.data) {
         setPosts(result.data);
+        setHasMorePosts(Boolean((result as { hasMore?: boolean }).hasMore));
       } else {
         setPosts([]);
+        setHasMorePosts(false);
       }
     } catch (error) {
       if (requestId !== latestLoadRequestId.current) return;
       console.error('Failed to load posts:', error);
       setPosts([]);
+      setHasMorePosts(false);
       setLoadError('Could not load posts. Please check your connection and try again.');
     } finally {
       if (timeoutId) {
@@ -203,6 +224,60 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       }
     }
   }, [authLoading, user, userNeedsMetroOnboarding, metroAreaId, selectedTagSlugs]);
+
+  const loadMorePosts = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    if (!metroAreaId || !hasMorePosts || loading) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMorePosts(true);
+    try {
+      const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
+      const result = await getPostsByMetroArea(
+        supabase,
+        metroAreaId,
+        slugs,
+        FEED_PAGE_SIZE,
+        posts.length
+      );
+      if (result.data) {
+        setPosts((prev) => {
+          const seen = new Set(prev.map((p) => p.id));
+          const next = [...prev];
+          for (const p of result.data!) {
+            if (!seen.has(p.id)) next.push(p);
+          }
+          return next;
+        });
+        setHasMorePosts(Boolean(result.hasMore));
+      } else {
+        setHasMorePosts(false);
+      }
+    } catch (error) {
+      console.error('Failed to load more posts:', error);
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMorePosts(false);
+    }
+  }, [metroAreaId, hasMorePosts, loading, selectedTagSlugs, posts.length]);
+
+  // IntersectionObserver sentinel for infinite scroll
+  useEffect(() => {
+    const node = loadSentinelRef.current;
+    if (!node) return;
+    if (!hasMorePosts || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMorePosts();
+        }
+      },
+      { rootMargin: '400px 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMorePosts, loading, loadMorePosts]);
 
   // Load liked post IDs
   useEffect(() => {
@@ -226,7 +301,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     }
   }, [user]);
 
-  // Load upcoming events for sidebar
+  // Load upcoming events and sponsored listings for sidebar
   useEffect(() => {
     if (!metroAreaId) return;
     const requestedMetro = metroAreaId;
@@ -234,6 +309,18 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       if (requestedMetro !== metroAreaId) return; // stale response guard
       if (result.data) {
         setUpcomingEvents(result.data);
+      }
+    });
+    getStickyBusinessListings(supabase, requestedMetro, { limit: 3 }).then((result) => {
+      if (requestedMetro !== metroAreaId) return;
+      if (result.data) {
+        setStickyListings(result.data);
+      }
+    });
+    getSponsoredFeedListings(supabase, requestedMetro, { limit: 5 }).then((result) => {
+      if (requestedMetro !== metroAreaId) return;
+      if (result.data) {
+        setSponsoredFeedListings(result.data);
       }
     });
   }, [metroAreaId]);
@@ -471,25 +558,47 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     router.push(`/posts/create?edit=${post.id}`);
   }
 
+  const feedEntries: FeedEntry[] = useMemo(() => {
+    const postEntries: FeedEntry[] = posts.map((post) => ({ kind: 'post', post }));
+    const sponsoredEntries: FeedEntry[] = sponsoredFeedListings.map((sponsored) => ({
+      kind: 'sponsored',
+      sponsored,
+    }));
+    return interleaveSponsoredItems(postEntries, sponsoredEntries, {
+      interval: SPONSORED_FEED_INJECTION_INTERVAL,
+    });
+  }, [posts, sponsoredFeedListings]);
+
   if (!user) return null;
 
   const firstName = user.full_name?.trim().split(' ')[0] || 'there';
-  const sponsoredItems = [
-    {
-      id: 'biz-1',
-      title: 'Himalayan Kitchen',
-      description: 'Authentic Nepali cuisine in the heart of your city. Order online or dine in!',
-      cta: 'Visit Website',
-      label: 'AD',
-    },
-    {
-      id: 'biz-2',
-      title: 'Nepal Travel Co.',
-      description: 'Book affordable flights to Kathmandu. Special diaspora fares available now.',
-      cta: 'Learn More',
-      label: 'AD',
-    },
-  ];
+  const sponsoredItems = stickyListings.length > 0
+    ? stickyListings.map((s) => ({
+        id: s.id,
+        title: s.listing.title,
+        description: s.listing.description?.slice(0, 100) || '',
+        cta: 'View Listing',
+        label: 'Sponsored',
+        href: `/marketplace/listing/${s.listing.id}`,
+      }))
+    : [
+        {
+          id: 'biz-1',
+          title: 'Himalayan Kitchen',
+          description: 'Authentic Nepali cuisine in the heart of your city. Order online or dine in!',
+          cta: 'Visit Website',
+          label: 'AD',
+          href: '#',
+        },
+        {
+          id: 'biz-2',
+          title: 'Nepal Travel Co.',
+          description: 'Book affordable flights to Kathmandu. Special diaspora fares available now.',
+          cta: 'Learn More',
+          label: 'AD',
+          href: '#',
+        },
+      ];
 
   return (
     <>
@@ -578,24 +687,62 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 )}
               </div>
             ) : (
-              posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  liked={likedIds.has(post.id)}
-                  saved={savedIds.has(post.id)}
-                  onTagClick={handleTagChipToggle}
-                  currentUserId={user?.id}
-                  onAvatarViewProfile={handleAvatarViewProfile}
-                  onAvatarChat={handleAvatarChat}
-                  onOpenLightbox={openLightbox}
-                  onSharePost={handleSharePost}
-                  onDeletePost={handleDeletePost}
-                  onEditPost={handleEditPost}
-                  onReportPost={handleReportPost}
-                  onSaveToggle={post.author_id !== user?.id ? () => handleSaveToggle(post) : undefined}
-                />
-              ))
+              feedEntries.map((entry) => {
+                if (entry.kind === 'sponsored') {
+                  const listing = entry.sponsored.listing;
+                  return (
+                    <Link
+                      key={`sponsored-${entry.sponsored.id}`}
+                      href={`/marketplace/listing/${listing.id}`}
+                      className={styles.inlineSponsoredCard}
+                    >
+                      <div className={styles.inlineSponsoredLabel}>Sponsored · Marketplace</div>
+                      <h3 className={styles.inlineSponsoredTitle}>{listing.title}</h3>
+                      {listing.description && (
+                        <p className={styles.inlineSponsoredDescription}>
+                          {listing.description.slice(0, 160)}
+                          {listing.description.length > 160 ? '…' : ''}
+                        </p>
+                      )}
+                      {listing.price && (
+                        <div className={styles.inlineSponsoredPrice}>{listing.price}</div>
+                      )}
+                    </Link>
+                  );
+                }
+                const post = entry.post;
+                return (
+                  <PostCard
+                    key={`post-${post.id}`}
+                    post={post}
+                    liked={likedIds.has(post.id)}
+                    saved={savedIds.has(post.id)}
+                    onTagClick={handleTagChipToggle}
+                    currentUserId={user?.id}
+                    onAvatarViewProfile={handleAvatarViewProfile}
+                    onAvatarChat={handleAvatarChat}
+                    onOpenLightbox={openLightbox}
+                    onSharePost={handleSharePost}
+                    onDeletePost={handleDeletePost}
+                    onEditPost={handleEditPost}
+                    onReportPost={handleReportPost}
+                    onSaveToggle={post.author_id !== user?.id ? () => handleSaveToggle(post) : undefined}
+                  />
+                );
+              })
+            )}
+            {!loading && !loadError && posts.length > 0 && (
+              <>
+                {hasMorePosts && (
+                  <div ref={loadSentinelRef} className={styles.feedLoadSentinel} aria-hidden="true" />
+                )}
+                {loadingMorePosts && (
+                  <div className={styles.feedFooterLoader} data-testid="feed-loading-more">
+                    <Skeleton height={14} width="60%" mb="xs" />
+                    <Skeleton height={12} width="40%" />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
@@ -611,7 +758,9 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 <div className={styles.sponsoredCardBody}>
                   <h3 className={styles.sponsoredCardTitle}>{item.title}</h3>
                   <p className={styles.sponsoredCardText}>{item.description}</p>
-                  <Button variant="subtle" size="compact-sm">{item.cta}</Button>
+                  <Link href={item.href}>
+                    <Button variant="subtle" size="compact-sm">{item.cta}</Button>
+                  </Link>
                 </div>
               </article>
             ))}

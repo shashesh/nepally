@@ -131,14 +131,20 @@ export async function getListingsByMetro(
 
     if (error) throw error;
 
+    // `hasMore` is derived from the raw page size BEFORE the client-side
+    // category filter below, so pagination still advances when a page
+    // filters down to zero matches.
+    const rawRows = (data || []) as MarketplaceListing[];
+    const hasMore = rawRows.length === limit;
+
     // If filtering by category slug via nested filter, Supabase may return rows
     // where category is null (no match). Filter those client-side.
-    let listings = (data || []) as MarketplaceListing[];
+    let listings = rawRows;
     if (filters.categorySlug) {
       listings = listings.filter((l) => l.category != null);
     }
 
-    return { data: listings };
+    return { data: listings, hasMore };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch listings') };
   }
@@ -172,7 +178,8 @@ export async function getFeaturedListings(
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return { data: (data || []) as MarketplaceListing[] };
+    const rows = (data || []) as MarketplaceListing[];
+    return { data: rows, hasMore: rows.length === limit };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch featured listings') };
   }
@@ -202,7 +209,8 @@ export async function getTrendingListings(
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return { data: (data || []) as MarketplaceListing[] };
+    const rows = (data || []) as MarketplaceListing[];
+    return { data: rows, hasMore: rows.length === limit };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch trending listings') };
   }

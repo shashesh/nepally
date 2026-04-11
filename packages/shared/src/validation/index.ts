@@ -9,3 +9,4 @@ export * from './housing';
 export * from './jobs';
 export * from './events';
 export * from './marketplace';
+export * from './promotion';

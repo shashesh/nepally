@@ -69,7 +69,12 @@ export async function getPostsByMetroArea(
 
     if (error) throw error;
 
-    let posts: Post[] = (data || []).map(flattenPostTags);
+    const rawRows = data || [];
+    // `hasMore` is derived from the raw page size BEFORE any client-side tag
+    // filtering, so pagination advances even when a page filters down to 0.
+    const hasMore = rawRows.length === limit;
+
+    let posts: Post[] = rawRows.map(flattenPostTags);
 
     // Client-side tag filtering (lightweight — could move to RPC if volume grows)
     if (tagSlugs && tagSlugs.length > 0) {
@@ -78,7 +83,7 @@ export async function getPostsByMetroArea(
       );
     }
 
-    return { data: posts };
+    return { data: posts, hasMore };
   } catch (error) {
     return {
       error: error instanceof Error ? error : new Error('Failed to fetch posts'),

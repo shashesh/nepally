@@ -243,6 +243,35 @@ describe('getListingsByMetro', () => {
     await getListingsByMetro(supabase, 'metro-1', { sortBy: 'price_desc' });
     expect(chain.order).toHaveBeenCalledWith('price', { ascending: false, nullsFirst: false });
   });
+
+  it('returns hasMore=true when a full page is returned', async () => {
+    const page = Array.from({ length: 20 }, (_, i) => ({ ...MOCK_LISTING, id: `lst-${i}` }));
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: page, error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getListingsByMetro(supabase, 'metro-1', { limit: 20, offset: 0 });
+    expect(result.data).toHaveLength(20);
+    expect(result.hasMore).toBe(true);
+    expect(chain.range).toHaveBeenCalledWith(0, 19);
+  });
+
+  it('passes offset through to range() for pagination', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getListingsByMetro(supabase, 'metro-1', { limit: 20, offset: 40 });
+    expect(chain.range).toHaveBeenCalledWith(40, 59);
+  });
 });
 
 // ─── getFeaturedListings ────────────────────────────────────────────────────
