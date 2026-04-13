@@ -62,7 +62,7 @@ export default function PromoteSuccessPage() {
     return () => {
       cancelled = true;
     };
-  }, [router.isReady, promotionId]);
+  }, [router.isReady, promotionId, router]);
 
   if (!user) return null;
 

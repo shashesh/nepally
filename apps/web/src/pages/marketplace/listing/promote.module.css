@@ -21,6 +21,10 @@
 }
 
 .backLink {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
   cursor: pointer;
   color: #666;
   text-decoration: none;
@@ -797,6 +801,10 @@
 }
 
 .backLink {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
   display: flex;
   align-items: center;
   gap: 6px;

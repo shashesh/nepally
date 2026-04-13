@@ -17,7 +17,7 @@ const LISTING_SELECT_FOR_SPONSORED = `
   listing:marketplace_listings!listing_promotions_listing_id_fkey (
     id, title, description, photos, price, category_id, listing_type,
     business_name, views_count, saves_count, contacts_count,
-    is_featured, trending_score, status, refreshed_at, created_at,
+    is_featured, trending_score, status, metro_area_id, refreshed_at, created_at,
     owner:users!marketplace_listings_owner_id_fkey (
       id, full_name, trust_level, profile_photo
     ),
@@ -158,7 +158,7 @@ export async function getStickyBusinessListings(
         const listing = item.listing as Record<string, unknown> | null;
         return listing && listing.metro_area_id === metroId && listing.status === 'active';
       }
-    ) as unknown as unknown as SponsoredListing[];
+    ) as unknown as SponsoredListing[];
 
     return { data: filtered };
   } catch (error) {

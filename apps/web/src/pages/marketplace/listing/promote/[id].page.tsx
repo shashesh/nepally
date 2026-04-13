@@ -180,9 +180,9 @@ export default function PromoteListingPage() {
       <div className={styles.container}>
         {/* Header */}
         <div className={styles.header}>
-          <a className={styles.backLink} onClick={handleBack} role="button" tabIndex={0}>
+          <button type="button" className={styles.backLink} onClick={handleBack}>
             ← Back
-          </a>
+          </button>
           <span className={styles.headerTitle}>Promote Listing</span>
           <span />
         </div>

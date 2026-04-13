@@ -61,32 +61,48 @@ serve(async (req) => {
     // For featured_listing promotions, reset is_featured only if owner is not premium
     const featuredPromos = expired.filter((p) => p.promotion_type === 'featured_listing');
 
-    for (const promo of featuredPromos) {
-      // Check if listing owner is premium (premium users keep is_featured via their own trigger)
-      const { data: owner } = await supabase
+    if (featuredPromos.length > 0) {
+      // Batch 1: fetch premium status for all affected owners in one query
+      const ownerIds = [...new Set(featuredPromos.map((p) => p.user_id))];
+      const { data: premiumOwners } = await supabase
         .from('users')
-        .select('is_premium')
-        .eq('id', promo.user_id)
-        .single();
+        .select('id, is_premium')
+        .in('id', ownerIds);
 
-      if (!owner?.is_premium) {
-        // Also check there's no other active featured_listing promo on this listing
-        const { data: otherActive } = await supabase
+      const premiumOwnerSet = new Set(
+        (premiumOwners ?? []).filter((u) => u.is_premium).map((u) => u.id)
+      );
+
+      // Only consider listings whose owner is not premium
+      const nonPremiumListingIds = [
+        ...new Set(
+          featuredPromos.filter((p) => !premiumOwnerSet.has(p.user_id)).map((p) => p.listing_id)
+        ),
+      ];
+
+      if (nonPremiumListingIds.length > 0) {
+        // Batch 2: find listings that still have another active featured_listing promo
+        const { data: stillActive } = await supabase
           .from('listing_promotions')
-          .select('id')
-          .eq('listing_id', promo.listing_id)
+          .select('listing_id')
+          .in('listing_id', nonPremiumListingIds)
           .eq('promotion_type', 'featured_listing')
-          .eq('status', 'active')
-          .limit(1)
-          .maybeSingle();
+          .eq('status', 'active');
 
-        if (!otherActive) {
+        const stillActiveSet = new Set((stillActive ?? []).map((r) => r.listing_id));
+
+        const listingsToUnfeature = nonPremiumListingIds.filter((id) => !stillActiveSet.has(id));
+
+        if (listingsToUnfeature.length > 0) {
+          // Single bulk update instead of one UPDATE per listing
           await supabase
             .from('marketplace_listings')
             .update({ is_featured: false })
-            .eq('id', promo.listing_id);
+            .in('id', listingsToUnfeature);
 
-          console.log(`Reset is_featured for listing ${promo.listing_id} (non-premium owner)`);
+          console.log(
+            `Reset is_featured for ${listingsToUnfeature.length} listing(s) (non-premium owners)`
+          );
         }
       }
     }

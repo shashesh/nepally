@@ -77,10 +77,18 @@ serve(async (req) => {
 
         // Also store the payment intent ID from the checkout session
         if (session.payment_intent) {
-          await supabase
+          const { error: linkError } = await supabase
             .from('listing_promotions')
             .update({ stripe_payment_intent_id: session.payment_intent as string })
             .eq('id', promotionId);
+
+          if (linkError) {
+            console.error(
+              `Failed to link payment_intent ${session.payment_intent} to promotion ${promotionId}:`,
+              linkError
+            );
+            throw linkError;
+          }
         }
 
         await activatePromotion(supabase, promotionId);
@@ -128,13 +136,16 @@ serve(async (req) => {
 
 /**
  * Activate a promotion: set status, dates, and snapshot views_at_start.
- * Idempotent — skips if already active.
+ * Only activates promotions currently in 'pending' state. Late or
+ * out-of-order webhooks for cancelled/expired/active promotions are
+ * skipped. The update is guarded by .eq('status', 'pending') so
+ * concurrent deliveries cannot double-activate.
  */
 async function activatePromotion(
   supabase: ReturnType<typeof createClient>,
   promotionId: string
 ): Promise<void> {
-  // Fetch the pending promotion
+  // Fetch the promotion
   const { data: promotion, error: fetchError } = await supabase
     .from('listing_promotions')
     .select('id, listing_id, duration_days, status')
@@ -146,9 +157,13 @@ async function activatePromotion(
     return;
   }
 
-  // Idempotent: skip if already active
-  if (promotion.status === 'active') {
-    console.log(`Promotion ${promotionId} is already active, skipping`);
+  // Only pending promotions may be activated. Skip anything else
+  // (active = idempotent no-op; cancelled/expired = late webhook we
+  // must not resurrect).
+  if (promotion.status !== 'pending') {
+    console.log(
+      `Promotion ${promotionId} has status '${promotion.status}', not 'pending'; skipping activation`
+    );
     return;
   }
 
@@ -163,6 +178,9 @@ async function activatePromotion(
   const endDate = new Date(now);
   endDate.setDate(endDate.getDate() + promotion.duration_days);
 
+  // Atomic guard: only transition pending → active. If a concurrent
+  // webhook already flipped the row, this update matches 0 rows and
+  // is a safe no-op.
   const { error: updateError } = await supabase
     .from('listing_promotions')
     .update({
@@ -171,7 +189,8 @@ async function activatePromotion(
       end_date: endDate.toISOString(),
       views_at_start: listing?.views_count ?? 0,
     })
-    .eq('id', promotionId);
+    .eq('id', promotionId)
+    .eq('status', 'pending');
 
   if (updateError) {
     console.error(`Failed to activate promotion ${promotionId}:`, updateError);
