@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
-import { getCategories, getListingsByMetro } from '@nepally/shared';
+import { getCategories, getListingsByMetro, getFeaturedListings } from '@nepally/shared';
 import MarketplaceCategoryScreen from './MarketplaceCategoryScreen';
 
 // ---------------------------------------------------------------------------
@@ -8,6 +8,20 @@ import MarketplaceCategoryScreen from './MarketplaceCategoryScreen';
 // ---------------------------------------------------------------------------
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
+jest.mock('../../components/marketplace/ListingStrip', () => {
+  const { View, Text } = jest.requireActual('react-native');
+  const ReactLocal = jest.requireActual('react');
+  type MockListing = { id: string; title: string };
+  return {
+    ListingStrip: ({ title, listings }: { title: string; listings: MockListing[] }) =>
+      ReactLocal.createElement(
+        View,
+        { testID: `strip-${title.toLowerCase()}` },
+        ReactLocal.createElement(Text, null, `strip:${title}:${listings.length}`)
+      ),
+  };
+});
 
 jest.mock('../../components/marketplace/ListingCard', () => ({
   ListingCard: ({ listing }: { listing: { title: string } }) => {
@@ -98,10 +112,12 @@ jest.mock('../../config/supabase', () => ({ supabase: {} }));
 jest.mock('@nepally/shared', () => ({
   getListingsByMetro: jest.fn(async () => ({ data: [] })),
   getCategories: jest.fn(async () => ({ data: [] })),
+  getFeaturedListings: jest.fn(async () => ({ data: [] })),
 }));
 
 const mockGetListingsByMetro = getListingsByMetro as jest.MockedFunction<typeof getListingsByMetro>;
 const mockGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
+const mockGetFeaturedListings = getFeaturedListings as jest.MockedFunction<typeof getFeaturedListings>;
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -178,6 +194,7 @@ describe('MarketplaceCategoryScreen', () => {
     });
     mockGetCategories.mockResolvedValue({ data: [FOOD_CATEGORY, PRO_CATEGORY] });
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
+    mockGetFeaturedListings.mockResolvedValue({ data: [] });
   });
 
   it('renders the category name in the header', async () => {
@@ -300,5 +317,41 @@ describe('MarketplaceCategoryScreen', () => {
     await waitFor(() => {
       expect(mockGetCategories).toHaveBeenCalled();
     });
+  });
+
+  it('renders ListingStrip when getFeaturedListings returns listings', async () => {
+    mockGetFeaturedListings.mockResolvedValue({ data: [MOCK_LISTING] });
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('strip:Featured:1')).toBeTruthy();
+    });
+    expect(mockGetFeaturedListings).toHaveBeenCalledWith(
+      expect.anything(),
+      'metro-1',
+      expect.objectContaining({ categorySlug: 'food-restaurants', limit: 10 })
+    );
+  });
+
+  it('does not render featured strip in search mode', async () => {
+    mockRouteParams.mockReturnValue({
+      categorySlug: '__search__',
+      categoryName: 'Search: biryani',
+    });
+    mockGetFeaturedListings.mockResolvedValue({ data: [MOCK_LISTING] });
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Search Results')).toBeTruthy();
+    });
+    expect(screen.queryByText(/strip:Featured/)).toBeNull();
+    expect(mockGetFeaturedListings).not.toHaveBeenCalled();
+  });
+
+  it('does not render featured strip when getFeaturedListings returns empty', async () => {
+    mockGetFeaturedListings.mockResolvedValue({ data: [] });
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+    expect(screen.queryByText(/strip:Featured/)).toBeNull();
   });
 });

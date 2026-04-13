@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   getCategories,
   getListingsByMetro,
+  getFeaturedListings,
   type MarketplaceCategory,
   type MarketplaceListing,
 } from '@nepally/shared';
@@ -26,6 +27,7 @@ import { spacing } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 import type { MarketplaceStackParamList } from '../../types/navigation';
 import { ListingCard } from '../../components/marketplace/ListingCard';
+import { ListingStrip } from '../../components/marketplace/ListingStrip';
 import { FilterBar, type FilterBarValue } from '../../components/marketplace/FilterBar';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
@@ -53,6 +55,7 @@ export default function MarketplaceCategoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [featuredListings, setFeaturedListings] = useState<MarketplaceListing[]>([]);
 
   const metroId = user?.metro_area_id ?? '';
   const mountedRef = useRef(true);
@@ -75,6 +78,12 @@ export default function MarketplaceCategoryScreen() {
     };
   }, []);
 
+  const handleItemPress = useCallback(
+    (listing: MarketplaceListing) =>
+      navigation.navigate('ListingDetail', { listingId: listing.id }),
+    [navigation]
+  );
+
   const fetchListings = useCallback(
     async (offset = 0, isRefresh = false) => {
       if (!metroId) {
@@ -83,13 +92,21 @@ export default function MarketplaceCategoryScreen() {
       }
 
       try {
-        const result = await getListingsByMetro(supabase, metroId, {
-          categorySlug: filters.category || undefined,
-          searchQuery: filters.query || undefined,
-          sortBy: filters.sort,
-          limit: PAGE_SIZE,
-          offset,
-        });
+        const [result, featuredResult] = await Promise.all([
+          getListingsByMetro(supabase, metroId, {
+            categorySlug: filters.category || undefined,
+            searchQuery: filters.query || undefined,
+            sortBy: filters.sort,
+            limit: PAGE_SIZE,
+            offset,
+          }),
+          offset === 0 && !isSearchMode
+            ? getFeaturedListings(supabase, metroId, {
+                categorySlug: filters.category || undefined,
+                limit: 10,
+              })
+            : Promise.resolve({ data: [] as MarketplaceListing[] }),
+        ]);
 
         if (!mountedRef.current) return;
 
@@ -101,6 +118,10 @@ export default function MarketplaceCategoryScreen() {
           }
           setHasMore(result.data.length === PAGE_SIZE);
         }
+
+        if (offset === 0 && !isSearchMode && featuredResult.data) {
+          setFeaturedListings(featuredResult.data);
+        }
       } catch {
         // Silently handle — empty listings will surface in the UI.
       } finally {
@@ -111,7 +132,7 @@ export default function MarketplaceCategoryScreen() {
         }
       }
     },
-    [metroId, filters]
+    [metroId, filters, isSearchMode]
   );
 
   useEffect(() => {
@@ -186,6 +207,18 @@ export default function MarketplaceCategoryScreen() {
               onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
             />
           )}
+          ListHeaderComponent={
+            featuredListings.length > 0 ? (
+              <ListingStrip
+                title="Featured"
+                titleIcon="⭐"
+                listings={featuredListings}
+                onItemPress={handleItemPress}
+                onShowAll={() => {}}
+                maxItems={10}
+              />
+            ) : null
+          }
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary.main]} />
           }
