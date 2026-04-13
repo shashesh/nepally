@@ -110,7 +110,7 @@ export async function getListingsByMetro(
     const sortBy: ListingSortBy = filters.sortBy ?? 'newest';
 
     let query = supabase
-      .from('marketplace_listings')
+      .from('marketplace_listings_view')
       .select(LISTING_SELECT)
       .eq('status', 'active')
       .eq('metro_area_id', metroId);
@@ -169,7 +169,7 @@ export async function getFeaturedListings(
     const offset = opts.offset ?? 0;
 
     const { data, error } = await supabase
-      .from('marketplace_listings')
+      .from('marketplace_listings_view')
       .select(LISTING_SELECT)
       .eq('status', 'active')
       .eq('metro_area_id', metroId)
@@ -200,7 +200,7 @@ export async function getTrendingListings(
     const offset = opts.offset ?? 0;
 
     const { data, error } = await supabase
-      .from('marketplace_listings')
+      .from('marketplace_listings_view')
       .select(LISTING_SELECT)
       .eq('status', 'active')
       .eq('metro_area_id', metroId)
@@ -225,7 +225,7 @@ export async function getListingById(
 ): Promise<ListingResult> {
   try {
     const { data, error } = await supabase
-      .from('marketplace_listings')
+      .from('marketplace_listings_view')
       .select(LISTING_SELECT)
       .eq('id', listingId)
       .neq('status', 'removed')
@@ -254,7 +254,7 @@ export async function getListingsByOwner(
 ): Promise<ListingsResult> {
   try {
     const { data, error } = await supabase
-      .from('marketplace_listings')
+      .from('marketplace_listings_view')
       .select(LISTING_SELECT)
       .eq('owner_id', ownerId)
       .neq('status', 'removed')
@@ -542,7 +542,7 @@ export async function getSavedListingsByUser(
       .from('saved_listings')
       .select(`
         listing_id,
-        listing:marketplace_listings!saved_listings_listing_id_fkey (
+        listing:marketplace_listings_view!saved_listings_listing_id_fkey (
           ${LISTING_SELECT}
         )
       `)

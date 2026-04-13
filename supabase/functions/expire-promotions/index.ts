@@ -1,6 +1,8 @@
 // Supabase Edge Function: expire-promotions
-// Runs hourly via cron to expire promotions past their end date.
-// Resets is_featured only for non-premium listing owners.
+// Runs hourly via cron to expire paid promotions past their end date.
+// Premium-perk promotions (source = 'premium_perk') have end_date IS NULL
+// and are never touched by this job — they are managed by the user premium
+// cascade trigger in migration 023.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
@@ -23,11 +25,13 @@ serve(async (req) => {
     const now = new Date().toISOString();
     console.log('Starting promotion expiration job...');
 
-    // Find active promotions past their end date
+    // Find active paid promotions past their end date.
+    // Premium_perk rows are excluded explicitly by source filter.
     const { data: expired, error: fetchError } = await supabase
       .from('listing_promotions')
-      .select('id, listing_id, user_id, promotion_type')
+      .select('id')
       .eq('status', 'active')
+      .eq('source', 'paid')
       .lte('end_date', now);
 
     if (fetchError) {
@@ -43,11 +47,10 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${expired.length} expired promotions`);
+    console.log(`Found ${expired.length} expired paid promotions`);
 
     const expiredIds = expired.map((p) => p.id);
 
-    // Batch-update all to expired status
     const { error: updateError } = await supabase
       .from('listing_promotions')
       .update({ status: 'expired' })
@@ -58,56 +61,10 @@ serve(async (req) => {
       throw updateError;
     }
 
-    // For featured_listing promotions, reset is_featured only if owner is not premium
-    const featuredPromos = expired.filter((p) => p.promotion_type === 'featured_listing');
+    // No is_featured write-back: featured status is derived on read via
+    // marketplace_listings_view. Updating promotion status alone is enough.
 
-    if (featuredPromos.length > 0) {
-      // Batch 1: fetch premium status for all affected owners in one query
-      const ownerIds = [...new Set(featuredPromos.map((p) => p.user_id))];
-      const { data: premiumOwners } = await supabase
-        .from('users')
-        .select('id, is_premium')
-        .in('id', ownerIds);
-
-      const premiumOwnerSet = new Set(
-        (premiumOwners ?? []).filter((u) => u.is_premium).map((u) => u.id)
-      );
-
-      // Only consider listings whose owner is not premium
-      const nonPremiumListingIds = [
-        ...new Set(
-          featuredPromos.filter((p) => !premiumOwnerSet.has(p.user_id)).map((p) => p.listing_id)
-        ),
-      ];
-
-      if (nonPremiumListingIds.length > 0) {
-        // Batch 2: find listings that still have another active featured_listing promo
-        const { data: stillActive } = await supabase
-          .from('listing_promotions')
-          .select('listing_id')
-          .in('listing_id', nonPremiumListingIds)
-          .eq('promotion_type', 'featured_listing')
-          .eq('status', 'active');
-
-        const stillActiveSet = new Set((stillActive ?? []).map((r) => r.listing_id));
-
-        const listingsToUnfeature = nonPremiumListingIds.filter((id) => !stillActiveSet.has(id));
-
-        if (listingsToUnfeature.length > 0) {
-          // Single bulk update instead of one UPDATE per listing
-          await supabase
-            .from('marketplace_listings')
-            .update({ is_featured: false })
-            .in('id', listingsToUnfeature);
-
-          console.log(
-            `Reset is_featured for ${listingsToUnfeature.length} listing(s) (non-premium owners)`
-          );
-        }
-      }
-    }
-
-    console.log(`Successfully expired ${expiredIds.length} promotions`);
+    console.log(`Successfully expired ${expiredIds.length} paid promotions`);
 
     return new Response(
       JSON.stringify({

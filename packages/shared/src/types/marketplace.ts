@@ -13,7 +13,7 @@ export type ItemCondition = 'new' | 'used';
 /**
  * Sort options for marketplace listing queries.
  * - `newest` / `oldest`: by refreshed_at
- * - `featured`: is_featured DESC, then refreshed_at DESC
+ * - `featured`: is_featured DESC (computed from active listing_promotions), then refreshed_at DESC
  * - `price_asc` / `price_desc`: by price (TEXT column — lexicographic sort; see note in api/marketplace.ts)
  */
 export type ListingSortBy = 'newest' | 'oldest' | 'featured' | 'price_asc' | 'price_desc';
@@ -68,7 +68,9 @@ export interface MarketplaceListing {
   saves_count: number;
   contacts_count: number;
   // Discovery surfaces (migration 018)
-  is_featured: boolean;
+  // is_featured is now computed by marketplace_listings_view (migration 023).
+  // Optional because write operations return rows from the base table only.
+  is_featured?: boolean;
   trending_score: number;
   // Soft expiry
   refreshed_at: string;
