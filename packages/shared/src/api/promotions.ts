@@ -17,7 +17,7 @@ const LISTING_SELECT_FOR_SPONSORED = `
   listing:marketplace_listings!listing_promotions_listing_id_fkey (
     id, title, description, photos, price, category_id, listing_type,
     business_name, views_count, saves_count, contacts_count,
-    is_featured, trending_score, status, metro_area_id, refreshed_at, created_at,
+    trending_score, status, metro_area_id, refreshed_at, created_at,
     owner:users!marketplace_listings_owner_id_fkey (
       id, full_name, trust_level, profile_photo
     ),

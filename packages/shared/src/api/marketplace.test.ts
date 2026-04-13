@@ -204,7 +204,7 @@ describe('getListingsByMetro', () => {
     expect(chain.order).toHaveBeenCalledWith('refreshed_at', { ascending: true });
   });
 
-  it('applies featured sort (is_featured DESC, refreshed_at DESC)', async () => {
+  it('applies featured sort and queries the view', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -214,6 +214,7 @@ describe('getListingsByMetro', () => {
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
     await getListingsByMetro(supabase, 'metro-1', { sortBy: 'featured' });
+    expect(supabase.from).toHaveBeenCalledWith('marketplace_listings_view');
     expect(chain.order).toHaveBeenCalledWith('is_featured', { ascending: false });
     expect(chain.order).toHaveBeenCalledWith('refreshed_at', { ascending: false });
   });
@@ -277,7 +278,7 @@ describe('getListingsByMetro', () => {
 // ─── getFeaturedListings ────────────────────────────────────────────────────
 
 describe('getFeaturedListings', () => {
-  it('filters by is_featured = true and status = active', async () => {
+  it('filters by is_featured = true and queries the view', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -288,6 +289,7 @@ describe('getFeaturedListings', () => {
 
     const result = await getFeaturedListings(supabase, 'metro-1');
     expect(result.data).toHaveLength(1);
+    expect(supabase.from).toHaveBeenCalledWith('marketplace_listings_view');
     expect(chain.eq).toHaveBeenCalledWith('status', 'active');
     expect(chain.eq).toHaveBeenCalledWith('metro_area_id', 'metro-1');
     expect(chain.eq).toHaveBeenCalledWith('is_featured', true);
@@ -533,6 +535,27 @@ describe('createListing', () => {
     await createListing(supabase, { ...CREATE_INPUT, price: '   ' });
     const insertPayload = chain.insert.mock.calls[0][0];
     expect(insertPayload.price).toBeNull();
+  });
+
+  it('writes against the base table, not the view', async () => {
+    const chain = {
+      insert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: MOCK_LISTING, error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await createListing(supabase, {
+      owner_id: 'user-1',
+      metro_area_id: 'metro-1',
+      category_id: 'cat-1',
+      listing_type: 'individual',
+      title: 'Test',
+      description: 'Test',
+      photos: [],
+    });
+    expect(supabase.from).toHaveBeenCalledWith('marketplace_listings');
+    expect(supabase.from).not.toHaveBeenCalledWith('marketplace_listings_view');
   });
 });
 
