@@ -46,6 +46,40 @@ describe('posts api', () => {
     expect(result.data).toHaveLength(1);
     expect(result.data?.[0].id).toBe('post-1');
     expect(result.data?.[0].tags?.[0].slug).toBe('jobs');
+    // Raw page (2 rows) is smaller than default limit (20), so no more pages.
+    expect(result.hasMore).toBe(false);
+  });
+
+  it('reports hasMore=true when page is full', async () => {
+    const rawPosts = Array.from({ length: 20 }, (_, i) => ({
+      id: `post-${i}`,
+      title: `Post ${i}`,
+      post_tags: [],
+    }));
+
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      or: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.or.mockReturnValue(query);
+    query.order.mockReturnValue(query);
+    query.range.mockResolvedValue({ data: rawPosts, error: null });
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as SupabaseClient;
+
+    const result = await getPostsByMetroArea(supabase, '19100', undefined, 20, 0);
+
+    expect(result.error).toBeUndefined();
+    expect(result.data).toHaveLength(20);
+    expect(result.hasMore).toBe(true);
   });
 
   it('returns error for missing post in getPostById', async () => {

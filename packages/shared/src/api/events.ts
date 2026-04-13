@@ -51,7 +51,8 @@ type AttendeeRow = {
 export async function getEventsByMetro(
   supabase: SupabaseClient,
   metroId: string,
-  limit = 50
+  limit = 20,
+  offset = 0
 ): Promise<EventsResult> {
   try {
     const { data, error } = await supabase
@@ -60,10 +61,11 @@ export async function getEventsByMetro(
       .neq('status', 'removed')
       .or(`metro_area_id.eq.${metroId},is_global.eq.true`)
       .order('start_date', { ascending: true })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return { data: (data || []) as Event[] };
+    const rows = (data || []) as Event[];
+    return { data: rows, hasMore: rows.length === limit };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch events') };
   }

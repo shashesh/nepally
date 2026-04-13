@@ -154,6 +154,7 @@ jest.mock('@nepally/shared', () => ({
   getListingsByMetro: jest.fn(async () => ({ data: [] })),
   getFeaturedListings: jest.fn(async () => ({ data: [] })),
   getTrendingListings: jest.fn(async () => ({ data: [] })),
+  getStickyBusinessListings: jest.fn(async () => ({ data: [] })),
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
 }));
 

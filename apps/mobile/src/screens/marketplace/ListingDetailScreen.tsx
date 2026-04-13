@@ -23,6 +23,7 @@ import {
   incrementListingViews,
   incrementListingContacts,
   getOrCreateConversation,
+  getActivePromotionForListing,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   BUSINESS_HOURS_DAYS,
@@ -53,6 +54,7 @@ export default function ListingDetailScreen() {
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [hasActivePromotion, setHasActivePromotion] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +73,15 @@ export default function ListingDetailScreen() {
         if (listingResult.data) {
           setListing(listingResult.data);
           void incrementListingViews(supabase, listingId);
+
+          // Check for active promotion (non-blocking)
+          if (listingResult.data.owner_id === userId) {
+            getActivePromotionForListing(supabase, listingId).then((promoResult) => {
+              if (!cancelled && promoResult.data) {
+                setHasActivePromotion(true);
+              }
+            });
+          }
         }
 
         if (savedResult.data) {
@@ -352,6 +363,20 @@ export default function ListingDetailScreen() {
             <Ionicons name="create-outline" size={20} color={colors.primary.main} />
             <Text style={styles.editButtonText}>Edit Listing</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.editButton, hasActivePromotion && styles.disabledButton]}
+            onPress={() => navigation.navigate('PromoteListing', { listingId: listing.id })}
+            disabled={hasActivePromotion}
+          >
+            <Ionicons
+              name="megaphone-outline"
+              size={20}
+              color={hasActivePromotion ? colors.text.disabled : '#FF9800'}
+            />
+            <Text style={[styles.editButtonText, hasActivePromotion && styles.disabledButtonText]}>
+              {hasActivePromotion ? 'Promoted' : 'Promote'}
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
     </SafeAreaView>
@@ -619,5 +644,11 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary.main,
     fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledButtonText: {
+    color: colors.text.disabled,
   },
 });

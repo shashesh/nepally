@@ -160,6 +160,14 @@ export default function MyListingsPage() {
                   </Link>
 
                   {listing.status === 'active' && (
+                    <Link href={`/marketplace/listing/promote/${listing.id}`}>
+                      <button className={`${styles.actionLink} ${styles.actionEdit}`}>
+                        🚀 Promote
+                      </button>
+                    </Link>
+                  )}
+
+                  {listing.status === 'active' && (
                     <button
                       className={`${styles.actionLink} ${styles.actionRefresh}`}
                       onClick={() => handleRefresh(listing.id)}

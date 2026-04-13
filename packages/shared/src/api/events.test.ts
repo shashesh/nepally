@@ -46,7 +46,7 @@ describe('getEventsByMetro', () => {
       neq: vi.fn().mockReturnThis(),
       or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: [MOCK_EVENT], error: null }),
+      range: vi.fn().mockResolvedValue({ data: [MOCK_EVENT], error: null }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
@@ -54,6 +54,7 @@ describe('getEventsByMetro', () => {
     expect(result.error).toBeUndefined();
     expect(result.data).toHaveLength(1);
     expect(result.data?.[0].id).toBe('event-1');
+    expect(result.hasMore).toBe(false);
   });
 
   it('returns error on supabase failure', async () => {
@@ -62,7 +63,7 @@ describe('getEventsByMetro', () => {
       neq: vi.fn().mockReturnThis(),
       or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+      range: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
@@ -77,12 +78,44 @@ describe('getEventsByMetro', () => {
       neq: vi.fn().mockReturnThis(),
       or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
     const result = await getEventsByMetro(supabase, '19100');
     expect(result.data).toEqual([]);
+    expect(result.hasMore).toBe(false);
+  });
+
+  it('sets hasMore=true when a full page is returned', async () => {
+    const page = Array.from({ length: 20 }, (_, i) => ({ ...MOCK_EVENT, id: `evt-${i}` }));
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: page, error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getEventsByMetro(supabase, '19100', 20, 0);
+    expect(result.data).toHaveLength(20);
+    expect(result.hasMore).toBe(true);
+    expect(chain.range).toHaveBeenCalledWith(0, 19);
+  });
+
+  it('passes offset through to range() for pagination', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getEventsByMetro(supabase, '19100', 20, 40);
+    expect(chain.range).toHaveBeenCalledWith(40, 59);
   });
 });
 

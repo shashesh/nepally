@@ -8,7 +8,12 @@ jest.mock('expo-linear-gradient', () => {
   return { LinearGradient: View };
 });
 
-jest.mock('@nepally/shared', () => ({}));
+jest.mock('@nepally/shared', () => {
+  const actual = jest.requireActual('@nepally/shared');
+  return {
+    ...actual,
+  };
+});
 
 const MOCK_CATEGORY = {
   id: 'cat-1',

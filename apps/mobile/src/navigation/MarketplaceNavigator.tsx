@@ -7,6 +7,7 @@ import MarketplaceCategoryScreen from '../screens/marketplace/MarketplaceCategor
 import ListingDetailScreen from '../screens/marketplace/ListingDetailScreen';
 import CreateListingScreen from '../screens/marketplace/CreateListingScreen';
 import MyListingsScreen from '../screens/marketplace/MyListingsScreen';
+import PromoteListingScreen from '../screens/marketplace/PromoteListingScreen';
 
 const Stack = createNativeStackNavigator<MarketplaceStackParamList>();
 
@@ -46,6 +47,14 @@ export function MarketplaceNavigator() {
         name="MyListings"
         component={MyListingsScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PromoteListing"
+        component={PromoteListingScreen}
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
       />
     </Stack.Navigator>
   );

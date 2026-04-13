@@ -36,3 +36,19 @@ export function formatDate(date: Date): string {
     day: 'numeric',
   });
 }
+
+/**
+ * Format cents as USD string: 199 -> "$1.99"
+ */
+export function formatCurrency(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+/**
+ * Add days to a date, returning a new Date (does not mutate input).
+ */
+export function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}

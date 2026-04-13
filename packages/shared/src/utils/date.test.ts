@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCount } from './date';
+import { formatCount, formatCurrency, addDays } from './date';
 
 describe('formatCount', () => {
   it('returns the number as-is below 1000', () => {
@@ -28,5 +28,55 @@ describe('formatCount', () => {
     expect(formatCount(10500)).toBe('10K');
     expect(formatCount(99999)).toBe('99K');
     expect(formatCount(100000)).toBe('100K');
+  });
+});
+
+describe('formatCurrency', () => {
+  it('formats cents as USD string', () => {
+    expect(formatCurrency(199)).toBe('$1.99');
+    expect(formatCurrency(299)).toBe('$2.99');
+    expect(formatCurrency(499)).toBe('$4.99');
+  });
+
+  it('formats zero cents', () => {
+    expect(formatCurrency(0)).toBe('$0.00');
+  });
+
+  it('formats large values', () => {
+    expect(formatCurrency(10000)).toBe('$100.00');
+    expect(formatCurrency(99999)).toBe('$999.99');
+  });
+
+  it('formats single-digit cents', () => {
+    expect(formatCurrency(1)).toBe('$0.01');
+    expect(formatCurrency(9)).toBe('$0.09');
+  });
+});
+
+describe('addDays', () => {
+  it('adds days to a date', () => {
+    const base = new Date('2026-04-01T00:00:00Z');
+    const result = addDays(base, 7);
+    expect(result.toISOString()).toBe('2026-04-08T00:00:00.000Z');
+  });
+
+  it('does not mutate the input date', () => {
+    const base = new Date('2026-04-01T00:00:00Z');
+    const originalTime = base.getTime();
+    addDays(base, 7);
+    expect(base.getTime()).toBe(originalTime);
+  });
+
+  it('handles adding 0 days', () => {
+    const base = new Date('2026-04-01T12:00:00Z');
+    const result = addDays(base, 0);
+    expect(result.getTime()).toBe(base.getTime());
+  });
+
+  it('handles month boundary crossing', () => {
+    const base = new Date('2026-04-28T00:00:00Z');
+    const result = addDays(base, 5);
+    expect(result.getUTCMonth()).toBe(4); // May (0-indexed)
+    expect(result.getUTCDate()).toBe(3);
   });
 });

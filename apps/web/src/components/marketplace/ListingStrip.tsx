@@ -8,7 +8,7 @@ interface ListingStripProps {
   title: string;
   titleIcon?: string;
   listings: MarketplaceListing[];
-  showAllHref: string;
+  showAllHref?: string;
   maxItems?: number;
 }
 
@@ -52,9 +52,11 @@ export function ListingStrip({
         <h2 className={styles.title}>
           {titleIcon && <span aria-hidden="true">{titleIcon}</span>} {title}
         </h2>
-        <Link href={showAllHref} className={styles.viewAllLink}>
-          View All →
-        </Link>
+        {showAllHref && (
+          <Link href={showAllHref} className={styles.viewAllLink}>
+            View All →
+          </Link>
+        )}
       </div>
       <div className={styles.scrollerWrapper}>
         {canScrollLeft && (
@@ -77,7 +79,7 @@ export function ListingStrip({
               <ListingCard listing={listing} />
             </div>
           ))}
-          {showAllCard && (
+          {showAllCard && showAllHref && (
             <Link
               href={showAllHref}
               className={`${styles.scrollerItem} ${styles.showAllCard}`}

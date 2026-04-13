@@ -15,6 +15,7 @@ export * from './constants/trustLevels';
 export * from './constants/location';
 export * from './constants/events';
 export * from './constants/marketplace';
+export * from './constants/promotions';
 
 // Utilities
 export * from './utils';

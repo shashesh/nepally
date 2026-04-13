@@ -93,6 +93,7 @@ export type MarketplaceStackParamList = {
   ListingDetail: { listingId: string };
   CreateListing: { editListingId?: string } | undefined;
   MyListings: undefined;
+  PromoteListing: { listingId: string };
 };
 
 /**

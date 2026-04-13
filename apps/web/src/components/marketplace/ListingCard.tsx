@@ -21,9 +21,11 @@ const CATEGORY_THEME_CLASS_BY_SLUG: Record<string, string> = {
 
 interface ListingCardProps {
   listing: MarketplaceListing;
+  /** Show a "Sponsored" badge overlay */
+  sponsored?: boolean;
 }
 
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, sponsored }: ListingCardProps) {
   const categoryThemeClass =
     CATEGORY_THEME_CLASS_BY_SLUG[listing.category?.slug ?? ''] ?? styles.categoryThemeOther;
   const isVerifiedSeller = (listing.owner?.trust_level ?? 0) >= 1;
@@ -48,6 +50,9 @@ export function ListingCard({ listing }: ListingCardProps) {
             {listing.category?.emoji ?? '📦'}
           </span>
         </div>
+      )}
+      {sponsored && (
+        <span className={styles.sponsoredBadge}>Sponsored</span>
       )}
       <div className={styles.cardBody}>
         <div className={styles.cardCategoryChip}>

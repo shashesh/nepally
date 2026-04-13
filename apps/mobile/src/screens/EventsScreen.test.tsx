@@ -353,13 +353,13 @@ describe('EventsScreen', () => {
   describe('data fetching', () => {
     it('passes supabase client and metro ID to getEventsByMetro', async () => {
       await renderAndSettle();
-      expect(mockGetEventsByMetro).toHaveBeenCalledWith({}, '19100');
+      expect(mockGetEventsByMetro).toHaveBeenCalledWith({}, '19100', 20, 0);
     });
 
     it('uses different metro ID from user', async () => {
       setAuthUser({ metro_area_id: '35620' });
       await renderAndSettle();
-      expect(mockGetEventsByMetro).toHaveBeenCalledWith({}, '35620');
+      expect(mockGetEventsByMetro).toHaveBeenCalledWith({}, '35620', 20, 0);
     });
   });
 });

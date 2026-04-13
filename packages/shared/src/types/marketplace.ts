@@ -96,6 +96,7 @@ export interface ListingResult {
 export interface ListingsResult {
   data?: MarketplaceListing[];
   error?: Error;
+  hasMore?: boolean;
 }
 
 export interface CategoriesResult {

@@ -52,6 +52,7 @@ export interface EventResult {
 export interface EventsResult {
   data?: Event[];
   error?: Error;
+  hasMore?: boolean;
 }
 
 export interface EventRsvpsResult {

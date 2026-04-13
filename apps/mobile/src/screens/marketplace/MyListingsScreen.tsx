@@ -195,6 +195,16 @@ export default function MyListingsScreen() {
             {item.status === 'active' && (
               <TouchableOpacity
                 style={styles.actionButton}
+                onPress={() => navigation.navigate('PromoteListing', { listingId: item.id })}
+              >
+                <Ionicons name="megaphone-outline" size={18} color="#FF9800" />
+                <Text style={[styles.actionText, { color: '#FF9800' }]}>Promote</Text>
+              </TouchableOpacity>
+            )}
+
+            {item.status === 'active' && (
+              <TouchableOpacity
+                style={styles.actionButton}
                 onPress={() => handleRefresh(item.id)}
               >
                 <Ionicons name="refresh-outline" size={18} color={colors.success} />
