@@ -80,6 +80,36 @@ export default function PromoteListingScreen({ route, navigation }: Props) {
     };
   }, [listingId]);
 
+  // Poll for promotion activation on step 4
+  useEffect(() => {
+    if (step !== 4 || !promotionId) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 15;
+    let pollTimeoutId: ReturnType<typeof setTimeout>;
+
+    const schedulePoll = () => {
+      if (cancelled || attempts >= maxAttempts) return;
+      attempts++;
+      getPromotionById(supabase, promotionId).then((result) => {
+        if (cancelled) return;
+        if (result.data?.status === 'active') {
+          setPromotionActive(true);
+        } else if (attempts < maxAttempts) {
+          pollTimeoutId = setTimeout(schedulePoll, 2000);
+        }
+      });
+    };
+
+    schedulePoll();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(pollTimeoutId);
+    };
+  }, [step, promotionId]);
+
   const totalCostCents = selectedTier
     ? selectedTier.daily_cost_cents * durationDays
     : 0;
@@ -138,20 +168,8 @@ export default function PromoteListingScreen({ route, navigation }: Props) {
         setPromotionId(result.data.promotionId);
       }
 
-      // Open Stripe Payment Sheet
-      // NOTE: @stripe/stripe-react-native initPaymentSheet + presentPaymentSheet
-      // would be called here. For now, simulate success for the UI flow:
-      if (result.data?.clientSecret) {
-        // In production, this would use:
-        // const { initPaymentSheet, presentPaymentSheet } = useStripe();
-        // await initPaymentSheet({ paymentIntentClientSecret: result.data.clientSecret });
-        // const { error } = await presentPaymentSheet();
-        // if (!error) { setStep(4); }
-
-        // Placeholder: move to confirmation step
-        if (mountedRef.current) {
-          setStep(4);
-        }
+      if (result.data?.clientSecret && mountedRef.current) {
+        setStep(4);
       }
     } catch {
       Alert.alert('Error', 'Something went wrong. Please try again.');
@@ -161,32 +179,6 @@ export default function PromoteListingScreen({ route, navigation }: Props) {
       }
     }
   }, [selectedTier, user, listingId, durationDays]);
-
-  // Poll for promotion activation on step 4
-  useEffect(() => {
-    if (step !== 4 || !promotionId) return;
-
-    let cancelled = false;
-    let attempts = 0;
-    const maxAttempts = 15;
-
-    const poll = async () => {
-      while (!cancelled && attempts < maxAttempts) {
-        attempts++;
-        const result = await getPromotionById(supabase, promotionId);
-        if (!cancelled && result.data?.status === 'active') {
-          setPromotionActive(true);
-          return;
-        }
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-    };
-
-    poll();
-    return () => {
-      cancelled = true;
-    };
-  }, [step, promotionId]);
 
   const handleBack = useCallback(() => {
     if (step === 1) {

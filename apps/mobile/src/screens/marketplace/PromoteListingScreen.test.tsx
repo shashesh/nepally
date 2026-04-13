@@ -17,10 +17,56 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+// Explicit mock — no jest.requireActual — prevents React 19 act() from detecting
+// pending async work from the real shared module during render.
+jest.mock('@nepally/shared', () => ({
+  PROMOTION_TIERS: [
+    {
+      type: 'featured_listing',
+      name: 'Featured Listing',
+      description: 'Boost to top of marketplace search & category pages',
+      daily_cost_cents: 199,
+      benefits: ['Appear at the top of search results', 'Featured badge on your listing'],
+      icon: 'star',
+      color: '#FF9800',
+    },
+    {
+      type: 'sponsored_feed',
+      name: 'Sponsored Feed',
+      description: 'Appear in the main Home Page scroll feed',
+      daily_cost_cents: 299,
+      benefits: ['Injected into the home feed for all local users'],
+      icon: 'megaphone',
+      color: '#1565C0',
+    },
+    {
+      type: 'sticky_business',
+      name: 'Sticky Business',
+      description: 'Fixed placement in Sponsored Ads section',
+      daily_cost_cents: 499,
+      benefits: ['Persistent visibility on every page load'],
+      icon: 'pin',
+      color: '#DC143C',
+    },
+  ],
+  DEFAULT_PROMOTION_DAYS: 7,
+  MIN_PROMOTION_DAYS: 1,
+  MAX_PROMOTION_DAYS: 90,
+  formatCurrency: (cents: number) => `$${(cents / 100).toFixed(2)}`,
+  addDays: (date: Date, days: number) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  },
+  formatDate: (date: Date) => date.toLocaleDateString(),
+  getListingById: jest.fn(async () => ({ data: null })),
+  createPromotionCheckout: jest.fn(async () => ({ data: null })),
+  getPromotionById: jest.fn(async () => ({ data: null })),
+}));
+
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
 
-// Create properly typed mock route and navigation
 type PromoteListingScreenProps = NativeStackScreenProps<
   MarketplaceStackParamList,
   'PromoteListing'
@@ -35,43 +81,37 @@ const createMockRoute = (
 });
 
 const createMockNavigation = (): PromoteListingScreenProps['navigation'] => {
-  const mockGetParent = jest.fn(() => undefined);
   const navigation = {
     goBack: mockGoBack,
     navigate: mockNavigate,
     dispatch: jest.fn(),
     reset: jest.fn(),
     setParams: jest.fn(),
-    dangerouslyGetState: jest.fn(
-      () => ({
-        routes: [],
-        index: 0,
-        key: 'root',
-        routeNames: ['PromoteListing'],
-        type: 'stack',
-        stale: false,
-      })
-    ),
+    dangerouslyGetState: jest.fn(() => ({
+      routes: [],
+      index: 0,
+      key: 'root',
+      routeNames: ['PromoteListing'],
+      type: 'stack',
+      stale: false,
+    })),
     isFocused: jest.fn(() => true),
     canGoBack: jest.fn(() => true),
     push: jest.fn(),
     replace: jest.fn(),
     pop: jest.fn(),
     popToTop: jest.fn(),
-    getParent: mockGetParent,
-    getState: jest.fn(
-      () => ({
-        routes: [],
-        index: 0,
-        key: 'root',
-        routeNames: ['PromoteListing'],
-        type: 'stack',
-        stale: false,
-      })
-    ),
+    getParent: jest.fn(() => undefined),
+    getState: jest.fn(() => ({
+      routes: [],
+      index: 0,
+      key: 'root',
+      routeNames: ['PromoteListing'],
+      type: 'stack',
+      stale: false,
+    })),
     addListener: jest.fn(() => jest.fn()),
   };
-
   return navigation as unknown as PromoteListingScreenProps['navigation'];
 };
 
@@ -104,16 +144,6 @@ jest.mock('../../config/supabase', () => ({
 jest.mock('expo-constants', () => ({
   expoConfig: { extra: { supabaseUrl: 'https://test.supabase.co' } },
 }));
-
-jest.mock('@nepally/shared', () => {
-  const actual = jest.requireActual('@nepally/shared');
-  return {
-    ...actual,
-    getListingById: jest.fn(),
-    createPromotionCheckout: jest.fn(),
-    getPromotionById: jest.fn(),
-  };
-});
 
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
 const mockGetPromotionById = getPromotionById as jest.MockedFunction<typeof getPromotionById>;
@@ -215,16 +245,14 @@ describe('PromoteListingScreen', () => {
       expect(screen.getByTestId('tier-featured_listing')).toBeTruthy();
     });
 
-    // Select tier
     fireEvent.press(screen.getByTestId('tier-featured_listing'));
     fireEvent.press(screen.getByTestId('continue-button'));
 
-    // Step 2
     await waitFor(() => {
       expect(screen.getByText('Set Duration')).toBeTruthy();
     });
 
-    // Default 7 days at $1.99/day = $13.93
+    // 7 days × $1.99/day = $13.93
     expect(screen.getByTestId('total-cost').props.children).toBe('$13.93');
   });
 
@@ -235,7 +263,6 @@ describe('PromoteListingScreen', () => {
       expect(screen.getByTestId('tier-sponsored_feed')).toBeTruthy();
     });
 
-    // Go to step 2
     fireEvent.press(screen.getByTestId('tier-sponsored_feed'));
     fireEvent.press(screen.getByTestId('continue-button'));
 
@@ -243,7 +270,6 @@ describe('PromoteListingScreen', () => {
       expect(screen.getByText('Set Duration')).toBeTruthy();
     });
 
-    // Press back
     fireEvent.press(screen.getByTestId('back-button'));
 
     await waitFor(() => {
@@ -258,7 +284,6 @@ describe('PromoteListingScreen', () => {
       expect(screen.getByTestId('tier-featured_listing')).toBeTruthy();
     });
 
-    // Step 1 -> 2
     fireEvent.press(screen.getByTestId('tier-featured_listing'));
     fireEvent.press(screen.getByTestId('continue-button'));
 
@@ -266,7 +291,6 @@ describe('PromoteListingScreen', () => {
       expect(screen.getByText('Set Duration')).toBeTruthy();
     });
 
-    // Step 2 -> 3
     fireEvent.press(screen.getByTestId('continue-button'));
 
     await waitFor(() => {
