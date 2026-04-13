@@ -113,19 +113,12 @@ export async function getSponsoredFeedListings(
       .eq('status', 'active')
       .gte('end_date', new Date().toISOString())
       .order('created_at', { ascending: false })
+      .filter('marketplace_listings.metro_area_id', 'eq', metroId)
+      .filter('marketplace_listings.status', 'eq', 'active')
       .limit(limit);
 
     if (error) throw error;
-
-    // Filter to only listings in the user's metro area and active status
-    const filtered = (data ?? []).filter(
-      (item: Record<string, unknown>) => {
-        const listing = item.listing as Record<string, unknown> | null;
-        return listing && listing.metro_area_id === metroId && listing.status === 'active';
-      }
-    ) as unknown as SponsoredListing[];
-
-    return { data: filtered };
+    return { data: (data ?? []) as unknown as SponsoredListing[] };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch sponsored feed listings') };
   }
@@ -149,18 +142,12 @@ export async function getStickyBusinessListings(
       .eq('status', 'active')
       .gte('end_date', new Date().toISOString())
       .order('created_at', { ascending: false })
+      .filter('marketplace_listings.metro_area_id', 'eq', metroId)
+      .filter('marketplace_listings.status', 'eq', 'active')
       .limit(limit);
 
     if (error) throw error;
-
-    const filtered = (data ?? []).filter(
-      (item: Record<string, unknown>) => {
-        const listing = item.listing as Record<string, unknown> | null;
-        return listing && listing.metro_area_id === metroId && listing.status === 'active';
-      }
-    ) as unknown as SponsoredListing[];
-
-    return { data: filtered };
+    return { data: (data ?? []) as unknown as SponsoredListing[] };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch sticky business listings') };
   }
