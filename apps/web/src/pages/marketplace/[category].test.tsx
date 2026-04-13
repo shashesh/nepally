@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useRouter: vi.fn(),
   getListingsByMetro: vi.fn(),
+  getFeaturedListings: vi.fn(),
   useCachedCategories: vi.fn(),
 }));
 
@@ -107,10 +108,20 @@ const MOCK_LISTING = {
 
 vi.mock('@nepally/shared', () => ({
   getListingsByMetro: mocks.getListingsByMetro,
+  getFeaturedListings: mocks.getFeaturedListings,
   MARKETPLACE_CATEGORIES: [
     { slug: 'food-restaurants', name: 'Food & Restaurants', emoji: '🍜', icon: 'restaurant', color: '#FF6B35' },
     { slug: 'professional-services', name: 'Professional Services', emoji: '💼', icon: 'briefcase', color: '#2196F3' },
   ],
+}));
+
+vi.mock('../../components/marketplace/ListingStrip', () => ({
+  ListingStrip: ({ title, listings }: { title: string; listings: { id: string }[] }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': `strip-${title.toLowerCase()}` },
+      `strip:${title}:${listings.length}`
+    ),
 }));
 
 import MarketplaceCategoryPage from './[category].page';
@@ -131,6 +142,7 @@ describe('MarketplaceCategoryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
+    mocks.getFeaturedListings.mockResolvedValue({ data: [] });
     mocks.useCachedCategories.mockReturnValue([MOCK_CATEGORY]);
   });
 
@@ -242,5 +254,43 @@ describe('MarketplaceCategoryPage', () => {
       undefined,
       { shallow: true }
     );
+  });
+
+  it('renders ListingStrip when getFeaturedListings returns listings', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    mocks.getFeaturedListings.mockResolvedValue({ data: [MOCK_LISTING] });
+    render(React.createElement(MarketplaceCategoryPage));
+    await waitFor(() => {
+      expect(screen.getByText('strip:Featured:1')).toBeDefined();
+    });
+    expect(mocks.getFeaturedListings).toHaveBeenCalledWith(
+      expect.anything(),
+      'metro-1',
+      expect.objectContaining({ categorySlug: 'food-restaurants', limit: 10 })
+    );
+  });
+
+  it('does not render featured strip in search mode', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'search', q: 'momo' }));
+    mocks.getFeaturedListings.mockResolvedValue({ data: [MOCK_LISTING] });
+    render(React.createElement(MarketplaceCategoryPage));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Search: momo/ })).toBeDefined();
+    });
+    expect(screen.queryByText(/strip:Featured/)).toBeNull();
+    expect(mocks.getFeaturedListings).not.toHaveBeenCalled();
+  });
+
+  it('does not render featured strip when getFeaturedListings returns empty', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    mocks.getFeaturedListings.mockResolvedValue({ data: [] });
+    render(React.createElement(MarketplaceCategoryPage));
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
+    });
+    expect(screen.queryByText(/strip:Featured/)).toBeNull();
   });
 });

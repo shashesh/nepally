@@ -39,7 +39,7 @@ test.describe('Marketplace full feature flow', () => {
     await page.goto('/marketplace/food-restaurants');
 
     await expect(page.getByRole('heading', { name: /food & restaurants/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title)).toBeVisible();
+    await expect(page.getByText(MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title).first()).toBeVisible();
 
     await page.getByRole('link', { name: /back to marketplace/i }).click();
     await expect(page).toHaveURL(/\/marketplace$/);

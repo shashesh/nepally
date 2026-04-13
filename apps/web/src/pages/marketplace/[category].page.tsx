@@ -8,11 +8,13 @@ import { useCachedCategories } from '../../hooks/useCachedCategories';
 import { supabase } from '../../lib/supabase';
 import {
   getListingsByMetro,
+  getFeaturedListings,
   MARKETPLACE_CATEGORIES,
   type ListingSortBy,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { ListingCard } from '../../components/marketplace/ListingCard';
+import { ListingStrip } from '../../components/marketplace/ListingStrip';
 import { FilterBar, type FilterBarValue } from '../../components/marketplace/FilterBar';
 import styles from './marketplace.module.css';
 
@@ -49,6 +51,7 @@ export default function MarketplaceCategoryPage() {
   const pageTitle = isSearch ? `Search: ${q}` : categoryConfig?.name ?? 'Category';
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [featuredListings, setFeaturedListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const categories = useCachedCategories();
 
@@ -63,13 +66,19 @@ export default function MarketplaceCategoryPage() {
   const fetchListings = useCallback(async () => {
     if (!metroId || !router.isReady) return;
     setLoading(true);
-    const result = await getListingsByMetro(supabase, metroId, {
-      categorySlug: isSearch ? undefined : slug,
-      searchQuery: q || undefined,
-      sortBy: sort,
-      limit: PAGE_SIZE,
-    });
+    const [result, featuredResult] = await Promise.all([
+      getListingsByMetro(supabase, metroId, {
+        categorySlug: isSearch ? undefined : slug,
+        searchQuery: q || undefined,
+        sortBy: sort,
+        limit: PAGE_SIZE,
+      }),
+      !isSearch
+        ? getFeaturedListings(supabase, metroId, { categorySlug: slug, limit: 10 })
+        : Promise.resolve({ data: [] as MarketplaceListing[] }),
+    ]);
     if (result.data) setListings(result.data);
+    if (!isSearch && featuredResult.data) setFeaturedListings(featuredResult.data);
     setLoading(false);
   }, [metroId, slug, q, sort, isSearch, router.isReady]);
 
@@ -123,6 +132,15 @@ export default function MarketplaceCategoryPage() {
           onChange={handleFilterChange}
           lockedCategory={isSearch ? undefined : slug}
         />
+
+        {!isSearch && featuredListings.length > 0 && (
+          <ListingStrip
+            title="Featured"
+            titleIcon="⭐"
+            listings={featuredListings}
+            maxItems={10}
+          />
+        )}
 
         {loading ? (
           <div className={styles.listingGrid}>
