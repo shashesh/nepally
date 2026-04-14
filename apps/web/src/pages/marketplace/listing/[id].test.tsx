@@ -84,6 +84,10 @@ vi.mock('@nepally/shared', () => ({
   LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
   ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
   BUSINESS_HOURS_DAYS: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+  getListingHighlights: vi.fn(() => [
+    { key: 'phone', icon: '📞', label: 'Phone', value: '555-1234' },
+  ]),
+  isBusinessOpenNow: vi.fn(() => ({ isOpen: true, nextChangeLabel: 'Closes 5p' })),
 }));
 
 import ListingDetailPage from './[id].page';
@@ -117,7 +121,7 @@ describe('ListingDetailPage', () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
+      expect(screen.getAllByText('Himalayan Kitchen').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -133,7 +137,7 @@ describe('ListingDetailPage', () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('$15-25')).toBeDefined();
+      expect(screen.getAllByText('$15-25').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -186,8 +190,8 @@ describe('ListingDetailPage', () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('Contact Seller')).toBeDefined();
-      expect(screen.getByText('Save')).toBeDefined();
+      expect(screen.getAllByText('Contact Seller').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Save listing').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -195,15 +199,7 @@ describe('ListingDetailPage', () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'user-2', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('Edit Listing')).toBeDefined();
-    });
-  });
-
-  it('shows back link to marketplace', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getByText(/Back to Marketplace/)).toBeDefined();
+      expect(screen.getAllByText('Edit Listing').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -214,6 +210,41 @@ describe('ListingDetailPage', () => {
       expect(screen.getByText('Hours:')).toBeDefined();
       expect(screen.getByText('Monday')).toBeDefined();
       expect(screen.getByText('9:00 - 17:00')).toBeDefined();
+    });
+  });
+
+  it('renders breadcrumb with category name', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(ListingDetailPage));
+    await waitFor(() => {
+      expect(screen.getByText('Marketplace')).toBeDefined();
+      expect(screen.getByText('Food & Restaurants')).toBeDefined();
+    });
+  });
+
+  it('renders highlights strip with phone chip for business listing', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(ListingDetailPage));
+    await waitFor(() => {
+      expect(screen.getAllByText('555-1234').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('renders sidebar with Contact Seller and Save buttons for non-owner', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(ListingDetailPage));
+    await waitFor(() => {
+      expect(screen.getAllByText('Contact Seller').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Save listing').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('renders Edit and Promote buttons in sidebar for owner', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'user-2', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(ListingDetailPage));
+    await waitFor(() => {
+      expect(screen.getAllByText('Edit Listing').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Promote').length).toBeGreaterThanOrEqual(1);
     });
   });
 });
