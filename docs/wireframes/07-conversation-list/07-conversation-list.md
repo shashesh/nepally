@@ -360,7 +360,7 @@ LIMIT 20;
 | Direction | Trigger | Destination |
 |-----------|---------|-------------|
 | Entry | Tap Messages tab in bottom nav | This screen |
-| Entry | Deep link `nusa://messages` | This screen |
+| Entry | Deep link `nepally://messages` | This screen |
 | Exit | Tap conversation row | `/message-thread` (Screen 08) with `conversation_id` |
 | Exit | Tap "Browse Posts" (empty state) | Home tab |
 | Exit | Tap other bottom tabs | Respective tab |

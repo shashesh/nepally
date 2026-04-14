@@ -21,7 +21,7 @@ The Welcome Screen is the first screen users see after launching Nepally. It int
 ## Visual Wireframe
 
 ::: hero
-![Nepally Logo](assets/nusa-logo.png)
+![Nepally Logo](assets/nepally-logo.png)
 
 # Your Local Nepali Community in the USA
 
@@ -311,7 +311,7 @@ No internet connection. Please check your connection and try again.
 | Direction | Trigger | Destination |
 |-----------|---------|-------------|
 | Entry | App launch (unauthenticated) | This screen |
-| Entry | Deep link `nusa://welcome` | This screen |
+| Entry | Deep link `nepally://welcome` | This screen |
 | Exit | Tap "Sign Up" | `/signup-method` (Screen 02) |
 | Exit | Tap "Log In" | `/login` (out of scope) |
 | Modal | Tap Terms/Privacy | Web view (returns here on close) |

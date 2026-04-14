@@ -797,7 +797,7 @@ At Home Screen:
 | Google OAuth error/timeout | Show error, suggest retry or alternative | "Try Again" or "Use Phone Instead" buttons | "Something went wrong with Google signup. Please try again or use phone number." |
 | Email already registered | Show error immediately | "Log In Instead" button | "This email is already registered. Please log in or use a different email." |
 | Invalid ZIP code (e.g., 00000) | Show inline error, prevent continue | Clear error when user edits | "This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code." |
-| ZIP not in database | Show apologetic error | "Enter different ZIP" or "Contact support" | "We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nusa.app" |
+| ZIP not in database | Show apologetic error | "Enter different ZIP" or "Contact support" | "We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nepally.us" |
 | Metro mapping API error | Retry automatically 2x, then show error | "Retry" button or "Skip for now" option | "We're having trouble finding your metro area. Please try again." |
 | App crashes during onboarding | Restart app, resume from last completed step | Auto-resume (e.g., if ZIP saved, skip to tutorial) | None (seamless resume) |
 | User closes app mid-onboarding | On next launch, resume from last step | Show "Continue where you left off" or "Start over" | "Welcome back! Continue setting up your account?" |
