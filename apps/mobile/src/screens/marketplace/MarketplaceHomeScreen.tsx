@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -18,13 +18,12 @@ import {
   getFeaturedListings,
   getListingsByMetro,
   getStickyBusinessListings,
+  getTrendingListings,
   getUserSavedListingIds,
-  injectSponsoredIntoGrid,
   saveListing,
   unsaveListing,
   type MarketplaceCategory,
   type MarketplaceListing,
-  type SponsoredListing,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
@@ -46,7 +45,6 @@ type Nav = NativeStackNavigationProp<MarketplaceStackParamList, 'MarketplaceHome
 const GRID_LIMIT = 20;
 const GUTTER = 12;
 const CARD_WIDTH = Math.floor((Dimensions.get('window').width - GUTTER * 3) / 2);
-const SPONSORED_INTERVAL = 8;
 const SEARCH_DEBOUNCE_MS = 300;
 
 export default function MarketplaceHomeScreen() {
@@ -56,12 +54,11 @@ export default function MarketplaceHomeScreen() {
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
 
   const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
-  const [activeTab, setActiveTab] = useState<MarketplaceTabKey>('for-you');
+  const [activeTab, setActiveTab] = useState<MarketplaceTabKey>('sponsored');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
-  const [sponsored, setSponsored] = useState<SponsoredListing[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,18 +80,16 @@ export default function MarketplaceHomeScreen() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Load categories, sponsored, and saved-ids once per user/metro
+  // Load categories and saved-ids once per user/metro
   useEffect(() => {
     if (!metroId) return;
     (async () => {
-      const [cats, spons, ids] = await Promise.all([
+      const [cats, ids] = await Promise.all([
         getCategories(supabase),
-        getStickyBusinessListings(supabase, metroId, { limit: 5 }),
         user ? getUserSavedListingIds(supabase, user.id) : Promise.resolve({ data: [] as string[] }),
       ]);
       if (!mountedRef.current) return;
       if (cats.data) setCategories(cats.data);
-      if (spons.data) setSponsored(spons.data);
       if (ids.data) setSavedIds(new Set(ids.data));
     })();
   }, [metroId, user]);
@@ -106,25 +101,57 @@ export default function MarketplaceHomeScreen() {
       return;
     }
     try {
-      let result;
-      if (activeTab === 'featured' && !selectedCategory && !searchQuery) {
-        result = await getFeaturedListings(supabase, metroId, { limit: GRID_LIMIT });
-      } else {
-        result = await getListingsByMetro(supabase, metroId, {
+      // Filter fallback: any active search or category filter always uses getListingsByMetro,
+      // because the curated endpoints (sponsored / featured / trending) don't accept filters.
+      if (selectedCategory || searchQuery) {
+        const result = await getListingsByMetro(supabase, metroId, {
           categorySlug: selectedCategory || undefined,
           searchQuery: searchQuery || undefined,
           sortBy: 'newest',
           limit: GRID_LIMIT,
           offset: 0,
         });
+        if (!mountedRef.current) return;
+        setListings(result.data ?? []);
+        setHasMore(Boolean(result.hasMore));
+        return;
       }
-      if (!mountedRef.current) return;
-      if (result.data) {
-        setListings(result.data);
-        setHasMore(Boolean((result as { hasMore?: boolean }).hasMore));
-      } else {
-        setListings([]);
-        setHasMore(false);
+
+      // Tab routing — each tab has its own source of truth.
+      switch (activeTab) {
+        case 'sponsored': {
+          const result = await getStickyBusinessListings(supabase, metroId, { limit: GRID_LIMIT });
+          if (!mountedRef.current) return;
+          const flattened = (result.data ?? []).map((s) => s.listing);
+          setListings(flattened);
+          setHasMore(false);
+          return;
+        }
+        case 'featured': {
+          const result = await getFeaturedListings(supabase, metroId, { limit: GRID_LIMIT });
+          if (!mountedRef.current) return;
+          setListings(result.data ?? []);
+          setHasMore(false);
+          return;
+        }
+        case 'trending': {
+          const result = await getTrendingListings(supabase, metroId, { limit: GRID_LIMIT });
+          if (!mountedRef.current) return;
+          setListings(result.data ?? []);
+          setHasMore(false);
+          return;
+        }
+        case 'all': {
+          const result = await getListingsByMetro(supabase, metroId, {
+            sortBy: 'newest',
+            limit: GRID_LIMIT,
+            offset: 0,
+          });
+          if (!mountedRef.current) return;
+          setListings(result.data ?? []);
+          setHasMore(Boolean(result.hasMore));
+          return;
+        }
       }
     } catch {
       if (mountedRef.current) {
@@ -153,6 +180,10 @@ export default function MarketplaceHomeScreen() {
 
   const loadMore = useCallback(async () => {
     if (loadingMoreRef.current || !hasMore || !metroId) return;
+    // Pagination only applies to the 'all' tab and the filtered fallback path.
+    // Curated tabs (sponsored / featured / trending) are fixed top-N lists.
+    const isPaginatedPath = selectedCategory || searchQuery || activeTab === 'all';
+    if (!isPaginatedPath) return;
     loadingMoreRef.current = true;
     try {
       const result = await getListingsByMetro(supabase, metroId, {
@@ -173,7 +204,7 @@ export default function MarketplaceHomeScreen() {
     } finally {
       loadingMoreRef.current = false;
     }
-  }, [listings.length, metroId, selectedCategory, searchQuery, hasMore]);
+  }, [listings.length, metroId, selectedCategory, searchQuery, hasMore, activeTab]);
 
   const handleCardPress = useCallback(
     (listing: MarketplaceListing) => {
@@ -230,16 +261,7 @@ export default function MarketplaceHomeScreen() {
     [navigation]
   );
 
-  const gridData = useMemo(() => {
-    if (activeTab === 'featured' || selectedCategory || searchQuery) return listings;
-    const sponsoredListings = sponsored.map((s) => s.listing);
-    return injectSponsoredIntoGrid(listings, sponsoredListings, SPONSORED_INTERVAL);
-  }, [activeTab, selectedCategory, searchQuery, listings, sponsored]);
-
-  const sponsoredIds = useMemo(
-    () => new Set(sponsored.map((s) => s.listing.id)),
-    [sponsored]
-  );
+  const gridData = listings;
 
   const renderGridItem = useCallback(
     ({ item }: { item: MarketplaceListing }) => (
@@ -249,10 +271,9 @@ export default function MarketplaceHomeScreen() {
         onPress={() => handleCardPress(item)}
         isSaved={savedIds.has(item.id)}
         onToggleSave={handleToggleSave}
-        sponsored={sponsoredIds.has(item.id)}
       />
     ),
-    [handleCardPress, handleToggleSave, savedIds, sponsoredIds]
+    [handleCardPress, handleToggleSave, savedIds]
   );
 
   const renderHeader = useCallback(

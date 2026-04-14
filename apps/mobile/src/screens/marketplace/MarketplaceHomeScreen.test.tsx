@@ -66,8 +66,9 @@ jest.mock('@nepally/shared', () => {
       ],
     })),
     getFeaturedListings: jest.fn(async () => ({ data: [], hasMore: false })),
+    getTrendingListings: jest.fn(async () => ({ data: [], hasMore: false })),
     getListingsByMetro: jest.fn(async () => ({ data: [sampleListing], hasMore: false })),
-    getStickyBusinessListings: jest.fn(async () => ({ data: [] })),
+    getStickyBusinessListings: jest.fn(async () => ({ data: [{ listing: sampleListing }] })),
     getUserSavedListingIds: jest.fn(async () => ({ data: [] })),
     saveListing: jest.fn(async () => ({})),
     unsaveListing: jest.fn(async () => ({})),
@@ -88,23 +89,22 @@ describe('MarketplaceHomeScreen (redesign)', () => {
     });
   });
 
-  it('renders the three tab strip', async () => {
+  it('renders the four tab strip', async () => {
     const screen = render(<MarketplaceHomeScreen />);
     await waitFor(() => {
-      expect(screen.getByText('For You')).toBeTruthy();
+      expect(screen.getByText('Sponsored')).toBeTruthy();
       expect(screen.getByText('Featured')).toBeTruthy();
-      expect(screen.getByText('Recent')).toBeTruthy();
+      expect(screen.getByText('Trending')).toBeTruthy();
+      expect(screen.getByText('All Listings')).toBeTruthy();
     });
   });
 
-  it('does NOT render the old Sponsored / Featured strip / Recently Added / Trending headers', async () => {
+  it('renders listing grid on the default Sponsored tab', async () => {
     const screen = render(<MarketplaceHomeScreen />);
     await waitFor(() => {
       expect(screen.getByText('Warm winter jacket')).toBeTruthy();
     });
     expect(screen.queryByText('Recently Added')).toBeNull();
-    expect(screen.queryByText('Trending')).toBeNull();
-    expect(screen.queryByText('All Listings')).toBeNull();
   });
 
   it('opens the menu sheet and routes My Listings', async () => {

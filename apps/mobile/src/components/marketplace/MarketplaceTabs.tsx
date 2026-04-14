@@ -4,7 +4,7 @@ import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 import { warmAccent, warmBorder, warmDisplaySm, warmSurface } from '../../styles/warmTokens';
 
-export type MarketplaceTabKey = 'for-you' | 'featured' | 'recent';
+export type MarketplaceTabKey = 'sponsored' | 'featured' | 'trending' | 'all';
 
 interface MarketplaceTabsProps {
   active: MarketplaceTabKey;
@@ -12,9 +12,10 @@ interface MarketplaceTabsProps {
 }
 
 const TABS: { key: MarketplaceTabKey; label: string }[] = [
-  { key: 'for-you', label: 'For You' },
+  { key: 'sponsored', label: 'Sponsored' },
   { key: 'featured', label: 'Featured' },
-  { key: 'recent', label: 'Recent' },
+  { key: 'trending', label: 'Trending' },
+  { key: 'all', label: 'All Listings' },
 ];
 
 export function MarketplaceTabs({ active, onChange }: MarketplaceTabsProps) {
