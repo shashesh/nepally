@@ -22,12 +22,12 @@ ASK:
 ## Step 1: Gather Context
 
 Read these files (skip any that don't exist):
-- `docs/features/[feature-name].md` — Feature spec: requirements, edge cases, metrics
+- `docs/product/features/[feature-name].md` — Feature spec: requirements, edge cases, metrics
 - `docs/user-journeys/[category]/[number]-[journey-name].md` — Step-by-step flow, pain points, API needs
 - `docs/wireframes/[screen-name].md` — Layout, component specs, states, validation
 - `docs/wireframes/00-design-system-foundation.md` — Colors, typography, spacing tokens
-- `docs/code-sharing-guide.md` — Shared vs platform-specific decisions
-- `docs/monorepo-structure.md` — Package boundaries, import rules
+- `docs/guides/code-sharing.md` — Shared vs platform-specific decisions
+- `docs/architecture/monorepo-structure.md` — Package boundaries, import rules
 
 ---
 

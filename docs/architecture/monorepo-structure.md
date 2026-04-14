@@ -87,8 +87,8 @@ nepally/
 ├── package.json          # Root package.json (workspaces)
 ├── CLAUDE.md             # Instructions for Claude Code
 ├── TECH-VERSIONS.md      # Technology version source of truth
-├── SETUP-AND-TESTING-GUIDE.md  # Development setup guide
-├── product-roadmap.md    # Product roadmap
+├── docs/guides/setup-and-testing.md  # Development setup guide
+├── docs/product/roadmap.md    # Product roadmap
 └── README.md             # Main README
 ```
 

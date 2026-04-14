@@ -83,7 +83,7 @@ Deliver a complete notifications system across web and mobile that includes:
 
 ### Pre-Implementation Freshness Gate (Required)
 
-- [ ] Feature spec reviewed and date-checked: `docs/features/<feature>.md`
+- [ ] Feature spec reviewed and date-checked: `docs/product/features/<feature>.md`
 - [ ] User journey reviewed and date-checked: `docs/user-journeys/<...>.md`
 - [ ] Wireframe reviewed and date-checked: `docs/wireframes/15-notifications/15-notifications.md`
 - [ ] No conflicting requirements across those sources

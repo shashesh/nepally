@@ -10,7 +10,7 @@ When the user invokes `/refine-roadmap [section-name]`, analyze and improve that
 ## Process
 
 ### Step 1: Enter Plan Mode
-Read the current `product-roadmap.md`, understand the section's context, identify dependencies.
+Read the current `docs/product/roadmap.md`, understand the section's context, identify dependencies.
 
 ### Step 2: Analyze (5 dimensions)
 - **Completeness**: All scenarios covered? Edge cases? Success metrics? Dependencies?
@@ -26,7 +26,7 @@ Report with: Current state summary, strengths, gaps (with impact/suggestions), u
 DO NOT make changes until user answers questions and approves specific changes.
 
 ### Step 5: Update Roadmap
-After approval: update `product-roadmap.md`, maintain formatting, update date.
+After approval: update `docs/product/roadmap.md`, maintain formatting, update date.
 
 ### Step 6: Document Decisions (if significant)
 Create `docs/decisions/[YYYY-MM-DD]-[topic].md` with: Decision, Rationale, Alternatives Considered, Consequences (positive/negative).

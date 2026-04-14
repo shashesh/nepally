@@ -35,7 +35,7 @@
 
 4. **Documentation-First**
    - All decisions should be documented in markdown files
-   - Keep the product-roadmap.md as the single source of truth
+   - Keep the docs/product/roadmap.md as the single source of truth
    - Create separate documents for detailed specifications
 
 5. **Git Workflow - User Controls Commits**
@@ -50,19 +50,19 @@
    - `apps/mobile/` and `apps/web/` MUST import from `@nepally/shared` — NEVER redefine locally
    - `packages/shared/` MUST NOT import from `react-native`, `expo-*`, or `next`
    - If the same type/function/constant exists in more than one place, it belongs in `packages/shared/`
-   - Always read `docs/code-sharing-guide.md` and `docs/monorepo-structure.md` before implementing
+   - Always read `docs/guides/code-sharing.md` and `docs/architecture/monorepo-structure.md` before implementing
 
 ## Implementation Workflow (CRITICAL)
 
 When implementing features, ALWAYS follow this sequence:
 
 1. **Context Gathering** (MANDATORY before coding)
-   - Read feature specification: `docs/features/[feature-name].md` (if exists)
+   - Read feature specification: `docs/product/features/[feature-name].md` (if exists)
    - Read user journey: `docs/user-journeys/[category]/[number]-[journey-name].md`
    - Read wireframes: `docs/wireframes/[screen-name].md`
    - Read design system: `docs/wireframes/00-design-system-foundation.md`
-   - Read code sharing guide: `docs/code-sharing-guide.md`
-   - Read monorepo structure: `docs/monorepo-structure.md`
+   - Read code sharing guide: `docs/guides/code-sharing.md`
+   - Read monorepo structure: `docs/architecture/monorepo-structure.md`
 
 2. **Platform & Sharing Analysis** (MANDATORY before planning)
    - Determine target platforms: Mobile, Web, or Both (default: Both)
@@ -97,8 +97,8 @@ When implementing features, ALWAYS follow this sequence:
 **Use `/implement-feature [feature-name]` skill for guided implementation.**
 
 ## File Organization
-- `product-roadmap.md` - Master roadmap (single source of truth)
-- `docs/features/` - Detailed feature specifications
+- `docs/product/roadmap.md` - Master roadmap (single source of truth)
+- `docs/product/features/` - Detailed feature specifications
 - `docs/wireframes/` - Wireframe descriptions and references
 - `docs/user-journeys/` - User flow documentation
 - `docs/decisions/` - Architecture Decision Records (ADRs)

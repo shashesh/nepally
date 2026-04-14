@@ -19,11 +19,11 @@ ASK:
 
 ## Step 2: Plan
 
-Enter plan mode. Review `product-roadmap.md`, check for conflicts with trust/safety principles, identify stakeholders.
+Enter plan mode. Review `docs/product/roadmap.md`, check for conflicts with trust/safety principles, identify stakeholders.
 
 ## Step 3: Create Feature Spec
 
-Create `docs/features/[feature-name].md` with these sections:
+Create `docs/product/features/[feature-name].md` with these sections:
 - **Metadata**: Status, Phase, Owner, Date
 - **Overview & Problem Statement**
 - **User Story**: As a [type], I want [action], so that [benefit]
@@ -42,7 +42,7 @@ Offer 2-3 UX/design approaches with pros, cons, complexity, and roadmap alignmen
 
 ## Step 5: Update Roadmap
 
-If approved, update `product-roadmap.md` with link to spec.
+If approved, update `docs/product/roadmap.md` with link to spec.
 
 ## Step 6: Suggest Next Steps
 

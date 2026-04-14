@@ -410,5 +410,5 @@ WHERE metro_area_id IS NOT NULL;
 - Wireframes: `docs/wireframes/11-location-permission-screen.md`
 - Wireframes: `docs/wireframes/12-location-change-prompt.md`
 - Wireframes: `docs/wireframes/13-location-switcher.md`
-- Database Schema: `docs/database-schema.md`
-- Code Sharing Guide: `docs/code-sharing-guide.md`
+- Database Schema: `docs/architecture/database-schema.md`
+- Code Sharing Guide: `docs/guides/code-sharing.md`

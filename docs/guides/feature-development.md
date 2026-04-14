@@ -58,7 +58,7 @@ Stage 6: Validate       /shared-first-check + tests
 /design-feature events
 ```
 
-**Output:** `docs/features/events.md` containing:
+**Output:** `docs/product/features/events.md` containing:
 - Problem statement and user story
 - Functional requirements (scoped to what you are building now)
 - Non-functional requirements (performance, trust level gating, RLS)
@@ -126,14 +126,14 @@ Stage 6: Validate       /shared-first-check + tests
 
 ## Stage 4: Create an Implementation Plan
 
-**When to run:** Before any code is written. Create `docs/implementation-plans/[feature-name].md` using the template at `docs/implementation-plans/_template.md`.
+**When to run:** Before any code is written. Create `docs/plans/active/[feature-name].md` using the template at `docs/plans/_template.md`.
 
 **This is the most skipped step and the one that prevents the most mistakes.**
 
 **Prompt:**
 ```
-Using docs/implementation-plans/_template.md as the template, create an implementation plan
-for the events feature. Reference the spec at docs/features/events.md, the user journeys
+Using docs/plans/active/_template.md as the template, create an implementation plan
+for the events feature. Reference the spec at docs/product/features/events.md, the user journeys
 at docs/user-journeys/events/, and the wireframes at docs/wireframes/[relevant screens].
 
 The plan must include:
@@ -255,7 +255,7 @@ A feature is done when ALL of the following are true:
 - [ ] `npm run lint` passes
 - [ ] Implementation plan step tracker is fully updated to "Completed"
 - [ ] `phase1-feature-breakdown.md` updated (new implementation update block at top)
-- [ ] `product-roadmap.md` updated if feature is now complete (new section or status change)
+- [ ] `docs/product/roadmap.md` updated if feature is now complete (new section or status change)
 - [ ] `CLAUDE.md` "Done" list updated
 
 ---
@@ -314,7 +314,7 @@ These features share properties that make the process especially important:
 /wireframe event-rsvp-confirmation
 
 # 5. Plan (write implementation plan doc before any code)
-# Prompt: "Create docs/implementation-plans/events-feature.md using the template.
+# Prompt: "Create docs/archive/plans/events-feature.md using the template.
 #          Reference all the docs above. DB changes go in 004_events.sql."
 
 # 6. Implement (after plan reviewed)

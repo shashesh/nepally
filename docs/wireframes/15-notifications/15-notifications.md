@@ -1,7 +1,7 @@
 # Wireframe: Notifications
 
 > **Screen:** 15 | **Status:** Draft | **Updated:** 2026-03-03
-> **Feature Spec:** `docs/features/phase1-feature-breakdown.md` — Features 12.1–12.4
+> **Feature Spec:** `docs/product/features/phase1-feature-breakdown.md` — Features 12.1–12.4
 > **Story:** As a user, I want to receive and manage notifications so I can stay informed about activity that matters to me.
 
 ---

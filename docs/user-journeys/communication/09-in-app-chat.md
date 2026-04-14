@@ -319,7 +319,7 @@ User taps "Contact Author" or chat icon
    - **Frequency:** Every conversation
    - **Affected Users:** All users waiting for a reply
    - **Mitigation:** Unread badge on Messages tab (polled every 30s) provides passive awareness when app is open
-   - **Solution:** Deploy push notification edge function (see `docs/implementation-plans/notifications-feature.md`)
+   - **Solution:** Deploy push notification edge function (see `docs/plans/active/notifications-feature.md`)
 
 2. **Pain Point:** No typing indicator
    - **Impact:** Medium — users don't know if the other party is composing, leading to uncertainty
