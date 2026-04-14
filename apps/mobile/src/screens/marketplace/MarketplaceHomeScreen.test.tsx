@@ -174,23 +174,27 @@ describe('MarketplaceHomeScreen (redesign)', () => {
     mockUseAuth.mockReturnValue({ user: STABLE_USER });
   });
 
-  it('renders the header title and new icon actions', async () => {
+  // Header and tab labels render synchronously in the initial tree.
+  // Using waitFor with multiple assertions inside triggers a CI-specific hang:
+  // FlatList's VirtualizedList schedules setState via real timers, causing
+  // constant re-renders during waitFor polling. With >1 assertion in the
+  // callback, one can find its target while another is transiently missing
+  // mid-re-render — waitFor never sees them all pass together, retries until
+  // 30s timeout on Ubuntu CI. Single-assertion waitFor calls (tests below)
+  // are not affected. Static assertions don't need waitFor at all.
+  it('renders the header title and new icon actions', () => {
     const screen = render(<MarketplaceHomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Marketplace')).toBeTruthy();
-      expect(screen.getByLabelText('Open saved listings')).toBeTruthy();
-      expect(screen.getByLabelText('Open marketplace menu')).toBeTruthy();
-    });
+    expect(screen.getByText('Marketplace')).toBeTruthy();
+    expect(screen.getByLabelText('Open saved listings')).toBeTruthy();
+    expect(screen.getByLabelText('Open marketplace menu')).toBeTruthy();
   });
 
-  it('renders the four tab strip', async () => {
+  it('renders the four tab strip', () => {
     const screen = render(<MarketplaceHomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Sponsored')).toBeTruthy();
-      expect(screen.getByText('Featured')).toBeTruthy();
-      expect(screen.getByText('Trending')).toBeTruthy();
-      expect(screen.getByText('All Listings')).toBeTruthy();
-    });
+    expect(screen.getByText('Sponsored')).toBeTruthy();
+    expect(screen.getByText('Featured')).toBeTruthy();
+    expect(screen.getByText('Trending')).toBeTruthy();
+    expect(screen.getByText('All Listings')).toBeTruthy();
   });
 
   it('renders listing grid on the default Sponsored tab', async () => {
