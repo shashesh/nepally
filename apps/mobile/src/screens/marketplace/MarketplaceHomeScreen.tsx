@@ -146,11 +146,6 @@ export default function MarketplaceHomeScreen() {
     }, [fetchGrid])
   );
 
-  useEffect(() => {
-    setLoading(true);
-    fetchGrid();
-  }, [fetchGrid]);
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchGrid();
@@ -281,7 +276,24 @@ export default function MarketplaceHomeScreen() {
     ? 'empty-category'
     : 'empty-metro';
 
-  const renderEmpty = () => {
+  const handleEmptyPrimary = useCallback(() => {
+    if (emptyVariant === 'empty-search') {
+      setSearchInput('');
+      setSelectedCategory('');
+      return;
+    }
+    if (emptyVariant === 'empty-category') {
+      setSelectedCategory('');
+      return;
+    }
+    if (canCreate) navigation.navigate('CreateListing');
+  }, [emptyVariant, canCreate, navigation]);
+
+  const handleEmptySecondary = useCallback(() => {
+    setMenuVisible(true);
+  }, []);
+
+  const renderEmpty = useCallback(() => {
     if (loading) {
       return (
         <View style={styles.skeletonGrid}>
@@ -295,24 +307,11 @@ export default function MarketplaceHomeScreen() {
       <MarketplaceEmptyState
         variant={emptyVariant}
         hidePrimary={!canCreate && emptyVariant === 'empty-metro'}
-        onPrimary={() => {
-          if (emptyVariant === 'empty-search') {
-            setSearchInput('');
-            setSelectedCategory('');
-            return;
-          }
-          if (emptyVariant === 'empty-category') {
-            setSelectedCategory('');
-            return;
-          }
-          if (canCreate) navigation.navigate('CreateListing');
-        }}
-        onSecondary={
-          emptyVariant === 'empty-metro' ? () => setMenuVisible(true) : undefined
-        }
+        onPrimary={handleEmptyPrimary}
+        onSecondary={emptyVariant === 'empty-metro' ? handleEmptySecondary : undefined}
       />
     );
-  };
+  }, [loading, emptyVariant, canCreate, handleEmptyPrimary, handleEmptySecondary]);
 
   return (
     <SafeAreaView style={styles.container}>
