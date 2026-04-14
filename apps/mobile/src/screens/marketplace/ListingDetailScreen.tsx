@@ -24,6 +24,7 @@ import {
   incrementListingContacts,
   getOrCreateConversation,
   getActivePromotionForListing,
+  getListingHighlights,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   BUSINESS_HOURS_DAYS,
@@ -183,6 +184,7 @@ export default function ListingDetailScreen() {
   const daysAgo = Math.floor(
     (Date.now() - new Date(listing.refreshed_at).getTime()) / (1000 * 60 * 60 * 24)
   );
+  const highlights = getListingHighlights(listing, new Date());
 
   return (
     <SafeAreaView style={styles.container}>
@@ -230,9 +232,19 @@ export default function ListingDetailScreen() {
 
         {/* Main Content */}
         <View style={styles.contentSection}>
-          {/* Title & Price */}
+          {/* Breadcrumb */}
+          <View style={styles.breadcrumb}>
+            <Text style={styles.breadcrumbText}>Marketplace</Text>
+            {listing.category?.name && (
+              <>
+                <Text style={styles.breadcrumbSep}> › </Text>
+                <Text style={styles.breadcrumbText}>{listing.category.name}</Text>
+              </>
+            )}
+          </View>
+
+          {/* Title */}
           <Text style={styles.title}>{listing.title}</Text>
-          {listing.price && <Text style={styles.price}>{listing.price}</Text>}
 
           {/* Badges */}
           <View style={styles.badgeRow}>
@@ -254,6 +266,33 @@ export default function ListingDetailScreen() {
               </View>
             )}
           </View>
+
+          {/* Highlights strip */}
+          {highlights.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.highlightsStrip}
+            >
+              {highlights.map((chip) => (
+                <View
+                  key={chip.key}
+                  style={[styles.highlightChip, chip.key === 'open_now' && styles.highlightChipOpen]}
+                >
+                  <Text style={styles.highlightChipText}>
+                    {chip.icon} {chip.value}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Inline price card */}
+          {listing.price && (
+            <View style={styles.inlinePriceCard}>
+              <Text style={styles.inlinePrice}>{listing.price}</Text>
+            </View>
+          )}
 
           {/* Description */}
           <Text style={styles.description}>{listing.description}</Text>
@@ -332,13 +371,20 @@ export default function ListingDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Action Bar */}
+      {/* Sticky Bottom Bar — non-owner only */}
       {!isOwner && (
-        <View style={styles.actionBar}>
+        <View style={styles.stickyBar}>
+          {listing.price && (
+            <View style={styles.stickyBarPrice}>
+              <Text style={styles.stickyBarPriceText}>{listing.price}</Text>
+            </View>
+          )}
           <TouchableOpacity
-            style={[styles.saveButton, isSaved && styles.saveButtonActive]}
+            style={[styles.saveIconButton, isSaved && styles.saveButtonActive]}
             onPress={handleSave}
             disabled={saving}
+            accessibilityRole="button"
+            accessibilityLabel={isSaved ? 'Unsave listing' : 'Save listing'}
           >
             <Ionicons
               name={isSaved ? 'bookmark' : 'bookmark-outline'}
@@ -346,9 +392,12 @@ export default function ListingDetailScreen() {
               color={isSaved ? colors.primary.main : colors.text.secondary}
             />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
-            <Ionicons name="chatbubble-outline" size={20} color={colors.white} />
-            <Text style={styles.contactButtonText}>Contact</Text>
+          <TouchableOpacity
+            style={styles.stickyBarButton}
+            onPress={handleContact}
+            accessibilityRole="button"
+          >
+            <Text style={styles.stickyBarButtonText}>Contact Seller</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -602,7 +651,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  saveButton: {
+  saveIconButton: {
     width: 48,
     height: 48,
     borderRadius: borderRadius.input,
@@ -614,21 +663,6 @@ const styles = StyleSheet.create({
   saveButtonActive: {
     borderColor: colors.primary.main,
     backgroundColor: colors.primary.light,
-  },
-  contactButton: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: colors.primary.main,
-    borderRadius: borderRadius.input,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.s,
-    height: 48,
-  },
-  contactButtonText: {
-    ...typography.body,
-    color: colors.white,
-    fontWeight: '600',
   },
   editButton: {
     flex: 1,
@@ -650,5 +684,92 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: colors.text.disabled,
+  },
+  breadcrumb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  breadcrumbText: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  breadcrumbSep: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+  },
+  highlightsStrip: {
+    paddingVertical: spacing.xs,
+    gap: spacing.xs,
+  },
+  highlightChip: {
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.xxs,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.badge,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginRight: spacing.xs,
+  },
+  highlightChipOpen: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#A5D6A7',
+  },
+  highlightChipText: {
+    ...typography.caption,
+    color: colors.text.primary,
+  },
+  inlinePriceCard: {
+    marginVertical: spacing.s,
+    padding: spacing.s,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  inlinePrice: {
+    ...typography.h3,
+    color: colors.primary.main,
+    fontWeight: '700',
+  },
+  stickyBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.s,
+    paddingBottom: spacing.m,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: spacing.s,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  stickyBarPrice: {
+    flexShrink: 0,
+  },
+  stickyBarPriceText: {
+    ...typography.body,
+    fontWeight: '700',
+    color: colors.primary.main,
+  },
+  stickyBarButton: {
+    flex: 1,
+    backgroundColor: colors.primary.main,
+    paddingVertical: spacing.s,
+    borderRadius: borderRadius.input,
+    alignItems: 'center',
+  },
+  stickyBarButtonText: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.white,
   },
 });
