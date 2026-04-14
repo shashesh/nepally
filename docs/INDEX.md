@@ -51,6 +51,8 @@
 ## Specs (active design specs)
 
 - [specs/2026-04-13-docs-reorganization-design.md](specs/2026-04-13-docs-reorganization-design.md) — design spec for this docs reorganization
+- [specs/2026-04-13-marketplace-listing-details-enhancement-design.md](specs/2026-04-13-marketplace-listing-details-enhancement-design.md) — marketplace listing detail page Split View redesign (web + mobile)
+- [plans/active/2026-04-13-marketplace-listing-details-enhancement.md](plans/active/2026-04-13-marketplace-listing-details-enhancement.md) — implementation plan for Split View listing detail redesign
 
 ## User journeys
 
