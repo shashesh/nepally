@@ -25,3 +25,6 @@ export * from './validation';
 
 // API functions (Supabase query logic with dependency injection)
 export * from './api';
+
+// Business logic helpers
+export * from './logic';
