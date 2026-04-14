@@ -60,7 +60,7 @@ Describe the user-facing outcome this implementation must deliver.
 
 Before coding, verify source docs are current and aligned:
 
-- [ ] Feature spec reviewed and date-checked: `docs/features/<feature>.md`
+- [ ] Feature spec reviewed and date-checked: `docs/product/features/<feature>.md`
 - [ ] User journey reviewed and date-checked: `docs/user-journeys/<...>.md`
 - [ ] Wireframe reviewed and date-checked: `docs/wireframes/<...>.md`
 - [ ] No conflicting requirements across the 3 sources

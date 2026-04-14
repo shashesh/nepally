@@ -12,6 +12,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Nepally (US Nepal Help Network) is a utility-first community platform for the Nepalese diaspora in the USA. Structured, location-based services for housing, jobs, emergencies, and travel coordination. Cross-platform monorepo: React Native (Expo 54) + Next.js 15, backed by Supabase. See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 
+## Finding Docs
+
+The canonical map of every document in this repo is **[docs/INDEX.md](./docs/INDEX.md)**. It's a flat, greppable list — search it first before reading through the folder tree. The index covers guides, architecture, product specs, plans, and decisions. Completed plans live in `docs/archive/`.
+
+Rules for keeping the index honest:
+- Adding a doc? Add a one-line entry to `docs/INDEX.md` in the same commit.
+- Moving or archiving a doc? Update `docs/INDEX.md` in the same commit.
+- Superpowers brainstorming/writing-plans: save specs to `docs/specs/` and plans to `docs/plans/active/` (not `docs/superpowers/...`).
+
 ## Core Architecture Principles
 
 ### Metro-First Location Model
@@ -43,7 +52,7 @@ Everything else                        → packages/shared/
 - Shared types use **snake_case** matching Supabase column names
 - `apps/` MUST import from `@nepally/shared` — NEVER redefine types/validation/API/constants locally
 - `packages/shared/` MUST NOT import from `react-native`, `expo-*`, `next`, or any platform package
-- Before implementing features, read `docs/code-sharing-guide.md` and `docs/monorepo-structure.md`
+- Before implementing features, read [docs/guides/code-sharing.md](./docs/guides/code-sharing.md) and [docs/architecture/monorepo-structure.md](./docs/architecture/monorepo-structure.md)
 
 ### Styling Rules
 - **Web**: NEVER inline `style={{}}`. Always CSS Modules (`.module.css`), reference via `className={styles.x}`

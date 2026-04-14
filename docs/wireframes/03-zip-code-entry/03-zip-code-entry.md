@@ -93,7 +93,7 @@ This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code.
 ### Error State: ZIP Not in Metro Database
 
 ::: alert error
-:warning: We don't have coverage in this area yet. Please try a nearby ZIP code or [contact support@nusa.app](mailto:support@nusa.app)
+:warning: We don't have coverage in this area yet. Please try a nearby ZIP code or [contact support@nepally.us](mailto:support@nepally.us)
 :::
 
 ---
@@ -401,7 +401,7 @@ You won't see local posts until you set your location.
 **Scenario:** User enters valid ZIP code format, but it's not mapped to any metro area in our database
 **Trigger:** After tapping "Continue" and API returns 404
 **Behavior:**
-- Show error banner at top: "We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nusa.app"
+- Show error banner at top: "We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nepally.us"
 - Banner: Red background (#C62828), white text, dismissible
 - Input field remains editable
 - "Contact Support" link in banner opens email client
@@ -567,7 +567,7 @@ You won't see local posts until you set your location.
 | `zipcode_button` | Continue |
 | `zipcode_skip` | Skip for now |
 | `zipcode_error_invalid` | This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code. |
-| `zipcode_error_no_coverage` | We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nusa.app |
+| `zipcode_error_no_coverage` | We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nepally.us |
 
 ### Tone & Voice
 - **Friendly:** "Where are you located?" (not "Enter ZIP")
@@ -613,7 +613,7 @@ function validateZipCode(zip) {
 | Direction | Trigger | Destination |
 |-----------|---------|-------------|
 | Entry | From Screen 02 after successful OAuth/signup | This screen |
-| Entry | Deep link `nusa://onboarding/zip-code` (authenticated, no metro) | This screen |
+| Entry | Deep link `nepally://onboarding/zip-code` (authenticated, no metro) | This screen |
 | Exit | Tap "Continue" (valid ZIP) | `/metro-confirmation` (Screen 04) |
 | Exit | Tap "Skip Anyway" in dialog | `/onboarding/tutorial` (Screen 05), metro_area_id = null |
 | Back | Back button (if shown) | Previous screen |

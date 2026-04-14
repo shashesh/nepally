@@ -491,7 +491,7 @@ export interface EventRsvp {
 ## Open Questions
 
 - [ ] **Event photo storage bucket**: Should event photos go in the existing `post-photos` bucket or a separate `event-photos` bucket? (Recommendation: separate bucket for cleaner RLS)
-- [ ] **RSVP notification**: When a new user RSVPs to an event, should the organizer receive an in-app notification? (Depends on notifications DB layer being built — see `docs/implementation-plans/notifications-feature.md`)
+- [ ] **RSVP notification**: When a new user RSVPs to an event, should the organizer receive an in-app notification? (Depends on notifications DB layer being built — see `docs/plans/active/notifications-feature.md`)
 - [ ] **Event reminder push notifications**: Deferred to E6.1 in the feature breakdown. Requires Supabase Edge Function (cron) or pg_cron. Will be designed separately after push notification infrastructure is complete.
 - [ ] **Attendee list cap**: Should the full attendee list modal paginate, or load all at once? (Recommendation: load all — events are unlikely to have thousands of RSVPs in MVP)
 
@@ -500,7 +500,7 @@ export interface EventRsvp {
 ## Related Documentation
 
 - [Events Feature Breakdown](./events-feature-breakdown.md) — implementation tasks, sequencing, and effort estimates
-- [Product Roadmap — Section H](../../product-roadmap.md) — roadmap context
+- [Product Roadmap — Section H](../../docs/product/roadmap.md) — roadmap context
 - [Code Sharing Guide](../code-sharing-guide.md) — shared-first architecture rules
 - [Monorepo Structure](../monorepo-structure.md) — package boundaries
 - [Notifications Feature Plan](../implementation-plans/notifications-feature.md) — prerequisite for event reminders

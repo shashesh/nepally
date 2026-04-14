@@ -55,6 +55,8 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 ### 2. Enable Phone Authentication
 
+> **Note (2026-04-13):** Phone SMS authentication was **removed 2026-03-25**. Current auth is email + Google only. This section and the Twilio secrets section below are retained for historical reference in case phone auth is reintroduced.
+
 1. Go to **Authentication** > **Providers**
 2. Click **Phone**
 3. Enable **Phone** provider
@@ -110,11 +112,11 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ### 5. Configure Site URL and Redirect URLs
 
 1. Go to **Authentication** > **URL Configuration**
-2. Set **Site URL**: Your production domain (e.g., `https://nusa.app`)
+2. Set **Site URL**: Your production domain (e.g., `https://nepally.us`)
 3. Add **Redirect URLs**:
    ```
    http://localhost:3000/**
-   https://nusa.app/**
+   https://nepally.us/**
    https://your-preview-url.vercel.app/**
    myapp:///** (for mobile deep linking)
    ```

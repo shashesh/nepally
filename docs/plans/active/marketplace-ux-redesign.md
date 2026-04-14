@@ -84,8 +84,8 @@ Replace the current large search bar + category cards grid on the marketplace ho
 ### Pre-Implementation Freshness Gate (Required)
 
 - [ ] Confirm `docs/wireframes/` has no current marketplace wireframe; if present, verify alignment with design images provided in this session.
-- [ ] Confirm `docs/features/` marketplace feature doc (if any) reflects the new UX.
-- [ ] Confirm product-roadmap.md marketplace entry doesn't contradict this direction.
+- [ ] Confirm `docs/product/features/` marketplace feature doc (if any) reflects the new UX.
+- [ ] Confirm docs/product/roadmap.md marketplace entry doesn't contradict this direction.
 - [ ] If outdated/contradictory docs exist, update them before coding.
 
 ---

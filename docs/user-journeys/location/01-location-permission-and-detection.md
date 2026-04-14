@@ -350,7 +350,7 @@
 
 **Page:** Feed page
 **User sees:**
-- Browser's native geolocation permission bar: "nusa.app wants to know your location" [Allow] [Block]
+- Browser's native geolocation permission bar: "nepally.us wants to know your location" [Allow] [Block]
 - Behind the permission bar, a banner on the page: "Allow location access to see posts near you"
 
 **Option A: User clicks "Allow"**

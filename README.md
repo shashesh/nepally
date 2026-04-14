@@ -15,7 +15,7 @@ npm run mobile
 npm run web
 ```
 
-For detailed setup instructions, see [Setup & Testing Guide](./SETUP-AND-TESTING-GUIDE.md).
+For detailed setup instructions, see [Setup & Testing Guide](./docs/guides/setup-and-testing.md).
 
 ## Core Features
 
@@ -41,7 +41,7 @@ For detailed setup instructions, see [Setup & Testing Guide](./SETUP-AND-TESTING
 | **Mobile App** | React Native (Expo 54) |
 | **Web App** | Next.js 15 |
 | **Backend** | Supabase (PostgreSQL, Realtime, Auth, Storage) |
-| **Auth** | Supabase Auth (phone SMS, email, Google OAuth) |
+| **Auth** | Supabase Auth (email + Google OAuth; phone SMS removed 2026-03-25) |
 | **Language** | TypeScript |
 | **React** | 19.1.0 (unified) |
 | **Node** | 20 (CI) |
@@ -62,28 +62,28 @@ nepally/
 └── package.json         # Root package.json (npm workspaces monorepo)
 ```
 
-See [Monorepo Structure](./docs/monorepo-structure.md) for details.
+See [Monorepo Structure](./docs/architecture/monorepo-structure.md) for details.
 
 ## Documentation
 
 ### Getting Started
-- [Setup & Testing Guide](./SETUP-AND-TESTING-GUIDE.md) - Complete development setup
+- [Setup & Testing Guide](./docs/guides/setup-and-testing.md) - Complete development setup
 - [TECH-VERSIONS.md](./TECH-VERSIONS.md) - Technology version source of truth
 
 ### Architecture
-- [Monorepo Structure](./docs/monorepo-structure.md) - Codebase organization
-- [Code Sharing Guide](./docs/code-sharing-guide.md) - What to share between mobile/web
-- [Database Schema](./docs/database-schema.md) - PostgreSQL tables and schema
+- [Monorepo Structure](./docs/architecture/monorepo-structure.md) - Codebase organization
+- [Code Sharing Guide](./docs/guides/code-sharing.md) - What to share between mobile/web
+- [Database Schema](./docs/architecture/database-schema.md) - PostgreSQL tables and schema
 
 ### Backend
-- [Supabase Setup](./docs/supabase-setup.md) - Configure Supabase project
+- [Supabase Setup](./docs/architecture/supabase-setup.md) - Configure Supabase project
 
 ### Deployment
-- [Deployment Guide](./docs/deployment-guide.md) - Deploy to production
+- [Deployment Guide](./docs/guides/deployment.md) - Deploy to production
 
 ### Product
-- [Product Roadmap](./product-roadmap.md) - Feature roadmap and phases
-- [Feature Specs](./docs/features/) - Detailed feature specifications
+- [Product Roadmap](./docs/product/roadmap.md) - Feature roadmap and phases
+- [Feature Specs](./docs/product/features/) - Detailed feature specifications
 - [User Journeys](./docs/user-journeys/) - User flow documentation
 - [Wireframes](./docs/wireframes/) - Screen wireframe documentation
 

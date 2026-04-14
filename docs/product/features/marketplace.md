@@ -1,7 +1,7 @@
 # Feature: Marketplace
 
 **Status:** Phase 1 MVP Implemented
-**Last Updated:** 2026-03-27
+**Last Updated:** 2026-04-13
 **Priority:** High
 
 ---
@@ -156,6 +156,6 @@ All business logic in `packages/shared/`:
 
 ## Related Documentation
 
-- [Product Roadmap](../../product-roadmap.md) — Phase planning
+- [Product Roadmap](../../docs/product/roadmap.md) — Phase planning
 - [Code Sharing Guide](../code-sharing-guide.md) — Shared-first architecture
 - [Database Schema](../database-schema.md) — Full schema reference

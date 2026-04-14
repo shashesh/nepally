@@ -48,7 +48,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ### 4. Configure Custom Domain
 
 1. Go to **Settings** > **Domains**
-2. Add your domain: `nusa.app`
+2. Add your domain: `nepally.us`
 3. Update DNS records:
    - Type: `A`
    - Name: `@`
@@ -100,7 +100,7 @@ Set these values:
 
 You do **not** need two separate Vercel projects. One project handles both environments:
 - Dev deploys create Preview deployments (unique URL per deploy)
-- Production deploys promote to the Production domain (`nusa.app`)
+- Production deploys promote to the Production domain (`nepally.us`)
 
 Scope environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, etc.) per Vercel environment in the project dashboard under **Settings > Environment Variables**, selecting **Preview** or **Production** scope as appropriate.
 
@@ -146,7 +146,7 @@ View deployment logs in Vercel dashboard:
 
 ### 11. Test Production Site
 
-1. Visit https://nusa.app
+1. Visit https://nepally.us
 2. Test key features:
    - Sign up / Login
    - View posts
@@ -309,7 +309,7 @@ eas submit --platform ios
 You'll need:
 - Apple ID
 - App-specific password (generate in Apple ID settings)
-- Bundle identifier (e.g., `com.nusa.app`)
+- Bundle identifier (e.g., `us.nepally.app`)
 
 ### 5. Build Android App
 
@@ -336,7 +336,7 @@ eas submit --platform android
 
 You'll need:
 - Google Play service account key (JSON file)
-- App bundle identifier (e.g., `com.nusa.app`)
+- App bundle identifier (e.g., `us.nepally.app`)
 
 ### 6. App Store Listings
 
@@ -345,16 +345,16 @@ You'll need:
 1. Go to [App Store Connect](https://appstoreconnect.apple.com/)
 2. Create new app:
    - **Name:** Nepally
-   - **Bundle ID:** `com.nusa.app`
-   - **SKU:** `nusa-app`
+   - **Bundle ID:** `us.nepally.app`
+   - **SKU:** `nepally-app`
    - **User Access:** Full Access
 3. Fill app information:
    - **Category:** Social Networking
    - **Screenshots:** (1242x2208 for iPhone, 2048x2732 for iPad)
    - **Description:** (see template below)
    - **Keywords:** nepal, nepalese, community, help, housing, jobs
-   - **Support URL:** https://nusa.app/support
-   - **Privacy Policy URL:** https://nusa.app/privacy
+   - **Support URL:** https://nepally.us/support
+   - **Privacy Policy URL:** https://nepally.us/privacy
 4. Pricing: **Free**
 5. Submit for review
 
@@ -372,7 +372,7 @@ You'll need:
    - **Category:** Social
    - **Screenshots:** (1080x1920, need 2-8 screenshots)
    - **Description:** (see template below)
-   - **Privacy Policy URL:** https://nusa.app/privacy
+   - **Privacy Policy URL:** https://nepally.us/privacy
 4. Content rating questionnaire
 5. Submit for review
 

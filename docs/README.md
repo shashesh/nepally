@@ -1,28 +1,55 @@
-# Documentation
+# Nepally Documentation
 
-This directory contains detailed documentation for the Nepally project.
+Welcome. This folder holds all documentation for the Nepally monorepo.
 
-## Guides
+**Looking for a specific doc?** See [INDEX.md](INDEX.md) — a flat, greppable list of every document with a one-line purpose. It's the fastest way to find things (and what coding agents use).
 
-| File | Purpose |
-|------|---------|
-| [feature-development-process.md](./feature-development-process.md) | **Start here** — end-to-end process from idea to shipped feature |
-| [database-schema.md](./database-schema.md) | PostgreSQL tables, RLS policies, query patterns |
-| [code-sharing-guide.md](./code-sharing-guide.md) | What to share between mobile/web apps |
-| [monorepo-structure.md](./monorepo-structure.md) | Codebase organization and workspace setup |
-| [supabase-setup.md](./supabase-setup.md) | Supabase project configuration |
-| [deployment-guide.md](./deployment-guide.md) | Deploy to Vercel, App Store, Google Play |
+## Folder layout
 
-## Testing Policy
+| Folder | Contents |
+|---|---|
+| [guides/](guides/) | How-to docs — setup, code sharing, deployment, feature development workflow |
+| [architecture/](architecture/) | How the system is built — monorepo structure, database schema, Supabase setup |
+| [product/](product/) | Roadmap and feature specs |
+| [product/features/](product/features/) | Per-feature specifications |
+| [plans/active/](plans/active/) | In-progress and planned implementation plans |
+| [plans/_template.md](plans/_template.md) | Template for new implementation plans |
+| [specs/](specs/) | Active design specs from brainstorming sessions |
+| [user-journeys/](user-journeys/) | Documented user flows |
+| [wireframes/](wireframes/) | Screen-by-screen wireframes |
+| [decisions/](decisions/) | Architecture decision records (ADRs) |
+| [archive/](archive/) | Completed plans, superseded specs, historical progress docs |
 
-Use these documents as the source of truth for required testing workflow:
+## Canonical references at repo root
 
-- [../SETUP-AND-TESTING-GUIDE.md](../SETUP-AND-TESTING-GUIDE.md) — setup, workspace tests, coverage commands, and CI-aligned local checks.
-- [../README.md](../README.md) — project-wide agent rules, including mandatory unit tests for new/changed functionality.
-- [../.github/copilot-instructions.md](../.github/copilot-instructions.md) — Copilot coding instructions with non-negotiable testing requirements.
-- [../CLAUDE.md](../CLAUDE.md) — Claude coding workflow and mandatory validation gates.
+- [../README.md](../README.md) — project overview, setup quickstart
+- [../CLAUDE.md](../CLAUDE.md) — rules for coding agents working in this repo
+- [../TECH-VERSIONS.md](../TECH-VERSIONS.md) — canonical tech stack versions
 
-Minimum pre-PR commands:
+## Conventions
+
+- **Plans** live in `plans/active/` while in flight, then move to `archive/plans/` when shipped or abandoned.
+- **Specs** live in `specs/` while relevant, then move to `archive/specs/` when the work they describe is complete.
+- **Completed work stays discoverable** — we archive rather than delete so a coding agent searching "how did we do X" still finds the answer.
+- **One canonical home per topic.** If two docs cover the same ground, pick one and delete/archive the other rather than letting them drift.
+
+## Adding a new doc
+
+1. Pick the right folder from the table above.
+2. Add an entry to [INDEX.md](INDEX.md) under the matching section with a one-line purpose.
+3. Follow the filename conventions of siblings.
+
+## Document status labels
+
+- **Draft** — Work in progress
+- **In Review** — Ready for feedback
+- **Approved** — Finalized, ready for implementation
+- **Implemented** — Feature has been built
+- **Deprecated** — No longer relevant (candidate for archive)
+
+## Testing policy quickref
+
+See [guides/setup-and-testing.md](guides/setup-and-testing.md) for the full testing workflow. Minimum pre-PR commands:
 
 ```bash
 npm run lint
@@ -30,32 +57,3 @@ npm run type-check
 npm run test
 npm run test:coverage
 ```
-
-## Subdirectories
-
-### `/features`
-Detailed feature specifications created using `/design-feature` skill.
-
-### `/wireframes`
-Screen wireframe documentation created using `/wireframe` skill. Includes design system foundation.
-
-### `/user-journeys`
-End-to-end user experience documentation created using `/user-journey` skill.
-
-### `/decisions`
-Architecture Decision Records (ADRs) documenting important choices.
-
-## Creating New Documentation
-
-- Use custom Claude skills (`/design-feature`, `/wireframe`, `/user-journey`)
-- Follow templates provided by each skill
-- Link related documents together
-- Keep documents in sync with `product-roadmap.md`
-
-## Document Status Labels
-
-- **Draft** - Work in progress
-- **In Review** - Ready for feedback
-- **Approved** - Finalized, ready for implementation
-- **Implemented** - Feature has been built
-- **Deprecated** - No longer relevant

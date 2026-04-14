@@ -449,7 +449,7 @@ No persistent state across sessions.
 | Direction | Trigger | Destination |
 |-----------|---------|-------------|
 | Entry | Tap "Sign Up" on Screen 01 | This screen |
-| Entry | Deep link `nusa://signup` | This screen |
+| Entry | Deep link `nepally://signup` | This screen |
 | Exit | Google option | Google OAuth → Screen 03 (ZIP Code Entry) |
 | Exit | Phone option | Phone entry screen (future) |
 | Exit | Email option | Email entry screen (future) |

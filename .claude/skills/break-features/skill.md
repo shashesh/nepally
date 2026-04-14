@@ -15,7 +15,7 @@ Analyzes a roadmap phase and breaks it into small, implementable features with d
 
 ## Process
 
-1. Read `product-roadmap.md` to understand the phase
+1. Read `docs/product/roadmap.md` to understand the phase
 2. Identify all features needed
 3. Break each into small chunks (1-5 days of work)
 4. Define dependencies between features

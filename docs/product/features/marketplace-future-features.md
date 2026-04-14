@@ -142,6 +142,6 @@ Features recommended for earliest implementation based on current codebase readi
 ## Related Documentation
 
 - [Marketplace Feature (Phase 1)](./marketplace.md) — Implemented feature spec
-- [Product Roadmap](../../product-roadmap.md) — Phase planning
+- [Product Roadmap](../../docs/product/roadmap.md) — Phase planning
 - [Code Sharing Guide](../code-sharing-guide.md) — Shared-first architecture
 - [Database Schema](../database-schema.md) — Full schema reference

@@ -572,7 +572,7 @@ const { data } = await supabase
 |-----------|---------|-------------|
 | Entry | Tap PostCard on HomeScreen | This screen |
 | Entry | Tap post context bar in MessageThreadScreen | This screen |
-| Entry | Deep link `nusa://post/{postId}` | This screen |
+| Entry | Deep link `nepally://post/{postId}` | This screen |
 | Exit | Back button | Previous screen (HomeScreen or MessageThreadScreen) |
 | Exit | Avatar menu "Chat" tap | MessageThreadScreen |
 | Exit | Avatar menu "View Profile" tap | Public ProfileScreen (future) |

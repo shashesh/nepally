@@ -112,7 +112,7 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 
 ## Database Schema
 
-The schema is already defined in `docs/database-schema.md` and `supabase/migrations/001_schema.sql`. Key tables:
+The schema is already defined in `docs/architecture/database-schema.md` and `supabase/migrations/001_schema.sql`. Key tables:
 
 ### Existing Tables (verify they exist in migration)
 

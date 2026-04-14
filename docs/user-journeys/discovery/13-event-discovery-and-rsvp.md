@@ -296,7 +296,7 @@ User opens Events tab
    - **Frequency:** Every RSVP'd event
    - **Affected Users:** All users who RSVP
    - **Mitigation:** None currently
-   - **Solution:** Deploy push notification edge function with event reminder scheduling (see `docs/implementation-plans/notifications-feature.md`)
+   - **Solution:** Deploy push notification edge function with event reminder scheduling (see `docs/plans/active/notifications-feature.md`)
 
 3. **Pain Point:** No "My Events" / saved events list in the profile
    - **Impact:** Medium — no way to easily find all events you've RSVP'd to

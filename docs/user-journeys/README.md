@@ -1,6 +1,6 @@
 # Nepally User Journeys - Phase 1
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-04-13
 **Total Journeys:** 14
 **Status:** Planning
 

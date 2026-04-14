@@ -901,7 +901,7 @@ You need to verify your phone number to create posts and message others.
 |-----------|---------|-------------|
 | Entry | From Screen 05 (Onboarding Tutorial) — "Get Started" | This screen |
 | Entry | App launch (if user already onboarded) | This screen |
-| Entry | Deep link `nusa://home` or `nusa://feed` | This screen |
+| Entry | Deep link `nepally://home` or `nepally://feed` | This screen |
 | Exit | Tap "Verify Now" | Journey #02 (Trust Level Verification) |
 | Exit | Tap post card | Post Detail screen |
 | Exit | Tap Search icon | Search screen |
