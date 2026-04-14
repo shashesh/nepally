@@ -321,6 +321,52 @@ describe('getFeaturedListings', () => {
     const result = await getFeaturedListings(supabase, 'metro-1');
     expect(result.error).toBeDefined();
   });
+
+  it('applies category slug filter when categorySlug is provided', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [MOCK_LISTING], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getFeaturedListings(supabase, 'metro-1', { categorySlug: 'food-restaurants', limit: 10 });
+
+    expect(chain.eq).toHaveBeenCalledWith('category.slug', 'food-restaurants');
+  });
+
+  it('strips null-category rows when categorySlug is provided', async () => {
+    const listingWithCategory = { ...MOCK_LISTING, category: { id: 'cat-1', slug: 'food-restaurants' } };
+    const listingNullCategory = { ...MOCK_LISTING, id: 'listing-2', category: null };
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [listingWithCategory, listingNullCategory], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getFeaturedListings(supabase, 'metro-1', { categorySlug: 'food-restaurants' });
+    expect(result.data).toHaveLength(1);
+    expect(result.data?.[0].id).toBe('listing-1');
+  });
+
+  it('does not apply category filter when categorySlug is absent', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [MOCK_LISTING], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getFeaturedListings(supabase, 'metro-1');
+
+    const eqCalls = (chain.eq as ReturnType<typeof vi.fn>).mock.calls;
+    const slugCall = eqCalls.find((c) => c[0] === 'category.slug');
+    expect(slugCall).toBeUndefined();
+  });
 });
 
 // ─── getTrendingListings ────────────────────────────────────────────────────

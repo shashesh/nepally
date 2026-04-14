@@ -149,12 +149,30 @@ describe('getPromotionById', () => {
 // ─── getSponsoredFeedListings ──────────────────────────────────────────────
 
 describe('getSponsoredFeedListings', () => {
-  it('returns sponsored listings filtered by metro area', async () => {
+  it('passes metro_area_id filter to the DB query', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
+      filter: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [MOCK_SPONSORED], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getSponsoredFeedListings(supabase, 'metro-1', { limit: 5 });
+
+    expect(chain.filter).toHaveBeenCalledWith('listing.metro_area_id', 'eq', 'metro-1');
+    expect(chain.filter).toHaveBeenCalledWith('listing.status', 'eq', 'active');
+  });
+
+  it('returns listings from DB response', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      filter: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: [MOCK_SPONSORED], error: null }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
@@ -163,26 +181,29 @@ describe('getSponsoredFeedListings', () => {
     expect(result.data).toHaveLength(1);
   });
 
-  it('filters out listings from other metro areas', async () => {
+  it('returns empty array when DB returns no active promotions', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: [MOCK_SPONSORED], error: null }),
+      filter: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
-    const result = await getSponsoredFeedListings(supabase, 'metro-OTHER');
-    expect(result.data).toHaveLength(0);
+    const result = await getSponsoredFeedListings(supabase, 'metro-1');
+    expect(result.data).toEqual([]);
+    expect(result.error).toBeUndefined();
   });
 
-  it('returns empty array on error', async () => {
+  it('returns error on supabase failure', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
+      filter: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: null, error: new Error('fail') }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
@@ -195,19 +216,53 @@ describe('getSponsoredFeedListings', () => {
 // ─── getStickyBusinessListings ─────────────────────────────────────────────
 
 describe('getStickyBusinessListings', () => {
-  it('queries for sticky_business promotion type', async () => {
+  it('passes metro_area_id filter to the DB query', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      filter: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getStickyBusinessListings(supabase, 'metro-99');
+
+    expect(chain.filter).toHaveBeenCalledWith('listing.metro_area_id', 'eq', 'metro-99');
+    expect(chain.filter).toHaveBeenCalledWith('listing.status', 'eq', 'active');
+  });
+
+  it('returns listings from DB response', async () => {
     const stickyItem = { ...MOCK_SPONSORED, promotion_type: 'sticky_business' };
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
+      filter: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: [stickyItem], error: null }),
     };
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
     const result = await getStickyBusinessListings(supabase, 'metro-1');
     expect(result.data).toHaveLength(1);
+  });
+
+  it('returns empty array when DB returns no active promotions', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      filter: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getStickyBusinessListings(supabase, 'metro-1');
+    expect(result.data).toEqual([]);
+    expect(result.error).toBeUndefined();
   });
 });
 

@@ -13,8 +13,10 @@ import type {
 } from '../types/promotion';
 import type { CreatePromotionInput } from '../validation/promotion';
 
+// Embeds are hinted by the FK column (listing_id) because PostgREST cannot
+// look up base-table FK constraint names when selecting from a view.
 const LISTING_SELECT_FOR_SPONSORED = `
-  listing:marketplace_listings!listing_promotions_listing_id_fkey (
+  listing:marketplace_listings!listing_id (
     id, title, description, photos, price, category_id, listing_type,
     business_name, views_count, saves_count, contacts_count,
     trending_score, status, metro_area_id, refreshed_at, created_at,
@@ -107,25 +109,16 @@ export async function getSponsoredFeedListings(
   const { limit = 5 } = options;
   try {
     const { data, error } = await supabase
-      .from('listing_promotions')
+      .from('listing_promotions_display')
       .select(`id, promotion_type, ${LISTING_SELECT_FOR_SPONSORED}`)
       .eq('promotion_type', 'sponsored_feed')
-      .eq('status', 'active')
-      .gte('end_date', new Date().toISOString())
       .order('created_at', { ascending: false })
+      .filter('listing.metro_area_id', 'eq', metroId)
+      .filter('listing.status', 'eq', 'active')
       .limit(limit);
 
     if (error) throw error;
-
-    // Filter to only listings in the user's metro area and active status
-    const filtered = (data ?? []).filter(
-      (item: Record<string, unknown>) => {
-        const listing = item.listing as Record<string, unknown> | null;
-        return listing && listing.metro_area_id === metroId && listing.status === 'active';
-      }
-    ) as unknown as SponsoredListing[];
-
-    return { data: filtered };
+    return { data: (data ?? []) as unknown as SponsoredListing[] };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch sponsored feed listings') };
   }
@@ -143,24 +136,16 @@ export async function getStickyBusinessListings(
   const { limit = 5 } = options;
   try {
     const { data, error } = await supabase
-      .from('listing_promotions')
+      .from('listing_promotions_display')
       .select(`id, promotion_type, ${LISTING_SELECT_FOR_SPONSORED}`)
       .eq('promotion_type', 'sticky_business')
-      .eq('status', 'active')
-      .gte('end_date', new Date().toISOString())
       .order('created_at', { ascending: false })
+      .filter('listing.metro_area_id', 'eq', metroId)
+      .filter('listing.status', 'eq', 'active')
       .limit(limit);
 
     if (error) throw error;
-
-    const filtered = (data ?? []).filter(
-      (item: Record<string, unknown>) => {
-        const listing = item.listing as Record<string, unknown> | null;
-        return listing && listing.metro_area_id === metroId && listing.status === 'active';
-      }
-    ) as unknown as SponsoredListing[];
-
-    return { data: filtered };
+    return { data: (data ?? []) as unknown as SponsoredListing[] };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch sticky business listings') };
   }

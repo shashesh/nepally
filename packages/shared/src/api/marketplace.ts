@@ -153,11 +153,13 @@ export async function getListingsByMetro(
 export interface StripOptions {
   limit?: number;
   offset?: number;
+  categorySlug?: string;
 }
 
 /**
  * Fetch featured active listings in a metro, ordered by refreshed_at DESC.
  * Uses the partial index `idx_marketplace_listings_featured`.
+ * Optionally scoped to a category via `opts.categorySlug`.
  */
 export async function getFeaturedListings(
   supabase: SupabaseClient,
@@ -168,18 +170,34 @@ export async function getFeaturedListings(
     const limit = opts.limit ?? 10;
     const offset = opts.offset ?? 0;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('marketplace_listings_view')
       .select(LISTING_SELECT)
       .eq('status', 'active')
       .eq('metro_area_id', metroId)
       .eq('is_featured', true)
-      .order('refreshed_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('refreshed_at', { ascending: false });
+
+    if (opts.categorySlug) {
+      query = query.eq('category.slug', opts.categorySlug);
+    }
+
+    const { data, error } = await query.range(offset, offset + limit - 1);
 
     if (error) throw error;
-    const rows = (data || []) as MarketplaceListing[];
-    return { data: rows, hasMore: rows.length === limit };
+
+    // `hasMore` is derived from the raw page size BEFORE the client-side
+    // category filter below, so pagination still advances when a page
+    // filters down to zero matches.
+    const rawRows = (data || []) as MarketplaceListing[];
+    const hasMore = rawRows.length === limit;
+
+    let rows = rawRows;
+    if (opts.categorySlug) {
+      rows = rows.filter((l) => l.category != null);
+    }
+
+    return { data: rows, hasMore };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch featured listings') };
   }

@@ -19,7 +19,12 @@ interface ListingStripProps {
   titleIcon?: string;
   listings: MarketplaceListing[];
   onItemPress: (listing: MarketplaceListing) => void;
-  onShowAll: () => void;
+  /**
+   * Optional "show all" handler. When omitted, the header "View All →" button
+   * and the trailing "Show All" footer card are not rendered — use this when
+   * the strip has no dedicated destination screen.
+   */
+  onShowAll?: () => void;
   maxItems?: number;
   /** Card width inside the horizontal strip */
   cardWidth?: number;
@@ -57,7 +62,7 @@ export function ListingStrip({
   if (listings.length === 0) return null;
 
   const visible = listings.slice(0, maxItems);
-  const showShowAll = listings.length >= maxItems;
+  const showShowAll = onShowAll != null && listings.length >= maxItems;
 
   return (
     <View style={styles.strip} accessibilityLabel={title}>
@@ -65,14 +70,16 @@ export function ListingStrip({
         <Text style={styles.title}>
           {titleIcon ? `${titleIcon} ` : ''}{title}
         </Text>
-        <TouchableOpacity
-          onPress={onShowAll}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={`View all ${title}`}
-        >
-          <Text style={styles.viewAll}>View All →</Text>
-        </TouchableOpacity>
+        {onShowAll != null && (
+          <TouchableOpacity
+            onPress={onShowAll}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={`View all ${title}`}
+          >
+            <Text style={styles.viewAll}>View All →</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <FlatList
         horizontal
