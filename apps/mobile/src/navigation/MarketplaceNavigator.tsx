@@ -8,6 +8,9 @@ import ListingDetailScreen from '../screens/marketplace/ListingDetailScreen';
 import CreateListingScreen from '../screens/marketplace/CreateListingScreen';
 import MyListingsScreen from '../screens/marketplace/MyListingsScreen';
 import PromoteListingScreen from '../screens/marketplace/PromoteListingScreen';
+import BrowseCategoriesScreen from '../screens/marketplace/BrowseCategoriesScreen';
+import MarketplaceRulesScreen from '../screens/marketplace/MarketplaceRulesScreen';
+import SavedListingsScreen from '../screens/marketplace/SavedListingsScreen';
 
 const Stack = createNativeStackNavigator<MarketplaceStackParamList>();
 
@@ -55,6 +58,21 @@ export function MarketplaceNavigator() {
           headerShown: false,
           presentation: 'modal',
         }}
+      />
+      <Stack.Screen
+        name="BrowseCategories"
+        component={BrowseCategoriesScreen}
+        options={{ title: 'Browse Categories' }}
+      />
+      <Stack.Screen
+        name="MarketplaceRules"
+        component={MarketplaceRulesScreen}
+        options={{ title: 'Marketplace Rules' }}
+      />
+      <Stack.Screen
+        name="SavedListings"
+        component={SavedListingsScreen}
+        options={{ title: 'Saved' }}
       />
     </Stack.Navigator>
   );
