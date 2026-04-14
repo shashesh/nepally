@@ -3,10 +3,6 @@ import React from 'react';
 import MarketplaceHomeScreen from './MarketplaceHomeScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('expo-image', () => ({ Image: () => null }));
-jest.mock('expo-linear-gradient', () => ({
-  LinearGradient: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-}));
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
 jest.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'u1', metro_area_id: 'm1', trust_level: 1 } }),
@@ -27,6 +23,91 @@ jest.mock('@react-navigation/native', () => {
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
+
+// Mock heavy child components — documented CI fix pattern (see apps/mobile/CLAUDE.md).
+// React 19's act() flush loop doesn't converge when deep child trees have their own
+// hooks/animations. Flat stubs keep the render tree shallow so waitFor can resolve.
+
+jest.mock('../../components/marketplace/ListingGridCard', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return {
+    ListingGridCard: ({ listing }: { listing: { title: string } }) =>
+      ReactLocal.createElement(Text, null, listing.title),
+  };
+});
+
+jest.mock('../../components/marketplace/ListingGridCardSkeleton', () => ({
+  ListingGridCardSkeleton: () => null,
+}));
+
+jest.mock('../../components/marketplace/MarketplaceSearchBar', () => ({
+  MarketplaceSearchBar: () => null,
+}));
+
+jest.mock('../../components/marketplace/CategoryTileRow', () => ({
+  CategoryTileRow: () => null,
+}));
+
+jest.mock('../../components/marketplace/MarketplaceTabs', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text, View } = jest.requireActual('react-native');
+  return {
+    MarketplaceTabs: () =>
+      ReactLocal.createElement(
+        View,
+        null,
+        ReactLocal.createElement(Text, null, 'Sponsored'),
+        ReactLocal.createElement(Text, null, 'Featured'),
+        ReactLocal.createElement(Text, null, 'Trending'),
+        ReactLocal.createElement(Text, null, 'All Listings')
+      ),
+  };
+});
+
+jest.mock('../../components/marketplace/MarketplaceEmptyState', () => ({
+  MarketplaceEmptyState: () => null,
+}));
+
+jest.mock('../../components/marketplace/MarketplaceMenuSheet', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text, TouchableOpacity, View } = jest.requireActual('react-native');
+  type MockProps = {
+    visible: boolean;
+    onClose: () => void;
+    onSelect: (key: string) => void;
+  };
+  const ROWS: { key: string; label: string }[] = [
+    { key: 'my-listings', label: 'My Listings' },
+    { key: 'saved', label: 'Saved' },
+    { key: 'promote', label: 'Promote a Listing' },
+    { key: 'browse-categories', label: 'Browse Categories' },
+    { key: 'change-location', label: 'Change Location' },
+    { key: 'rules', label: 'Marketplace Rules' },
+  ];
+  return {
+    MarketplaceMenuSheet: ({ visible, onClose, onSelect }: MockProps) => {
+      if (!visible) return null;
+      return ReactLocal.createElement(
+        View,
+        null,
+        ...ROWS.map((row) =>
+          ReactLocal.createElement(
+            TouchableOpacity,
+            {
+              key: row.key,
+              onPress: () => {
+                onSelect(row.key);
+                onClose();
+              },
+            },
+            ReactLocal.createElement(Text, null, row.label)
+          )
+        )
+      );
+    },
+  };
+});
 
 const sampleListing = {
   id: 'l1',

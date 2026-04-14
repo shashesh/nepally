@@ -13,8 +13,19 @@ jest.mock('@react-navigation/native', () => ({
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
-jest.mock('expo-image', () => ({ Image: () => null }));
-jest.mock('expo-linear-gradient', () => ({ LinearGradient: ({ children }: { children?: React.ReactNode }) => <>{children}</> }));
+// Mock heavy child components — CI fix pattern (see apps/mobile/CLAUDE.md).
+jest.mock('../../components/marketplace/ListingGridCard', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return {
+    ListingGridCard: ({ listing }: { listing: { title: string } }) =>
+      ReactLocal.createElement(Text, null, listing.title),
+  };
+});
+
+jest.mock('../../components/marketplace/MarketplaceEmptyState', () => ({
+  MarketplaceEmptyState: () => null,
+}));
 
 const mockListing = {
   id: 'l1',
