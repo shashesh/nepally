@@ -7,6 +7,8 @@ import type { MarketplaceListing } from '../../types/marketplace';
  * - Skips sponsored items whose `id` already appears in the organic list
  *   (prevents double-render on screens where a listing is both trending and promoted).
  * - Cycles through sponsored items in order if the grid is long enough for multiple injections.
+ * - Skips injection when there are fewer than `interval` organic items remaining after
+ *   the current position, so sponsored items never bunch up at the end of a short grid.
  *
  * @throws if `interval` is less than 1.
  */

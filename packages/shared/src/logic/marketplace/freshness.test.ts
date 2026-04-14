@@ -47,4 +47,14 @@ describe('formatListingFreshness', () => {
     const createdAt = new Date(NOW + 60 * 1000).toISOString();
     expect(formatListingFreshness(createdAt, NOW)).toBe('just now');
   });
+
+  it('returns "12mo" at the boundary of 364 days (never "0y")', () => {
+    const createdAt = new Date(NOW - 364 * 24 * 60 * 60 * 1000).toISOString();
+    expect(formatListingFreshness(createdAt, NOW)).toBe('12mo');
+  });
+
+  it('returns "1y" at exactly 365 days', () => {
+    const createdAt = new Date(NOW - 365 * 24 * 60 * 60 * 1000).toISOString();
+    expect(formatListingFreshness(createdAt, NOW)).toBe('1y');
+  });
 });

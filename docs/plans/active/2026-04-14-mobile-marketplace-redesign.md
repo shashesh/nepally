@@ -3,6 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Git policy (project CLAUDE.md):** Never commit on `master` — always verify the branch first. Commits on a feature branch do NOT require permission; commit freely as each task completes. `git push` ALWAYS requires explicit user confirmation — pause at the end of the plan (or whenever the user asks) and summarize what will be pushed before running `git push`.
+>
+> **Note on per-task checkpoint wording:** Some individual task steps below say "ask the user before running `git commit`" — those were written before the current git policy was adopted. The header policy supersedes them. Future plans should not duplicate that wording.
 
 **Goal:** Redesign the mobile marketplace home screen around a denser editorial grid, tab-driven sort, persistent search, category tiles, and a marketplace-hub bottom sheet menu — replacing the current four-strip stacked layout.
 

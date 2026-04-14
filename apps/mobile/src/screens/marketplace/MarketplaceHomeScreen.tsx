@@ -101,13 +101,16 @@ export default function MarketplaceHomeScreen() {
       return;
     }
     try {
-      // Filter fallback: any active search or category filter always uses getListingsByMetro,
-      // because the curated endpoints (sponsored / featured / trending) don't accept filters.
+      // Filter fallback: any active search or category filter always uses
+      // getListingsByMetro, because the curated endpoints (sponsored / featured /
+      // trending) don't accept filters. The sort key tracks the active tab so
+      // the tab's semantic stays intact even when filtered.
       if (selectedCategory || searchQuery) {
+        const filterSort = activeTab === 'featured' ? 'featured' : 'newest';
         const result = await getListingsByMetro(supabase, metroId, {
           categorySlug: selectedCategory || undefined,
           searchQuery: searchQuery || undefined,
-          sortBy: 'newest',
+          sortBy: filterSort,
           limit: GRID_LIMIT,
           offset: 0,
         });
@@ -186,10 +189,11 @@ export default function MarketplaceHomeScreen() {
     if (!isPaginatedPath) return;
     loadingMoreRef.current = true;
     try {
+      const filterSort = activeTab === 'featured' ? 'featured' : 'newest';
       const result = await getListingsByMetro(supabase, metroId, {
         categorySlug: selectedCategory || undefined,
         searchQuery: searchQuery || undefined,
-        sortBy: 'newest',
+        sortBy: filterSort,
         limit: GRID_LIMIT,
         offset: listings.length,
       });

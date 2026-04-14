@@ -38,7 +38,10 @@ export default function SavedListingsScreen() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     (async () => {
       const [saved, ids] = await Promise.all([
         getSavedListingsByUser(supabase, user.id),

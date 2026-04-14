@@ -37,7 +37,7 @@ export function formatListingFreshness(
   if (days < 30) return `${weeks}w`;
 
   const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mo`;
+  if (days < 365) return `${months}mo`;
 
   const years = Math.floor(days / 365);
   return `${years}y`;
