@@ -1,24 +1,27 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
+  Dimensions,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  TrustLevel,
   getCategories,
   getFeaturedListings,
   getListingsByMetro,
-  getTrendingListings,
   getStickyBusinessListings,
-  TrustLevel,
+  getUserSavedListingIds,
+  injectSponsoredIntoGrid,
+  saveListing,
+  unsaveListing,
   type MarketplaceCategory,
   type MarketplaceListing,
   type SponsoredListing,
@@ -26,60 +29,47 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
-import { spacing, borderRadius } from '../../styles/spacing';
+import { spacing } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
+import { warmAccent, warmBorder, warmSurface } from '../../styles/warmTokens';
+import { ListingGridCard } from '../../components/marketplace/ListingGridCard';
+import { ListingGridCardSkeleton } from '../../components/marketplace/ListingGridCardSkeleton';
+import { MarketplaceSearchBar } from '../../components/marketplace/MarketplaceSearchBar';
+import { CategoryTileRow } from '../../components/marketplace/CategoryTileRow';
+import { MarketplaceTabs, type MarketplaceTabKey } from '../../components/marketplace/MarketplaceTabs';
+import { MarketplaceMenuSheet, type MarketplaceMenuKey } from '../../components/marketplace/MarketplaceMenuSheet';
+import { MarketplaceEmptyState } from '../../components/marketplace/MarketplaceEmptyState';
 import type { MarketplaceStackParamList } from '../../types/navigation';
-import { ListingCard } from '../../components/marketplace/ListingCard';
-import { FilterBar, type FilterBarValue } from '../../components/marketplace/FilterBar';
-import { ListingStrip } from '../../components/marketplace/ListingStrip';
 
-type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
+type Nav = NativeStackNavigationProp<MarketplaceStackParamList, 'MarketplaceHome'>;
 
-const STRIP_LIMIT = 10;
 const GRID_LIMIT = 20;
-
-const DEFAULT_FILTERS: FilterBarValue = {
-  category: '',
-  sort: 'newest',
-  query: '',
-};
+const GUTTER = 12;
+const CARD_WIDTH = Math.floor((Dimensions.get('window').width - GUTTER * 3) / 2);
+const SPONSORED_INTERVAL = 8;
+const SEARCH_DEBOUNCE_MS = 300;
 
 export default function MarketplaceHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
-
-  const [filters, setFilters] = useState<FilterBarValue>(DEFAULT_FILTERS);
-  const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
-  const [featured, setFeatured] = useState<MarketplaceListing[]>([]);
-  const [recent, setRecent] = useState<MarketplaceListing[]>([]);
-  const [trending, setTrending] = useState<MarketplaceListing[]>([]);
-  const [allListings, setAllListings] = useState<MarketplaceListing[]>([]);
-  const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>([]);
-  const [sponsoredListings, setSponsoredListings] = useState<SponsoredListing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [hasMoreAll, setHasMoreAll] = useState(false);
-  const [hasMoreFiltered, setHasMoreFiltered] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const loadingMoreRef = useRef(false);
-
   const metroId = user?.metro_area_id ?? '';
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
+
+  const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
+  const [activeTab, setActiveTab] = useState<MarketplaceTabKey>('for-you');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [sponsored, setSponsored] = useState<SponsoredListing[]>([]);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+
   const mountedRef = useRef(true);
-
-  useFocusEffect(
-    useCallback(() => {
-      setFilters(DEFAULT_FILTERS);
-    }, [])
-  );
-
-  const isFiltered = useMemo(
-    () =>
-      Boolean(filters.category) ||
-      filters.sort !== 'newest' ||
-      Boolean(filters.query),
-    [filters]
-  );
+  const loadingMoreRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -87,308 +77,296 @@ export default function MarketplaceHomeScreen() {
     };
   }, []);
 
-  const fetchHomeData = useCallback(async () => {
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Load categories, sponsored, and saved-ids once per user/metro
+  useEffect(() => {
+    if (!metroId) return;
+    (async () => {
+      const [cats, spons, ids] = await Promise.all([
+        getCategories(supabase),
+        getStickyBusinessListings(supabase, metroId, { limit: 5 }),
+        user ? getUserSavedListingIds(supabase, user.id) : Promise.resolve({ data: [] as string[] }),
+      ]);
+      if (!mountedRef.current) return;
+      if (cats.data) setCategories(cats.data);
+      if (spons.data) setSponsored(spons.data);
+      if (ids.data) setSavedIds(new Set(ids.data));
+    })();
+  }, [metroId, user]);
+
+  // Load grid whenever tab / category / searchQuery / metro changes
+  const fetchGrid = useCallback(async () => {
     if (!metroId) {
       setLoading(false);
       return;
     }
     try {
-      const [catResult, featuredResult, recentResult, trendingResult, allResult, sponsoredResult] =
-        await Promise.all([
-          getCategories(supabase),
-          getFeaturedListings(supabase, metroId, { limit: STRIP_LIMIT }),
-          getListingsByMetro(supabase, metroId, { limit: STRIP_LIMIT, sortBy: 'newest' }),
-          getTrendingListings(supabase, metroId, { limit: STRIP_LIMIT }),
-          getListingsByMetro(supabase, metroId, { limit: GRID_LIMIT }),
-          getStickyBusinessListings(supabase, metroId, { limit: 5 }),
-        ]);
-
-      if (!mountedRef.current) return;
-
-      if (catResult.data) setCategories(catResult.data);
-      if (featuredResult.data) setFeatured(featuredResult.data);
-      if (recentResult.data) setRecent(recentResult.data);
-      if (trendingResult.data) setTrending(trendingResult.data);
-      if (allResult.data) {
-        setAllListings(allResult.data);
-        setHasMoreAll(Boolean(allResult.hasMore));
+      let result;
+      if (activeTab === 'featured' && !selectedCategory && !searchQuery) {
+        result = await getFeaturedListings(supabase, metroId, { limit: GRID_LIMIT });
       } else {
-        setHasMoreAll(false);
+        result = await getListingsByMetro(supabase, metroId, {
+          categorySlug: selectedCategory || undefined,
+          searchQuery: searchQuery || undefined,
+          sortBy: 'newest',
+          limit: GRID_LIMIT,
+          offset: 0,
+        });
       }
-      if (sponsoredResult.data) setSponsoredListings(sponsoredResult.data);
+      if (!mountedRef.current) return;
+      if (result.data) {
+        setListings(result.data);
+        setHasMore(Boolean((result as { hasMore?: boolean }).hasMore));
+      } else {
+        setListings([]);
+        setHasMore(false);
+      }
     } catch {
-      // Silently handle — empty state will surface in the UI.
+      if (mountedRef.current) {
+        setListings([]);
+        setHasMore(false);
+      }
     } finally {
       if (mountedRef.current) {
         setLoading(false);
         setRefreshing(false);
       }
     }
-  }, [metroId]);
+  }, [metroId, activeTab, selectedCategory, searchQuery]);
 
-  const fetchFiltered = useCallback(async () => {
-    if (!metroId) return;
-    try {
-      const result = await getListingsByMetro(supabase, metroId, {
-        categorySlug: filters.category || undefined,
-        searchQuery: filters.query || undefined,
-        sortBy: filters.sort,
-        limit: GRID_LIMIT,
-        offset: 0,
-      });
-      if (!mountedRef.current) return;
-      if (result.data) {
-        setFilteredListings(result.data);
-        setHasMoreFiltered(Boolean(result.hasMore));
-      } else {
-        setHasMoreFiltered(false);
-      }
-    } catch {
-      // Silently handle.
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }
-  }, [metroId, filters]);
-
-  const loadMoreListings = useCallback(async () => {
-    if (loadingMoreRef.current) return;
-    if (!metroId || loading || refreshing) return;
-
-    const currentList = isFiltered ? filteredListings : allListings;
-    const hasMore = isFiltered ? hasMoreFiltered : hasMoreAll;
-    if (!hasMore) return;
-
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    try {
-      const result = await getListingsByMetro(supabase, metroId, {
-        categorySlug: isFiltered ? (filters.category || undefined) : undefined,
-        searchQuery: isFiltered ? (filters.query || undefined) : undefined,
-        sortBy: isFiltered ? filters.sort : 'newest',
-        limit: GRID_LIMIT,
-        offset: currentList.length,
-      });
-      if (!mountedRef.current) return;
-      if (result.data) {
-        const appender = (prev: MarketplaceListing[]) => {
-          const seen = new Set(prev.map((l) => l.id));
-          const next = [...prev];
-          for (const l of result.data!) {
-            if (!seen.has(l.id)) next.push(l);
-          }
-          return next;
-        };
-        if (isFiltered) {
-          setFilteredListings(appender);
-          setHasMoreFiltered(Boolean(result.hasMore));
-        } else {
-          setAllListings(appender);
-          setHasMoreAll(Boolean(result.hasMore));
-        }
-      } else {
-        if (isFiltered) setHasMoreFiltered(false);
-        else setHasMoreAll(false);
-      }
-    } finally {
-      loadingMoreRef.current = false;
-      if (mountedRef.current) setLoadingMore(false);
-    }
-  }, [
-    metroId,
-    loading,
-    refreshing,
-    isFiltered,
-    filteredListings,
-    allListings,
-    hasMoreFiltered,
-    hasMoreAll,
-    filters,
-  ]);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchGrid();
+    }, [fetchGrid])
+  );
 
   useEffect(() => {
     setLoading(true);
-    if (isFiltered) {
-      fetchFiltered();
-    } else {
-      fetchHomeData();
-    }
-  }, [isFiltered, fetchFiltered, fetchHomeData]);
+    fetchGrid();
+  }, [fetchGrid]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    if (isFiltered) {
-      fetchFiltered();
-    } else {
-      fetchHomeData();
-    }
-  }, [isFiltered, fetchFiltered, fetchHomeData]);
+    fetchGrid();
+  }, [fetchGrid]);
 
-  const handleItemPress = useCallback(
+  const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current || !hasMore || !metroId) return;
+    loadingMoreRef.current = true;
+    try {
+      const result = await getListingsByMetro(supabase, metroId, {
+        categorySlug: selectedCategory || undefined,
+        searchQuery: searchQuery || undefined,
+        sortBy: 'newest',
+        limit: GRID_LIMIT,
+        offset: listings.length,
+      });
+      if (!mountedRef.current) return;
+      if (result.data) {
+        setListings((prev) => {
+          const seen = new Set(prev.map((l) => l.id));
+          return [...prev, ...result.data!.filter((l) => !seen.has(l.id))];
+        });
+        setHasMore(Boolean(result.hasMore));
+      }
+    } finally {
+      loadingMoreRef.current = false;
+    }
+  }, [listings.length, metroId, selectedCategory, searchQuery, hasMore]);
+
+  const handleCardPress = useCallback(
     (listing: MarketplaceListing) => {
       navigation.navigate('ListingDetail', { listingId: listing.id });
     },
     [navigation]
   );
 
-  const handleShowAll = useCallback(
-    (sortBy: FilterBarValue['sort']) => {
-      setFilters({ category: '', sort: sortBy, query: '' });
+  const handleToggleSave = useCallback(
+    async (listingId: string) => {
+      const wasSaved = savedIds.has(listingId);
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.delete(listingId);
+        else next.add(listingId);
+        return next;
+      });
+      if (wasSaved) {
+        await unsaveListing(supabase, listingId);
+      } else {
+        await saveListing(supabase, listingId);
+      }
     },
-    []
+    [savedIds]
   );
 
-  const onShowAllFeatured = useCallback(() => handleShowAll('featured'), [handleShowAll]);
-  const onShowAllNewest = useCallback(() => handleShowAll('newest'), [handleShowAll]);
-  // Trending uses newest sort; the server already orders by trending_score for the strip
-  const onShowAllTrending = useCallback(() => handleShowAll('newest'), [handleShowAll]);
+  const handleMenuSelect = useCallback(
+    (key: MarketplaceMenuKey) => {
+      switch (key) {
+        case 'my-listings':
+          navigation.navigate('MyListings');
+          break;
+        case 'saved':
+          navigation.navigate('SavedListings');
+          break;
+        case 'promote':
+          navigation.navigate('MyListings');
+          break;
+        case 'browse-categories':
+          navigation.navigate('BrowseCategories');
+          break;
+        case 'change-location': {
+          // Cross-stack navigation: location is managed in the Home stack.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const parent = navigation.getParent() as any;
+          parent?.navigate('Home', { screen: 'ManageLocations' });
+          break;
+        }
+        case 'rules':
+          navigation.navigate('MarketplaceRules');
+          break;
+      }
+    },
+    [navigation]
+  );
 
-  const renderListingItem = useCallback(
+  const gridData = useMemo(() => {
+    if (activeTab === 'featured' || selectedCategory || searchQuery) return listings;
+    const sponsoredListings = sponsored.map((s) => s.listing);
+    return injectSponsoredIntoGrid(listings, sponsoredListings, SPONSORED_INTERVAL);
+  }, [activeTab, selectedCategory, searchQuery, listings, sponsored]);
+
+  const sponsoredIds = useMemo(
+    () => new Set(sponsored.map((s) => s.listing.id)),
+    [sponsored]
+  );
+
+  const renderGridItem = useCallback(
     ({ item }: { item: MarketplaceListing }) => (
-      <ListingCard listing={item} onPress={() => handleItemPress(item)} />
+      <ListingGridCard
+        listing={item}
+        width={CARD_WIDTH}
+        onPress={() => handleCardPress(item)}
+        isSaved={savedIds.has(item.id)}
+        onToggleSave={handleToggleSave}
+        sponsored={sponsoredIds.has(item.id)}
+      />
     ),
-    [handleItemPress]
+    [handleCardPress, handleToggleSave, savedIds, sponsoredIds]
   );
 
-  if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Marketplace</Text>
-        </View>
-        <FilterBar categories={categories} value={filters} onChange={setFilters} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary.main} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const renderHeader = useCallback(
+    () => (
+      <View>
+        <MarketplaceSearchBar value={searchInput} onChangeText={setSearchInput} />
+        <CategoryTileRow
+          categories={categories}
+          selectedSlug={selectedCategory}
+          onSelect={setSelectedCategory}
+        />
+        <MarketplaceTabs active={activeTab} onChange={setActiveTab} />
+      </View>
+    ),
+    [categories, selectedCategory, activeTab, searchInput]
+  );
 
-  const gridData = isFiltered ? filteredListings : allListings;
+  const emptyVariant = searchQuery
+    ? 'empty-search'
+    : selectedCategory
+    ? 'empty-category'
+    : 'empty-metro';
+
+  const renderEmpty = () => {
+    if (loading) {
+      return (
+        <View style={styles.skeletonGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ListingGridCardSkeleton key={i} width={CARD_WIDTH} />
+          ))}
+        </View>
+      );
+    }
+    return (
+      <MarketplaceEmptyState
+        variant={emptyVariant}
+        hidePrimary={!canCreate && emptyVariant === 'empty-metro'}
+        onPrimary={() => {
+          if (emptyVariant === 'empty-search') {
+            setSearchInput('');
+            setSelectedCategory('');
+            return;
+          }
+          if (emptyVariant === 'empty-category') {
+            setSelectedCategory('');
+            return;
+          }
+          if (canCreate) navigation.navigate('CreateListing');
+        }}
+        onSecondary={
+          emptyVariant === 'empty-metro' ? () => setMenuVisible(true) : undefined
+        }
+      />
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Marketplace</Text>
         <View style={styles.headerActions}>
-          {canCreate && (
-            <TouchableOpacity
-              style={styles.myListingsButton}
-              onPress={() => navigation.navigate('MyListings')}
-              accessibilityLabel="My Listings"
-            >
-              <Ionicons name="list-outline" size={22} color={colors.primary.main} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => navigation.navigate('SavedListings')}
+            accessibilityLabel="Open saved listings"
+          >
+            <Ionicons name="heart-outline" size={22} color={colors.text.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => setMenuVisible(true)}
+            accessibilityLabel="Open marketplace menu"
+          >
+            <Ionicons name="menu-outline" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
         </View>
       </View>
 
-      <FilterBar categories={categories} value={filters} onChange={setFilters} />
-
       <FlatList
-        data={gridData}
+        data={loading ? [] : gridData}
         keyExtractor={(item) => item.id}
-        renderItem={renderListingItem}
+        numColumns={2}
+        renderItem={renderGridItem}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary.main]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[warmAccent.warm]} />
         }
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          isFiltered ? (
-            <TouchableOpacity
-              style={styles.backToHome}
-              onPress={() => setFilters(DEFAULT_FILTERS)}
-              accessibilityLabel="Back to Marketplace"
-            >
-              <Ionicons name="chevron-back" size={16} color={colors.primary.main} />
-              <Text style={styles.backToHomeText}>Back to Marketplace</Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              {sponsoredListings.length > 0 && (
-                <ListingStrip
-                  title="Sponsored"
-                  titleIcon="📢"
-                  listings={sponsoredListings.map((s) => s.listing)}
-                  onItemPress={handleItemPress}
-                  onShowAll={() => {}}
-                  maxItems={5}
-                />
-              )}
-              <ListingStrip
-                title="Featured"
-                titleIcon="⭐"
-                listings={featured}
-                onItemPress={handleItemPress}
-                onShowAll={onShowAllFeatured}
-                maxItems={STRIP_LIMIT}
-              />
-              <ListingStrip
-                title="Recently Added"
-                titleIcon="🆕"
-                listings={recent}
-                onItemPress={handleItemPress}
-                onShowAll={onShowAllNewest}
-                maxItems={STRIP_LIMIT}
-              />
-              <ListingStrip
-                title="Trending"
-                titleIcon="🔥"
-                listings={trending}
-                onItemPress={handleItemPress}
-                onShowAll={onShowAllTrending}
-                maxItems={STRIP_LIMIT}
-              />
-              {allListings.length > 0 && (
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>All Listings</Text>
-                </View>
-              )}
-            </>
-          )
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="storefront-outline" size={48} color={colors.text.tertiary} />
-            <Text style={styles.emptyText}>
-              {isFiltered ? 'No listings match your filters' : 'No listings in your area yet'}
-            </Text>
-            {!isFiltered && canCreate && (
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => navigation.navigate('CreateListing')}
-              >
-                <Text style={styles.createButtonText}>Create the first listing</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        }
-        onEndReached={loadMoreListings}
+        onEndReached={loadMore}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          loadingMore ? (
-            <View style={styles.footerLoader}>
-              <ActivityIndicator size="small" color={colors.primary.main} />
-            </View>
-          ) : null
-        }
       />
 
-      {/* FAB */}
       {canCreate && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => navigation.navigate('CreateListing')}
-          activeOpacity={0.8}
           accessibilityLabel="Create listing"
         >
-          <Ionicons name="add" size={28} color={colors.white} />
+          <Ionicons name="add" size={28} color="#FFFFFF" />
         </TouchableOpacity>
       )}
+
+      <MarketplaceMenuSheet
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        onSelect={handleMenuSelect}
+      />
     </SafeAreaView>
   );
 }
@@ -396,33 +374,17 @@ export default function MarketplaceHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: warmSurface.canvas,
   },
   header: {
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
+    backgroundColor: warmSurface.canvas,
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: warmBorder.hairline,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  backToHome: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: spacing.m,
-    paddingBottom: spacing.s,
-  },
-  backToHomeText: {
-    ...typography.body,
-    color: colors.primary.main,
-    fontWeight: '500',
   },
   headerTitle: {
     ...typography.h2,
@@ -430,58 +392,37 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s,
+    gap: 4,
   },
-  myListingsButton: {
-    padding: spacing.xs,
-  },
-  listContent: {
-    paddingHorizontal: spacing.m,
-    paddingBottom: 80,
-  },
-  footerLoader: {
-    paddingVertical: spacing.m,
+  iconBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  sectionHeader: {
-    paddingTop: spacing.m,
-    paddingBottom: spacing.s,
-    marginHorizontal: -spacing.m,
-    paddingHorizontal: spacing.m,
+  content: {
+    paddingHorizontal: GUTTER,
+    paddingBottom: 96,
+    gap: GUTTER,
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
+  row: {
+    gap: GUTTER,
+    marginBottom: GUTTER,
   },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-    gap: spacing.m,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.text.secondary,
-  },
-  createButton: {
-    backgroundColor: colors.primary.main,
-    paddingHorizontal: spacing.l,
-    paddingVertical: spacing.s,
-    borderRadius: borderRadius.input,
-  },
-  createButtonText: {
-    ...typography.body,
-    color: colors.white,
-    fontWeight: '600',
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: GUTTER,
+    paddingTop: GUTTER,
   },
   fab: {
     position: 'absolute',
-    right: spacing.m,
-    bottom: spacing.m,
+    right: spacing.s,
+    bottom: spacing.s,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary.main,
+    backgroundColor: warmAccent.warm,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 6,
