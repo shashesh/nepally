@@ -69,6 +69,10 @@ jest.mock('@nepally/shared', () => ({
     'saturday',
     'sunday',
   ],
+  getListingHighlights: jest.fn(() => [
+    { key: 'phone', icon: '📞', label: 'Phone', value: '555-1234' },
+  ]),
+  isBusinessOpenNow: jest.fn(() => ({ isOpen: true, nextChangeLabel: 'Closes 5p' })),
 }));
 
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
@@ -159,7 +163,7 @@ describe('ListingDetailScreen', () => {
   it('renders listing price', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
-      expect(screen.getByText('$15-25')).toBeTruthy();
+      expect(screen.getAllByText('$15-25').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -229,7 +233,7 @@ describe('ListingDetailScreen', () => {
   it('shows Contact button when user is not the owner', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Contact')).toBeTruthy();
+      expect(screen.getByText('Contact Seller')).toBeTruthy();
     });
   });
 
@@ -246,7 +250,7 @@ describe('ListingDetailScreen', () => {
   it('does not show Edit button for non-owner', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Contact')).toBeTruthy();
+      expect(screen.getByText('Contact Seller')).toBeTruthy();
     });
     expect(screen.queryByText('Edit Listing')).toBeNull();
   });
@@ -259,7 +263,7 @@ describe('ListingDetailScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
     });
-    expect(screen.getByText('Contact')).toBeTruthy();
+    expect(screen.getByText('Contact Seller')).toBeTruthy();
   });
 
   // -- Report ----------------------------------------------------------------
@@ -300,5 +304,39 @@ describe('ListingDetailScreen', () => {
       expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
     });
     expect(screen.queryByText('Business Details')).toBeNull();
+  });
+
+  // -- Split View enhancement (2026-04-13) -----------------------------------
+
+  it('renders breadcrumb with category name', async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Marketplace')).toBeTruthy();
+    });
+  });
+
+  it('renders highlight chip value', async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getAllByText('555-1234').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('renders sticky bottom bar with Contact Seller for non-owner', async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Contact Seller')).toBeTruthy();
+    });
+  });
+
+  it('hides sticky bottom bar for owner', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+    expect(screen.queryByText('Contact Seller')).toBeNull();
   });
 });
