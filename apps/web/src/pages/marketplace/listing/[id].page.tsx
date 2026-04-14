@@ -168,6 +168,8 @@ export default function ListingDetailPage() {
                   alt={`${listing.title} photo ${photoIndex + 1}`}
                   className={styles.mainPhoto}
                   fill
+                  sizes="(max-width: 960px) 100vw, 720px"
+                  priority
                 />
                 {listing.photos.length > 1 && (
                   <>
