@@ -162,8 +162,8 @@ describe('getSponsoredFeedListings', () => {
 
     await getSponsoredFeedListings(supabase, 'metro-1', { limit: 5 });
 
-    expect(chain.filter).toHaveBeenCalledWith('marketplace_listings.metro_area_id', 'eq', 'metro-1');
-    expect(chain.filter).toHaveBeenCalledWith('marketplace_listings.status', 'eq', 'active');
+    expect(chain.filter).toHaveBeenCalledWith('listing.metro_area_id', 'eq', 'metro-1');
+    expect(chain.filter).toHaveBeenCalledWith('listing.status', 'eq', 'active');
   });
 
   it('returns listings from DB response', async () => {
@@ -229,8 +229,8 @@ describe('getStickyBusinessListings', () => {
 
     await getStickyBusinessListings(supabase, 'metro-99');
 
-    expect(chain.filter).toHaveBeenCalledWith('marketplace_listings.metro_area_id', 'eq', 'metro-99');
-    expect(chain.filter).toHaveBeenCalledWith('marketplace_listings.status', 'eq', 'active');
+    expect(chain.filter).toHaveBeenCalledWith('listing.metro_area_id', 'eq', 'metro-99');
+    expect(chain.filter).toHaveBeenCalledWith('listing.status', 'eq', 'active');
   });
 
   it('returns listings from DB response', async () => {

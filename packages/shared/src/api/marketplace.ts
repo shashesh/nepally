@@ -186,12 +186,18 @@ export async function getFeaturedListings(
 
     if (error) throw error;
 
-    let rows = (data || []) as MarketplaceListing[];
+    // `hasMore` is derived from the raw page size BEFORE the client-side
+    // category filter below, so pagination still advances when a page
+    // filters down to zero matches.
+    const rawRows = (data || []) as MarketplaceListing[];
+    const hasMore = rawRows.length === limit;
+
+    let rows = rawRows;
     if (opts.categorySlug) {
       rows = rows.filter((l) => l.category != null);
     }
 
-    return { data: rows, hasMore: rows.length === limit };
+    return { data: rows, hasMore };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch featured listings') };
   }

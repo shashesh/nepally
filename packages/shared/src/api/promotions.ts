@@ -113,8 +113,8 @@ export async function getSponsoredFeedListings(
       .eq('status', 'active')
       .gte('end_date', new Date().toISOString())
       .order('created_at', { ascending: false })
-      .filter('marketplace_listings.metro_area_id', 'eq', metroId)
-      .filter('marketplace_listings.status', 'eq', 'active')
+      .filter('listing.metro_area_id', 'eq', metroId)
+      .filter('listing.status', 'eq', 'active')
       .limit(limit);
 
     if (error) throw error;
@@ -142,8 +142,8 @@ export async function getStickyBusinessListings(
       .eq('status', 'active')
       .gte('end_date', new Date().toISOString())
       .order('created_at', { ascending: false })
-      .filter('marketplace_listings.metro_area_id', 'eq', metroId)
-      .filter('marketplace_listings.status', 'eq', 'active')
+      .filter('listing.metro_area_id', 'eq', metroId)
+      .filter('listing.status', 'eq', 'active')
       .limit(limit);
 
     if (error) throw error;

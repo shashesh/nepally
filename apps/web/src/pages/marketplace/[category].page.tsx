@@ -78,7 +78,10 @@ export default function MarketplaceCategoryPage() {
         : Promise.resolve({ data: [] as MarketplaceListing[] }),
     ]);
     if (result.data) setListings(result.data);
-    if (!isSearch && featuredResult.data) setFeaturedListings(featuredResult.data);
+    // Always reset featured state. In search mode the parallel fetch above
+    // short-circuits to an empty array, which clears any stale strip carried
+    // over from a previous category instance of this page.
+    setFeaturedListings(featuredResult.data ?? []);
     setLoading(false);
   }, [metroId, slug, q, sort, isSearch, router.isReady]);
 

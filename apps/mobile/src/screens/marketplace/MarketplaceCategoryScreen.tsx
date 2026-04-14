@@ -119,8 +119,11 @@ export default function MarketplaceCategoryScreen() {
           setHasMore(result.data.length === PAGE_SIZE);
         }
 
-        if (offset === 0 && !isSearchMode && featuredResult.data) {
-          setFeaturedListings(featuredResult.data);
+        // Always reset featured state on a fresh fetch. In search mode the
+        // parallel fetch above short-circuits to an empty array, which clears
+        // any stale strip carried over from a previous category load.
+        if (offset === 0) {
+          setFeaturedListings(featuredResult.data ?? []);
         }
       } catch {
         // Silently handle — empty listings will surface in the UI.
@@ -208,13 +211,12 @@ export default function MarketplaceCategoryScreen() {
             />
           )}
           ListHeaderComponent={
-            featuredListings.length > 0 ? (
+            !isSearchMode && featuredListings.length > 0 ? (
               <ListingStrip
                 title="Featured"
                 titleIcon="⭐"
                 listings={featuredListings}
                 onItemPress={handleItemPress}
-                onShowAll={() => {}}
                 maxItems={10}
               />
             ) : null
