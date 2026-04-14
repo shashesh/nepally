@@ -4,22 +4,32 @@ import MarketplaceHomeScreen from './MarketplaceHomeScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
+
+// CRITICAL: useAuth must return a STABLE reference across renders. Returning a
+// fresh object literal every call makes `useEffect([user])` in the screen re-fire
+// every render, causing an infinite loop that hangs on Ubuntu CI (passes locally
+// on Windows only because act() converges before the 30s timeout there).
+// Pattern lifted from HomeScreen.test.tsx which is proven to pass CI.
+const mockUseAuth = jest.fn();
 jest.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { id: 'u1', metro_area_id: 'm1', trust_level: 1 } }),
+  useAuth: () => mockUseAuth(),
 }));
 
 const mockNavigate = jest.fn();
-jest.mock('@react-navigation/native', () => {
-  const React = jest.requireActual('react');
-  return {
-    useNavigation: () => ({ navigate: mockNavigate, getParent: () => ({ navigate: mockNavigate }) }),
-    useFocusEffect: (cb: () => void) => {
-      // Simulate focus firing once on mount — must be wrapped in useEffect to avoid
-      // calling setState during render.
-      React.useEffect(cb, []);
-    },
-  };
-});
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ navigate: mockNavigate, getParent: () => ({ navigate: mockNavigate }) }),
+  // useFocusEffect mock using cbRef pattern — captures latest callback without
+  // re-firing on every render. Copied from HomeScreen.test.tsx (proven CI-stable).
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    const ReactActual = jest.requireActual('react') as typeof import('react');
+    const cbRef = ReactActual.useRef(cb);
+    cbRef.current = cb;
+    ReactActual.useEffect(() => {
+      const cleanup = cbRef.current();
+      return typeof cleanup === 'function' ? cleanup : undefined;
+    }, []);
+  },
+}));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
@@ -156,9 +166,12 @@ jest.mock('@nepally/shared', () => {
   };
 });
 
+const STABLE_USER = { id: 'u1', metro_area_id: 'm1', trust_level: 1 };
+
 describe('MarketplaceHomeScreen (redesign)', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    mockUseAuth.mockReturnValue({ user: STABLE_USER });
   });
 
   it('renders the header title and new icon actions', async () => {

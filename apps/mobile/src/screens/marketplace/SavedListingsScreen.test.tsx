@@ -4,8 +4,14 @@ import SavedListingsScreen from './SavedListingsScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
+
+// CRITICAL: useAuth must return a STABLE reference across renders. A fresh object
+// literal each call makes the screen's `useEffect([user])` re-fire every render,
+// triggering an infinite loop that hangs on Ubuntu CI (passes on Windows only
+// because act() converges before the 30s timeout there).
+const mockUseAuth = jest.fn();
 jest.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { id: 'u1', metro_area_id: 'm1', trust_level: 1 } }),
+  useAuth: () => mockUseAuth(),
 }));
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: jest.fn() }),
@@ -66,7 +72,13 @@ jest.mock('@nepally/shared', () => {
   };
 });
 
+const STABLE_USER = { id: 'u1', metro_area_id: 'm1', trust_level: 1 };
+
 describe('SavedListingsScreen', () => {
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ user: STABLE_USER });
+  });
+
   it('renders saved listings after loading', async () => {
     const screen = render(<SavedListingsScreen />);
     await waitFor(() => {
