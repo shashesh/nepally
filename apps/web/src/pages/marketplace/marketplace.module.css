@@ -885,3 +885,120 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Listing detail — Split View enhancement (2026-04-13) ===== */
+
+.detailContainerWide {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary, #757575);
+  margin-bottom: 16px;
+}
+
+.breadcrumb a {
+  color: var(--color-primary, #1565C0);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbSep {
+  color: var(--color-text-tertiary, #9E9E9E);
+}
+
+.breadcrumbCurrent {
+  color: var(--color-text-primary, #212121);
+  font-weight: 500;
+}
+
+.twoColumnGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 32px;
+  align-items: start;
+}
+
+.mainColumn {
+  min-width: 0;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: white;
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 12px;
+  padding: 20px;
+  position: sticky;
+  top: 80px;
+  align-self: start;
+}
+
+.sidebarPrice {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-primary, #1565C0);
+  margin-bottom: 4px;
+}
+
+.highlightsStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.highlightChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-background-subtle, #F5F5F5);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--color-text-primary, #212121);
+}
+
+.highlightChipOpen {
+  background: #E8F5E9;
+  border-color: #A5D6A7;
+  color: #1B5E20;
+}
+
+.inlinePriceCard {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .twoColumnGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .inlinePriceCard {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: white;
+    border: 1px solid var(--color-border, #e0e0e0);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+}
