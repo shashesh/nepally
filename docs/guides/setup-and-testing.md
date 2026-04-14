@@ -30,7 +30,7 @@ nvm use 18
 
 ```bash
 # Navigate to project root
-cd C:\Users\shash\Documents\personal-github-repos\unhn
+cd C:\Users\shash\Documents\personal-github-repos\nepally
 
 # Install all dependencies
 npm install
@@ -482,7 +482,7 @@ If you want to test with a real user account:
 INSERT INTO users (id, email, full_name, trust_level, metro_area_id, zip_code)
 VALUES (
   'test-user-id',
-  'test@nusa.com',
+  'test@nepally.us',
   'Test User',
   0,
   '19100',
@@ -580,7 +580,7 @@ rm -rf node_modules && npm install  # Fresh install
 nvm install 18 && nvm use 18
 
 # 2. Install dependencies
-cd C:\Users\shash\Documents\personal-github-repos\unhn
+cd C:\Users\shash\Documents\personal-github-repos\nepally
 npm install
 
 # 3. Set up environment variables

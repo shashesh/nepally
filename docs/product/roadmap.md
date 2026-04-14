@@ -1,7 +1,7 @@
 # Nepally App: Product Roadmap
 
 **Version:** 1.5
-**Last Updated:** 2026-03-10 (Events: full implementation on mobile + web; PROGRESS.md synced to current state)
+**Last Updated:** 2026-04-13 (Docs reorganized; phone SMS auth references removed)
 
 ---
 
@@ -43,7 +43,7 @@ To prevent spam, accounts have "Trust Levels":
 | **2** | Contributor | High engagement/vouched for by others; higher visibility |
 
 **Trust Level Progression Rules:**
-- **Level 0 → Level 1:** Complete email verification OR sign in with Google (phone SMS verification planned for long-term)
+- **Level 0 → Level 1:** Complete email verification OR sign in with Google
 - **Level 1 → Level 2:** Achieve 10+ approved posts with average 5+ upvotes each OR receive moderator endorsement
 - **Demotion Policy:** Users flagged 5+ times with confirmed violations may be demoted or banned
 
@@ -450,7 +450,7 @@ Before first emergency post submission, users must acknowledge:
 | **Mobile** | React Native + Expo | Native performance, fast development, shared code |
 | **Web** | Next.js (TypeScript) | SSR for SEO, React 19 support |
 | **Backend** | Supabase (PostgreSQL) | Real-time subscriptions, RLS, generous free tier |
-| **Auth** | Supabase Auth | Email, Google OAuth (phone SMS planned long-term) |
+| **Auth** | Supabase Auth | Email + Google OAuth (phone SMS removed 2026-03-25) |
 | **Storage** | Supabase Storage | Built-in CDN, RLS for files |
 | **Location** | Static ZIP-to-Metro dataset | HUD USPS Crosswalk, zero API costs |
 | **Admin Dashboard** | Web-based interface | For moderators to approve alerts and manage content |
@@ -504,7 +504,7 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 2. **Reporting system** — DB schema exists; API, UI, auto-hide threshold, and moderator queue not built
 3. **Admin dashboard** — Web-based moderator tools (flagged queue, trust level management, ban/unban, platform stats)
 4. **Full notifications system** — UI screens exist; DB migration, shared API, and push delivery edge function not started (see `docs/implementation-plans/notifications-feature.md`)
-5. **Trust Level progression** — Level 0→1 via email verification or Google sign-in (already implemented); phone SMS verification deferred to long-term
+5. **Trust Level progression** — Level 0→1 via email verification or Google sign-in (already implemented)
 6. **Chat RLS re-enablement** — Critical security fix before any public release (see Security TODO in PROGRESS.md)
 
 ## Next Steps

@@ -41,7 +41,7 @@ For detailed setup instructions, see [Setup & Testing Guide](./SETUP-AND-TESTING
 | **Mobile App** | React Native (Expo 54) |
 | **Web App** | Next.js 15 |
 | **Backend** | Supabase (PostgreSQL, Realtime, Auth, Storage) |
-| **Auth** | Supabase Auth (phone SMS, email, Google OAuth) |
+| **Auth** | Supabase Auth (email + Google OAuth; phone SMS removed 2026-03-25) |
 | **Language** | TypeScript |
 | **React** | 19.1.0 (unified) |
 | **Node** | 20 (CI) |

@@ -9,7 +9,7 @@ Nepally uses a **monorepo** structure powered by **npm workspaces**. This means 
 ## Directory Structure
 
 ```
-nusa/
+nepally/
 ├── .github/              # GitHub Actions workflows
 │   └── workflows/
 │       ├── ci.yml        # Continuous integration
