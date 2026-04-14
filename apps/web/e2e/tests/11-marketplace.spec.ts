@@ -50,7 +50,7 @@ test.describe('Marketplace full feature flow', () => {
 
     await expect(page.getByRole('heading', { name: MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE.title })).toBeVisible({ timeout: 10_000 });
 
-    const saveButton = page.getByRole('button', { name: /^save$/i });
+    const saveButton = page.getByRole('button', { name: /save listing/i });
     await expect(saveButton).toBeVisible();
     await saveButton.click();
 
