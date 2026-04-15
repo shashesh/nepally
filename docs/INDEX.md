@@ -42,6 +42,7 @@
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
 - [plans/active/2026-04-13-docs-reorganization.md](plans/active/2026-04-13-docs-reorganization.md) — this reorganization plan [status: in-progress]
+- [plans/active/2026-04-14-mobile-marketplace-redesign.md](plans/active/2026-04-14-mobile-marketplace-redesign.md) — 14-task implementation plan for the mobile marketplace redesign
 - [plans/active/marketplace-ux-redesign.md](plans/active/marketplace-ux-redesign.md) — marketplace filter bar + featured/recent/trending strips [status: planned]
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening [status: planned]
 - [plans/active/notifications-feature.md](plans/active/notifications-feature.md) — full notifications system (DB + shared API + push delivery) [status: planned]
@@ -52,6 +53,7 @@
 
 - [specs/2026-04-13-docs-reorganization-design.md](specs/2026-04-13-docs-reorganization-design.md) — design spec for this docs reorganization
 - [specs/2026-04-13-marketplace-listing-details-enhancement-design.md](specs/2026-04-13-marketplace-listing-details-enhancement-design.md) — marketplace listing detail page Split View redesign (web + mobile)
+- [specs/2026-04-14-mobile-marketplace-redesign-design.md](specs/2026-04-14-mobile-marketplace-redesign-design.md) — spec for the 4-tab mobile marketplace home redesign (Sponsored · Featured · Trending · All Listings)
 - [plans/active/2026-04-13-marketplace-listing-details-enhancement.md](plans/active/2026-04-13-marketplace-listing-details-enhancement.md) — implementation plan for Split View listing detail redesign
 
 ## User journeys

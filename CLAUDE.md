@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Workflow Rules (Non-Negotiable)
 
-- **Always ask for explicit user confirmation before running `git commit` or `git push`.**
-- Show a summary of what will be committed/pushed and wait for approval before proceeding.
-- Never auto-commit or auto-push, even at the end of a task.
+- **NEVER commit to `master`.** Always verify the current branch before `git commit` / `git push`. If HEAD is on `master`, stop and ask the user which branch to switch to (or create) before committing.
+- **`git commit` does NOT require permission.** Commit freely on feature branches as work progresses. Use clear, conventional commit messages.
+- **`git push` ALWAYS requires explicit user confirmation.** Show a summary of what will be pushed (branch, commits, diff stat) and wait for approval before running `git push`.
+- Never auto-push at the end of a task.
+- Never force-push to `master` under any circumstance.
 
 ## Project Overview
 
