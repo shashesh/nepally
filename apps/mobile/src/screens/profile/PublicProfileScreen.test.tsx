@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import PublicProfileScreen from './PublicProfileScreen';
 
 const mockUseAuth = jest.fn();
@@ -14,9 +14,17 @@ const mockGetPostsByAuthorId = jest.fn();
 const mockGetEventsByOrganizer = jest.fn();
 const mockGetActiveListingsBySeller = jest.fn();
 const mockGetOrCreateConversation = jest.fn();
+const mockIsFollowing = jest.fn();
+const mockFollowUser = jest.fn();
+const mockUnfollowUser = jest.fn();
 
 const mockSupabaseSingle = jest.fn();
-const mockSupabaseEq = jest.fn(() => ({ single: mockSupabaseSingle }));
+const mockSupabaseMaybeSingle = jest.fn();
+const mockSupabaseEq2 = jest.fn(() => ({ maybeSingle: mockSupabaseMaybeSingle }));
+const mockSupabaseEq = jest.fn(() => ({
+  single: mockSupabaseSingle,
+  eq: mockSupabaseEq2,
+}));
 const mockSupabaseSelect = jest.fn(() => ({ eq: mockSupabaseEq }));
 const mockSupabaseFrom = jest.fn(() => ({ select: mockSupabaseSelect }));
 
@@ -49,6 +57,9 @@ jest.mock('@nepally/shared', () => ({
     mockGetActiveListingsBySeller(...args),
   getOrCreateConversation: (...args: Parameters<typeof mockGetOrCreateConversation>) =>
     mockGetOrCreateConversation(...args),
+  isFollowing: (...args: Parameters<typeof mockIsFollowing>) => mockIsFollowing(...args),
+  followUser: (...args: Parameters<typeof mockFollowUser>) => mockFollowUser(...args),
+  unfollowUser: (...args: Parameters<typeof mockUnfollowUser>) => mockUnfollowUser(...args),
   formatRelativeTime: jest.fn(() => '2h ago'),
   formatPublicName: (name: string) => {
     if (!name || !name.trim()) return '';
@@ -60,6 +71,16 @@ jest.mock('@nepally/shared', () => ({
   getTrustLabel: (level: number) => {
     const labels: Record<number, string> = { 0: 'New', 1: 'Verified', 2: 'Contributor' };
     return labels[level] ?? 'Unknown';
+  },
+  LANGUAGE_LABELS: {
+    nepali: 'Nepali',
+    english: 'English',
+    newari: 'Newari',
+    maithili: 'Maithili',
+    bhojpuri: 'Bhojpuri',
+    tharu: 'Tharu',
+    tamang: 'Tamang',
+    other: 'Other',
   },
 }));
 
@@ -143,6 +164,9 @@ describe('PublicProfileScreen', () => {
     mockGetPostsByAuthorId.mockResolvedValue({ data: mockUserPosts });
     mockGetEventsByOrganizer.mockResolvedValue({ data: mockUserEvents });
     mockGetActiveListingsBySeller.mockResolvedValue({ data: mockUserListings });
+    mockIsFollowing.mockResolvedValue({ data: false });
+    mockFollowUser.mockResolvedValue({});
+    mockUnfollowUser.mockResolvedValue({});
     mockSupabaseSingle.mockResolvedValue({
       data: { name: 'Dallas-Fort Worth', state: 'TX' },
     });
@@ -505,5 +529,50 @@ describe('PublicProfileScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('Roommate needed')).toBeTruthy();
     });
+  });
+
+  // ─── Follow button + counts + identity chips ───────────────────────────────
+
+  it('renders follow button, counts, and extended fields', async () => {
+    mockGetUserById.mockResolvedValue({
+      data: {
+        ...mockProfileUser,
+        id: 'target-1',
+        hometown_district: 'Pokhara',
+        college: 'Pulchowk',
+        years_in_us: 6,
+        languages: ['nepali', 'newari'],
+        follower_count: 12,
+        following_count: 4,
+      },
+    });
+    mockUseRoute.mockReturnValue({ params: { userId: 'target-1' } });
+    render(<PublicProfileScreen />);
+    await act(async () => {});
+    expect(await screen.findByTestId('follow-button')).toBeTruthy();
+    expect(await screen.findByText('12 followers')).toBeTruthy();
+    expect(await screen.findByText('4 following')).toBeTruthy();
+    expect(await screen.findByText('Pokhara')).toBeTruthy();
+    expect(await screen.findByText('Pulchowk')).toBeTruthy();
+    expect(await screen.findByText('6 years in US')).toBeTruthy();
+  });
+
+  it('hides empty extended fields gracefully', async () => {
+    mockGetUserById.mockResolvedValue({
+      data: {
+        ...mockProfileUser,
+        id: 'target-2',
+        hometown_district: null,
+        college: null,
+        years_in_us: null,
+        languages: [],
+        follower_count: 0,
+        following_count: 0,
+      },
+    });
+    mockUseRoute.mockReturnValue({ params: { userId: 'target-2' } });
+    render(<PublicProfileScreen />);
+    await act(async () => {});
+    expect(screen.queryByText(/years in US/)).toBeNull();
   });
 });

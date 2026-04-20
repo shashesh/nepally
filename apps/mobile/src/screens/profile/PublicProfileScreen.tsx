@@ -18,6 +18,7 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
+import { FollowButton } from '../../components/FollowButton';
 import type { HomeStackParamList } from '../../types/navigation';
 import {
   TrustLevel,
@@ -29,6 +30,8 @@ import {
   formatRelativeTime,
   formatPublicName,
   getTrustLabel,
+  LANGUAGE_LABELS,
+  type LanguageCode,
 } from '@nepally/shared';
 import type {
   User,
@@ -598,6 +601,48 @@ export default function PublicProfileScreen(): React.ReactElement {
               ))}
             </View>
 
+            {/* Follow button */}
+            {!isOwnProfile ? (
+              <FollowButton
+                supabase={supabase}
+                viewerId={currentUser?.id ?? null}
+                targetUserId={profileUser.id}
+              />
+            ) : null}
+
+            {/* Follower / following counts */}
+            <View style={styles.countsRow}>
+              <Text style={styles.count}>{profileUser.follower_count ?? 0} followers</Text>
+              <Text style={styles.countDot}>·</Text>
+              <Text style={styles.count}>{profileUser.following_count ?? 0} following</Text>
+            </View>
+
+            {/* Identity chips */}
+            <View style={styles.chipsRow}>
+              {profileUser.hometown_district ? (
+                <View style={styles.identityChip}>
+                  <Text style={styles.identityChipText}>{profileUser.hometown_district}</Text>
+                </View>
+              ) : null}
+              {profileUser.college ? (
+                <View style={styles.identityChip}>
+                  <Text style={styles.identityChipText}>{profileUser.college}</Text>
+                </View>
+              ) : null}
+              {typeof profileUser.years_in_us === 'number' ? (
+                <View style={styles.identityChip}>
+                  <Text style={styles.identityChipText}>{profileUser.years_in_us} years in US</Text>
+                </View>
+              ) : null}
+              {(profileUser.languages ?? []).map((code) => (
+                <View key={code} style={styles.identityChip}>
+                  <Text style={styles.identityChipText}>
+                    {LANGUAGE_LABELS[code as LanguageCode] ?? code}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
             {/* CTA */}
             {!isOwnProfile ? (
               <TouchableOpacity
@@ -996,6 +1041,21 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     color: colors.text.primary,
   } as TextStyle,
+
+  // ── Follow counts + identity chips ──────────
+  countsRow: { flexDirection: 'row', marginTop: 12 } as ViewStyle,
+  count: { fontSize: 14, color: '#555' } as TextStyle,
+  countDot: { marginHorizontal: 6, color: '#999' } as TextStyle,
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 12 } as ViewStyle,
+  identityChip: {
+    backgroundColor: '#f4f4f4',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 6,
+  } as ViewStyle,
+  identityChipText: { fontSize: 12, color: '#333' } as TextStyle,
 
   // ── About card ──────────────────────────────
   aboutCard: {
