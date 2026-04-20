@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import {
+  NEPAL_DISTRICTS,
+  type NepalDistrict,
+} from '../constants/nepalDistricts';
+import {
+  SUPPORTED_LANGUAGES,
+  type LanguageCode,
+} from '../constants/languages';
 
 /**
  * User profile validation schemas.
@@ -32,3 +40,65 @@ export const bioSchema = z
 export const bioUpdateSchema = bioSchema.nullable().optional();
 
 export type BioInput = z.infer<typeof bioSchema>;
+
+export const COLLEGE_MAX_LENGTH = 100;
+export const YEARS_IN_US_MIN = 0;
+export const YEARS_IN_US_MAX = 99;
+
+export const hometownDistrictSchema = z
+  .string()
+  .transform((v) => v.trim())
+  .pipe(
+    z.enum(NEPAL_DISTRICTS as unknown as [NepalDistrict, ...NepalDistrict[]], {
+      errorMap: () => ({ message: 'Select a valid Nepal district' }),
+    })
+  );
+
+export const hometownDistrictUpdateSchema = hometownDistrictSchema
+  .nullable()
+  .optional();
+
+export const collegeSchema = z
+  .string()
+  .transform((v) => v.trim())
+  .pipe(
+    z
+      .string()
+      .max(
+        COLLEGE_MAX_LENGTH,
+        `College must be at most ${COLLEGE_MAX_LENGTH} characters`
+      )
+  )
+  .transform((v) => (v.length === 0 ? null : v));
+
+export const collegeUpdateSchema = collegeSchema.nullable().optional();
+
+export const yearsInUsSchema = z
+  .number()
+  .int('Years in US must be a whole number')
+  .min(YEARS_IN_US_MIN, `Years in US must be at least ${YEARS_IN_US_MIN}`)
+  .max(YEARS_IN_US_MAX, `Years in US must be at most ${YEARS_IN_US_MAX}`);
+
+export const yearsInUsUpdateSchema = yearsInUsSchema.nullable().optional();
+
+export const languagesSchema = z
+  .array(
+    z.enum(SUPPORTED_LANGUAGES as unknown as [LanguageCode, ...LanguageCode[]])
+  )
+  .max(SUPPORTED_LANGUAGES.length, 'Too many languages selected');
+
+export const languagesUpdateSchema = languagesSchema.optional();
+
+/**
+ * Partial update payload for the "About You" section of profile edit.
+ * All fields optional; unspecified fields are not changed.
+ */
+export const extendedProfileUpdateSchema = z.object({
+  hometown_district: hometownDistrictUpdateSchema,
+  college: collegeUpdateSchema,
+  years_in_us: yearsInUsUpdateSchema,
+  languages: languagesUpdateSchema,
+  bio: bioUpdateSchema,
+});
+
+export type ExtendedProfileUpdate = z.infer<typeof extendedProfileUpdateSchema>;
