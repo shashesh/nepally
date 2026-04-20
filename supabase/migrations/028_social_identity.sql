@@ -5,7 +5,7 @@
 -- Rollback: write a new forward-only migration that:
 --   DROP TRIGGER IF EXISTS user_follows_after_insert ON user_follows;
 --   DROP TRIGGER IF EXISTS user_follows_after_delete ON user_follows;
---   DROP TRIGGER IF EXISTS user_blocks_sever_follows ON user_blocks;
+--   DROP TRIGGER IF EXISTS blocked_users_sever_follows ON blocked_users;
 --   DROP TABLE IF EXISTS user_follows;
 --   ALTER TABLE users
 --     DROP COLUMN IF EXISTS hometown_district,
@@ -144,7 +144,7 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS user_blocks_sever_follows ON user_blocks;
-CREATE TRIGGER user_blocks_sever_follows
-  AFTER INSERT ON user_blocks
+DROP TRIGGER IF EXISTS blocked_users_sever_follows ON blocked_users;
+CREATE TRIGGER blocked_users_sever_follows
+  AFTER INSERT ON blocked_users
   FOR EACH ROW EXECUTE FUNCTION sever_follows_on_block();
