@@ -9,6 +9,8 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import {
   TRUST_LEVELS,
+  BIO_MAX_LENGTH,
+  bioSchema,
   getPostsByAuthorId,
   getSavedPostsByUserId,
   unsavePost,
@@ -177,6 +179,50 @@ export default function ProfilePage() {
 
     await refreshUser();
     notifications.show({ message: 'Profile updated' });
+    setMenuOpen(false);
+  }
+
+  async function handleEditBio() {
+    if (!user) return;
+
+    const currentBio = user.bio ?? '';
+    const nextBio = window.prompt(
+      `Update your bio (max ${BIO_MAX_LENGTH} characters)`,
+      currentBio
+    );
+
+    if (nextBio === null) {
+      setMenuOpen(false);
+      return;
+    }
+
+    const parsed = bioSchema.safeParse(nextBio);
+    if (!parsed.success) {
+      notifications.show({
+        message: parsed.error.issues[0]?.message || 'Invalid bio',
+        color: 'red',
+      });
+      setMenuOpen(false);
+      return;
+    }
+
+    const { error } = await updateUserProfile(supabase, user.id, {
+      bio: parsed.data,
+    });
+
+    if (error) {
+      notifications.show({
+        message: error.message || 'Failed to update bio',
+        color: 'red',
+      });
+      setMenuOpen(false);
+      return;
+    }
+
+    await refreshUser();
+    notifications.show({
+      message: parsed.data ? 'Bio updated' : 'Bio cleared',
+    });
     setMenuOpen(false);
   }
 
@@ -479,7 +525,15 @@ export default function ProfilePage() {
                     handleViewProfile();
                   }}
                 >
-                  View Profile
+                  Edit Name
+                </UnstyledButton>
+                <UnstyledButton
+                  className={styles.hamburgerItem}
+                  onClick={() => {
+                    handleEditBio();
+                  }}
+                >
+                  Edit Bio
                 </UnstyledButton>
                 <UnstyledButton
                   className={styles.hamburgerItem}
@@ -603,6 +657,15 @@ export default function ProfilePage() {
 
             {activeTab === 'about' && (
               <>
+                <div className={styles.infoSection}>
+                  <h2 className={styles.sectionTitle}>Bio</h2>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoValue}>
+                      {user.bio || 'No bio set. Tap the menu → Edit Bio to add one.'}
+                    </span>
+                  </div>
+                </div>
+
                 <div className={styles.infoSection}>
                   <h2 className={styles.sectionTitle}>Account Info</h2>
                   <div className={styles.infoRow}>

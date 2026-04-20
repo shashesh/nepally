@@ -77,7 +77,7 @@ export async function updateUserLocation(
 export async function updateUserProfile(
   supabase: SupabaseClient,
   userId: string,
-  updates: Partial<Pick<User, 'full_name' | 'phone' | 'profile_photo'>>
+  updates: Partial<Pick<User, 'full_name' | 'phone' | 'profile_photo' | 'bio'>>
 ): Promise<UserResult> {
   try {
     const { data, error } = await supabase

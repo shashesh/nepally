@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,115 +8,167 @@ import {
   Alert,
   StatusBar,
   ActivityIndicator,
+  type ImageStyle,
+  type TextStyle,
+  type ViewStyle,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
-import { HomeStackParamList } from '../../types/navigation';
+import type { HomeStackParamList } from '../../types/navigation';
 import {
   TrustLevel,
   getUserById,
   getPostsByAuthorId,
   getEventsByOrganizer,
+  getActiveListingsBySeller,
   getOrCreateConversation,
   formatRelativeTime,
   formatPublicName,
   getTrustLabel,
 } from '@nepally/shared';
-import type { User, Post, Event } from '@nepally/shared';
-import { Avatar } from '../../components/Avatar';
+import type {
+  User,
+  Post,
+  Event,
+  MarketplaceListing,
+} from '@nepally/shared';
 import { colors } from '../../styles/colors';
-import { typography } from '../../styles/typography';
-import { spacing, borderRadius } from '../../styles/spacing';
+import { typography, fontFamily } from '../../styles/typography';
+import { spacing, borderRadius, shadows } from '../../styles/spacing';
+import { sanitizeMediaUri } from '../../utils/mediaUrl';
 
 type Navigation = NativeStackNavigationProp<HomeStackParamList, 'PublicProfileView'>;
 type Route = RouteProp<HomeStackParamList, 'PublicProfileView'>;
+type ProfileTab = 'posts' | 'events' | 'listings' | 'about';
 
-export default function PublicProfileScreen() {
+function getInitials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function pluralize(count: number, singular: string): string {
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
+}
+
+function formatPrice(listing: MarketplaceListing): string | null {
+  if (listing.price === null || listing.price === undefined) return null;
+  const raw =
+    typeof listing.price === 'number' ? listing.price : Number(listing.price);
+  if (!Number.isFinite(raw)) return null;
+  return raw.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: raw % 1 === 0 ? 0 : 2,
+  });
+}
+
+/** Trust level badge colors matching the rest of the app */
+function getTrustColors(level: number): { bg: string; fg: string } {
+  if (level === TrustLevel.CONTRIBUTOR) {
+    return { bg: '#E3F2FD', fg: colors.primary.main };
+  }
+  if (level === TrustLevel.VERIFIED) {
+    return { bg: '#E8F5E9', fg: colors.success };
+  }
+  return { bg: '#F5F5F5', fg: colors.text.secondary };
+}
+
+export default function PublicProfileScreen(): React.ReactElement {
   const navigation = useNavigation<Navigation>();
   const route = useRoute<Route>();
   const { userId } = route.params;
   const { user: currentUser } = useAuth();
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [userEvents, setUserEvents] = useState<Event[]>([]);
+  const [userListings, setUserListings] = useState<MarketplaceListing[]>([]);
   const [metroName, setMetroName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [listingsLoading, setListingsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'posts' | 'events' | 'about'>('posts');
+  const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [messagingLoading, setMessagingLoading] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadProfile() {
+    async function loadProfile(): Promise<void> {
       setLoading(true);
       setError(null);
-
       const result = await getUserById(supabase, userId);
-
-      if (!isMounted) return;
-
+      if (!mountedRef.current) return;
       if (result.error || !result.data) {
-        setError('Could not load profile.');
+        setError('We couldn\u2019t find this member. They may have deleted their account.');
         setLoading(false);
         return;
       }
-
       setProfileUser(result.data);
       setLoading(false);
 
-      // Load metro area name
       if (result.data.metro_area_id) {
         const { data: metro } = await supabase
           .from('metro_areas')
           .select('name, state')
           .eq('id', result.data.metro_area_id)
           .single();
-        if (isMounted && metro) {
+        if (mountedRef.current && metro) {
           setMetroName(`${metro.name}, ${metro.state}`);
         }
       }
     }
 
-    async function loadPosts() {
+    async function loadPosts(): Promise<void> {
       setPostsLoading(true);
       const result = await getPostsByAuthorId(supabase, userId, 30);
-      if (!isMounted) return;
+      if (!mountedRef.current) return;
       setUserPosts(result.data || []);
       setPostsLoading(false);
     }
 
-    async function loadEvents() {
+    async function loadEvents(): Promise<void> {
       setEventsLoading(true);
       const result = await getEventsByOrganizer(supabase, userId, 50);
-      if (!isMounted) return;
+      if (!mountedRef.current) return;
       setUserEvents(result.data || []);
       setEventsLoading(false);
+    }
+
+    async function loadListings(): Promise<void> {
+      setListingsLoading(true);
+      const result = await getActiveListingsBySeller(supabase, userId, 30);
+      if (!mountedRef.current) return;
+      setUserListings(result.data || []);
+      setListingsLoading(false);
     }
 
     loadProfile();
     loadPosts();
     loadEvents();
-
-    return () => {
-      isMounted = false;
-    };
+    loadListings();
   }, [userId]);
 
-  const handleMessage = async () => {
+  const handleMessage = useCallback(async (): Promise<void> => {
     if (!currentUser || !profileUser) return;
 
     if (currentUser.trust_level === TrustLevel.NEW) {
       Alert.alert(
-        'Verify to Message',
-        'Please verify your phone number to message others.',
+        'Verify to message',
+        'Please verify your email to message other members.',
         [{ text: 'OK' }]
       );
       return;
@@ -130,6 +182,7 @@ export default function PublicProfileScreen() {
       profileUser.id,
       profileUser.full_name
     );
+    if (!mountedRef.current) return;
     setMessagingLoading(false);
 
     if (result.data) {
@@ -146,12 +199,23 @@ export default function PublicProfileScreen() {
     } else {
       Alert.alert('Error', 'Failed to start conversation. Please try again.');
     }
-  };
+  }, [currentUser, profileUser, navigation]);
 
+  const handleListingPress = useCallback(
+    (listingId: string): void => {
+      navigation.getParent()?.navigate('Marketplace', {
+        screen: 'ListingDetail',
+        params: { listingId },
+      });
+    },
+    [navigation]
+  );
+
+  // ── Loading ─────────────────────────────────
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary.main} />
         </View>
@@ -159,10 +223,11 @@ export default function PublicProfileScreen() {
     );
   }
 
+  // ── Error ───────────────────────────────────
   if (error || !profileUser) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error || 'Profile not found.'}</Text>
         </View>
@@ -170,75 +235,130 @@ export default function PublicProfileScreen() {
     );
   }
 
-  const trustLevel = profileUser.trust_level;
-  const trustBadgeStyle =
-    trustLevel === TrustLevel.NEW
-      ? styles.trustBadgeNew
-      : trustLevel === TrustLevel.VERIFIED
-        ? styles.trustBadgeVerified
-        : styles.trustBadgeContributor;
-
-  const memberSinceYear = new Date(profileUser.created_at).getFullYear();
+  // ── Derived values ──────────────────────────
+  const publicName = formatPublicName(profileUser.full_name);
+  const firstName =
+    profileUser.full_name.trim().split(/\s+/)[0] ?? profileUser.full_name;
   const isOwnProfile = currentUser?.id === userId;
+  const memberSinceYear = new Date(profileUser.created_at).getFullYear();
+  const trustLevel = profileUser.trust_level;
+  const initials = getInitials(profileUser.full_name);
+  const safePhotoUrl = sanitizeMediaUri(profileUser.profile_photo);
+  const hasPhoto = !!safePhotoUrl;
 
-  function renderPosts() {
+  const trustColors = getTrustColors(trustLevel);
+
+  // Stats line — counts are shown on the tabs instead
+  const statsParts: string[] = [];
+  if (metroName) statsParts.push(metroName);
+  statsParts.push(`Joined ${memberSinceYear}`);
+
+  // Tabs
+  const tabs: { id: ProfileTab; label: string; count?: number }[] = [
+    { id: 'posts', label: 'Posts', count: userPosts.length },
+    { id: 'events', label: 'Events', count: userEvents.length },
+    { id: 'listings', label: 'Listings', count: userListings.length },
+    { id: 'about', label: 'About' },
+  ];
+
+  // ── Tab content renderers ───────────────────
+  const renderPosts = (): React.ReactElement => {
     if (postsLoading) {
-      return <Text style={styles.tabMessage}>Loading...</Text>;
+      return <Text style={styles.emptyText}>Loading\u2026</Text>;
     }
     if (userPosts.length === 0) {
-      return <Text style={styles.tabMessage}>No posts yet.</Text>;
+      if (isOwnProfile) {
+        return (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTextInner}>
+              You haven{'\u2019'}t posted anything yet.
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyCta}
+              onPress={() => { navigation.navigate('CreatePost' as never); }}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.emptyCtaText}>Start a post</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+      return (
+        <Text style={styles.emptyText}>
+          {firstName} hasn{'\u2019'}t posted anything yet.
+        </Text>
+      );
     }
     return (
-      <View style={styles.postList}>
+      <View style={styles.rowList}>
         {userPosts.map((post) => (
           <TouchableOpacity
             key={post.id}
-            style={styles.postItem}
+            style={styles.card}
             onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
             activeOpacity={0.75}
           >
-            <View style={styles.postItemHeader}>
-              <Text style={styles.postItemTitle} numberOfLines={1}>
+            <View style={styles.rowTop}>
+              <Text style={styles.rowTitle} numberOfLines={1}>
                 {post.title}
               </Text>
-              <View style={[styles.scopeBadge, post.is_global ? styles.scopeGlobal : styles.scopeLocal]}>
-                <Text style={post.is_global ? styles.scopeTextGlobal : styles.scopeTextLocal}>
-                  {post.is_global ? '🌐 Global' : '📍 Local'}
-                </Text>
-              </View>
+              <Text
+                style={[
+                  styles.rowScope,
+                  post.is_global && styles.rowScopeGlobal,
+                ]}
+              >
+                {post.is_global ? 'GLOBAL' : 'LOCAL'}
+              </Text>
             </View>
-            <Text style={styles.postItemDescription} numberOfLines={2}>
-              {post.description}
-            </Text>
-            <View style={styles.postMetaRow}>
-              <Text style={styles.postMetaText}>{formatRelativeTime(new Date(post.created_at))}</Text>
-              <Text style={styles.postMetaText}>❤️ {post.likes_count || 0}</Text>
-              <Text style={styles.postMetaText}>💬 {post.comments_count || 0}</Text>
+            {post.description ? (
+              <Text style={styles.rowDescription} numberOfLines={2}>
+                {post.description}
+              </Text>
+            ) : null}
+            <View style={styles.rowMeta}>
+              <Text style={styles.rowMetaText}>
+                {formatRelativeTime(new Date(post.created_at))}
+              </Text>
+              <Text style={styles.rowMetaText}>
+                {pluralize(post.likes_count || 0, 'like')}
+              </Text>
+              <Text style={styles.rowMetaText}>
+                {pluralize(post.comments_count || 0, 'comment')}
+              </Text>
             </View>
           </TouchableOpacity>
         ))}
       </View>
     );
-  }
+  };
 
-  function renderEvents() {
+  const renderEvents = (): React.ReactElement => {
     if (eventsLoading) {
-      return <Text style={styles.tabMessage}>Loading...</Text>;
+      return <Text style={styles.emptyText}>Loading\u2026</Text>;
     }
     if (userEvents.length === 0) {
-      return <Text style={styles.tabMessage}>No events yet.</Text>;
+      return (
+        <Text style={styles.emptyText}>
+          {firstName} hasn{'\u2019'}t organized any events.
+        </Text>
+      );
     }
-
     return (
-      <View style={styles.eventList}>
+      <View style={styles.rowList}>
         {userEvents.map((event) => {
-          const isPast = new Date(event.end_date ?? event.start_date) < new Date();
+          const isPast =
+            new Date(event.end_date ?? event.start_date) < new Date();
           const isCancelled = event.status === 'cancelled';
-
+          const statusLabel = isCancelled
+            ? 'Cancelled'
+            : isPast
+              ? 'Past'
+              : null;
           return (
             <TouchableOpacity
               key={event.id}
-              style={styles.eventItem}
+              style={styles.card}
               activeOpacity={0.75}
               onPress={() => {
                 const rootNavigation = navigation.getParent();
@@ -249,132 +369,286 @@ export default function PublicProfileScreen() {
                 });
               }}
             >
-              <View style={styles.eventItemHeader}>
-                <Text style={styles.eventItemTitle} numberOfLines={1}>
+              <View style={styles.rowTop}>
+                <Text style={styles.rowTitle} numberOfLines={1}>
                   {event.title}
                 </Text>
-                <View style={[styles.scopeBadge, event.is_global ? styles.scopeGlobal : styles.scopeLocal]}>
-                  <Text style={event.is_global ? styles.scopeTextGlobal : styles.scopeTextLocal}>
-                    {event.is_global ? '🌐 Global' : '📍 Local'}
-                  </Text>
-                </View>
+                <Text
+                  style={[
+                    styles.rowScope,
+                    event.is_global && styles.rowScopeGlobal,
+                  ]}
+                >
+                  {event.is_global ? 'GLOBAL' : 'LOCAL'}
+                </Text>
               </View>
-
-              <Text style={styles.eventItemMeta} numberOfLines={1}>
-                {new Date(event.start_date).toLocaleDateString()} · {event.location_name}
+              <Text style={styles.rowDescription} numberOfLines={1}>
+                {new Date(event.start_date).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+                {' \u00b7 '}
+                {event.location_name}
               </Text>
-
-              <View style={styles.eventMetaRow}>
-                <Text style={styles.postMetaText}>{event.rsvp_count} going</Text>
-                {isCancelled && <Text style={styles.eventCancelledText}>Cancelled</Text>}
-                {!isCancelled && isPast && <Text style={styles.eventPastText}>Past</Text>}
+              <View style={styles.rowMeta}>
+                <Text style={styles.rowMetaText}>
+                  {pluralize(event.rsvp_count || 0, 'going')}
+                </Text>
+                {statusLabel && (
+                  <Text style={styles.rowMetaText}>{statusLabel}</Text>
+                )}
               </View>
             </TouchableOpacity>
           );
         })}
       </View>
     );
-  }
+  };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Avatar & Basic Info */}
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            <Avatar
-              name={profileUser.full_name}
-              photoUrl={profileUser.profile_photo}
-              trustLevel={trustLevel}
-              size="xlarge"
-            />
-          </View>
-          <Text style={styles.name}>{formatPublicName(profileUser.full_name)}</Text>
-
-          {/* Trust Badge */}
-          <View style={[styles.trustBadge, trustBadgeStyle]}>
-            <Ionicons name="shield-checkmark" size={14} color={colors.white} />
-            <Text style={styles.trustText}>
-              Level {trustLevel} — {getTrustLabel(trustLevel)}
+  const renderListings = (): React.ReactElement => {
+    if (listingsLoading) {
+      return <Text style={styles.emptyText}>Loading\u2026</Text>;
+    }
+    if (userListings.length === 0) {
+      if (isOwnProfile) {
+        return (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTextInner}>
+              You have no active listings.
             </Text>
-          </View>
-
-          {/* Message Button (only shown when viewing another user) */}
-          {!isOwnProfile && (
             <TouchableOpacity
-              style={[styles.messageButton, messagingLoading && styles.messageButtonDisabled]}
-              onPress={handleMessage}
-              disabled={messagingLoading}
-              activeOpacity={0.8}
+              style={styles.emptyCta}
+              onPress={() => {
+                const parent = navigation.getParent();
+                if (parent) {
+                  (parent.navigate as (...args: unknown[]) => void)('Marketplace', {
+                    screen: 'CreateListing',
+                  });
+                }
+              }}
+              activeOpacity={0.75}
             >
-              <Ionicons name="chatbubble-outline" size={16} color={colors.white} />
-              <Text style={styles.messageButtonText}>
-                {messagingLoading ? 'Opening...' : 'Message'}
-              </Text>
+              <Text style={styles.emptyCtaText}>Post a listing</Text>
             </TouchableOpacity>
-          )}
+          </View>
+        );
+      }
+      return (
+        <Text style={styles.emptyText}>
+          {firstName} has no active listings.
+        </Text>
+      );
+    }
+    return (
+      <View style={styles.rowList}>
+        {userListings.map((listing) => {
+          const thumb =
+            listing.photos && listing.photos.length > 0
+              ? listing.photos[0]
+              : null;
+          const price = formatPrice(listing);
+          const categoryName = listing.category?.name || 'Marketplace';
+          return (
+            <TouchableOpacity
+              key={listing.id}
+              style={styles.listingCard}
+              activeOpacity={0.75}
+              onPress={() => handleListingPress(listing.id)}
+            >
+              {thumb ? (
+                <Image
+                  source={thumb}
+                  style={styles.listingThumb}
+                  contentFit="cover"
+                  accessibilityLabel=""
+                />
+              ) : (
+                <View style={styles.listingThumbPlaceholder}>
+                  <Text style={styles.listingThumbPlaceholderText}>
+                    {categoryName.charAt(0)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.listingBody}>
+                <Text style={styles.listingTitle} numberOfLines={2}>
+                  {listing.title}
+                </Text>
+                <View style={styles.rowMeta}>
+                  {price ? (
+                    <Text style={styles.listingPrice}>{price}</Text>
+                  ) : null}
+                  <Text style={styles.rowMetaText}>{categoryName}</Text>
+                  <Text style={styles.rowMetaText}>
+                    {formatRelativeTime(new Date(listing.created_at))}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const renderAbout = (): React.ReactElement => (
+    <View style={styles.aboutCard}>
+      {profileUser.bio ? (
+        <View style={styles.aboutBioBlock}>
+          <Text style={styles.aboutLabel}>BIO</Text>
+          <Text style={styles.aboutBio}>{profileUser.bio}</Text>
         </View>
+      ) : null}
+      <View style={styles.aboutRow}>
+        <Text style={styles.aboutLabel}>LOCATION</Text>
+        <Text style={styles.aboutValue}>{metroName || 'Not set'}</Text>
+      </View>
+      <View style={styles.aboutRow}>
+        <Text style={styles.aboutLabel}>MEMBER SINCE</Text>
+        <Text style={styles.aboutValue}>{memberSinceYear}</Text>
+      </View>
+      <View style={styles.aboutRow}>
+        <Text style={styles.aboutLabel}>TRUST LEVEL</Text>
+        <View style={[styles.trustChip, { backgroundColor: trustColors.bg }]}>
+          <View style={[styles.trustDot, { backgroundColor: trustColors.fg }]} />
+          <Text style={[styles.trustChipText, { color: trustColors.fg }]}>
+            Level {trustLevel} {'·'} {getTrustLabel(trustLevel)}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.aboutDivider} />
+      <View style={styles.aboutRow}>
+        <Text style={styles.aboutLabel}>POSTS</Text>
+        <Text style={styles.aboutValue}>{userPosts.length}</Text>
+      </View>
+      <View style={styles.aboutRow}>
+        <Text style={styles.aboutLabel}>EVENTS ORGANIZED</Text>
+        <Text style={styles.aboutValue}>{userEvents.length}</Text>
+      </View>
+      <View style={styles.aboutRow}>
+        <Text style={styles.aboutLabel}>ACTIVE LISTINGS</Text>
+        <Text style={styles.aboutValue}>{userListings.length}</Text>
+      </View>
+    </View>
+  );
 
-        <View style={styles.section}>
-          <View style={styles.tabsRow}>
-            <TouchableOpacity
-              style={[styles.tabButton, activeTab === 'posts' ? styles.tabButtonActive : null]}
-              onPress={() => setActiveTab('posts')}
-            >
-              <Text style={[styles.tabButtonText, activeTab === 'posts' ? styles.tabButtonTextActive : null]}>
-                Posts
+  // ── Render ──────────────────────────────────
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary.main} />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Banner — gradient block behind avatar */}
+        <View style={styles.banner} />
+
+        {/* Profile card — overlaps banner bottom */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileCardTop}>
+            <View style={styles.avatarRing}>
+              {hasPhoto ? (
+                <Image
+                  source={safePhotoUrl}
+                  style={styles.avatarPhoto}
+                  contentFit="cover"
+                  transition={200}
+                  accessibilityLabel={`${publicName} profile photo`}
+                />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarFallbackText}>{initials}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.identityInline}>
+              <Text style={styles.displayName} numberOfLines={2}>
+                {publicName}
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tabButton, activeTab === 'events' ? styles.tabButtonActive : null]}
-              onPress={() => setActiveTab('events')}
-            >
-              <Text style={[styles.tabButtonText, activeTab === 'events' ? styles.tabButtonTextActive : null]}>
-                Events
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tabButton, activeTab === 'about' ? styles.tabButtonActive : null]}
-              onPress={() => setActiveTab('about')}
-            >
-              <Text style={[styles.tabButtonText, activeTab === 'about' ? styles.tabButtonTextActive : null]}>
-                About
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {activeTab === 'posts' && renderPosts()}
-
-          {activeTab === 'events' && renderEvents()}
-
-          {activeTab === 'about' && (
-            <View>
-              <Text style={styles.sectionTitle}>Location</Text>
-              <View style={styles.infoRow}>
-                <Ionicons name="location" size={20} color={colors.text.secondary} />
-                <Text style={styles.infoLabel}>
-                  {metroName || 'Location not set'}
+              <View style={[styles.trustChip, { backgroundColor: trustColors.bg }]}>
+                <View
+                  style={[styles.trustDot, { backgroundColor: trustColors.fg }]}
+                />
+                <Text style={[styles.trustChipText, { color: trustColors.fg }]}>
+                  Level {trustLevel} {'·'} {getTrustLabel(trustLevel)}
                 </Text>
               </View>
-
-              <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>Activity</Text>
-              <View style={styles.aboutRow}>
-                <Text style={styles.aboutLabel}>Posts</Text>
-                <Text style={styles.aboutValue}>{userPosts.length}</Text>
-              </View>
-              <View style={styles.aboutRow}>
-                <Text style={styles.aboutLabel}>Events</Text>
-                <Text style={styles.aboutValue}>{userEvents.length}</Text>
-              </View>
-              <View style={styles.aboutRow}>
-                <Text style={styles.aboutLabel}>Member Since</Text>
-                <Text style={styles.aboutValue}>{memberSinceYear}</Text>
-              </View>
             </View>
-          )}
+          </View>
+
+          {/* Body */}
+          <View style={styles.profileBody}>
+            {trustLevel === TrustLevel.NEW && !isOwnProfile ? (
+              <Text style={styles.newMemberHint}>
+                New to Nepally \u2014 message carefully.
+              </Text>
+            ) : null}
+
+            {profileUser.bio ? (
+              <Text style={styles.bio}>{profileUser.bio}</Text>
+            ) : null}
+
+            {/* Stats — Reddit-style compact */}
+            <View style={styles.statsRow}>
+              {statsParts.map((item, index) => (
+                <React.Fragment key={index}>
+                  {index > 0 ? (
+                    <Text style={styles.statDot}>{'\u00b7'}</Text>
+                  ) : null}
+                  <Text style={styles.statText}>{item}</Text>
+                </React.Fragment>
+              ))}
+            </View>
+
+            {/* CTA */}
+            {!isOwnProfile ? (
+              <TouchableOpacity
+                style={[
+                  styles.messageCta,
+                  messagingLoading && styles.messageCtaDisabled,
+                ]}
+                onPress={handleMessage}
+                disabled={messagingLoading}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.messageCtaText}>
+                  {messagingLoading
+                    ? 'Opening conversation\u2026'
+                    : `Message ${publicName}`}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Tab rail */}
+        <View style={styles.tabRail}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[styles.tab, isActive && styles.tabActive]}
+                onPress={() => setActiveTab(tab.id)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+                >
+                  {tab.label}
+                  {tab.count !== undefined && tab.count > 0 ? (
+                    <Text style={styles.tabCount}> {tab.count}</Text>
+                  ) : null}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Content */}
+        <View style={styles.content}>
+          {activeTab === 'posts' && renderPosts()}
+          {activeTab === 'events' && renderEvents()}
+          {activeTab === 'listings' && renderListings()}
+          {activeTab === 'about' && renderAbout()}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -385,249 +659,381 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
+  } as ViewStyle,
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
+  } as ViewStyle,
   errorText: {
     ...typography.body,
-    color: colors.error,
-  },
-  scrollContent: {
-    paddingBottom: spacing.l,
-    paddingHorizontal: spacing.m,
-  },
-  header: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    paddingTop: spacing.l,
-    paddingBottom: spacing.m,
+    color: colors.text.secondary,
     paddingHorizontal: spacing.l,
-    marginBottom: spacing.xs,
-    borderRadius: borderRadius.card,
-  },
-  avatarContainer: {
-    marginBottom: spacing.s,
-  },
-  name: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.s,
-  },
-  trustBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.s,
-    paddingVertical: spacing.xxs,
-    borderRadius: borderRadius.badge,
-    marginBottom: spacing.m,
-  },
-  trustBadgeNew: {
-    backgroundColor: colors.badge.level0,
-  },
-  trustBadgeVerified: {
-    backgroundColor: colors.badge.level1,
-  },
-  trustBadgeContributor: {
-    backgroundColor: colors.badge.level2,
-  },
-  trustText: {
-    ...typography.caption,
-    color: colors.white,
-    fontWeight: '600',
-  },
-  messageButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    textAlign: 'center',
+  } as TextStyle,
+  scrollContent: {
+    paddingBottom: spacing.xl,
+  } as ViewStyle,
+
+  // ── Banner ──────────────────────────────────
+  banner: {
+    height: 120,
     backgroundColor: colors.primary.main,
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    borderRadius: borderRadius.button,
-  },
-  messageButtonDisabled: {
-    opacity: 0.6,
-  },
-  messageButtonText: {
-    ...typography.body,
-    color: colors.white,
-    fontWeight: '600',
-  },
-  section: {
+  } as ViewStyle,
+
+  // ── Profile card ────────────────────────────
+  profileCard: {
     backgroundColor: colors.white,
-    paddingHorizontal: spacing.s,
-    paddingVertical: spacing.s,
+    marginHorizontal: spacing.xs,
+    marginTop: -40,
     borderRadius: borderRadius.card,
-  },
-  tabsRow: {
+    padding: spacing.s,
+    paddingTop: 0,
+    ...shadows.card,
+  } as ViewStyle,
+  profileCardTop: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginBottom: spacing.s,
-  },
-  tabButton: {
-    flex: 1,
-    height: 42,
+    alignItems: 'flex-end',
+    gap: spacing.s,
+    marginTop: -24,
+    marginBottom: spacing.xs,
+  } as ViewStyle,
+
+  // ── Avatar ──────────────────────────────────
+  avatarRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: colors.white,
+    backgroundColor: colors.white,
+    overflow: 'hidden',
+    ...shadows.card,
+  } as ViewStyle,
+  avatarPhoto: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: colors.surfaceMuted,
+  } as ImageStyle,
+  avatarFallback: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: colors.primary.light,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tabButtonActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primary.main,
-  },
-  tabButtonText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontWeight: '500',
-    fontSize: 15,
-  },
-  tabButtonTextActive: {
+  } as ViewStyle,
+  avatarFallbackText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 28,
+    color: colors.primary.main,
+    letterSpacing: -0.5,
+  } as TextStyle,
+
+  // ── Identity inline ─────────────────────────
+  identityInline: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.xxs,
+    paddingBottom: spacing.xxs,
+  } as ViewStyle,
+  displayName: {
+    ...typography.h3,
     color: colors.text.primary,
-    fontWeight: '700',
-  },
-  tabMessage: {
-    ...typography.body,
-    color: colors.text.secondary,
-    paddingVertical: spacing.s,
-  },
-  postList: {
-    gap: spacing.s,
-  },
-  eventList: {
-    gap: spacing.s,
-  },
-  postItem: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.card,
-    padding: spacing.s,
-  },
-  eventItem: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.card,
-    padding: spacing.s,
-  },
-  postItemHeader: {
+  } as TextStyle,
+
+  // ── Trust chip ──────────────────────────────
+  trustChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.s,
-  },
-  eventItemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.s,
-  },
-  postItemTitle: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '700',
-    flex: 1,
-  },
-  eventItemTitle: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '700',
-    flex: 1,
-  },
-  scopeBadge: {
-    borderRadius: borderRadius.badge,
-    paddingHorizontal: spacing.xs,
+    gap: 6,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-  },
-  scopeLocal: {
-    backgroundColor: colors.badge.localBg,
-  },
-  scopeGlobal: {
+    borderRadius: 999,
+    alignSelf: 'flex-start',
+  } as ViewStyle,
+  trustDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  } as ViewStyle,
+  trustChipText: {
+    fontFamily: fontFamily.semibold,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.01,
+  } as TextStyle,
+
+  // ── Profile body ────────────────────────────
+  profileBody: {
+    gap: spacing.xs,
+  } as ViewStyle,
+  newMemberHint: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+  } as TextStyle,
+  bio: {
+    ...typography.body,
+    color: colors.text.secondary,
+  } as TextStyle,
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+  } as ViewStyle,
+  statText: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+  } as TextStyle,
+  statDot: {
+    ...typography.caption,
+    color: colors.border,
+  } as TextStyle,
+
+  // ── CTA ─────────────────────────────────────
+  messageCta: {
     backgroundColor: colors.primary.main,
-  },
-  scopeTextLocal: {
-    ...typography.caption,
-    color: colors.badge.localText,
-    fontWeight: '600',
-  },
-  scopeTextGlobal: {
-    ...typography.caption,
+    paddingHorizontal: spacing.m,
+    paddingVertical: 12,
+    borderRadius: 999,
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  messageCtaDisabled: {
+    opacity: 0.6,
+  } as ViewStyle,
+  messageCtaText: {
+    ...typography.button,
     color: colors.white,
-    fontWeight: '600',
-  },
-  postItemDescription: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontSize: 14,
-    marginTop: spacing.xs,
-  },
-  postMetaRow: {
+  } as TextStyle,
+
+  // ── Tab rail ────────────────────────────────
+  tabRail: {
     flexDirection: 'row',
-    gap: spacing.s,
+    marginHorizontal: spacing.xs,
     marginTop: spacing.xs,
-  },
-  eventMetaRow: {
-    flexDirection: 'row',
-    gap: spacing.s,
-    marginTop: spacing.xs,
-  },
-  postMetaText: {
-    ...typography.caption,
-    color: colors.text.secondary,
-  },
-  eventItemMeta: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontSize: 14,
-    marginTop: spacing.xs,
-  },
-  eventCancelledText: {
-    ...typography.caption,
-    color: colors.error,
-    fontWeight: '700',
-  },
-  eventPastText: {
-    ...typography.caption,
-    color: colors.text.secondary,
-    fontWeight: '700',
-  },
-  sectionTitle: {
-    ...typography.caption,
-    color: colors.text.secondary,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    ...shadows.card,
+    overflow: 'hidden',
+  } as ViewStyle,
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.card,
+  } as ViewStyle,
+  tabActive: {
+    backgroundColor: 'rgba(21, 101, 192, 0.08)',
+  } as ViewStyle,
+  tabLabel: {
+    fontFamily: fontFamily.medium,
+    fontSize: 15,
+    color: colors.text.tertiary,
+    fontWeight: '500',
+  } as TextStyle,
+  tabLabelActive: {
+    fontFamily: fontFamily.semibold,
+    color: colors.primary.main,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.s,
-  },
-  sectionTitleSpaced: {
-    marginTop: spacing.m,
-  },
-  infoRow: {
+  } as TextStyle,
+  tabCount: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    color: colors.text.tertiary,
+    fontWeight: '400',
+  } as TextStyle,
+
+  // ── Content area ────────────────────────────
+  content: {
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.xs,
+  } as ViewStyle,
+
+  // ── Empty states ────────────────────────────
+  emptyText: {
+    ...typography.body,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+    paddingVertical: spacing.m,
+    textAlign: 'center',
+  } as TextStyle,
+  emptyState: {
+    paddingVertical: spacing.m,
+    gap: spacing.s,
+    alignItems: 'center',
+  } as ViewStyle,
+  emptyTextInner: {
+    ...typography.body,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+  } as TextStyle,
+  emptyCta: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  emptyCtaText: {
+    ...typography.button,
+    color: colors.text.primary,
+  } as TextStyle,
+
+  // ── Card rows (posts, events) ───────────────
+  rowList: {
+    gap: spacing.xs,
+  } as ViewStyle,
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.s,
+    borderWidth: 1,
+    borderColor: colors.border,
+  } as ViewStyle,
+  rowTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s,
-    marginBottom: spacing.s,
-  },
-  infoLabel: {
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  } as ViewStyle,
+  rowTitle: {
     ...typography.body,
+    fontWeight: '600',
+    fontFamily: fontFamily.semibold,
     color: colors.text.primary,
-  },
+    flex: 1,
+  } as TextStyle,
+  rowScope: {
+    ...typography.label,
+    fontWeight: '600',
+    fontFamily: fontFamily.semibold,
+    color: colors.text.tertiary,
+    letterSpacing: 0.6,
+  } as TextStyle,
+  rowScopeGlobal: {
+    color: colors.primary.main,
+  } as TextStyle,
+  rowDescription: {
+    ...typography.caption,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+    marginTop: spacing.xxs,
+  } as TextStyle,
+  rowMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.xxs,
+  } as ViewStyle,
+  rowMetaText: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+  } as TextStyle,
+
+  // ── Listing cards ───────────────────────────
+  listingCard: {
+    flexDirection: 'row',
+    gap: spacing.s,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.s,
+    borderWidth: 1,
+    borderColor: colors.border,
+  } as ViewStyle,
+  listingThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.button,
+    backgroundColor: colors.surfaceMuted,
+  } as ImageStyle,
+  listingThumbPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.button,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  listingThumbPlaceholderText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 24,
+    color: colors.text.tertiary,
+  } as TextStyle,
+  listingBody: {
+    flex: 1,
+    gap: spacing.xxs,
+  } as ViewStyle,
+  listingTitle: {
+    ...typography.body,
+    fontWeight: '600',
+    fontFamily: fontFamily.semibold,
+    color: colors.text.primary,
+  } as TextStyle,
+  listingPrice: {
+    ...typography.body,
+    fontWeight: '700',
+    fontFamily: fontFamily.bold,
+    color: colors.text.primary,
+  } as TextStyle,
+
+  // ── About card ──────────────────────────────
+  aboutCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.s,
+    borderWidth: 1,
+    borderColor: colors.border,
+  } as ViewStyle,
+  aboutBioBlock: {
+    gap: spacing.xxs,
+    paddingBottom: spacing.s,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    marginBottom: spacing.xxs,
+  } as ViewStyle,
+  aboutBio: {
+    ...typography.body,
+    color: colors.text.secondary,
+  } as TextStyle,
+  aboutDivider: {
+    height: spacing.xxs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  } as ViewStyle,
   aboutRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.xs,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
+  } as ViewStyle,
   aboutLabel: {
-    ...typography.body,
-    color: colors.text.secondary,
-  },
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontWeight: '600',
+    fontFamily: fontFamily.semibold,
+    letterSpacing: 0.6,
+  } as TextStyle,
   aboutValue: {
     ...typography.body,
     color: colors.text.primary,
-    fontWeight: '600',
-  },
+    fontWeight: '500',
+    fontFamily: fontFamily.medium,
+    textAlign: 'right',
+  } as TextStyle,
 });
+
+// Re-export for tests.
+export const PROFILE_TEST_COLORS = colors;

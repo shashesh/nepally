@@ -16,6 +16,7 @@ const profilePageMocks = vi.hoisted(() => {
     getUserByIdMock: vi.fn(),
     getPostsByAuthorIdMock: vi.fn(),
     getEventsByOrganizerMock: vi.fn(),
+    getActiveListingsBySellerMock: vi.fn(),
     getOrCreateConversationMock: vi.fn(),
     formatRelativeTimeMock: vi.fn(),
     supabaseSingleMock,
@@ -37,14 +38,11 @@ vi.mock('@nepally/shared', async () => {
     getUserById: profilePageMocks.getUserByIdMock,
     getPostsByAuthorId: profilePageMocks.getPostsByAuthorIdMock,
     getEventsByOrganizer: profilePageMocks.getEventsByOrganizerMock,
+    getActiveListingsBySeller: profilePageMocks.getActiveListingsBySellerMock,
     getOrCreateConversation: profilePageMocks.getOrCreateConversationMock,
     formatRelativeTime: profilePageMocks.formatRelativeTimeMock,
   };
 });
-vi.mock('../../components/Avatar', () => ({
-  default: ({ name }: { name: string }) =>
-    React.createElement('div', { 'data-testid': 'avatar' }, name),
-}));
 vi.mock('next/head', () => ({
   default: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
@@ -67,6 +65,7 @@ const mockProfileUser = {
   trust_level: 1,
   metro_area_id: '19100',
   profile_photo: null,
+  bio: null,
   created_at: '2024-01-15T00:00:00Z',
 };
 
@@ -106,6 +105,25 @@ const mockUserEvents = [
   },
 ];
 
+const mockUserListings = [
+  {
+    id: 'listing-1',
+    title: 'IKEA desk, like new',
+    description: 'Hardly used.',
+    price: 80,
+    owner_id: 'profile-user',
+    status: 'active',
+    category: { id: 'furniture', name: 'Furniture', emoji: '🛋️' },
+    photos: [],
+    is_global: false,
+    created_at: '2026-03-15T12:00:00Z',
+    refreshed_at: '2026-03-15T12:00:00Z',
+    views_count: 5,
+    saves_count: 1,
+    contacts_count: 0,
+  },
+];
+
 import PublicProfilePage from './[id].page';
 
 describe('PublicProfilePage', () => {
@@ -123,6 +141,9 @@ describe('PublicProfilePage', () => {
     profilePageMocks.getUserByIdMock.mockResolvedValue({ data: mockProfileUser });
     profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: mockUserPosts });
     profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: mockUserEvents });
+    profilePageMocks.getActiveListingsBySellerMock.mockResolvedValue({
+      data: mockUserListings,
+    });
     profilePageMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
     // Wire up supabase chain for metro area query
     profilePageMocks.supabaseSingleMock.mockResolvedValue({
@@ -141,11 +162,12 @@ describe('PublicProfilePage', () => {
 
   // ─── Loading / Error States ────────────────────────────────────────────────
 
-  it('shows loading state while profile is being fetched', () => {
+  it('shows an aria-busy skeleton while profile is being fetched', () => {
     profilePageMocks.getUserByIdMock.mockReturnValue(new Promise(() => {}));
     profilePageMocks.getPostsByAuthorIdMock.mockReturnValue(new Promise(() => {}));
-    render(<PublicProfilePage />);
-    expect(screen.getByText('Loading profile...')).toBeDefined();
+    profilePageMocks.getActiveListingsBySellerMock.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<PublicProfilePage />);
+    expect(container.querySelector('[aria-busy="true"]')).toBeDefined();
   });
 
   it('shows error message when getUserById returns an error', async () => {
@@ -155,7 +177,7 @@ describe('PublicProfilePage', () => {
     });
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText('Could not load profile.')).toBeDefined();
+      expect(screen.getByText(/couldn.t find this member/i)).toBeDefined();
     });
   });
 
@@ -163,7 +185,7 @@ describe('PublicProfilePage', () => {
     profilePageMocks.getUserByIdMock.mockResolvedValue({ data: null });
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText('Could not load profile.')).toBeDefined();
+      expect(screen.getByText(/couldn.t find this member/i)).toBeDefined();
     });
   });
 
@@ -182,30 +204,29 @@ describe('PublicProfilePage', () => {
   it('renders the public display name using formatPublicName', async () => {
     render(<PublicProfilePage />);
     await waitFor(() => {
-      // formatPublicName('Bikal Shrestha') → 'Bikal S.'
       expect(screen.getByText('Bikal S.')).toBeDefined();
     });
   });
 
-  it('renders trust badge for verified user (level 1)', async () => {
+  it('renders trust chip for verified user (level 1)', async () => {
     render(<PublicProfilePage />);
     await waitFor(() => {
-      // "✓ Level 1: Verified"
       expect(screen.getByText(/Level 1.*Verified/)).toBeDefined();
     });
   });
 
-  it('renders trust badge for new user (level 0)', async () => {
+  it('renders trust chip for new user (level 0) and shows new-member hint', async () => {
     profilePageMocks.getUserByIdMock.mockResolvedValue({
       data: { ...mockProfileUser, trust_level: 0 },
     });
     render(<PublicProfilePage />);
     await waitFor(() => {
       expect(screen.getByText(/Level 0.*New/)).toBeDefined();
+      expect(screen.getByText(/New to Nepally.*message carefully/i)).toBeDefined();
     });
   });
 
-  it('renders trust badge for contributor user (level 2)', async () => {
+  it('renders trust chip for contributor user (level 2)', async () => {
     profilePageMocks.getUserByIdMock.mockResolvedValue({
       data: { ...mockProfileUser, trust_level: 2 },
     });
@@ -215,34 +236,76 @@ describe('PublicProfilePage', () => {
     });
   });
 
-  // ─── Message Button ────────────────────────────────────────────────────────
+  // ─── Bio ───────────────────────────────────────────────────────────────────
 
-  it('renders message button when viewing another user profile', async () => {
+  it('renders the bio when one is set', async () => {
+    profilePageMocks.getUserByIdMock.mockResolvedValue({
+      data: {
+        ...mockProfileUser,
+        bio: 'Software eng in Dallas, happy to help new arrivals.',
+      },
+    });
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Message/ })).toBeDefined();
+      expect(
+        screen.getByText('Software eng in Dallas, happy to help new arrivals.')
+      ).toBeDefined();
     });
   });
 
-  it('does not render message button when viewing own profile', async () => {
+  it('does not render a bio block on other users with no bio', async () => {
+    render(<PublicProfilePage />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+    expect(screen.queryByText(/Add a short bio/i)).toBeNull();
+  });
+
+  it('shows "Add a short bio" on own profile when bio is empty', async () => {
+    profilePageMocks.useAuthMock.mockReturnValue({
+      user: { ...mockCurrentUser, id: 'profile-user' },
+    });
+    render(<PublicProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByText(/Add a short bio/i)).toBeDefined();
+    });
+  });
+
+  // ─── Message CTA ───────────────────────────────────────────────────────────
+
+  it('renders Message CTA with first name when viewing another user', async () => {
+    render(<PublicProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Message Bikal S\./i })).toBeDefined();
+    });
+  });
+
+  it('renders Edit profile link instead of Message CTA on own profile', async () => {
     profilePageMocks.useAuthMock.mockReturnValue({
       user: { ...mockCurrentUser, id: 'profile-user' },
     });
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
     expect(screen.queryByRole('button', { name: /Message/ })).toBeNull();
+    expect(screen.getByText(/Edit profile/i)).toBeDefined();
   });
 
-  it('calls getOrCreateConversation and navigates when message button is clicked', async () => {
+  it('renders Sign-in Message label when unauthenticated', async () => {
+    profilePageMocks.useAuthMock.mockReturnValue({ user: null });
+    render(<PublicProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Sign in to message/i })).toBeDefined();
+    });
+  });
+
+  it('calls getOrCreateConversation and navigates when Message CTA is clicked', async () => {
     profilePageMocks.getOrCreateConversationMock.mockResolvedValue({
       data: { conversationId: 'conv-abc', isNew: true },
     });
     render(<PublicProfilePage />);
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Message/ })).toBeDefined()
+      expect(screen.getByRole('button', { name: /Message Bikal S\./i })).toBeDefined()
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Message/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Message Bikal S\./i }));
 
     await waitFor(() => {
       expect(profilePageMocks.getOrCreateConversationMock).toHaveBeenCalledWith(
@@ -256,31 +319,29 @@ describe('PublicProfilePage', () => {
     });
   });
 
-  it('redirects to /login when unauthenticated user clicks message', async () => {
+  it('redirects to /login when unauthenticated user clicks Message CTA', async () => {
     profilePageMocks.useAuthMock.mockReturnValue({ user: null });
     render(<PublicProfilePage />);
-    // No currentUser means isOwnProfile = false but no user - button still visible
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Message/ })).toBeDefined()
+      expect(screen.getByRole('button', { name: /Sign in to message/i })).toBeDefined()
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Message/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Sign in to message/i }));
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/login');
     });
   });
 
-  it('shows loading state while messaging is in progress', async () => {
+  it('swaps CTA label to "Opening conversation…" while messaging', async () => {
     profilePageMocks.getOrCreateConversationMock.mockReturnValue(new Promise(() => {}));
     render(<PublicProfilePage />);
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Message/ })).toBeDefined()
+      expect(screen.getByRole('button', { name: /Message Bikal S\./i })).toBeDefined()
     );
-    fireEvent.click(screen.getByRole('button', { name: /Message/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Message Bikal S\./i }));
     await waitFor(() => {
-      const btn = screen.getByRole('button', { name: /Message/ });
-      expect(btn.getAttribute('data-loading')).toBe('true');
+      expect(screen.getByText(/Opening conversation/i)).toBeDefined();
     });
   });
 
@@ -294,28 +355,29 @@ describe('PublicProfilePage', () => {
     });
   });
 
-  it('shows empty state when user has no posts', async () => {
+  it('shows an empty state using the first name when user has no posts', async () => {
     profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText('No posts yet.')).toBeDefined();
+      expect(screen.getByText(/Bikal.*hasn.t posted anything/i)).toBeDefined();
     });
   });
 
-  it('shows Local badge for non-global post', async () => {
+  it('renders a Local text chip for non-global post (no emoji)', async () => {
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText('📍 Local')).toBeDefined();
+      expect(screen.getByText('Local')).toBeDefined();
     });
+    expect(screen.queryByText(/📍/)).toBeNull();
   });
 
-  it('shows Global badge for global post', async () => {
+  it('renders a Global text chip for global post', async () => {
     profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({
       data: [{ ...mockUserPosts[0], is_global: true }],
     });
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText('🌐 Global')).toBeDefined();
+      expect(screen.getByText('Global')).toBeDefined();
     });
   });
 
@@ -327,40 +389,84 @@ describe('PublicProfilePage', () => {
     });
   });
 
+  // ─── Events Tab ────────────────────────────────────────────────────────────
+
   it('shows organizer events in Events tab', async () => {
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Events' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Events/ }));
 
     await waitFor(() => {
       expect(screen.getByText('Nepali Networking Night')).toBeDefined();
-      expect(screen.getByText('18 going')).toBeDefined();
+      expect(screen.getByText('18 goings')).toBeDefined();
     });
   });
 
-  it('shows empty state when user has no events', async () => {
+  it('shows empty events state with first name', async () => {
     profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: [] });
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Events' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Events/ }));
 
     await waitFor(() => {
-      expect(screen.getByText('No events yet.')).toBeDefined();
+      expect(screen.getByText(/Bikal.*hasn.t organized any events/i)).toBeDefined();
     });
   });
 
-  // ─── About Tab ────────────────────────────────────────────────────────────
+  // ─── Listings Tab (new) ────────────────────────────────────────────────────
 
-  it('switches to About tab and shows metro area location', async () => {
+  it('shows active listings in the Listings tab', async () => {
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Listings/ }));
 
     await waitFor(() => {
-      expect(screen.getByText('Dallas-Fort Worth, TX')).toBeDefined();
+      expect(screen.getByText('IKEA desk, like new')).toBeDefined();
+      expect(screen.getByText('$80')).toBeDefined();
+    });
+  });
+
+  it('shows empty listings state for other users', async () => {
+    profilePageMocks.getActiveListingsBySellerMock.mockResolvedValue({ data: [] });
+    render(<PublicProfilePage />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Listings/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Bikal has no active listings/i)).toBeDefined();
+    });
+  });
+
+  it('listing items link to the listing detail page', async () => {
+    render(<PublicProfilePage />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Listings/ }));
+
+    await waitFor(() => {
+      const listingLink = screen.getByText('IKEA desk, like new').closest('a');
+      expect(listingLink?.getAttribute('href')).toBe('/marketplace/listing/listing-1');
+    });
+  });
+
+  // ─── About Tab ─────────────────────────────────────────────────────────────
+
+  it('shows metro area location in About tab', async () => {
+    render(<PublicProfilePage />);
+    await waitFor(() =>
+      // metro shows in the header meta row too, so wait until it's rendered there
+      expect(screen.getAllByText('Dallas-Fort Worth, TX').length).toBeGreaterThan(0)
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
+
+    await waitFor(() => {
+      // now both header meta + About row contain it
+      expect(screen.getAllByText('Dallas-Fort Worth, TX').length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -371,7 +477,7 @@ describe('PublicProfilePage', () => {
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
 
     await waitFor(() => {
       expect(screen.getByText('Not set')).toBeDefined();
@@ -382,34 +488,25 @@ describe('PublicProfilePage', () => {
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
 
     await waitFor(() => {
       expect(screen.getByText('2024')).toBeDefined();
     });
   });
 
-  it('shows post count in About tab', async () => {
+  it('About tab lists all activity counts including listings', async () => {
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
 
     await waitFor(() => {
-      // 1 post in mockUserPosts — the count "1" appears as the Posts value
-      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
-    });
-  });
-
-  it('shows event count in About tab', async () => {
-    render(<PublicProfilePage />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
-
-    fireEvent.click(screen.getByRole('button', { name: 'About' }));
-
-    await waitFor(() => {
-      // 1 event in mockUserEvents — the count "1" appears as the Events value
-      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+      // Row labels in the About section are unique — tab labels now include a nested count.
+      expect(screen.getByText('Active listings')).toBeDefined();
+      expect(screen.getByText('Events organized')).toBeDefined();
+      // The bare "Posts" label only appears in the About row (tab reads "Posts 1").
+      expect(screen.getAllByText('Posts').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -417,10 +514,12 @@ describe('PublicProfilePage', () => {
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'About' }));
-    await waitFor(() => expect(screen.getByText('Dallas-Fort Worth, TX')).toBeDefined());
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
+    await waitFor(() =>
+      expect(screen.getAllByText('Dallas-Fort Worth, TX').length).toBeGreaterThan(0)
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Posts' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Posts/ }));
     await waitFor(() => {
       expect(screen.getByText('Roommate needed')).toBeDefined();
     });

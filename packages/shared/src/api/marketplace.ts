@@ -261,6 +261,40 @@ export async function getListingById(
 }
 
 /**
+ * Get a seller's active listings for display on the public profile view.
+ *
+ * Only `status='active'` is returned, regardless of whether the viewer
+ * is the owner — sold / hidden / expired listings never appear on another
+ * user's public profile. RLS on marketplace_listings already allows any
+ * authenticated user to read active rows, so this works for strangers.
+ */
+export async function getActiveListingsBySeller(
+  supabase: SupabaseClient,
+  sellerId: string,
+  limit: number = 30
+): Promise<ListingsResult> {
+  try {
+    const { data, error } = await supabase
+      .from('marketplace_listings_view')
+      .select(LISTING_SELECT)
+      .eq('owner_id', sellerId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return { data: (data || []) as MarketplaceListing[] };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error
+          : new Error('Failed to fetch seller listings'),
+    };
+  }
+}
+
+/**
  * Get listings created by a specific user (for My Listings / profile view).
  * Includes all statuses except 'removed'. Ordered by created_at DESC.
  */

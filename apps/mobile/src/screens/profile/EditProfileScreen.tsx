@@ -23,6 +23,8 @@ import {
   uploadProfilePhoto,
   deleteProfilePhoto,
   APP_CONFIG,
+  BIO_MAX_LENGTH,
+  bioSchema,
 } from '@nepally/shared';
 import { saveMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
@@ -43,6 +45,7 @@ export function EditProfileScreen() {
 
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [bio, setBio] = useState(user?.bio || '');
   const [zipCode, setZipCode] = useState(user?.zip_code || '');
   const [metroName, setMetroName] = useState<string | null>(null);
   const [resolvedMetroId, setResolvedMetroId] = useState<string | null>(null);
@@ -214,6 +217,10 @@ export function EditProfileScreen() {
       newErrors.fullName = 'Name must be at least 2 characters';
     }
 
+    if (bio.length > BIO_MAX_LENGTH) {
+      newErrors.bio = `Bio must be at most ${BIO_MAX_LENGTH} characters`;
+    }
+
     if (zipCode && zipCode.length !== APP_CONFIG.zipCodeLength) {
       newErrors.zipCode = `ZIP code must be ${APP_CONFIG.zipCodeLength} digits`;
     }
@@ -231,9 +238,20 @@ export function EditProfileScreen() {
     setSaving(true);
 
     try {
+      const parsedBio = bioSchema.safeParse(bio);
+      if (!parsedBio.success) {
+        setErrors((prev) => ({
+          ...prev,
+          bio: parsedBio.error.issues[0]?.message || 'Invalid bio',
+        }));
+        setSaving(false);
+        return;
+      }
+
       const profileResult = await updateUserProfile(supabase, user.id, {
         full_name: fullName.trim(),
         phone: phone.trim() || undefined,
+        bio: parsedBio.data,
       });
 
       if (profileResult.error) {
@@ -319,6 +337,32 @@ export function EditProfileScreen() {
           {errors.fullName && (
             <Text style={styles.errorText}>{errors.fullName}</Text>
           )}
+        </View>
+
+        {/* Bio */}
+        <View style={styles.fieldContainer}>
+          <View style={styles.bioLabelRow}>
+            <Text style={styles.label}>Bio</Text>
+            <Text
+              style={[
+                styles.bioCounter,
+                bio.length > BIO_MAX_LENGTH && styles.bioCounterOver,
+              ]}
+            >
+              {bio.length}/{BIO_MAX_LENGTH}
+            </Text>
+          </View>
+          <TextInput
+            style={[styles.bioInput, errors.bio && styles.inputError]}
+            placeholder="A short line about you — what you're up to, how others can help."
+            placeholderTextColor={colors.text.disabled}
+            value={bio}
+            onChangeText={setBio}
+            multiline
+            textAlignVertical="top"
+            maxLength={BIO_MAX_LENGTH + 50}
+          />
+          {errors.bio && <Text style={styles.errorText}>{errors.bio}</Text>}
         </View>
 
         {/* Phone Number */}
@@ -423,6 +467,30 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: borderRadius.input,
     paddingHorizontal: spacing.s,
+    ...typography.body,
+    color: colors.text.primary,
+  },
+  bioLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+  },
+  bioCounter: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    fontVariant: ['tabular-nums'],
+  },
+  bioCounterOver: {
+    color: colors.error,
+    fontWeight: '600',
+  },
+  bioInput: {
+    minHeight: 96,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.input,
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.s,
     ...typography.body,
     color: colors.text.primary,
   },
