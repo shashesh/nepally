@@ -125,7 +125,7 @@ Maintained by `AFTER INSERT` / `AFTER DELETE` triggers on `user_follows`. Unit t
 - `user_follows` SELECT: public read (follower + followee lists are public).
 - `user_follows` INSERT: `auth.uid() = follower_id` AND follower trust level ≥ 1.
 - `user_follows` DELETE: `auth.uid() = follower_id` (unfollow); moderators may delete any row.
-- Blocking a user (existing `user_blocks` table) removes both follow rows via a DB trigger.
+- Blocking a user (existing `blocked_users` table) removes both follow rows via a DB trigger.
 
 **UX touchpoints:**
 - Public profile: primary "Follow" / "Following" button, plus follower/following counts that expand into list screens.
@@ -214,7 +214,7 @@ Each suggestion carries a reason string: `"Both from Pokhara"`, `"Both studied a
 | Events | Pulse "Events This Week" deep-links into existing event detail |
 | Chat | Unchanged; follow does **not** change messaging permissions |
 | Trust levels | Unchanged; follow available at Level 1+; Level 0 can view but not follow |
-| Blocking (`user_blocks`) | New trigger severs follows both directions when a block is created |
+| Blocking (`blocked_users`) | New trigger severs follows both directions when a block is created |
 
 ---
 
