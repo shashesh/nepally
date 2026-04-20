@@ -28,6 +28,7 @@ import {
 } from '@nepally/shared';
 import { saveMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
+import { AboutYouSection, type AboutYouValues } from './components/AboutYouSection';
 import { Avatar } from '../../components/Avatar';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { colors } from '../../styles/colors';
@@ -51,6 +52,12 @@ export function EditProfileScreen() {
   const [resolvedMetroId, setResolvedMetroId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [aboutYou, setAboutYou] = useState<AboutYouValues>({
+    hometown_district: user?.hometown_district ?? null,
+    college: user?.college ?? null,
+    years_in_us: user?.years_in_us ?? null,
+    languages: user?.languages ?? [],
+  });
 
   // Photo state
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -252,6 +259,10 @@ export function EditProfileScreen() {
         full_name: fullName.trim(),
         phone: phone.trim() || undefined,
         bio: parsedBio.data,
+        hometown_district: aboutYou.hometown_district,
+        college: aboutYou.college,
+        years_in_us: aboutYou.years_in_us,
+        languages: aboutYou.languages,
       });
 
       if (profileResult.error) {
@@ -401,6 +412,9 @@ export function EditProfileScreen() {
             <Text style={styles.metroText}>{metroName}</Text>
           )}
         </View>
+
+        {/* About You */}
+        <AboutYouSection values={aboutYou} onChange={setAboutYou} disabled={saving} />
 
         {/* Save Button */}
         <PrimaryButton
