@@ -151,7 +151,7 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleViewProfile() {
+  async function handleEditName() {
     if (!user) return;
 
     const nextName = window.prompt('Update your full name', user.full_name || '');
@@ -522,7 +522,7 @@ export default function ProfilePage() {
                 <UnstyledButton
                   className={styles.hamburgerItem}
                   onClick={() => {
-                    handleViewProfile();
+                    handleEditName();
                   }}
                 >
                   Edit Name

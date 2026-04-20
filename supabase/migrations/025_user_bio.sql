@@ -10,7 +10,8 @@
 --     the users table SELECT policy)
 --
 -- Rollback notes
---   To roll back, write migration 026 that runs:
+--   To roll back, write a new incremental migration (the next available
+--   sequential number) that runs:
 --     ALTER TABLE users DROP COLUMN bio;
 
 ALTER TABLE users

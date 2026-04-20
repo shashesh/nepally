@@ -583,12 +583,17 @@ export default function PublicProfilePage() {
                     : tab === 'listings'
                       ? userListings.length
                       : undefined;
+              const tabId = `profile-tab-${tab}`;
+              const panelId = `profile-tabpanel-${tab}`;
               return (
                 <button
                   key={tab}
+                  id={tabId}
                   type="button"
                   role="tab"
-                  aria-selected={isActive ? 'true' : 'false'}
+                  aria-selected={isActive}
+                  aria-controls={panelId}
+                  tabIndex={isActive ? 0 : -1}
                   className={`${styles.tab} ${isActive ? styles.tabActive : ''}`}
                   onClick={() => setActiveTab(tab)}
                 >
@@ -602,7 +607,13 @@ export default function PublicProfilePage() {
           </div>
 
           {/* Content */}
-          <div className={styles.content} role="tabpanel">
+          <div
+            className={styles.content}
+            role="tabpanel"
+            id={`profile-tabpanel-${activeTab}`}
+            aria-labelledby={`profile-tab-${activeTab}`}
+            tabIndex={0}
+          >
             {activeTab === 'posts' && renderPosts()}
             {activeTab === 'events' && renderEvents()}
             {activeTab === 'listings' && renderListings()}

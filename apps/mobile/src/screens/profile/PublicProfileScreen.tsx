@@ -620,15 +620,23 @@ export default function PublicProfileScreen(): React.ReactElement {
         </View>
 
         {/* Tab rail */}
-        <View style={styles.tabRail}>
+        <View
+          style={styles.tabRail}
+          accessibilityRole="tablist"
+        >
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
+            const countSuffix =
+              tab.count !== undefined && tab.count > 0 ? `, ${tab.count}` : '';
             return (
               <TouchableOpacity
                 key={tab.id}
                 style={[styles.tab, isActive && styles.tabActive]}
                 onPress={() => setActiveTab(tab.id)}
                 activeOpacity={0.7}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={`${tab.label}${countSuffix}`}
               >
                 <Text
                   style={[styles.tabLabel, isActive && styles.tabLabelActive]}

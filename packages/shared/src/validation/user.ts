@@ -8,18 +8,21 @@ export const BIO_MAX_LENGTH = 200;
 
 /**
  * Short self-description shown on the public profile.
- * - trimmed
- * - max 200 chars (matches DB constraint in migration 025)
+ * - trimmed + control characters stripped first (keep tab + newline for line breaks)
+ * - max 200 chars applied AFTER normalization so inputs whose stored value
+ *   would fit the DB constraint aren't rejected for leading/trailing whitespace
+ *   or stripped control characters (matches DB constraint in migration 025)
  * - empty string is normalized to null so the UI can distinguish
  *   "user hasn't set a bio" from "user set an empty bio"
- * - control characters stripped (keep tab + newline for line breaks)
  */
 export const bioSchema = z
   .string()
-  .max(BIO_MAX_LENGTH, `Bio must be at most ${BIO_MAX_LENGTH} characters`)
   .transform((value) => value.trim())
   // eslint-disable-next-line no-control-regex
   .transform((value) => value.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, ''))
+  .pipe(
+    z.string().max(BIO_MAX_LENGTH, `Bio must be at most ${BIO_MAX_LENGTH} characters`)
+  )
   .transform((value) => (value.length === 0 ? null : value));
 
 /**

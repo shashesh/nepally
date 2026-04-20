@@ -46,7 +46,6 @@
   display: flex;
   align-items: flex-end;
   gap: var(--space-s);
-  margin-bottom: var(--space-s);
   transform: translateY(-24px);
   margin-bottom: -8px;
 }

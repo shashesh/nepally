@@ -48,6 +48,16 @@ describe('bioSchema', () => {
     const input = 'a'.repeat(BIO_MAX_LENGTH + 1);
     expect(() => bioSchema.parse(input)).toThrow();
   });
+
+  it(`accepts ${BIO_MAX_LENGTH} chars of content surrounded by whitespace`, () => {
+    const input = `  ${'a'.repeat(BIO_MAX_LENGTH)}  `;
+    expect(bioSchema.parse(input)).toBe('a'.repeat(BIO_MAX_LENGTH));
+  });
+
+  it(`accepts ${BIO_MAX_LENGTH} chars of content mixed with control characters`, () => {
+    const input = `${'a'.repeat(BIO_MAX_LENGTH)}\u0000\u0007`;
+    expect(bioSchema.parse(input)).toBe('a'.repeat(BIO_MAX_LENGTH));
+  });
 });
 
 describe('bioUpdateSchema', () => {
