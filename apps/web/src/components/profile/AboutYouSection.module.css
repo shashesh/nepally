@@ -1,0 +1,29 @@
+.section { margin-top: 32px; }
+.title { font-size: 18px; font-weight: 600; color: #111; margin: 0 0 4px; }
+.subtitle { font-size: 13px; color: #666; margin: 0 0 16px; }
+.label { display: block; font-size: 14px; color: #333; margin: 16px 0 6px; }
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  background: #fff;
+}
+.select { composes: input; }
+.chipGrid { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 13px;
+}
+.chipSelected {
+  background: #c8102e;
+  color: #fff;
+  border-color: #c8102e;
+}
