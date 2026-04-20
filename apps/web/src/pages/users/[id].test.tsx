@@ -18,6 +18,7 @@ const profilePageMocks = vi.hoisted(() => {
     getEventsByOrganizerMock: vi.fn(),
     getActiveListingsBySellerMock: vi.fn(),
     getOrCreateConversationMock: vi.fn(),
+    isFollowingMock: vi.fn(),
     formatRelativeTimeMock: vi.fn(),
     supabaseSingleMock,
     supabaseEqMock,
@@ -40,6 +41,7 @@ vi.mock('@nepally/shared', async () => {
     getEventsByOrganizer: profilePageMocks.getEventsByOrganizerMock,
     getActiveListingsBySeller: profilePageMocks.getActiveListingsBySellerMock,
     getOrCreateConversation: profilePageMocks.getOrCreateConversationMock,
+    isFollowing: profilePageMocks.isFollowingMock,
     formatRelativeTime: profilePageMocks.formatRelativeTimeMock,
   };
 });
@@ -145,6 +147,7 @@ describe('PublicProfilePage', () => {
       data: mockUserListings,
     });
     profilePageMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
+    profilePageMocks.isFollowingMock.mockResolvedValue({ data: false });
     // Wire up supabase chain for metro area query
     profilePageMocks.supabaseSingleMock.mockResolvedValue({
       data: { name: 'Dallas-Fort Worth', state: 'TX' },
@@ -523,5 +526,64 @@ describe('PublicProfilePage', () => {
     await waitFor(() => {
       expect(screen.getByText('Roommate needed')).toBeDefined();
     });
+  });
+
+  // ─── Follow button, counts, and identity chips ────────────────────────────
+
+  it('renders follow button, counts, and identity chips', async () => {
+    profilePageMocks.getUserByIdMock.mockResolvedValue({
+      data: {
+        ...mockProfileUser,
+        id: 'target-1',
+        hometown_district: 'Pokhara',
+        college: 'Pulchowk',
+        years_in_us: 6,
+        languages: ['nepali', 'newari'],
+        follower_count: 12,
+        following_count: 4,
+      },
+    });
+    profilePageMocks.useRouterMock.mockReturnValue({
+      query: { id: 'target-1' },
+      push: vi.fn(),
+      replace: vi.fn(),
+    });
+    profilePageMocks.useAuthMock.mockReturnValue({ user: { ...mockCurrentUser, id: 'viewer-1' } });
+
+    render(<PublicProfilePage />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+
+    expect(screen.getByTestId('follow-button')).toBeDefined();
+    expect(screen.getByText(/12 followers/)).toBeDefined();
+    expect(screen.getByText(/4 following/)).toBeDefined();
+    expect(screen.getByText('Pokhara')).toBeDefined();
+    expect(screen.getByText('Pulchowk')).toBeDefined();
+    expect(screen.getByText('6 years in US')).toBeDefined();
+  });
+
+  it('hides identity chips that are empty', async () => {
+    profilePageMocks.getUserByIdMock.mockResolvedValue({
+      data: {
+        ...mockProfileUser,
+        id: 'target-2',
+        hometown_district: null,
+        college: null,
+        years_in_us: null,
+        languages: [],
+        follower_count: 0,
+        following_count: 0,
+      },
+    });
+    profilePageMocks.useRouterMock.mockReturnValue({
+      query: { id: 'target-2' },
+      push: vi.fn(),
+      replace: vi.fn(),
+    });
+    profilePageMocks.useAuthMock.mockReturnValue({ user: { ...mockCurrentUser, id: 'viewer-1' } });
+
+    render(<PublicProfilePage />);
+    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+
+    expect(screen.queryByText(/years in US/)).toBeNull();
   });
 });
