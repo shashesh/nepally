@@ -37,12 +37,12 @@ export default function SavedListingsScreen() {
     };
   }, []);
 
-  useEffect(() => {
+  const fetchSaved = useCallback(async () => {
     if (!user) {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
       return;
     }
-    (async () => {
+    try {
       const [saved, ids] = await Promise.all([
         getSavedListingsByUser(supabase, user.id),
         getUserSavedListingIds(supabase, user.id),
@@ -50,9 +50,16 @@ export default function SavedListingsScreen() {
       if (!mountedRef.current) return;
       if (saved.data) setListings(saved.data);
       if (ids.data) setSavedIds(new Set(ids.data));
-      setLoading(false);
-    })();
+    } catch {
+      // Silently handle — empty state will surface in the UI.
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchSaved();
+  }, [fetchSaved]);
 
   const handleToggleSave = useCallback(
     async (listingId: string) => {
