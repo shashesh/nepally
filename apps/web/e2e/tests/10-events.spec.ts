@@ -114,6 +114,14 @@ async function mockEventsEndpoints(
   const eventDetail = options.eventDetail ?? MOCK_EVENTS[0];
   const attendees = options.attendees ?? [];
 
+  // Clear any previously registered handlers for these patterns so a second
+  // call cleanly replaces the first. Without this, a prior `beforeEach` mock
+  // can race with per-test overrides (shown up as a flaky cancelled-banner
+  // test when the old handler sometimes wins).
+  await page.unroute('**/rest/v1/events**');
+  await page.unroute('**/rest/v1/event_rsvps**');
+  await page.unroute('**/rpc/soft_delete_event**');
+
   // Events list + single event GET
   await page.route('**/rest/v1/events**', async (route) => {
     const accept = route.request().headers()['accept'] ?? '';
