@@ -54,6 +54,7 @@
 - [specs/2026-04-13-docs-reorganization-design.md](specs/2026-04-13-docs-reorganization-design.md) — design spec for this docs reorganization
 - [specs/2026-04-13-marketplace-listing-details-enhancement-design.md](specs/2026-04-13-marketplace-listing-details-enhancement-design.md) — marketplace listing detail page Split View redesign (web + mobile)
 - [specs/2026-04-14-mobile-marketplace-redesign-design.md](specs/2026-04-14-mobile-marketplace-redesign-design.md) — spec for the 4-tab mobile marketplace home redesign (Sponsored · Featured · Trending · All Listings)
+- [specs/2026-04-20-your-community-today-design.md](specs/2026-04-20-your-community-today-design.md) — "Your Community Today": Metro Pulse card strip + Social Identity (follow graph, extended profile, helper score)
 - [plans/active/2026-04-13-marketplace-listing-details-enhancement.md](plans/active/2026-04-13-marketplace-listing-details-enhancement.md) — implementation plan for Split View listing detail redesign
 
 ## User journeys
