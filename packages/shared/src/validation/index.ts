@@ -3,6 +3,7 @@
  */
 
 export * from './post';
+export * from './user';
 
 // Legacy schemas — kept for backward compatibility during migration
 export * from './housing';

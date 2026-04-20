@@ -10,6 +10,7 @@ export interface User {
   full_name: string;
   phone?: string;
   profile_photo?: string | null;
+  bio?: string | null;
 
   // Location
   metro_area_id?: string;
