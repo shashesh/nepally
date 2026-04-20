@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../test-utils';
+import { render, screen, fireEvent, waitFor, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -9,6 +9,7 @@ const profileMocks = vi.hoisted(() => ({
   useRouterMock: vi.fn(),
   getPostsByAuthorIdMock: vi.fn(),
   getSavedPostsByUserIdMock: vi.fn(),
+  getListingsByOwnerMock: vi.fn(),
   unsavePostMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
   updateUserProfileMock: vi.fn(),
@@ -36,6 +37,7 @@ vi.mock('@nepally/shared', async () => {
     ...actual,
     getPostsByAuthorId: profileMocks.getPostsByAuthorIdMock,
     getSavedPostsByUserId: profileMocks.getSavedPostsByUserIdMock,
+    getListingsByOwner: profileMocks.getListingsByOwnerMock,
     unsavePost: profileMocks.unsavePostMock,
     formatRelativeTime: profileMocks.formatRelativeTimeMock,
     updateUserProfile: profileMocks.updateUserProfileMock,
@@ -83,6 +85,7 @@ describe('ProfilePage', () => {
     });
     profileMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({ data: [] });
+    profileMocks.getListingsByOwnerMock.mockResolvedValue({ data: [] });
     profileMocks.unsavePostMock.mockResolvedValue({});
     profileMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
   });
@@ -373,6 +376,59 @@ describe('ProfilePage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Saved posts DB error')).toBeDefined();
+    });
+  });
+
+  // ─── About You section tests ─────────────────────────────────────────────
+
+  it('renders the About You section with initial values', async () => {
+    profileMocks.useAuthMock.mockReturnValue({
+      user: {
+        ...mockUser,
+        hometown_district: 'Kathmandu',
+        college: 'Pulchowk',
+        years_in_us: 5,
+        languages: ['nepali'],
+      },
+      signOut: mockSignOut,
+      refreshUser: mockRefreshUser,
+    });
+    render(<ProfilePage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'About' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('About You')).toBeDefined();
+      expect((screen.getByLabelText('Hometown district') as HTMLSelectElement).value).toBe('Kathmandu');
+      expect((screen.getByLabelText('College / university') as HTMLInputElement).value).toBe('Pulchowk');
+    });
+  });
+
+  it('sends About You values to updateUserProfile on save', async () => {
+    profileMocks.updateUserProfileMock.mockResolvedValue({ data: { id: 'user-1' } });
+    render(<ProfilePage />);
+
+    // navigate to About tab
+    await waitFor(() => expect(screen.getByRole('button', { name: 'About' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+
+    // wait for About You section to appear
+    await waitFor(() => expect(screen.getByLabelText('Hometown district')).toBeDefined());
+
+    // simulate selecting Pokhara — fireEvent.change fires React's onChange with the new value
+    const districtSelect = screen.getByLabelText('Hometown district');
+    Object.defineProperty(districtSelect, 'value', { writable: true, value: 'Pokhara' });
+    fireEvent.change(districtSelect);
+
+    // click save
+    fireEvent.click(screen.getByRole('button', { name: /save about you/i }));
+
+    await waitFor(() => {
+      expect(profileMocks.updateUserProfileMock).toHaveBeenCalledWith(
+        expect.anything(),
+        'user-1',
+        expect.objectContaining({ hometown_district: 'Pokhara' })
+      );
     });
   });
 });
