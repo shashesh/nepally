@@ -110,10 +110,10 @@ CREATE POLICY "user_follows_insert_self_verified"
   ON user_follows
   FOR INSERT
   WITH CHECK (
-    auth.uid() = follower_id
+    (SELECT auth.uid()) = follower_id
     AND EXISTS (
       SELECT 1 FROM users
-      WHERE id = auth.uid()
+      WHERE id = (SELECT auth.uid())
         AND trust_level >= 1
         AND is_banned = false
     )
@@ -123,9 +123,9 @@ CREATE POLICY "user_follows_delete_self_or_mod"
   ON user_follows
   FOR DELETE
   USING (
-    auth.uid() = follower_id
+    (SELECT auth.uid()) = follower_id
     OR EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
+      SELECT 1 FROM users WHERE id = (SELECT auth.uid()) AND is_moderator = true
     )
   );
 
