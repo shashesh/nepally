@@ -8,8 +8,8 @@ function makeChain(final: { data: unknown; error: unknown }) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   // terminal: awaiting the builder resolves to `final`
-  (chain as unknown as PromiseLike<unknown>).then = (res: (v: unknown) => unknown) =>
-    Promise.resolve(res(final));
+  (chain as unknown as { then: (res: (v: unknown) => unknown) => Promise<unknown> }).then =
+    (res: (v: unknown) => unknown) => Promise.resolve(res(final));
   return chain;
 }
 
