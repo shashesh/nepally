@@ -32,6 +32,7 @@ type FeedEntry =
   | { kind: 'sponsored'; sponsored: SponsoredListing };
 import Avatar from '../components/Avatar';
 import ReportPostModal from '../components/ReportPostModal';
+import { MetroPulseStrip } from '../components/pulse/MetroPulseStrip';
 import styles from '../styles/Feed.module.css';
 
 const LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
@@ -647,6 +648,13 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 </Link>
               )}
             </div>
+
+            {activeLocation?.metro_area_id ? (
+              <MetroPulseStrip
+                metroAreaId={activeLocation.metro_area_id}
+                metroLabel={activeLocation.metro_name ?? 'your metro'}
+              />
+            ) : null}
 
             {loading ? (
               <Stack data-testid="feed-loading" gap="md">
