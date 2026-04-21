@@ -170,7 +170,7 @@ describe('PublicProfileScreen', () => {
     mockSupabaseSingle.mockResolvedValue({
       data: { name: 'Dallas-Fort Worth', state: 'TX' },
     });
-    mockSupabaseEq.mockReturnValue({ single: mockSupabaseSingle });
+    mockSupabaseEq.mockReturnValue({ single: mockSupabaseSingle, eq: mockSupabaseEq2 });
     mockSupabaseSelect.mockReturnValue({ eq: mockSupabaseEq });
     mockSupabaseFrom.mockReturnValue({ select: mockSupabaseSelect });
   });

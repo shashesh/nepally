@@ -24,6 +24,12 @@ interface User {
   metro_area_id?: string;
   trust_level: number;
   is_premium: boolean;
+  hometown_district?: string | null;
+  college?: string | null;
+  years_in_us?: number | null;
+  languages?: string[];
+  follower_count?: number;
+  following_count?: number;
 }
 
 interface AuthContextType {
