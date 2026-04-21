@@ -18,3 +18,4 @@ export * from './events';
 export * from './reports';
 export * from './marketplace';
 export * from './promotions';
+export * from './culturalEvents';
