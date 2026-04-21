@@ -19,3 +19,4 @@ export * from './reports';
 export * from './marketplace';
 export * from './promotions';
 export * from './culturalEvents';
+export * from './fxRates';
