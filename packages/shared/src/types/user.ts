@@ -12,6 +12,14 @@ export interface User {
   profile_photo?: string | null;
   bio?: string | null;
 
+  // Social identity (opt-in, added in migration 028)
+  hometown_district?: string | null;
+  college?: string | null;
+  years_in_us?: number | null;
+  languages?: string[];
+  follower_count?: number;
+  following_count?: number;
+
   // Location
   metro_area_id?: string;
   zip_code?: string;

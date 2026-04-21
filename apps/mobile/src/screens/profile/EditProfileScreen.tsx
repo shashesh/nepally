@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ import {
 } from '@nepally/shared';
 import { saveMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
+import { AboutYouSection, type AboutYouValues } from './components/AboutYouSection';
 import { Avatar } from '../../components/Avatar';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { colors } from '../../styles/colors';
@@ -51,11 +52,25 @@ export function EditProfileScreen() {
   const [resolvedMetroId, setResolvedMetroId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [aboutYou, setAboutYou] = useState<AboutYouValues>({
+    hometown_district: user?.hometown_district ?? null,
+    college: user?.college ?? null,
+    years_in_us: user?.years_in_us ?? null,
+    languages: user?.languages ?? [],
+  });
 
   // Photo state
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoStatus, setPhotoStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [localPhotoUri, setLocalPhotoUri] = useState<string | null>(null);
+
+  // Prevents setState after unmount in async handlers (handleSave, photo flows).
+  // Without this, RNTL cleanup on CI can race with the finally blocks below and
+  // stall React 19's act scope — see apps/mobile/CLAUDE.md rule #7.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const originalZip = user?.zip_code || '';
   const displayPhotoUrl = localPhotoUri || user?.profile_photo || null;
@@ -133,11 +148,17 @@ export function EditProfileScreen() {
 
       setLocalPhotoUri(url!);
       await refreshUser();
-      setPhotoStatus({ type: 'success', message: 'Photo updated' });
+      if (mountedRef.current) {
+        setPhotoStatus({ type: 'success', message: 'Photo updated' });
+      }
     } catch (error: unknown) {
-      setPhotoStatus({ type: 'error', message: getErrorMessage(error, 'Failed to upload photo') });
+      if (mountedRef.current) {
+        setPhotoStatus({ type: 'error', message: getErrorMessage(error, 'Failed to upload photo') });
+      }
     } finally {
-      setPhotoUploading(false);
+      if (mountedRef.current) {
+        setPhotoUploading(false);
+      }
     }
   };
 
@@ -187,11 +208,17 @@ export function EditProfileScreen() {
 
       setLocalPhotoUri(null);
       await refreshUser();
-      setPhotoStatus({ type: 'success', message: 'Photo removed' });
+      if (mountedRef.current) {
+        setPhotoStatus({ type: 'success', message: 'Photo removed' });
+      }
     } catch (error: unknown) {
-      setPhotoStatus({ type: 'error', message: getErrorMessage(error, 'Failed to remove photo') });
+      if (mountedRef.current) {
+        setPhotoStatus({ type: 'error', message: getErrorMessage(error, 'Failed to remove photo') });
+      }
     } finally {
-      setPhotoUploading(false);
+      if (mountedRef.current) {
+        setPhotoUploading(false);
+      }
     }
   };
 
@@ -252,6 +279,10 @@ export function EditProfileScreen() {
         full_name: fullName.trim(),
         phone: phone.trim() || undefined,
         bio: parsedBio.data,
+        hometown_district: aboutYou.hometown_district,
+        college: aboutYou.college,
+        years_in_us: aboutYou.years_in_us,
+        languages: aboutYou.languages,
       });
 
       if (profileResult.error) {
@@ -271,13 +302,19 @@ export function EditProfileScreen() {
       }
 
       await refreshUser();
-      Alert.alert('Success', 'Profile updated successfully', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      if (mountedRef.current) {
+        Alert.alert('Success', 'Profile updated successfully', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      }
     } catch (error: unknown) {
-      Alert.alert('Error', getErrorMessage(error, 'Failed to update profile'));
+      if (mountedRef.current) {
+        Alert.alert('Error', getErrorMessage(error, 'Failed to update profile'));
+      }
     } finally {
-      setSaving(false);
+      if (mountedRef.current) {
+        setSaving(false);
+      }
     }
   };
 
@@ -401,6 +438,9 @@ export function EditProfileScreen() {
             <Text style={styles.metroText}>{metroName}</Text>
           )}
         </View>
+
+        {/* About You */}
+        <AboutYouSection values={aboutYou} onChange={setAboutYou} disabled={saving} />
 
         {/* Save Button */}
         <PrimaryButton

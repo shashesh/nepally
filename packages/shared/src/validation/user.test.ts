@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { bioSchema, bioUpdateSchema, BIO_MAX_LENGTH } from './user';
+import {
+  hometownDistrictSchema,
+  collegeSchema,
+  yearsInUsSchema,
+  languagesSchema,
+  extendedProfileUpdateSchema,
+} from './user';
 
 describe('bioSchema', () => {
   it('accepts a normal bio string', () => {
@@ -75,5 +82,58 @@ describe('bioUpdateSchema', () => {
 
   it('normalizes empty string to null', () => {
     expect(bioUpdateSchema.parse('')).toBeNull();
+  });
+});
+
+describe('extended profile validation', () => {
+  it('accepts a valid Nepal district', () => {
+    expect(hometownDistrictSchema.parse('Kathmandu')).toBe('Kathmandu');
+  });
+
+  it('rejects unknown districts', () => {
+    expect(() => hometownDistrictSchema.parse('Narnia')).toThrow();
+  });
+
+  it('trims college whitespace and normalizes empty to null', () => {
+    expect(collegeSchema.parse('  Pulchowk  ')).toBe('Pulchowk');
+    expect(collegeSchema.parse('   ')).toBeNull();
+  });
+
+  it('rejects college longer than 100 chars', () => {
+    expect(() => collegeSchema.parse('x'.repeat(101))).toThrow();
+  });
+
+  it('accepts years_in_us in range', () => {
+    expect(yearsInUsSchema.parse(5)).toBe(5);
+  });
+
+  it('rejects out-of-range years_in_us', () => {
+    expect(() => yearsInUsSchema.parse(-1)).toThrow();
+    expect(() => yearsInUsSchema.parse(100)).toThrow();
+  });
+
+  it('accepts a list of supported language codes', () => {
+    expect(languagesSchema.parse(['nepali', 'english'])).toEqual([
+      'nepali',
+      'english',
+    ]);
+  });
+
+  it('rejects unsupported language codes', () => {
+    expect(() => languagesSchema.parse(['klingon'])).toThrow();
+  });
+
+  it('rejects duplicate language codes', () => {
+    expect(() => languagesSchema.parse(['nepali', 'nepali'])).toThrow(
+      /unique/i
+    );
+  });
+
+  it('extendedProfileUpdateSchema accepts a fully partial payload', () => {
+    const parsed = extendedProfileUpdateSchema.parse({
+      hometown_district: 'Kathmandu',
+    });
+    expect(parsed.hometown_district).toBe('Kathmandu');
+    expect(parsed.college).toBeUndefined();
   });
 });

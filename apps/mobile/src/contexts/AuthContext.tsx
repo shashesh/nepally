@@ -24,6 +24,12 @@ interface User {
   metro_area_id?: string;
   trust_level: number;
   is_premium: boolean;
+  hometown_district?: string | null;
+  college?: string | null;
+  years_in_us?: number | null;
+  languages?: string[];
+  follower_count?: number;
+  following_count?: number;
 }
 
 interface AuthContextType {
@@ -155,6 +161,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         metro_area_id: userData.metro_area_id,
         trust_level: userData.trust_level,
         is_premium: userData.is_premium ?? false,
+        hometown_district: userData.hometown_district ?? null,
+        college: userData.college ?? null,
+        years_in_us: userData.years_in_us ?? null,
+        languages: userData.languages ?? [],
+        follower_count: userData.follower_count ?? 0,
+        following_count: userData.following_count ?? 0,
       };
 
       setUser(userProfile);
