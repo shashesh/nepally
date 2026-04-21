@@ -85,7 +85,10 @@ export const languagesSchema = z
   .array(
     z.enum(SUPPORTED_LANGUAGES as unknown as [LanguageCode, ...LanguageCode[]])
   )
-  .max(SUPPORTED_LANGUAGES.length, 'Too many languages selected');
+  .max(SUPPORTED_LANGUAGES.length, 'Too many languages selected')
+  .refine((arr) => new Set(arr).size === arr.length, {
+    message: 'Languages must be unique',
+  });
 
 export const languagesUpdateSchema = languagesSchema.optional();
 

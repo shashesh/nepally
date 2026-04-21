@@ -123,6 +123,12 @@ describe('extended profile validation', () => {
     expect(() => languagesSchema.parse(['klingon'])).toThrow();
   });
 
+  it('rejects duplicate language codes', () => {
+    expect(() => languagesSchema.parse(['nepali', 'nepali'])).toThrow(
+      /unique/i
+    );
+  });
+
   it('extendedProfileUpdateSchema accepts a fully partial payload', () => {
     const parsed = extendedProfileUpdateSchema.parse({
       hometown_district: 'Kathmandu',

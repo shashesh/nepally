@@ -66,6 +66,22 @@ export default function ProfilePage() {
     }
   }, [user, router]);
 
+  // AuthContext starts as null while loading, so the initial useState above
+  // captures empty values. Re-sync when the user profile actually loads (or
+  // the signed-in user changes) so the About You form reflects the DB state.
+  // Keyed on user?.id so in-progress edits aren't clobbered by unrelated
+  // user-object re-renders.
+  useEffect(() => {
+    if (!user) return;
+    setAboutYou({
+      hometown_district: user.hometown_district ?? null,
+      college: user.college ?? null,
+      years_in_us: user.years_in_us ?? null,
+      languages: user.languages ?? [],
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
 
   useEffect(() => {
     if (!userId) return;

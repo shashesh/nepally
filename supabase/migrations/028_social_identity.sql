@@ -15,7 +15,12 @@
 --     DROP COLUMN IF EXISTS follower_count,
 --     DROP COLUMN IF EXISTS following_count;
 
--- 1) Extended profile columns (all optional, all NULLable)
+-- 1) Extended profile columns.
+-- hometown_district / college / years_in_us are NULLable (user-optional).
+-- languages is NOT NULL with default '{}' — empty array represents
+-- "no languages selected" so callers don't have to distinguish NULL vs [].
+-- follower_count / following_count are trigger-maintained counters and
+-- default to 0 for all existing rows.
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS hometown_district text,
   ADD COLUMN IF NOT EXISTS college text,
