@@ -83,6 +83,7 @@ jest.mock('../../components/Avatar', () => ({
   Avatar: () => null,
 }));
 jest.mock('../../components/buttons/PrimaryButton', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factory is hoisted above ESM imports
   const { TouchableOpacity, Text } = require('react-native');
   return {
     PrimaryButton: ({ title, onPress }: { title: string; onPress: () => void }) => (
@@ -96,6 +97,12 @@ jest.mock('../../components/buttons/PrimaryButton', () => {
 import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import { EditProfileScreen } from './EditProfileScreen';
+import { useAuth } from '../../hooks/useAuth';
+import { updateUserProfile } from '@nepally/shared';
+
+const mockedUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
+const mockedUpdateUserProfile =
+  updateUserProfile as jest.MockedFunction<typeof updateUserProfile>;
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
@@ -119,8 +126,7 @@ describe('EditProfileScreen', () => {
   });
 
   it('renders the About You section with the initial values', async () => {
-    const { useAuth } = require('../../hooks/useAuth');
-    useAuth.mockReturnValue({
+    mockedUseAuth.mockReturnValue({
       user: {
         id: 'user-1',
         full_name: 'Test User',
@@ -133,7 +139,7 @@ describe('EditProfileScreen', () => {
         languages: ['nepali'],
       },
       refreshUser: jest.fn(),
-    });
+    } as unknown as ReturnType<typeof useAuth>);
     const { findByText, getByTestId } = render(<EditProfileScreen />);
     await act(async () => {});
     expect(await findByText('About You')).toBeTruthy();
@@ -142,9 +148,7 @@ describe('EditProfileScreen', () => {
   });
 
   it('propagates About You changes into updateUserProfile', async () => {
-    const { updateUserProfile } = require('@nepally/shared');
-    const { useAuth } = require('../../hooks/useAuth');
-    useAuth.mockReturnValue({
+    mockedUseAuth.mockReturnValue({
       user: {
         id: 'user-1',
         full_name: 'Test User',
@@ -157,7 +161,7 @@ describe('EditProfileScreen', () => {
         languages: [],
       },
       refreshUser: jest.fn(),
-    });
+    } as unknown as ReturnType<typeof useAuth>);
     const { getByTestId, getByText } = render(<EditProfileScreen />);
     await act(async () => {});
     await act(async () => {
@@ -166,7 +170,7 @@ describe('EditProfileScreen', () => {
     await act(async () => {
       fireEvent.press(getByText('Save Changes'));
     });
-    expect(updateUserProfile).toHaveBeenCalledWith(
+    expect(mockedUpdateUserProfile).toHaveBeenCalledWith(
       expect.anything(),
       'user-1',
       expect.objectContaining({ college: 'TU Kirtipur' })

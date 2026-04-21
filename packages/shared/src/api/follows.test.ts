@@ -98,7 +98,7 @@ describe('follows api', () => {
       { id: 'f-1', follower_id: 'a', followee_id: 'u-1', created_at: '2' },
       { id: 'f-2', follower_id: 'b', followee_id: 'u-1', created_at: '1' },
     ];
-    (chain.range as any).mockResolvedValue({ data: list, error: null });
+    chain.range.mockResolvedValue({ data: list, error: null });
 
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
@@ -111,7 +111,7 @@ describe('follows api', () => {
 
   it('getFollowing filters by follower_id', async () => {
     const chain = makeChain({ data: null, error: null });
-    (chain.range as any).mockResolvedValue({ data: [], error: null });
+    chain.range.mockResolvedValue({ data: [], error: null });
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
     await getFollowing(supabase, 'u-1', { limit: 10, offset: 0 });
