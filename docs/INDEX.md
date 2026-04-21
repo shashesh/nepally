@@ -48,6 +48,7 @@
 - [plans/active/notifications-feature.md](plans/active/notifications-feature.md) — full notifications system (DB + shared API + push delivery) [status: planned]
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — Phase 1 post-audit remediation tasks [status: planned]
 - [plans/active/phase1-remediation-github-issues.md](plans/active/phase1-remediation-github-issues.md) — copy-paste GitHub issue cards for Phase 1 remediation
+- [plans/active/2026-04-20-pr3-helper-score-social-cards.md](plans/active/2026-04-20-pr3-helper-score-social-cards.md) — PR 3 of "Your Community Today": helper score + find_your_people + top_helper cards [status: planned, blocked on #41 + #42]
 
 ## Specs (active design specs)
 
