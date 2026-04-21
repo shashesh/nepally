@@ -95,7 +95,7 @@ jest.mock('../../components/buttons/PrimaryButton', () => {
 });
 
 import React from 'react';
-import { act, fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { EditProfileScreen } from './EditProfileScreen';
 import { useAuth } from '../../hooks/useAuth';
 import { updateUserProfile } from '@nepally/shared';
@@ -140,8 +140,9 @@ describe('EditProfileScreen', () => {
       },
       refreshUser: jest.fn(),
     } as unknown as ReturnType<typeof useAuth>);
+    // CLAUDE.md mobile rule #6: async components must use waitFor, never
+    // bare `await act(async () => {})` (deadlocks on Ubuntu CI runners).
     const { findByText, getByTestId } = render(<EditProfileScreen />);
-    await act(async () => {});
     expect(await findByText('About You')).toBeTruthy();
     expect(getByTestId('about-college-input').props.value).toBe('Pulchowk');
     expect(getByTestId('about-years-input').props.value).toBe('5');
@@ -162,18 +163,18 @@ describe('EditProfileScreen', () => {
       },
       refreshUser: jest.fn(),
     } as unknown as ReturnType<typeof useAuth>);
+    // CLAUDE.md mobile rule #6: use waitFor + fireEvent directly; never wrap
+    // fireEvent in `await act(async () => {})` — deadlocks on Ubuntu CI.
+    // RNTL's fireEvent already wraps synchronous updates in act() internally.
     const { getByTestId, getByText } = render(<EditProfileScreen />);
-    await act(async () => {});
-    await act(async () => {
-      fireEvent.changeText(getByTestId('about-college-input'), 'TU Kirtipur');
+    fireEvent.changeText(getByTestId('about-college-input'), 'TU Kirtipur');
+    fireEvent.press(getByText('Save Changes'));
+    await waitFor(() => {
+      expect(mockedUpdateUserProfile).toHaveBeenCalledWith(
+        expect.anything(),
+        'user-1',
+        expect.objectContaining({ college: 'TU Kirtipur' })
+      );
     });
-    await act(async () => {
-      fireEvent.press(getByText('Save Changes'));
-    });
-    expect(mockedUpdateUserProfile).toHaveBeenCalledWith(
-      expect.anything(),
-      'user-1',
-      expect.objectContaining({ college: 'TU Kirtipur' })
-    );
   });
 });
