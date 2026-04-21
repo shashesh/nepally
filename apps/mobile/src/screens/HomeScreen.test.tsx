@@ -74,6 +74,9 @@ jest.mock('../components/location/LocationChangeSheet', () => ({
 jest.mock('../components/location/LocationSwitcherSheet', () => ({
   LocationSwitcherSheet: () => null,
 }));
+jest.mock('../components/pulse/MetroPulseStrip', () => ({
+  MetroPulseStrip: () => null,
+}));
 jest.mock('../components/cards/PostCard', () => ({
   PostCard: ({ onMorePress }: { onMorePress?: () => void }) => {
     const ReactNative = jest.requireActual('react-native') as typeof import('react-native');

@@ -30,6 +30,7 @@ import { SkeletonPostCard } from '../components/cards/SkeletonPostCard';
 import { TagFilterBar } from '../components/filters/TagFilterBar';
 import { PostMoreSheet } from '../components/sheets/PostMoreSheet';
 import { ReportPostSheet } from '../components/sheets/ReportPostSheet';
+import { MetroPulseStrip } from '../components/pulse/MetroPulseStrip';
 import {
   getPostsByMetroArea,
   getTags,
@@ -952,7 +953,17 @@ export default function HomeScreen() {
               tintColor={colors.primary.main}
             />
           }
-          ListHeaderComponent={renderCreatePostBanner()}
+          ListHeaderComponent={() => (
+            <>
+              {metroAreaId ? (
+                <MetroPulseStrip
+                  metroAreaId={metroAreaId}
+                  metroLabel={metroName ?? 'your metro'}
+                />
+              ) : null}
+              {renderCreatePostBanner()}
+            </>
+          )}
           ListEmptyComponent={initialLoading ? renderLoadingState : loadError ? renderErrorState : renderEmptyState}
           onEndReached={loadMorePosts}
           onEndReachedThreshold={0.5}
