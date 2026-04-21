@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getPulseCards, type PulseCard as PulseCardType } from '@nepally/shared';
 import { supabase } from '../../config/supabase';
@@ -69,16 +69,20 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
 
   return (
     <View style={styles.wrapper} testID="metro-pulse-strip">
-      <FlatList
+      <ScrollView
         horizontal
-        data={cards}
-        keyExtractor={(c) => `${c.kind}:${c.id}`}
-        renderItem={({ item }) => (
-          <PulseCard card={item} onPress={handlePress} onDismiss={handleDismiss} />
-        )}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.content}
-      />
+      >
+        {cards.map((card) => (
+          <PulseCard
+            key={`${card.kind}:${card.id}`}
+            card={card}
+            onPress={handlePress}
+            onDismiss={handleDismiss}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 }
