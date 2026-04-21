@@ -109,36 +109,40 @@ test.describe('Feed sidebar — Upcoming Events widget', () => {
 
   test('displays upcoming event titles and locations', async ({ page }) => {
     await page.goto('/feed');
-    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].location_name)).toBeVisible();
-    await expect(page.getByText(MOCK_UPCOMING_EVENTS[1].title)).toBeVisible();
-    await expect(page.getByText(MOCK_UPCOMING_EVENTS[1].location_name)).toBeVisible();
+    const widget = page.locator('aside');
+    await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
+    await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].location_name)).toBeVisible();
+    await expect(widget.getByText(MOCK_UPCOMING_EVENTS[1].title)).toBeVisible();
+    await expect(widget.getByText(MOCK_UPCOMING_EVENTS[1].location_name)).toBeVisible();
   });
 
   test('event cards show formatted date with month and day', async ({ page }) => {
     await page.goto('/feed');
-    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
+    const widget = page.locator('aside');
+    await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
 
     // The date block should contain the day number from the first event
     const eventDate = new Date(MOCK_UPCOMING_EVENTS[0].start_date);
     const day = eventDate.getDate().toString().padStart(2, '0');
-    await expect(page.getByText(day).first()).toBeVisible();
+    await expect(widget.getByText(day).first()).toBeVisible();
   });
 
   test('event cards link to the event detail page', async ({ page }) => {
     await page.goto('/feed');
-    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
+    const widget = page.locator('aside');
+    await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
 
-    const eventLink = page.locator(`a[href="/events/${MOCK_UPCOMING_EVENTS[0].id}"]`);
+    const eventLink = widget.locator(`a[href="/events/${MOCK_UPCOMING_EVENTS[0].id}"]`);
     await expect(eventLink).toBeVisible();
   });
 
   test('does not show past events in the widget', async ({ page }) => {
     await page.goto('/feed');
-    await expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
+    const widget = page.locator('aside');
+    await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
 
     // The past event title should not appear — the API filters it out
-    await expect(page.getByText('Past Cultural Festival')).not.toBeVisible();
+    await expect(widget.getByText('Past Cultural Festival')).not.toBeVisible();
   });
 
   test('Sponsor Spotlight appears above Upcoming Events', async ({ page }) => {
