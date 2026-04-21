@@ -383,3 +383,10 @@
   gap: var(--space-s);
 }
 
+/* ── About You save row ──────────────────── */
+.saveAboutRow {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-start;
+}
+

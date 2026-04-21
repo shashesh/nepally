@@ -14,6 +14,8 @@ import {
   getOrCreateConversation,
   formatRelativeTime,
   formatPublicName,
+  LANGUAGE_LABELS,
+  type LanguageCode,
 } from '@nepally/shared';
 import type {
   User,
@@ -22,6 +24,7 @@ import type {
   Event,
   MarketplaceListing,
 } from '@nepally/shared';
+import { FollowButton } from '../../components/users/FollowButton';
 import styles from '../../styles/PublicProfile.module.css';
 
 type ProfileTab = 'posts' | 'events' | 'listings' | 'about';
@@ -538,6 +541,41 @@ export default function PublicProfilePage() {
                   Joined {memberSinceYear}
                 </span>
               </div>
+
+              {/* Follow row — button + follower/following counts */}
+              <div className={styles.socialRow}>
+                <FollowButton
+                  supabase={supabase}
+                  viewerId={currentUser?.id ?? null}
+                  targetUserId={profileUser.id}
+                />
+                <span className={styles.followCount}>{profileUser.follower_count ?? 0} followers</span>
+                <span className={styles.followDot}>·</span>
+                <span className={styles.followCount}>{profileUser.following_count ?? 0} following</span>
+              </div>
+
+              {/* Identity chips */}
+              {(profileUser.hometown_district ||
+                profileUser.college ||
+                typeof profileUser.years_in_us === 'number' ||
+                (profileUser.languages ?? []).length > 0) && (
+                <div className={styles.identityChipRow}>
+                  {profileUser.hometown_district && (
+                    <span className={styles.identityChip}>{profileUser.hometown_district}</span>
+                  )}
+                  {profileUser.college && (
+                    <span className={styles.identityChip}>{profileUser.college}</span>
+                  )}
+                  {typeof profileUser.years_in_us === 'number' && (
+                    <span className={styles.identityChip}>{profileUser.years_in_us} years in US</span>
+                  )}
+                  {(profileUser.languages ?? []).map((code) => (
+                    <span key={code} className={styles.identityChip}>
+                      {LANGUAGE_LABELS[code as LanguageCode] ?? code}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* CTA */}
               <div className={styles.ctaRow}>

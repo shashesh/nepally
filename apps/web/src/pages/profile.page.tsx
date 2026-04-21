@@ -22,6 +22,7 @@ import {
 import type { Post, TrustLevel, MarketplaceListing } from '@nepally/shared';
 import { getListingsByOwner, LISTING_SOFT_EXPIRY_DAYS } from '@nepally/shared';
 import Avatar from '../components/Avatar';
+import { AboutYouSection, type AboutYouValues } from '../components/profile/AboutYouSection';
 import styles from '../styles/Profile.module.css';
 
 type ProfileTab = 'posts' | 'listings' | 'saved' | 'about';
@@ -50,6 +51,13 @@ export default function ProfilePage() {
   const [listingsLoading, setListingsLoading] = useState(false);
   const [postsError, setPostsError] = useState<string | null>(null);
   const [savedError, setSavedError] = useState<string | null>(null);
+  const [aboutYou, setAboutYou] = useState<AboutYouValues>({
+    hometown_district: user?.hometown_district ?? null,
+    college: user?.college ?? null,
+    years_in_us: user?.years_in_us ?? null,
+    languages: user?.languages ?? [],
+  });
+  const [aboutYouSaving, setAboutYouSaving] = useState(false);
   const userId = user?.id ?? null;
 
   useEffect(() => {
@@ -57,6 +65,22 @@ export default function ProfilePage() {
       router.replace('/login');
     }
   }, [user, router]);
+
+  // AuthContext starts as null while loading, so the initial useState above
+  // captures empty values. Re-sync when the user profile actually loads (or
+  // the signed-in user changes) so the About You form reflects the DB state.
+  // Keyed on user?.id so in-progress edits aren't clobbered by unrelated
+  // user-object re-renders.
+  useEffect(() => {
+    if (!user) return;
+    setAboutYou({
+      hometown_district: user.hometown_district ?? null,
+      college: user.college ?? null,
+      years_in_us: user.years_in_us ?? null,
+      languages: user.languages ?? [],
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
 
   useEffect(() => {
@@ -331,6 +355,24 @@ export default function ProfilePage() {
     }
     // Reset so the same file can be re-selected
     e.target.value = '';
+  }
+
+  async function handleSaveAboutYou() {
+    if (!user) return;
+    setAboutYouSaving(true);
+    const { error } = await updateUserProfile(supabase, user.id, {
+      hometown_district: aboutYou.hometown_district,
+      college: aboutYou.college,
+      years_in_us: aboutYou.years_in_us,
+      languages: aboutYou.languages,
+    });
+    if (error) {
+      notifications.show({ message: error.message || 'Failed to save', color: 'red' });
+    } else {
+      await refreshUser();
+      notifications.show({ message: 'Saved' });
+    }
+    setAboutYouSaving(false);
   }
 
   async function handleUnsave(postId: string) {
@@ -657,6 +699,21 @@ export default function ProfilePage() {
 
             {activeTab === 'about' && (
               <>
+                <AboutYouSection
+                  values={aboutYou}
+                  onChange={setAboutYou}
+                  disabled={aboutYouSaving}
+                />
+                <div className={styles.saveAboutRow}>
+                  <Button
+                    onClick={handleSaveAboutYou}
+                    loading={aboutYouSaving}
+                    aria-label="Save About You"
+                  >
+                    Save About You
+                  </Button>
+                </div>
+
                 <div className={styles.infoSection}>
                   <h2 className={styles.sectionTitle}>Bio</h2>
                   <div className={styles.infoRow}>
