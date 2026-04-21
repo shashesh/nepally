@@ -39,7 +39,7 @@ describe('MetroPulseStrip', () => {
     render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" />);
     await waitFor(() => {
       expect(screen.getByTestId('metro-pulse-strip')).toBeTruthy();
-    }, { timeout: 5000 });
+    });
     expect(screen.getByTestId('pulse-card-fx_rate')).toBeTruthy();
   });
 
