@@ -31,8 +31,11 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
         dismissedIds,
       });
       if (cancelled || !mountedRef.current) return;
-      if (res.data) setCards(res.data.cards);
-      else setCards([]);
+      const next = res.data?.cards ?? [];
+      // Bail out when the fetch returns the same empty state we started with.
+      // React 19's act scope treats the extra re-render as pending work, which
+      // can hang Ubuntu CI tests that wait on the empty→empty transition.
+      setCards((prev) => (prev.length === 0 && next.length === 0 ? prev : next));
     })();
     return () => {
       cancelled = true;
