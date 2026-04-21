@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { EventFilterBar, type EventFilterBarValue } from './EventFilterBar';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -90,13 +90,15 @@ describe('EventFilterBar', () => {
   });
 
   describe('search input interactions', () => {
-    it('calls onChange with new query after debounce', async () => {
+    it('calls onChange with new query after debounce', () => {
+      // searchDebounceMs={0} makes handleSearchChange call onChange synchronously,
+      // so no act()/waitFor is needed. A bare `await act(async () => {})` here was
+      // flaky on Ubuntu CI (apps/mobile/CLAUDE.md rule #2).
       const onChange = jest.fn();
       const { getByPlaceholderText } = render(
         <EventFilterBar value={DEFAULT_VALUE} onChange={onChange} searchDebounceMs={0} />
       );
       fireEvent.changeText(getByPlaceholderText('Search events...'), 'dashain');
-      await act(async () => {});
       expect(onChange).toHaveBeenCalledWith({ type: 'all', query: 'dashain' });
     });
 
