@@ -348,3 +348,33 @@ export async function updatePost(
   }
 }
 
+interface PostCountResult {
+  data?: number;
+  error?: Error;
+}
+
+/**
+ * Count of posts in the given metro area created on or after `sinceIso`.
+ * Uses count-only HEAD request — does not transfer row data.
+ */
+export async function getRecentPostsCountByMetro(
+  supabase: SupabaseClient,
+  metroAreaId: string,
+  sinceIso: string
+): Promise<PostCountResult> {
+  try {
+    const { count, error } = await supabase
+      .from('posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('metro_area_id', metroAreaId)
+      .gte('created_at', sinceIso);
+
+    if (error) throw error;
+    return { data: count ?? 0 };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to count recent posts'),
+    };
+  }
+}
+
