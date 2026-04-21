@@ -367,6 +367,7 @@ export async function getRecentPostsCountByMetro(
       .from('posts')
       .select('id', { count: 'exact', head: true })
       .eq('metro_area_id', metroAreaId)
+      .eq('status', 'active')
       .gte('created_at', sinceIso);
 
     if (error) throw error;

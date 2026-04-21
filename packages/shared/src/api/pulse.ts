@@ -8,7 +8,7 @@ import { assemblePulseCards } from '../logic/pulse';
 import { getUpcomingCulturalEvents } from './culturalEvents';
 import { getExchangeRate } from './fxRates';
 import { getRecentPostsCountByMetro } from './posts';
-import { getUpcomingEventsByMetro } from './events';
+import { getUpcomingEventsPulseByMetro } from './events';
 
 interface Params {
   metroAreaId: string;
@@ -53,7 +53,7 @@ export async function getPulseCards(
   const [culturalRes, highlightsRes, eventsRes, fxRes] = await Promise.allSettled([
     getUpcomingCulturalEvents(supabase, 30, now),
     getRecentPostsCountByMetro(supabase, params.metroAreaId, hoursAgo(now, HIGHLIGHTS_WINDOW_HOURS)),
-    getUpcomingEventsByMetro(supabase, params.metroAreaId, EVENTS_FETCH_LIMIT),
+    getUpcomingEventsPulseByMetro(supabase, params.metroAreaId, EVENTS_WINDOW_DAYS, now, EVENTS_FETCH_LIMIT),
     getExchangeRate(supabase, params.fetcher, now),
   ]);
 

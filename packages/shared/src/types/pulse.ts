@@ -7,7 +7,8 @@ export type PulseCardKind =
   | 'cultural_calendar'
   | 'metro_highlights'
   | 'events_this_week'
-  | 'fx_rate';
+  | 'fx_rate'
+  | 'create_first_post';
 
 export interface CulturalCalendarCard {
   kind: 'cultural_calendar';

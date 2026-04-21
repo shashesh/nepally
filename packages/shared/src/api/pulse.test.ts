@@ -18,7 +18,7 @@ vi.mock('./events', async (original) => {
   const mod = await (original as () => Promise<Record<string, unknown>>)();
   return {
     ...mod,
-    getUpcomingEventsByMetro: vi.fn(),
+    getUpcomingEventsPulseByMetro: vi.fn(),
   };
 });
 
@@ -26,7 +26,7 @@ import { getPulseCards } from './pulse';
 import { getUpcomingCulturalEvents } from './culturalEvents';
 import { getExchangeRate } from './fxRates';
 import { getRecentPostsCountByMetro } from './posts';
-import { getUpcomingEventsByMetro } from './events';
+import { getUpcomingEventsPulseByMetro } from './events';
 
 function fakeSupabase() {
   return { from: vi.fn() } as unknown as SupabaseClient;
@@ -48,7 +48,7 @@ describe('getPulseCards composer', () => {
     (getRecentPostsCountByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: 4,
     });
-    (getUpcomingEventsByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (getUpcomingEventsPulseByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [
         {
           id: 'e-1',
@@ -79,7 +79,7 @@ describe('getPulseCards composer', () => {
     (getRecentPostsCountByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: 4,
     });
-    (getUpcomingEventsByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (getUpcomingEventsPulseByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [],
     });
     (getExchangeRate as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -105,7 +105,7 @@ describe('getPulseCards composer', () => {
       data: 0,
     });
     // Two events: one inside 7-day window, one beyond.
-    (getUpcomingEventsByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (getUpcomingEventsPulseByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [
         { id: 'e-in',  title: 'Soon',  start_date: '2026-04-22T18:00:00Z' }, // +2 days
         { id: 'e-out', title: 'Later', start_date: '2026-05-10T18:00:00Z' }, // +20 days
@@ -145,7 +145,7 @@ describe('getPulseCards composer', () => {
         return { data: 0 };
       }
     );
-    (getUpcomingEventsByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (getUpcomingEventsPulseByMetro as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [],
     });
     (getExchangeRate as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
