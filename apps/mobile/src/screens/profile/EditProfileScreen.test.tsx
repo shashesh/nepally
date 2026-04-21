@@ -2,6 +2,15 @@ import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/asy
 
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
+// ---------------------------------------------------------------------------
+// Module-scoped mocks — mirrors PublicProfileScreen.test.tsx pattern, which
+// is stable on Ubuntu CI runners. Factory-scoped `jest.fn(() => ...)` + mid-
+// test `mockReturnValue` calls proved flaky on CI: React 19's act() scope
+// occasionally entered a flush loop that never converged and timed out at 30s.
+// ---------------------------------------------------------------------------
+const mockUseAuth = jest.fn();
+const mockRefreshUser = jest.fn();
+
 jest.mock('../../config/supabase', () => ({
   supabase: {
     from: jest.fn(() => ({
@@ -20,24 +29,15 @@ jest.mock('../../config/supabase', () => ({
 }));
 
 jest.mock('../../hooks/useAuth', () => ({
-  useAuth: jest.fn(() => ({
-    user: {
-      id: 'user-1',
-      full_name: 'Test User',
-      email: 'test@nusa.com',
-      trust_level: 1,
-      is_premium: false,
-    },
-    refreshUser: jest.fn(),
-  })),
+  useAuth: () => mockUseAuth(),
 }));
 
 jest.mock('../../hooks/useMetroArea', () => ({
-  useMetroArea: jest.fn(() => ({
+  useMetroArea: () => ({
     fetchMetroByZip: jest.fn().mockResolvedValue(null),
     updateLocation: jest.fn().mockResolvedValue(undefined),
     loading: false,
-  })),
+  }),
 }));
 
 jest.mock('@nepally/shared', () => ({
@@ -64,7 +64,9 @@ jest.mock('../../utils/storage', () => ({
 
 jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
+  requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
   launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
+  launchCameraAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
 }));
 
 jest.mock('expo-image-manipulator', () => ({
@@ -76,12 +78,14 @@ jest.mock('expo-file-system', () => ({
   File: class MockFile {
     constructor() {}
     async bytes() { return new Uint8Array(); }
+    async arrayBuffer() { return new ArrayBuffer(0); }
   },
 }));
 
 jest.mock('../../components/Avatar', () => ({
   Avatar: () => null,
 }));
+
 jest.mock('../../components/buttons/PrimaryButton', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factory is hoisted above ESM imports
   const { TouchableOpacity, Text } = require('react-native');
@@ -94,25 +98,30 @@ jest.mock('../../components/buttons/PrimaryButton', () => {
   };
 });
 
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ goBack: jest.fn() }),
+}));
+
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { EditProfileScreen } from './EditProfileScreen';
-import { useAuth } from '../../hooks/useAuth';
 import { updateUserProfile } from '@nepally/shared';
 
-const mockedUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 const mockedUpdateUserProfile =
   updateUserProfile as jest.MockedFunction<typeof updateUserProfile>;
 
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({
-    goBack: jest.fn(),
-  }),
-}));
+const baseUser = {
+  id: 'user-1',
+  full_name: 'Test User',
+  email: 'test@nusa.com',
+  trust_level: 1,
+  is_premium: false,
+};
 
 describe('EditProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ user: baseUser, refreshUser: mockRefreshUser });
   });
 
   it('renders without crashing', () => {
@@ -125,50 +134,46 @@ describe('EditProfileScreen', () => {
     expect(getByDisplayValue('Test User')).toBeTruthy();
   });
 
-  it('renders the About You section with the initial values', async () => {
-    mockedUseAuth.mockReturnValue({
+  it('renders the About You section with the initial values', () => {
+    // EditProfileScreen has no async useEffect — initial render is fully
+    // synchronous, so sync queries are correct here. `findByText`/`waitFor`
+    // was previously timing out on Ubuntu CI due to polling interacting with
+    // React 19's act() scope (see apps/mobile/CLAUDE.md rule #6 context).
+    mockUseAuth.mockReturnValue({
       user: {
-        id: 'user-1',
-        full_name: 'Test User',
-        email: 'test@nusa.com',
-        trust_level: 1,
-        is_premium: false,
+        ...baseUser,
         hometown_district: 'Kathmandu',
         college: 'Pulchowk',
         years_in_us: 5,
         languages: ['nepali'],
       },
-      refreshUser: jest.fn(),
-    } as unknown as ReturnType<typeof useAuth>);
-    // CLAUDE.md mobile rule #6: async components must use waitFor, never
-    // bare `await act(async () => {})` (deadlocks on Ubuntu CI runners).
-    const { findByText, getByTestId } = render(<EditProfileScreen />);
-    expect(await findByText('About You')).toBeTruthy();
+      refreshUser: mockRefreshUser,
+    });
+
+    const { getByText, getByTestId } = render(<EditProfileScreen />);
+
+    expect(getByText('About You')).toBeTruthy();
     expect(getByTestId('about-college-input').props.value).toBe('Pulchowk');
     expect(getByTestId('about-years-input').props.value).toBe('5');
   });
 
   it('propagates About You changes into updateUserProfile', async () => {
-    mockedUseAuth.mockReturnValue({
+    mockUseAuth.mockReturnValue({
       user: {
-        id: 'user-1',
-        full_name: 'Test User',
-        email: 'test@nusa.com',
-        trust_level: 1,
-        is_premium: false,
+        ...baseUser,
         hometown_district: null,
         college: null,
         years_in_us: null,
         languages: [],
       },
-      refreshUser: jest.fn(),
-    } as unknown as ReturnType<typeof useAuth>);
-    // CLAUDE.md mobile rule #6: use waitFor + fireEvent directly; never wrap
-    // fireEvent in `await act(async () => {})` — deadlocks on Ubuntu CI.
-    // RNTL's fireEvent already wraps synchronous updates in act() internally.
+      refreshUser: mockRefreshUser,
+    });
+
     const { getByTestId, getByText } = render(<EditProfileScreen />);
+
     fireEvent.changeText(getByTestId('about-college-input'), 'TU Kirtipur');
     fireEvent.press(getByText('Save Changes'));
+
     await waitFor(() => {
       expect(mockedUpdateUserProfile).toHaveBeenCalledWith(
         expect.anything(),
