@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { assemblePulseCards } from './pulse';
 import type { CulturalEventRow } from '../api/culturalEvents';
 import type { ExchangeRate } from '../api/fxRates';
+import type { RankedSuggestion } from './followSuggestions';
 
 const now = new Date('2026-04-20T00:00:00Z');
 
@@ -31,6 +32,9 @@ describe('assemblePulseCards', () => {
       nextEventStartsAt: '2026-04-24T18:00:00Z',
       fx,
       dismissedIds: new Set(),
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper: null,
     });
 
     expect(result.map((c) => c.kind)).toEqual([
@@ -59,6 +63,9 @@ describe('assemblePulseCards', () => {
       nextEventStartsAt: null,
       fx: null,
       dismissedIds: new Set(),
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper: null,
     });
     expect(result.find((c) => c.kind === 'metro_highlights')).toBeUndefined();
   });
@@ -75,6 +82,9 @@ describe('assemblePulseCards', () => {
       nextEventStartsAt: null,
       fx,
       dismissedIds: new Set(['fx_rate']),
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper: null,
     });
     expect(result.find((c) => c.kind === 'fx_rate')).toBeUndefined();
   });
@@ -91,6 +101,9 @@ describe('assemblePulseCards', () => {
       nextEventStartsAt: null,
       fx,
       dismissedIds: new Set(),
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper: null,
     });
     expect(result.some((c) => c.kind === 'create_first_post')).toBe(true);
   });
@@ -110,6 +123,9 @@ describe('assemblePulseCards', () => {
       nextEventStartsAt: null,
       fx,
       dismissedIds: new Set(),
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper: null,
     });
     expect(result.some((c) => c.kind === 'create_first_post')).toBe(false);
   });
@@ -128,7 +144,112 @@ describe('assemblePulseCards', () => {
       nextEventStartsAt: null,
       fx: null,
       dismissedIds: new Set(),
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper: null,
     });
     expect(result.find((c) => c.kind === 'cultural_calendar')).toBeUndefined();
+  });
+});
+
+describe('assemblePulseCards — PR 3 cards', () => {
+  const baseInput = {
+    now: new Date('2026-04-20T00:00:00Z'),
+    cultural: [],
+    metroHighlightsCount: 0,
+    metroLabel: 'DFW',
+    eventsCount: 0,
+    nextEventTitle: null,
+    nextEventStartsAt: null,
+    fx: null,
+    dismissedIds: new Set<string>(),
+  };
+
+  const suggestions: RankedSuggestion[] = [
+    { userId: 'u-1', displayName: 'Anish S.', photo: null, reason: 'Both from Pokhara', score: 10 },
+    { userId: 'u-2', displayName: 'Bina K.', photo: null, reason: 'Both studied at Pulchowk', score: 8 },
+  ];
+
+  const topHelper = {
+    userId: 'h-1',
+    displayName: 'Deepak G.',
+    photo: null,
+    helperScore: 84,
+  };
+
+  it('builds a find_your_people card when viewer follows <5 and suggestions are non-empty', () => {
+    const cards = assemblePulseCards({
+      ...baseInput,
+      viewerFollowingCount: 2,
+      suggestions,
+      topHelper: null,
+    } as any);
+
+    const card = cards.find((c) => c.kind === 'find_your_people');
+    expect(card?.kind).toBe('find_your_people');
+    if (card?.kind === 'find_your_people') {
+      expect(card.suggestionCount).toBe(2);
+      expect(card.featured.userId).toBe('u-1');
+      expect(card.featured.reason).toContain('Pokhara');
+      expect(card.deepLink).toBe('/users/u-1');
+    }
+  });
+
+  it('omits find_your_people when viewer follows >= 5', () => {
+    const cards = assemblePulseCards({
+      ...baseInput,
+      viewerFollowingCount: 5,
+      suggestions,
+      topHelper: null,
+    } as any);
+    expect(cards.find((c) => c.kind === 'find_your_people')).toBeUndefined();
+  });
+
+  it('omits find_your_people when suggestions list is empty', () => {
+    const cards = assemblePulseCards({
+      ...baseInput,
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper: null,
+    } as any);
+    expect(cards.find((c) => c.kind === 'find_your_people')).toBeUndefined();
+  });
+
+  it('builds a top_helper card when one exists', () => {
+    const cards = assemblePulseCards({
+      ...baseInput,
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper,
+    } as any);
+    const card = cards.find((c) => c.kind === 'top_helper');
+    expect(card?.kind).toBe('top_helper');
+    if (card?.kind === 'top_helper') {
+      expect(card.helper.userId).toBe('h-1');
+      expect(card.helper.helperScore).toBe(84);
+      expect(card.metroLabel).toBe('DFW');
+      expect(card.deepLink).toBe('/users/h-1');
+    }
+  });
+
+  it('respects display order after the existing four cards', () => {
+    const cards = assemblePulseCards({
+      ...baseInput,
+      fx: { pair: 'USD_NPR', rate: 133, fetchedAt: '2026-04-20T00:00:00Z' },
+      metroHighlightsCount: 2,
+      viewerFollowingCount: 0,
+      suggestions,
+      topHelper,
+    } as any);
+
+    const order = cards.map((c) => c.kind);
+    const idxHighlights = order.indexOf('metro_highlights');
+    const idxFx = order.indexOf('fx_rate');
+    const idxFind = order.indexOf('find_your_people');
+    const idxTop = order.indexOf('top_helper');
+
+    expect(idxHighlights).toBeLessThan(idxFx);
+    expect(idxFx).toBeLessThan(idxFind);
+    expect(idxFind).toBeLessThan(idxTop);
   });
 });

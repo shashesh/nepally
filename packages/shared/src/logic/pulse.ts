@@ -9,9 +9,12 @@ import type {
   EventsThisWeekCard,
   FxRateCard,
   CreateFirstPostCard,
+  FindYourPeopleCard,
+  TopHelperCard,
 } from '../types/pulse';
 import type { CulturalEventRow } from '../api/culturalEvents';
 import type { ExchangeRate } from '../api/fxRates';
+import type { RankedSuggestion } from './followSuggestions';
 
 const CULTURAL_WINDOW_DAYS = 30;
 const MIN_CARDS_BEFORE_BACKFILL = 3;
@@ -36,6 +39,15 @@ export interface AssemblePulseCardsInput {
   nextEventStartsAt: string | null;
   fx: ExchangeRate | null;
   dismissedIds: Set<string>;
+  // PR 3 additions
+  viewerFollowingCount: number;
+  suggestions: RankedSuggestion[];
+  topHelper: {
+    userId: string;
+    displayName: string;
+    photo: string | null;
+    helperScore: number;
+  } | null;
 }
 
 function daysBetween(a: Date, b: Date): number {
@@ -112,6 +124,48 @@ function buildCreateFirstPostCard(): CreateFirstPostCard {
   };
 }
 
+const FIND_YOUR_PEOPLE_FOLLOW_THRESHOLD = 5;
+
+function buildFindYourPeopleCard(
+  suggestions: RankedSuggestion[],
+  viewerFollowingCount: number
+): FindYourPeopleCard | null {
+  if (viewerFollowingCount >= FIND_YOUR_PEOPLE_FOLLOW_THRESHOLD) return null;
+  if (suggestions.length === 0) return null;
+  const top = suggestions[0];
+  return {
+    kind: 'find_your_people',
+    id: 'find_your_people',
+    suggestionCount: suggestions.length,
+    featured: {
+      userId: top.userId,
+      displayName: top.displayName,
+      photo: top.photo,
+      reason: top.reason,
+    },
+    deepLink: `/users/${top.userId}`,
+  };
+}
+
+function buildTopHelperCard(
+  topHelper: AssemblePulseCardsInput['topHelper'],
+  metroLabel: string
+): TopHelperCard | null {
+  if (!topHelper) return null;
+  return {
+    kind: 'top_helper',
+    id: 'top_helper',
+    helper: {
+      userId: topHelper.userId,
+      displayName: topHelper.displayName,
+      photo: topHelper.photo,
+      helperScore: topHelper.helperScore,
+    },
+    metroLabel,
+    deepLink: `/users/${topHelper.userId}`,
+  };
+}
+
 export function assemblePulseCards(input: AssemblePulseCardsInput): PulseCard[] {
   const cards: PulseCard[] = [];
 
@@ -138,6 +192,15 @@ export function assemblePulseCards(input: AssemblePulseCardsInput): PulseCard[] 
 
   const fx = buildFxCard(input.fx);
   if (fx) cards.push(fx);
+
+  const findYourPeople = buildFindYourPeopleCard(
+    input.suggestions,
+    input.viewerFollowingCount
+  );
+  if (findYourPeople) cards.push(findYourPeople);
+
+  const topHelperCard = buildTopHelperCard(input.topHelper, input.metroLabel);
+  if (topHelperCard) cards.push(topHelperCard);
 
   const filtered = cards.filter((c) => !input.dismissedIds.has(c.id));
 

@@ -82,6 +82,9 @@ export async function getPulseCards(
       nextEventStartsAt: nextEvent ? nextEvent.start_date : null,
       fx,
       dismissedIds,
+      viewerFollowingCount: 0,
+      suggestions: [],
+      topHelper: null,
     });
     return {
       data: { cards, computedAt: now.toISOString() },
