@@ -4,7 +4,7 @@ import { getFollowSuggestionCandidates } from './followSuggestions';
 
 function makeListChain(final: { data: unknown; error: unknown }) {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  for (const m of ['select', 'eq', 'neq', 'order', 'limit']) {
+  for (const m of ['select', 'eq', 'neq', 'or', 'order', 'limit']) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   (chain as unknown as { then: (res: (v: unknown) => unknown) => Promise<unknown> }).then =

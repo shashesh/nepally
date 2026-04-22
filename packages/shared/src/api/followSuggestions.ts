@@ -75,9 +75,13 @@ export async function getFollowSuggestionCandidates(
       ((followsData ?? []) as FollowRow[]).map((r) => r.followee_id)
     );
 
+    // Scope block lookup to rows that involve the viewer. Avoids an
+    // unbounded full-table scan and reduces the amount of sensitive
+    // block-graph data returned to the client.
     const { data: blocksData, error: blocksErr } = await supabase
       .from('blocked_users')
-      .select('blocker_id, blocked_id');
+      .select('blocker_id, blocked_id')
+      .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`);
 
     if (blocksErr) throw blocksErr;
     const blockedIds = new Set<string>();

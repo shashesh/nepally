@@ -124,12 +124,18 @@ export async function getPulseCards(
     helperScore: number;
   } | null = null;
   if (topHelperBase) {
-    const { data: hRow } = await supabase
+    // Follow-up lookup for display name + photo. A Supabase `error` or a
+    // null `data` row (e.g. user deleted between the view read and this
+    // query, or RLS denial) is intentionally swallowed: the top_helper
+    // card is dropped so the rest of the strip still renders, mirroring
+    // the graceful-degradation policy of the Promise.allSettled batch
+    // above. Observability (metrics/alerting) is a future add.
+    const { data: hRow, error: hErr } = await supabase
       .from('users')
       .select('id, full_name, profile_photo')
       .eq('id', topHelperBase.userId)
       .maybeSingle();
-    if (hRow) {
+    if (!hErr && hRow) {
       const row = hRow as { id: string; full_name: string; profile_photo: string | null };
       topHelperForCard = {
         userId: row.id,
