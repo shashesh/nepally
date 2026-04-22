@@ -17,6 +17,7 @@ const mockGetOrCreateConversation = jest.fn();
 const mockIsFollowing = jest.fn();
 const mockFollowUser = jest.fn();
 const mockUnfollowUser = jest.fn();
+const mockGetHelperScore = jest.fn();
 
 const mockSupabaseSingle = jest.fn();
 const mockSupabaseMaybeSingle = jest.fn();
@@ -60,6 +61,8 @@ jest.mock('@nepally/shared', () => ({
   isFollowing: (...args: Parameters<typeof mockIsFollowing>) => mockIsFollowing(...args),
   followUser: (...args: Parameters<typeof mockFollowUser>) => mockFollowUser(...args),
   unfollowUser: (...args: Parameters<typeof mockUnfollowUser>) => mockUnfollowUser(...args),
+  getHelperScore: (...args: Parameters<typeof mockGetHelperScore>) => mockGetHelperScore(...args),
+  HELPER_SCORE_VISIBILITY_THRESHOLD: 10,
   formatRelativeTime: jest.fn(() => '2h ago'),
   formatPublicName: (name: string) => {
     if (!name || !name.trim()) return '';
@@ -152,6 +155,9 @@ const mockUserListings = [
 describe('PublicProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetHelperScore.mockResolvedValue({
+      data: { userId: 'profile-user', helperScore: 0, helpfulComments: 0, likesReceivedOnOwnPosts: 0 },
+    });
     mockUseRoute.mockReturnValue({ params: { userId: 'profile-user' } });
     mockUseAuth.mockReturnValue({
       user: { id: 'current-user', full_name: 'Test User', trust_level: 1 },
@@ -574,5 +580,36 @@ describe('PublicProfileScreen', () => {
     render(<PublicProfileScreen />);
     await act(async () => {});
     expect(screen.queryByText(/years in US/)).toBeNull();
+  });
+
+  it('renders the helper badge when score >= threshold', async () => {
+    mockGetHelperScore.mockResolvedValue({
+      data: {
+        userId: 'profile-user',
+        helperScore: 42,
+        helpfulComments: 15,
+        likesReceivedOnOwnPosts: 12,
+      },
+    });
+    render(<PublicProfileScreen />);
+    await waitFor(() => {
+      expect(screen.getByText(/Helped 42 people this year/)).toBeTruthy();
+    });
+  });
+
+  it('hides the helper badge when score < threshold', async () => {
+    mockGetHelperScore.mockResolvedValue({
+      data: {
+        userId: 'profile-user',
+        helperScore: 4,
+        helpfulComments: 2,
+        likesReceivedOnOwnPosts: 0,
+      },
+    });
+    render(<PublicProfileScreen />);
+    await waitFor(() => {
+      expect(screen.getAllByText(/Bikal S\./).length).toBeGreaterThan(0); // sanity: page loaded
+    });
+    expect(screen.queryByText(/Helped \d+ people this year/)).toBeNull();
   });
 });
