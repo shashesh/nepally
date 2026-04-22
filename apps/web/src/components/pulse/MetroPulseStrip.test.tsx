@@ -31,7 +31,7 @@ describe('MetroPulseStrip (web)', () => {
         ],
       },
     });
-    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" />);
+    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" viewerId="viewer-1" />);
     await waitFor(() => {
       expect(screen.getByTestId('metro-pulse-strip')).toBeDefined();
     });
@@ -53,7 +53,7 @@ describe('MetroPulseStrip (web)', () => {
         ],
       },
     });
-    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" />);
+    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" viewerId="viewer-1" />);
     await waitFor(() => {
       expect(screen.getByTestId('pulse-card-events_this_week')).toBeDefined();
     });
@@ -65,7 +65,7 @@ describe('MetroPulseStrip (web)', () => {
     getPulseCardsMock.mockResolvedValue({
       data: { computedAt: '2026-04-20T00:00:00Z', cards: [] },
     });
-    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" />);
+    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" viewerId="viewer-1" />);
     await waitFor(() => {
       expect(screen.queryByTestId('metro-pulse-strip')).toBeNull();
     });

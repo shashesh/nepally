@@ -8,9 +8,10 @@ import { PulseCard } from './PulseCard';
 interface Props {
   metroAreaId: string;
   metroLabel: string;
+  viewerId: string;
 }
 
-export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
+export function MetroPulseStrip({ metroAreaId, metroLabel, viewerId }: Props) {
   const [cards, setCards] = useState<PulseCardType[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set());
   const mountedRef = useRef(true);
@@ -31,6 +32,7 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
       const res = await getPulseCards(supabase, {
         metroAreaId,
         metroLabel,
+        viewerId,
         dismissedIds: new Set(),
       });
       if (cancelled || !mountedRef.current) return;
@@ -39,7 +41,7 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [metroAreaId, metroLabel]);
+  }, [metroAreaId, metroLabel, viewerId]);
 
   const handlePress = useCallback(
     (card: PulseCardType) => {
