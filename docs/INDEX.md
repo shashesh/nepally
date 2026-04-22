@@ -49,6 +49,7 @@
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — Phase 1 post-audit remediation tasks [status: planned]
 - [plans/active/phase1-remediation-github-issues.md](plans/active/phase1-remediation-github-issues.md) — copy-paste GitHub issue cards for Phase 1 remediation
 - [plans/active/2026-04-20-pr1-social-identity.md](plans/active/2026-04-20-pr1-social-identity.md) — PR 1 of "Your Community Today": follow graph + extended profile [status: planned]
+- [plans/active/2026-04-20-pr2-metro-pulse.md](plans/active/2026-04-20-pr2-metro-pulse.md) — PR 2 of "Your Community Today": Metro Pulse card strip [status: implemented]
 
 ## Specs (active design specs)
 

@@ -5,6 +5,7 @@ import {
   deletePost,
   getPostById,
   getPostsByMetroArea,
+  getRecentPostsCountByMetro,
 } from './posts';
 
 describe('posts api', () => {
@@ -142,5 +143,55 @@ describe('posts api', () => {
 
     expect(result.error).toBeNull();
     expect(deleteBuilder.eq).toHaveBeenCalledWith('id', 'post-123');
+  });
+});
+
+describe('getRecentPostsCountByMetro', () => {
+  it('counts posts in metro created since the given timestamp', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+    } as unknown as Record<string, ReturnType<typeof vi.fn>>;
+    (chain as unknown as { then: (res: (v: unknown) => unknown) => Promise<unknown> }).then =
+      (res: (v: unknown) => unknown) => Promise.resolve(res({ count: 7, error: null }));
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(chain),
+    } as unknown as import('@supabase/supabase-js').SupabaseClient;
+
+    const res = await getRecentPostsCountByMetro(
+      supabase,
+      'metro-dfw',
+      '2026-04-19T00:00:00Z'
+    );
+
+    expect(supabase.from).toHaveBeenCalledWith('posts');
+    expect(chain.select).toHaveBeenCalledWith('id', { count: 'exact', head: true });
+    expect(chain.eq).toHaveBeenCalledWith('metro_area_id', 'metro-dfw');
+    expect(chain.gte).toHaveBeenCalledWith('created_at', '2026-04-19T00:00:00Z');
+    expect(res.data).toBe(7);
+    expect(res.error).toBeUndefined();
+  });
+
+  it('returns 0 when count is null', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+    } as unknown as Record<string, ReturnType<typeof vi.fn>>;
+    (chain as unknown as { then: (res: (v: unknown) => unknown) => Promise<unknown> }).then =
+      (res: (v: unknown) => unknown) => Promise.resolve(res({ count: null, error: null }));
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(chain),
+    } as unknown as import('@supabase/supabase-js').SupabaseClient;
+
+    const res = await getRecentPostsCountByMetro(
+      supabase,
+      'metro-dfw',
+      '2026-04-19T00:00:00Z'
+    );
+    expect(res.data).toBe(0);
   });
 });
