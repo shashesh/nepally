@@ -56,6 +56,7 @@ function renderBody(card: PulseCardType): { headline: string; detail: string } {
         detail: `Top helper in ${card.metroLabel}`,
       };
   }
+  throw new Error(`Unhandled PulseCard kind: ${(card as { kind: string }).kind}`);
 }
 
 export function PulseCard({ card, onPress, onDismiss }: Props) {

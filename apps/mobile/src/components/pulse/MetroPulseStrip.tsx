@@ -45,16 +45,25 @@ export function MetroPulseStrip({ metroAreaId, metroLabel, viewerId }: Props) {
 
   const handlePress = useCallback(
     (card: PulseCardType) => {
+      const nav = navigation as unknown as {
+        navigate: (route: string, params?: Record<string, unknown>) => void;
+      };
       switch (card.kind) {
         case 'cultural_calendar':
         case 'events_this_week':
-          (navigation as unknown as { navigate: (r: string) => void }).navigate('Events');
+          nav.navigate('Events');
           break;
         case 'metro_highlights':
         case 'fx_rate':
           break;
         case 'create_first_post':
-          (navigation as unknown as { navigate: (r: string) => void }).navigate('CreatePost');
+          nav.navigate('CreatePost');
+          break;
+        case 'find_your_people':
+          nav.navigate('PublicProfileView', { userId: card.featured.userId });
+          break;
+        case 'top_helper':
+          nav.navigate('PublicProfileView', { userId: card.helper.userId });
           break;
       }
     },

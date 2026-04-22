@@ -43,6 +43,10 @@ export function MetroPulseStrip({ metroAreaId, metroLabel, viewerId }: Props) {
         case 'create_first_post':
           router.push('/post/new');
           return;
+        case 'find_your_people':
+        case 'top_helper':
+          router.push(card.deepLink);
+          return;
         case 'metro_highlights':
         case 'fx_rate':
           return;

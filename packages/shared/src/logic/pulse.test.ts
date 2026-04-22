@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assemblePulseCards } from './pulse';
+import { assemblePulseCards, type AssemblePulseCardsInput } from './pulse';
 import type { CulturalEventRow } from '../api/culturalEvents';
 import type { ExchangeRate } from '../api/fxRates';
 import type { RankedSuggestion } from './followSuggestions';
@@ -153,7 +153,13 @@ describe('assemblePulseCards', () => {
 });
 
 describe('assemblePulseCards — PR 3 cards', () => {
-  const baseInput = {
+  // Typed Omit so the tests stay type-safe: if AssemblePulseCardsInput adds
+  // new PR-3 fields, this declaration fails to compile instead of silently
+  // drifting under an `as any` cast.
+  const baseInput: Omit<
+    AssemblePulseCardsInput,
+    'viewerFollowingCount' | 'suggestions' | 'topHelper'
+  > = {
     now: new Date('2026-04-20T00:00:00Z'),
     cultural: [],
     metroHighlightsCount: 0,
@@ -170,7 +176,7 @@ describe('assemblePulseCards — PR 3 cards', () => {
     { userId: 'u-2', displayName: 'Bina K.', photo: null, reason: 'Both studied at Pulchowk', score: 8 },
   ];
 
-  const topHelper = {
+  const topHelper: AssemblePulseCardsInput['topHelper'] = {
     userId: 'h-1',
     displayName: 'Deepak G.',
     photo: null,
@@ -183,7 +189,7 @@ describe('assemblePulseCards — PR 3 cards', () => {
       viewerFollowingCount: 2,
       suggestions,
       topHelper: null,
-    } as any);
+    });
 
     const card = cards.find((c) => c.kind === 'find_your_people');
     expect(card?.kind).toBe('find_your_people');
@@ -201,7 +207,7 @@ describe('assemblePulseCards — PR 3 cards', () => {
       viewerFollowingCount: 5,
       suggestions,
       topHelper: null,
-    } as any);
+    });
     expect(cards.find((c) => c.kind === 'find_your_people')).toBeUndefined();
   });
 
@@ -211,7 +217,7 @@ describe('assemblePulseCards — PR 3 cards', () => {
       viewerFollowingCount: 0,
       suggestions: [],
       topHelper: null,
-    } as any);
+    });
     expect(cards.find((c) => c.kind === 'find_your_people')).toBeUndefined();
   });
 
@@ -221,7 +227,7 @@ describe('assemblePulseCards — PR 3 cards', () => {
       viewerFollowingCount: 0,
       suggestions: [],
       topHelper,
-    } as any);
+    });
     const card = cards.find((c) => c.kind === 'top_helper');
     expect(card?.kind).toBe('top_helper');
     if (card?.kind === 'top_helper') {
@@ -240,7 +246,7 @@ describe('assemblePulseCards — PR 3 cards', () => {
       viewerFollowingCount: 0,
       suggestions,
       topHelper,
-    } as any);
+    });
 
     const order = cards.map((c) => c.kind);
     const idxHighlights = order.indexOf('metro_highlights');

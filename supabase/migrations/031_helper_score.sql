@@ -20,7 +20,10 @@
 -- Rollback: write a new forward-only migration that runs:
 --   DROP VIEW IF EXISTS user_helper_scores;
 
-CREATE OR REPLACE VIEW user_helper_scores AS
+-- security_invoker = true so the view honors the caller's RLS on base tables
+-- (matches the hardening pattern established in 026_fix_security_definer_views).
+CREATE OR REPLACE VIEW user_helper_scores
+WITH (security_invoker = true) AS
 WITH comments_on_others AS (
   SELECT
     c.author_id AS user_id,
@@ -54,6 +57,10 @@ WHERE u.is_banned = false;
 
 COMMENT ON VIEW user_helper_scores IS
   'Derived helper-reputation score per user over last 365 days. Read-only.';
+
+-- Public profile (/users/[id]) calls getHelperScore from the anon role, so
+-- both anon and authenticated need SELECT. Matches listing_promotions_display.
+GRANT SELECT ON user_helper_scores TO anon, authenticated;
 
 -- Supporting indexes (idempotent; skip if already present).
 CREATE INDEX IF NOT EXISTS idx_post_comments_author_created
