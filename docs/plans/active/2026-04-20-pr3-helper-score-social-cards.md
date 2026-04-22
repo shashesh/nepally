@@ -44,7 +44,7 @@ Confirm on master before starting: `git log master --oneline | head -30` should 
 ## File Structure
 
 ### Created
-- `supabase/migrations/030_helper_score.sql` — `user_helper_scores` VIEW + indexes on source tables if missing
+- `supabase/migrations/031_helper_score.sql` — `user_helper_scores` VIEW + indexes on source tables if missing
 - `packages/shared/src/api/helperScore.ts` — `getHelperScore`, `getTopHelperInMetro`
 - `packages/shared/src/api/helperScore.test.ts`
 - `packages/shared/src/api/followSuggestions.ts` — `getFollowSuggestionCandidates`
@@ -78,25 +78,25 @@ Confirm on master before starting: `git log master --oneline | head -30` should 
 - **Branch:** stay on `feat/community-today-pr3` (create off master once deps merge). Commit frequently; never push without explicit user OK.
 - **Migration apply:** Task A2 is a manual user-gated step, same pattern as PR 1/PR 2.
 - **Tests:** mock helper-score API in UI tests; never hit a live view.
-- **Migration number:** 030 (assumes no unrelated migrations landed after 029; verify with `ls supabase/migrations/` before writing).
+- **Migration number:** 031 (030 was taken by `030_fx_rates_tighten_rls.sql` on master after this plan was authored).
 
 ---
 
 ## Phase A — Database Foundation
 
-### Task A1: Author migration 030
+### Task A1: Author migration 031
 
 **Files:**
-- Create: `supabase/migrations/030_helper_score.sql`
+- Create: `supabase/migrations/031_helper_score.sql`
 
 - [ ] **Step 1: Verify no unrelated migrations landed after 029**
 
-Run (Glob): `supabase/migrations/*.sql` — confirm the next sequential number is 030. If a newer number exists, use the next free integer and update all references in this plan.
+Run (Glob): `supabase/migrations/*.sql` — confirm the next sequential number is 031. If a newer number exists, use the next free integer and update all references in this plan.
 
 - [ ] **Step 2: Write the migration**
 
 ```sql
--- 030_helper_score.sql
+-- 031_helper_score.sql
 -- ADDITIVE: creates a read-only VIEW aggregating helper-reputation signals
 -- per user over the last 365 days. No source tables modified.
 --
@@ -165,11 +165,11 @@ CREATE INDEX IF NOT EXISTS idx_post_likes_post_created
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/migrations/030_helper_score.sql
-git commit -m "feat(db): user_helper_scores view (030)"
+git add supabase/migrations/031_helper_score.sql
+git commit -m "feat(db): user_helper_scores view (031)"
 ```
 
-### Task A2 (manual gate): User applies migration 030
+### Task A2 (manual gate): User applies migration 031
 
 User applies via Supabase SQL Editor (or `supabase db push`) and verifies:
 
@@ -2240,14 +2240,14 @@ Per CLAUDE.md, never push without explicit user OK. Offer this PR body to the us
 
 ```
 ## Summary
-- Adds migration 030 — user_helper_scores VIEW (formula: 2 × comments-on-others + 1 × likes-received, last 365 days)
+- Adds migration 031 — user_helper_scores VIEW (formula: 2 × comments-on-others + 1 × likes-received, last 365 days)
 - Shared API: getHelperScore, getTopHelperInMetro, getFollowSuggestionCandidates
 - Shared logic: rankFollowSuggestions pure function (rule-based, deterministic)
 - Extends PulseCard union with find_your_people + top_helper variants; composer now reads the viewer row and ranks candidates
 - UI: both new card kinds render on mobile + web; helper badge added to public profile (hidden when score < 10)
 
 ## Test plan
-- [ ] Migration 030 applied + user_helper_scores returns rows
+- [ ] Migration 031 applied + user_helper_scores returns rows
 - [ ] Shared tests pass (includes new helperScore + followSuggestions coverage)
 - [ ] Mobile tests pass
 - [ ] Web tests pass
