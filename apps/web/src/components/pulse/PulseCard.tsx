@@ -30,6 +30,10 @@ function renderBody(card: PulseCardType): { headline: string; detail: string } {
       return { headline: formatFx(card), detail: 'USD · NPR' };
     case 'create_first_post':
       return { headline: card.title, detail: 'Click to create the first post today' };
+    case 'find_your_people':
+      return { headline: card.featured.displayName, detail: card.featured.reason };
+    case 'top_helper':
+      return { headline: card.helper.displayName, detail: `Top helper in ${card.metroLabel}` };
   }
 }
 
