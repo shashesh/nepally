@@ -22,6 +22,8 @@ const CARD_ORDER: Record<PulseCard['kind'], number> = {
   events_this_week: 2,
   fx_rate: 3,
   create_first_post: 4,
+  find_your_people: 5,
+  top_helper: 6,
 };
 
 export interface AssemblePulseCardsInput {

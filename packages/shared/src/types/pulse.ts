@@ -8,7 +8,9 @@ export type PulseCardKind =
   | 'metro_highlights'
   | 'events_this_week'
   | 'fx_rate'
-  | 'create_first_post';
+  | 'create_first_post'
+  | 'find_your_people'
+  | 'top_helper';
 
 export interface CulturalCalendarCard {
   kind: 'cultural_calendar';
@@ -51,12 +53,40 @@ export interface CreateFirstPostCard {
   deepLink: string;
 }
 
+export interface FindYourPeopleCard {
+  kind: 'find_your_people';
+  id: 'find_your_people';
+  suggestionCount: number;
+  featured: {
+    userId: string;
+    displayName: string; // already masked via formatPublicName
+    photo: string | null;
+    reason: string; // e.g. 'Both from Pokhara'
+  };
+  deepLink: string; // `/users/${userId}`
+}
+
+export interface TopHelperCard {
+  kind: 'top_helper';
+  id: 'top_helper';
+  helper: {
+    userId: string;
+    displayName: string; // masked
+    photo: string | null;
+    helperScore: number;
+  };
+  metroLabel: string;
+  deepLink: string;
+}
+
 export type PulseCard =
   | CulturalCalendarCard
   | MetroHighlightsCard
   | EventsThisWeekCard
   | FxRateCard
-  | CreateFirstPostCard;
+  | CreateFirstPostCard
+  | FindYourPeopleCard
+  | TopHelperCard;
 
 export interface PulseCardsResult {
   cards: PulseCard[];
