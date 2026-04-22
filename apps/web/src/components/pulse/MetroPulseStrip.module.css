@@ -1,0 +1,10 @@
+.wrapper { padding: 12px 0; }
+.row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 0 16px;
+  scroll-snap-type: x mandatory;
+}
+.row > * { scroll-snap-align: start; }

@@ -97,6 +97,50 @@ export async function getUpcomingEventsByMetro(
   }
 }
 
+export interface PulseEventSummary {
+  id: string;
+  title: string;
+  start_date: string;
+}
+
+interface PulseEventsResult {
+  data?: PulseEventSummary[];
+  error?: Error;
+}
+
+/**
+ * Lightweight upcoming-events query for the Metro Pulse strip.
+ * Returns minimal columns (id, title, start_date) with no organizer join —
+ * avoids pulling the full Event payload on every home-feed render.
+ */
+export async function getUpcomingEventsPulseByMetro(
+  supabase: SupabaseClient,
+  metroId: string,
+  withinDays: number,
+  now: Date = new Date(),
+  limit = 20
+): Promise<PulseEventsResult> {
+  try {
+    const upperIso = new Date(now.getTime() + withinDays * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from('events')
+      .select('id, title, start_date')
+      .neq('status', 'removed')
+      .gte('start_date', now.toISOString())
+      .lte('start_date', upperIso)
+      .or(`metro_area_id.eq.${metroId},is_global.eq.true`)
+      .order('start_date', { ascending: true })
+      .limit(limit);
+
+    if (error) throw error;
+    return { data: (data || []) as PulseEventSummary[] };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to fetch pulse events'),
+    };
+  }
+}
+
 /**
  * Get a single event by ID, with organizer info joined.
  */

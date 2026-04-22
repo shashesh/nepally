@@ -266,6 +266,44 @@
   text-decoration: underline;
 }
 
+/* ── Social row (follow button + counts) ────── */
+
+.socialRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: var(--space-xs);
+}
+
+.followCount {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
+.followDot {
+  color: var(--color-text-tertiary);
+  opacity: 0.6;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ── Identity chips (district / college / years / languages) ─ */
+
+.identityChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-xxs);
+}
+
+.identityChip {
+  background: var(--color-surface-low, #f4f4f4);
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary, #333);
+}
+
 /* ── Tab rail ────────────────────────────────── */
 
 .tabRail {

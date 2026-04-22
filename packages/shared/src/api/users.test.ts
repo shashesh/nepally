@@ -308,4 +308,49 @@ describe('users api', () => {
     expect(result.error).toBeDefined();
     expect(result.data).toBeUndefined();
   });
+
+  describe('updateUserProfile — extended fields', () => {
+    it('accepts hometown_district, college, years_in_us, languages', async () => {
+      const query = {
+        update: vi.fn(),
+        eq: vi.fn(),
+        select: vi.fn(),
+        single: vi.fn(),
+      };
+      query.update.mockReturnValue(query);
+      query.eq.mockReturnValue(query);
+      query.select.mockReturnValue(query);
+      query.single.mockResolvedValue({
+        data: {
+          id: 'u-3',
+          hometown_district: 'Kathmandu',
+          college: 'Pulchowk',
+          years_in_us: 5,
+          languages: ['nepali', 'english'],
+        },
+        error: null,
+      });
+      const supabase = {
+        from: vi.fn().mockReturnValue(query),
+      } as unknown as SupabaseClient;
+
+      const result = await updateUserProfile(supabase, 'u-3', {
+        hometown_district: 'Kathmandu',
+        college: 'Pulchowk',
+        years_in_us: 5,
+        languages: ['nepali', 'english'],
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.data?.hometown_district).toBe('Kathmandu');
+      expect(query.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hometown_district: 'Kathmandu',
+          college: 'Pulchowk',
+          years_in_us: 5,
+          languages: ['nepali', 'english'],
+        })
+      );
+    });
+  });
 });

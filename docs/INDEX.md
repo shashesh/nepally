@@ -48,6 +48,8 @@
 - [plans/active/notifications-feature.md](plans/active/notifications-feature.md) — full notifications system (DB + shared API + push delivery) [status: planned]
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — Phase 1 post-audit remediation tasks [status: planned]
 - [plans/active/phase1-remediation-github-issues.md](plans/active/phase1-remediation-github-issues.md) — copy-paste GitHub issue cards for Phase 1 remediation
+- [plans/active/2026-04-20-pr1-social-identity.md](plans/active/2026-04-20-pr1-social-identity.md) — PR 1 of "Your Community Today": follow graph + extended profile [status: planned]
+- [plans/active/2026-04-20-pr2-metro-pulse.md](plans/active/2026-04-20-pr2-metro-pulse.md) — PR 2 of "Your Community Today": Metro Pulse card strip [status: implemented]
 - [plans/active/2026-04-20-pr3-helper-score-social-cards.md](plans/active/2026-04-20-pr3-helper-score-social-cards.md) — PR 3 of "Your Community Today": helper score + find_your_people + top_helper cards [status: planned, blocked on #41 + #42]
 
 ## Specs (active design specs)
@@ -55,6 +57,7 @@
 - [specs/2026-04-13-docs-reorganization-design.md](specs/2026-04-13-docs-reorganization-design.md) — design spec for this docs reorganization
 - [specs/2026-04-13-marketplace-listing-details-enhancement-design.md](specs/2026-04-13-marketplace-listing-details-enhancement-design.md) — marketplace listing detail page Split View redesign (web + mobile)
 - [specs/2026-04-14-mobile-marketplace-redesign-design.md](specs/2026-04-14-mobile-marketplace-redesign-design.md) — spec for the 4-tab mobile marketplace home redesign (Sponsored · Featured · Trending · All Listings)
+- [specs/2026-04-20-your-community-today-design.md](specs/2026-04-20-your-community-today-design.md) — "Your Community Today": Metro Pulse card strip + Social Identity (follow graph, extended profile, helper score)
 - [plans/active/2026-04-13-marketplace-listing-details-enhancement.md](plans/active/2026-04-13-marketplace-listing-details-enhancement.md) — implementation plan for Split View listing detail redesign
 
 ## User journeys
