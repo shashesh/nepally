@@ -12,7 +12,7 @@ interface Props {
 
 export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
   const [cards, setCards] = useState<PulseCardType[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set());
   const mountedRef = useRef(true);
   const navigation = useNavigation();
 
@@ -22,25 +22,24 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
     };
   }, []);
 
+  // Fetch depends only on metro scope. Dismissals are applied client-side
+  // below — keeping them out of the effect deps prevents a re-fetch loop
+  // that destabilises React 19's act scope on Ubuntu CI.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const res = await getPulseCards(supabase, {
         metroAreaId,
         metroLabel,
-        dismissedIds,
+        dismissedIds: new Set(),
       });
       if (cancelled || !mountedRef.current) return;
-      const next = res.data?.cards ?? [];
-      // Bail out when the fetch returns the same empty state we started with.
-      // React 19's act scope treats the extra re-render as pending work, which
-      // can hang Ubuntu CI tests that wait on the empty→empty transition.
-      setCards((prev) => (prev.length === 0 && next.length === 0 ? prev : next));
+      if (res.data) setCards(res.data.cards);
     })();
     return () => {
       cancelled = true;
     };
-  }, [metroAreaId, metroLabel, dismissedIds]);
+  }, [metroAreaId, metroLabel]);
 
   const handlePress = useCallback(
     (card: PulseCardType) => {
@@ -68,7 +67,8 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
     });
   }, []);
 
-  if (cards.length === 0) return null;
+  const visibleCards = cards.filter((c) => !dismissedIds.has(c.id));
+  if (visibleCards.length === 0) return null;
 
   return (
     <View style={styles.wrapper} testID="metro-pulse-strip">
@@ -77,7 +77,7 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {cards.map((card) => (
+        {visibleCards.map((card) => (
           <PulseCard
             key={`${card.kind}:${card.id}`}
             card={card}
