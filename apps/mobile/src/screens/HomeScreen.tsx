@@ -955,10 +955,11 @@ export default function HomeScreen() {
           }
           ListHeaderComponent={() => (
             <>
-              {metroAreaId ? (
+              {metroAreaId && user?.id ? (
                 <MetroPulseStrip
                   metroAreaId={metroAreaId}
                   metroLabel={metroName ?? 'your metro'}
+                  viewerId={user.id}
                 />
               ) : null}
               {renderCreatePostBanner()}

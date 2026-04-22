@@ -34,3 +34,33 @@ describe('PulseCard (web)', () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 });
+
+describe('PulseCard (web) — PR 3 cards', () => {
+  it('renders a find_your_people card with featured name + reason', () => {
+    const card = {
+      kind: 'find_your_people',
+      id: 'find_your_people',
+      suggestionCount: 3,
+      featured: {
+        userId: 'u-1', displayName: 'Anish S.', photo: null, reason: 'Both from Pokhara',
+      },
+      deepLink: '/users/u-1',
+    } as const;
+    render(<PulseCard card={card} onPress={vi.fn()} onDismiss={vi.fn()} />);
+    expect(screen.getByText(/Anish S\./)).toBeDefined();
+    expect(screen.getByText(/Both from Pokhara/)).toBeDefined();
+  });
+
+  it('renders a top_helper card with score metadata', () => {
+    const card = {
+      kind: 'top_helper',
+      id: 'top_helper',
+      helper: { userId: 'h-1', displayName: 'Deepak G.', photo: null, helperScore: 84 },
+      metroLabel: 'DFW',
+      deepLink: '/users/h-1',
+    } as const;
+    render(<PulseCard card={card} onPress={vi.fn()} onDismiss={vi.fn()} />);
+    expect(screen.getByText(/Deepak G\./)).toBeDefined();
+    expect(screen.getByText(/Top helper in DFW/)).toBeDefined();
+  });
+});

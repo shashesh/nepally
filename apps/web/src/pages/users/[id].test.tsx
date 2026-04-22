@@ -19,6 +19,7 @@ const profilePageMocks = vi.hoisted(() => {
     getActiveListingsBySellerMock: vi.fn(),
     getOrCreateConversationMock: vi.fn(),
     isFollowingMock: vi.fn(),
+    getHelperScoreMock: vi.fn(),
     formatRelativeTimeMock: vi.fn(),
     supabaseSingleMock,
     supabaseEqMock,
@@ -42,6 +43,8 @@ vi.mock('@nepally/shared', async () => {
     getActiveListingsBySeller: profilePageMocks.getActiveListingsBySellerMock,
     getOrCreateConversation: profilePageMocks.getOrCreateConversationMock,
     isFollowing: profilePageMocks.isFollowingMock,
+    getHelperScore: profilePageMocks.getHelperScoreMock,
+    HELPER_SCORE_VISIBILITY_THRESHOLD: 10,
     formatRelativeTime: profilePageMocks.formatRelativeTimeMock,
   };
 });
@@ -148,6 +151,9 @@ describe('PublicProfilePage', () => {
     });
     profilePageMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
     profilePageMocks.isFollowingMock.mockResolvedValue({ data: false });
+    profilePageMocks.getHelperScoreMock.mockResolvedValue({
+      data: { userId: 'profile-user', helperScore: 0, helpfulComments: 0, likesReceivedOnOwnPosts: 0 },
+    });
     // Wire up supabase chain for metro area query
     profilePageMocks.supabaseSingleMock.mockResolvedValue({
       data: { name: 'Dallas-Fort Worth', state: 'TX' },
@@ -585,5 +591,39 @@ describe('PublicProfilePage', () => {
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
 
     expect(screen.queryByText(/years in US/)).toBeNull();
+  });
+
+  // ─── Helper Score Badge ────────────────────────────────────────────────────
+
+  it('renders the helper badge when score >= threshold', async () => {
+    profilePageMocks.getHelperScoreMock.mockResolvedValue({
+      data: {
+        userId: 'profile-user',
+        helperScore: 42,
+        helpfulComments: 15,
+        likesReceivedOnOwnPosts: 12,
+      },
+    });
+    render(<PublicProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByText(/Helped 42 people this year/)).toBeDefined();
+    });
+  });
+
+  it('hides the helper badge when score < threshold', async () => {
+    profilePageMocks.getHelperScoreMock.mockResolvedValue({
+      data: {
+        userId: 'profile-user',
+        helperScore: 4,
+        helpfulComments: 2,
+        likesReceivedOnOwnPosts: 0,
+      },
+    });
+    render(<PublicProfilePage />);
+    await waitFor(() => {
+      // Sanity: page loaded — "Bikal S." appears in some header
+      expect(screen.queryAllByText(/Bikal S\./).length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText(/Helped \d+ people this year/)).toBeNull();
   });
 });

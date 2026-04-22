@@ -15,6 +15,8 @@ import {
   formatRelativeTime,
   formatPublicName,
   LANGUAGE_LABELS,
+  getHelperScore,
+  HELPER_SCORE_VISIBILITY_THRESHOLD,
   type LanguageCode,
 } from '@nepally/shared';
 import type {
@@ -69,6 +71,7 @@ export default function PublicProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [messagingLoading, setMessagingLoading] = useState(false);
+  const [helperScore, setHelperScore] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
@@ -131,10 +134,17 @@ export default function PublicProfilePage() {
       setListingsLoading(false);
     }
 
+    async function loadHelperScore(): Promise<void> {
+      const result = await getHelperScore(supabase, currentId);
+      if (!isMounted) return;
+      setHelperScore(result.data?.helperScore ?? 0);
+    }
+
     loadProfile();
     loadPosts();
     loadEvents();
     loadListings();
+    loadHelperScore();
 
     return () => {
       isMounted = false;
@@ -575,6 +585,10 @@ export default function PublicProfilePage() {
                     </span>
                   ))}
                 </div>
+              )}
+
+              {typeof helperScore === 'number' && helperScore >= HELPER_SCORE_VISIBILITY_THRESHOLD && (
+                <p className={styles.helperBadge}>🙏 Helped {helperScore} people this year</p>
               )}
 
               {/* CTA */}

@@ -77,7 +77,7 @@ describe('MetroPulseStrip', () => {
       data: { computedAt: '2026-04-20T00:00:00Z', cards: [FX_CARD] },
     });
 
-    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" />);
+    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" viewerId="viewer-1" />);
 
     await waitFor(() => {
       expect(screen.getByTestId('pulse-card-fx_rate')).toBeTruthy();

@@ -45,7 +45,18 @@ function renderBody(card: PulseCardType): { headline: string; detail: string } {
         headline: card.title,
         detail: 'Tap to create the first post today',
       };
+    case 'find_your_people':
+      return {
+        headline: card.featured.displayName,
+        detail: card.featured.reason,
+      };
+    case 'top_helper':
+      return {
+        headline: card.helper.displayName,
+        detail: `Top helper in ${card.metroLabel}`,
+      };
   }
+  throw new Error(`Unhandled PulseCard kind: ${(card as { kind: string }).kind}`);
 }
 
 export function PulseCard({ card, onPress, onDismiss }: Props) {

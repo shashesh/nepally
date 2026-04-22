@@ -31,6 +31,8 @@ import {
   formatPublicName,
   getTrustLabel,
   LANGUAGE_LABELS,
+  getHelperScore,
+  HELPER_SCORE_VISIBILITY_THRESHOLD,
   type LanguageCode,
 } from '@nepally/shared';
 import type {
@@ -101,6 +103,7 @@ export default function PublicProfileScreen(): React.ReactElement {
   const [userEvents, setUserEvents] = useState<Event[]>([]);
   const [userListings, setUserListings] = useState<MarketplaceListing[]>([]);
   const [metroName, setMetroName] = useState<string | null>(null);
+  const [helperScore, setHelperScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
   const [eventsLoading, setEventsLoading] = useState(false);
@@ -159,10 +162,17 @@ export default function PublicProfileScreen(): React.ReactElement {
       setListingsLoading(false);
     }
 
+    async function loadHelperScore(): Promise<void> {
+      const result = await getHelperScore(supabase, userId);
+      if (!mountedRef.current) return;
+      setHelperScore(result.data?.helperScore ?? 0);
+    }
+
     loadProfile();
     loadPosts();
     loadEvents();
     loadListings();
+    loadHelperScore();
   }, [userId]);
 
   const handleMessage = useCallback(async (): Promise<void> => {
@@ -643,6 +653,10 @@ export default function PublicProfileScreen(): React.ReactElement {
               ))}
             </View>
 
+            {typeof helperScore === 'number' && helperScore >= HELPER_SCORE_VISIBILITY_THRESHOLD ? (
+              <Text style={styles.helperBadge}>🙏 Helped {helperScore} people this year</Text>
+            ) : null}
+
             {/* CTA */}
             {!isOwnProfile ? (
               <TouchableOpacity
@@ -1056,6 +1070,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   } as ViewStyle,
   identityChipText: { fontSize: 12, color: '#333' } as TextStyle,
+  helperBadge: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  } as TextStyle,
 
   // ── About card ──────────────────────────────
   aboutCard: {

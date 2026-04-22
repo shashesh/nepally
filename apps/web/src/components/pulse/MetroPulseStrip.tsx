@@ -8,9 +8,10 @@ import styles from './MetroPulseStrip.module.css';
 interface Props {
   metroAreaId: string;
   metroLabel: string;
+  viewerId: string;
 }
 
-export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
+export function MetroPulseStrip({ metroAreaId, metroLabel, viewerId }: Props) {
   const [cards, setCards] = useState<PulseCardType[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const router = useRouter();
@@ -21,6 +22,7 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
       const res = await getPulseCards(supabase, {
         metroAreaId,
         metroLabel,
+        viewerId,
         dismissedIds,
       });
       if (cancelled) return;
@@ -29,7 +31,7 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [metroAreaId, metroLabel, dismissedIds]);
+  }, [metroAreaId, metroLabel, viewerId, dismissedIds]);
 
   const handlePress = useCallback(
     (card: PulseCardType) => {
@@ -40,6 +42,10 @@ export function MetroPulseStrip({ metroAreaId, metroLabel }: Props) {
           return;
         case 'create_first_post':
           router.push('/post/new');
+          return;
+        case 'find_your_people':
+        case 'top_helper':
+          router.push(card.deepLink);
           return;
         case 'metro_highlights':
         case 'fx_rate':

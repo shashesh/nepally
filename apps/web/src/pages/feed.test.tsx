@@ -20,6 +20,7 @@ const feedMocks = vi.hoisted(() => ({
   getUpcomingEventsByMetroMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
   notificationsShowMock: vi.fn(),
+  getPulseCardsMock: vi.fn(),
 }));
 
 vi.mock('@mantine/notifications', () => ({ notifications: { show: feedMocks.notificationsShowMock } }));
@@ -41,6 +42,7 @@ vi.mock('@nepally/shared', async () => {
     createReport: feedMocks.createReportMock,
     getUpcomingEventsByMetro: feedMocks.getUpcomingEventsByMetroMock,
     formatRelativeTime: feedMocks.formatRelativeTimeMock,
+    getPulseCards: feedMocks.getPulseCardsMock,
     TAG_EMOJI: { housing: '🏠', jobs: '💼' },
   };
 });
@@ -112,6 +114,9 @@ describe('FeedPage', () => {
     feedMocks.unsavePostMock.mockResolvedValue({});
     feedMocks.createReportMock.mockResolvedValue({ data: { id: 'report-1' } });
     feedMocks.getUpcomingEventsByMetroMock.mockResolvedValue({ data: [] });
+    feedMocks.getPulseCardsMock.mockResolvedValue({
+      data: { cards: [], computedAt: new Date().toISOString() },
+    });
   });
 
   it('redirects to /login when user is not logged in', async () => {

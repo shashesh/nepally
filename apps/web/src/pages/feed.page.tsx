@@ -649,10 +649,11 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               )}
             </div>
 
-            {metroAreaId ? (
+            {metroAreaId && user?.id ? (
               <MetroPulseStrip
                 metroAreaId={metroAreaId}
                 metroLabel={activeLocation?.metro_name ?? 'your metro'}
+                viewerId={user.id}
               />
             ) : null}
 
