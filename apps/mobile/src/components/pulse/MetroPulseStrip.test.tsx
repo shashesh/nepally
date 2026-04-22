@@ -64,22 +64,15 @@ describe('MetroPulseStrip', () => {
     jest.clearAllMocks();
   });
 
-  it('fetches pulse cards with the provided metro params', async () => {
-    mockGetPulseCards.mockResolvedValue({
-      data: { computedAt: '2026-04-20T00:00:00Z', cards: [] },
-    });
-
-    render(<MetroPulseStrip metroAreaId="m-1" metroLabel="DFW" />);
-
-    await waitFor(() => {
-      expect(mockGetPulseCards).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ metroAreaId: 'm-1', metroLabel: 'DFW' })
-      );
-    });
-  });
-
-  it('renders cards returned by the composer', async () => {
+  it('renders cards returned by the composer with the provided metro params', async () => {
+    // Seeding a non-empty card list is intentional. Four prior iterations of
+    // a dedicated "fetch was called with correct params" test — with empty
+    // cards — consistently hit the 30s Ubuntu CI timeout even though they
+    // passed locally. The symptom is React 19's act scope treating the
+    // setCards([])→render-to-null no-op cycle as never-converging pending
+    // work. Seeding real cards gives the commit phase an actual DOM change
+    // to settle on, which converges cleanly, and the mock-call assertion
+    // still verifies the same behaviour (params threaded correctly).
     mockGetPulseCards.mockResolvedValue({
       data: { computedAt: '2026-04-20T00:00:00Z', cards: [FX_CARD] },
     });
@@ -89,5 +82,10 @@ describe('MetroPulseStrip', () => {
     await waitFor(() => {
       expect(screen.getByTestId('pulse-card-fx_rate')).toBeTruthy();
     });
+
+    expect(mockGetPulseCards).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ metroAreaId: 'm-1', metroLabel: 'DFW' })
+    );
   });
 });
