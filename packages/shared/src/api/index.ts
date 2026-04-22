@@ -22,4 +22,5 @@ export * from './culturalEvents';
 export * from './fxRates';
 export * from './pulse';
 export * from './follows';
+export * from './followSuggestions';
 export * from './helperScore';
