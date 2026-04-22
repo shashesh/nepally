@@ -50,7 +50,7 @@
 - [plans/active/phase1-remediation-github-issues.md](plans/active/phase1-remediation-github-issues.md) — copy-paste GitHub issue cards for Phase 1 remediation
 - [plans/active/2026-04-20-pr1-social-identity.md](plans/active/2026-04-20-pr1-social-identity.md) — PR 1 of "Your Community Today": follow graph + extended profile [status: planned]
 - [plans/active/2026-04-20-pr2-metro-pulse.md](plans/active/2026-04-20-pr2-metro-pulse.md) — PR 2 of "Your Community Today": Metro Pulse card strip [status: implemented]
-- [plans/active/2026-04-20-pr3-helper-score-social-cards.md](plans/active/2026-04-20-pr3-helper-score-social-cards.md) — PR 3 of "Your Community Today": helper score + find_your_people + top_helper cards [status: planned, blocked on #41 + #42]
+- [plans/active/2026-04-20-pr3-helper-score-social-cards.md](plans/active/2026-04-20-pr3-helper-score-social-cards.md) — PR 3 of "Your Community Today": helper score + find_your_people + top_helper cards [status: implemented]
 
 ## Specs (active design specs)
 
