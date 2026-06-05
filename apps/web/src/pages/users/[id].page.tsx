@@ -643,7 +643,7 @@ export default function PublicProfilePage() {
                   id={tabId}
                   type="button"
                   role="tab"
-                  aria-selected={isActive}
+                  aria-selected={isActive ? 'true' : 'false'}
                   aria-controls={panelId}
                   tabIndex={isActive ? 0 : -1}
                   className={`${styles.tab} ${isActive ? styles.tabActive : ''}`}
