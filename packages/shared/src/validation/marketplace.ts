@@ -38,12 +38,10 @@ const listingBaseSchema = z.object({
     .max(MAX_LISTING_DESCRIPTION_LENGTH, `Description must be at most ${MAX_LISTING_DESCRIPTION_LENGTH} characters`)
     .refine((v) => v.trim().length >= 10, 'Description cannot be only whitespace'),
 
-  category_id: z
-    .string()
-    .uuid('Invalid category'),
+  category_id: z.guid('Invalid category'),
 
   listing_type: z.enum(LISTING_TYPE_TUPLE, {
-    errorMap: () => ({ message: 'Select a listing type' }),
+    message: 'Select a listing type',
   }),
 
   photos: z

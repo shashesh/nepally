@@ -4,8 +4,8 @@
 
 Before starting, ensure you have:
 
-- **Node.js**: Version 18.0.0 or higher
-- **npm**: Version 9.0.0 or higher
+- **Node.js**: Version 20.19.0 or higher
+- **npm**: Version 10.0.0 or higher
 - **Git**: For version control
 - **Code editor**: VS Code recommended
 - **Mobile testing**: Expo Go app on your phone OR iOS Simulator/Android Emulator
@@ -14,8 +14,8 @@ Before starting, ensure you have:
 
 ### Check your current version:
 ```bash
-node --version  # Should show v18.x.x or higher
-npm --version   # Should show 9.x.x or higher
+node --version  # Should show v20.19.x or higher
+npm --version   # Should show 10.x.x or higher
 ```
 
 ### If you need to upgrade (Windows):
@@ -202,7 +202,7 @@ npm run dev
 
 **You should see:**
 ```
-   ▲ Next.js 15.5.12
+   ▲ Next.js 16.2.7 (Turbopack)
    - Local:        http://localhost:3000
    - Ready in 2.3s
 ```

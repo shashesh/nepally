@@ -180,11 +180,11 @@ export async function createPromotionCheckout(
     );
 
     if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
       throw new Error(body.error || `Checkout failed (${response.status})`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as CheckoutResult['data'];
     return { data };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to create promotion checkout') };

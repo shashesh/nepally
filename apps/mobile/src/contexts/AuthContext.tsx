@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../config/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { saveUserData, clearAllData } from '../utils/storage';
-import { registerForPushNotificationsAsync } from '../services/notifications';
+import { registerForPushNotificationsAsync, isExpoGo } from '../services/notifications';
 
 const SESSION_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -76,7 +76,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       const didRegister = await registerForPushNotificationsAsync(supabase, userId);
-      if (!didRegister) {
+      if (!didRegister && !isExpoGo) {
+        // In Expo Go this is expected (remote push unsupported), so stay silent
+        // there; on real builds a falsy result means denied/failed registration.
         console.warn('Push token registration skipped or denied for mobile user:', userId);
       }
     } catch (error) {
