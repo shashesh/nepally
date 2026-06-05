@@ -24,7 +24,7 @@ export const createPostSchema = z.object({
     .refine((v) => v.trim().length >= 10, 'Body cannot be only whitespace'),
 
   tag_ids: z
-    .array(z.string().uuid())
+    .array(z.guid())
     .min(1, 'Select at least 1 tag')
     .max(3, 'Maximum 3 tags allowed'),
 

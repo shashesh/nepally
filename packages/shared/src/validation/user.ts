@@ -50,7 +50,7 @@ export const hometownDistrictSchema = z
   .transform((v) => v.trim())
   .pipe(
     z.enum(NEPAL_DISTRICTS as unknown as [NepalDistrict, ...NepalDistrict[]], {
-      errorMap: () => ({ message: 'Select a valid Nepal district' }),
+      message: 'Select a valid Nepal district',
     })
   );
 

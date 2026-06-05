@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { MIN_PROMOTION_DAYS, MAX_PROMOTION_DAYS } from '../constants/promotions';
 
 export const createPromotionSchema = z.object({
-  listing_id: z.string().uuid('Invalid listing ID'),
+  listing_id: z.guid('Invalid listing ID'),
   promotion_type: z.enum(['featured_listing', 'sponsored_feed', 'sticky_business']),
   duration_days: z
     .number()

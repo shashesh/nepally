@@ -19,7 +19,7 @@ const eventBaseSchema = z.object({
     .refine((v) => v.trim().length >= 10, 'Description cannot be only whitespace'),
 
   event_type: z.enum(EVENT_TYPE_TUPLE, {
-    errorMap: () => ({ message: 'Select a valid event type' }),
+    message: 'Select a valid event type',
   }),
 
   start_date: z
