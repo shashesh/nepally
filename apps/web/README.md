@@ -4,9 +4,9 @@ This is the web application for Nepally, built with Next.js and React.
 
 ## Tech Stack
 
-- **React:** 19.1.0
-- **Next.js:** 15.5.12
-- **TypeScript:** 5.3.3+
+- **React:** 19.1.4
+- **Next.js:** 16.2.7 (Turbopack)
+- **TypeScript:** 6.0+
 - **Backend:** Supabase
 - **Styling:** CSS Modules
 
@@ -26,7 +26,7 @@ npm run build
 npm start
 ```
 
-> **Note:** This project uses Next.js 15.5.12 instead of Next.js 16 because Next.js 16 with Turbopack has React 19 compatibility issues. Next.js 15 provides stable, production-ready React 19 support.
+> **Note:** React is pinned to exactly **19.1.4** across the monorepo (root `overrides`) because React Native 0.81 requires an exact React match. Do not bump React independently — React 19.2 is blocked until the Expo SDK 54→56 migration. See [TECH-VERSIONS.md](../../TECH-VERSIONS.md).
 
 ## Project Structure
 

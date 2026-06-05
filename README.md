@@ -39,7 +39,7 @@ For detailed setup instructions, see [Setup & Testing Guide](./docs/guides/setup
 | Component | Technology |
 |-----------|-----------|
 | **Mobile App** | React Native (Expo 54) |
-| **Web App** | Next.js 15 |
+| **Web App** | Next.js 16 |
 | **Backend** | Supabase (PostgreSQL, Realtime, Auth, Storage) |
 | **Auth** | Supabase Auth (email + Google OAuth; phone SMS removed 2026-03-25) |
 | **Language** | TypeScript |

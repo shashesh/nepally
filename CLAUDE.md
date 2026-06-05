@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Nepally (US Nepal Help Network) is a utility-first community platform for the Nepalese diaspora in the USA. Structured, location-based services for housing, jobs, emergencies, and travel coordination. Cross-platform monorepo: React Native (Expo 54) + Next.js 15, backed by Supabase. See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
+Nepally (US Nepal Help Network) is a utility-first community platform for the Nepalese diaspora in the USA. Structured, location-based services for housing, jobs, emergencies, and travel coordination. Cross-platform monorepo: React Native (Expo 54) + Next.js 16, backed by Supabase. See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 
 ## Finding Docs
 
