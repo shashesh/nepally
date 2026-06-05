@@ -26,6 +26,7 @@ const mockRegisterForPushNotificationsAsync = jest.fn();
 jest.mock('../services/notifications', () => ({
   registerForPushNotificationsAsync: (...args: unknown[]) =>
     mockRegisterForPushNotificationsAsync(...args),
+  isExpoGo: false,
 }));
 
 import React from 'react';
