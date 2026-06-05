@@ -22,11 +22,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'next dev',
+    command: 'next build && next start',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    // Run from apps/web/ so Next.js picks up .env.local automatically
+    timeout: 240_000,
     cwd: __dirname,
   },
 });
