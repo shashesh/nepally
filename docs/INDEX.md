@@ -51,6 +51,7 @@
 - [plans/active/2026-04-20-pr1-social-identity.md](plans/active/2026-04-20-pr1-social-identity.md) — PR 1 of "Your Community Today": follow graph + extended profile [status: planned]
 - [plans/active/2026-04-20-pr2-metro-pulse.md](plans/active/2026-04-20-pr2-metro-pulse.md) — PR 2 of "Your Community Today": Metro Pulse card strip [status: implemented]
 - [plans/active/2026-04-20-pr3-helper-score-social-cards.md](plans/active/2026-04-20-pr3-helper-score-social-cards.md) — PR 3 of "Your Community Today": helper score + find_your_people + top_helper cards [status: implemented]
+- [plans/active/2026-06-07-postgres-15-to-17-upgrade.md](plans/active/2026-06-07-postgres-15-to-17-upgrade.md) — Postgres version sync note: remote already on 17 GA; local config.toml + docs synced to 17 [status: in-progress]
 
 ## Specs (active design specs)
 

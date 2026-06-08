@@ -17,7 +17,8 @@ max_rows = 1000
 # Port to use for the local database URL.
 port = 54322
 # The database major version to use. This must be the same as your remote database.
-major_version = 15
+# Remote (nusa-staging) runs Postgres 17.6.x GA — keep this at 17 to match. (synced 2026-06-07)
+major_version = 17
 
 [studio]
 # Port to use for Supabase Studio.
