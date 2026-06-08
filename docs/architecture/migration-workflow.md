@@ -5,6 +5,8 @@
 
 This doc defines how database migrations are authored and applied for Nepally, and records the 2026-06-07 reconciliation of the remote migration tracker. Read alongside [database-schema.md](database-schema.md) (schema + numbering rules) and [supabase-setup.md](supabase-setup.md).
 
+> **Dates vs. timestamps:** prose dates in this doc (e.g. "2026-06-07") are the local working date. The `version` timestamps in the tracker tables below are **UTC**, auto-assigned by Supabase. They can therefore read one calendar day ahead — e.g. the migration-033 row `20260608021301` is `2026-06-08 02:13:01 UTC`, which is the evening of 2026-06-07 in US local time (the same session).
+
 ---
 
 ## How migrations work here (canonical workflow)
