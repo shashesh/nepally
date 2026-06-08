@@ -6,9 +6,13 @@
 --      Migration 031 intended security_invoker=true and 032 re-asserted it via
 --      ALTER VIEW, but 032 never took effect on the remote (migration drift —
 --      it is absent from the remote migrations tracker). This re-asserts it.
---      Safe: users/posts/post_comments/post_likes all have permissive public
---      SELECT policies, so invoker-side RLS yields the same rows (it only stops
---      counting reputation from non-active posts, matching 031's design intent).
+--      Safe: the view's base tables are readable by every caller under their
+--      own RLS — `users` and `post_likes` SELECT are unrestricted (USING true),
+--      and `post_comments` allows non-deleted rows (the view already filters
+--      is_deleted = false). The only narrowing is `posts`, whose SELECT is
+--      active-only (status = 'active'); under invoker semantics that simply
+--      stops counting reputation from non-active posts, matching 031's design
+--      intent. Net result for end users is the same (or more correct) data.
 --
 --   2. PERFORMANCE (WARN) auth_rls_initplan:
 --      19 RLS policies call auth.uid() (or current_setting()) per-row. Wrapping
