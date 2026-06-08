@@ -25,6 +25,7 @@
 - [architecture/monorepo-structure.md](architecture/monorepo-structure.md) — packages/apps layout and import rules
 - [architecture/database-schema.md](architecture/database-schema.md) — tables, RLS policies, migration numbering
 - [architecture/supabase-setup.md](architecture/supabase-setup.md) — project config, auth providers, storage
+- [architecture/migration-workflow.md](architecture/migration-workflow.md) — how migrations are authored/applied (manual/MCP, numeric prefixes); 2026-06-07 tracker realignment + before-snapshot
 
 ## Product
 
