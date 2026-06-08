@@ -1,6 +1,6 @@
 # Nepally Technology Versions
 
-**Last Updated:** 2026-06-05
+**Last Updated:** 2026-06-07
 
 This document serves as the single source of truth for all technology versions used in the Nepally project.
 

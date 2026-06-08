@@ -4,7 +4,7 @@
 > **Coding agents:** this is your map — grep it for keywords to find the right doc fast.
 > **Humans:** also see [README.md](README.md) for the folder overview.
 
-**Last verified:** 2026-04-13
+**Last verified:** 2026-06-07
 **If you add, move, or retire a doc, update this file in the same commit.**
 
 ## Repo root
