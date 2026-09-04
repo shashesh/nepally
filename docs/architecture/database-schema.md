@@ -94,6 +94,13 @@ CREATE POLICY "Users can insert their own profile"
   WITH CHECK (auth.uid() = id);
 
 -- Users can update their own profile
+-- NOTE (migration 034): a BEFORE INSERT/UPDATE trigger
+-- (guard_user_privileged_columns) rejects client-side changes to trust_level,
+-- is_moderator, is_premium, is_banned, ban_reason, *_verified and the counter
+-- columns, and resets them to defaults on client INSERT. Trust-level promotion
+-- goes through the mark_user_verified() SECURITY DEFINER RPC, which reads
+-- auth.users (confirmed email or linked Google identity -> trust_level 1).
+-- Live check: `npm run test:security:users-privilege`.
 CREATE POLICY "Users can update own profile"
   ON users FOR UPDATE
   USING (auth.uid() = id);

@@ -154,6 +154,10 @@ npm run test:e2e:web:headed  # Run web e2e in headed browser mode
 npm run test:e2e:web:ui      # Open Playwright UI for web e2e
 npm run test:e2e:web:report  # Run web e2e and open HTML report
 npm run test:e2e:mobile      # Run mobile e2e tests only
+
+# Live security smoke tests (need SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
+npm run test:security:chat-rls          # Chat tables: cross-user isolation
+npm run test:security:users-privilege   # Users table: privileged columns cannot be self-escalated (migration 034)
 ```
 
 ## Development Phases

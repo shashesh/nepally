@@ -116,49 +116,45 @@ export async function updateUserProfile(
 }
 
 /**
- * Mark a user's email as verified (called after OTP/link verification).
- * Only promotes trust_level to 1 if currently lower — never demotes.
+ * Promote the calling user to Verified (trust_level 1) through the
+ * `mark_user_verified` SECURITY DEFINER RPC. The server reads auth.users for
+ * the current session and promotes only when the email is confirmed or a
+ * Google identity is linked. Never demotes.
+ *
+ * Clients cannot write trust_level / *_verified directly — migration 034
+ * rejects those writes — so this is the only promotion path.
  */
-export async function markEmailVerified(
-  supabase: SupabaseClient,
-  userId: string
+export async function markUserVerified(
+  supabase: SupabaseClient
 ): Promise<UserResult> {
   try {
-    const { data: current, error: fetchError } = await supabase
-      .from('users')
-      .select('trust_level')
-      .eq('id', userId)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const updates: Record<string, unknown> = {
-      email_verified: true,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (!current || current.trust_level < 1) {
-      updates.trust_level = 1;
-    }
-
-    const { data, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', userId)
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc('mark_user_verified');
 
     if (error) throw error;
-    if (!data) throw new Error('Failed to mark email verified');
 
-    return { data: data as User };
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) throw new Error('Failed to mark user verified');
+
+    return { data: row as User };
   } catch (error) {
     return {
       error: error instanceof Error
         ? error
-        : new Error('Failed to mark email verified'),
+        : new Error('Failed to mark user verified'),
     };
   }
+}
+
+/**
+ * Mark a user's email as verified (called after OTP/link verification).
+ * Delegates to markUserVerified — identity comes from the session, so the
+ * userId argument is retained only for call-site compatibility.
+ */
+export async function markEmailVerified(
+  supabase: SupabaseClient,
+  _userId: string
+): Promise<UserResult> {
+  return markUserVerified(supabase);
 }
 
 /**
@@ -186,48 +182,15 @@ export async function resendVerificationEmail(
 
 /**
  * Mark a user's Google account as verified and promote trust level.
- * Only promotes trust_level to 1 if currently lower — never demotes.
+ * Delegates to markUserVerified — the server checks auth.identities for a
+ * linked Google provider, so the userId argument is retained only for
+ * call-site compatibility.
  */
 export async function markGoogleVerified(
   supabase: SupabaseClient,
-  userId: string
+  _userId: string
 ): Promise<UserResult> {
-  try {
-    const { data: current, error: fetchError } = await supabase
-      .from('users')
-      .select('trust_level')
-      .eq('id', userId)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const updates: Record<string, unknown> = {
-      google_verified: true,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (!current || current.trust_level < 1) {
-      updates.trust_level = 1;
-    }
-
-    const { data, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    if (!data) throw new Error('Failed to mark Google verified');
-
-    return { data: data as User };
-  } catch (error) {
-    return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to mark Google verified'),
-    };
-  }
+  return markUserVerified(supabase);
 }
 
 /**

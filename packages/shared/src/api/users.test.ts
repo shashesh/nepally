@@ -5,6 +5,7 @@ import {
   getUserById,
   markEmailVerified,
   markGoogleVerified,
+  markUserVerified,
   resendVerificationEmail,
   updateUserProfile,
 } from './users';
@@ -97,92 +98,91 @@ describe('users api', () => {
     });
   });
 
-  it('marks email as verified and promotes trust level from 0', async () => {
-    const query = {
-      update: vi.fn(),
-      eq: vi.fn(),
-      select: vi.fn(),
-      single: vi.fn(),
-    };
-
-    query.update.mockReturnValue(query);
-    query.eq.mockReturnValue(query);
-    query.select.mockReturnValue(query);
-    // First single(): fetch current trust_level
-    query.single.mockResolvedValueOnce({
-      data: { trust_level: 0 },
-      error: null,
-    });
-    // Second single(): update result
-    query.single.mockResolvedValueOnce({
+  it('markUserVerified calls the mark_user_verified RPC and returns the profile', async () => {
+    const rpc = vi.fn().mockResolvedValue({
       data: { id: 'user-3', email_verified: true, trust_level: 1 },
       error: null,
     });
+    const supabase = { rpc } as unknown as SupabaseClient;
 
-    const supabase = {
-      from: vi.fn().mockReturnValue(query),
-    } as unknown as SupabaseClient;
+    const result = await markUserVerified(supabase);
+
+    expect(rpc).toHaveBeenCalledWith('mark_user_verified');
+    expect(result.error).toBeUndefined();
+    expect(result.data?.trust_level).toBe(1);
+    expect(result.data?.email_verified).toBe(true);
+  });
+
+  it('markUserVerified never writes to the users table directly', async () => {
+    const from = vi.fn();
+    const rpc = vi.fn().mockResolvedValue({
+      data: { id: 'user-3', trust_level: 1 },
+      error: null,
+    });
+    const supabase = { rpc, from } as unknown as SupabaseClient;
+
+    await markUserVerified(supabase);
+
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('markUserVerified unwraps a single-row array response', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ id: 'user-3', trust_level: 1 }],
+      error: null,
+    });
+    const supabase = { rpc } as unknown as SupabaseClient;
+
+    const result = await markUserVerified(supabase);
+
+    expect(result.data?.id).toBe('user-3');
+  });
+
+  it('markUserVerified returns error when the RPC fails', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: new Error('permission denied'),
+    });
+    const supabase = { rpc } as unknown as SupabaseClient;
+
+    const result = await markUserVerified(supabase);
+
+    expect(result.error?.message).toBe('permission denied');
+    expect(result.data).toBeUndefined();
+  });
+
+  it('markUserVerified returns error when the RPC returns no row', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    const supabase = { rpc } as unknown as SupabaseClient;
+
+    const result = await markUserVerified(supabase);
+
+    expect(result.error).toBeDefined();
+    expect(result.data).toBeUndefined();
+  });
+
+  it('markEmailVerified delegates to the mark_user_verified RPC without a direct table write', async () => {
+    const from = vi.fn();
+    const rpc = vi.fn().mockResolvedValue({
+      data: { id: 'user-3', email_verified: true, trust_level: 1 },
+      error: null,
+    });
+    const supabase = { rpc, from } as unknown as SupabaseClient;
 
     const result = await markEmailVerified(supabase, 'user-3');
 
+    expect(rpc).toHaveBeenCalledWith('mark_user_verified');
+    expect(from).not.toHaveBeenCalled();
     expect(result.error).toBeUndefined();
-    expect(query.update).toHaveBeenCalledWith(
-      expect.objectContaining({ email_verified: true, trust_level: 1 })
-    );
+    expect(result.data?.email_verified).toBe(true);
   });
 
-  it('does not demote trust level when marking email verified on a contributor', async () => {
-    const query = {
-      update: vi.fn(),
-      eq: vi.fn(),
-      select: vi.fn(),
-      single: vi.fn(),
-    };
-
-    query.update.mockReturnValue(query);
-    query.eq.mockReturnValue(query);
-    query.select.mockReturnValue(query);
-    // Contributor with trust_level 2
-    query.single.mockResolvedValueOnce({
-      data: { trust_level: 2 },
-      error: null,
-    });
-    query.single.mockResolvedValueOnce({
-      data: { id: 'user-3', email_verified: true, trust_level: 2 },
-      error: null,
-    });
-
-    const supabase = {
-      from: vi.fn().mockReturnValue(query),
-    } as unknown as SupabaseClient;
-
-    const result = await markEmailVerified(supabase, 'user-3');
-
-    expect(result.error).toBeUndefined();
-    expect(query.update).toHaveBeenCalledWith(
-      expect.not.objectContaining({ trust_level: expect.anything() })
-    );
-  });
-
-  it('returns error when markEmailVerified DB call fails', async () => {
-    const query = {
-      update: vi.fn(),
-      eq: vi.fn(),
-      select: vi.fn(),
-      single: vi.fn(),
-    };
-
-    query.update.mockReturnValue(query);
-    query.eq.mockReturnValue(query);
-    query.select.mockReturnValue(query);
-    query.single.mockResolvedValue({
+  it('returns error when markEmailVerified RPC fails', async () => {
+    const rpc = vi.fn().mockResolvedValue({
       data: null,
       error: new Error('DB error'),
     });
-
-    const supabase = {
-      from: vi.fn().mockReturnValue(query),
-    } as unknown as SupabaseClient;
+    const supabase = { rpc } as unknown as SupabaseClient;
 
     const result = await markEmailVerified(supabase, 'user-3');
 
@@ -219,89 +219,28 @@ describe('users api', () => {
     expect(result.error?.message).toBe('Rate limited');
   });
 
-  it('marks Google as verified and promotes trust level from 0', async () => {
-    const query = {
-      update: vi.fn(),
-      eq: vi.fn(),
-      select: vi.fn(),
-      single: vi.fn(),
-    };
-
-    query.update.mockReturnValue(query);
-    query.eq.mockReturnValue(query);
-    query.select.mockReturnValue(query);
-    query.single.mockResolvedValueOnce({
-      data: { trust_level: 0 },
-      error: null,
-    });
-    query.single.mockResolvedValueOnce({
+  it('markGoogleVerified delegates to the mark_user_verified RPC without a direct table write', async () => {
+    const from = vi.fn();
+    const rpc = vi.fn().mockResolvedValue({
       data: { id: 'user-5', google_verified: true, trust_level: 1 },
       error: null,
     });
-
-    const supabase = {
-      from: vi.fn().mockReturnValue(query),
-    } as unknown as SupabaseClient;
+    const supabase = { rpc, from } as unknown as SupabaseClient;
 
     const result = await markGoogleVerified(supabase, 'user-5');
 
+    expect(rpc).toHaveBeenCalledWith('mark_user_verified');
+    expect(from).not.toHaveBeenCalled();
     expect(result.error).toBeUndefined();
-    expect(query.update).toHaveBeenCalledWith(
-      expect.objectContaining({ google_verified: true, trust_level: 1 })
-    );
+    expect(result.data?.google_verified).toBe(true);
   });
 
-  it('does not demote trust level when marking Google verified on a contributor', async () => {
-    const query = {
-      update: vi.fn(),
-      eq: vi.fn(),
-      select: vi.fn(),
-      single: vi.fn(),
-    };
-
-    query.update.mockReturnValue(query);
-    query.eq.mockReturnValue(query);
-    query.select.mockReturnValue(query);
-    query.single.mockResolvedValueOnce({
-      data: { trust_level: 2 },
-      error: null,
-    });
-    query.single.mockResolvedValueOnce({
-      data: { id: 'user-5', google_verified: true, trust_level: 2 },
-      error: null,
-    });
-
-    const supabase = {
-      from: vi.fn().mockReturnValue(query),
-    } as unknown as SupabaseClient;
-
-    const result = await markGoogleVerified(supabase, 'user-5');
-
-    expect(result.error).toBeUndefined();
-    expect(query.update).toHaveBeenCalledWith(
-      expect.not.objectContaining({ trust_level: expect.anything() })
-    );
-  });
-
-  it('returns error when markGoogleVerified DB call fails', async () => {
-    const query = {
-      update: vi.fn(),
-      eq: vi.fn(),
-      select: vi.fn(),
-      single: vi.fn(),
-    };
-
-    query.update.mockReturnValue(query);
-    query.eq.mockReturnValue(query);
-    query.select.mockReturnValue(query);
-    query.single.mockResolvedValue({
+  it('returns error when markGoogleVerified RPC fails', async () => {
+    const rpc = vi.fn().mockResolvedValue({
       data: null,
       error: new Error('DB error'),
     });
-
-    const supabase = {
-      from: vi.fn().mockReturnValue(query),
-    } as unknown as SupabaseClient;
+    const supabase = { rpc } as unknown as SupabaseClient;
 
     const result = await markGoogleVerified(supabase, 'user-5');
 
