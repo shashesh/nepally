@@ -30,7 +30,9 @@ function requireEnv(name: string): string {
 }
 
 function randomToken(length = 8): string {
-  return Math.random().toString(36).slice(2, 2 + length);
+  return Math.random()
+    .toString(36)
+    .slice(2, 2 + length);
 }
 
 function assertCondition(condition: unknown, message: string): void {
@@ -58,7 +60,9 @@ async function createAuthedClient(
   });
 
   if (error || !data.session) {
-    throw new Error(`Failed to sign in test user ${fixture.email}: ${error?.message || 'no session'}`);
+    throw new Error(
+      `Failed to sign in test user ${fixture.email}: ${error?.message || 'no session'}`
+    );
   }
 
   return createClient(url, anonKey, {
@@ -104,6 +108,10 @@ async function readPrivilegedColumns(service: SupabaseClient, userId: string) {
   return data;
 }
 
+/** Error the 034 guard trigger raises (ERRCODE 42501 + fixed message). */
+const PRIVILEGE_GUARD_ERROR_CODE = '42501';
+const PRIVILEGE_GUARD_MESSAGE = 'Privileged user columns cannot be modified directly';
+
 async function expectSelfUpdateBlocked(
   client: SupabaseClient,
   userId: string,
@@ -112,6 +120,12 @@ async function expectSelfUpdateBlocked(
 ): Promise<void> {
   const { error } = await client.from('users').update(patch).eq('id', userId).select('id');
   assertCondition(!!error, `Self-update of ${label} should be rejected, but succeeded`);
+  // Any error would satisfy the check above; insist on the guard trigger specifically so
+  // an unrelated failure (auth, network, RLS drift) cannot masquerade as a pass.
+  assertCondition(
+    error?.code === PRIVILEGE_GUARD_ERROR_CODE && error.message.includes(PRIVILEGE_GUARD_MESSAGE),
+    `Self-update of ${label} was rejected for an unexpected reason: ${error?.code} ${error?.message}`
+  );
 }
 
 async function main(): Promise<void> {
@@ -142,7 +156,12 @@ async function main(): Promise<void> {
     await expectSelfUpdateBlocked(clientA, userA.id, { is_premium: true }, 'is_premium');
     await expectSelfUpdateBlocked(clientA, userA.id, { trust_level: 2 }, 'trust_level');
     await expectSelfUpdateBlocked(clientA, userA.id, { email_verified: true }, 'email_verified');
-    await expectSelfUpdateBlocked(clientA, userA.id, { reports_received: 0, is_banned: true }, 'is_banned');
+    await expectSelfUpdateBlocked(
+      clientA,
+      userA.id,
+      { reports_received: 0, is_banned: true },
+      'is_banned'
+    );
 
     const afterBlocked = await readPrivilegedColumns(service, userA.id);
     assertCondition(afterBlocked.is_moderator === false, 'is_moderator must remain false');
@@ -180,11 +199,17 @@ async function main(): Promise<void> {
       is_moderator: true,
       is_premium: true,
     });
-    assertCondition(!insertBError, `Client profile insert should succeed: ${insertBError?.message}`);
+    assertCondition(
+      !insertBError,
+      `Client profile insert should succeed: ${insertBError?.message}`
+    );
 
     const insertedB = await readPrivilegedColumns(service, userB.id);
     assertCondition(insertedB.trust_level === 0, 'Inserted trust_level must be coerced to 0');
-    assertCondition(insertedB.is_moderator === false, 'Inserted is_moderator must be coerced to false');
+    assertCondition(
+      insertedB.is_moderator === false,
+      'Inserted is_moderator must be coerced to false'
+    );
     assertCondition(insertedB.is_premium === false, 'Inserted is_premium must be coerced to false');
 
     console.log('PASS: users privilege smoke test verified privileged columns are guarded.');
