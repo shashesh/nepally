@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Nepally",
-    "slug": "nusa-mobile",
+    "slug": "nepally",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,13 +11,14 @@
       "resizeMode": "contain",
       "backgroundColor": "#1565C0"
     },
-    "scheme": "nusa",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "scheme": "nepally",
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nusa.app"
+      "bundleIdentifier": "us.nepally.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +26,7 @@
         "backgroundColor": "#ffffff"
       },
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.nusa.app"
+      "package": "us.nepally.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -55,11 +56,6 @@
           "sounds": []
         }
       ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id-here"
-      }
-    }
+    ]
   }
 }

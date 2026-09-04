@@ -1,4 +1,4 @@
-appId: com.nusa.app
+appId: us.nepally.app
 ---
 # Create post → back to HomeScreen
 - launchApp:

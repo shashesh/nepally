@@ -249,33 +249,23 @@ eas login
 
 ### 3. Configure EAS
 
-Create `apps/mobile/eas.json`:
+`apps/mobile/eas.json` is committed with three build profiles (`development`, `preview`, `production`) and remote app-version management (`autoIncrement` on production). `apps/mobile/app.json` carries the store identity:
 
-```json
-{
-  "cli": {
-    "version": ">= 5.9.0"
-  },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal",
-      "ios": {
-        "simulator": true
-      }
-    },
-    "production": {
-      "autoIncrement": true
-    }
-  },
-  "submit": {
-    "production": {}
-  }
-}
-```
+| Field | Value |
+|-------|-------|
+| `slug` | `nepally` |
+| `scheme` (deep links / OAuth callback) | `nepally` → `nepally://auth/callback` |
+| `ios.bundleIdentifier` | `us.nepally.app` |
+| `android.package` | `us.nepally.app` |
+
+One-time setup, in this order:
+
+1. `cd apps/mobile && eas init` — links the app to your Expo account and writes `extra.eas.projectId` into `app.json`. **Push tokens do not work in a store build until this id exists** (`expo-notifications` reads it from the app config), so commit the change.
+2. Add the build-time public env vars to EAS (`eas env:create` or the Expo dashboard) for every profile: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+3. In the Supabase dashboard → **Authentication → URL Configuration**, add `nepally://**` to the redirect URLs (the Google sign-in callback is `nepally://auth/callback`). See [supabase-setup.md](../architecture/supabase-setup.md).
+4. The Maestro E2E flows in `apps/mobile/.maestro` already target `us.nepally.app`.
+
+The AsyncStorage keys still use the historical `@nusa:` prefix on purpose — renaming them would sign every existing user out.
 
 ### 4. Build iOS App
 
