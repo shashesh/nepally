@@ -37,7 +37,7 @@ const mockOpenAuthSession = WebBrowser.openAuthSessionAsync as jest.Mock;
 describe('googleAuth service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockMakeRedirectUri.mockReturnValue('nusa://auth/callback');
+    mockMakeRedirectUri.mockReturnValue('nepally://auth/callback');
   });
 
   it('completes full OAuth flow and returns user', async () => {
@@ -47,7 +47,7 @@ describe('googleAuth service', () => {
     });
     mockOpenAuthSession.mockResolvedValue({
       type: 'success',
-      url: 'nusa://auth/callback?code=auth-code-123',
+      url: 'nepally://auth/callback?code=auth-code-123',
     });
     mockAuth.exchangeCodeForSession.mockResolvedValue({
       data: { session: { access_token: 'token' } },
@@ -72,13 +72,13 @@ describe('googleAuth service', () => {
     expect(mockAuth.signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
       options: {
-        redirectTo: 'nusa://auth/callback',
+        redirectTo: 'nepally://auth/callback',
         skipBrowserRedirect: true,
       },
     });
     expect(mockOpenAuthSession).toHaveBeenCalledWith(
       'https://accounts.google.com/oauth?state=abc',
-      'nusa://auth/callback'
+      'nepally://auth/callback'
     );
     expect(result.user?.id).toBe('user-1');
     expect(result.user?.full_name).toBe('Nusa User');
@@ -142,7 +142,7 @@ describe('googleAuth service', () => {
       error: null,
     });
 
-    const result = await handleGoogleAuthCallback('nusa://auth/callback?code=abc123');
+    const result = await handleGoogleAuthCallback('nepally://auth/callback?code=abc123');
 
     expect(mockAuth.exchangeCodeForSession).toHaveBeenCalledWith('abc123');
     expect(result.user?.id).toBe('user-1');
@@ -156,16 +156,16 @@ describe('googleAuth service', () => {
   });
 
   it('rejects callback URL with non-auth path', async () => {
-    const result = await handleGoogleAuthCallback('nusa://malicious/path?code=abc');
+    const result = await handleGoogleAuthCallback('nepally://malicious/path?code=abc');
     expect(result.error).toBeInstanceOf(Error);
   });
 
   it('rejects callback URL with auth-like hostname and callback path', async () => {
-    const result = await handleGoogleAuthCallback('nusa://myauth/callback?code=abc');
+    const result = await handleGoogleAuthCallback('nepally://myauth/callback?code=abc');
     expect(result.error).toBeInstanceOf(Error);
   });
   it('rejects callback URL with no code', async () => {
-    const result = await handleGoogleAuthCallback('nusa://auth/callback');
+    const result = await handleGoogleAuthCallback('nepally://auth/callback');
     expect(result.error).toBeInstanceOf(Error);
   });
 });

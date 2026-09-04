@@ -1,4 +1,4 @@
-appId: com.nusa.app
+appId: us.nepally.app
 ---
 # ZIP code entry → metro confirmation flow
 # Prerequisite: user is signed in and arrives at ZipCodeEntryScreen

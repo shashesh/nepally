@@ -118,7 +118,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    http://localhost:3000/**
    https://nepally.us/**
    https://your-preview-url.vercel.app/**
-   myapp:///** (for mobile deep linking)
+   nepally://** (mobile deep linking / Google OAuth callback: nepally://auth/callback)
    ```
 
 ## Database Setup

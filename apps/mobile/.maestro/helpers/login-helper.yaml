@@ -2,7 +2,7 @@
 # Prerequisite: app is already at the WelcomeScreen (first launch or signed out)
 # Usage: runFlow: helpers/login-helper.yaml
 
-appId: com.nusa.app
+appId: us.nepally.app
 ---
 
 - tapOn: "Log In"

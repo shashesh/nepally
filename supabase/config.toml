@@ -36,7 +36,7 @@ file_size_limit = 50
 # The base URL for your website. Used for OAuth redirects and email links.
 site_url = "http://localhost:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to after authentication.
-additional_redirect_urls = ["http://localhost:8081", "myapp://"]
+additional_redirect_urls = ["http://localhost:8081", "nepally://auth/callback"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour).
 jwt_expiry = 3600
 # Allow/disallow new user signups to your project.

@@ -1,4 +1,4 @@
-appId: com.nusa.app
+appId: us.nepally.app
 ---
 # Login → HomeScreen with FAB visible
 - launchApp:
