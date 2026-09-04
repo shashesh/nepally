@@ -4,6 +4,7 @@ import {
   createPost,
   deletePost,
   getPostById,
+  getPostsByAuthorId,
   getPostsByMetroArea,
   getRecentPostsCountByMetro,
 } from './posts';
@@ -143,6 +144,53 @@ describe('posts api', () => {
 
     expect(result.error).toBeNull();
     expect(deleteBuilder.eq).toHaveBeenCalledWith('id', 'post-123');
+  });
+});
+
+describe('getPostsByAuthorId', () => {
+  it('defaults to active-only posts (public profile view)', async () => {
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      in: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.order.mockReturnValue(query);
+    query.range.mockResolvedValue({ data: [], error: null });
+
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    await getPostsByAuthorId(supabase, 'author-1');
+
+    expect(query.eq).toHaveBeenCalledWith('author_id', 'author-1');
+    expect(query.eq).toHaveBeenCalledWith('status', 'active');
+    expect(query.in).not.toHaveBeenCalled();
+  });
+
+  it('includes own pending posts when includeOwnPending is true (own profile view)', async () => {
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      in: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.in.mockReturnValue(query);
+    query.order.mockReturnValue(query);
+    query.range.mockResolvedValue({ data: [], error: null });
+
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    await getPostsByAuthorId(supabase, 'author-1', 20, 0, true);
+
+    expect(query.eq).toHaveBeenCalledWith('author_id', 'author-1');
+    expect(query.in).toHaveBeenCalledWith('status', ['active', 'pending']);
+    expect(query.eq).not.toHaveBeenCalledWith('status', 'active');
   });
 });
 

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   getPendingPosts,
+  getPostsByIds,
   setPostModerationStatus,
   setUserBanStatus,
 } from './moderation';
@@ -52,6 +53,54 @@ describe('getPendingPosts', () => {
     const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
 
     const result = await getPendingPosts(supabase);
+
+    expect(result.error?.message).toBe('boom');
+    expect(result.data).toBeUndefined();
+  });
+});
+
+describe('getPostsByIds', () => {
+  it('returns an empty list without querying when no ids are given', async () => {
+    const from = vi.fn();
+    const supabase = { from } as unknown as SupabaseClient;
+
+    const result = await getPostsByIds(supabase, []);
+
+    expect(result.data).toEqual([]);
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('fetches every id in a single query and flattens tags', async () => {
+    const query = {
+      select: vi.fn(),
+      in: vi.fn(),
+    };
+    query.select.mockReturnValue(query);
+    query.in.mockResolvedValue({
+      data: [{ id: 'post-9', post_tags: [{ tag: { id: 't1', slug: 'jobs', name: 'Jobs' } }] }],
+      error: null,
+    });
+
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    const result = await getPostsByIds(supabase, ['post-9', 'post-1']);
+
+    expect(supabase.from).toHaveBeenCalledWith('posts');
+    expect(query.in).toHaveBeenCalledWith('id', ['post-9', 'post-1']);
+    expect(result.data?.[0].tags?.[0].slug).toBe('jobs');
+  });
+
+  it('returns error when the query fails', async () => {
+    const query = {
+      select: vi.fn(),
+      in: vi.fn(),
+    };
+    query.select.mockReturnValue(query);
+    query.in.mockResolvedValue({ data: null, error: new Error('boom') });
+
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    const result = await getPostsByIds(supabase, ['post-9']);
 
     expect(result.error?.message).toBe('boom');
     expect(result.data).toBeUndefined();

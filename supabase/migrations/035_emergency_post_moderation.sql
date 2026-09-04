@@ -26,6 +26,12 @@
 --      reports was moderator-only, so every ordinary report insert failed with
 --      "new row violates row-level security policy". Reporters can now read
 --      their own reports.
+--   7. Emergency review was enforced only by the client. createPost() decides
+--      status = 'pending' from a caller-supplied flag, so a verified user could
+--      insert an active post over REST and link the Emergency tag in post_tags
+--      directly, publishing an unreviewed Emergency post. An AFTER INSERT
+--      trigger on post_tags now moves the post back to 'pending' whenever a
+--      signed-in non-moderator attaches a tag with requires_moderation = true.
 --
 -- Changes:
 --   - public.is_moderator(): STABLE SECURITY DEFINER helper for the caller.
@@ -41,6 +47,10 @@
 --     posts.reports_count / users.reports_received and auto-hides an active
 --     post (status -> 'pending') once it reaches 3 reports.
 --   - reports: unique partial index — one open report per (reporter, target).
+--   - enforce_moderated_tag_status(): AFTER INSERT trigger on post_tags —
+--     force-reverts an active post to 'pending' when a signed-in
+--     non-moderator attaches a requires_moderation tag, closing the gap
+--     where createPost()'s status choice was trusted from the client.
 --   - user_helper_scores: explicit p.status = 'active' filters.
 --
 -- Uses ALTER POLICY / CREATE OR REPLACE so there is no window without a
@@ -257,15 +267,75 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_reports_one_open_per_reporter_target
 
 -- Reporters can read their own reports (needed for INSERT ... RETURNING).
 -- Kept as a single permissive SELECT policy to avoid the
--- multiple_permissive_policies advisor warning.
-ALTER POLICY "Moderators can view reports" ON public.reports
-  RENAME TO "Moderators and reporters can view reports";
+-- multiple_permissive_policies advisor warning. The rename is guarded so
+-- re-running this file after the policy has already been renamed is a no-op.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'reports'
+      AND policyname = 'Moderators can view reports'
+  ) THEN
+    ALTER POLICY "Moderators can view reports" ON public.reports
+      RENAME TO "Moderators and reporters can view reports";
+  END IF;
+END
+$$;
 
 ALTER POLICY "Moderators and reporters can view reports" ON public.reports
   USING (
     (select public.is_moderator())
     OR reported_by = (select auth.uid())
   );
+
+-- ---------------------------------------------------------------------------
+-- 5b) Moderated tags force review server-side (closes the client-only check)
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.enforce_moderated_tag_status()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- This function must run as SECURITY DEFINER so its UPDATE below can pass
+  -- guard_post_status_transition (which only lets moderators, or non-'anon'/
+  -- 'authenticated' current_user, change status). That side effect means
+  -- current_user is ALWAYS the function owner in here, not the caller — the
+  -- current_user check the other 035/034 triggers use would be wrong. auth.uid()
+  -- reads the JWT GUC directly, so it still reflects the real caller: NULL
+  -- means no end-user session (service_role / dashboard / migration).
+  IF auth.uid() IS NULL OR public.is_moderator() THEN
+    RETURN NEW;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.tags t
+    WHERE t.id = NEW.tag_id AND t.requires_moderation = true
+  ) THEN
+    -- Runs as the function owner, so guard_post_status_transition lets it through.
+    UPDATE public.posts
+       SET status = 'pending', updated_at = now()
+     WHERE id = NEW.post_id
+       AND status = 'active';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.enforce_moderated_tag_status() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS trg_enforce_moderated_tag_status ON public.post_tags;
+CREATE TRIGGER trg_enforce_moderated_tag_status
+  AFTER INSERT ON public.post_tags
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_moderated_tag_status();
+
+COMMENT ON FUNCTION public.enforce_moderated_tag_status() IS
+  'When an end user attaches a requires_moderation tag to a live post, the post goes back to pending review. Moderators and privileged roles are exempt.';
 
 -- ---------------------------------------------------------------------------
 -- 6) Helper score view: explicit active-post filter (same columns as 031)

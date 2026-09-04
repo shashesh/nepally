@@ -93,7 +93,9 @@ export default function ProfilePage() {
       setPostsLoading(true);
       setPostsError(null);
 
-      const result = await getPostsByAuthorId(supabase, currentUserId, 30);
+      // includeOwnPending: this is the viewer's own profile, so a pending
+      // Emergency post they submitted should still show up while it waits.
+      const result = await getPostsByAuthorId(supabase, currentUserId, 30, undefined, true);
       if (!isMounted) return;
 
       if (result.error) {

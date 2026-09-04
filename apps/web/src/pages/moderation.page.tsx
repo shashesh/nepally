@@ -12,7 +12,7 @@ import {
   resolveReport,
   setPostModerationStatus,
   setUserBanStatus,
-  getPostById,
+  getPostsByIds,
   formatPublicName,
   formatRelativeTime,
 } from '@nepally/shared';
@@ -50,6 +50,9 @@ export default function ModerationPage() {
   const [reportedPosts, setReportedPosts] = useState<Record<string, Post>>({});
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // One moderation action at a time: every button is disabled while any
+  // request is in flight, so two actions cannot race on the same rows.
+  const anyBusy = busyId !== null;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -72,17 +75,13 @@ export default function ModerationPage() {
     setPendingPosts(postsResult.data ?? []);
     setReports(nextReports);
 
-    // Reported posts are fetched so the queue can show the title and author
-    // (and offer "Ban author") without leaving the page.
+    // Reported posts are fetched in one batched query so the queue can show
+    // the title and author (and offer "Ban author") without leaving the page.
     const postIds = Array.from(
       new Set(nextReports.filter((r) => r.target_type === 'post').map((r) => r.target_id))
     );
-    const fetched = await Promise.all(
-      postIds.map(async (id) => [id, (await getPostById(supabase, id)).data] as const)
-    );
-    setReportedPosts(
-      Object.fromEntries(fetched.filter(([, post]) => Boolean(post)).map(([id, post]) => [id, post as Post]))
-    );
+    const { data: fetchedPosts } = await getPostsByIds(supabase, postIds);
+    setReportedPosts(Object.fromEntries((fetchedPosts ?? []).map((post) => [post.id, post])));
 
     setLoading(false);
   }, []);
@@ -138,6 +137,11 @@ export default function ModerationPage() {
       setBusyId(null);
       return;
     }
+
+    // The same post can also be sitting in the pending-posts queue (e.g. a
+    // reported Emergency submission); drop it there too so its card doesn't
+    // linger until the next full reload.
+    setPendingPosts((prev) => prev.filter((p) => p.id !== report.target_id));
 
     const ok = await closeReport(report, { status: 'actioned', reviewed_by: user.id, action: 'removed' });
     setBusyId(null);
@@ -234,6 +238,7 @@ export default function ModerationPage() {
                         size="xs"
                         onClick={() => decidePost(post, 'active')}
                         loading={busyId === post.id}
+                        disabled={anyBusy}
                       >
                         Approve
                       </Button>
@@ -242,7 +247,7 @@ export default function ModerationPage() {
                         variant="outline"
                         color="red"
                         onClick={() => decidePost(post, 'removed')}
-                        disabled={busyId === post.id}
+                        disabled={anyBusy}
                       >
                         Remove
                       </Button>
@@ -269,7 +274,6 @@ export default function ModerationPage() {
                     : 'a member';
                   const targetPost =
                     report.target_type === 'post' ? reportedPosts[report.target_id] : undefined;
-                  const busy = busyId === report.id;
 
                   return (
                     <article key={report.id} className={`${styles.card} ${styles.cardReport}`}>
@@ -300,7 +304,7 @@ export default function ModerationPage() {
                       </p>
 
                       <div className={styles.actions}>
-                        <Button size="xs" variant="default" onClick={() => dismissReport(report)} disabled={busy}>
+                        <Button size="xs" variant="default" onClick={() => dismissReport(report)} disabled={anyBusy}>
                           Dismiss
                         </Button>
                         {report.target_type === 'post' && (
@@ -309,7 +313,7 @@ export default function ModerationPage() {
                             variant="outline"
                             color="red"
                             onClick={() => removeReportedPost(report)}
-                            disabled={busy}
+                            disabled={anyBusy}
                           >
                             Remove post
                           </Button>
@@ -319,7 +323,7 @@ export default function ModerationPage() {
                             size="xs"
                             color="red"
                             onClick={() => banUser(report, targetPost.author_id, authorName(targetPost))}
-                            disabled={busy}
+                            disabled={anyBusy}
                           >
                             Ban author
                           </Button>
@@ -329,7 +333,7 @@ export default function ModerationPage() {
                             size="xs"
                             color="red"
                             onClick={() => banUser(report, report.target_id, 'this user')}
-                            disabled={busy}
+                            disabled={anyBusy}
                           >
                             Ban user
                           </Button>

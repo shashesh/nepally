@@ -96,6 +96,19 @@ describe('ProfilePage', () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 
+  it('loads own posts including pending (e.g. an Emergency post awaiting review)', async () => {
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(profileMocks.getPostsByAuthorIdMock).toHaveBeenCalledWith(
+        expect.anything(),
+        'user-1',
+        30,
+        undefined,
+        true
+      );
+    });
+  });
+
   it('renders user name, email, and trust level', async () => {
     render(<ProfilePage />);
     await waitFor(() => {

@@ -291,6 +291,44 @@ async function main(): Promise<void> {
     assertCondition(!unbannedInsert.error, `Unbanned user should be able to post again: ${unbannedInsert.error?.message}`);
     createdPosts.push(unbannedInsert.data!.id as string);
 
+    // 7. Attaching a moderation-required tag to a live post sends it back to review.
+    //    The client-computed requiresModeration flag is not trusted server-side.
+    const { data: emergencyTag, error: tagError } = await service
+      .from('tags')
+      .select('id')
+      .eq('slug', 'emergency')
+      .single();
+    assertCondition(!tagError && !!emergencyTag?.id, `Emergency tag lookup failed: ${tagError?.message}`);
+    const emergencyTagId = emergencyTag!.id as string;
+
+    const bypassInsert = await insertPost(authorClient, author.id, location, 'active', 'Bypass attempt');
+    assertCondition(!bypassInsert.error, `Active post insert should succeed: ${bypassInsert.error?.message}`);
+    const bypassPostId = bypassInsert.data!.id as string;
+    createdPosts.push(bypassPostId);
+
+    const bypassTag = await authorClient
+      .from('post_tags')
+      .insert({ post_id: bypassPostId, tag_id: emergencyTagId });
+    assertCondition(!bypassTag.error, `Emergency tag insert should succeed: ${bypassTag.error?.message}`);
+    assertCondition(
+      (await readPostStatus(service, bypassPostId)).status === 'pending',
+      'Attaching the Emergency tag to an active post must send it back to review'
+    );
+
+    const modPost = await insertPost(moderatorClient, moderator.id, location, 'active', 'Moderator emergency');
+    assertCondition(!modPost.error, `Moderator post insert should succeed: ${modPost.error?.message}`);
+    const modPostId = modPost.data!.id as string;
+    createdPosts.push(modPostId);
+
+    const modTag = await moderatorClient
+      .from('post_tags')
+      .insert({ post_id: modPostId, tag_id: emergencyTagId });
+    assertCondition(!modTag.error, `Moderator tag insert should succeed: ${modTag.error?.message}`);
+    assertCondition(
+      (await readPostStatus(service, modPostId)).status === 'active',
+      'Moderators may publish Emergency posts directly'
+    );
+
     console.log('PASS: emergency post + moderation smoke test verified.');
   } finally {
     for (const postId of createdPosts) {

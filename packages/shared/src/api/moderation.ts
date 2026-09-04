@@ -42,6 +42,31 @@ export async function getPendingPosts(
 }
 
 /**
+ * Fetch multiple posts by id in a single query (e.g. the posts referenced by
+ * a page of reports), instead of one round trip per id.
+ */
+export async function getPostsByIds(
+  supabase: SupabaseClient,
+  postIds: string[]
+): Promise<PostsResult> {
+  if (postIds.length === 0) {
+    return { data: [] };
+  }
+
+  try {
+    const { data, error } = await supabase.from('posts').select(POST_SELECT).in('id', postIds);
+
+    if (error) throw error;
+
+    return { data: (data || []).map(flattenPostTags) };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Failed to fetch posts'),
+    };
+  }
+}
+
+/**
  * Approve ('active') or take down ('removed') a post. The status-transition
  * trigger rejects this for non-moderators.
  */

@@ -123,14 +123,22 @@ export async function getPostsByAuthorId(
   supabase: SupabaseClient,
   authorId: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  /**
+   * true on the viewer's own profile so a pending Emergency post they
+   * submitted shows up while it waits for review. RLS (035) already
+   * restricts non-active rows to the author or a moderator, so this only
+   * ever widens results for the signed-in author's own posts — it must
+   * stay false on public profile views (other members' pending/removed
+   * posts must never surface there).
+   */
+  includeOwnPending: boolean = false
 ): Promise<PostsResult> {
   try {
-    const { data, error } = await supabase
-      .from('posts')
-      .select(POST_SELECT)
-      .eq('author_id', authorId)
-      .eq('status', 'active')
+    let query = supabase.from('posts').select(POST_SELECT).eq('author_id', authorId);
+    query = includeOwnPending ? query.in('status', ['active', 'pending']) : query.eq('status', 'active');
+
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

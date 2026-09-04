@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   resolveReportMock: vi.fn(),
   setPostModerationStatusMock: vi.fn(),
   setUserBanStatusMock: vi.fn(),
-  getPostByIdMock: vi.fn(),
+  getPostsByIdsMock: vi.fn(),
   notificationsShowMock: vi.fn(),
 }));
 
@@ -29,7 +29,7 @@ vi.mock('@nepally/shared', async () => {
     resolveReport: mocks.resolveReportMock,
     setPostModerationStatus: mocks.setPostModerationStatusMock,
     setUserBanStatus: mocks.setUserBanStatusMock,
-    getPostById: mocks.getPostByIdMock,
+    getPostsByIds: mocks.getPostsByIdsMock,
   };
 });
 vi.mock('next/head', () => ({
@@ -121,7 +121,7 @@ describe('ModerationPage', () => {
     mocks.useAuthMock.mockReturnValue({ user: moderator, loading: false });
     mocks.getPendingPostsMock.mockResolvedValue({ data: [pendingPost] });
     mocks.listReportsMock.mockResolvedValue({ data: [postReport, userReport] });
-    mocks.getPostByIdMock.mockResolvedValue({ data: reportedPost });
+    mocks.getPostsByIdsMock.mockResolvedValue({ data: [reportedPost] });
     mocks.resolveReportMock.mockResolvedValue({ data: { ...postReport, status: 'dismissed' } });
     mocks.setPostModerationStatusMock.mockResolvedValue({ data: { ...pendingPost, status: 'active' } });
     mocks.setUserBanStatusMock.mockResolvedValue({ data: { ...spammer, is_banned: true } });
@@ -161,7 +161,7 @@ describe('ModerationPage', () => {
     expect(userLink.getAttribute('href')).toBe('/users/user-5');
 
     expect(mocks.listReportsMock).toHaveBeenCalledWith({}, { status: 'pending' });
-    expect(mocks.getPostByIdMock).toHaveBeenCalledWith({}, 'post-9');
+    expect(mocks.getPostsByIdsMock).toHaveBeenCalledWith({}, ['post-9']);
   });
 
   it('approves a pending post and removes it from the queue', async () => {
@@ -207,6 +207,31 @@ describe('ModerationPage', () => {
     expect(screen.getByText('Flood in Irving')).toBeDefined();
   });
 
+  it('disables every action while one is in flight', async () => {
+    let resolveApprove: (value: { data: typeof pendingPost }) => void = () => {};
+    mocks.setPostModerationStatusMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveApprove = resolve;
+      })
+    );
+    render(<ModerationPage />);
+    await screen.findByText('Cheap iPhones');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Remove' }).hasAttribute('disabled')).toBe(true);
+    });
+    for (const button of screen.getAllByRole('button', { name: 'Dismiss' })) {
+      expect(button.hasAttribute('disabled')).toBe(true);
+    }
+    expect(screen.getByRole('button', { name: 'Ban user' }).hasAttribute('disabled')).toBe(true);
+
+    resolveApprove({ data: { ...pendingPost, status: 'active' } });
+
+    await waitFor(() => expect(screen.queryByText('Flood in Irving')).toBeNull());
+    expect(screen.getByRole('button', { name: 'Ban user' }).hasAttribute('disabled')).toBe(false);
+  });
   it('dismisses a report', async () => {
     render(<ModerationPage />);
     await screen.findByText('Cheap iPhones');
@@ -270,6 +295,32 @@ describe('ModerationPage', () => {
     await waitFor(() => expect(window.confirm).toHaveBeenCalled());
     expect(mocks.setUserBanStatusMock).not.toHaveBeenCalled();
     expect(mocks.resolveReportMock).not.toHaveBeenCalled();
+  });
+
+  it('removing a reported post also drops its card from the pending queue', async () => {
+    const pendingAndReportedPost = { ...pendingPost, id: 'post-1' };
+    const pendingPostReport = {
+      ...postReport,
+      id: 'report-3',
+      target_id: pendingAndReportedPost.id,
+      reason: 'Misuse',
+    };
+    mocks.listReportsMock.mockResolvedValue({ data: [postReport, pendingPostReport] });
+    mocks.getPostsByIdsMock.mockResolvedValue({ data: [reportedPost, pendingAndReportedPost] });
+    mocks.setPostModerationStatusMock.mockResolvedValue({
+      data: { ...pendingAndReportedPost, status: 'removed' },
+    });
+    render(<ModerationPage />);
+    await screen.findByText('Misuse');
+    expect(screen.getAllByText('Flood in Irving').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove post' })[1]);
+
+    await waitFor(() =>
+      expect(mocks.setPostModerationStatusMock).toHaveBeenCalledWith({}, 'post-1', 'removed')
+    );
+    await waitFor(() => expect(screen.queryByText('Misuse')).toBeNull());
+    expect(screen.queryByText('Flood in Irving')).toBeNull();
   });
 
   it('bans a reported user directly', async () => {

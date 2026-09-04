@@ -388,7 +388,12 @@ CREATE POLICY "Verified users can create posts"
 -- NOTE (035): trigger guard_post_status_transition (BEFORE UPDATE OF status)
 -- lets only moderators change a post's status; a non-moderator may only move
 -- their own post to 'removed'. Three open reports auto-hide an active post
--- (status -> 'pending') via on_report_created(). Live check:
+-- (status -> 'pending') via on_report_created(). The client's choice of
+-- status ('active' vs 'pending') is not trusted: enforce_moderated_tag_status
+-- (AFTER INSERT on post_tags) force-reverts an active post to 'pending' when
+-- a signed-in non-moderator attaches a requires_moderation tag (e.g.
+-- Emergency), so createPost() cannot be bypassed by inserting the post and
+-- tag as two separate REST calls. Live check:
 -- `npm run test:security:emergency-post`.
 
 -- Post authors and moderators can update posts
