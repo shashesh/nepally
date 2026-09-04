@@ -14,8 +14,10 @@ const createMocks = vi.hoisted(() => ({
   uploadPostPhotosMock: vi.fn(),
   validatePostPhotoFileMock: vi.fn(),
   getPostPhotoPathFromUrlMock: vi.fn(),
+  notificationsShowMock: vi.fn(),
 }));
 
+vi.mock('@mantine/notifications', () => ({ notifications: { show: createMocks.notificationsShowMock } }));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: createMocks.useAuthMock }));
 vi.mock('../../hooks/useLocation', () => ({ useLocation: createMocks.useLocationMock }));
 vi.mock('next/router', () => ({ useRouter: createMocks.useRouterMock }));
@@ -164,6 +166,57 @@ describe('CreatePostPage', () => {
       expect(createMocks.createPostMock).toHaveBeenCalled();
       expect(mockPush).toHaveBeenCalledWith('/feed');
     });
+  });
+
+  it('shows a submitted-for-review notice when the post needs moderation', async () => {
+    createMocks.createPostMock.mockResolvedValue({ data: { id: 'post-new', status: 'pending' }, error: null });
+    render(<CreatePostPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /Emergency/ })).toBeDefined());
+
+    fireEvent.change(screen.getByLabelText('Post title, required'), {
+      target: { value: 'Flooding near the temple' },
+    });
+    fireEvent.change(screen.getByLabelText('Post body, required'), {
+      target: { value: 'Water is rising fast, need volunteers with trucks.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Emergency/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Post' }).hasAttribute('disabled')).toBe(false);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+    await waitFor(() => {
+      expect(createMocks.createPostMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ requiresModeration: true })
+      );
+      expect(createMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringMatching(/review/i) })
+      );
+      expect(mockPush).toHaveBeenCalledWith('/feed');
+    });
+  });
+
+  it('does not show the review notice for a regular post', async () => {
+    createMocks.createPostMock.mockResolvedValue({ data: { id: 'post-new' }, error: null });
+    render(<CreatePostPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
+
+    fireEvent.change(screen.getByLabelText('Post title, required'), {
+      target: { value: 'Valid post title here' },
+    });
+    fireEvent.change(screen.getByLabelText('Post body, required'), {
+      target: { value: 'This is a valid body with enough characters.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Housing/ }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Post' }).hasAttribute('disabled')).toBe(false);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed'));
+    expect(createMocks.notificationsShowMock).not.toHaveBeenCalled();
   });
 
   it('shows error when post creation fails', async () => {

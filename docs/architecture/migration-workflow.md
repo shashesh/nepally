@@ -1,6 +1,6 @@
 # Database Migration Workflow & Tracker
 
-**Last updated:** 2026-06-07
+**Last updated:** 2026-09-04
 **Applies to:** Supabase project `nusa-staging` (`tlusiongalvszftnzpoq`) — the single live database.
 
 This doc defines how database migrations are authored and applied for Nepally, and records the 2026-06-07 reconciliation of the remote migration tracker. Read alongside [database-schema.md](database-schema.md) (schema + numbering rules) and [supabase-setup.md](supabase-setup.md).
@@ -75,9 +75,9 @@ The pre-realignment tracker contents (31 rows), captured before the rewrite:
 | 20260608021301 | fix_security_definer_view_and_rls_initplan |
 
 ### After (current)
-34 rows, `version` `001`–`034`, `name` = repo file stem — an exact mirror of `supabase/migrations/*.sql`.
+35 rows, `version` `001`–`035`, `name` = repo file stem — an exact mirror of `supabase/migrations/*.sql`.
 
-`034_guard_user_privileged_columns` was applied 2026-09-04 via MCP `apply_migration`. That tool records a **timestamp** version (`20260904162458`), so the row was realigned to `034` right after applying (see step 3 below).
+`034_guard_user_privileged_columns` and `035_emergency_post_moderation` were applied 2026-09-04 via MCP `apply_migration`. That tool records a **timestamp** version (e.g. `20260904162458`), so each row was realigned to its numeric version right after applying (see step 3 below). The reports SELECT-policy change in 035 was added to the file after the initial apply and applied as a delta with `execute_sql`; the tracker row already existed, so no new row was needed.
 
 ---
 
@@ -86,12 +86,14 @@ The pre-realignment tracker contents (31 rows), captured before the rewrite:
 1. Create `supabase/migrations/NNN_short_description.sql` (next sequential number; additive only).
 2. Apply via MCP `apply_migration` (name = the file stem without the numeric prefix) **or** the dashboard SQL Editor.
 3. Both paths record a 14-digit **timestamp** version (confirmed for `apply_migration` on 2026-09-04). Realign the new row so the tracker keeps mirroring the repo:
+
    ```sql
    UPDATE supabase_migrations.schema_migrations
       SET version = 'NNN',
           statements = ARRAY['-- Canonical SQL: supabase/migrations/NNN_<name>.sql']
     WHERE version = '<timestamp>' AND name = '<name>';
    ```
+
 4. Re-run advisors (`get_advisors`) after DDL to catch new RLS/security/perf issues.
 
 ## Adopting the Supabase CLI later (optional, not done)

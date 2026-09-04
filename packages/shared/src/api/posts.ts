@@ -16,8 +16,8 @@ type RawPost = Omit<Post, 'tags'> & {
   post_tags?: RawPostTagJoin[] | null;
 };
 
-// ── Select fragment used across queries ─────────────────────────────
-const POST_SELECT = `
+// ── Select fragment used across queries (also used by moderation.ts) ──
+export const POST_SELECT = `
   *,
   author:users!posts_author_id_fkey (
     id,
@@ -33,7 +33,7 @@ const POST_SELECT = `
 /**
  * Flatten the nested post_tags → tag join into a flat `tags` array on the Post.
  */
-function flattenPostTags(raw: RawPost): Post {
+export function flattenPostTags(raw: RawPost): Post {
   const { post_tags, ...rest } = raw;
   const tags: Tag[] = (post_tags || [])
     .map((pt) => pt?.tag)

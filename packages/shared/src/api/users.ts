@@ -5,7 +5,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { User } from '../types/user';
 
-interface UserResult {
+export interface UserResult {
   data?: User;
   error?: Error;
 }

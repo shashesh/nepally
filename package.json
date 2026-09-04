@@ -23,6 +23,7 @@
     "test:e2e:mobile": "npm run test:e2e --workspace=apps/mobile",
     "test:security:chat-rls": "tsx scripts/security/chat-rls-smoke.ts",
     "test:security:users-privilege": "tsx scripts/security/users-privilege-smoke.ts",
+    "test:security:emergency-post": "tsx scripts/security/emergency-post-smoke.ts",
     "ci:local": "node scripts/run-ci-local.js",
     "lint": "npm run lint --workspaces",
     "lint:guards": "node scripts/guard-no-catch-any.js",

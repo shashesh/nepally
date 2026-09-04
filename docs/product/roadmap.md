@@ -1,7 +1,7 @@
 # Nepally App: Product Roadmap
 
 **Version:** 1.5
-**Last Updated:** 2026-04-13 (Docs reorganized; phone SMS auth references removed)
+**Last Updated:** 2026-09-04 (Phase 1 status resynced with code: reporting + moderation queue shipped; remaining list rewritten)
 
 ---
 
@@ -225,7 +225,9 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 - Inappropriate images removed within 24 hours
 - Repeat violators banned from photo uploads
 
-### F. Basic Reporting System
+### F. Basic Reporting System (Implemented 2026-09-04)
+
+**Status:** Report submission (web + mobile), one open report per reporter/target, auto-hide at 3 reports, and the moderator queue at `/moderation` are live (migration 035). Chat-message reports are recorded but message content stays private to participants.
 
 **User Reporting:** Simple flagging mechanism for spam, scams, and inappropriate content.
 
@@ -240,7 +242,9 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 - Remove (delete content, notify poster)
 - Ban user (permanent account suspension)
 
-### G. Admin Dashboard
+### G. Admin Dashboard (Partially implemented — `/moderation`)
+
+**Status:** Flagged-content queue, Emergency post approvals, and ban/unban shipped 2026-09-04 (web only, gated on `users.is_moderator`). Trust-level management, platform statistics, and moderator activity logs are not built yet.
 
 **Web-Based Interface:** Supabase Admin SDK for moderator tools.
 
@@ -500,21 +504,21 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 - Web navigation (sidebar, top nav, all pages)
 
 ### Remaining (Phase 1)
-1. **Profile photo upload** — Avatar component done; file picker + Supabase upload pipeline not built
-2. **Reporting system** — DB schema exists; API, UI, auto-hide threshold, and moderator queue not built
-3. **Admin dashboard** — Web-based moderator tools (flagged queue, trust level management, ban/unban, platform stats)
-4. **Full notifications system** — UI screens exist; DB migration, shared API, and push delivery edge function not started (see `docs/plans/active/notifications-feature.md`)
-5. **Trust Level progression** — Level 0→1 via email verification or Google sign-in (already implemented)
-6. **Chat RLS re-enablement** — Critical security fix before any public release (see Security TODO in PROGRESS.md)
+1. **Admin dashboard (partial)** — `/moderation` on web ships the flagged-content queue, Emergency approvals, and ban/unban (migration 035, 2026-09-04). Not built: trust-level management (Level 2 grants) and platform stats
+2. **Full notifications system** — DB (009–012), shared API, token registration, and the push edge function exist; live delivery validation (function secrets, `app.settings.*` DB settings for the trigger) is pending (see `docs/plans/active/notifications-feature.md`)
+3. **Legal pages** — Privacy Policy, Terms (with the 911 disclaimer), Community Guidelines, and Help pages are linked from the web footer and mobile welcome screen but do not exist yet
+4. **Mobile store configuration** — `app.json` still carries NUSA identifiers and a placeholder EAS project id; `eas.json` is missing
+
+**Shipped since the previous update (verified 2026-09-04):** profile photo upload (web + mobile); chat RLS (migration 008); reporting end-to-end (submission, one open report per reporter/target, auto-hide at 3 reports, moderator queue); Emergency post moderation flow (pending → approve/remove); server-side trust-level promotion and a privileged-column guard on `users` (migration 034); Trust Level 0→1 via email verification or Google sign-in.
 
 ## Next Steps
 
 ### Immediate Actions
-1. Fix Chat RLS (critical security issue — see PROGRESS.md Security TODO for exact steps)
-2. Build profile photo upload (picker UI → compress → upload to `avatars` Supabase bucket → display)
-3. Build reporting system (API functions + "Report" button UI + auto-hide threshold + moderator queue)
-4. Build Admin Dashboard (flagged content queue, trust level management, ban/unban, platform stats)
-5. Complete full notifications system (see `docs/plans/active/notifications-feature.md`)
+1. Publish legal pages (Privacy, Terms, Guidelines, Help) and link them from web and mobile
+2. Configure the mobile app for the stores (bundle ids, URL scheme, EAS project, `eas.json`) and update the Google OAuth redirect URLs to match
+3. Validate push delivery in the live project (function secrets + `app.settings.*` DB settings), then close out `docs/plans/active/notifications-feature.md`
+4. Add error tracking (Sentry) to web and mobile, and custom SMTP for auth email before public signups
+5. Extend `/moderation` with trust-level management (Level 2 grants) and platform stats
 
 ### Research Needed
 - Legal review of liability disclaimers
