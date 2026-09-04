@@ -22,6 +22,7 @@
     "test:e2e:web:report": "npm run test:e2e --workspace=apps/web -- --reporter=html && npm exec --workspace=apps/web playwright show-report",
     "test:e2e:mobile": "npm run test:e2e --workspace=apps/mobile",
     "test:security:chat-rls": "tsx scripts/security/chat-rls-smoke.ts",
+    "test:security:users-privilege": "tsx scripts/security/users-privilege-smoke.ts",
     "ci:local": "node scripts/run-ci-local.js",
     "lint": "npm run lint --workspaces",
     "lint:guards": "node scripts/guard-no-catch-any.js",
