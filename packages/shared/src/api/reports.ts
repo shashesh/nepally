@@ -29,6 +29,10 @@ const MODERATOR_REPORT_SELECT = `
   )
 `;
 
+const DUPLICATE_KEY_CODE = '23505';
+export const DUPLICATE_REPORT_MESSAGE =
+  'You have already reported this. A moderator will review it.';
+
 export interface CreateReportInput {
   reported_by: string;
   target_type: ReportTargetType;
@@ -71,6 +75,11 @@ export async function createReport(
       .insert(payload)
       .select('*')
       .single();
+
+    // One open report per (reporter, target) — enforced by a unique index (035).
+    if ((error as { code?: string } | null)?.code === DUPLICATE_KEY_CODE) {
+      return { error: new Error(DUPLICATE_REPORT_MESSAGE) };
+    }
 
     if (error) throw error;
     if (!data) throw new Error('Failed to create report');

@@ -212,6 +212,22 @@ describe('Layout', () => {
       expect(screen.getByText('Verify to Post')).toBeDefined();
     });
 
+    it('hides the Moderation link for non-moderators', () => {
+      render(<Layout>Content</Layout>);
+      expect(screen.queryByText('Moderation')).toBeNull();
+    });
+
+    it('shows the Moderation link for moderators', () => {
+      layoutMocks.useAuthMock.mockReturnValue({
+        user: { ...mockUser, is_moderator: true },
+        loading: false,
+        signOut: layoutMocks.signOutMock,
+      });
+      render(<Layout>Content</Layout>);
+      const link = screen.getByText('Moderation').closest('a');
+      expect(link?.getAttribute('href')).toBe('/moderation');
+    });
+
     it('renders LocationSwitcher in the header', () => {
       render(<Layout>Content</Layout>);
       expect(screen.getByTestId('location-switcher')).toBeDefined();

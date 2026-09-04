@@ -103,6 +103,28 @@ describe('createReport', () => {
   });
 });
 
+describe('createReport duplicate handling', () => {
+  it('maps a duplicate open report (23505) to a friendly error', async () => {
+    const query = {
+      insert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: '23505', message: 'duplicate key value violates unique constraint' },
+      }),
+    };
+
+    const supabase = {
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as SupabaseClient;
+
+    const result = await createReport(supabase, BASE_REPORT_INPUT);
+
+    expect(result.data).toBeUndefined();
+    expect(result.error?.message).toBe('You have already reported this. A moderator will review it.');
+  });
+});
+
 describe('listReports', () => {
   it('lists reports ordered by created_at desc', async () => {
     const rows = [{ id: 'report-1', status: 'pending' }];

@@ -359,22 +359,42 @@ CREATE INDEX idx_posts_is_global ON posts(is_global) WHERE is_global = true;
 -- Row Level Security
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read active posts
+-- Anyone can read active posts; authors see their own posts in any status;
+-- moderators see everything (migration 035).
 CREATE POLICY "Active posts are viewable by everyone"
   ON posts FOR SELECT
-  USING (status = 'active');
+  USING (
+    status = 'active'
+    OR author_id = (select auth.uid())
+    OR (select public.is_moderator())
+  );
 
--- Verified users (trust level 1+) can create posts
+-- Verified, non-banned users (trust level 1+) can create posts.
+-- status may be 'active' or 'pending' — tags with requires_moderation
+-- (Emergency) are inserted as 'pending' and approved on /moderation (035).
 CREATE POLICY "Verified users can create posts"
   ON posts FOR INSERT
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM users
-      WHERE id = auth.uid()
-      AND trust_level >= 1
+      WHERE id = (select auth.uid())
+        AND trust_level >= 1
+        AND is_banned = false
     )
-    AND author_id = auth.uid()
+    AND author_id = (select auth.uid())
+    AND status IN ('active', 'pending')
   );
+
+-- NOTE (035): trigger guard_post_status_transition (BEFORE UPDATE OF status)
+-- lets only moderators change a post's status; a non-moderator may only move
+-- their own post to 'removed'. Three open reports auto-hide an active post
+-- (status -> 'pending') via on_report_created(). The client's choice of
+-- status ('active' vs 'pending') is not trusted: enforce_moderated_tag_status
+-- (AFTER INSERT on post_tags) force-reverts an active post to 'pending' when
+-- a signed-in non-moderator attaches a requires_moderation tag (e.g.
+-- Emergency), so createPost() cannot be bypassed by inserting the post and
+-- tag as two separate REST calls. Live check:
+-- `npm run test:security:emergency-post`.
 
 -- Post authors and moderators can update posts
 CREATE POLICY "Authors and moderators can update posts"
@@ -724,14 +744,24 @@ CREATE INDEX idx_reports_reported_by ON reports(reported_by);
 -- Row Level Security
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
--- Only moderators can read reports
-CREATE POLICY "Moderators can view reports"
+-- Moderators read every report; reporters read their own (035). The
+-- reporter clause is required because createReport() inserts with RETURNING
+-- and Postgres applies SELECT policies to returned rows.
+CREATE POLICY "Moderators and reporters can view reports"
   ON reports FOR SELECT
   USING (
-    EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND is_moderator = true
-    )
+    (select public.is_moderator())
+    OR reported_by = (select auth.uid())
   );
+
+-- One open report per (reporter, target); createReport() maps the 23505
+-- violation to a friendly message (035).
+CREATE UNIQUE INDEX idx_reports_one_open_per_reporter_target
+  ON reports (reported_by, target_type, target_id)
+  WHERE status = 'pending';
+
+-- AFTER INSERT trigger on_report_created() bumps posts.reports_count and
+-- users.reports_received, and auto-hides an active post at 3 reports (035).
 
 -- Verified users can create reports
 CREATE POLICY "Verified users can create reports"

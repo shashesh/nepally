@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Alert, Button, Switch, Text } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import Head from 'next/head';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
@@ -493,6 +494,13 @@ export default function CreatePostPage() {
       }
 
       clearSelectedPhotos();
+      if (requiresModeration) {
+        notifications.show({
+          title: 'Submitted for review',
+          message:
+            'Your emergency post was sent to a moderator for review. It will appear in the feed once approved.',
+        });
+      }
       router.push('/feed');
     } catch {
       setError('Could not create post. Please check your connection and try again.');

@@ -15,6 +15,7 @@ import {
   IconLayoutGrid,
   IconCalendarEvent,
   IconShoppingCart,
+  IconShieldCheck,
   IconPlus,
   IconLock,
   IconFileText,
@@ -542,6 +543,15 @@ export default function Layout({ children }: LayoutProps) {
                 <IconShoppingCart size={18} className={styles.sidebarLinkIcon} />
                 Marketplace
               </Link>
+              {user.is_moderator && (
+                <Link
+                  href="/moderation"
+                  className={`${styles.sidebarLink} ${isActive('/moderation') ? styles.sidebarLinkActive : ''}`}
+                >
+                  <IconShieldCheck size={18} className={styles.sidebarLinkIcon} />
+                  Moderation
+                </Link>
+              )}
             </nav>
 
             {user.trust_level >= 1 ? (

@@ -158,6 +158,7 @@ npm run test:e2e:mobile      # Run mobile e2e tests only
 # Live security smoke tests (need SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
 npm run test:security:chat-rls          # Chat tables: cross-user isolation
 npm run test:security:users-privilege   # Users table: privileged columns cannot be self-escalated (migration 034)
+npm run test:security:emergency-post    # Pending (Emergency) posts, moderator approve/ban, report auto-hide (migration 035)
 ```
 
 ## Development Phases
