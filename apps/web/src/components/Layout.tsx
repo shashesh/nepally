@@ -571,6 +571,10 @@ export default function Layout({ children }: LayoutProps) {
                   <IconLock size={14} className={styles.sidebarFooterIcon} />
                   Privacy Policy
                 </Link>
+                <Link href="/terms" className={styles.sidebarFooterLink}>
+                  <IconFileText size={14} className={styles.sidebarFooterIcon} />
+                  Terms of Service
+                </Link>
                 <Link href="/guidelines" className={styles.sidebarFooterLink}>
                   <IconFileText size={14} className={styles.sidebarFooterIcon} />
                   Guidelines
@@ -611,6 +615,16 @@ export default function Layout({ children }: LayoutProps) {
       </nav>
 
       <main className={styles.main}>{children}</main>
+
+      <footer className={styles.publicFooter}>
+        <nav className={styles.publicFooterNav} aria-label="Footer links">
+          <Link href="/privacy" className={styles.publicFooterLink}>Privacy Policy</Link>
+          <Link href="/terms" className={styles.publicFooterLink}>Terms of Service</Link>
+          <Link href="/guidelines" className={styles.publicFooterLink}>Guidelines</Link>
+          <Link href="/help" className={styles.publicFooterLink}>Help Center</Link>
+        </nav>
+        <div className={styles.publicFooterCopy}>&copy; {new Date().getFullYear()} Nepally Community</div>
+      </footer>
     </div>
   );
 }

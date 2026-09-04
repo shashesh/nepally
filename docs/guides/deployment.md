@@ -353,7 +353,7 @@ You'll need:
    - **Screenshots:** (1242x2208 for iPhone, 2048x2732 for iPad)
    - **Description:** (see template below)
    - **Keywords:** nepal, nepalese, community, help, housing, jobs
-   - **Support URL:** https://nepally.us/support
+   - **Support URL:** https://nepally.us/help
    - **Privacy Policy URL:** https://nepally.us/privacy
 4. Pricing: **Free**
 5. Submit for review

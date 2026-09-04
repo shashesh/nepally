@@ -294,3 +294,17 @@
 .backLink:hover {
   color: var(--color-primary);
 }
+
+.legalConsent {
+  margin: var(--space-s) 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.legalConsent a {
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

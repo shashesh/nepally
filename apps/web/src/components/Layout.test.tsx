@@ -154,6 +154,39 @@ describe('Layout', () => {
     });
   });
 
+  describe('legal links', () => {
+    const legalLinks: Array<[string, string]> = [
+      ['Privacy Policy', '/privacy'],
+      ['Terms of Service', '/terms'],
+      ['Guidelines', '/guidelines'],
+      ['Help Center', '/help'],
+    ];
+
+    it('are in the sidebar footer for logged-in users', () => {
+      layoutMocks.useAuthMock.mockReturnValue({
+        user: { id: 'user-1', full_name: 'Test User', email: 'test@example.com', trust_level: 1, profile_photo: null },
+        loading: false,
+        signOut: layoutMocks.signOutMock,
+      });
+      render(<Layout>Content</Layout>);
+      for (const [label, href] of legalLinks) {
+        expect(screen.getByText(label).closest('a')?.getAttribute('href')).toBe(href);
+      }
+    });
+
+    it('are in the public footer for logged-out visitors', () => {
+      layoutMocks.useAuthMock.mockReturnValue({
+        user: null,
+        loading: false,
+        signOut: layoutMocks.signOutMock,
+      });
+      render(<Layout>Content</Layout>);
+      for (const [label, href] of legalLinks) {
+        expect(screen.getByText(label).closest('a')?.getAttribute('href')).toBe(href);
+      }
+    });
+  });
+
   describe('when user is logged in', () => {
     const mockUser = {
       id: 'user-1',

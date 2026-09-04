@@ -170,6 +170,12 @@ export default function SignupPage() {
             </Stack>
           </form>
 
+          <p className={styles.legalConsent}>
+            By creating an account you agree to the{' '}
+            <Link href="/terms">Terms of Service</Link> and{' '}
+            <Link href="/privacy">Privacy Policy</Link>.
+          </p>
+
           <p className={styles.switchText}>
             Already have an account?{' '}
             <Link href="/login" className={styles.switchLink}>

@@ -506,15 +506,16 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
 ### Remaining (Phase 1)
 1. **Admin dashboard (partial)** — `/moderation` on web ships the flagged-content queue, Emergency approvals, and ban/unban (migration 035, 2026-09-04). Not built: trust-level management (Level 2 grants) and platform stats
 2. **Full notifications system** — DB (009–012), shared API, token registration, and the push edge function exist; live delivery validation (function secrets, `app.settings.*` DB settings for the trigger) is pending (see `docs/plans/active/notifications-feature.md`)
-3. **Legal pages** — Privacy Policy, Terms (with the 911 disclaimer), Community Guidelines, and Help pages are linked from the web footer and mobile welcome screen but do not exist yet
+3. **Legal pages (draft, needs counsel review)** — `/privacy`, `/terms` (911 disclaimer, notice-board framing), `/guidelines`, and `/help` shipped 2026-09-04 and are linked from the web footers, the signup form, and the mobile welcome screen. Governing-law/venue wording and the refund language for promotions must be confirmed by a lawyer; `support@nepally.us` must exist before launch
 4. **Mobile store configuration** — `app.json` still carries NUSA identifiers and a placeholder EAS project id; `eas.json` is missing
+5. **In-app account deletion** — Apple requires it for apps with account creation; today deletion is by emailing support (documented in `/help`)
 
 **Shipped since the previous update (verified 2026-09-04):** profile photo upload (web + mobile); chat RLS (migration 008); reporting end-to-end (submission, one open report per reporter/target, auto-hide at 3 reports, moderator queue); Emergency post moderation flow (pending → approve/remove); server-side trust-level promotion and a privileged-column guard on `users` (migration 034); Trust Level 0→1 via email verification or Google sign-in.
 
 ## Next Steps
 
 ### Immediate Actions
-1. Publish legal pages (Privacy, Terms, Guidelines, Help) and link them from web and mobile
+1. Get the legal pages reviewed by counsel (governing law, refunds) and create the `support@nepally.us` mailbox
 2. Configure the mobile app for the stores (bundle ids, URL scheme, EAS project, `eas.json`) and update the Google OAuth redirect URLs to match
 3. Validate push delivery in the live project (function secrets + `app.settings.*` DB settings), then close out `docs/plans/active/notifications-feature.md`
 4. Add error tracking (Sentry) to web and mobile, and custom SMTP for auth email before public signups
