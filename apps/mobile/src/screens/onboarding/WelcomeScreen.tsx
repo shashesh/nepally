@@ -4,9 +4,11 @@ import {
   Text,
   StyleSheet,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
+import { LEGAL_URLS } from '@nepally/shared';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { SecondaryButton } from '../../components/buttons/SecondaryButton';
 import { colors } from '../../styles/colors';
@@ -22,6 +24,12 @@ export function WelcomeScreen() {
 
   const handleLogIn = () => {
     navigation.navigate('EmailSignup', { mode: 'login' });
+  };
+
+  const openLegalPage = (url: string) => {
+    Linking.openURL(url).catch(() => {
+      // The device has no browser handler; nothing else to do here.
+    });
   };
 
   return (
@@ -68,9 +76,21 @@ export function WelcomeScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             By continuing, you agree to{'\n'}
-            <Text style={styles.link}>Terms of Service</Text>
+            <Text
+              style={styles.link}
+              accessibilityRole="link"
+              onPress={() => openLegalPage(LEGAL_URLS.terms)}
+            >
+              Terms of Service
+            </Text>
             {' '}and{' '}
-            <Text style={styles.link}>Privacy Policy</Text>
+            <Text
+              style={styles.link}
+              accessibilityRole="link"
+              onPress={() => openLegalPage(LEGAL_URLS.privacy)}
+            >
+              Privacy Policy
+            </Text>
           </Text>
         </View>
       </View>

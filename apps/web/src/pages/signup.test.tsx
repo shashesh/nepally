@@ -185,6 +185,12 @@ describe('SignupPage', () => {
     });
   });
 
+  it('links to the Terms of Service and Privacy Policy', () => {
+    render(<SignupPage />);
+    expect(screen.getByRole('link', { name: 'Terms of Service' }).getAttribute('href')).toBe('/terms');
+    expect(screen.getByRole('link', { name: 'Privacy Policy' }).getAttribute('href')).toBe('/privacy');
+  });
+
   it('renders Google signup button without phone option', () => {
     render(<SignupPage />);
     expect(screen.getByText('Continue with Google')).toBeDefined();

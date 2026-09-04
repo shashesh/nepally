@@ -642,3 +642,39 @@
 .notifIconMessage { color: var(--color-primary); }
 .notifIconEmergency { color: var(--color-accent-red); }
 .notifIconDefault { color: var(--color-secondary); }
+
+/* Public (logged-out) footer — keeps policy pages reachable without an account */
+.publicFooter {
+  margin-top: auto;
+  padding: var(--space-l) var(--space-m);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.publicFooterNav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs) var(--space-m);
+}
+
+.publicFooterLink {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.publicFooterLink:hover {
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}
+
+.publicFooterCopy {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  opacity: 0.7;
+}
