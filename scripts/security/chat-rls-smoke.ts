@@ -109,6 +109,7 @@ async function main(): Promise<void> {
 
   const createdUsers: string[] = [];
   let conversationId: string | null = null;
+  let ownerCreatedConversationId: string | null = null;
 
   try {
     const owner = await createFixtureUser(service, 'rls-owner');
@@ -200,10 +201,62 @@ async function main(): Promise<void> {
     assertCondition(!strangerMessageRead.error, `Stranger message read query failed: ${strangerMessageRead.error?.message}`);
     assertCondition((strangerMessageRead.data || []).length === 0, 'Stranger should not read messages in foreign conversation');
 
+    // SEC-04 (migration 036): a stranger must not be able to add *themselves* as a
+    // participant. Before 036 this single insert defeated every check above.
+    const strangerSelfJoin = await strangerClient
+      .from('conversation_participants')
+      .insert({
+        conversation_id: conversationId,
+        user_id: stranger.id,
+        name: stranger.email,
+      });
+
+    assertCondition(!!strangerSelfJoin.error, 'Stranger self-join into conversation_participants should be denied by RLS');
+
+    const strangerMembership = await service
+      .from('conversation_participants')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('user_id', stranger.id);
+
+    assertCondition((strangerMembership.data || []).length === 0, 'Stranger must not be a participant after the denied self-join');
+
+    const strangerMessageReadAfterJoinAttempt = await strangerClient
+      .from('messages')
+      .select('id')
+      .eq('conversation_id', conversationId);
+
+    assertCondition((strangerMessageReadAfterJoinAttempt.data || []).length === 0, 'Stranger must still not read messages after the denied self-join');
+
+    // The legitimate client flow still works: the creator inserts the
+    // conversation, adds themselves, then adds the peer.
+    const { data: ownerConv, error: ownerConvError } = await ownerClient
+      .from('conversations')
+      .insert({ creator_id: owner.id })
+      .select('id')
+      .single();
+
+    assertCondition(!ownerConvError && !!ownerConv?.id, `Owner should be able to create a conversation: ${ownerConvError?.message}`);
+    ownerCreatedConversationId = ownerConv!.id;
+
+    const ownerAddsSelf = await ownerClient
+      .from('conversation_participants')
+      .insert({ conversation_id: ownerCreatedConversationId, user_id: owner.id, name: owner.email });
+
+    assertCondition(!ownerAddsSelf.error, `Creator should be able to add themselves: ${ownerAddsSelf.error?.message}`);
+
+    const ownerAddsPeer = await ownerClient
+      .from('conversation_participants')
+      .insert({ conversation_id: ownerCreatedConversationId, user_id: stranger.id, name: stranger.email });
+
+    assertCondition(!ownerAddsPeer.error, `Creator should be able to add a peer: ${ownerAddsPeer.error?.message}`);
+
     console.log('PASS: chat RLS smoke test verified cross-user isolation.');
   } finally {
-    if (conversationId) {
-      await service.from('conversations').delete().eq('id', conversationId);
+    for (const id of [conversationId, ownerCreatedConversationId]) {
+      if (id) {
+        await service.from('conversations').delete().eq('id', id);
+      }
     }
 
     for (const userId of createdUsers) {
