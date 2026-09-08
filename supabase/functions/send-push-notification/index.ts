@@ -57,6 +57,38 @@ function buildExpoHeaders(): HeadersInit {
   return headers;
 }
 
+/**
+ * Constant-time string comparison so the service-role check does not leak
+ * how many leading characters of the key matched.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const bytesA = encoder.encode(a);
+  const bytesB = encoder.encode(b);
+  if (bytesA.length !== bytesB.length) return false;
+
+  let diff = 0;
+  for (let i = 0; i < bytesA.length; i++) {
+    diff |= bytesA[i] ^ bytesB[i];
+  }
+  return diff === 0;
+}
+
+/**
+ * Only the DB fanout trigger (migration 009/012) may invoke this function. It
+ * authenticates with the service-role key. The gateway's verify_jwt only
+ * proves *a* project JWT was presented — the public anon key satisfies it —
+ * so without this check anyone could push arbitrary titles/URLs to any user.
+ */
+function isServiceRoleCaller(req: Request): boolean {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!serviceRoleKey) return false;
+
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  return token.length > 0 && timingSafeEqual(token, serviceRoleKey);
+}
+
 let vapidConfigured = false;
 
 function ensureWebPushConfigured(): void {
@@ -79,6 +111,10 @@ function ensureWebPushConfigured(): void {
 serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 });
+  }
+
+  if (!isServiceRoleCaller(req)) {
+    return new Response('Unauthorized', { status: 401 });
   }
 
   let payload: PushPayload;
