@@ -20,7 +20,7 @@ import {
   type LanguageCode,
 } from '@nepally/shared';
 import type {
-  User,
+  PublicUser,
   Post,
   TrustLevel,
   Event,
@@ -59,7 +59,7 @@ export default function PublicProfilePage() {
   const { id } = router.query;
   const { user: currentUser } = useAuth();
 
-  const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [profileUser, setProfileUser] = useState<PublicUser | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [userEvents, setUserEvents] = useState<Event[]>([]);
   const [userListings, setUserListings] = useState<MarketplaceListing[]>([]);

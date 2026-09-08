@@ -50,6 +50,27 @@ export interface User {
   last_active_at: string;
 }
 
+/**
+ * Another member's profile as readable through the REST API.
+ *
+ * Migration 036 grants anon/authenticated column-level SELECT on public.users,
+ * so reads of other users never include email, phone, zip_code, ban_reason,
+ * reports_received or the *_verified flags. The caller's own full `User` row
+ * comes from `getMyProfile()` (the get_my_profile RPC) instead.
+ */
+export type PublicUser = Omit<
+  User,
+  | 'email'
+  | 'phone'
+  | 'zip_code'
+  | 'ban_reason'
+  | 'reports_received'
+  | 'email_verified'
+  | 'phone_verified'
+  | 'facebook_verified'
+  | 'google_verified'
+>;
+
 /** Lightweight user for API results (e.g., post author) */
 export interface UserSummary {
   id: string;

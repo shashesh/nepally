@@ -1,38 +1,93 @@
 /**
  * Shared Users API functions
  * All Supabase query logic — accepts SupabaseClient via dependency injection
+ *
+ * Column visibility (migration 036): clients hold a column-level SELECT grant
+ * on public.users covering only public-profile columns, so reads of *other*
+ * users select PUBLIC_USER_COLUMNS and return `PublicUser`. The caller's own
+ * full row — email, phone, zip_code, moderation flags — is only available via
+ * the `get_my_profile()` SECURITY DEFINER RPC, which every own-row read and
+ * every profile write in this module goes through. A `select('*')` or bare
+ * `.select()` on users fails with "permission denied".
  */
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { User } from '../types/user';
+import type { PublicUser, User } from '../types/user';
+import { PUBLIC_USER_COLUMNS } from '../constants/users';
 
 export interface UserResult {
   data?: User;
   error?: Error;
 }
 
+export interface PublicUserResult {
+  data?: PublicUser;
+  error?: Error;
+}
+
 /**
- * Get user by ID
+ * Read the calling user's own full profile row through the get_my_profile RPC.
+ * Resolves with no data (and no error) when the profile row does not exist yet,
+ * e.g. mid-signup before createUserProfile has run.
+ */
+async function fetchOwnProfile(
+  supabase: SupabaseClient
+): Promise<{ data: User | null; error: Error | null }> {
+  const { data, error } = await supabase.rpc('get_my_profile').maybeSingle();
+  if (error) {
+    return { data: null, error };
+  }
+  return { data: (data as User | null) ?? null, error: null };
+}
+
+/**
+ * Get another member's public profile by ID.
+ * Only public-profile columns are returned — see PUBLIC_USER_COLUMNS.
+ * For the signed-in user's own full row use getMyProfile().
  */
 export async function getUserById(
   supabase: SupabaseClient,
   userId: string
-): Promise<UserResult> {
+): Promise<PublicUserResult> {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select(PUBLIC_USER_COLUMNS)
       .eq('id', userId)
       .single();
 
     if (error) throw error;
     if (!data) throw new Error('User not found');
 
-    return { data: data as User };
+    return { data: data as unknown as PublicUser };
   } catch (error) {
     return {
       error: error instanceof Error
         ? error
         : new Error('Failed to fetch user'),
+    };
+  }
+}
+
+/**
+ * Get the signed-in user's own full profile (including email, phone, zip_code
+ * and moderation flags). Resolves with `data: undefined` and no error when the
+ * profile row does not exist yet (e.g. mid-signup before createUserProfile),
+ * so callers can distinguish "not created" from a failed read.
+ */
+export async function getMyProfile(
+  supabase: SupabaseClient
+): Promise<UserResult> {
+  try {
+    const { data, error } = await fetchOwnProfile(supabase);
+
+    if (error) throw error;
+
+    return { data: data ?? undefined };
+  } catch (error) {
+    return {
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to fetch profile'),
     };
   }
 }
@@ -47,21 +102,22 @@ export async function updateUserLocation(
   metroAreaId: string
 ): Promise<UserResult> {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('users')
       .update({
         zip_code: zipCode,
         metro_area_id: metroAreaId,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', userId)
-      .select()
-      .single();
+      .eq('id', userId);
 
     if (error) throw error;
+
+    const { data, error: readError } = await fetchOwnProfile(supabase);
+    if (readError) throw readError;
     if (!data) throw new Error('Failed to update user');
 
-    return { data: data as User };
+    return { data };
   } catch (error) {
     return {
       error: error instanceof Error
@@ -92,20 +148,21 @@ export async function updateUserProfile(
   >
 ): Promise<UserResult> {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('users')
       .update({
         ...updates,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', userId)
-      .select()
-      .single();
+      .eq('id', userId);
 
     if (error) throw error;
+
+    const { data, error: readError } = await fetchOwnProfile(supabase);
+    if (readError) throw readError;
     if (!data) throw new Error('Failed to update profile');
 
-    return { data: data as User };
+    return { data };
   } catch (error) {
     return {
       error: error instanceof Error
@@ -114,7 +171,6 @@ export async function updateUserProfile(
     };
   }
 }
-
 /**
  * Promote the calling user to Verified (trust_level 1) through the
  * `mark_user_verified` SECURITY DEFINER RPC. The server reads auth.users for
@@ -203,21 +259,22 @@ export async function createUserProfile(
   fullName: string
 ): Promise<UserResult> {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('users')
       .insert({
         id: userId,
         email,
         full_name: fullName,
         trust_level: 0, // Start at Level 0
-      })
-      .select()
-      .single();
+      });
 
     if (error) throw error;
+
+    const { data, error: readError } = await fetchOwnProfile(supabase);
+    if (readError) throw readError;
     if (!data) throw new Error('Failed to create profile');
 
-    return { data: data as User };
+    return { data };
   } catch (error) {
     return {
       error: error instanceof Error

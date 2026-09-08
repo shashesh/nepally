@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { createUserProfile, markEmailVerified, markGoogleVerified, getUserById } from '@nepally/shared';
+import { createUserProfile, markEmailVerified, markGoogleVerified, getMyProfile } from '@nepally/shared';
 import styles from '../../styles/Auth.module.css';
 
 type CallbackState = 'verifying' | 'error';
@@ -28,7 +28,7 @@ export default function AuthCallbackPage() {
       const provider = user.app_metadata?.provider;
 
       // Check if profile already exists (e.g. returning user via magic link)
-      const { data: existingProfile } = await getUserById(supabase, user.id);
+      const { data: existingProfile } = await getMyProfile(supabase);
 
       if (!existingProfile) {
         await createUserProfile(supabase, user.id, email, fullName);
@@ -42,7 +42,7 @@ export default function AuthCallbackPage() {
       }
 
       // Route based on onboarding state
-      const { data: profile } = await getUserById(supabase, user.id);
+      const { data: profile } = await getMyProfile(supabase);
       if (profile?.metro_area_id) {
         router.push('/feed');
       } else {
