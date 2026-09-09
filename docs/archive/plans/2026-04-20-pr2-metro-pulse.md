@@ -1,3 +1,10 @@
+---
+title: "PR 2: Metro Pulse card strip"
+status: implemented
+created: 2026-04-20
+spec: docs/specs/2026-04-20-your-community-today-design.md
+---
+
 # PR 2: Metro Pulse Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -8,7 +15,7 @@
 
 **Tech Stack:** TypeScript, Supabase (PostgreSQL + RLS), Zod for incidental payload validation, React (Next.js 15) for web, React Native (Expo 54) for mobile, Vitest for shared/web tests, Jest for mobile tests.
 
-**Spec:** [docs/specs/2026-04-20-your-community-today-design.md](../../specs/2026-04-20-your-community-today-design.md) §3
+**Spec:** [docs/specs/2026-04-20-your-community-today-design.md](../specs/2026-04-20-your-community-today-design.md) §3
 
 **Branch:** `feat/metro-pulse` (already created from master)
 

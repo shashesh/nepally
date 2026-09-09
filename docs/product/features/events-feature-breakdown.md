@@ -463,4 +463,4 @@ CREATE OR REPLACE FUNCTION decrement_rsvp_count() RETURNS trigger ...
 - [Phase 1 Feature Breakdown](./phase1-feature-breakdown.md) — existing Phase 1 work for reference
 - [Code Sharing Guide](../../guides/code-sharing.md) — shared-first architecture rules
 - [Monorepo Structure](../../architecture/monorepo-structure.md) — package boundaries
-- [Notifications Feature Plan](../../plans/active/notifications-feature.md) — push notification infrastructure (prerequisite for E6.1)
+- [Notifications Feature Plan](../../archive/plans/notifications-feature.md) — push notification infrastructure (prerequisite for E6.1)

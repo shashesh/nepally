@@ -1,3 +1,9 @@
+---
+title: Marketplace UX redesign
+status: implemented
+created: 2026-04-05
+---
+
 # Marketplace UX Redesign — Implementation Plan
 
 **Plan Version:** v1

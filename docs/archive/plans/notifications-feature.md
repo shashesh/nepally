@@ -1,3 +1,9 @@
+---
+title: Notifications feature
+status: implemented
+created: 2026-03-03
+---
+
 # Notifications Feature — Filled Implementation Plan Example (Features 12.1–12.4)
 
 **Plan Version:** v3 (Template-Aligned Example)

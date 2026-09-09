@@ -1,3 +1,10 @@
+---
+title: Mobile marketplace redesign
+status: implemented
+created: 2026-04-14
+spec: docs/specs/2026-04-14-mobile-marketplace-redesign-design.md
+---
+
 # Mobile Marketplace Redesign Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -12,7 +19,7 @@
 
 **Tech Stack:** React Native 0.81 / Expo 54, React 19.1, TypeScript 5.3, `@react-navigation/native-stack`, Jest 29 + React Native Testing Library v13, `@expo/vector-icons`, `expo-image`, `expo-linear-gradient`, `@nepally/shared`.
 
-**Spec:** [docs/specs/2026-04-14-mobile-marketplace-redesign-design.md](../../specs/2026-04-14-mobile-marketplace-redesign-design.md)
+**Spec:** [docs/specs/2026-04-14-mobile-marketplace-redesign-design.md](../specs/2026-04-14-mobile-marketplace-redesign-design.md)
 
 ---
 

@@ -503,5 +503,5 @@ export interface EventRsvp {
 - [Product Roadmap — Section H](../roadmap.md) — roadmap context
 - [Code Sharing Guide](../../guides/code-sharing.md) — shared-first architecture rules
 - [Monorepo Structure](../../architecture/monorepo-structure.md) — package boundaries
-- [Notifications Feature Plan](../../plans/active/notifications-feature.md) — prerequisite for event reminders
+- [Notifications Feature Plan](../../archive/plans/notifications-feature.md) — prerequisite for event reminders
 - [Design System Foundation](../../wireframes/00-design-system-foundation/00-design-system-foundation.md) — colors, typography, spacing

@@ -1,3 +1,9 @@
+---
+title: Phase 1 remediation GitHub issue cards
+status: abandoned
+created: 2026-03-23
+---
+
 # Phase 1 Remediation - GitHub Issue Cards
 
 Use one section below per GitHub issue. Each card is written to be copy-paste ready.

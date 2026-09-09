@@ -1,3 +1,10 @@
+---
+title: Marketplace listing details enhancement
+status: implemented
+created: 2026-04-13
+spec: docs/specs/2026-04-13-marketplace-listing-details-enhancement-design.md
+---
+
 # Marketplace Listing Details Enhancement — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -8,7 +15,7 @@
 
 **Tech Stack:** TypeScript, Next.js 15, React 19, React Native (Expo 54), Vitest (web + shared), Jest (mobile), CSS Modules (web), StyleSheet (mobile).
 
-**Spec:** [docs/specs/2026-04-13-marketplace-listing-details-enhancement-design.md](../../specs/2026-04-13-marketplace-listing-details-enhancement-design.md)
+**Spec:** [docs/specs/2026-04-13-marketplace-listing-details-enhancement-design.md](../specs/2026-04-13-marketplace-listing-details-enhancement-design.md)
 
 ---
 

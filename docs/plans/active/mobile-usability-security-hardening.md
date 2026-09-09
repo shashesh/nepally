@@ -1,3 +1,9 @@
+---
+title: Mobile usability and security hardening
+status: planned
+created: 2026-03-10
+---
+
 # Mobile App Usability, Security, and Proactive UX Hardening — Implementation Plan
 
 Plan Version: v1  

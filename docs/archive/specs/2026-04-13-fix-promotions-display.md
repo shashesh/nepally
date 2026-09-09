@@ -1,3 +1,9 @@
+---
+title: Fix promotions display design
+status: implemented
+created: 2026-04-13
+---
+
 # Fix Promotions Display
 
 **Date:** 2026-04-13

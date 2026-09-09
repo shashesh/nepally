@@ -1,3 +1,9 @@
+---
+title: Public profile view
+status: implemented
+created: 2026-03-04
+---
+
 # Public Profile View — Implementation Plan
 
 **Plan Version:** v1

@@ -42,27 +42,27 @@
 ## Plans (active implementation plans)
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
-- [plans/active/2026-04-13-docs-reorganization.md](plans/active/2026-04-13-docs-reorganization.md) — this reorganization plan [status: in-progress]
-- [plans/active/2026-04-14-mobile-marketplace-redesign.md](plans/active/2026-04-14-mobile-marketplace-redesign.md) — 14-task implementation plan for the mobile marketplace redesign
-- [plans/active/marketplace-ux-redesign.md](plans/active/marketplace-ux-redesign.md) — marketplace filter bar + featured/recent/trending strips [status: planned]
+- [plans/active/2026-04-13-docs-reorganization.md](./archive/plans/2026-04-13-docs-reorganization.md) — this reorganization plan [status: in-progress]
+- [plans/active/2026-04-14-mobile-marketplace-redesign.md](./archive/plans/2026-04-14-mobile-marketplace-redesign.md) — 14-task implementation plan for the mobile marketplace redesign
+- [plans/active/marketplace-ux-redesign.md](./archive/plans/marketplace-ux-redesign.md) — marketplace filter bar + featured/recent/trending strips [status: planned]
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening [status: planned]
-- [plans/active/notifications-feature.md](plans/active/notifications-feature.md) — full notifications system (DB + shared API + push delivery) [status: planned]
+- [plans/active/notifications-feature.md](./archive/plans/notifications-feature.md) — full notifications system (DB + shared API + push delivery) [status: planned]
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — Phase 1 post-audit remediation tasks [status: planned]
-- [plans/active/phase1-remediation-github-issues.md](plans/active/phase1-remediation-github-issues.md) — copy-paste GitHub issue cards for Phase 1 remediation
-- [plans/active/2026-04-20-pr1-social-identity.md](plans/active/2026-04-20-pr1-social-identity.md) — PR 1 of "Your Community Today": follow graph + extended profile [status: planned]
-- [plans/active/2026-04-20-pr2-metro-pulse.md](plans/active/2026-04-20-pr2-metro-pulse.md) — PR 2 of "Your Community Today": Metro Pulse card strip [status: implemented]
-- [plans/active/2026-04-20-pr3-helper-score-social-cards.md](plans/active/2026-04-20-pr3-helper-score-social-cards.md) — PR 3 of "Your Community Today": helper score + find_your_people + top_helper cards [status: implemented]
-- [plans/active/2026-06-07-postgres-15-to-17-upgrade.md](plans/active/2026-06-07-postgres-15-to-17-upgrade.md) — Postgres version sync note: remote already on 17 GA; local config.toml + docs synced to 17 [status: in-progress]
+- [plans/active/phase1-remediation-github-issues.md](./archive/plans/phase1-remediation-github-issues.md) — copy-paste GitHub issue cards for Phase 1 remediation
+- [plans/active/2026-04-20-pr1-social-identity.md](./archive/plans/2026-04-20-pr1-social-identity.md) — PR 1 of "Your Community Today": follow graph + extended profile [status: planned]
+- [plans/active/2026-04-20-pr2-metro-pulse.md](./archive/plans/2026-04-20-pr2-metro-pulse.md) — PR 2 of "Your Community Today": Metro Pulse card strip [status: implemented]
+- [plans/active/2026-04-20-pr3-helper-score-social-cards.md](./archive/plans/2026-04-20-pr3-helper-score-social-cards.md) — PR 3 of "Your Community Today": helper score + find_your_people + top_helper cards [status: implemented]
+- [plans/active/2026-06-07-postgres-15-to-17-upgrade.md](./archive/plans/2026-06-07-postgres-15-to-17-upgrade.md) — Postgres version sync note: remote already on 17 GA; local config.toml + docs synced to 17 [status: in-progress]
 - [plans/active/2026-09-08-documentation-system.md](plans/active/2026-09-08-documentation-system.md) — 13-task plan: docs:check tooling, 157-link cleanup, lifecycle audit, GitHub templates [status: in-progress]
 
 ## Specs (active design specs)
 
-- [specs/2026-04-13-docs-reorganization-design.md](specs/2026-04-13-docs-reorganization-design.md) — design spec for this docs reorganization
-- [specs/2026-04-13-marketplace-listing-details-enhancement-design.md](specs/2026-04-13-marketplace-listing-details-enhancement-design.md) — marketplace listing detail page Split View redesign (web + mobile)
-- [specs/2026-04-14-mobile-marketplace-redesign-design.md](specs/2026-04-14-mobile-marketplace-redesign-design.md) — spec for the 4-tab mobile marketplace home redesign (Sponsored · Featured · Trending · All Listings)
-- [specs/2026-04-20-your-community-today-design.md](specs/2026-04-20-your-community-today-design.md) — "Your Community Today": Metro Pulse card strip + Social Identity (follow graph, extended profile, helper score)
+- [specs/2026-04-13-docs-reorganization-design.md](./archive/specs/2026-04-13-docs-reorganization-design.md) — design spec for this docs reorganization
+- [specs/2026-04-13-marketplace-listing-details-enhancement-design.md](./archive/specs/2026-04-13-marketplace-listing-details-enhancement-design.md) — marketplace listing detail page Split View redesign (web + mobile)
+- [specs/2026-04-14-mobile-marketplace-redesign-design.md](./archive/specs/2026-04-14-mobile-marketplace-redesign-design.md) — spec for the 4-tab mobile marketplace home redesign (Sponsored · Featured · Trending · All Listings)
+- [specs/2026-04-20-your-community-today-design.md](./archive/specs/2026-04-20-your-community-today-design.md) — "Your Community Today": Metro Pulse card strip + Social Identity (follow graph, extended profile, helper score)
 - [specs/2026-09-08-documentation-system-design.md](specs/2026-09-08-documentation-system-design.md) — docs organization + CI-enforced currency (link/index/lifecycle checks, SOP trigger matrix, GitHub templates)
-- [plans/active/2026-04-13-marketplace-listing-details-enhancement.md](plans/active/2026-04-13-marketplace-listing-details-enhancement.md) — implementation plan for Split View listing detail redesign
+- [plans/active/2026-04-13-marketplace-listing-details-enhancement.md](./archive/plans/2026-04-13-marketplace-listing-details-enhancement.md) — implementation plan for Split View listing detail redesign
 
 ## User journeys
 

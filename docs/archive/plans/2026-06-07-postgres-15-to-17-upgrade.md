@@ -1,3 +1,9 @@
+---
+title: PostgreSQL 15 to 17 version sync
+status: implemented
+created: 2026-06-07
+---
+
 # PostgreSQL Version Sync (local 15 → 17) — Operations Note
 
 **Plan Version:** v2 (rewritten after live-DB check)

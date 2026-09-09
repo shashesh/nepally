@@ -1,3 +1,9 @@
+---
+title: Marketplace listing details enhancement design
+status: implemented
+created: 2026-04-13
+---
+
 # Marketplace Listing Details Enhancement — Design Spec
 
 **Date:** 2026-04-13

@@ -1,3 +1,9 @@
+---
+title: Your Community Today design
+status: implemented
+created: 2026-04-20
+---
+
 # "Your Community Today" — Engagement & Stickiness Design
 
 **Date:** 2026-04-20
@@ -5,9 +11,9 @@
 **Author:** Brainstormed collaboratively; authored by Claude Code
 **Supersedes:** n/a
 **Related docs:**
-- [product/roadmap.md](../product/roadmap.md)
-- [plans/active/notifications-feature.md](../plans/active/notifications-feature.md)
-- [architecture/monorepo-structure.md](../architecture/monorepo-structure.md)
+- [product/roadmap.md](../../product/roadmap.md)
+- [plans/active/notifications-feature.md](../plans/notifications-feature.md)
+- [architecture/monorepo-structure.md](../../architecture/monorepo-structure.md)
 
 ---
 
@@ -220,7 +226,7 @@ Each suggestion carries a reason string: `"Both from Pokhara"`, `"Both studied a
 
 ## 7. Shared-First Placement
 
-Per [guides/code-sharing.md](../guides/code-sharing.md):
+Per [guides/code-sharing.md](../../guides/code-sharing.md):
 
 ```
 packages/shared/src/

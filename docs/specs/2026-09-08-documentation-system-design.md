@@ -1,6 +1,6 @@
 ---
 title: Documentation System — Organization & Currency Enforcement
-status: planned
+status: in-progress
 created: 2026-09-08
 ---
 
@@ -9,7 +9,7 @@ created: 2026-09-08
 **Date:** 2026-09-08
 **Status:** Design spec — awaiting review
 **Author:** Brainstormed collaboratively; authored by Claude Code
-**Supersedes:** [specs/2026-04-13-docs-reorganization-design.md](2026-04-13-docs-reorganization-design.md) (structure landed; currency mechanism never did)
+**Supersedes:** [specs/2026-04-13-docs-reorganization-design.md](../archive/specs/2026-04-13-docs-reorganization-design.md) (structure landed; currency mechanism never did)
 **Related docs:**
 - [INDEX.md](../INDEX.md)
 - [README.md](../README.md)

@@ -1,3 +1,9 @@
+---
+title: Drop is_featured column design
+status: implemented
+created: 2026-04-10
+---
+
 # Drop `marketplace_listings.is_featured` — Design
 
 **Date:** 2026-04-10

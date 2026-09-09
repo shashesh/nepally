@@ -1,3 +1,10 @@
+---
+title: Drop is_featured column
+status: implemented
+created: 2026-04-10
+spec: docs/archive/specs/2026-04-10-drop-is-featured-column-design.md
+---
+
 # Drop `marketplace_listings.is_featured` — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

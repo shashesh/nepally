@@ -1,3 +1,9 @@
+---
+title: Promote listing feature
+status: implemented
+created: 2026-03-20
+---
+
 # Promote Listing — Implementation Plan
 
 **Plan Version:** v1

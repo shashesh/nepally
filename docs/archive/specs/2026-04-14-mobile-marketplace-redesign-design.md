@@ -1,3 +1,9 @@
+---
+title: Mobile marketplace redesign design
+status: implemented
+created: 2026-04-14
+---
+
 # Mobile Marketplace Redesign — Design
 
 **Date:** 2026-04-14

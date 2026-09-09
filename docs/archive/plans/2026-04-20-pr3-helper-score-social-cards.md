@@ -1,3 +1,10 @@
+---
+title: "PR 3: Helper score and social pulse cards"
+status: implemented
+created: 2026-04-20
+spec: docs/specs/2026-04-20-your-community-today-design.md
+---
+
 # PR 3: Helper Score + Social Pulse Cards Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -8,7 +15,7 @@
 
 **Tech Stack:** TypeScript, Supabase (PostgreSQL + RLS), Zod validation where relevant, React (Next.js 15) for web, React Native (Expo 54) for mobile, Vitest for shared/web tests, Jest for mobile tests.
 
-**Spec:** [docs/specs/2026-04-20-your-community-today-design.md](../../specs/2026-04-20-your-community-today-design.md) §3.2 (cards 5+6), §4.3 (Helper Score), §5.2 (suggestion ranking)
+**Spec:** [docs/specs/2026-04-20-your-community-today-design.md](../specs/2026-04-20-your-community-today-design.md) §3.2 (cards 5+6), §4.3 (Helper Score), §5.2 (suggestion ranking)
 
 **Branch:** `feat/community-today-pr3` (create off master **after** #41 and #42 merge).
 
