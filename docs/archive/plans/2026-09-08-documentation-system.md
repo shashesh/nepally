@@ -1,6 +1,6 @@
 ---
 title: Documentation system — organization and CI-enforced currency
-status: in-progress
+status: implemented
 created: 2026-09-08
 spec: docs/specs/2026-09-08-documentation-system-design.md
 ---
@@ -15,7 +15,7 @@ spec: docs/specs/2026-09-08-documentation-system-design.md
 
 **Tech Stack:** Plain CommonJS Node, zero new dependencies. `node:test` + `node:assert/strict` for tests. GitHub Actions reusing the existing `ci-job.yml` reusable workflow.
 
-**Spec:** [docs/specs/2026-09-08-documentation-system-design.md](../../specs/2026-09-08-documentation-system-design.md)
+**Spec:** [docs/specs/2026-09-08-documentation-system-design.md](../specs/2026-09-08-documentation-system-design.md)
 
 **Branch:** `chore/docs-system` (already created, off `master`). The spec is already committed there as `3ffb85b`.
 

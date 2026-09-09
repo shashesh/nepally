@@ -4,7 +4,7 @@
 > **Coding agents:** this is your map — grep it for keywords to find the right doc fast.
 > **Humans:** also see [README.md](README.md) for the folder overview.
 
-**Last verified:** 2026-09-08
+**Last verified:** 2026-09-09
 
 **This file is CI-enforced.** `npm run docs:check` fails if a doc under `docs/` is
 missing from this index, or if an entry here points at something that does not exist.
@@ -54,13 +54,11 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 ## Plans (in-flight only — finished plans move to `archive/plans/`)
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
-- [plans/active/2026-09-08-documentation-system.md](plans/active/2026-09-08-documentation-system.md) — 13-task plan: docs:check tooling, link cleanup, lifecycle audit, GitHub templates
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 
 ## Specs (point-in-time designs — archived when the work ships)
 
-- [specs/2026-09-08-documentation-system-design.md](specs/2026-09-08-documentation-system-design.md) — docs organization + CI-enforced currency (link/index/lifecycle checks, SOP trigger matrix, GitHub templates)
 
 ## User journeys
 
