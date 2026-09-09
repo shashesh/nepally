@@ -1,7 +1,7 @@
 # Wireframe: ZIP Code Entry
 
 > **Screen:** 03 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 8
+> **Journey:** [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 8
 > **Story:** As a new user who just created an account, I want to enter my ZIP code so Nepally can show me posts in my local metro area.
 
 ---
@@ -767,10 +767,10 @@ WHERE id = 'user_id';
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [02-signup-method-selection.md](./02-signup-method-selection.md) |
-| Next (Success) | [04-metro-confirmation.md](./04-metro-confirmation.md) |
-| Next (Skip) | [05-onboarding-tutorial.md](./05-onboarding-tutorial.md) |
-| Journey | [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 8 |
+| Previous | [02-signup-method-selection.md](../02-signup-method-selection/02-signup-method-selection.md) |
+| Next (Success) | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md) |
+| Next (Skip) | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md) |
+| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 8 |
 
 ---
 

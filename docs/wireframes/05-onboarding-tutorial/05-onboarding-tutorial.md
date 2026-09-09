@@ -1,7 +1,7 @@
 # Wireframe: Onboarding Tutorial
 
 > **Screen:** 05 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Steps 10-12
+> **Journey:** [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Steps 10-12
 > **Story:** As a new user, I want to quickly understand Nepally's key features (metro-first feed, trust levels, post categories) so I can use the app effectively.
 
 ---
@@ -549,9 +549,9 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [04-metro-confirmation.md](./04-metro-confirmation.md) |
-| Next | [06-home-screen-level-0.md](./06-home-screen-level-0.md) |
-| Journey | [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Steps 10-12 |
+| Previous | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md) |
+| Next | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) |
+| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Steps 10-12 |
 
 ---
 

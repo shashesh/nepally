@@ -1,7 +1,7 @@
 # Wireframe: Home Screen (Level 0)
 
 > **Screen:** 06 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 13
+> **Journey:** [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 13
 > **Story:** As a new Level 0 user who just completed onboarding, I want to browse local and global posts in my metro area so I can find relevant community content tagged with Housing, Jobs, Help, and more.
 
 ---
@@ -1067,9 +1067,9 @@ You need to verify your phone number to create posts and message others.
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [05-onboarding-tutorial.md](./05-onboarding-tutorial.md) |
+| Previous | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md) |
 | Next | Post Detail Screen (out of scope for this journey) |
-| Journey | [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 13 (Success State) |
+| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 13 (Success State) |
 | Related | Journey #02: Trust Level Verification (user will likely proceed here next) |
 | Related | Journey #07: Browse and Search Posts (user is already browsing) |
 

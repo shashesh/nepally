@@ -428,12 +428,12 @@ Dismissible: [✕]{.secondary}
 | File | Description |
 |------|-------------|
 | [00-design-system-foundation.md](00-design-system-foundation.md) | This file |
-| [01-welcome-screen.md](01-welcome-screen.md) | Welcome / splash screen |
-| [02-signup-method-selection.md](02-signup-method-selection.md) | Signup method selection |
-| [03-zip-code-entry.md](03-zip-code-entry.md) | ZIP code entry |
-| [04-metro-confirmation.md](04-metro-confirmation.md) | Metro area confirmation |
-| [05-onboarding-tutorial.md](05-onboarding-tutorial.md) | Onboarding tutorial |
-| [06-home-screen-level-0.md](06-home-screen-level-0.md) | Home screen (Level 0) |
+| [01-welcome-screen.md](../01-welcome-screen/01-welcome-screen.md) | Welcome / splash screen |
+| [02-signup-method-selection.md](../02-signup-method-selection/02-signup-method-selection.md) | Signup method selection |
+| [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md) | ZIP code entry |
+| [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md) | Metro area confirmation |
+| [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md) | Onboarding tutorial |
+| [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) | Home screen (Level 0) |
 
 ---
 

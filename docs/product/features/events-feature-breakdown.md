@@ -459,8 +459,8 @@ CREATE OR REPLACE FUNCTION decrement_rsvp_count() RETURNS trigger ...
 ## Related Documentation
 
 - [Events Feature Spec](./events.md) — high-level purpose, user stories, data model
-- [Product Roadmap — Section H](../../docs/product/roadmap.md#h-events-documentation-only) — roadmap context
+- [Product Roadmap — Section H](../roadmap.md#h-events-documentation-only) — roadmap context
 - [Phase 1 Feature Breakdown](./phase1-feature-breakdown.md) — existing Phase 1 work for reference
-- [Code Sharing Guide](../code-sharing-guide.md) — shared-first architecture rules
-- [Monorepo Structure](../monorepo-structure.md) — package boundaries
-- [Notifications Feature Plan](../implementation-plans/notifications-feature.md) — push notification infrastructure (prerequisite for E6.1)
+- [Code Sharing Guide](../../guides/code-sharing.md) — shared-first architecture rules
+- [Monorepo Structure](../../architecture/monorepo-structure.md) — package boundaries
+- [Notifications Feature Plan](../../plans/active/notifications-feature.md) — push notification infrastructure (prerequisite for E6.1)

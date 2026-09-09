@@ -8,7 +8,7 @@
 
 **Tech Stack:** No code. Just Markdown edits and `git mv`. Verification uses `git grep`, `git log --follow`, and link sweeps.
 
-**Spec:** [docs/superpowers/specs/2026-04-13-docs-reorganization-design.md](../specs/2026-04-13-docs-reorganization-design.md) — note: this spec file itself moves to `docs/specs/` in Task 6.
+**Spec:** [docs/superpowers/specs/2026-04-13-docs-reorganization-design.md](../../specs/2026-04-13-docs-reorganization-design.md) — note: this spec file itself moves to `docs/specs/` in Task 6.
 
 **Branch:** `chore/docs-reorganization` (already created, off master). Working tree has `.gitignore` modification unrelated to this work; leave untouched.
 

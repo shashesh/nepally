@@ -317,7 +317,7 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 - Push notification reminders (depends on full notifications infrastructure)
 - Events visible on organizer's public profile
 
-See [Events Feature Spec](docs/product/features/events.md) and [Events Feature Breakdown](docs/product/features/events-feature-breakdown.md) for full details.
+See [Events Feature Spec](./features/events.md) and [Events Feature Breakdown](./features/events-feature-breakdown.md) for full details.
 
 ### I. Marketplace (Documentation Only)
 
@@ -335,7 +335,7 @@ See [Events Feature Spec](docs/product/features/events.md) and [Events Feature B
 - Verified business badges
 - Paid promotion tiers (Phase 3 revenue)
 
-See [Marketplace Feature Spec](docs/product/features/marketplace.md) for full details.
+See [Marketplace Feature Spec](./features/marketplace.md) for full details.
 
 ---
 
@@ -459,7 +459,7 @@ Before first emergency post submission, users must acknowledge:
 | **Location** | Static ZIP-to-Metro dataset | HUD USPS Crosswalk, zero API costs |
 | **Admin Dashboard** | Web-based interface | For moderators to approve alerts and manage content |
 
-See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for exact versions.
+See [TECH-VERSIONS.md](../../TECH-VERSIONS.md) for exact versions.
 
 ---
 

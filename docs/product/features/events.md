@@ -500,8 +500,8 @@ export interface EventRsvp {
 ## Related Documentation
 
 - [Events Feature Breakdown](./events-feature-breakdown.md) — implementation tasks, sequencing, and effort estimates
-- [Product Roadmap — Section H](../../docs/product/roadmap.md) — roadmap context
-- [Code Sharing Guide](../code-sharing-guide.md) — shared-first architecture rules
-- [Monorepo Structure](../monorepo-structure.md) — package boundaries
-- [Notifications Feature Plan](../implementation-plans/notifications-feature.md) — prerequisite for event reminders
-- [Design System Foundation](../wireframes/00-design-system-foundation.md) — colors, typography, spacing
+- [Product Roadmap — Section H](../roadmap.md) — roadmap context
+- [Code Sharing Guide](../../guides/code-sharing.md) — shared-first architecture rules
+- [Monorepo Structure](../../architecture/monorepo-structure.md) — package boundaries
+- [Notifications Feature Plan](../../plans/active/notifications-feature.md) — prerequisite for event reminders
+- [Design System Foundation](../../wireframes/00-design-system-foundation/00-design-system-foundation.md) — colors, typography, spacing

@@ -156,6 +156,6 @@ All business logic in `packages/shared/`:
 
 ## Related Documentation
 
-- [Product Roadmap](../../docs/product/roadmap.md) — Phase planning
-- [Code Sharing Guide](../code-sharing-guide.md) — Shared-first architecture
-- [Database Schema](../database-schema.md) — Full schema reference
+- [Product Roadmap](../roadmap.md) — Phase planning
+- [Code Sharing Guide](../../guides/code-sharing.md) — Shared-first architecture
+- [Database Schema](../../architecture/database-schema.md) — Full schema reference

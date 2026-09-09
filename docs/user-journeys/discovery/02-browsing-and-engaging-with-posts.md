@@ -529,7 +529,7 @@
 
 ## Related Documentation
 
-- [Feature Spec: Post Likes and Comments](../features/post-likes-and-comments.md)
-- [Wireframe: Enhanced Home Screen](../wireframes/06-home-screen-level-0.md)
-- [Wireframe: Post Detail with Comments](../wireframes/09-post-detail.md)
-- [Phase 1 Feature Breakdown](../features/phase1-feature-breakdown.md)
+- [Feature Spec: Post Likes and Comments](../../product/features/post-likes-and-comments.md)
+- [Wireframe: Enhanced Home Screen](../../wireframes/06-home-screen-level-0/06-home-screen-level-0.md)
+- [Wireframe: Post Detail with Comments](../../wireframes/09-post-detail/09-post-detail.md)
+- [Phase 1 Feature Breakdown](../../product/features/phase1-feature-breakdown.md)

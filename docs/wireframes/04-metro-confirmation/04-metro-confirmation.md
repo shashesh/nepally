@@ -1,7 +1,7 @@
 # Wireframe: Metro Confirmation
 
 > **Screen:** 04 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 9
+> **Journey:** [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 9
 > **Story:** As a new user who just entered my ZIP code, I want confirmation that Nepally mapped me to the correct metro area so I know I'll see relevant local posts.
 
 ---
@@ -454,9 +454,9 @@ Join 12,503 verified members in your area
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [03-zip-code-entry.md](./03-zip-code-entry.md) |
-| Next | [05-onboarding-tutorial.md](./05-onboarding-tutorial.md) |
-| Journey | [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 9 |
+| Previous | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md) |
+| Next | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md) |
+| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 9 |
 
 ---
 

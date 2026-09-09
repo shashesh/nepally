@@ -1,8 +1,8 @@
 # Wireframe: Location Switcher & Saved Locations
 
 > **Screen:** 13 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-location-permission-and-detection](../user-journeys/location/01-location-permission-and-detection.md) - Scenario D
-> **Feature:** [dynamic-location-management](../features/dynamic-location-management.md) - Features L.5, L.6
+> **Journey:** [01-location-permission-and-detection](../../user-journeys/location/01-location-permission-and-detection.md) - Scenario D
+> **Feature:** [dynamic-location-management](../../product/features/dynamic-location-management.md) - Features L.5, L.6
 > **Story:** As a commuter with multiple locations, I want to quickly switch between my saved locations to view feeds from different metro areas.
 > **Platforms:** Mobile + Web
 
@@ -418,7 +418,7 @@ Houston-The Woodlands, TX will be removed from your saved locations.
 |------|--------|-------------|
 | Home Screen Header | Tap metro name | Location Switcher (bottom sheet / popover) |
 | Location Switcher | Tap saved location | Switch feed immediately |
-| Location Switcher | Tap detected location | Location Change Prompt ([wireframe 12](./12-location-change-prompt.md)) |
+| Location Switcher | Tap detected location | Location Change Prompt ([wireframe 12](../12-location-change-prompt/12-location-change-prompt.md)) |
 | Location Switcher | Tap "Add a Location" | Add Location Screen/Modal |
 | Add Location | Search metro → Select → Name → Save | Return to switcher |
 | Add Location | Back / Cancel | Return to switcher |
@@ -449,7 +449,7 @@ Houston-The Woodlands, TX will be removed from your saved locations.
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [06-home-screen-level-0.md](./06-home-screen-level-0.md) (header trigger) |
-| Related | [11-location-permission-screen.md](./11-location-permission-screen.md) |
-| Related | [12-location-change-prompt.md](./12-location-change-prompt.md) |
-| Journey | [01-location-permission-and-detection](../user-journeys/location/01-location-permission-and-detection.md) |
+| Previous | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) (header trigger) |
+| Related | [11-location-permission-screen.md](../11-location-permission-screen/11-location-permission-screen.md) |
+| Related | [12-location-change-prompt.md](../12-location-change-prompt/12-location-change-prompt.md) |
+| Journey | [01-location-permission-and-detection](../../user-journeys/location/01-location-permission-and-detection.md) |

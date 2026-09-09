@@ -4,7 +4,7 @@ Plan Version: v1
 Date: 2026-03-10  
 Owner: _TBD_  
 Status: Planned  
-Primary Spec/Wireframe: [docs/guides/feature-development.md](docs/guides/feature-development.md), [docs/wireframes/00-design-system-foundation.md](docs/wireframes/00-design-system-foundation.md)
+Primary Spec/Wireframe: [docs/guides/feature-development.md](../../guides/feature-development.md), [docs/wireframes/00-design-system-foundation.md](../../wireframes/00-design-system-foundation/00-design-system-foundation.md)
 
 ---
 

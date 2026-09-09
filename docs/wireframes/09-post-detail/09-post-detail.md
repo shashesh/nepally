@@ -1,7 +1,7 @@
 # Wireframe: Post Detail Screen
 
 > **Screen:** 09 | **Status:** Draft | **Updated:** 2026-02-22
-> **Journey:** [phase1-feature-breakdown.md](../features/phase1-feature-breakdown.md) - Feature 5.4, [in-app-chat.md](../features/in-app-chat.md) - Feature 8.2 (entry point)
+> **Journey:** [phase1-feature-breakdown.md](../../product/features/phase1-feature-breakdown.md) - Feature 5.4, [in-app-chat.md](../../product/features/in-app-chat.md) - Feature 8.2 (entry point)
 > **Story:** As a user, I want to see the full details of a post so I can decide whether to contact the author.
 
 ---
@@ -625,10 +625,10 @@ const { data } = await supabase
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [06-home-screen-level-0.md](./06-home-screen-level-0.md) (tap PostCard) |
-| Next | [08-message-thread.md](./08-message-thread.md) (Avatar menu Chat) |
-| Feature | [in-app-chat.md](../features/in-app-chat.md) |
-| Feature | [phase1-feature-breakdown.md](../features/phase1-feature-breakdown.md) |
+| Previous | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) (tap PostCard) |
+| Next | [08-message-thread.md](../08-message-thread/08-message-thread.md) (Avatar menu Chat) |
+| Feature | [in-app-chat.md](../../product/features/in-app-chat.md) |
+| Feature | [phase1-feature-breakdown.md](../../product/features/phase1-feature-breakdown.md) |
 
 ---
 
