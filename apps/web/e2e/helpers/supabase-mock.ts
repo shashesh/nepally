@@ -30,10 +30,14 @@ function expectsSingleObject(route: Route): boolean {
  */
 async function mockGetMyProfile(page: Page): Promise<void> {
   await page.route('**/rest/v1/rpc/get_my_profile**', async (route) => {
+    // get_my_profile() is RETURNS SETOF, so PostgREST replies with an array
+    // unless the caller asked for a single object (.maybeSingle()/.single()
+    // sets the vnd.pgrst.object+json Accept header) — match real behavior
+    // instead of hardcoding the shape the one current call site happens to use.
     await route.fulfill({
       status: 200,
       headers: JSON_HEADERS,
-      body: JSON.stringify(MOCK_USER_PROFILE),
+      body: JSON.stringify(expectsSingleObject(route) ? MOCK_USER_PROFILE : [MOCK_USER_PROFILE]),
     });
   });
 }
