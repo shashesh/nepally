@@ -25,16 +25,22 @@ This document indexes all user journeys for the Nepally app. Each journey docume
 
 ## Journey Organization
 
-Journeys are organized into **6 categories** based on user intent:
+Journeys are organized by user intent. **Planned** is the original 14-journey
+scope; **written** is what exists on disk today.
 
-| Category | Journey Count | Purpose |
-|----------|---------------|---------|
-| **Onboarding** | 2 | Getting started with Nepally |
-| **Post Creation** | 4 | Creating housing, job, emergency, and travel posts |
-| **Discovery** | 3 | Finding posts, responding, and discovering events |
-| **Communication** | 1 | In-app chat and messaging |
-| **Safety** | 2 | Reporting content and moderation |
-| **Management** | 2 | Managing posts and events |
+| Category | Planned | Written | Purpose |
+|----------|---------|---------|---------|
+| **Onboarding** | 2 | 1 | Getting started with Nepally |
+| **Post Creation** | 4 | 1 | Creating posts (one unified tag-based form, not four separate flows) |
+| **Discovery** | 3 | 2 | Finding posts, responding, and discovering events |
+| **Communication** | 1 | 1 | In-app chat and messaging |
+| **Safety** | 2 | 0 | Reporting content and moderation |
+| **Management** | 2 | 1 | Managing posts and events |
+| **Location** | — | 1 | Location permission, detection, and switching |
+| **Total** | **14** | **7** | |
+
+`location/` was added after the original scope was drawn and is not part of the
+14. `safety/` has no directory yet — nothing has been written for it.
 
 ---
 
