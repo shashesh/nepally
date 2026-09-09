@@ -4,8 +4,15 @@
 > **Coding agents:** this is your map — grep it for keywords to find the right doc fast.
 > **Humans:** also see [README.md](README.md) for the folder overview.
 
-**Last verified:** 2026-06-07
-**If you add, move, or retire a doc, update this file in the same commit.**
+**Last verified:** 2026-09-08
+
+**This file is CI-enforced.** `npm run docs:check` fails if a doc under `docs/` is
+missing from this index, or if an entry here points at something that does not exist.
+Add, move, or retire a doc → update this file in the same commit. See
+[guides/documentation-workflow.md](guides/documentation-workflow.md) for the full
+procedure.
+
+Plan and spec status lives in each file's frontmatter, not here — one source, not two.
 
 ## Repo root
 
@@ -15,10 +22,12 @@
 
 ## Guides (how to work in this repo)
 
-- [guides/setup-and-testing.md](guides/setup-and-testing.md) — environment setup, running apps, testing policy, CI-aligned local checks
+- [README.md](README.md) — what lives in which folder, and the conventions
+- [guides/setup-and-testing.md](guides/setup-and-testing.md) — environment setup, running apps, testing policy, CI-aligned local checks, security smoke tests
 - [guides/code-sharing.md](guides/code-sharing.md) — shared-first architecture rules and examples
 - [guides/deployment.md](guides/deployment.md) — deploying web (Vercel) and mobile (EAS)
 - [guides/feature-development.md](guides/feature-development.md) — 7-stage feature development workflow (design → plan → implement → validate)
+- [guides/documentation-workflow.md](guides/documentation-workflow.md) — which doc to update when, the frontmatter contract, what `docs:check` enforces, quarterly sweep
 
 ## Architecture (how the system is built)
 
@@ -30,6 +39,9 @@
 ## Product
 
 - [product/roadmap.md](product/roadmap.md) — phases, current status, what's next
+
+### Feature specs (evergreen — what each feature is today)
+
 - [product/features/phase1-feature-breakdown.md](product/features/phase1-feature-breakdown.md) — Phase 1 feature index
 - [product/features/events.md](product/features/events.md) — events feature spec
 - [product/features/events-feature-breakdown.md](product/features/events-feature-breakdown.md) — events feature sub-breakdown
@@ -39,38 +51,55 @@
 - [product/features/dynamic-location-management.md](product/features/dynamic-location-management.md) — location switcher feature spec
 - [product/features/post-likes-and-comments.md](product/features/post-likes-and-comments.md) — post engagement feature spec
 
-## Plans (active implementation plans)
+## Plans (in-flight only — finished plans move to `archive/plans/`)
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
-- [plans/active/2026-04-13-docs-reorganization.md](./archive/plans/2026-04-13-docs-reorganization.md) — this reorganization plan [status: in-progress]
-- [plans/active/2026-04-14-mobile-marketplace-redesign.md](./archive/plans/2026-04-14-mobile-marketplace-redesign.md) — 14-task implementation plan for the mobile marketplace redesign
-- [plans/active/marketplace-ux-redesign.md](./archive/plans/marketplace-ux-redesign.md) — marketplace filter bar + featured/recent/trending strips [status: planned]
-- [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening [status: planned]
-- [plans/active/notifications-feature.md](./archive/plans/notifications-feature.md) — full notifications system (DB + shared API + push delivery) [status: planned]
-- [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — Phase 1 post-audit remediation tasks [status: planned]
-- [plans/active/phase1-remediation-github-issues.md](./archive/plans/phase1-remediation-github-issues.md) — copy-paste GitHub issue cards for Phase 1 remediation
-- [plans/active/2026-04-20-pr1-social-identity.md](./archive/plans/2026-04-20-pr1-social-identity.md) — PR 1 of "Your Community Today": follow graph + extended profile [status: planned]
-- [plans/active/2026-04-20-pr2-metro-pulse.md](./archive/plans/2026-04-20-pr2-metro-pulse.md) — PR 2 of "Your Community Today": Metro Pulse card strip [status: implemented]
-- [plans/active/2026-04-20-pr3-helper-score-social-cards.md](./archive/plans/2026-04-20-pr3-helper-score-social-cards.md) — PR 3 of "Your Community Today": helper score + find_your_people + top_helper cards [status: implemented]
-- [plans/active/2026-06-07-postgres-15-to-17-upgrade.md](./archive/plans/2026-06-07-postgres-15-to-17-upgrade.md) — Postgres version sync note: remote already on 17 GA; local config.toml + docs synced to 17 [status: in-progress]
-- [plans/active/2026-09-08-documentation-system.md](plans/active/2026-09-08-documentation-system.md) — 13-task plan: docs:check tooling, 157-link cleanup, lifecycle audit, GitHub templates [status: in-progress]
+- [plans/active/2026-09-08-documentation-system.md](plans/active/2026-09-08-documentation-system.md) — 13-task plan: docs:check tooling, link cleanup, lifecycle audit, GitHub templates
+- [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
+- [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 
-## Specs (active design specs)
+## Specs (point-in-time designs — archived when the work ships)
 
-- [specs/2026-04-13-docs-reorganization-design.md](./archive/specs/2026-04-13-docs-reorganization-design.md) — design spec for this docs reorganization
-- [specs/2026-04-13-marketplace-listing-details-enhancement-design.md](./archive/specs/2026-04-13-marketplace-listing-details-enhancement-design.md) — marketplace listing detail page Split View redesign (web + mobile)
-- [specs/2026-04-14-mobile-marketplace-redesign-design.md](./archive/specs/2026-04-14-mobile-marketplace-redesign-design.md) — spec for the 4-tab mobile marketplace home redesign (Sponsored · Featured · Trending · All Listings)
-- [specs/2026-04-20-your-community-today-design.md](./archive/specs/2026-04-20-your-community-today-design.md) — "Your Community Today": Metro Pulse card strip + Social Identity (follow graph, extended profile, helper score)
 - [specs/2026-09-08-documentation-system-design.md](specs/2026-09-08-documentation-system-design.md) — docs organization + CI-enforced currency (link/index/lifecycle checks, SOP trigger matrix, GitHub templates)
-- [plans/active/2026-04-13-marketplace-listing-details-enhancement.md](./archive/plans/2026-04-13-marketplace-listing-details-enhancement.md) — implementation plan for Split View listing detail redesign
 
 ## User journeys
 
-Documented user flows for every major Phase 1 surface. See [user-journeys/README.md](user-journeys/README.md) for the full index across 14 journeys in 6 categories (onboarding, post creation, discovery, communication, safety, management).
+Index and category breakdown: [user-journeys/README.md](user-journeys/README.md) — 7 written of 14 planned.
+
+- [user-journeys/onboarding/01-signup-and-onboarding.md](user-journeys/onboarding/01-signup-and-onboarding.md) — account creation through metro assignment
+- [user-journeys/location/01-location-permission-and-detection.md](user-journeys/location/01-location-permission-and-detection.md) — location permission, detection, and switching
+- [user-journeys/post-creation/03-creating-a-post.md](user-journeys/post-creation/03-creating-a-post.md) — the unified tag-based post creation flow
+- [user-journeys/discovery/02-browsing-and-engaging-with-posts.md](user-journeys/discovery/02-browsing-and-engaging-with-posts.md) — feed browsing, likes, comments
+- [user-journeys/discovery/13-event-discovery-and-rsvp.md](user-journeys/discovery/13-event-discovery-and-rsvp.md) — finding events and RSVPing
+- [user-journeys/communication/09-in-app-chat.md](user-journeys/communication/09-in-app-chat.md) — starting and holding a conversation
+- [user-journeys/management/14-event-creation-and-management.md](user-journeys/management/14-event-creation-and-management.md) — creating and managing an event
 
 ## Wireframes
 
-Screen-by-screen wireframes for Phase 1 UI. See [wireframes/](wireframes/) — 18+ screen folders, each with its own markdown spec plus HTML preview.
+Each folder holds a markdown spec plus an HTML preview.
+
+- [wireframes/00-design-system-foundation/00-design-system-foundation.md](wireframes/00-design-system-foundation/00-design-system-foundation.md) — colors, spacing, typography, component primitives
+- [wireframes/01-welcome-screen/01-welcome-screen.md](wireframes/01-welcome-screen/01-welcome-screen.md) — first-run welcome
+- [wireframes/02-signup-method-selection/02-signup-method-selection.md](wireframes/02-signup-method-selection/02-signup-method-selection.md) — email vs Google sign-up
+- [wireframes/03-zip-code-entry/03-zip-code-entry.md](wireframes/03-zip-code-entry/03-zip-code-entry.md) — ZIP entry for metro mapping
+- [wireframes/04-metro-confirmation/04-metro-confirmation.md](wireframes/04-metro-confirmation/04-metro-confirmation.md) — confirm detected metro area
+- [wireframes/05-onboarding-tutorial/05-onboarding-tutorial.md](wireframes/05-onboarding-tutorial/05-onboarding-tutorial.md) — first-run tutorial carousel
+- [wireframes/06-home-screen-level-0/06-home-screen-level-0.md](wireframes/06-home-screen-level-0/06-home-screen-level-0.md) — home feed as seen by a Level 0 account
+- [wireframes/07-conversation-list/07-conversation-list.md](wireframes/07-conversation-list/07-conversation-list.md) — chat inbox
+- [wireframes/08-message-thread/08-message-thread.md](wireframes/08-message-thread/08-message-thread.md) — single conversation thread
+- [wireframes/09-post-detail/09-post-detail.md](wireframes/09-post-detail/09-post-detail.md) — post detail with comments
+- [wireframes/10-profile-photo-upload/10-profile-photo-upload.md](wireframes/10-profile-photo-upload/10-profile-photo-upload.md) — avatar upload and crop
+- [wireframes/11-location-permission-screen/11-location-permission-screen.md](wireframes/11-location-permission-screen/11-location-permission-screen.md) — OS location permission prompt
+- [wireframes/12-location-change-prompt/12-location-change-prompt.md](wireframes/12-location-change-prompt/12-location-change-prompt.md) — prompt when detected metro differs from saved
+- [wireframes/13-location-switcher/13-location-switcher.md](wireframes/13-location-switcher/13-location-switcher.md) — switching between saved locations
+- [wireframes/14-create-post/14-create-post.md](wireframes/14-create-post/14-create-post.md) — post composer with tag selector
+- [wireframes/15-notifications/15-notifications.md](wireframes/15-notifications/15-notifications.md) — notification list and deep links
+- [wireframes/16-events-list/16-events-list.md](wireframes/16-events-list/16-events-list.md) — events browse list
+- [wireframes/16-create-event/16-create-event.md](wireframes/16-create-event/16-create-event.md) — event creation form
+- [wireframes/17-event-detail/17-event-detail.md](wireframes/17-event-detail/17-event-detail.md) — event detail with RSVP
+
+Exploratory HTML/CSS prototypes (marketplace layout options, design-taste notes) live
+in `wireframes/_prototypes/`. The underscore prefix keeps them out of this index.
 
 ## Decisions (ADRs)
 
@@ -80,8 +109,13 @@ Screen-by-screen wireframes for Phase 1 UI. See [wireframes/](wireframes/) — 1
 
 ## Archive
 
-Completed plans, shipped specs, historical progress docs. See [archive/](archive/). Notable contents:
-- `archive/PROGRESS.md` — historical implementation tracker (superseded by roadmap + memory)
+Completed plans, shipped specs, and historical progress docs. Kept rather than deleted
+so "how did we do X" stays answerable. Indexed at folder granularity — individual
+archived files are exempt from the index check, but their links are still verified.
+
+See [archive/](archive/):
+
+- `archive/PROGRESS.md` — historical implementation tracker (superseded by roadmap)
 - `archive/marketplace-category-consolidation-plan.md` — shipped as migration 016
-- `archive/plans/` — 6 completed plans (events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display)
-- `archive/specs/` — 2 design specs for shipped features (drop-is-featured, fix-promotions-display)
+- `archive/plans/` — 16 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, and the Postgres 15→17 sync
+- `archive/specs/` — 6 design specs for shipped features

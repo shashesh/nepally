@@ -18,10 +18,20 @@ Nepally (US Nepal Help Network) is a utility-first community platform for the Ne
 
 The canonical map of every document in this repo is **[docs/INDEX.md](./docs/INDEX.md)**. It's a flat, greppable list — search it first before reading through the folder tree. The index covers guides, architecture, product specs, plans, and decisions. Completed plans live in `docs/archive/`.
 
-Rules for keeping the index honest:
-- Adding a doc? Add a one-line entry to `docs/INDEX.md` in the same commit.
-- Moving or archiving a doc? Update `docs/INDEX.md` in the same commit.
+**The canonical procedure is [docs/guides/documentation-workflow.md](./docs/guides/documentation-workflow.md)** — it holds the trigger matrix for which doc to update when.
+
+Rules for keeping the index honest. The first three are **CI-enforced** — `npm run docs:check` fails the PR, it is not a reminder:
+- Adding, moving, or retiring a doc? Update `docs/INDEX.md` in the same commit.
+- Moving a doc that others link to? Fix the linking docs — broken relative links fail CI.
+- Finishing a plan or spec? Set `status: implemented` in its frontmatter and `git mv` it to `docs/archive/`. Terminal status outside `archive/` fails CI.
+
+Filing rules:
+- Feature behavior → `docs/product/features/` (evergreen — what the feature IS today).
+- One change's design → `docs/specs/` (dated, archived when it ships).
+- Plans and specs carry frontmatter: `title`, `status` (`planned` | `in-progress` | `implemented` | `abandoned`), `created`.
 - Superpowers brainstorming/writing-plans: save specs to `docs/specs/` and plans to `docs/plans/active/` (not `docs/superpowers/...`).
+
+Run `npm run docs:check` before opening a PR.
 
 ## Core Architecture Principles
 
