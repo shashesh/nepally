@@ -21,6 +21,27 @@ function expectsSingleObject(route: Route): boolean {
   return typeof acceptHeader === 'string' && acceptHeader.includes('application/vnd.pgrst.object+json');
 }
 
+/**
+ * Intercepts the get_my_profile() RPC (migration 036) that AuthContext and
+ * createUserProfile() call for the caller's own row instead of a GET on
+ * /rest/v1/users. Without this route the request falls through to the real
+ * Supabase project — the fake e2e session fails auth there, the profile
+ * fetch errors, and the app never considers the user logged in.
+ */
+async function mockGetMyProfile(page: Page): Promise<void> {
+  await page.route('**/rest/v1/rpc/get_my_profile**', async (route) => {
+    // get_my_profile() is RETURNS SETOF, so PostgREST replies with an array
+    // unless the caller asked for a single object (.maybeSingle()/.single()
+    // sets the vnd.pgrst.object+json Accept header) — match real behavior
+    // instead of hardcoding the shape the one current call site happens to use.
+    await route.fulfill({
+      status: 200,
+      headers: JSON_HEADERS,
+      body: JSON.stringify(expectsSingleObject(route) ? MOCK_USER_PROFILE : [MOCK_USER_PROFILE]),
+    });
+  });
+}
+
 function buildMockPostRows() {
   return [...MOCK_POSTS, MOCK_POST_OTHER_AUTHOR].map((post) => ({
     ...post,
@@ -89,6 +110,8 @@ function filterMarketplaceListingsByRequest<T extends object>(requestUrl: string
  */
 export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
   const marketplaceState = buildMarketplaceState();
+
+  await mockGetMyProfile(page);
 
   // Auth: getSession / getUser
   await page.route('**/auth/v1/token**', async (route) => {
@@ -380,6 +403,7 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
  * Intercepts the Supabase sign-in endpoint to simulate a successful email login.
  */
 export async function mockSignIn(page: Page, email = MOCK_USER_EMAIL): Promise<void> {
+  await mockGetMyProfile(page);
   await page.route('**/auth/v1/token?grant_type=password**', async (route) => {
     const session = makeFakeSession(MOCK_USER_ID, email);
     await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify(session) });
@@ -405,6 +429,7 @@ export async function mockSignIn(page: Page, email = MOCK_USER_EMAIL): Promise<v
  * Intercepts the Supabase sign-up endpoint to simulate a successful email signup.
  */
 export async function mockSignUp(page: Page, email = MOCK_USER_EMAIL): Promise<void> {
+  await mockGetMyProfile(page);
   await page.route('**/auth/v1/signup**', async (route) => {
     const session = makeFakeSession(MOCK_USER_ID, email);
     await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify(session) });
