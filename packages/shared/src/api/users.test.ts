@@ -149,6 +149,24 @@ describe('users api', () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it('updateUserProfile fails loudly when the read-back does not match the requested user', async () => {
+    const query = { update: vi.fn(), eq: vi.fn() };
+    query.update.mockReturnValue(query);
+    query.eq.mockResolvedValue({ error: null });
+    // get_my_profile() is driven by auth.uid(), not the userId argument — if a
+    // mismatched userId meant the write's RLS policy touched zero rows, this
+    // would otherwise return the caller's own unrelated profile as a "success".
+    const { rpc } = mockOwnProfileRpc({ id: 'someone-else' });
+    const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+
+    const result = await updateUserProfile(supabase, 'user-2', { bio: 'x' });
+
+    expect(result.error).toBeDefined();
+    expect(result.error?.message).toContain('someone-else');
+    expect(result.error?.message).toContain('user-2');
+    expect(result.data).toBeUndefined();
+  });
+
   it('updates user location and re-reads the own row via RPC', async () => {
     const query = { update: vi.fn(), eq: vi.fn(), select: vi.fn() };
     query.update.mockReturnValue(query);
@@ -165,6 +183,21 @@ describe('users api', () => {
     );
     expect(query.select).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledWith('get_my_profile');
+  });
+
+  it('updateUserLocation fails loudly when the read-back does not match the requested user', async () => {
+    const query = { update: vi.fn(), eq: vi.fn() };
+    query.update.mockReturnValue(query);
+    query.eq.mockResolvedValue({ error: null });
+    const { rpc } = mockOwnProfileRpc({ id: 'someone-else' });
+    const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+
+    const result = await updateUserLocation(supabase, 'user-2', '75001', '19100');
+
+    expect(result.error).toBeDefined();
+    expect(result.error?.message).toContain('someone-else');
+    expect(result.error?.message).toContain('user-2');
+    expect(result.data).toBeUndefined();
   });
 
   it('creates user profile with trust level 0 and returns the row via RPC', async () => {
@@ -198,6 +231,20 @@ describe('users api', () => {
     });
     expect(query.select).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledWith('get_my_profile');
+  });
+
+  it('createUserProfile fails loudly when the read-back does not match the requested user', async () => {
+    const query = { insert: vi.fn() };
+    query.insert.mockResolvedValue({ error: null });
+    const { rpc } = mockOwnProfileRpc({ id: 'someone-else' });
+    const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+
+    const result = await createUserProfile(supabase, 'new-user', 'new@nusa.com', 'New User');
+
+    expect(result.error).toBeDefined();
+    expect(result.error?.message).toContain('someone-else');
+    expect(result.error?.message).toContain('new-user');
+    expect(result.data).toBeUndefined();
   });
 
   it('markUserVerified calls the mark_user_verified RPC and returns the profile', async () => {

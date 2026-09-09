@@ -24,6 +24,9 @@ function assertCondition(condition: unknown, message: string): void {
   }
 }
 
+/** Postgres insufficient_privilege — what an RLS WITH CHECK violation surfaces as. */
+const RLS_VIOLATION_CODE = '42501';
+
 async function createAuthedClient(
   url: string,
   anonKey: string,
@@ -212,6 +215,11 @@ async function main(): Promise<void> {
       });
 
     assertCondition(!!strangerSelfJoin.error, 'Stranger self-join into conversation_participants should be denied by RLS');
+    // Insist on the RLS violation specifically so a transient/network error cannot masquerade as a pass.
+    assertCondition(
+      strangerSelfJoin.error?.code === RLS_VIOLATION_CODE,
+      `Stranger self-join was rejected for an unexpected reason: ${strangerSelfJoin.error?.code} ${strangerSelfJoin.error?.message}`
+    );
 
     const strangerMembership = await service
       .from('conversation_participants')

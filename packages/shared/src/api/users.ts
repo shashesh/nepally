@@ -40,6 +40,31 @@ async function fetchOwnProfile(
 }
 
 /**
+ * Read-back for a write that targeted a specific `userId`. get_my_profile()
+ * is driven by auth.uid(), not by the `userId` a caller passed to
+ * update/insert — if a mismatched userId meant the write's RLS policy
+ * silently matched zero rows (no PostgREST error on an UPDATE that touches
+ * nothing), this would otherwise return the caller's own unrelated profile
+ * as if the write had succeeded. Fail loudly instead.
+ */
+async function fetchOwnProfileForUser(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ data: User | null; error: Error | null }> {
+  const { data, error } = await fetchOwnProfile(supabase);
+  if (error) return { data: null, error };
+  if (data && data.id !== userId) {
+    return {
+      data: null,
+      error: new Error(
+        `Profile read-back (${data.id}) does not match the requested user (${userId}); the write may not have applied`
+      ),
+    };
+  }
+  return { data, error: null };
+}
+
+/**
  * Get another member's public profile by ID.
  * Only public-profile columns are returned — see PUBLIC_USER_COLUMNS.
  * For the signed-in user's own full row use getMyProfile().
@@ -113,7 +138,7 @@ export async function updateUserLocation(
 
     if (error) throw error;
 
-    const { data, error: readError } = await fetchOwnProfile(supabase);
+    const { data, error: readError } = await fetchOwnProfileForUser(supabase, userId);
     if (readError) throw readError;
     if (!data) throw new Error('Failed to update user');
 
@@ -158,7 +183,7 @@ export async function updateUserProfile(
 
     if (error) throw error;
 
-    const { data, error: readError } = await fetchOwnProfile(supabase);
+    const { data, error: readError } = await fetchOwnProfileForUser(supabase, userId);
     if (readError) throw readError;
     if (!data) throw new Error('Failed to update profile');
 
@@ -270,7 +295,7 @@ export async function createUserProfile(
 
     if (error) throw error;
 
-    const { data, error: readError } = await fetchOwnProfile(supabase);
+    const { data, error: readError } = await fetchOwnProfileForUser(supabase, userId);
     if (readError) throw readError;
     if (!data) throw new Error('Failed to create profile');
 

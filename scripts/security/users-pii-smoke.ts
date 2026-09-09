@@ -15,6 +15,7 @@
  * Env: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { PUBLIC_USER_COLUMNS } from '@nepally/shared';
 
 type UserFixture = {
   id: string;
@@ -22,12 +23,6 @@ type UserFixture = {
   password: string;
   fullName: string;
 };
-
-/** Mirrors PUBLIC_USER_COLUMNS in packages/shared/src/constants/users.ts. */
-const PUBLIC_COLUMNS =
-  'id, full_name, profile_photo, bio, hometown_district, college, years_in_us, languages, ' +
-  'follower_count, following_count, metro_area_id, trust_level, is_premium, is_moderator, ' +
-  'is_banned, posts_count, helpful_votes_received, created_at, updated_at, last_active_at';
 
 const PII_COLUMNS = ['email', 'phone', 'zip_code', 'ban_reason', 'reports_received'];
 
@@ -174,7 +169,7 @@ async function main(): Promise<void> {
       await expectColumnRead(anon, target.id, column, 'anon', true);
     }
     await expectColumnRead(anon, target.id, '*', 'anon', true);
-    const anonPublic = await expectColumnRead(anon, target.id, PUBLIC_COLUMNS, 'anon', false);
+    const anonPublic = await expectColumnRead(anon, target.id, PUBLIC_USER_COLUMNS, 'anon', false);
     assertCondition(anonPublic?.full_name === target.fullName, 'anon should read public full_name');
 
     // 2. another signed-in user: same restrictions.
@@ -193,7 +188,7 @@ async function main(): Promise<void> {
     );
 
     // 3. public columns remain readable for authenticated users.
-    const viewerPublic = await expectColumnRead(viewerClient, target.id, PUBLIC_COLUMNS, 'viewer', false);
+    const viewerPublic = await expectColumnRead(viewerClient, target.id, PUBLIC_USER_COLUMNS, 'viewer', false);
     assertCondition(viewerPublic?.trust_level === 1, 'viewer should read public trust_level');
 
     // 4. own full row via RPC; anon cannot call it.

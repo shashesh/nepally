@@ -59,17 +59,20 @@ function buildExpoHeaders(): HeadersInit {
 
 /**
  * Constant-time string comparison so the service-role check does not leak
- * how many leading characters of the key matched.
+ * how many leading characters of the key matched. No early return on length
+ * mismatch — that would branch on public-length information before the
+ * comparison loop runs; the length difference is folded into the same
+ * accumulator instead, and out-of-range indices compare against 0.
  */
 function timingSafeEqual(a: string, b: string): boolean {
   const encoder = new TextEncoder();
   const bytesA = encoder.encode(a);
   const bytesB = encoder.encode(b);
-  if (bytesA.length !== bytesB.length) return false;
+  const maxLength = Math.max(bytesA.length, bytesB.length);
 
-  let diff = 0;
-  for (let i = 0; i < bytesA.length; i++) {
-    diff |= bytesA[i] ^ bytesB[i];
+  let diff = bytesA.length ^ bytesB.length;
+  for (let i = 0; i < maxLength; i++) {
+    diff |= (bytesA[i] ?? 0) ^ (bytesB[i] ?? 0);
   }
   return diff === 0;
 }
