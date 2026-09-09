@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { getUserById } from '@nepally/shared';
+import { getMyProfile } from '@nepally/shared';
 import type { User } from '@nepally/shared';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { requestWebPushPermission } from '../lib/webPush';
@@ -29,9 +29,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const pushRegistrationAttemptedUserIdRef = useRef<string | null>(null);
 
-  const fetchUserProfile = useCallback(async (userId: string) => {
+  // Own row (email, phone, zip_code, moderation flags) is only readable through
+  // the get_my_profile RPC — clients hold column-level SELECT on users (036).
+  const fetchUserProfile = useCallback(async () => {
     try {
-      const result = await getUserById(supabase, userId);
+      const result = await getMyProfile(supabase);
       if (result.data) {
         setUser(result.data);
       }
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } = await supabase.auth.getSession();
       if (session?.user) {
         setSupabaseUser(session.user);
-        await fetchUserProfile(session.user.id);
+        await fetchUserProfile();
       }
     } catch (error) {
       console.error('Failed to load user:', error);
@@ -110,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pushRegistrationAttemptedUserIdRef.current = null;
       } else if (session?.user) {
         setSupabaseUser(session.user);
-        await fetchUserProfile(session.user.id);
+        await fetchUserProfile();
       }
     });
 
@@ -124,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { user: sbUser },
     } = await supabase.auth.getUser();
     if (sbUser) {
-      await fetchUserProfile(sbUser.id);
+      await fetchUserProfile();
     }
   }
 

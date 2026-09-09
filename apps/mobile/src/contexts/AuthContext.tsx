@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../config/supabase';
+import { getMyProfile } from '@nepally/shared';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { saveUserData, clearAllData } from '../utils/storage';
 import { registerForPushNotificationsAsync, isExpoGo } from '../services/notifications';
@@ -138,12 +139,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      // Fetch user profile from database
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', supabaseUser.id)
-        .maybeSingle();
+      // Fetch own profile through the get_my_profile RPC — email, phone,
+      // zip_code are not readable via the REST column grant (migration 036).
+      const { data: userData, error } = await getMyProfile(supabase);
 
       // Profile not yet created (e.g. auth state fires before createUserProfile completes during signup)
       if (error) throw error;

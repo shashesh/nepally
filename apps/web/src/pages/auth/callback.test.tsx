@@ -10,7 +10,7 @@ const callbackMocks = vi.hoisted(() => ({
   createUserProfileMock: vi.fn(),
   markEmailVerifiedMock: vi.fn(),
   markGoogleVerifiedMock: vi.fn(),
-  getUserByIdMock: vi.fn(),
+  getMyProfileMock: vi.fn(),
 }));
 
 vi.mock('next/router', () => ({
@@ -30,7 +30,7 @@ vi.mock('@nepally/shared', () => ({
   createUserProfile: callbackMocks.createUserProfileMock,
   markEmailVerified: callbackMocks.markEmailVerifiedMock,
   markGoogleVerified: callbackMocks.markGoogleVerifiedMock,
-  getUserById: callbackMocks.getUserByIdMock,
+  getMyProfile: callbackMocks.getMyProfileMock,
 }));
 
 vi.mock('next/head', () => ({
@@ -73,7 +73,7 @@ describe('AuthCallbackPage', () => {
     callbackMocks.createUserProfileMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
     callbackMocks.markEmailVerifiedMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
     callbackMocks.markGoogleVerifiedMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
-    callbackMocks.getUserByIdMock.mockResolvedValue({ data: null, error: { message: 'Not found' } });
+    callbackMocks.getMyProfileMock.mockResolvedValue({ data: null, error: { message: 'Not found' } });
   });
 
   afterEach(() => {
@@ -95,8 +95,8 @@ describe('AuthCallbackPage', () => {
       }
     );
 
-    // New user: first getUserById returns null, second returns profile with no metro
-    callbackMocks.getUserByIdMock
+    // New user: first getMyProfile returns null, second returns profile with no metro
+    callbackMocks.getMyProfileMock
       .mockResolvedValueOnce({ data: null, error: null })
       .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: null }, error: null });
 
@@ -130,7 +130,7 @@ describe('AuthCallbackPage', () => {
       }
     );
 
-    callbackMocks.getUserByIdMock
+    callbackMocks.getMyProfileMock
       .mockResolvedValueOnce({ data: null, error: null })
       .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: null }, error: null });
 
@@ -156,7 +156,7 @@ describe('AuthCallbackPage', () => {
     );
 
     // Returning user: profile exists with metro_area_id set
-    callbackMocks.getUserByIdMock
+    callbackMocks.getMyProfileMock
       .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: '35620' }, error: null })
       .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: '35620' }, error: null });
 
@@ -215,7 +215,7 @@ describe('AuthCallbackPage', () => {
       }
     );
 
-    callbackMocks.getUserByIdMock
+    callbackMocks.getMyProfileMock
       .mockResolvedValueOnce({ data: null, error: null })
       .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: null }, error: null });
 

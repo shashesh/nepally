@@ -84,6 +84,17 @@ CREATE INDEX idx_users_trust_level ON users(trust_level);
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can read user profiles (public data)
+-- NOTE (migration 036): rows are public but COLUMNS are not. anon/authenticated
+-- hold a column-level SELECT grant covering only the public-profile columns
+-- (id, full_name, profile_photo, bio, hometown_district, college, years_in_us,
+-- languages, follower_count, following_count, metro_area_id, trust_level,
+-- is_premium, is_moderator, is_banned, posts_count, helpful_votes_received,
+-- created_at, updated_at, last_active_at). email, phone, zip_code, ban_reason,
+-- reports_received and the *_verified flags are withheld; `select('*')` and
+-- `update ... RETURNING *` from a client fail with "permission denied".
+-- The caller's own full row comes from the get_my_profile() SECURITY DEFINER
+-- RPC. Shared API: getUserById() -> PublicUser, getMyProfile() -> User.
+-- Live check: `npm run test:security:users-pii`.
 CREATE POLICY "Users are viewable by everyone"
   ON users FOR SELECT
   USING (true);
@@ -594,10 +605,18 @@ CREATE POLICY "Users can view own participation"
   ON conversation_participants FOR SELECT
   USING (user_id = auth.uid());
 
--- Users can insert themselves as participants
-CREATE POLICY "Users can add themselves to conversations"
+-- Only the conversation's creator or an existing participant may add rows.
+-- NOTE (migration 036): the original policy accepted any row where
+-- user_id = auth.uid(), which let any user self-join a conversation by UUID
+-- and read its history. is_conversation_creator() / is_conversation_participant()
+-- are SECURITY DEFINER helpers. The client flow (insert conversation -> add
+-- self -> add peer) still passes. Live check: `npm run test:security:chat-rls`.
+CREATE POLICY "Conversation members can add participants"
   ON conversation_participants FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (
+    is_conversation_creator(conversation_id, (SELECT auth.uid()))
+    OR is_conversation_participant(conversation_id, (SELECT auth.uid()))
+  );
 
 -- Users can update their own participation (unread counts)
 CREATE POLICY "Users can update own participation"
