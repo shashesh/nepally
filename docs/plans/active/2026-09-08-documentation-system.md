@@ -531,7 +531,13 @@ Expected: PASS — 6 tests
 - [ ] **Step 6: Sanity-check against the real repo**
 
 Run: `node -e "console.log(require('./scripts/docs/check-links').checkLinks(process.cwd()).length)"`
-Expected: a number in the 150–160 range (the spec measured **157** on `master`). This confirms the checker sees the real drift. Do **not** fix anything yet — that is Task 8.
+Expected: **115**. This confirms the checker sees the real drift. Do **not** fix anything yet — that is Task 8.
+
+> **Measurement note.** An early shell-based estimate said 157, and a first cut of the
+> checker said 173. Both were inflated: they counted illustrative links inside fenced
+> code blocks, of which this repo's plans and guides have many. `extractLinks` skips
+> fenced blocks and inline code spans, which is why the real figure is 115 across 30
+> files. If you get 173, fence skipping has regressed.
 
 - [ ] **Step 7: Commit**
 
@@ -541,7 +547,7 @@ git commit -m "feat(docs-check): add relative link checker
 
 Validates every relative .md/.html link across docs/ (archive included)
 plus the three root docs. Strips anchors before resolving; skips
-external schemes. Reports 157 pre-existing violations on this tree.
+external schemes. Reports 115 pre-existing violations on this tree.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
@@ -1172,7 +1178,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Task 8: Fix the 157 broken links
+## Task 8: Fix the 115 broken links
 
 **Files:** many under `docs/` — driven by checker output, not by a fixed list.
 
@@ -1235,7 +1241,7 @@ Expected: `0`
 
 ```bash
 git add docs
-git commit -m "fix(docs): repair 157 broken internal links
+git commit -m "fix(docs): repair 115 broken internal links
 
 Three causes: (a) wireframes and journeys still using pre-reorg flat
 sibling paths, (b) links to docs that changed folders in the April
@@ -1480,7 +1486,7 @@ How documentation stays current in this repo, and what happens if it does not.
 Some documentation rules are **enforced by CI** and cannot be skipped. Others are
 **prompts in the PR template** and rely on you. This guide is explicit about which
 is which, because treating a checkbox as an enforcement mechanism is how this
-repo accumulated 157 broken links and a three-month-stale index.
+repo accumulated 115 broken links and a three-month-stale index.
 
 Run `npm run docs:check` before you open a PR.
 
@@ -1986,7 +1992,7 @@ Per CLAUDE.md, `git push` requires explicit user confirmation. Report the branch
 |---|---|---|
 | Checker unit tests | `npm run docs:test` | pass, ~35 tests / 6 files |
 | Repo content | `npm run docs:check` | `exit=0`, 0 violations |
-| Broken-link count | driven by `checkLinks` | 157 → 0 |
+| Broken-link count | driven by `checkLinks` | 115 → 0 |
 | Lifecycle | `checkLifecycle` | `[]` |
 | Index | `checkIndex` | `[]` |
 | Existing gates | `npm run lint`, `type-check`, `test` | unchanged, pass |

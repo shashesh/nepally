@@ -47,7 +47,7 @@ Measured on `master` at commit `3b51c43`, 2026-09-08.
 
 | Finding | Measurement |
 |---|---|
-| Broken internal links | **157**, across 66 active (non-archive) docs |
+| Broken internal links | **115**, across 30 files |
 | INDEX staleness | `Last verified: 2026-06-07` — 3 months; no entry for migrations 034–036, the four `test:security:*` scripts, or the security-hardening arc |
 | Finished plans still in `plans/active/` | `2026-04-20-pr2-metro-pulse.md` and `2026-04-20-pr3-helper-score-social-cards.md`, both self-labelled `[status: implemented]` |
 | Plans that never closed | `2026-04-13-docs-reorganization.md` — the plan to fix docs — still `[status: in-progress]` after 5 months |
@@ -233,9 +233,22 @@ unparseable and duplicated; it moves into frontmatter, and INDEX stops carrying 
 
 ### 7.1 Placement and constraints
 
-`scripts/docs/`, plain Node with **no new dependencies**, following the existing
-`scripts/guard-no-catch-any.js` precedent. Node 20 (per `.nvmrc` and CI) provides
-`node:test` and `fs.globSync`, which is all this needs.
+`scripts/docs/`, plain **CommonJS** Node with **no new dependencies**, following the
+existing `scripts/guard-no-catch-any.js` precedent exactly (that file uses `require`,
+and the root `package.json` declares no `"type": "module"`).
+
+Runtime targets, which constrain what may be used:
+
+| Source | Value |
+|---|---|
+| `.nvmrc` | `24` |
+| CI (`ci-job.yml`) | `node-version: 24` |
+| `package.json` `engines.node` | `>=20.19.0` |
+
+The engines **floor of 20.19** governs, not the 24 used in CI. Consequence:
+`node:test` is fine (stable since 20), but **`fs.globSync` must not be used** — it
+landed in Node 22. Directory traversal uses a recursive `walk()` with an ignore set,
+copied in shape from `guard-no-catch-any.js`.
 
 ```
 scripts/docs/
@@ -360,7 +373,27 @@ on:
     paths: ['**/*.md', 'docs/**', 'scripts/docs/**']
 ```
 
-Single job: checkout, setup-node 20 with npm cache, `npm ci`, `npm run docs:check`.
+The job body **reuses the existing `ci-job.yml` reusable workflow** rather than
+hand-rolling checkout/setup-node/`npm ci` steps:
+
+```yaml
+jobs:
+  docs_test:
+    name: Docs checker tests
+    uses: ./.github/workflows/ci-job.yml
+    with:
+      command: npm run docs:test
+  docs_check:
+    name: Docs check
+    uses: ./.github/workflows/ci-job.yml
+    with:
+      command: npm run docs:check
+```
+
+This keeps Node version, npm caching, and timeout policy in one place — changing
+`ci-job.yml` updates the docs workflow for free. The path filter lives in the caller's
+`on:` block, which is the only part `ci-job.yml` cannot express.
+
 **Blocking** — the cleanup in §10 lands in the same PR, so the repo is green when it
 first runs.
 
@@ -493,7 +526,7 @@ effort.
 
 | # | Item | Detail |
 |---|---|---|
-| 1 | **157 broken links** | Mostly mechanical: wireframes and user-journeys use pre-reorg flat paths. Fix by resolution rules, not blind find-replace — some targets genuinely do not exist and need the link removed rather than repointed. |
+| 1 | **115 broken links** | Mostly mechanical: wireframes and user-journeys use pre-reorg flat paths. Fix by resolution rules, not blind find-replace — some targets genuinely do not exist and need the link removed rather than repointed. |
 | 2 | **Archive finished plans** | `2026-04-20-pr2-metro-pulse`, `2026-04-20-pr3-helper-score-social-cards` (both `implemented`); `2026-04-13-docs-reorganization` + its spec (superseded by this one). `git mv` to preserve history. |
 | 3 | **Audit remaining `plans/active/`** | `plans/active/` holds 12 files; items 2 and 4 archive 4 of them, leaving **8** to audit. Each gets a real status determined by reading it against the code — not assumed. Implemented ones archive; genuinely planned ones get frontmatter. |
 | 4 | **Archive `phase1-remediation-github-issues.md`** | Superseded by issue templates (§8.3). |
@@ -545,7 +578,7 @@ tests. They are verified by observing the first PR that runs them.
 
 | Risk | Mitigation |
 |---|---|
-| **Fixing 157 links mechanically introduces wrong-but-resolving links** | Some targets do not exist at all (e.g. 10 journeys in the journeys README). Each link is resolved by intent, not by pattern match; where no correct target exists the link is removed and the gap stated. Reviewed as its own commit, separate from tooling. |
+| **Fixing 115 links mechanically introduces wrong-but-resolving links** | Some targets do not exist at all (e.g. 10 journeys in the journeys README). Each link is resolved by intent, not by pattern match; where no correct target exists the link is removed and the gap stated. Reviewed as its own commit, separate from tooling. |
 | **Blocking CI on day one blocks unrelated work** | The cleanup lands in the same PR as the workflow, so `master` is green the moment enforcement starts. If §10 cannot be completed, the workflow ships warn-only (`continue-on-error: true`) and flips in a follow-up — the fallback, not the plan. |
 | **`check-index` becomes noisy for scratch docs** | The exemption list (`archive/**`, `INDEX.md`, `_template.md`, `_prototypes/**`) is explicit and extensible. Underscore-prefixed paths are the escape hatch. |
 | **Hand-rolled frontmatter parser mis-parses valid YAML** | The contract is flat `key: value` only, documented in §6, enforced by `check-lifecycle` rejecting unparseable frontmatter loudly rather than silently skipping. |
