@@ -1,0 +1,47 @@
+name: Bug report
+description: Something behaves incorrectly.
+labels: [bug]
+body:
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Mobile (Expo)
+        - Web (Next.js)
+        - Shared package
+        - Supabase / database
+        - CI
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Sign in as a Level 0 user
+        2. Open the marketplace tab
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+  - type: dropdown
+    id: trust_level
+    attributes:
+      label: Trust level of the account, if relevant
+      options:
+        - Not relevant
+        - Level 0 (new)
+        - Level 1 (verified)
+        - Level 2 (contributor)
+        - Moderator
+  - type: input
+    id: metro
+    attributes:
+      label: Metro area, if relevant
+      placeholder: e.g. Dallas-Fort Worth

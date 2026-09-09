@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation index
+    url: https://github.com/shashesh/nepally/blob/master/docs/INDEX.md
+    about: Every doc in this repo with a one-line purpose. Search here first.
+  - name: Documentation workflow
+    url: https://github.com/shashesh/nepally/blob/master/docs/guides/documentation-workflow.md
+    about: Which doc to update when, and what npm run docs:check enforces.

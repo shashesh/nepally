@@ -1,0 +1,35 @@
+name: Docs
+
+# Reuses ci-job.yml so Node version, npm caching, and timeout policy stay in one
+# place. The path filter lives here because it is the only part the reusable
+# workflow cannot express.
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '**/*.md'
+      - 'docs/**'
+      - 'scripts/docs/**'
+      - '.github/workflows/docs.yml'
+  push:
+    branches:
+      - master
+    paths:
+      - '**/*.md'
+      - 'docs/**'
+      - 'scripts/docs/**'
+
+jobs:
+  docs_test:
+    name: Docs checker tests
+    uses: ./.github/workflows/ci-job.yml
+    with:
+      command: npm run docs:test
+
+  docs_check:
+    name: Docs check
+    uses: ./.github/workflows/ci-job.yml
+    with:
+      command: npm run docs:check
