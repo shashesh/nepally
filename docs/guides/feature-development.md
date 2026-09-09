@@ -1,6 +1,6 @@
 # Feature Development Process
 
-**Last Updated:** 2026-03-05
+**Last Updated:** 2026-09-08
 
 This document defines the end-to-end process for taking a feature from initial idea to shipped, tested code. Follow this for every non-trivial feature. The process exists to prevent the most common failure modes: building the wrong thing, missing edge cases, duplicating logic across platforms, and shipping without tests.
 
@@ -20,7 +20,7 @@ Context gathered upfront (spec, journey, wireframes) eliminates the two most exp
 Stage 0: Scope          /break-features      (for complex features only)
 Stage 1: Spec           /design-feature
 Stage 2: Journey        /user-journey        (one per key flow)
-Stage 3: Wireframes     /wireframe           (one per screen)
+Stage 3: Wireframes     /wireframe-old       (one per screen)
 Stage 4: Plan           create implementation plan doc
 Stage 5: Implement      /implement-feature
 Stage 6: Validate       /shared-first-check + tests
@@ -97,16 +97,16 @@ Stage 6: Validate       /shared-first-check + tests
 
 ## Stage 3: Wireframe Every Screen
 
-**Skill:** `/wireframe [screen-name]`
+**Skill:** `/wireframe-old [screen-name]` — the skill is registered under the name `wireframe-old`, not `wireframe`.
 
 **When to run:** After user journeys are documented. Wireframe every screen identified in the journeys, including empty states, error states, and loading states.
 
 **Prompt examples for Events:**
 ```
-/wireframe event-list-screen
-/wireframe event-detail-screen
-/wireframe event-creation-screen
-/wireframe event-rsvp-confirmation
+/wireframe-old event-list-screen
+/wireframe-old event-detail-screen
+/wireframe-old event-creation-screen
+/wireframe-old event-rsvp-confirmation
 ```
 
 **Output per screen:** `docs/wireframes/[number]-[screen-name]/[screen-name].md` containing:
@@ -120,7 +120,7 @@ Stage 6: Validate       /shared-first-check + tests
 **Key check before moving on:**
 - Every screen in every user journey has a wireframe
 - Every error state from the journey has a matching wireframe state
-- The design system (`docs/wireframes/00-design-system-foundation.md`) colors and spacing are referenced correctly
+- The design system (`docs/wireframes/00-design-system-foundation/00-design-system-foundation.md`) colors and spacing are referenced correctly
 
 ---
 
@@ -132,7 +132,7 @@ Stage 6: Validate       /shared-first-check + tests
 
 **Prompt:**
 ```
-Using docs/plans/active/_template.md as the template, create an implementation plan
+Using docs/plans/_template.md as the template, create an implementation plan
 for the events feature. Reference the spec at docs/product/features/events.md, the user journeys
 at docs/user-journeys/events/, and the wireframes at docs/wireframes/[relevant screens].
 
@@ -257,6 +257,12 @@ A feature is done when ALL of the following are true:
 - [ ] `phase1-feature-breakdown.md` updated (new implementation update block at top)
 - [ ] `docs/product/roadmap.md` updated if feature is now complete (new section or status change)
 - [ ] `CLAUDE.md` "Done" list updated
+- [ ] `npm run docs:check` passes
+- [ ] Plan `status:` updated; if complete, `git mv`'d to `docs/archive/plans/`
+- [ ] `docs/INDEX.md` updated for any doc added, moved, or retired
+
+See [documentation-workflow.md](documentation-workflow.md) for the full trigger matrix
+of which doc to update when, and which rows CI enforces.
 
 ---
 
@@ -267,7 +273,7 @@ A feature is done when ALL of the following are true:
 | Feature is large or unclear in scope | `/break-features` first |
 | Starting a new feature | `/design-feature` |
 | Documenting a user flow | `/user-journey` |
-| Designing a screen | `/wireframe` |
+| Designing a screen | `/wireframe-old` |
 | About to write code | Create implementation plan first |
 | Building the feature | `/implement-feature` |
 | Feature built, verifying architecture | `/shared-first-check` |
@@ -308,13 +314,13 @@ These features share properties that make the process especially important:
 /user-journey event-rsvp
 
 # 4. Wireframes (after journeys documented)
-/wireframe event-list-screen
-/wireframe event-detail-screen
-/wireframe event-creation-screen
-/wireframe event-rsvp-confirmation
+/wireframe-old event-list-screen
+/wireframe-old event-detail-screen
+/wireframe-old event-creation-screen
+/wireframe-old event-rsvp-confirmation
 
 # 5. Plan (write implementation plan doc before any code)
-# Prompt: "Create docs/archive/plans/events-feature.md using the template.
+# Prompt: "Create docs/plans/active/events-feature.md using the template.
 #          Reference all the docs above. DB changes go in 004_events.sql."
 
 # 6. Implement (after plan reviewed)
