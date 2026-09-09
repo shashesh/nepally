@@ -8,6 +8,10 @@ const { parseFrontmatter } = require('./frontmatter');
 const VALID_STATUSES = new Set(['planned', 'in-progress', 'implemented', 'abandoned']);
 const TERMINAL_STATUSES = new Set(['implemented', 'abandoned']);
 
+// Frontmatter keys required on every tracked plan/spec, besides `status`
+// (which has its own dedicated enum check below).
+const REQUIRED_FIELDS = ['title', 'created'];
+
 // Directories whose .md files must carry lifecycle frontmatter.
 const TRACKED_DIRS = ['docs/plans', 'docs/specs', 'docs/archive'];
 const EXEMPT = new Set(['docs/plans/_template.md']);
@@ -40,6 +44,15 @@ function checkLifecycle(rootDir) {
         message: 'no frontmatter block; expected title, status, created',
       });
       continue;
+    }
+
+    const missingFields = REQUIRED_FIELDS.filter((key) => !parsed.data[key]);
+    if (missingFields.length > 0) {
+      violations.push({
+        rule: 'missing-frontmatter-field',
+        file,
+        message: `frontmatter is missing required field(s): ${missingFields.join(', ')}`,
+      });
     }
 
     const status = parsed.data.status;

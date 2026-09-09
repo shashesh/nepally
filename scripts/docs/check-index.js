@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { walkFiles } = require('./walk');
-const { extractRelativeLinks } = require('./check-links');
+const { extractRelativeLinks, safeDecodeURIComponent } = require('./check-links');
 
 const INDEX_PATH = 'docs/INDEX.md';
 
@@ -42,7 +42,7 @@ function checkIndex(rootDir) {
   const mentioned = new Set();
 
   for (const { target, line } of extractRelativeLinks(indexContent)) {
-    const withoutAnchor = decodeURIComponent(target.split('#')[0]);
+    const withoutAnchor = safeDecodeURIComponent(target.split('#')[0]);
     const absolute = path.resolve(indexDir, withoutAnchor);
     const relative = path.relative(rootDir, absolute).replace(/\\/g, '/');
     mentioned.add(relative);

@@ -1,10 +1,11 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { checkLinks, extractLinks } = require('./check-links');
+const { checkLinks, extractLinks, safeDecodeURIComponent } = require('./check-links');
 
 const GOOD = path.join(__dirname, '__fixtures__', 'links-good');
 const BROKEN = path.join(__dirname, '__fixtures__', 'links-broken');
+const MALFORMED_PERCENT = path.join(__dirname, '__fixtures__', 'links-malformed-percent');
 
 test('extractLinks finds markdown links with line numbers', () => {
   const links = extractLinks('a\n[one](x.md) and [two](y.html)\n');
@@ -65,6 +66,35 @@ test('extractLinks does not let an unclosed fence swallow the rest of the file',
   // silently disable checking for everything after it. Treat EOF as closing.
   const content = ['```', '[hidden](x.md)'].join('\n');
   assert.deepEqual(extractLinks(content), []);
+});
+
+test('extractLinks requires a closing fence at least as long as its opener', () => {
+  // Per CommonMark, a fence opened with 4+ backticks (used to show a nested
+  // 3-backtick example) can only be closed by a run of the same length or
+  // longer — a shorter ``` inside it is just content, not a closer.
+  const content = [
+    '````md',
+    '```',
+    '[hidden](inner.md)',
+    '```',
+    '````',
+    '[visible](outer.md)',
+  ].join('\n');
+
+  assert.deepEqual(extractLinks(content), [{ target: 'outer.md', line: 6 }]);
+});
+
+test('safeDecodeURIComponent falls back to the raw string on malformed percent-encoding', () => {
+  assert.equal(safeDecodeURIComponent('docs/50%.md'), 'docs/50%.md');
+  assert.equal(safeDecodeURIComponent('docs/a%2fb.md'), 'docs/a/b.md');
+});
+
+test('checkLinks reports a malformed percent-encoded target as broken instead of throwing', () => {
+  assert.doesNotThrow(() => checkLinks(MALFORMED_PERCENT));
+  const violations = checkLinks(MALFORMED_PERCENT);
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].rule, 'broken-link');
+  assert.match(violations[0].message, /50%\.md/);
 });
 
 test('reports no violations when every link resolves', () => {

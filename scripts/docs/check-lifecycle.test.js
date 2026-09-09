@@ -45,11 +45,19 @@ test('flags a non-terminal status inside archive/', () => {
   assert.equal(v.rule, 'archived-non-terminal');
 });
 
-test('finds exactly the four seeded violations', () => {
+test('flags frontmatter missing required fields even when status is valid', () => {
+  const v = checkLifecycle(BAD).find((x) => x.file.endsWith('missing-fields.md'));
+  assert.equal(v.rule, 'missing-frontmatter-field');
+  assert.match(v.message, /title/);
+  assert.match(v.message, /created/);
+});
+
+test('finds exactly the five seeded violations', () => {
   assert.deepEqual(rulesFor(BAD), [
     'archived-non-terminal',
     'invalid-status',
     'missing-frontmatter',
+    'missing-frontmatter-field',
     'unarchived-terminal',
   ]);
 });

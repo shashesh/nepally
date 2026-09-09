@@ -12,6 +12,23 @@ const FENCE_OPEN = /^\s*(`{3,}|~{3,})/;
 const INLINE_CODE = /`[^`]*`/g;
 
 /**
+ * decodeURIComponent that tolerates malformed percent-encoding (e.g. a stray
+ * "%" in a link target) by falling back to the raw string instead of
+ * throwing, so a bad link produces a normal violation instead of crashing
+ * docs:check.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function safeDecodeURIComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+/**
  * Extract relative doc links worth checking, with 1-based line numbers.
  * Skips external schemes, bare anchors, non-doc extensions, fenced code
  * blocks, and inline code spans.
@@ -41,18 +58,21 @@ function extractLinks(content) {
 function extractRelativeLinks(content) {
   const lines = content.split(/\r?\n/);
   const links = [];
-  let fenceMarker = null;
+  let fenceMarker = null; // { char, length } while inside a fenced code block
 
   for (let i = 0; i < lines.length; i += 1) {
     const fenceMatch = FENCE_OPEN.exec(lines[i]);
     if (fenceMatch) {
-      const marker = fenceMatch[1];
+      const run = fenceMatch[1];
+      const marker = { char: run[0], length: run.length };
       if (fenceMarker === null) {
-        fenceMarker = marker[0];
+        fenceMarker = marker;
         continue;
       }
-      // A closing fence must use the same character as the one that opened it.
-      if (marker[0] === fenceMarker) {
+      // Per CommonMark, a closing fence must use the same character as the
+      // opener and be at least as long — a shorter run of the same character
+      // (e.g. ``` inside a ```` fence) is just content, not a closer.
+      if (marker.char === fenceMarker.char && marker.length >= fenceMarker.length) {
         fenceMarker = null;
         continue;
       }
@@ -99,7 +119,7 @@ function checkLinks(rootDir) {
     const fileDir = path.dirname(absolute);
 
     for (const { target, line } of extractLinks(content)) {
-      const withoutAnchor = decodeURIComponent(target.split('#')[0]);
+      const withoutAnchor = safeDecodeURIComponent(target.split('#')[0]);
       const resolved = path.resolve(fileDir, withoutAnchor);
       if (!fs.existsSync(resolved)) {
         violations.push({
@@ -115,4 +135,4 @@ function checkLinks(rootDir) {
   return violations;
 }
 
-module.exports = { checkLinks, extractLinks, extractRelativeLinks };
+module.exports = { checkLinks, extractLinks, extractRelativeLinks, safeDecodeURIComponent };
