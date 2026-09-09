@@ -24,6 +24,21 @@ const INLINE_CODE = /`[^`]*`/g;
  * @returns {{ target: string, line: number }[]}
  */
 function extractLinks(content) {
+  return extractRelativeLinks(content).filter(({ target }) => {
+    const withoutAnchor = target.split('#')[0];
+    return CHECKED_EXTENSIONS.has(path.extname(withoutAnchor).toLowerCase());
+  });
+}
+
+/**
+ * Every relative link target, with no extension filter — folder links included.
+ * check-index needs these so an INDEX entry pointing at a missing *directory*
+ * is caught too, not just a missing .md file.
+ *
+ * @param {string} content
+ * @returns {{ target: string, line: number }[]}
+ */
+function extractRelativeLinks(content) {
   const lines = content.split(/\r?\n/);
   const links = [];
   let fenceMarker = null;
@@ -36,7 +51,7 @@ function extractLinks(content) {
         fenceMarker = marker[0];
         continue;
       }
-      // A closing fence must use the same character and be at least as long.
+      // A closing fence must use the same character as the one that opened it.
       if (marker[0] === fenceMarker) {
         fenceMarker = null;
         continue;
@@ -55,7 +70,6 @@ function extractLinks(content) {
 
       const withoutAnchor = target.split('#')[0];
       if (!withoutAnchor) continue;
-      if (!CHECKED_EXTENSIONS.has(path.extname(withoutAnchor).toLowerCase())) continue;
 
       links.push({ target, line: i + 1 });
     }
@@ -101,4 +115,4 @@ function checkLinks(rootDir) {
   return violations;
 }
 
-module.exports = { checkLinks, extractLinks };
+module.exports = { checkLinks, extractLinks, extractRelativeLinks };
