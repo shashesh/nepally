@@ -59,6 +59,8 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 ## Specs (point-in-time designs — archived when the work ships)
 
+_None active._ Shipped designs live in [archive/specs/](archive/specs/).
+
 
 ## User journeys
 
@@ -115,5 +117,5 @@ See [archive/](archive/):
 
 - `archive/PROGRESS.md` — historical implementation tracker (superseded by roadmap)
 - `archive/marketplace-category-consolidation-plan.md` — shipped as migration 016
-- `archive/plans/` — 16 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, and the Postgres 15→17 sync
-- `archive/specs/` — 6 design specs for shipped features
+- `archive/plans/` — 17 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, and the Postgres 15→17 sync
+- `archive/specs/` — 7 design specs for shipped features
