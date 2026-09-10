@@ -19,9 +19,9 @@ This document serves as the single source of truth for all technology versions u
 |---------|---------|-------|
 | **react-native** | 0.81.5 | Compatible with Expo 54 |
 | **expo** | ~54.0.0 | Latest stable |
-| **@react-navigation/native** | 6.x | Navigation library |
-| **@react-navigation/bottom-tabs** | 6.x | Tab navigation |
-| **@react-navigation/native-stack** | 6.x | Stack navigation |
+| **@react-navigation/native** | 7.x | Navigation library |
+| **@react-navigation/bottom-tabs** | 7.x | Tab navigation |
+| **@react-navigation/native-stack** | 7.x | Stack navigation |
 
 ### Web App (`apps/web`)
 
@@ -98,6 +98,24 @@ This document serves as the single source of truth for all technology versions u
   169 pre-existing findings. They are set to `warn` pending
   `docs/plans/active/react-compiler-lint-cleanup.md`.
 
+### React Navigation 7 (upgraded from 6, 2026-09-10)
+- **Reason:** the whole v6 line is npm-deprecated ("This version is no longer
+  supported") — native, bottom-tabs, native-stack, core, elements and routers.
+- **No code changes were needed.** The app only uses the dynamic API
+  (`createNativeStackNavigator` / `createBottomTabNavigator` / `useNavigation`),
+  which v7 keeps source-compatible; type-check passed against v7 with zero
+  errors across the 72 files that touch it. `NavigationContainer` uses only
+  `onReady`/`onStateChange`, both still supported, and the removed `independent`
+  prop was never used.
+- **Peers were already satisfied:** v7 needs react-native-screens >= 4
+  (on 4.16) and react-native-safe-area-context >= 4 (on 5.6).
+- **Added `src/navigation/navigationIntegration.test.tsx`.** Every other
+  navigation-touching test mocks `@react-navigation/native`, so none of them
+  would notice the navigators failing to construct — which is precisely how a
+  major upgrade breaks. That test uses the real library.
+- **`decode-uri-component` stays flagged:** v7 still depends on
+  `query-string@7`, which pulls it in. Upstream.
+
 ### Expo 54.0 (Not 53.x or earlier)
 - **Reason:** Latest stable version with React 19 support
 - **Required by:** React Native 0.81.5
@@ -108,10 +126,9 @@ These are intentionally held and should be done as dedicated efforts:
 
 | Upgrade | Blocked by / Reason |
 |---------|---------------------|
-| **Expo SDK 54 → 56** | Coordinated migration; unlocks React 19.2, RN 0.85, React Navigation 7, jest 30 |
+| **Expo SDK 54 → 56** | Coordinated migration; unlocks React 19.2, RN 0.85, jest 30 |
 | **React 19.2 / Mantine 9** | RN 0.81 renderer requires exact React match → needs Expo 56 first |
 | **jest / @types/jest 30** | jest-expo 54 peer-requires jest 29; moves with Expo 56 |
-| **React Navigation 6 → 7** | v6 is deprecated upstream ("no longer supported"); 72 mobile files touch it |
 
 ## Version Update Policy
 
