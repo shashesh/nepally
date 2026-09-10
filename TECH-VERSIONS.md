@@ -81,6 +81,13 @@ This document serves as the single source of truth for all technology versions u
 - **Reason:** Next 16 (Turbopack) builds and runs cleanly against the pinned React 19.1.4 — the earlier 16.x build failures are resolved. Verified: production build of all routes, plus the full unit + E2E suites.
 - **Historical note:** The project previously pinned Next 15.5.12 because an early Next 16 + React 19 combination failed during build (`Cannot read properties of undefined (reading 'ReactCurrentDispatcher')`). That is no longer the case.
 - **`eslint-config-next` moved to 16** alongside the ESLint 10 flat-config migration (2026-09-10).
+- **`apps/web/AGENTS.md` and `apps/web/CLAUDE.md` are generated, and committed on
+  purpose.** `next dev` writes them when it detects an AI coding agent, via
+  `node_modules/next/dist/esm/server/lib/generate-agent-files.js`. The block is
+  delimited by `<!-- BEGIN:nextjs-agent-rules -->` markers and upserted in place,
+  so a Next upgrade rewrites it and shows up as a normal diff. Committing them
+  keeps the tree clean; deleting them just makes the next `next dev` recreate
+  them. Leave the markers alone — content outside them is preserved.
 
 ### ESLint 10 + flat config (upgraded from 8, 2026-09-10)
 - **Reason:** ESLint 8 is EOL and npm-deprecated, and so is 9 (it is the
