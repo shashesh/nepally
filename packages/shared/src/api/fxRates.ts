@@ -101,7 +101,9 @@ export async function getExchangeRate(
   fetcher: Fetcher = globalThis.fetch.bind(globalThis) as Fetcher,
   now: Date = new Date()
 ): Promise<Result> {
-  let cache: CacheRow | null = null;
+  // No initializer: the only path that skips the assignment below is the
+  // catch, which returns. Assigning null here would be dead (no-useless-assignment).
+  let cache: CacheRow | null;
   try {
     cache = await readCache(supabase);
   } catch (error) {

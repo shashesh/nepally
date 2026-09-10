@@ -39,20 +39,25 @@
     "react": "19.1.4",
     "react-dom": "19.1.4",
     "ts-api-utils": "2.4.0",
-    "vite": "^7"
+    "vite": "^7",
+    "eslint": "$eslint",
+    "eslint-plugin-react": {
+      "eslint": "$eslint"
+    }
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
+    "@eslint/js": "^10.0.1",
     "@vitest/coverage-v8": "^4.1.11",
-    "eslint": "^8.57.0",
+    "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.5.0",
     "husky": "^9.0.10",
     "prettier": "^3.2.5",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.11"
   },

@@ -27,8 +27,8 @@ This document serves as the single source of truth for all technology versions u
 
 | Package | Version | Notes |
 |---------|---------|-------|
-| **next** | 16.2.7 | Turbopack; works with React 19.1.4 |
-| **eslint-config-next** | 15.x | Pinned at 15: v16 requires ESLint 9 (flat config); see Deferred Upgrades |
+| **next** | 16.3.x | Turbopack; works with React 19.1.4 |
+| **eslint-config-next** | 16.x | Flat config, exported as a config array; requires ESLint >= 9 |
 
 ### Shared Package (`packages/shared`)
 
@@ -52,7 +52,7 @@ This document serves as the single source of truth for all technology versions u
 | Tool | Version | Notes |
 |------|---------|-------|
 | **TypeScript** | 6.0.x | Type checking |
-| **ESLint** | 8.57.x | Linting (8 is EOL; flat-config migration deferred) |
+| **ESLint** | 10.x | Linting, flat config (`eslint.config.mjs`). 8 and 9 are both EOL |
 | **Prettier** | 3.x | Code formatting |
 | **eslint-config-prettier** | 10.x | Disables formatting-related ESLint rules |
 
@@ -80,7 +80,23 @@ This document serves as the single source of truth for all technology versions u
 ### Next.js 16.2.7 (upgraded from 15, 2026-06-05)
 - **Reason:** Next 16 (Turbopack) builds and runs cleanly against the pinned React 19.1.4 — the earlier 16.x build failures are resolved. Verified: production build of all routes, plus the full unit + E2E suites.
 - **Historical note:** The project previously pinned Next 15.5.12 because an early Next 16 + React 19 combination failed during build (`Cannot read properties of undefined (reading 'ReactCurrentDispatcher')`). That is no longer the case.
-- **`eslint-config-next` stays at 15:** v16 requires ESLint 9 (flat config); kept at 15 until the ESLint 8→9 migration. It still lints Next 16 code fine.
+- **`eslint-config-next` moved to 16** alongside the ESLint 10 flat-config migration (2026-09-10).
+
+### ESLint 10 + flat config (upgraded from 8, 2026-09-10)
+- **Reason:** ESLint 8 is EOL and npm-deprecated, and so is 9 (it is the
+  `maintenance` tag), so 10 was the only non-deprecated target. Config moved from
+  `.eslintrc.json` to `eslint.config.mjs` at the repo root and in `apps/web`.
+- **`settings.react.version` is pinned, not `'detect'`:** eslint-plugin-react's
+  version detection calls `context.getFilename()`, which ESLint 10 removed, and
+  crashes the whole run. Keep the pin in step with the React version.
+- **`eslint-plugin-react` needs an override:** its peer range stops at ESLint 9.7.
+  `overrides["eslint-plugin-react"].eslint` points it at the root ESLint. Drop the
+  override once upstream declares ESLint 10 support.
+- **The `--ext` flags are gone** from the lint scripts; flat config selects files
+  through the `files` patterns each config object declares.
+- **eslint-plugin-react-hooks 7** brings the React Compiler rule set, which flagged
+  169 pre-existing findings. They are set to `warn` pending
+  `docs/plans/active/react-compiler-lint-cleanup.md`.
 
 ### Expo 54.0 (Not 53.x or earlier)
 - **Reason:** Latest stable version with React 19 support
@@ -94,8 +110,8 @@ These are intentionally held and should be done as dedicated efforts:
 |---------|---------------------|
 | **Expo SDK 54 → 56** | Coordinated migration; unlocks React 19.2, RN 0.85, React Navigation 7, jest 30 |
 | **React 19.2 / Mantine 9** | RN 0.81 renderer requires exact React match → needs Expo 56 first |
-| **ESLint 8 → 10 (flat config)** | EOL; pulls in eslint-config-next 16 + eslint-plugin-react-hooks 7 (React Compiler ruleset) |
 | **jest / @types/jest 30** | jest-expo 54 peer-requires jest 29; moves with Expo 56 |
+| **React Navigation 6 → 7** | v6 is deprecated upstream ("no longer supported"); 72 mobile files touch it |
 
 ## Version Update Policy
 

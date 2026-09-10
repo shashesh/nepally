@@ -15,7 +15,7 @@
     "test:coverage:ci": "jest --ci --runInBand --forceExit --coverage",
     "test:coverage:ci:debug": "jest --ci --runInBand --coverage --detectOpenHandles",
     "test:e2e": "node scripts/run-maestro-e2e.js",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

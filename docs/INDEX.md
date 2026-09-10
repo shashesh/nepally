@@ -56,6 +56,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
+- [plans/active/react-compiler-lint-cleanup.md](plans/active/react-compiler-lint-cleanup.md) — burn down the 169 React Compiler lint findings surfaced by the ESLint 10 upgrade
 
 ## Specs (point-in-time designs — archived when the work ships)
 
