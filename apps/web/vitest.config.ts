@@ -8,6 +8,13 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Vitest defaults to 5s. Several page tests legitimately take 6-7s here
+    // (jsdom + Mantine + a full page render), so the default made the suite
+    // flaky under load — which tests tipped over varied run to run. Mirrors
+    // the CI-aware pattern already used in apps/mobile/jest.config.js, with
+    // more local headroom because these tests sit close to the old limit.
+    testTimeout: process.env.CI ? 30000 : 15000,
+    hookTimeout: process.env.CI ? 30000 : 15000,
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     coverage: {
