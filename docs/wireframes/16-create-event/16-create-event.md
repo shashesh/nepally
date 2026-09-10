@@ -1,8 +1,8 @@
 # Wireframe: Create Event
 
 > **Screen:** 16 | **Status:** Draft | **Updated:** 2026-03-05
-> **Feature Spec:** [Events Feature](../../features/events.md)
-> **Feature Breakdown:** [Events Breakdown — E4.1](../../features/events-feature-breakdown.md)
+> **Feature Spec:** [Events Feature](../../product/features/events.md)
+> **Feature Breakdown:** [Events Breakdown — E4.1](../../product/features/events-feature-breakdown.md)
 > **Story:** As a verified (Level 1+) user, I want to create a community event so others in my metro area can discover and RSVP to it.
 
 ---
@@ -632,8 +632,8 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 | On success → | Event Detail (screen to be wireframed) |
 | Fallback for Level 0 | Verification Prompt (existing flow) |
 | Edit mode reuses | This same screen |
-| Feature spec | [events.md](../../features/events.md) |
-| Feature breakdown | [events-feature-breakdown.md](../../features/events-feature-breakdown.md) |
+| Feature spec | [events.md](../../product/features/events.md) |
+| Feature breakdown | [events-feature-breakdown.md](../../product/features/events-feature-breakdown.md) |
 
 ---
 

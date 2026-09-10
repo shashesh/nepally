@@ -1,7 +1,7 @@
 # Wireframe: Signup Method Selection
 
 > **Screen:** 02 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 5
+> **Journey:** [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 5
 > **Story:** As a new user, I want to choose how I sign up (Google, Phone, or Email) so I can create an account using my preferred method.
 
 ---
@@ -535,9 +535,9 @@ No persistent state across sessions.
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [01-welcome-screen.md](./01-welcome-screen.md) |
-| Next | [03-zip-code-entry.md](./03-zip-code-entry.md) (after successful signup) |
-| Journey | [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 5 |
+| Previous | [01-welcome-screen.md](../01-welcome-screen/01-welcome-screen.md) |
+| Next | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md) (after successful signup) |
+| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 5 |
 
 ---
 

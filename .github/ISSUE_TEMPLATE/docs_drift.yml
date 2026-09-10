@@ -1,0 +1,34 @@
+name: Documentation drift
+description: A doc is wrong, stale, or missing. Also used for the quarterly sweep.
+labels: [documentation]
+body:
+  - type: input
+    id: path
+    attributes:
+      label: Doc path
+      placeholder: docs/guides/feature-development.md
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong
+    validations:
+      required: true
+  - type: textarea
+    id: correct
+    attributes:
+      label: What it should say
+  - type: checkboxes
+    id: sweep
+    attributes:
+      label: Quarterly freshness sweep
+      description: See docs/guides/documentation-workflow.md. Tick these off if this is the sweep.
+      options:
+        - label: This issue IS the quarterly sweep
+        - label: Guides re-read against current tooling; every skill and command named still exists
+        - label: TECH-VERSIONS.md verified against package.json across all three workspaces
+        - label: architecture/database-schema.md verified against the highest-numbered migration
+        - label: product/roadmap.md phase status matches what has shipped
+        - label: plans/active/ re-checked - nothing finished is still sitting there
+        - label: Last verified date stamped in docs/INDEX.md

@@ -1,3 +1,9 @@
+---
+title: Historical implementation progress tracker
+status: implemented
+created: 2026-02-01
+---
+
 # Nepally Development Progress
 
 **Last Updated:** 2026-03-10

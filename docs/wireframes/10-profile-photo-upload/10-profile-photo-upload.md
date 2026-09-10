@@ -1,7 +1,7 @@
 # Wireframe: Profile Photo Upload
 
 > **Screen:** 10 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [post-likes-and-comments.md](../features/post-likes-and-comments.md) - Feature 3.5
+> **Journey:** [post-likes-and-comments.md](../../product/features/post-likes-and-comments.md) - Feature 3.5
 > **Story:** As a user, I want to upload my profile photo so others can recognize me on posts and comments.
 
 ---
@@ -615,9 +615,9 @@ await supabase
 | Parent | EditProfileScreen (profile management) |
 | Uses | Device Camera (system UI) |
 | Uses | Photo Library Picker (system UI) |
-| Displays on | [09-post-detail.md](./09-post-detail.md) — author avatar |
-| Displays on | [07-conversation-list.md](./07-conversation-list.md) — chat avatar |
-| Displays on | [06-home-screen-level-0.md](./06-home-screen-level-0.md) — post card avatar |
+| Displays on | [09-post-detail.md](../09-post-detail/09-post-detail.md) — author avatar |
+| Displays on | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md) — chat avatar |
+| Displays on | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) — post card avatar |
 
 ---
 

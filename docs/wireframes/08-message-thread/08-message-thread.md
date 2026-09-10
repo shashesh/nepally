@@ -1,7 +1,7 @@
 # Wireframe: Message Thread Screen
 
 > **Screen:** 08 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [in-app-chat.md](../features/in-app-chat.md) - Features 8.4, 8.5, 8.6, 8.7
+> **Journey:** [in-app-chat.md](../../product/features/in-app-chat.md) - Features 8.4, 8.5, 8.6, 8.7
 > **Story:** As a verified user, I want to send and receive messages in a conversation so I can coordinate with other community members.
 
 ---
@@ -464,9 +464,9 @@ await supabase.from('conversation_participants')
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [07-conversation-list.md](./07-conversation-list.md) |
-| Related | [09-post-detail.md](./09-post-detail.md) (avatar menu Chat entry) |
-| Feature | [in-app-chat.md](../features/in-app-chat.md) |
+| Previous | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md) |
+| Related | [09-post-detail.md](../09-post-detail/09-post-detail.md) (avatar menu Chat entry) |
+| Feature | [in-app-chat.md](../../product/features/in-app-chat.md) |
 
 ---
 

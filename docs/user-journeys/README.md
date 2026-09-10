@@ -1,10 +1,16 @@
 # Nepally User Journeys - Phase 1
 
-**Last Updated:** 2026-04-13
-**Total Journeys:** 14
+**Last Updated:** 2026-09-08
+**Journeys written:** 7 of 14 planned
 **Status:** Planning
 
 This document indexes all user journeys for the Nepally app. Each journey documents a specific user flow from start to finish, including pain points, decision trees, and success metrics.
+
+> **Seven of the fourteen journeys below are not written yet.** Their rows say
+> `_not yet written_` in the File column rather than linking to a file that does
+> not exist. Until 2026-09-08 this README linked to all fourteen, so ten of its
+> links 404'd — the rows are kept because the plan is real, but a link is a
+> promise that the document exists.
 
 ---
 
@@ -19,16 +25,22 @@ This document indexes all user journeys for the Nepally app. Each journey docume
 
 ## Journey Organization
 
-Journeys are organized into **6 categories** based on user intent:
+Journeys are organized by user intent. **Planned** is the original 14-journey
+scope; **written** is what exists on disk today.
 
-| Category | Journey Count | Purpose |
-|----------|---------------|---------|
-| **Onboarding** | 2 | Getting started with Nepally |
-| **Post Creation** | 4 | Creating housing, job, emergency, and travel posts |
-| **Discovery** | 3 | Finding posts, responding, and discovering events |
-| **Communication** | 1 | In-app chat and messaging |
-| **Safety** | 2 | Reporting content and moderation |
-| **Management** | 2 | Managing posts and events |
+| Category | Planned | Written | Purpose |
+|----------|---------|---------|---------|
+| **Onboarding** | 2 | 1 | Getting started with Nepally |
+| **Post Creation** | 4 | 1 | Creating posts (one unified tag-based form, not four separate flows) |
+| **Discovery** | 3 | 2 | Finding posts, responding, and discovering events |
+| **Communication** | 1 | 1 | In-app chat and messaging |
+| **Safety** | 2 | 0 | Reporting content and moderation |
+| **Management** | 2 | 1 | Managing posts and events |
+| **Location** | — | 1 | Location permission, detection, and switching |
+| **Total** | **14** | **7** | |
+
+`location/` was added after the original scope was drawn and is not part of the
+14. `safety/` has no directory yet — nothing has been written for it.
 
 ---
 
@@ -39,7 +51,7 @@ Journeys are organized into **6 categories** based on user intent:
 | # | Journey Name | User Persona | Status | File |
 |---|--------------|--------------|--------|------|
 | 01 | **Signup and Onboarding** | New User (Level 0) | 🚧 Draft | [onboarding/01-signup-and-onboarding.md](./onboarding/01-signup-and-onboarding.md) |
-| 02 | **Trust Level Verification** | New User (Level 0 → Level 1) | 📝 Not Started | [onboarding/02-trust-level-verification.md](./onboarding/02-trust-level-verification.md) |
+| 02 | **Trust Level Verification** | New User (Level 0 → Level 1) | 📝 Not Started | _not yet written_ |
 
 **Purpose:** These journeys cover how new users discover Nepally, create accounts, verify their identity, and become trusted members of the community.
 
@@ -55,10 +67,10 @@ Journeys are organized into **6 categories** based on user intent:
 
 | # | Journey Name | User Persona | Status | File |
 |---|--------------|--------------|--------|------|
-| 03 | **Housing Post Creation** | Verified User (Level 1+) | 📝 Not Started | [post-creation/03-housing-post-creation.md](./post-creation/03-housing-post-creation.md) |
-| 04 | **Job Post Creation** | Verified User (Level 1+) | 📝 Not Started | [post-creation/04-job-post-creation.md](./post-creation/04-job-post-creation.md) |
-| 05 | **Emergency Post Creation** | Verified User (Level 1+) | 📝 Not Started | [post-creation/05-emergency-post-creation.md](./post-creation/05-emergency-post-creation.md) |
-| 06 | **Travel Post Creation** | Verified User (Level 1+) | 📝 Not Started | [post-creation/06-travel-post-creation.md](./post-creation/06-travel-post-creation.md) |
+| 03 | **Housing Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
+| 04 | **Job Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
+| 05 | **Emergency Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
+| 06 | **Travel Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
 
 **Purpose:** Creating tag-based posts (title + body + 1-3 tags) with optional photos — the Reddit-style format used for all post types.
 
@@ -82,8 +94,8 @@ Journeys are organized into **6 categories** based on user intent:
 
 | # | Journey Name | User Persona | Status | File |
 |---|--------------|--------------|--------|------|
-| 07 | **Browse and Search Posts** | Any User (Level 0+) | 📝 Not Started | [discovery/07-browse-and-search.md](./discovery/07-browse-and-search.md) |
-| 08 | **Respond to a Post** | Verified User (Level 1+) | 📝 Not Started | [discovery/08-respond-to-post.md](./discovery/08-respond-to-post.md) |
+| 07 | **Browse and Search Posts** | Any User (Level 0+) | 📝 Not Started | _not yet written_ |
+| 08 | **Respond to a Post** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
 | 13 | **Event Discovery & RSVP** | Any User (Level 0 browse; Level 1+ RSVP) | ✅ Reviewed | [discovery/13-event-discovery-and-rsvp.md](./discovery/13-event-discovery-and-rsvp.md) |
 
 **Purpose:** Finding relevant posts and events in the local metro area, initiating contact with post authors, and RSVPing to community events.
@@ -130,8 +142,8 @@ Journeys are organized into **6 categories** based on user intent:
 
 | # | Journey Name | User Persona | Status | File |
 |---|--------------|--------------|--------|------|
-| 10 | **Report Content or User** | Any User (Level 0+) | 📝 Not Started | [safety/10-report-content.md](./safety/10-report-content.md) |
-| 11 | **Moderator Review Flow** | Moderator | 📝 Not Started | [safety/11-moderator-review.md](./safety/11-moderator-review.md) |
+| 10 | **Report Content or User** | Any User (Level 0+) | 📝 Not Started | _not yet written_ |
+| 11 | **Moderator Review Flow** | Moderator | 📝 Not Started | _not yet written_ |
 
 **Purpose:** Maintaining community safety through user reporting and moderator review of flagged content.
 
@@ -153,7 +165,7 @@ Journeys are organized into **6 categories** based on user intent:
 
 | # | Journey Name | User Persona | Status | File |
 |---|--------------|--------------|--------|------|
-| 12 | **Renew or Edit an Expired Post** | Verified User (Level 1+) | 📝 Not Started | [management/12-renew-edit-post.md](./management/12-renew-edit-post.md) |
+| 12 | **Renew or Edit an Expired Post** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
 | 14 | **Event Creation & Management** | Verified User (Level 1+) as Organizer | ✅ Reviewed | [management/14-event-creation-and-management.md](./management/14-event-creation-and-management.md) |
 
 **Purpose:** Managing post and event lifecycle — editing, renewing, cancelling, and deleting content.

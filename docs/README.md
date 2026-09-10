@@ -8,17 +8,29 @@ Welcome. This folder holds all documentation for the Nepally monorepo.
 
 | Folder | Contents |
 |---|---|
-| [guides/](guides/) | How-to docs — setup, code sharing, deployment, feature development workflow |
+| [guides/](guides/) | How-to docs — setup, code sharing, deployment, feature development, documentation workflow |
 | [architecture/](architecture/) | How the system is built — monorepo structure, database schema, Supabase setup |
 | [product/](product/) | Roadmap and feature specs |
-| [product/features/](product/features/) | Per-feature specifications |
-| [plans/active/](plans/active/) | In-progress and planned implementation plans |
+| [product/features/](product/features/) | **Evergreen** per-feature specs — what each feature is today |
+| [plans/active/](plans/active/) | In-flight implementation plans only |
 | [plans/_template.md](plans/_template.md) | Template for new implementation plans |
-| [specs/](specs/) | Active design specs from brainstorming sessions |
+| [specs/](specs/) | **Point-in-time** design specs — one change each, archived when it ships |
 | [user-journeys/](user-journeys/) | Documented user flows |
-| [wireframes/](wireframes/) | Screen-by-screen wireframes |
+| [wireframes/](wireframes/) | Screen-by-screen wireframes (`_prototypes/` holds HTML/CSS exploration) |
 | [decisions/](decisions/) | Architecture decision records (ADRs) |
-| [archive/](archive/) | Completed plans, superseded specs, historical progress docs |
+| [archive/](archive/) | Completed plans, shipped specs, historical progress docs |
+
+### `product/features/` vs `specs/`
+
+Both describe features. Only one is kept current — this is the most common filing
+mistake.
+
+| | `product/features/<name>.md` | `specs/YYYY-MM-DD-<topic>-design.md` |
+|---|---|---|
+| **Tense** | Present — what the feature *is* | Past-dated — what one change *proposed* |
+| **Lifetime** | Evergreen; edited as behavior changes | Frozen at approval |
+| **On ship** | Updated | Archived to `archive/specs/` |
+| **Answers** | "How does marketplace work today?" | "Why did we redesign it in April?" |
 
 ## Canonical references at repo root
 
@@ -36,16 +48,36 @@ Welcome. This folder holds all documentation for the Nepally monorepo.
 ## Adding a new doc
 
 1. Pick the right folder from the table above.
-2. Add an entry to [INDEX.md](INDEX.md) under the matching section with a one-line purpose.
-3. Follow the filename conventions of siblings.
+2. If it is a plan or spec, add frontmatter (see below).
+3. Add an entry to [INDEX.md](INDEX.md) under the matching section with a one-line purpose.
+4. Run `npm run docs:check` — CI fails on a doc that is not indexed.
 
-## Document status labels
+Full procedure, including which doc to update when: [guides/documentation-workflow.md](guides/documentation-workflow.md).
 
-- **Draft** — Work in progress
-- **In Review** — Ready for feedback
-- **Approved** — Finalized, ready for implementation
-- **Implemented** — Feature has been built
-- **Deprecated** — No longer relevant (candidate for archive)
+## Document status
+
+Plans and specs carry frontmatter. These four values are the whole vocabulary, and
+CI validates them:
+
+```yaml
+---
+title: Notifications feature
+status: planned | in-progress | implemented | abandoned
+created: 2026-04-13
+---
+```
+
+**`implemented` or `abandoned` means the file must live under `archive/`.** That is
+the one rule that stops `plans/active/` from quietly becoming a second archive.
+
+## Checks
+
+```bash
+npm run docs:check   # broken links, unindexed docs, plan lifecycle
+npm run docs:test    # unit tests for the checkers themselves
+```
+
+Both run in CI on any PR that touches markdown.
 
 ## Testing policy quickref
 

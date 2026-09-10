@@ -1,0 +1,10 @@
+# Default owner for everything.
+*                        @shashesh
+
+# Areas where an agent-authored PR must not land without human review.
+# copilot-swe-agent[bot] has commit history in this repo; these paths are
+# where a bad change is expensive or hard to reverse.
+/docs/                   @shashesh
+/.github/                @shashesh
+/supabase/migrations/    @shashesh
+/packages/shared/        @shashesh

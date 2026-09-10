@@ -1,7 +1,7 @@
 # Wireframe: Welcome Screen
 
 > **Screen:** 01 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 4
+> **Journey:** [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 4
 > **Story:** As a new user launching Nepally for the first time, I want to understand what the app is about and easily sign up or log in.
 
 ---
@@ -369,8 +369,8 @@ No internet connection. Please check your connection and try again.
 | Relation | Screen |
 |----------|--------|
 | Previous | None (entry point) |
-| Next | [02-signup-method-selection.md](./02-signup-method-selection.md) |
-| Journey | [01-signup-and-onboarding](../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 4 |
+| Next | [02-signup-method-selection.md](../02-signup-method-selection/02-signup-method-selection.md) |
+| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 4 |
 
 ---
 

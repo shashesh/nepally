@@ -1,3 +1,9 @@
+---
+title: Marketplace category consolidation
+status: implemented
+created: 2026-04-01
+---
+
 # Marketplace Category Consolidation Plan
 
 **Status:** Implemented (016_consolidate_marketplace_categories.sql)

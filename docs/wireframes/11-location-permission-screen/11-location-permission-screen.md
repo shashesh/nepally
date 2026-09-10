@@ -1,8 +1,8 @@
 # Wireframe: Location Permission Screen
 
 > **Screen:** 11 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-location-permission-and-detection](../user-journeys/location/01-location-permission-and-detection.md) - Scenario A, Step 1
-> **Feature:** [dynamic-location-management](../features/dynamic-location-management.md) - Feature L.1
+> **Journey:** [01-location-permission-and-detection](../../user-journeys/location/01-location-permission-and-detection.md) - Scenario A, Step 1
+> **Feature:** [dynamic-location-management](../../product/features/dynamic-location-management.md) - Feature L.1
 > **Story:** As a new user, I want to understand why the app needs my location before being asked for permission, so I feel informed and comfortable granting access.
 > **Platforms:** Mobile + Web
 
@@ -279,9 +279,9 @@ We use your location to show you community posts, housing, jobs, and events near
 | Relation | Screen |
 |----------|--------|
 | Previous | Onboarding entry (first launch) |
-| Next (GPS success) | [04-metro-confirmation.md](./04-metro-confirmation.md) |
-| Next (GPS fail / Not Now) | [03-zip-code-entry.md](./03-zip-code-entry.md) |
-| Journey | [01-location-permission-and-detection](../user-journeys/location/01-location-permission-and-detection.md) |
+| Next (GPS success) | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md) |
+| Next (GPS fail / Not Now) | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md) |
+| Journey | [01-location-permission-and-detection](../../user-journeys/location/01-location-permission-and-detection.md) |
 
 ---
 

@@ -1,7 +1,7 @@
 # Wireframe: Event Detail Screen
 
 > **Screen:** 17 | **Status:** Draft | **Updated:** 2026-03-05
-> **Feature Spec:** [events.md](../../features/events.md)
+> **Feature Spec:** [events.md](../../product/features/events.md)
 > **Previous Screen:** [16-events-list.md](../16-events-list/16-events-list.md)
 > **Story:** As a verified user, I want to view full event details and RSVP so I can plan my attendance and let the organizer know I'm coming.
 
@@ -999,7 +999,7 @@ For **past** events: "*(Ended)*" appended, #757575
 |----------|--------|
 | Previous | [16-events-list.md](../16-events-list/16-events-list.md) |
 | Next | Create Event Screen (wireframe TBD) |
-| Feature Spec | [events.md](../../features/events.md) |
+| Feature Spec | [events.md](../../product/features/events.md) |
 | Related | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md) — Message Organizer navigates here |
 | Related | Public Profile Screen — organizer tap navigates here |
 | Design System | [00-design-system-foundation.md](../00-design-system-foundation/00-design-system-foundation.md) |

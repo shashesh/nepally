@@ -645,9 +645,9 @@ Returns all tags sorted by `sort_order`. Cache locally for session duration.
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [06-home-screen-level-0.md](./06-home-screen-level-0.md) (via FAB) |
+| Previous | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) (via FAB) |
 | Next | Home Screen (on success, post appears at top of feed) |
-| Related | [09-post-detail.md](./09-post-detail.md) — View of the created post |
+| Related | [09-post-detail.md](../09-post-detail/09-post-detail.md) — View of the created post |
 | Related | Post Edit Screen (reuses same form with pre-filled data) |
 
 ---

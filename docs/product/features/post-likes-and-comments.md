@@ -423,9 +423,9 @@ CREATE POLICY "Moderators can update any comment"
 ## UI/UX Specifications
 
 See detailed wireframe updates:
-- [Home Screen with Enhanced Post Cards](../wireframes/06-home-screen-level-0.md#post-card-enhanced)
-- [Post Detail with Comments](../wireframes/09-post-detail.md#comments-section)
-- [Profile Photo Upload](../wireframes/10-profile-photo-upload.md)
+- [Home Screen with Enhanced Post Cards](../../wireframes/06-home-screen-level-0/06-home-screen-level-0.md#post-card-enhanced)
+- [Post Detail with Comments](../../wireframes/09-post-detail/09-post-detail.md#comments-section)
+- [Profile Photo Upload](../../wireframes/10-profile-photo-upload/10-profile-photo-upload.md)
 
 ---
 

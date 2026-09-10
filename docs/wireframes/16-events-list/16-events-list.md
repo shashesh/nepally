@@ -1,8 +1,8 @@
 # Wireframe: Events List Screen
 
 > **Screen:** 16 | **Status:** Draft | **Updated:** 2026-03-05
-> **Feature Spec:** [events.md](../../features/events.md)
-> **Breakdown:** [events-feature-breakdown.md](../../features/events-feature-breakdown.md)
+> **Feature Spec:** [events.md](../../product/features/events.md)
+> **Breakdown:** [events-feature-breakdown.md](../../product/features/events-feature-breakdown.md)
 > **Story:** As a verified user, I want to browse upcoming community events in my metro area so I can discover, attend, and RSVP to events that interest me.
 
 ---
@@ -851,7 +851,7 @@ Same pattern as home screen Level 0 banner:
 
 | Relation | Screen |
 |----------|--------|
-| Feature Spec | [events.md](../../features/events.md) |
+| Feature Spec | [events.md](../../product/features/events.md) |
 | Next | Event Detail Screen (wireframe TBD) |
 | Next | Create Event Screen (wireframe TBD) |
 | Design System | [00-design-system-foundation.md](../00-design-system-foundation/00-design-system-foundation.md) |

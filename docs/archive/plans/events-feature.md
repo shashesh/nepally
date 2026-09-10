@@ -1,3 +1,9 @@
+---
+title: Events feature
+status: implemented
+created: 2026-03-10
+---
+
 # Events Feature — Implementation Plan
 
 **Plan Version:** v1

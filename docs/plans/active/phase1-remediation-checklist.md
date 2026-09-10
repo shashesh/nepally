@@ -1,3 +1,9 @@
+---
+title: Phase 1 remediation checklist
+status: in-progress
+created: 2026-03-23
+---
+
 # Phase 1 Remediation Checklist (Post Audit)
 
 **Version:** v1

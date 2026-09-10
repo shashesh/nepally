@@ -1,3 +1,9 @@
+---
+title: Promotion lifecycle and feeds
+status: implemented
+created: 2026-04-10
+---
+
 # Promotion Lifecycle Fixes + Sponsored/Sticky Feed Wiring
 
 **Status:** Implemented 2026-04-10

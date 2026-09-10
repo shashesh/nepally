@@ -1,8 +1,8 @@
 # Wireframe: Location Change Prompt
 
 > **Screen:** 12 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [01-location-permission-and-detection](../user-journeys/location/01-location-permission-and-detection.md) - Scenario C, Step 2
-> **Feature:** [dynamic-location-management](../features/dynamic-location-management.md) - Features L.3, L.4, L.8
+> **Journey:** [01-location-permission-and-detection](../../user-journeys/location/01-location-permission-and-detection.md) - Scenario C, Step 2
+> **Feature:** [dynamic-location-management](../../product/features/dynamic-location-management.md) - Features L.3, L.4, L.8
 > **Story:** As a traveling user, I want the app to notice I'm in a different city and give me the option to browse local content or keep my home feed.
 > **Platforms:** Mobile + Web
 

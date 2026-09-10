@@ -15,7 +15,7 @@ This guide explains what code should be shared between mobile and web apps, and 
 
 **Location:** `packages/shared/src/types/`
 
-**IMPORTANT:** Shared types use **snake_case** matching Supabase database column names. See [ADR: Shared Types Use snake_case](decisions/2026-02-16-shared-types-snake-case.md).
+**IMPORTANT:** Shared types use **snake_case** matching Supabase database column names. See [ADR: Shared Types Use snake_case](../decisions/2026-02-16-shared-types-snake-case.md).
 
 **Examples:**
 ```typescript

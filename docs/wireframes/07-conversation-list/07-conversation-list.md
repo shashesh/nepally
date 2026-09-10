@@ -1,7 +1,7 @@
 # Wireframe: Conversation List Screen
 
 > **Screen:** 07 | **Status:** Draft | **Updated:** 2026-02-19
-> **Journey:** [in-app-chat](../features/in-app-chat.md) - Feature 8.3
+> **Journey:** [in-app-chat](../../product/features/in-app-chat.md) - Feature 8.3
 > **Story:** As a verified user, I want to see all my conversations in one place so I can track ongoing conversations with other members.
 
 ---
@@ -421,9 +421,9 @@ LIMIT 20;
 
 | Relation | Screen |
 |----------|--------|
-| Previous | [06-home-screen-level-0.md](./06-home-screen-level-0.md) (Messages tab / Browse Posts CTA) |
-| Next | [08-message-thread.md](./08-message-thread.md) (tap conversation) |
-| Feature | [in-app-chat.md](../features/in-app-chat.md) |
+| Previous | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) (Messages tab / Browse Posts CTA) |
+| Next | [08-message-thread.md](../08-message-thread/08-message-thread.md) (tap conversation) |
+| Feature | [in-app-chat.md](../../product/features/in-app-chat.md) |
 
 ---
 

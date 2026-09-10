@@ -1,0 +1,42 @@
+name: Security finding
+description: A privilege, RLS, or data-exposure problem.
+labels: [security]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For anything actively exposing user data, tell the maintainer directly
+        before opening a public issue.
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical - data is exposed right now
+        - High - exploitable by an authenticated user
+        - Medium - defence in depth
+        - Low - hardening
+    validations:
+      required: true
+  - type: input
+    id: surface
+    attributes:
+      label: Affected table, policy, or function
+      placeholder: e.g. public.users - RLS SELECT policy
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: What is exposed, and how
+      description: Include the query or call path that demonstrates it.
+    validations:
+      required: true
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: Verification
+      options:
+        - label: A smoke test in scripts/security/ covers this
+        - label: A new migration is required
+        - label: I have confirmed this against a live project (not just reading policy SQL)

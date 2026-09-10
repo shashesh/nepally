@@ -71,3 +71,6 @@ error.jpeg
 # Claude Code local settings
 .claude/settings.local.json
 .superpowers/
+
+# Generated repo digests
+repomix-output.xml

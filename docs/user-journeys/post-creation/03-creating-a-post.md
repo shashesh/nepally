@@ -423,7 +423,7 @@
 
 ## Related Documentation
 
-- [Wireframe: Create Post](../../wireframes/14-create-post.md)
-- [Wireframe: Home Screen](../../wireframes/06-home-screen-level-0.md)
-- [Feature: Phase 1 Breakdown](../../features/phase1-feature-breakdown.md) — Features 5.1-5.3
+- [Wireframe: Create Post](../../wireframes/14-create-post/14-create-post.md)
+- [Wireframe: Home Screen](../../wireframes/06-home-screen-level-0/06-home-screen-level-0.md)
+- [Feature: Phase 1 Breakdown](../../product/features/phase1-feature-breakdown.md) — Features 5.1-5.3
 - [Decision: Post Tags Redesign](../../decisions/2026-02-17-post-tags-redesign-and-premium.md)
