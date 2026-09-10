@@ -22,6 +22,11 @@ jest.mock('../config/supabase', () => ({
 }));
 
 const mockRegisterForPushNotificationsAsync = jest.fn();
+const mockGetMyProfile = jest.fn();
+
+jest.mock('@nepally/shared', () => ({
+  getMyProfile: (...args: unknown[]) => mockGetMyProfile(...args),
+}));
 
 jest.mock('../services/notifications', () => ({
   registerForPushNotificationsAsync: (...args: unknown[]) =>
@@ -36,7 +41,6 @@ import { supabase } from '../config/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const mockAuth = supabase.auth as jest.Mocked<typeof supabase.auth>;
-const mockFrom = supabase.from as jest.Mock;
 type GetSessionResult = Awaited<ReturnType<typeof mockAuth.getSession>>;
 type GetUserResult = Awaited<ReturnType<typeof mockAuth.getUser>>;
 type OnAuthStateChangeResult = ReturnType<typeof mockAuth.onAuthStateChange>;
@@ -51,6 +55,7 @@ describe('AuthContext', () => {
     jest.clearAllMocks();
     (AsyncStorage as jest.Mocked<typeof AsyncStorage>).clear();
     mockRegisterForPushNotificationsAsync.mockResolvedValue(true);
+    mockGetMyProfile.mockResolvedValue({ data: undefined });
     // Default: no active session
     mockAuth.getSession.mockResolvedValue({
       data: { session: null },
@@ -90,20 +95,13 @@ describe('AuthContext', () => {
       data: { user: { id: 'user-1' } },
       error: null,
     } as GetUserResult);
-    mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({
-        data: {
+    mockGetMyProfile.mockResolvedValue({ data: {
           id: 'user-1',
           email: 'test@nusa.com',
           full_name: 'Test User',
           trust_level: 1,
           is_premium: false,
-        },
-        error: null,
-      }),
-    });
+        } });
 
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
     // Flush all pending microtasks (getSession → getUser → profile fetch chain).
@@ -150,20 +148,13 @@ describe('AuthContext', () => {
       data: { user: { id: 'user-1' } },
       error: null,
     } as GetUserResult);
-    mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({
-        data: {
+    mockGetMyProfile.mockResolvedValue({ data: {
           id: 'user-1',
           email: 'test@nusa.com',
           full_name: 'Test User',
           trust_level: 1,
           is_premium: false,
-        },
-        error: null,
-      }),
-    });
+        } });
 
     renderHook(() => React.useContext(AuthContext), { wrapper });
     await act(async () => {});
@@ -190,14 +181,7 @@ describe('AuthContext', () => {
       data: { user: { id: 'user-1' } },
       error: null,
     } as GetUserResult);
-    mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({
-        data: { id: 'user-1', email: 'test@nusa.com', full_name: 'Test User', trust_level: 1, is_premium: false },
-        error: null,
-      }),
-    });
+    mockGetMyProfile.mockResolvedValue({ data: { id: 'user-1', email: 'test@nusa.com', full_name: 'Test User', trust_level: 1, is_premium: false } });
 
     // No timestamps in storage — simulates first launch after upgrade or storage clear
     renderHook(() => React.useContext(AuthContext), { wrapper });

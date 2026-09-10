@@ -7,7 +7,7 @@ const authMocks = vi.hoisted(() => ({
   getUserMock: vi.fn(),
   onAuthStateChangeMock: vi.fn(),
   signOutMock: vi.fn(),
-  getUserByIdMock: vi.fn(),
+  getMyProfileMock: vi.fn(),
   requestWebPushPermissionMock: vi.fn(),
   unsubscribeMock: vi.fn(),
 }));
@@ -27,7 +27,7 @@ vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
-    getUserById: authMocks.getUserByIdMock,
+    getMyProfile: authMocks.getMyProfileMock,
   };
 });
 
@@ -53,7 +53,7 @@ describe('AuthProvider', () => {
     authStateChangeCallback = null;
     authMocks.getSessionMock.mockResolvedValue({ data: { session: null } });
     authMocks.getUserMock.mockResolvedValue({ data: { user: null } });
-    authMocks.getUserByIdMock.mockResolvedValue({ data: undefined });
+    authMocks.getMyProfileMock.mockResolvedValue({ data: undefined });
     authMocks.requestWebPushPermissionMock.mockResolvedValue(true);
     authMocks.onAuthStateChangeMock.mockImplementation((callback: unknown) => {
       authStateChangeCallback = callback as typeof authStateChangeCallback;
@@ -70,7 +70,7 @@ describe('AuthProvider', () => {
     authMocks.getSessionMock.mockResolvedValue({
       data: { session: { user: { id: 'user-1' } } },
     });
-    authMocks.getUserByIdMock.mockResolvedValue({
+    authMocks.getMyProfileMock.mockResolvedValue({
       data: { id: 'user-1', full_name: 'Nusa User' },
     });
 
@@ -113,7 +113,7 @@ describe('AuthProvider', () => {
     authMocks.getSessionMock.mockResolvedValue({
       data: { session: { user: { id: 'user-1' } } },
     });
-    authMocks.getUserByIdMock.mockResolvedValue({
+    authMocks.getMyProfileMock.mockResolvedValue({
       data: { id: 'user-1', full_name: 'Nusa User' },
     });
 
@@ -142,7 +142,7 @@ describe('AuthProvider', () => {
     authMocks.getSessionMock.mockResolvedValue({
       data: { session: { user: { id: 'user-2' } } },
     });
-    authMocks.getUserByIdMock.mockResolvedValue({ data: { id: 'user-2' } });
+    authMocks.getMyProfileMock.mockResolvedValue({ data: { id: 'user-2' } });
 
     render(
       <AuthProvider>
