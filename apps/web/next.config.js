@@ -1,7 +1,17 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@nepally/shared'],
+
+  // Pin Turbopack's workspace root to the monorepo root. Without this Next.js
+  // infers the root by walking up for a lockfile and can pick a stray
+  // package-lock.json outside the repo (e.g. in the user's home directory),
+  // which breaks resolution of hoisted deps and @nepally/shared.
+  turbopack: {
+    root: path.join(__dirname, '..', '..'),
+  },
 
   // Only treat *.page.tsx/ts/jsx/js files as Next.js routes.
   // This prevents colocated *.test.tsx files in src/pages/ from being
