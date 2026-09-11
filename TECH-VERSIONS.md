@@ -44,7 +44,7 @@ This document serves as the single source of truth for all technology versions u
 | **Supabase** | Latest | Backend, database, auth, storage |
 | **@supabase/supabase-js** | ^2.x (2.116+) | Client SDK |
 | **PostgreSQL** | 17.6.x | Via Supabase (remote on 17 GA; local `config.toml` `major_version` synced to 17 on 2026-06-07) |
-| **Node.js** | >=20.19.0 | Required minimum (raised for vitest 4 / jsdom 29) |
+| **Node.js** | >=22.0.0 | Required minimum (raised 2026-09-11 for @supabase/supabase-js 2.116, which declares `engines.node >=22`). CI and `.nvmrc` run 24. |
 | **npm** | >=10.0.0 | Package manager |
 
 ## Development Tools

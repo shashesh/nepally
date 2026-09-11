@@ -16,8 +16,10 @@ const IGNORED_DIRS = new Set([
  * Recursively collect files under rootDir matching the given extensions.
  * Returns paths relative to rootDir, "/"-separated, sorted.
  *
- * Uses a hand-rolled walk rather than fs.globSync because package.json
- * engines.node is ">=20.19.0" and globSync landed in Node 22.
+ * Uses a hand-rolled walk rather than fs.globSync. globSync landed in Node 22,
+ * which the engines.node floor (">=22.0.0" since 2026-09-11) now permits; this is
+ * retained because it is covered by the docs checker tests and swapping it would
+ * be a behavior change, not because the API is unavailable.
  *
  * @param {string} rootDir
  * @param {string[]} extensions e.g. ['.md']

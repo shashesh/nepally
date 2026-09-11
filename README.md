@@ -43,8 +43,8 @@ For detailed setup instructions, see [Setup & Testing Guide](./docs/guides/setup
 | **Backend** | Supabase (PostgreSQL, Realtime, Auth, Storage) |
 | **Auth** | Supabase Auth (email + Google OAuth; phone SMS removed 2026-03-25) |
 | **Language** | TypeScript |
-| **React** | 19.1.0 (unified) |
-| **Node** | 20 (CI) |
+| **React** | 19.1.4 (unified) |
+| **Node** | >=22 (CI runs 24) |
 
 See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for full version details.
 
@@ -92,7 +92,7 @@ See [Monorepo Structure](./docs/architecture/monorepo-structure.md) for details.
 
 ## CI/CD
 
-CI runs on GitHub Actions. All jobs run on `ubuntu-latest` with Node 20.
+CI runs on GitHub Actions. All jobs run on `ubuntu-latest` with Node 24.
 
 [![CI](https://github.com/shashesh/nepally/actions/workflows/ci.yml/badge.svg)](https://github.com/shashesh/nepally/actions/workflows/ci.yml)
 [![Deploy Dev](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-dev.yml/badge.svg)](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-dev.yml)

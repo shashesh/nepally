@@ -4,7 +4,7 @@
 
 Before starting, ensure you have:
 
-- **Node.js**: Version 20.19.0 or higher
+- **Node.js**: Version 22.0.0 or higher
 - **npm**: Version 10.0.0 or higher
 - **Git**: For version control
 - **Code editor**: VS Code recommended
@@ -14,7 +14,7 @@ Before starting, ensure you have:
 
 ### Check your current version:
 ```bash
-node --version  # Should show v20.19.x or higher
+node --version  # Should show v22.x or higher
 npm --version   # Should show 10.x.x or higher
 ```
 
