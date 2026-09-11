@@ -170,12 +170,11 @@ describe('SignupPage', () => {
   });
 
   it('shows loading state while submitting', async () => {
-    signupMocks.signUpWithEmailMock.mockImplementation(
-      // Resolve with a real result shape: bare resolve() hands the page
-      // `undefined`, and `result.error` then throws as an unhandled
-      // rejection 2s later, inside whichever test is running by then.
-      () => new Promise((resolve) => setTimeout(() => resolve({ error: null }), 2000))
-    );
+    // Never settles: this test only asserts the pending state. A mock that
+    // resolves on a real timer outlives the test — cleanup unmounts the page,
+    // then the success path resumes and calls the shared mockPush inside
+    // whichever test is running by then. No timer, nothing to resume.
+    signupMocks.signUpWithEmailMock.mockImplementation(() => new Promise(() => {}));
     render(<SignupPage />);
     fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
