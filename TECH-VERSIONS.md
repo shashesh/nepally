@@ -77,10 +77,32 @@ This document serves as the single source of truth for all technology versions u
 - **Reason:** Expo 54 requires React 19. Both mobile and web use the exact same React version (19.1.4) to avoid workspace conflicts and duplicate-React issues. Enforced via root `overrides`.
 - **Why not React 19.2.x:** React Native 0.81 bundles `react-native-renderer@19.1.x` and enforces an **exact** React version match at runtime (`Incompatible React versions` error). React 19.2 is therefore blocked until the Expo SDK 54→56 migration (which ships RN 0.85 + renderer 19.2). This also blocks Mantine 9 (requires React ^19.2). See Deferred Upgrades.
 
-### Next.js 16.2.7 (upgraded from 15, 2026-06-05)
+### Next.js 16 (upgraded from 15, 2026-06-05)
 - **Reason:** Next 16 (Turbopack) builds and runs cleanly against the pinned React 19.1.4 — the earlier 16.x build failures are resolved. Verified: production build of all routes, plus the full unit + E2E suites.
 - **Historical note:** The project previously pinned Next 15.5.12 because an early Next 16 + React 19 combination failed during build (`Cannot read properties of undefined (reading 'ReactCurrentDispatcher')`). That is no longer the case.
+- **Patch level:** on 16.3.x since 2026-09-10 (16.2.7 → 16.3.4, pulled in by in-range
+  security bumps). The exact version lives in the dependency table above — this heading
+  stays at the major so it does not go stale on every patch release.
 - **`eslint-config-next` moved to 16** alongside the ESLint 10 flat-config migration (2026-09-10).
+- **`apps/web/AGENTS.md` and `apps/web/CLAUDE.md` are generated, and committed on
+  purpose.** `next dev` writes them when it detects an AI coding agent, via
+  `node_modules/next/dist/server/lib/generate-agent-files.js` (the path the generated
+  block itself cites; `dist/esm/...` is the same module's ESM build). The block is
+  delimited by `<!-- BEGIN:nextjs-agent-rules -->` markers and upserted in place, so a
+  Next upgrade rewrites it and shows up as a normal diff. With both files committed and
+  current, `next dev` writes nothing. Leave the markers alone — content outside them is
+  preserved.
+
+  The two files do **not** share a lifecycle, so deleting them is not symmetric:
+
+  | Deleted | What the next `next dev` does |
+  |---|---|
+  | Both | Recreates both — `AGENTS.md` with the block, `CLAUDE.md` with `@AGENTS.md` |
+  | `CLAUDE.md` only | Leaves it deleted. `AGENTS.md` exists, so the shim is skipped and Claude Code loses the import |
+  | `AGENTS.md` only | Leaves it deleted, and writes the block **into `CLAUDE.md`** instead |
+
+  So deleting only `CLAUDE.md` is a silent, non-self-healing loss, and deleting only
+  `AGENTS.md` relocates the block rather than restoring it. Delete both or neither.
 
 ### ESLint 10 + flat config (upgraded from 8, 2026-09-10)
 - **Reason:** ESLint 8 is EOL and npm-deprecated, and so is 9 (it is the
