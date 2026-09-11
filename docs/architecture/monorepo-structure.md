@@ -82,7 +82,7 @@ nepally/
 │
 ├── .gitignore
 ├── .prettierrc
-├── .eslintrc.json
+├── eslint.config.mjs     # Flat config (apps/web has its own)
 ├── tsconfig.json         # Base TypeScript config
 ├── package.json          # Root package.json (workspaces)
 ├── CLAUDE.md             # Instructions for Claude Code
