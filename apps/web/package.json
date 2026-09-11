@@ -11,7 +11,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -36,9 +36,10 @@
     "@types/node": "^24.13.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^15.5.12",
+    "eslint": "^10.10.0",
+    "eslint-config-next": "^16.3.4",
     "jsdom": "^29.1.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0"
   }
 }
