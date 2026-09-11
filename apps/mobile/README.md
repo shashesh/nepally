@@ -6,8 +6,8 @@ React Native mobile application for the Nepally platform (Nepalese United Suppor
 
 ### Prerequisites
 
-- Node.js >= 18.0.0
-- npm >= 9.0.0
+- Node.js >= 22.0.0
+- npm >= 10.0.0
 - Expo CLI
 
 ### Installation
@@ -102,17 +102,17 @@ src/
 
 ### Tech Stack
 
-- **React**: 19.1.0
+- **React**: 19.1.4
 - **React Native**: 0.81.5
 - **Expo**: 54.0
-- **Navigation**: React Navigation v6
+- **Navigation**: React Navigation v7
 - **State Management**: React Context + Hooks
 - **Backend**: Supabase (PostgreSQL)
 - **Storage**: AsyncStorage
 - **Icons**: Expo Vector Icons
-- **TypeScript**: 5.3.3+ (Full type safety)
+- **TypeScript**: 6.0.x (Full type safety)
 
-> **Note:** Both mobile and web apps use React 19.1.0 for consistency across the monorepo.
+> **Note:** Both mobile and web apps use React 19.1.4 for consistency across the monorepo.
 
 ## Features Implemented (Phase 1)
 

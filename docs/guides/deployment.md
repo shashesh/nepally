@@ -186,7 +186,7 @@ Rollback options:
 
 4. **Build passes locally but fails in Actions**
   - Confirm lockfile is committed and `npm ci` is used.
-  - Check Node version parity (workflows run Node 20).
+  - Check Node version parity (workflows run Node 24).
   - Verify required env vars are present in Vercel for the target environment.
 
 5. **Dev deploy did not trigger after a merge**
