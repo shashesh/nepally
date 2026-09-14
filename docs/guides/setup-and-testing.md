@@ -4,7 +4,7 @@
 
 Before starting, ensure you have:
 
-- **Node.js**: Version 20.19.0 or higher
+- **Node.js**: Version 22.0.0 or higher
 - **npm**: Version 10.0.0 or higher
 - **Git**: For version control
 - **Code editor**: VS Code recommended
@@ -14,7 +14,7 @@ Before starting, ensure you have:
 
 ### Check your current version:
 ```bash
-node --version  # Should show v20.19.x or higher
+node --version  # Should show v22.x or higher
 npm --version   # Should show 10.x.x or higher
 ```
 
@@ -22,8 +22,8 @@ npm --version   # Should show 10.x.x or higher
 ```bash
 # Download and install from https://nodejs.org/
 # Or use nvm-windows:
-nvm install 18
-nvm use 18
+nvm install 22
+nvm use 22
 ```
 
 ## Step 2: Install Dependencies
@@ -510,10 +510,10 @@ VALUES (
 
 ```bash
 # Check Node version
-node --version  # Should be >= 18
+node --version  # Should be >= 22
 
 # Check npm version
-npm --version  # Should be >= 9
+npm --version  # Should be >= 10
 
 # Check Expo CLI
 npx expo --version
@@ -576,8 +576,8 @@ rm -rf node_modules && npm install  # Fresh install
 ## Quick Start (TL;DR)
 
 ```bash
-# 1. Upgrade Node to 18+
-nvm install 18 && nvm use 18
+# 1. Upgrade Node to 22+
+nvm install 22 && nvm use 22
 
 # 2. Install dependencies
 cd C:\Users\shash\Documents\personal-github-repos\nepally
