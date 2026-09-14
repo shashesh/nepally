@@ -60,7 +60,9 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 ## Specs (point-in-time designs — archived when the work ships)
 
-_None active._ Shipped designs live in [archive/specs/](archive/specs/).
+- [specs/2026-09-14-web-ui-overhaul-design.md](specs/2026-09-14-web-ui-overhaul-design.md) — web UI overhaul: H1 Ink & Marigold tokens, Mantine-8 component library (v9-ready), responsive shell with phone bottom tabs, global search, PR rollout
+
+Shipped designs live in [archive/specs/](archive/specs/).
 
 
 ## User journeys
