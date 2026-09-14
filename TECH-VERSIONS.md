@@ -1,6 +1,6 @@
 # Nepally Technology Versions
 
-**Last Updated:** 2026-09-11
+**Last Updated:** 2026-09-14
 
 This document serves as the single source of truth for all technology versions used in the Nepally project.
 
@@ -34,7 +34,7 @@ This document serves as the single source of truth for all technology versions u
 
 | Package | Version | Notes |
 |---------|---------|-------|
-| **typescript** | 6.0.x | Shared across monorepo |
+| **typescript** | 7.0.x | Shared across monorepo; installed side by side with 6.0 (see Development Tools) |
 | **zod** | 4.x | Schema validation |
 
 ## Backend & Services
@@ -51,7 +51,7 @@ This document serves as the single source of truth for all technology versions u
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| **TypeScript** | 6.0.x | Type checking |
+| **TypeScript** | 7.0.x | Type checking. TS 7 is installed as the npm alias `@typescript/native` → `typescript@^7`. The `typescript` package name is aliased to `@typescript/typescript6` (6.0.x) because 7.0 ships no JS compiler API, and typescript-eslint and the Expo CLI still `require('typescript')`. That wrapper hoists real TypeScript 6 into the root `node_modules`, and its `tsc` bin collides with TS 7's, so the `type-check`/`build`/`dev` scripts call `node ../../node_modules/@typescript/native/bin/tsc` directly. Use `npm run type-check`, not a bare `npx tsc` (which may be 6.0). `next build` type-checks with `tsc6`. Drop both aliases and restore plain `tsc` once those tools support TS 7 (expected with 7.1). |
 | **ESLint** | 10.x | Linting, flat config (`eslint.config.mjs`). 8 and 9 are both EOL |
 | **Prettier** | 3.x | Code formatting |
 | **eslint-config-prettier** | 10.x | Disables formatting-related ESLint rules |

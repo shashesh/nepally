@@ -110,7 +110,7 @@ src/
 - **Backend**: Supabase (PostgreSQL)
 - **Storage**: AsyncStorage
 - **Icons**: Expo Vector Icons
-- **TypeScript**: 6.0.x (Full type safety)
+- **TypeScript**: 7.0.x (Full type safety)
 
 > **Note:** Both mobile and web apps use React 19.1.4 for consistency across the monorepo.
 

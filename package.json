@@ -47,6 +47,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
@@ -56,7 +57,7 @@
     "husky": "^9.0.10",
     "prettier": "^3.2.5",
     "tsx": "^4.23.13",
-    "typescript": "^6.0.3",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.70.0",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.11"

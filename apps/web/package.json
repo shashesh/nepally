@@ -12,7 +12,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "lint": "eslint .",
-    "type-check": "tsc --noEmit"
+    "type-check": "node ../../node_modules/@typescript/native/bin/tsc --noEmit"
   },
   "dependencies": {
     "@mantine/core": "^8.3.18",
@@ -36,10 +36,11 @@
     "@types/node": "^24.13.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "eslint": "^10.10.0",
     "eslint-config-next": "^16.3.4",
     "jsdom": "^29.1.1",
-    "typescript": "^6.0.3",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.70.0"
   }
 }
