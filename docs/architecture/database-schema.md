@@ -1327,7 +1327,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 |---|---|---|
 | `post_search_document(title, description)` | `tsvector` | IMMUTABLE; title weight A, body weight B, `english`. GIN expression index `idx_posts_search_document` |
 | `person_search_document(full_name)` | `tsvector` | IMMUTABLE; `simple` (no stemming). GIN expression index `idx_users_person_search_document` |
-| `build_prefix_tsquery(input, config)` | `tsquery` | Splits on non-alphanumerics, ANDs words, prefix-matches the last; NULL for empty input |
+| `build_prefix_tsquery(input, config)` | `tsquery` | Splits on whitespace, punctuation and ASCII non-alphanumerics (deliberately not `[:alnum:]`, so Devanagari vowel signs stay inside words); ANDs the words and prefix-matches the last; NULL for empty input |
 | `search_posts(p_query, p_metro_id, p_all_metros)` | `id, rank, created_at, total_count` | Active posts; metro + global unless `p_all_metros` |
 | `search_listings(p_query, p_metro_id, p_all_metros)` | `id, rank, refreshed_at, total_count` | Active listings; uses `marketplace_listings.search_vector` |
 | `search_people(p_query, p_metro_id)` | public columns + `is_local, rank, total_count` | Non-banned members |
