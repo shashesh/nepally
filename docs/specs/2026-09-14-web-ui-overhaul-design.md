@@ -111,7 +111,7 @@ tokens only**.
 | `--surface-sunken` | `oklch(94% .012 75)` | wells, skeleton base |
 | `--text-1` | `oklch(19% .02 265)` | primary text (ink-tinted) |
 | `--text-2` | `oklch(44% .015 75)` | secondary text |
-| `--text-3` | `oklch(60% .014 75)` | tertiary / meta — **contrast-verified in PR 1, darkened if < 4.5:1** |
+| `--text-3` | `oklch(54% .014 75)` | tertiary / meta — 60% failed 4.5:1 on `--surface-0`; enforced by the PR 1 contrast test |
 | `--border-subtle` | `oklch(92% .012 75)` | card and divider borders |
 | `--border-solid` | `oklch(86% .014 75)` | inputs, outline buttons, chips |
 | `--action-bg` | `oklch(26% .07 265)` | primary buttons, active pills/tabs (ink navy) |
@@ -119,13 +119,13 @@ tokens only**.
 | `--action-fg` | `oklch(100% 0 0)` | |
 | `--accent` | `oklch(76% .15 70)` | marigold: brand dot, button underline, active indicators, unread dots — **never text** |
 | `--accent-tint` | `oklch(94% .05 85)` | Local chip, Contributor badge, search highlight |
-| `--accent-ink` | `oklch(42% .10 65)` | text on `--accent-tint` |
+| `--accent-ink` | `oklch(42% .09 65)` | text on `--accent-tint` (chroma .10 is outside sRGB) |
 | `--trust-new-fg` / `-bg` | `oklch(40% .01 75)` / `oklch(94% .008 75)` | Level 0 |
 | `--trust-verified-fg` / `-bg` | `oklch(35% .08 155)` / `oklch(95% .025 155)` | Level 1 (moss) |
 | `--trust-contributor-fg` / `-bg` | `var(--accent-ink)` / `var(--accent-tint)` | Level 2 |
-| `--emergency-fg` / `-bg` / `-border` | `oklch(42% .19 25)` / `oklch(95% .04 25)` / `oklch(85% .08 25)` | Emergency tag and banners only |
-| `--success` / `--warning` / `--danger` | `oklch(45% .08 155)` / `oklch(55% .13 65)` / `oklch(50% .20 25)` | form validation, toasts |
-| `--tag-housing` / `-jobs` / `-help` / `-question` / `-politics` / `-discussion` | `oklch(55% .12 155)` / `oklch(52% .11 255)` / `oklch(65% .14 75)` / `oklch(50% .11 300)` / `oklch(45% .03 265)` / `oklch(55% .09 200)` | topic dots (not full-colour pills); `--tag-emergency` = `var(--emergency-fg)`. Web-only — shared tag constants used by mobile are not changed |
+| `--emergency-fg` / `-bg` / `-border` | `oklch(42% .16 25)` / `oklch(95% .04 25)` / `oklch(85% .08 25)` | Emergency tag and banners only |
+| `--success` / `--warning` / `--danger` | `oklch(45% .08 155)` / `oklch(55% .11 65)` / `oklch(50% .20 25)` | form validation, toasts |
+| `--tag-housing` / `-jobs` / `-help` / `-question` / `-politics` / `-discussion` | `oklch(55% .12 155)` / `oklch(52% .11 255)` / `oklch(65% .12 75)` / `oklch(50% .11 300)` / `oklch(45% .03 265)` / `oklch(55% .09 200)` | topic dots (not full-colour pills); `--tag-emergency` = `var(--emergency-fg)`. Web-only — shared tag constants used by mobile are not changed |
 
 **Typography:** `--font-display` Gambarino (headings, post titles, section titles; weight
 400), `--font-body` Switzer (400/500/600). Scale: `--font-size-xs` 13px,
@@ -168,7 +168,8 @@ self-hosting; if not, load from the Fontshare CDN with `preconnect` and `display
 - `components`: theme-level `classNames`/`defaultProps` for Button (primary = ink with
   marigold inset underline; `default` = outline on `--border-solid`), Badge, Input,
   Menu, Popover, Modal, Tabs (marigold active indicator), Switch, Skeleton, Notification.
-- `<Notifications pauseResetOnHover="notification" />` set explicitly (v9 default changes).
+- Notification hover pausing: `pauseResetOnHover` does not exist in `@mantine/notifications`
+  8.3.18, so it is set during the Mantine 9 upgrade (§8).
 - **Sync test** (`mantine-theme.test.ts`): parses `tokens.css` and asserts theme base
   shades, radii, spacing and font sizes equal the token values.
 - **Contrast test** (`tokens.contrast.test.ts`): asserts WCAG AA (4.5:1) for every
@@ -294,7 +295,7 @@ names ("Notifications, 3 unread"); popover/menus keyboard-operable via Mantine.
 **UX (S3 → S1):**
 - **Suggestions** (`SearchCombobox`, desktop/tablet top bar): starts at 2 characters,
   250ms debounce, stale responses discarded. Groups: Posts (3), Listings (2), People (3);
-  empty groups hidden. Each group fetches limit + 1; when it has more, the group shows
+  empty groups hidden. Each group's `total_count` says whether it has more; if so it shows
   "More posts →" linking to `/search?q=…&tab=posts`. Footer "See all results for “q”"
   → `/search?q=…` (All tab). ↑/↓ move, Enter opens the highlighted item or — with nothing
   highlighted — the results page; Escape closes. No counts in the dropdown.
@@ -309,12 +310,13 @@ names ("Notifications, 3 unread"); popover/menus keyboard-operable via Mantine.
   login otherwise).
 
 **Database — `supabase/migrations/037_search.sql` (additive only):**
-- `posts.search_vector tsvector GENERATED ALWAYS AS (setweight(to_tsvector('english',
-  coalesce(title,'')),'A') || setweight(to_tsvector('english',
-  coalesce(description,'')),'B')) STORED` + GIN index.
-- `users.name_search tsvector GENERATED ALWAYS AS (to_tsvector('simple',
-  coalesce(full_name,''))) STORED` + GIN index; `GRANT SELECT (name_search) ON
-  public.users TO authenticated` (derived solely from the already-public `full_name`).
+- `public.post_search_document(title, description)` (IMMUTABLE: title weighted `A`, body
+  `B`, `english` config) with a GIN **expression** index on `posts`.
+- `public.person_search_document(full_name)` (IMMUTABLE, `simple` config — names are not
+  stemmed) with a GIN expression index on `users`.
+- Expression indexes instead of `STORED` columns: a `posts.search_vector` column would
+  ship in every `select('*')` feed payload, and a `users` column would need a new column
+  grant. The search functions call the identical expressions, so the indexes apply.
 - `public.build_prefix_tsquery(p_input text, p_config regconfig) RETURNS tsquery`
   (IMMUTABLE): splits on non-alphanumerics, drops empty tokens, ANDs them, adds `:*` to
   the last token; returns NULL for empty input. All sanitising happens here, so callers
@@ -332,11 +334,13 @@ names ("Notifications, 3 unread"); popover/menus keyboard-operable via Mantine.
     trust_level, metro_area_id, follower_count`; ordered by
     (`metro_area_id = p_metro_id`) desc, `ts_rank` desc, `follower_count` desc.
   - Each returns a `total_count` (window count) for the results-page tab labels.
-- Posts and listings RPCs should return rows compatible with the existing
-  `POST_SELECT` / `LISTING_SELECT` embeds. *Verify in PR 3a* that PostgREST preserves the
-  function's ordering when embedding via `.rpc(...).select(...)`; fallback: RPC returns
-  ordered `id, rank, total_count` and the shared API fetches rows with `.in('id', ids)`
-  and re-orders client-side.
+- Result shape and ordering (decided during planning — no verification spike):
+  `search_posts` returns `id, rank, created_at, total_count`; `search_listings` returns
+  `id, rank, refreshed_at, total_count`; `search_people` returns the public columns plus
+  `is_local, rank, total_count`. The shared API applies ordering and paging with
+  PostgREST `.order()` / `.range()` on the function result, then hydrates posts and
+  listings with the existing `POST_SELECT` / `LISTING_SELECT` via `.in('id', ids)` and
+  restores the rank order.
 
 **Shared — `packages/shared`:**
 - `types/search.ts`: `SearchScope`, `SearchTab`, `PostSearchResult`,
@@ -346,7 +350,7 @@ names ("Notifications, 3 unread"); popover/menus keyboard-operable via Mantine.
   if < 2 chars, max length) and `highlightSegments(text, query)` → `{ text, match }[]`.
 - `api/search.ts`: `searchPosts`, `searchListings`, `searchPeople` (paged, with
   `totalCount`) and `searchSuggestions(supabase, q, { metroId, allMetros })` (three
-  calls in parallel, limit + 1 per group → `hasMore`). All accept `SupabaseClient`.
+  calls in parallel; each group's `hasMore` comes from its `total_count`). All accept `SupabaseClient`.
 
 **Web:** `components/search/SearchCombobox` (Mantine `Combobox`), `SearchOverlay`,
 `SearchResultItem` (`post` / `listing` / `person`), `hooks/useSearchSuggestions`
@@ -370,10 +374,10 @@ Each PR is its own branch off `master`; commits are free, pushes require approva
 
 | # | PR | Contents |
 |---|---|---|
-| 0 | **Safety net** | Playwright `visual` project (screenshots) for login, signup, feed, post detail, create post, profile, public profile, events, event detail, marketplace, listing detail, messages, notifications — at 1280px desktop and Pixel 7 phone; `phone` project for nav e2e; `@axe-core/playwright` scan per page (fail on critical/serious); replace brittle selectors (`data-loading`, `data-disabled`, class substrings, `locator('..')`) with role/label queries; baseline tooling (§6). Captures today's UI. |
+| 0 | **Safety net** | Playwright `visual` project (screenshots) for login, signup, feed, post detail, create post, profile, public profile, events, event detail, marketplace, listing detail, messages, notifications — at 1280px desktop and Pixel 7 phone; `@axe-core/playwright` scan per page (fail on critical/serious violations not in `a11y-baseline.json`); fallback route for unmocked Supabase REST calls; replace brittle selectors (`data-loading`, `data-disabled`, class substrings, `locator('..')`) with role/label queries; baseline tooling (§6). Captures today's UI. |
 | 1 | **Foundation** | `tokens.css`, `fonts.ts`, `legacy-aliases.css`, rebuilt `mantine-theme.ts` + sync and contrast tests, global focus ring, `test-utils` uses the real theme, `ModalsProvider`, explicit Mantine 9-sensitive settings, `guard-css-tokens.js` and `forbid-elements` with allowlists, delete `design-system-next.css`, create `docs/architecture/web-ui-system.md`. Screenshots intentionally re-baselined. |
-| 2 | **Shell + primitives** | §4.3 shell; `components/ui/*` from §4.2; `useInfiniteScroll`; unread hooks; shared `getInitials`/avatar colour; Profile "Settings & more"; fix `/posts/new` and `/marketplace/new`; remove the broken search input. |
-| 3a | **Search: data + shared** | `037_search.sql`; `types/search.ts`, `utils/searchQuery.ts`, `api/search.ts` + tests; PostgREST ordering verification; extend `scripts/security/users-pii-smoke.ts` for `search_people` (public columns only, banned excluded). Migration applied before 3b deploys. |
+| 2 | **Shell + primitives** | §4.3 shell; `components/ui/*` from §4.2 (except `ImageLightbox`/`PhotoCarousel` → PR 4 and `ImageUploader` → PR 5, where first adopted); `phone` Playwright project + bottom-tab e2e; `useInfiniteScroll`; unread hooks; shared `getInitials`/avatar colour; Profile "Settings & more"; fix `/posts/new` and `/marketplace/new`; remove the broken search input. |
+| 3a | **Search: data + shared** | `037_search.sql`; `types/search.ts`, `utils/searchQuery.ts`, `api/search.ts` + tests; extend `scripts/security/users-pii-smoke.ts` for `search_people` (public columns only, banned excluded). Migration applied before 3b deploys. |
 | 3b | **Search: web** | `SearchCombobox`, `SearchOverlay`, `SearchResultItem`, `useSearchSuggestions`, `/search` page; unit, e2e (type → pick; "more posts" → Posts tab; all-metros toggle), visual (dropdown + page, desktop + phone); `docs/product/features/search.md`. |
 | 4 | **Feed + post detail** | `PostCard` (stretched link), `PostActions`, `PostMeta`, `CommentThread`, `CommentComposer`, `ImageLightbox`, `PhotoCarousel` adoption. |
 | 5 | **Create flows** | posts, marketplace, events create/edit on Mantine inputs; `ImageUploader`; consolidated upload logic. |
@@ -404,9 +408,11 @@ Each PR is its own branch off `master`; commits are free, pushes require approva
 - **Visual regression:** `toHaveScreenshot` with animations disabled, dynamic text
   (relative times, counts) masked, clock frozen via `page.clock`, self-hosted fonts.
   Baselines are **Linux-only** (CI runs `ubuntu-latest`): generated in the official
-  Playwright Docker image (`npm run test:visual:update:docker`) or via a new
-  `update_visual_baselines` input on `ci-manual.yml` that uploads snapshots as an artifact
-  to commit. The `visual` project is skipped on non-Linux hosts unless run in Docker.
+  Playwright Docker image (`npm run test:visual:docker --workspace=apps/web -- --update`)
+  or by the manual `Visual baselines` workflow (`.github/workflows/visual-baselines.yml`),
+  whose artifact is committed. PR CI runs the visual projects in a `web_visual` job inside
+  the same container image. Non-Linux hosts skip screenshots; `test:visual:smoke` still
+  checks every page reaches its ready state.
 - **Accessibility:** `@axe-core/playwright` on every visual page, failing on
   critical/serious violations.
 - **Security:** `npm run test:security:users-pii` extended for `search_people`.
@@ -421,21 +427,23 @@ Each PR is its own branch off `master`; commits are free, pushes require approva
 | Interim inconsistency: pages with hard-coded hex look off-palette until their PR | Worst offenders (marketplace, promote, events) scheduled explicitly; aliases keep token-based pages coherent |
 | Screenshot baselines differ across OS | Linux-only baselines via Docker / CI dispatch |
 | Bottom tab bar colliding with input bars / iOS safe areas | Hidden on task routes; safe-area padding; phone e2e + screenshots |
-| PostgREST may not preserve RPC ordering with embeds | Verify in PR 3a; ids-then-fetch fallback |
-| `STORED` generated column rewrites `posts`/`users` on migration | Tables are small at current scale; apply off-peak |
-| Search load from suggestions | 2-char minimum, 250ms debounce, limit + 1 rows, GIN indexes |
+| Ranked results lose their order when hydrated | Functions return ranked ids; the shared API orders via PostgREST and re-orders hydrated rows (unit-tested) |
+| GIN expression-index builds briefly block writes on `posts`/`users` | Tables are small at current scale; apply off-peak |
+| Search load from suggestions | 2-char minimum, 250ms debounce, small page sizes, GIN expression indexes |
+| Today's UI already has serious axe violations | Recorded per page in `a11y-baseline.json`; only new violations fail; area PRs delete their entries |
 
 ## 8. Mantine 9 readiness (executed after the Expo upgrade)
 
 Pre-neutralised in this effort: explicit `defaultRadius`; `light` variant via
-`variantColorResolver`; explicit `pauseResetOnHover`; no use of `Collapse in`,
+`variantColorResolver`; no use of `Collapse in`,
 `Spoiler initialState`, `Grid gutter`, `Text`/`Anchor` `color`,
 `TypographyStylesProvider`, `positionDependencies`, or the split/renamed hooks
 (`useFullscreen`, `useMouse`, `useMutationObserver`, `useHeadroom` boolean);
 `useLocalStorage` always given a `defaultValue`.
 
 Upgrade steps (separate PR): Expo 54 → 56+ unblocks React 19.2+ → bump all `@mantine/*`
-(including `modals`, `dropzone`) to 9.x → run unit, e2e, **visual (expect zero diffs)** →
+(including `modals`, `dropzone`) to 9.x → set `<Notifications pauseResetOnHover="notification" />` (keeps today's
+per-notification pausing) → run unit, e2e, **visual (expect zero diffs)** →
 update `TECH-VERSIONS.md` (remove the React 19.2 / Mantine 9 deferred rows).
 
 ## 9. Documentation
