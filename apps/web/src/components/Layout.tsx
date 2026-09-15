@@ -8,6 +8,7 @@ import { useUnreadMessageCount } from '../hooks/useUnreadMessageCount';
 import { BottomTabBar } from './layout/BottomTabBar';
 import { isTaskRoute } from './layout/navItems';
 import { PublicShell } from './layout/PublicShell';
+import { SearchEntry } from './layout/SearchEntry';
 import { SideRail } from './layout/SideRail';
 import { TopBar } from './layout/TopBar';
 import { getNotificationHref } from './notifications/notificationHref';
@@ -69,6 +70,7 @@ export default function Layout({ children }: LayoutProps) {
           onSignOut={() => {
             void handleSignOut();
           }}
+          search={<SearchEntry />}
         />
       </AppShell.Header>
 

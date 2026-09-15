@@ -5,6 +5,7 @@ import { useMediaQuery } from '@mantine/hooks';
 import { IconBell } from '@tabler/icons-react';
 import type { Notification } from '@nepally/shared';
 import { NotificationItem } from '../notifications/NotificationItem';
+import { PHONE_MEDIA_QUERY } from './breakpoints';
 import styles from './NotificationBell.module.css';
 
 export interface NotificationBellProps {
@@ -15,11 +16,8 @@ export interface NotificationBellProps {
   onDelete: (notification: Notification) => void;
 }
 
-/** Phones (below 48em) navigate to /notifications instead of opening a popover. */
-const PHONE_QUERY = '(max-width: 47.99em)';
-
 export function NotificationBell({ unreadCount, items, onOpen, onMarkAllRead, onDelete }: NotificationBellProps) {
-  const isPhone = useMediaQuery(PHONE_QUERY);
+  const isPhone = useMediaQuery(PHONE_MEDIA_QUERY);
   const [opened, setOpened] = useState(false);
   const label = unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications';
   const badge = unreadCount > 9 ? '9+' : unreadCount;
