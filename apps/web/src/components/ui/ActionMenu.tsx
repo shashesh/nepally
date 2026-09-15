@@ -34,8 +34,8 @@ export function ActionMenu({ label, items, target, position = 'bottom-end' }: Ac
       </Menu.Target>
       <Menu.Dropdown>
         {items.map((item) =>
-          item.href ? (
-            <Menu.Item key={item.key} component={Link} href={item.href} leftSection={item.icon} disabled={item.disabled}>
+          item.href && !item.disabled ? (
+            <Menu.Item key={item.key} component={Link} href={item.href} leftSection={item.icon}>
               {item.label}
             </Menu.Item>
           ) : (

@@ -46,4 +46,20 @@ describe('ActionMenu', () => {
     fireEvent.keyDown(menu, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
   });
+
+  it('renders a disabled link item as a disabled button without an href', async () => {
+    render(<ActionMenu label="Post options" items={[{ key: 'profile', label: 'View profile', href: '/users/u1', disabled: true }]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Post options' }));
+    const item = await screen.findByRole('menuitem', { name: 'View profile' });
+    expect(item.getAttribute('href')).toBeNull();
+    expect((item as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('does not run a disabled item action', async () => {
+    const onClick = vi.fn();
+    render(<ActionMenu label="Post options" items={[{ key: 'report', label: 'Report', onClick, disabled: true }]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Post options' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Report' }));
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });
