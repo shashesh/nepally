@@ -87,6 +87,15 @@ The spec is updated in the same commit as this plan.
    - **Why:** Playwright's default `--update-snapshots` rewrites only snapshots that fail comparison. A near-white tab bar on a near-white page stays within `maxDiffPixelRatio: 0.01`, so those snapshots never failed.
    - **Fix:** the Visual baselines workflow, `scripts/visual/run-in-docker.mjs` and `test:visual:update` now pass `--update-snapshots=all`.
    - **Coverage:** pixel diffs cannot see low-contrast chrome, so the phone e2e suite now asserts the tab bar is visible on `/messages`, `/notifications` and post detail.
+11. **Search tokenizer keeps Devanagari words whole.** Migration 037's `build_prefix_tsquery` splits input on `[[:space:][:punct:]!-/:-@[-`{-~]+`, not on `[^[:alnum:]]+` as first planned.
+   - **Why:** Postgres `[:alnum:]` excludes combining marks, so the planned pattern split `राम थापा` into `{र,म,थ,प}` and made Devanagari names unsearchable.
+   - **Evidence:** before the migration was written, read-only queries on the live project confirmed three things about the chosen pattern. It keeps `{राम, थाप}`, it still strips every tsquery operator character, and it produces `'thapa' & 'nclex' & 'pr':*` for the English example.
+12. **Migration 037 is live, and the tracker is realigned.** 037 was applied to `nusa-staging` on 2026-09-15 with the user's approval.
+   - **Verification:** functions, indexes and the anon denial were checked. Postgres and `authenticated` returned the same counts (people 20/20, posts 100/100, listings 3/3), so invoker rights work. The advisors raised no new lints. The users PII smoke test, extended for `search_people`, passes.
+   - **Tracker:** 036 still had its timestamp version, so 036 and 037 were both realigned to numeric versions in `supabase_migrations.schema_migrations`.
+13. **Carried into PR 3b.**
+   - **Total count:** a page past the end reports `totalCount` 0, so `useSearchPage` must keep the total from page 1.
+   - **Suggestion errors:** `searchSuggestions` is all-or-nothing on error. Enter still opens `/search`, where each tab loads on its own.
 
 ## Live tracker
 
@@ -96,8 +105,8 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 |---|---|---|---|---|---|
 | 0 Safety net | `test/web-visual-safety-net` | 0.1–0.6 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines generated in CI (no local Docker) |
 | 1 Foundation | `feat/web-design-tokens` (stacked on PR 0) | 1.1–1.7 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines generated in CI (db52500) |
-| 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | In Progress | 2026-09-15 | tasks done; awaiting CI baselines |
-| 3a Search: data + shared | `feat/search-data` | 3a.1–3a.4 | Not Started | 2026-09-14 | migration applied before 3b deploys |
+| 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines f19b133 (CI run 35016011832) |
+| 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Completed (pushed, not merged) | 2026-09-15 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
 | 3b Search: web | `feat/search-web` | 3b.1–3b.6 | Not Started | 2026-09-14 | |
 | 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
