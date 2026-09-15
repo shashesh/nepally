@@ -63,6 +63,14 @@ describe('getInitials', () => {
   it('returns ? for an empty name', () => {
     expect(getInitials('   ')).toBe('?');
   });
+
+  it('handles a first character outside the BMP without splitting the surrogate pair', () => {
+    expect(getInitials('😀 Sita')).toBe('😀S');
+  });
+
+  it('handles a single astral-plane word by code point, not UTF-16 code unit', () => {
+    expect(getInitials('😀😃')).toBe('😀😃');
+  });
 });
 
 describe('getAvatarToneIndex', () => {

@@ -18,6 +18,7 @@ describe('Avatar', () => {
   it('shows the verified mark for Level 1+ when requested', () => {
     render(<Avatar name="Sita Gurung" trustLevel={1} showVerifiedMark />);
     expect(screen.getByTestId('verified-mark')).toBeDefined();
+    expect(screen.getByRole('img', { name: 'Verified' })).toBeDefined();
   });
 
   it('hides the verified mark for Level 0 or when not requested', () => {

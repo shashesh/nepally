@@ -37,12 +37,17 @@ export function formatPublicName(fullName: string): string {
 /**
  * Initials for avatar placeholders: first + last word initials, or the first two
  * letters of a single word. "?" when the name is blank.
+ *
+ * Operates on Unicode code points (via Array.from), not UTF-16 code units, so a
+ * name starting with an astral-plane character (e.g. an emoji) isn't split into
+ * a lone surrogate.
  */
 export function getInitials(fullName: string): string {
+  const chars = (s: string) => Array.from(s);
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  if (parts.length === 1) return chars(parts[0]).slice(0, 2).join('').toUpperCase();
+  return (chars(parts[0])[0] + chars(parts[parts.length - 1])[0]).toUpperCase();
 }
 
 /** Deterministic tone for an avatar placeholder, in [0, toneCount). */

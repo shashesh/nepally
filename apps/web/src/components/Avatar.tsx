@@ -53,7 +53,7 @@ export default function Avatar({
         {getInitials(name)}
       </MantineAvatar>
       {showVerifiedMark && trustLevel >= 1 ? (
-        <span className={styles.verifiedMark} data-testid="verified-mark" aria-hidden="true">
+        <span className={styles.verifiedMark} data-testid="verified-mark" role="img" aria-label="Verified">
           ✓
         </span>
       ) : null}
