@@ -35,6 +35,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 - [architecture/database-schema.md](architecture/database-schema.md) — tables, RLS policies, migration numbering
 - [architecture/supabase-setup.md](architecture/supabase-setup.md) — project config, auth providers, storage
 - [architecture/migration-workflow.md](architecture/migration-workflow.md) — how migrations are authored/applied (manual/MCP, numeric prefixes); 2026-06-07 tracker realignment + before-snapshot
+- [architecture/web-ui-system.md](architecture/web-ui-system.md) — web design tokens, fonts, Mantine theme, guards and allowlists
 
 ## Product
 

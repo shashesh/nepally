@@ -29,6 +29,7 @@ This document serves as the single source of truth for all technology versions u
 |---------|---------|-------|
 | **next** | 16.3.x | Turbopack; works with React 19.1.4 |
 | **eslint-config-next** | 16.x | Flat config, exported as a config array; requires ESLint >= 9 |
+| **@mantine/core / hooks / form / notifications / modals** | 8.3.x | All on one version; 9.x waits for React 19.2 (see Deferred Upgrades) |
 
 ### Shared Package (`packages/shared`)
 
@@ -70,6 +71,7 @@ This document serves as the single source of truth for all technology versions u
 | **jsdom** | ^29.1.1 | apps/web | Browser-like test environment for web |
 | **@playwright/test** | ^1.49.0 | apps/web | E2E (runs against a production build — see playwright.config.ts) |
 | **@axe-core/playwright** | ^4.13.0 | apps/web | Axe scans in the visual projects; known violations in `e2e/visual/a11y-baseline.json` |
+| **culori** | ^4.0.2 | apps/web | Colour maths for token contrast and theme-sync tests |
 
 ## Why These Versions?
 

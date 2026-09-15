@@ -67,7 +67,7 @@ Everything else                        → packages/shared/
 - Before implementing features, read [docs/guides/code-sharing.md](./docs/guides/code-sharing.md) and [docs/architecture/monorepo-structure.md](./docs/architecture/monorepo-structure.md)
 
 ### Styling Rules
-- **Web**: NEVER inline `style={{}}`. Always CSS Modules (`.module.css`), reference via `className={styles.x}`
+- **Web**: NEVER inline `style={{}}`. Always CSS Modules (`.module.css`), reference via `className={styles.x}`. Use semantic tokens from `apps/web/src/styles/tokens.css` — no colour literals (see [docs/architecture/web-ui-system.md](./docs/architecture/web-ui-system.md))
 - **Mobile**: NEVER inline style objects. Always `StyleSheet.create()` at bottom of file
 
 ### Unit Testing Policy (MANDATORY)
