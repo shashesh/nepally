@@ -1,13 +1,17 @@
 import React from 'react';
 import { Avatar as MantineAvatar } from '@mantine/core';
+import { getAvatarToneIndex, getInitials } from '@nepally/shared';
+import styles from './Avatar.module.css';
 
-type AvatarSize = 'small' | 'medium' | 'large' | 'xlarge';
+export type AvatarSize = 'small' | 'medium' | 'large' | 'xlarge';
 
 interface AvatarProps {
   name: string;
   photoUrl?: string | null;
   trustLevel?: number;
   size?: AvatarSize;
+  /** Overlay a small check for Level 1+ members. */
+  showVerifiedMark?: boolean;
 }
 
 const SIZE_MAP: Record<AvatarSize, number> = {
@@ -17,52 +21,42 @@ const SIZE_MAP: Record<AvatarSize, number> = {
   xlarge: 80,
 };
 
-const AVATAR_COLORS = [
-  '#5B8EC9', // Soft blue
-  '#4BA3A3', // Teal
-  '#6B9E78', // Sage
-  '#C4915E', // Amber
-  '#C47A82', // Rose
-  '#8B7EC7', // Lavender
-  '#7B8FA1', // Slate
-  '#D08770', // Coral
-  '#9B7653', // Warm brown
-  '#6C8EAD', // Steel blue
+const TONE_CLASSES = [
+  styles.tone1,
+  styles.tone2,
+  styles.tone3,
+  styles.tone4,
+  styles.tone5,
+  styles.tone6,
+  styles.tone7,
+  styles.tone8,
 ];
-
-export function getColorFromName(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-}
 
 export default function Avatar({
   name,
   photoUrl,
-  trustLevel: _trustLevel = 0,
+  trustLevel = 0,
   size = 'medium',
+  showVerifiedMark = false,
 }: AvatarProps) {
-  const placeholderColor = !photoUrl ? getColorFromName(name) : undefined;
+  const toneClass = TONE_CLASSES[getAvatarToneIndex(name, TONE_CLASSES.length)];
 
   return (
-    <MantineAvatar
-      src={photoUrl}
-      alt={`${name}'s avatar`}
-      size={SIZE_MAP[size]}
-      radius="xl"
-      color={placeholderColor}
-    >
-      {getInitials(name)}
-    </MantineAvatar>
+    <span className={styles.root}>
+      <MantineAvatar
+        src={photoUrl ?? null}
+        alt={`${name}'s avatar`}
+        size={SIZE_MAP[size]}
+        radius="xl"
+        classNames={{ placeholder: toneClass }}
+      >
+        {getInitials(name)}
+      </MantineAvatar>
+      {showVerifiedMark && trustLevel >= 1 ? (
+        <span className={styles.verifiedMark} data-testid="verified-mark" aria-hidden="true">
+          ✓
+        </span>
+      ) : null}
+    </span>
   );
 }

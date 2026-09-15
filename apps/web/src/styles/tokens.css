@@ -84,6 +84,24 @@
   --tag-discussion: oklch(55% 0.09 200);
   --tag-emergency: var(--emergency-fg);
 
+  /* ── Avatar placeholder tones (bg / fg pairs) ─────────── */
+  --avatar-tone-1-bg: oklch(92% 0.04 25);
+  --avatar-tone-1-fg: oklch(38% 0.07 25);
+  --avatar-tone-2-bg: oklch(92% 0.04 70);
+  --avatar-tone-2-fg: oklch(38% 0.07 70);
+  --avatar-tone-3-bg: oklch(92% 0.04 110);
+  --avatar-tone-3-fg: oklch(38% 0.07 110);
+  --avatar-tone-4-bg: oklch(92% 0.04 155);
+  --avatar-tone-4-fg: oklch(38% 0.07 155);
+  --avatar-tone-5-bg: oklch(92% 0.04 200);
+  --avatar-tone-5-fg: oklch(38% 0.07 200);
+  --avatar-tone-6-bg: oklch(92% 0.04 235);
+  --avatar-tone-6-fg: oklch(38% 0.07 235);
+  --avatar-tone-7-bg: oklch(92% 0.04 265);
+  --avatar-tone-7-fg: oklch(38% 0.07 265);
+  --avatar-tone-8-bg: oklch(92% 0.04 320);
+  --avatar-tone-8-fg: oklch(38% 0.07 320);
+
   /* ── Typography ───────────────────────────────────────── */
   /* FontVariables.tsx overrides both families with the self-hosted faces. */
   --font-display: 'Gambarino', 'Source Serif Pro', Georgia, serif;

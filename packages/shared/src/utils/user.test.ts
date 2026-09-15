@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPublicName, getTrustLabel } from './user';
+import { formatPublicName, getAvatarToneIndex, getInitials, getTrustLabel } from './user';
 import { TrustLevel } from '../constants/trustLevels';
 
 describe('formatPublicName', () => {
@@ -44,5 +44,42 @@ describe('getTrustLabel', () => {
   it('returns "Unknown" for an unrecognized level', () => {
     expect(getTrustLabel(99)).toBe('Unknown');
     expect(getTrustLabel(-1)).toBe('Unknown');
+  });
+});
+
+describe('getInitials', () => {
+  it('uses first and last initials for multi-word names', () => {
+    expect(getInitials('Ram Bahadur Thapa')).toBe('RT');
+  });
+
+  it('uses the first two letters of a single word', () => {
+    expect(getInitials('bishal')).toBe('BI');
+  });
+
+  it('collapses extra whitespace', () => {
+    expect(getInitials('  Sita   Gurung ')).toBe('SG');
+  });
+
+  it('returns ? for an empty name', () => {
+    expect(getInitials('   ')).toBe('?');
+  });
+});
+
+describe('getAvatarToneIndex', () => {
+  it('is stable for the same name', () => {
+    expect(getAvatarToneIndex('Alice', 8)).toBe(getAvatarToneIndex('Alice', 8));
+  });
+
+  it('stays within range', () => {
+    for (const name of ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', '']) {
+      const index = getAvatarToneIndex(name, 8);
+      expect(index).toBeGreaterThanOrEqual(0);
+      expect(index).toBeLessThan(8);
+    }
+  });
+
+  it('spreads different names across tones', () => {
+    const tones = new Set(['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'].map((name) => getAvatarToneIndex(name, 8)));
+    expect(tones.size).toBeGreaterThan(1);
   });
 });

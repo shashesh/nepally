@@ -49,6 +49,13 @@ vi.mock('@nepally/shared', () => ({
   cancelEvent: vi.fn(async () => ({})),
   deleteEvent: vi.fn(async () => ({})),
   formatPublicName: (name: string) => name,
+  getInitials: (name: string) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  },
+  getAvatarToneIndex: () => 0,
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
   EVENT_TYPE_COLORS: {
     cultural: { text: '#E65100', background: '#FFF3E0' },

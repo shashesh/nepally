@@ -33,3 +33,23 @@ export function formatPublicName(fullName: string): string {
   const lastInitial = parts[parts.length - 1][0].toUpperCase();
   return `${firstName} ${lastInitial}.`;
 }
+
+/**
+ * Initials for avatar placeholders: first + last word initials, or the first two
+ * letters of a single word. "?" when the name is blank.
+ */
+export function getInitials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/** Deterministic tone for an avatar placeholder, in [0, toneCount). */
+export function getAvatarToneIndex(name: string, toneCount: number): number {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % toneCount;
+}
