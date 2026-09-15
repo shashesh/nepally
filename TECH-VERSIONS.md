@@ -69,6 +69,7 @@ This document serves as the single source of truth for all technology versions u
 | **@testing-library/dom** | ^10.4.1 | apps/web | Required peer of @testing-library/react 16 |
 | **jsdom** | ^29.1.1 | apps/web | Browser-like test environment for web |
 | **@playwright/test** | ^1.49.0 | apps/web | E2E (runs against a production build — see playwright.config.ts) |
+| **@axe-core/playwright** | ^4.13.0 | apps/web | Axe scans in the visual projects; known violations in `e2e/visual/a11y-baseline.json` |
 
 ## Why These Versions?
 

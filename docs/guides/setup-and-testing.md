@@ -327,6 +327,27 @@ npm run test:e2e:web:report
 npm run test:e2e:mobile
 ```
 
+### Visual regression and accessibility tests (web)
+
+The `visual-desktop` (1280×800) and `visual-phone` (Pixel 7) Playwright projects screenshot key pages and run an axe scan on each. Baselines are **Linux-only** and live in `apps/web/e2e/visual/__screenshots__/`. CI runs them in the `Web visual regression` job inside the Playwright container.
+
+```bash
+# Compare against baselines (needs Docker; identical to CI)
+npm run test:visual:docker --workspace=apps/web
+
+# Accept intentional visual changes
+npm run test:visual:docker --workspace=apps/web -- --update
+
+# Any OS without Docker: check every page reaches its ready state (no screenshots)
+npm run test:visual:smoke --workspace=apps/web
+```
+
+- **No Docker?** Push the branch (with approval), run **Actions → Visual baselines** on it, and unzip the `visual-baselines` artifact into `apps/web/e2e/visual/`.
+- **Feature branches:** `workflow_dispatch` only works once the workflow is on `master`. Before that, push a commit whose message contains `[visual-baselines]` to trigger the same run on the branch.
+- **Add a page:** append an entry to `apps/web/e2e/visual/pages.ts`.
+- **Accessibility baseline:** `apps/web/e2e/visual/a11y-baseline.json` records known serious/critical axe violations per `project:page`, and tests fail on anything new. After fixing violations, regenerate with `-- --update --write-a11y-baseline`. The diff of that file must only delete lines.
+- **Image tag:** the container tag in `ci.yml` and `visual-baselines.yml` must equal the installed `@playwright/test` version.
+
 ### Policy reminder
 
 - Every new functionality must include unit tests in the same change.
