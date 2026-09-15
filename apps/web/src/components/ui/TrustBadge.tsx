@@ -9,13 +9,14 @@ export interface TrustBadgeProps {
 }
 
 export function TrustBadge({ level }: TrustBadgeProps) {
-  const tierClass = level >= 2 ? styles.contributor : level === 1 ? styles.verified : styles.new;
+  const tier = level >= 2 ? 2 : level === 1 ? 1 : 0;
+  const tierClass = tier === 2 ? styles.contributor : tier === 1 ? styles.verified : styles.new;
   const icon =
-    level >= 2 ? <IconStarFilled size={12} aria-hidden="true" /> : level === 1 ? <IconCircleCheck size={12} aria-hidden="true" /> : null;
+    tier === 2 ? <IconStarFilled size={12} aria-hidden="true" /> : tier === 1 ? <IconCircleCheck size={12} aria-hidden="true" /> : null;
 
   return (
     <Badge variant="default" radius="xs" size="md" className={`${styles.root} ${tierClass}`} leftSection={icon}>
-      {getTrustLabel(level)}
+      {getTrustLabel(tier)}
     </Badge>
   );
 }

@@ -12,4 +12,12 @@ describe('TrustBadge', () => {
     render(<TrustBadge level={level} />);
     expect(screen.getByText(label)).toBeDefined();
   });
+
+  it.each([
+    [3, 'Contributor'],
+    [-1, 'New Member'],
+  ])('clamps out-of-range level %i to "%s"', (level, label) => {
+    render(<TrustBadge level={level} />);
+    expect(screen.getByText(label)).toBeDefined();
+  });
 });
