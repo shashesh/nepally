@@ -68,8 +68,12 @@ describe('SearchResultItem', () => {
     expect(screen.getByText(/In your metro/)).toBeDefined();
   });
 
-  it('contains no interactive elements', () => {
-    const { container } = render(<SearchResultItem result={{ kind: 'post', post }} query="thapa" />);
-    expect(container.querySelector('a, button, input')).toBeNull();
+  it.each<[string, SearchResult]>([
+    ['post', { kind: 'post', post }],
+    ['listing', { kind: 'listing', listing: { ...listing, photos: ['https://example.com/desk.jpg'] } as MarketplaceListing }],
+    ['person', { kind: 'person', person }],
+  ])('renders a %s with no interactive elements', (_kind, result) => {
+    const { container } = render(<SearchResultItem result={result} query="thapa" />);
+    expect(container.querySelector('a, button, input, select, textarea, [tabindex]')).toBeNull();
   });
 });
