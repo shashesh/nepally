@@ -32,7 +32,13 @@ vi.mock('@mantine/notifications', () => ({
 }));
 
 vi.mock('../styles/mantine-theme', () => ({
-  nusaTheme: {},
+  nepallyTheme: {},
+  cssVariablesResolver: () => ({ variables: {}, light: {}, dark: {} }),
+}));
+
+vi.mock('@mantine/modals', () => ({
+  ModalsProvider: ({ children }: { children: React.ReactNode }) =>
+    React.createElement('div', { 'data-testid': 'modals-provider' }, children),
 }));
 
 vi.mock('@mantine/core/styles.css', () => ({}));
@@ -54,6 +60,7 @@ describe('App', () => {
     expect(screen.getAllByTestId('mantine-provider').length).toBeGreaterThan(0);
     expect(screen.getByTestId('auth-provider')).toBeDefined();
     expect(screen.getByTestId('location-provider')).toBeDefined();
+    expect(screen.getAllByTestId('modals-provider').length).toBeGreaterThan(0);
     expect(screen.getByTestId('layout')).toBeDefined();
     expect(screen.getByTestId('page')).toBeDefined();
   });

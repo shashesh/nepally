@@ -98,7 +98,7 @@ export default function LocationSwitcher() {
               }
               rightSection={
                 isActive ? (
-                  <IconCheck size={16} stroke={3} color="var(--mantine-color-nusaPrimary-6)" />
+                  <IconCheck size={16} stroke={3} className={styles.accentIcon} />
                 ) : null
               }
             >
@@ -118,7 +118,7 @@ export default function LocationSwitcher() {
               rightSection={<IconChevronRight size={16} />}
             >
               <Text size="xs" c="dimmed">You&apos;re currently near</Text>
-              <Text size="sm" fw={600} c="nusaPrimary.6">
+              <Text size="sm" fw={600} c="ink.8">
                 {getShortMetroName(detectedLocation!.metro_name)},{' '}
                 {detectedLocation!.metro_state}
               </Text>
@@ -131,8 +131,8 @@ export default function LocationSwitcher() {
         {savedLocations.length < MAX_SAVED_LOCATIONS_PREMIUM && (
           <Menu.Item
             onClick={() => router.push('/profile/locations?add=true')}
-            leftSection={<IconPlus size={16} color="var(--mantine-color-nusaPrimary-6)" />}
-            c="nusaPrimary.6"
+            leftSection={<IconPlus size={16} className={styles.accentIcon} />}
+            c="ink.8"
           >
             Add a Location
           </Menu.Item>

@@ -287,7 +287,7 @@ export default function Layout({ children }: LayoutProps) {
   if (loading) {
     return (
       <Center mih="100vh">
-        <Loader color="nusaPrimary.6" />
+        <Loader />
       </Center>
     );
   }

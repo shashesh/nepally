@@ -1,0 +1,30 @@
+/*
+ * Theme-level class hooks for Mantine components, wired in mantine-theme.ts.
+ * Semantic tokens only.
+ */
+.primaryButton:not(:disabled, [data-disabled]) {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.badge {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.floating {
+  border: 1px solid var(--border-subtle);
+}
+
+.modal {
+  box-shadow: var(--shadow-modal);
+}
+
+.input {
+  border-color: var(--border-solid);
+}
+
+.input:focus,
+.input:focus-within {
+  border-color: var(--action-bg);
+}

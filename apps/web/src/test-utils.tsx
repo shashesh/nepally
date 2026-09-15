@@ -1,9 +1,15 @@
 import React, { type ReactElement } from 'react';
 import { render, type RenderOptions } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
+import { cssVariablesResolver, nepallyTheme } from './styles/mantine-theme';
 
 function TestWrapper({ children }: { children: React.ReactNode }) {
-  return <MantineProvider>{children}</MantineProvider>;
+  return (
+    <MantineProvider theme={nepallyTheme} cssVariablesResolver={cssVariablesResolver}>
+      <ModalsProvider>{children}</ModalsProvider>
+    </MantineProvider>
+  );
 }
 
 function renderWithMantine(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {

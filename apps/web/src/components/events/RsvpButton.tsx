@@ -27,7 +27,6 @@ export default function RsvpButton({ state, onPress, loading = false }: Props) {
   return (
     <Button
       variant={state === 'going' ? 'filled' : 'outline'}
-      color="nusaPrimary.6"
       radius="sm"
       size="md"
       onClick={isDisabled ? undefined : onPress}
