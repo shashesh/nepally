@@ -74,7 +74,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 
 | PR | Branch | Tasks | Status | Last updated | Notes |
 |---|---|---|---|---|---|
-| 0 Safety net | `test/web-visual-safety-net` | 0.1–0.6 | Not Started | 2026-09-14 | |
+| 0 Safety net | `test/web-visual-safety-net` | 0.1–0.6 | In Progress | 2026-09-15 | tasks done; Linux baselines via CI (no local Docker) |
 | 1 Foundation | `feat/web-design-tokens` | 1.1–1.7 | Not Started | 2026-09-14 | |
 | 2 Shell + primitives | `feat/web-app-shell` | 2.1–2.12 | Not Started | 2026-09-14 | |
 | 3a Search: data + shared | `feat/search-data` | 3a.1–3a.4 | Not Started | 2026-09-14 | migration applied before 3b deploys |
