@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '../test-utils';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { AppProps } from 'next/app';
 
@@ -57,10 +57,10 @@ describe('App', () => {
         router: {} as AppProps['router'],
       })
     );
-    expect(screen.getAllByTestId('mantine-provider').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('mantine-provider')).toBeDefined();
     expect(screen.getByTestId('auth-provider')).toBeDefined();
     expect(screen.getByTestId('location-provider')).toBeDefined();
-    expect(screen.getAllByTestId('modals-provider').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('modals-provider')).toBeDefined();
     expect(screen.getByTestId('layout')).toBeDefined();
     expect(screen.getByTestId('page')).toBeDefined();
   });
