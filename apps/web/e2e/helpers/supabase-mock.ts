@@ -42,6 +42,25 @@ async function mockGetMyProfile(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Lowest-priority handler for any REST/RPC call a spec doesn't mock.
+ *
+ * Playwright tries the most recently registered route first, so registering
+ * this before every specific route means it only answers requests nothing
+ * else claims. Without it an unmocked request hits the network (or the CI
+ * placeholder host) and renders a nondeterministic error state, which breaks
+ * screenshot tests.
+ */
+export async function mockUnhandledRest(page: Page): Promise<void> {
+  await page.route('**/rest/v1/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: JSON_HEADERS,
+      body: JSON.stringify(expectsSingleObject(route) ? null : []),
+    });
+  });
+}
+
 function buildMockPostRows() {
   return [...MOCK_POSTS, MOCK_POST_OTHER_AUTHOR].map((post) => ({
     ...post,
@@ -111,6 +130,8 @@ function filterMarketplaceListingsByRequest<T extends object>(requestUrl: string
 export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
   const marketplaceState = buildMarketplaceState();
 
+  // Must be registered before every specific route (see mockUnhandledRest).
+  await mockUnhandledRest(page);
   await mockGetMyProfile(page);
 
   // Auth: getSession / getUser
