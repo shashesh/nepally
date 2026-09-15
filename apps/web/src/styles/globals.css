@@ -76,6 +76,10 @@ select {
   font-family: inherit;
 }
 
+button:not(:disabled) {
+  cursor: pointer;
+}
+
 input,
 textarea,
 select {
