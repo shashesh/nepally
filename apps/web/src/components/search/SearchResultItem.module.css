@@ -1,0 +1,73 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  line-height: var(--leading-snug);
+  color: var(--text-1);
+}
+
+.compact .title {
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta,
+.aside {
+  font-size: var(--font-size-xs);
+  color: var(--text-3);
+}
+
+.aside {
+  flex-shrink: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.thumb {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  object-fit: cover;
+}
+
+.compact .thumb {
+  width: 32px;
+  height: 32px;
+}
+
+.price {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--action-bg);
+}
+
+.mark {
+  padding: 0 2px;
+  border-radius: var(--radius-chip);
+  background: var(--accent-tint);
+  color: inherit;
+}
