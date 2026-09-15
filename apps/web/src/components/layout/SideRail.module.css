@@ -1,0 +1,108 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: 100%;
+  padding: var(--space-4) var(--space-3);
+  overflow-y: auto;
+  background: var(--surface-1);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heading {
+  padding: 0 var(--space-3) var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.link:hover {
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+
+.link[aria-current='page'] {
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--accent);
+  font-weight: var(--font-weight-semibold);
+  color: var(--action-bg);
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--text-3);
+}
+
+.dotHousing { background: var(--tag-housing); }
+.dotJobs { background: var(--tag-jobs); }
+.dotHelp { background: var(--tag-help); }
+.dotQuestion { background: var(--tag-question); }
+.dotDiscussion { background: var(--tag-discussion); }
+.dotEmergency { background: var(--tag-emergency); }
+
+.cta {
+  flex-shrink: 0;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin-top: auto;
+  padding: var(--space-3) var(--space-3) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.footerLink {
+  font-size: var(--font-size-xs);
+  color: var(--text-3);
+}
+
+/* Tablet: icon-only rail. Labels stay in the accessibility tree. */
+@media (min-width: $mantine-breakpoint-sm) and (max-width: $mantine-breakpoint-md) {
+  .root {
+    align-items: center;
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .heading,
+  .footer {
+    display: none;
+  }
+
+  .link {
+    justify-content: center;
+    padding: var(--space-3);
+  }
+}
