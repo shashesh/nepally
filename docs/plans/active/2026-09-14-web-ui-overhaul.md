@@ -83,6 +83,10 @@ The spec is updated in the same commit as this plan.
 7. **Allowlists stay green per commit.** Task 2.11 removed the `Layout.module.css` and `Layout.tsx` allowlist entries in the same commit as the rewrite, because the CSS guard fails on an allowlisted file that is clean.
 8. **AppShell navbar.** `AppShell.Navbar` renders with `component="div"`, so `SideRail`'s `<nav aria-label="Primary">` is the only navigation landmark there. It is hidden below 48em with `visibleFrom="sm"`, because `navbar.collapsed.mobile` only moves the navbar off-canvas and never sets `display`. `Layout.test.tsx` asserts that every navigation landmark has an accessible name.
 9. **Top-bar search deferred to PR 3b.** The old top-bar search input led to `/search`, which did not exist. PR 2 drops it, and PR 3b fills `TopBar`'s `search` slot with `SearchCombobox`.
+10. **Baselines are always fully rewritten.** The first PR 2 baseline run left seven stale pre-PR-2 screenshots: phone `messages`, `notifications`, `post-detail` and `create-post`, and desktop `landing`, `login` and `signup`.
+   - **Why:** Playwright's default `--update-snapshots` rewrites only snapshots that fail comparison. A near-white tab bar on a near-white page stays within `maxDiffPixelRatio: 0.01`, so those snapshots never failed.
+   - **Fix:** the Visual baselines workflow, `scripts/visual/run-in-docker.mjs` and `test:visual:update` now pass `--update-snapshots=all`.
+   - **Coverage:** pixel diffs cannot see low-contrast chrome, so the phone e2e suite now asserts the tab bar is visible on `/messages`, `/notifications` and post detail.
 
 ## Live tracker
 
