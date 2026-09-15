@@ -5,3 +5,4 @@ export { PageHeader, type PageHeaderProps } from './PageHeader';
 export { ScopeBadge, type ScopeBadgeProps } from './ScopeBadge';
 export { TagChip, type TagChipProps } from './TagChip';
 export { TrustBadge, type TrustBadgeProps } from './TrustBadge';
+export { ActionMenu, type ActionMenuItem, type ActionMenuProps } from './ActionMenu';
