@@ -1,0 +1,55 @@
+name: Visual baselines
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Branch to regenerate web visual baselines for
+        required: true
+  # workflow_dispatch only works once this file is on master. Until then (and on
+  # any feature branch), push a commit whose message contains [visual-baselines].
+  push:
+    branches-ignore:
+      - master
+
+jobs:
+  update:
+    name: Regenerate web visual baselines
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual-baselines]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Keep this tag equal to the installed @playwright/test version.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_branch || github.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update screenshots and accessibility baseline
+        working-directory: apps/web
+        run: npx playwright test --project=visual-desktop --project=visual-phone --update-snapshots --workers=1
+        env:
+          CI: 'true'
+          A11Y_BASELINE_WRITE: '1'
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+      - name: Upload baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: |
+            apps/web/e2e/visual/__screenshots__
+            apps/web/e2e/visual/a11y-baseline.json

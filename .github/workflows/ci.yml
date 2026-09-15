@@ -67,3 +67,41 @@ jobs:
       install_playwright: true
       with_supabase_env: true
     secrets: inherit
+
+  web_visual:
+    name: Web visual regression
+    needs:
+      - gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Keep this tag equal to the installed @playwright/test version.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run visual tests
+        working-directory: apps/web
+        run: npx playwright test --project=visual-desktop --project=visual-phone
+        env:
+          CI: 'true'
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: apps/web/test-results
