@@ -25,7 +25,7 @@ const update = process.argv.includes('--update');
 const writeA11yBaseline = process.argv.includes('--write-a11y-baseline');
 
 const playwrightArgs = ['--project=visual-desktop', '--project=visual-phone'];
-if (update) playwrightArgs.push('--update-snapshots');
+if (update) playwrightArgs.push('--update-snapshots=all');
 if (writeA11yBaseline) playwrightArgs.push('--workers=1');
 
 const mounts = [

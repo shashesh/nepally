@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { injectAuthSession } from '../../fixtures/auth';
 import { mockSupabaseLoggedIn } from '../../helpers/supabase-mock';
+import { MOCK_POST_OTHER_AUTHOR } from '../../fixtures/mock-data';
 
 test.describe('Phone navigation', () => {
   test.beforeEach(async ({ page }) => {
@@ -37,5 +38,37 @@ test.describe('Phone navigation', () => {
     await page.goto('/posts/create');
     await expect(page.getByRole('heading', { name: /create post/i })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('navigation', { name: 'Tabs' })).toHaveCount(0);
+  });
+
+  test('the tab bar stays visible on empty-state and detail routes', async ({ page }) => {
+    await page.goto('/messages');
+    await expect(page.getByRole('heading', { name: /messages/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
+
+    await page.goto('/notifications');
+    await expect(page.getByRole('heading', { name: /notifications/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
+
+    // mockSupabaseLoggedIn's generic /rest/v1/posts** route always returns an
+    // array (buildMockPostRows()), regardless of the Accept header, so it
+    // does not satisfy getPostById()'s .single() call the way a real
+    // PostgREST server would. Override it here for the single-post request,
+    // mirroring the same-purpose setup in e2e/visual/pages.ts's
+    // `post-detail` entry.
+    const detailPost = {
+      ...MOCK_POST_OTHER_AUTHOR,
+      post_tags: (MOCK_POST_OTHER_AUTHOR.tags ?? []).map((tag) => ({ tag })),
+    };
+    await page.route('**/rest/v1/posts**', async (route) => {
+      const wantsSingle = (route.request().headers()['accept'] ?? '').includes('application/vnd.pgrst.object+json');
+      await route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(wantsSingle ? detailPost : [detailPost]),
+      });
+    });
+    await page.goto(`/posts/${MOCK_POST_OTHER_AUTHOR.id}`);
+    await expect(page.getByText(MOCK_POST_OTHER_AUTHOR.title).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
   });
 });

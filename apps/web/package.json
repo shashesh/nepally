@@ -12,7 +12,7 @@
     "test:e2e": "playwright test --project=chromium --project=phone",
     "test:e2e:ui": "playwright test --ui --project=chromium",
     "test:visual": "playwright test --project=visual-desktop --project=visual-phone",
-    "test:visual:update": "playwright test --project=visual-desktop --project=visual-phone --update-snapshots",
+    "test:visual:update": "playwright test --project=visual-desktop --project=visual-phone --update-snapshots=all",
     "test:visual:docker": "node ../../scripts/visual/run-in-docker.mjs",
     "test:visual:smoke": "node ../../scripts/visual/smoke.mjs",
     "lint": "eslint .",
