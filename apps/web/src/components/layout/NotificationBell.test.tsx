@@ -58,10 +58,7 @@ describe('NotificationBell', () => {
     renderBell();
     fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
     expect(await screen.findByText('No notifications yet')).toBeDefined();
-    // Note: Link exists in DOM with correct text/href but is inside popover with display:none,
-    // making it not discoverable by findByRole without {hidden:true}.
-    // Using {hidden:true} to assert accessibility while popover is hidden.
-    const seeAll = await screen.findByRole('link', { name: 'See all notifications →', hidden: true });
+    const seeAll = await screen.findByRole('link', { name: 'See all notifications →' });
     expect(seeAll.getAttribute('href')).toBe('/notifications');
   });
 

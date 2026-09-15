@@ -6,7 +6,7 @@ import { cssVariablesResolver, nepallyTheme } from './styles/mantine-theme';
 
 function TestWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <MantineProvider theme={nepallyTheme} cssVariablesResolver={cssVariablesResolver}>
+    <MantineProvider theme={nepallyTheme} cssVariablesResolver={cssVariablesResolver} env="test">
       <ModalsProvider>{children}</ModalsProvider>
     </MantineProvider>
   );
