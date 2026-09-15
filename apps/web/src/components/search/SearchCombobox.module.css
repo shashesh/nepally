@@ -1,0 +1,40 @@
+.input {
+  width: 100%;
+}
+
+.options {
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+}
+
+.option {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+}
+
+.option[data-combobox-selected] {
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.more,
+.seeAll {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--action-bg);
+}
+
+.seeAll {
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Phone overlay: results flow under the input instead of floating. */
+.inlineDropdown {
+  position: static !important;
+  width: 100% !important;
+  margin-top: var(--space-3);
+  border: none;
+  box-shadow: none;
+  transform: none !important;
+}
