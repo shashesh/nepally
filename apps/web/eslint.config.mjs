@@ -1,6 +1,7 @@
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
 import tseslint from 'typescript-eslint';
 import { RAW_ELEMENT_ALLOWLIST } from './eslint/raw-element-allowlist.mjs';
+import { escapeGlobLiteral } from './eslint/escape-glob.mjs';
 
 /**
  * Flat config for the web app, replacing the former .eslintrc.json.
@@ -81,7 +82,7 @@ const config = [
       'src/**/*.test.tsx',
       ...(process.env.RAW_ELEMENT_ALLOWLIST_DISABLED === '1'
         ? []
-        : RAW_ELEMENT_ALLOWLIST.map((filePath) => filePath.replace(/\[/g, '\\[').replace(/\]/g, '\\]'))),
+        : RAW_ELEMENT_ALLOWLIST.map(escapeGlobLiteral)),
     ],
     rules: {
       'react/forbid-elements': [
