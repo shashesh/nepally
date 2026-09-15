@@ -13,34 +13,25 @@ test.describe('Messages badge', () => {
 
     await page.unroute('**/rest/v1/conversation_participants**');
     await page.route('**/rest/v1/conversation_participants**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        headers: JSON_HEADERS,
-        body: JSON.stringify(unreadRows),
-      });
+      await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify(unreadRows) });
     });
 
     await page.goto('/feed');
 
-    const messagesLink = page.getByLabel('Messages');
-    const messagesIndicator = messagesLink.locator('..');
-    await expect(messagesLink).toBeVisible({ timeout: 10_000 });
-    await expect(messagesIndicator.getByText('3', { exact: true })).toHaveCount(0);
+    const readLink = page.getByRole('link', { name: 'Messages', exact: true });
+    const unreadLink = page.getByRole('link', { name: 'Messages, 3 unread', exact: true });
+    await expect(readLink).toBeVisible({ timeout: 10_000 });
 
     unreadRows = [{ unread_count: 3 }];
-
     await page.evaluate(() => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
-
-    await expect(messagesIndicator.getByText('3', { exact: true })).toBeVisible();
+    await expect(unreadLink).toBeVisible();
 
     unreadRows = [];
-
     await page.evaluate(() => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
-
-    await expect(messagesIndicator.getByText('3', { exact: true })).toHaveCount(0);
+    await expect(readLink).toBeVisible();
   });
 });

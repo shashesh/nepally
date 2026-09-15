@@ -42,7 +42,9 @@ test.describe('Profile page', () => {
     await page.getByRole('menuitem', { name: /view profile/i }).click();
 
     await expect(page).toHaveURL(/\/profile/);
-    await expect(page.locator('[class*="profileName"]').filter({ hasText: MOCK_USER_PROFILE.full_name })).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.getByRole('main').getByText(MOCK_USER_PROFILE.full_name, { exact: true }).first()
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test('Saved Posts tab is visible on the profile page', async ({ page }) => {

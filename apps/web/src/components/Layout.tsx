@@ -421,7 +421,7 @@ export default function Layout({ children }: LayoutProps) {
                 radius="xl"
                 component={Link}
                 href="/messages"
-                aria-label="Messages"
+                aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : 'Messages'}
               >
                 <IconMessageCircle size={22} />
               </ActionIcon>

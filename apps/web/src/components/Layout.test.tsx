@@ -361,6 +361,20 @@ describe('Layout', () => {
       expect(screen.queryByText('0')).toBeNull();
     });
 
+    it('includes the unread count in the Messages link accessible name', async () => {
+      layoutMocks.getTotalUnreadCountMock.mockResolvedValue({ count: 5 });
+      render(<Layout>Content</Layout>);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Messages, 5 unread')).toBeDefined();
+      });
+    });
+
+    it('names the Messages link plainly when nothing is unread', async () => {
+      render(<Layout>Content</Layout>);
+      await waitFor(() => expect(layoutMocks.getTotalUnreadCountMock).toHaveBeenCalled());
+      expect(screen.getByLabelText('Messages')).toBeDefined();
+    });
+
     it('shows notification bell badge when unread notification count > 0', async () => {
       layoutMocks.getUnreadNotificationCountMock.mockResolvedValue({ count: 3 });
       render(<Layout>Content</Layout>);
