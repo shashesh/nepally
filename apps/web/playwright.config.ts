@@ -37,7 +37,13 @@ export default defineConfig({
     {
       name: 'chromium',
       testDir: './e2e/tests',
+      testIgnore: '**/phone/**',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'phone',
+      testDir: './e2e/tests/phone',
+      use: { ...devices['Pixel 7'] },
     },
     {
       name: 'visual-desktop',
