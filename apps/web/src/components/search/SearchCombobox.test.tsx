@@ -88,6 +88,14 @@ describe('SearchCombobox', () => {
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/posts/p1'));
   });
 
+  it('does not leave the page on Enter while an IME composition is active', async () => {
+    render(<SearchCombobox />);
+    const input = typeQuery('thapa');
+    await screen.findByRole('option', { name: /Thapa Catering/ });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', isComposing: true });
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
   it('offers all metros when nothing matches locally', async () => {
     mocks.useSearchSuggestions.mockImplementation((input: string, scope: { allMetros: boolean }) => ({
       query: input.trim() || null,

@@ -102,7 +102,7 @@ export function SearchCombobox({ layout = 'dropdown', autoFocus = false, onNavig
             if (layout === 'dropdown') combobox.closeDropdown();
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && query && combobox.getSelectedOptionIndex() === -1) {
+            if (event.key === 'Enter' && !event.nativeEvent.isComposing && query && combobox.getSelectedOptionIndex() === -1) {
               event.preventDefault();
               navigate(buildSearchHref({ q: query, allMetros }));
             }
