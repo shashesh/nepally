@@ -1321,6 +1321,30 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 ---
 
+### Global search (migration 037)
+
+| Function | Returns | Notes |
+|---|---|---|
+| `post_search_document(title, description)` | `tsvector` | IMMUTABLE; title weight A, body weight B, `english`. GIN expression index `idx_posts_search_document` |
+| `person_search_document(full_name)` | `tsvector` | IMMUTABLE; `simple` (no stemming). GIN expression index `idx_users_person_search_document` |
+| `build_prefix_tsquery(input, config)` | `tsquery` | Splits on non-alphanumerics, ANDs words, prefix-matches the last; NULL for empty input |
+| `search_posts(p_query, p_metro_id, p_all_metros)` | `id, rank, created_at, total_count` | Active posts; metro + global unless `p_all_metros` |
+| `search_listings(p_query, p_metro_id, p_all_metros)` | `id, rank, refreshed_at, total_count` | Active listings; uses `marketplace_listings.search_vector` |
+| `search_people(p_query, p_metro_id)` | public columns + `is_local, rank, total_count` | Non-banned members |
+
+All three `search_*` functions are `SECURITY INVOKER` and executable by `authenticated` only, so RLS and migration 036's column grants apply unchanged. Clients order and page the results through PostgREST:
+
+```ts
+supabase.rpc('search_posts', { p_query, p_metro_id, p_all_metros })
+  .order('rank', { ascending: false })
+  .order('created_at', { ascending: false })
+  .range(0, 19);
+```
+
+Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calling the functions directly.
+
+---
+
 ## Data Migration from Firestore
 
 > **Historical note:** The project migrated from Firebase/Firestore to Supabase early in development. The code below is kept for reference only — there is no Firestore data to migrate. The live database is Supabase-only.

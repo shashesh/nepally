@@ -75,9 +75,11 @@ The pre-realignment tracker contents (31 rows), captured before the rewrite:
 | 20260608021301 | fix_security_definer_view_and_rls_initplan |
 
 ### After (current)
-35 rows, `version` `001`–`035`, `name` = repo file stem — an exact mirror of `supabase/migrations/*.sql`.
+37 rows, `version` `001`–`037`, `name` = repo file stem — an exact mirror of `supabase/migrations/*.sql`. The exception is the `036` row: its `name` is `036_restrict_user_pii_and_chat_participation`, keeping the repo's numeric prefix, unlike every other row.
 
 `034_guard_user_privileged_columns` and `035_emergency_post_moderation` were applied 2026-09-04 via MCP `apply_migration`. That tool records a **timestamp** version (e.g. `20260904162458`), so each row was realigned to its numeric version right after applying (see step 3 below). The reports SELECT-policy change in 035 was added to the file after the initial apply and applied as a delta with `execute_sql`; the tracker row already existed, so no new row was needed.
+
+`036_restrict_user_pii_and_chat_participation` kept its apply-time timestamp version (`20260908211511`) until it was realigned to `036` on 2026-09-15. `037_search` was applied on 2026-09-15 via MCP `apply_migration` (name `search`) and realigned to `037` straight away.
 
 ---
 
