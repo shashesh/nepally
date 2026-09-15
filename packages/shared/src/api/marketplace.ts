@@ -34,7 +34,7 @@ const CATEGORY_SELECT = `
   )
 `;
 
-const LISTING_SELECT = `*, ${OWNER_SELECT}, ${CATEGORY_SELECT}`;
+export const LISTING_SELECT = `*, ${OWNER_SELECT}, ${CATEGORY_SELECT}`;
 
 // ─── Categories ─────────────────────────────────────────────────────────────
 

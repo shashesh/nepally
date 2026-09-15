@@ -16,6 +16,7 @@ export * from './userSettings';
 export * from './deviceTokens';
 export * from './events';
 export * from './reports';
+export * from './search';
 export * from './moderation';
 export * from './marketplace';
 export * from './promotions';
