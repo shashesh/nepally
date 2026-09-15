@@ -53,6 +53,26 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 - Component overrides are plain objects, not `Component.extend`, so tests that mock individual Mantine components can still load the theme.
 - Use theme colour props (`c="ink.8"`), never `var(--mantine-color-…)` strings in TSX.
 
+## Shell and navigation
+
+- `components/Layout.tsx` composes Mantine `AppShell`:
+  - `TopBar` holds the brand, `LocationSwitcher` (≥48em), the search slot, `NotificationBell`, Messages and `AccountMenu` (≥48em).
+  - `SideRail` is full width at ≥62em and icon-only between 48em and 62em.
+  - `BottomTabBar` is for phones (<48em) and is hidden on `TASK_ROUTES`.
+  - `PublicShell` wraps signed-out visitors.
+- Navigation data and active-state rules live in `components/layout/navItems.ts`. Change links there, not in components.
+- Phones reach secondary pages (locations, notification settings, moderation, legal) from Profile → "Settings & more", and filter the feed with `TopicPills`.
+- Unread counts come from `hooks/useUnreadMessageCount` and `hooks/useNotificationsFeed`.
+- Accessibility:
+  - A skip link targets `main#main-content`.
+  - Landmarks are named `Primary`, `Tabs` and `Topics`.
+  - Active links carry `aria-current="page"`.
+  - Badge counts are part of accessible names ("Messages, 3 unread").
+
+## UI primitives (`components/ui`)
+
+`EmptyState`, `LoadingState`, `ErrorState`, `PageHeader`, `TagChip`, `ScopeBadge`, `TrustBadge`, `ActionMenu`, and `useConfirm` / `usePrompt` (never `window.confirm`/`alert`/`prompt`). `hooks/useInfiniteScroll` handles paginated lists. `Avatar` uses shared `getInitials` and token tones.
+
 ## Guards
 
 | Guard | Command | Allowlist |
@@ -69,6 +89,7 @@ The raw-element allowlist stores plain file paths. `apps/web/eslint.config.mjs` 
 - `tokens.contrast.test.ts` checks WCAG AA for every text/background token pair.
 - `mantine-theme.test.ts` checks the theme against the tokens.
 - `legacy-aliases.test.ts` checks every old variable still resolves.
+- Component tests render through `apps/web/src/test-utils.tsx`, which wraps `MantineProvider` (real theme, `env="test"`) and `ModalsProvider`. `env="test"` is Mantine's documented test-runner switch: it collapses transitions to their final state, renders portal content inline, and skips floating-ui's detached-reference check, which misfires in jsdom and would otherwise hide popovers and menus from role queries. Cover transition, portal and positioning behaviour in Playwright, not unit tests.
 - Visual regression and axe scans are described in [../guides/setup-and-testing.md](../guides/setup-and-testing.md) under "Visual regression and accessibility tests (web)".
 
 ## Mantine 9 readiness

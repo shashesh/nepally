@@ -266,7 +266,7 @@ export default function PublicProfilePage() {
         return (
           <p className={styles.emptyMessage}>
             You haven&apos;t posted anything yet.
-            <Link href="/posts/new">Start a post &rarr;</Link>
+            <Link href="/posts/create">Start a post &rarr;</Link>
           </p>
         );
       }
@@ -378,7 +378,7 @@ export default function PublicProfilePage() {
         return (
           <p className={styles.emptyMessage}>
             You haven&apos;t listed anything yet.
-            <Link href="/marketplace/new">Post a listing &rarr;</Link>
+            <Link href="/marketplace/create">Post a listing &rarr;</Link>
           </p>
         );
       }
