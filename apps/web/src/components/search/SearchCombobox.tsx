@@ -43,40 +43,6 @@ export function SearchCombobox({ layout = 'dropdown', autoFocus = false, onNavig
     void router.push(href);
   };
 
-  // Mantine's built-in Combobox keyboard navigation (in Combobox.Target) keys off
-  // `event.code`. Real KeyboardEvents always set it; only synthetic ones (e.g. RTL's
-  // `fireEvent.keyDown(el, { key: 'ArrowDown' })`, which sets `key` but not `code`) omit
-  // it. This fallback reproduces the same navigation for that case only, so it never runs
-  // for actual keyboard input and never double-handles alongside Mantine's own listener.
-  const handleFallbackNavigation = (event: React.KeyboardEvent<HTMLInputElement>): boolean => {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      if (combobox.dropdownOpened) {
-        combobox.selectNextOption();
-      } else {
-        combobox.openDropdown();
-        combobox.selectActiveOption();
-      }
-      return true;
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      if (combobox.dropdownOpened) {
-        combobox.selectPreviousOption();
-      } else {
-        combobox.openDropdown();
-        combobox.selectActiveOption();
-      }
-      return true;
-    }
-    if (event.key === 'Enter' && combobox.dropdownOpened && combobox.getSelectedOptionIndex() !== -1) {
-      event.preventDefault();
-      combobox.clickSelectedOption();
-      return true;
-    }
-    return false;
-  };
-
   const handleOptionSubmit = (optionValue: string) => {
     if (!query) return;
     if (optionValue === 'all') return navigate(buildSearchHref({ q: query, allMetros }));
@@ -136,7 +102,6 @@ export function SearchCombobox({ layout = 'dropdown', autoFocus = false, onNavig
             if (layout === 'dropdown') combobox.closeDropdown();
           }}
           onKeyDown={(event) => {
-            if (!event.code && handleFallbackNavigation(event)) return;
             if (event.key === 'Enter' && query && combobox.getSelectedOptionIndex() === -1) {
               event.preventDefault();
               navigate(buildSearchHref({ q: query, allMetros }));

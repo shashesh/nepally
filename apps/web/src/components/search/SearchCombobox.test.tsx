@@ -75,7 +75,7 @@ describe('SearchCombobox', () => {
   it('goes to all results on Enter with nothing highlighted', async () => {
     render(<SearchCombobox />);
     const input = typeQuery('thapa');
-    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/search?q=thapa'));
   });
 
@@ -83,8 +83,8 @@ describe('SearchCombobox', () => {
     render(<SearchCombobox />);
     const input = typeQuery('thapa');
     await screen.findByRole('option', { name: /Thapa Catering/ });
-    fireEvent.keyDown(input, { key: 'ArrowDown' });
-    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/posts/p1'));
   });
 
