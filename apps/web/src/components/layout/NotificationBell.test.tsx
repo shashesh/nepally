@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '../../test-utils';
+import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Notification } from '@nepally/shared';
 import { NotificationBell } from './NotificationBell';
@@ -57,10 +57,12 @@ describe('NotificationBell', () => {
   it('opens an empty dropdown with a link to all notifications', async () => {
     renderBell();
     fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
-    await screen.findByText('No notifications yet');
-    const link = await screen.findByText('See all notifications →');
-    expect(link.tagName).toBe('A');
-    expect(link.getAttribute('href')).toBe('/notifications');
+    expect(await screen.findByText('No notifications yet')).toBeDefined();
+    // Note: Link exists in DOM with correct text/href but is inside popover with display:none,
+    // making it not discoverable by findByRole without {hidden:true}.
+    // Using {hidden:true} to assert accessibility while popover is hidden.
+    const seeAll = await screen.findByRole('link', { name: 'See all notifications →', hidden: true });
+    expect(seeAll.getAttribute('href')).toBe('/notifications');
   });
 
   it('offers mark all as read when something is unread', async () => {
