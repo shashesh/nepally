@@ -1,0 +1,36 @@
+.root,
+.emergency {
+  height: auto;
+  padding: 3px var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.root {
+  border-color: var(--border-solid);
+  background: var(--surface-1);
+  color: var(--text-2);
+}
+
+.emergency {
+  border-color: var(--emergency-border);
+  background: var(--emergency-bg);
+  color: var(--emergency-fg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+}
+
+.housing { background: var(--tag-housing); }
+.jobs { background: var(--tag-jobs); }
+.help { background: var(--tag-help); }
+.question { background: var(--tag-question); }
+.politics { background: var(--tag-politics); }
+.discussion { background: var(--tag-discussion); }
+.emergencyDot { background: var(--tag-emergency); }
+.other { background: var(--text-3); }
