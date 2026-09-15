@@ -18,6 +18,10 @@ vi.mock('../components/Layout', () => ({
     React.createElement('div', { 'data-testid': 'layout' }, children),
 }));
 
+vi.mock('../components/layout/FontVariables', () => ({
+  default: () => null,
+}));
+
 vi.mock('@mantine/core', () => ({
   MantineProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', { 'data-testid': 'mantine-provider' }, children),
