@@ -180,8 +180,9 @@ describe('LoginPage', () => {
     fireEvent.submit(screen.getByRole('button', { name: 'Sign In' }));
     await waitFor(() => {
       const btn = screen.getByRole('button', { name: 'Sign In' });
+      // Mantine renders `loading` as a disabled native <button>; assert that
+      // user-observable state rather than Mantine's data-loading attribute.
       expect(btn.hasAttribute('disabled')).toBe(true);
-      expect(btn.getAttribute('data-loading')).toBe('true');
     });
   });
 

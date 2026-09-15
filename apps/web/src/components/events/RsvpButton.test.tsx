@@ -52,19 +52,19 @@ describe('RsvpButton (web)', () => {
   it('is disabled when past', () => {
     render(React.createElement(RsvpButton, { state: 'past' }));
     const btn = screen.getByRole('button');
-    expect(btn.hasAttribute('disabled') || btn.getAttribute('data-disabled') === 'true').toBe(true);
+    expect(btn.hasAttribute('disabled')).toBe(true);
   });
 
   it('is disabled when organizer', () => {
     render(React.createElement(RsvpButton, { state: 'organizer' }));
     const btn = screen.getByRole('button');
-    expect(btn.hasAttribute('disabled') || btn.getAttribute('data-disabled') === 'true').toBe(true);
+    expect(btn.hasAttribute('disabled')).toBe(true);
   });
 
   it('is disabled when level0', () => {
     render(React.createElement(RsvpButton, { state: 'level0' }));
     const btn = screen.getByRole('button');
-    expect(btn.hasAttribute('disabled') || btn.getAttribute('data-disabled') === 'true').toBe(true);
+    expect(btn.hasAttribute('disabled')).toBe(true);
   });
 
   it('shows "Updating..." when loading', () => {
@@ -75,6 +75,6 @@ describe('RsvpButton (web)', () => {
   it('is disabled when loading', () => {
     render(React.createElement(RsvpButton, { state: 'default', loading: true }));
     const btn = screen.getByRole('button');
-    expect(btn.hasAttribute('disabled') || btn.getAttribute('data-disabled') === 'true').toBe(true);
+    expect(btn.hasAttribute('disabled')).toBe(true);
   });
 });
