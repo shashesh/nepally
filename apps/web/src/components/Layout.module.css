@@ -23,21 +23,6 @@
   border-right: 1px solid var(--border-subtle);
 }
 
-/*
- * Mantine's `collapsed.mobile` only translates the navbar off-canvas (a
- * drawer it expects a burger button to reopen); it never sets display:none,
- * so it would otherwise stay in the a11y tree with a real bounding box below
- * the breakpoint. We have no mobile toggle for the rail — BottomTabBar
- * replaces it outright — so force it fully hidden. `!important` is needed
- * because Mantine's own unconditional `display: flex` on the same element
- * carries equal selector specificity and loads after this stylesheet.
- */
-@media (max-width: $mantine-breakpoint-sm) {
-  .navbar {
-    display: none !important;
-  }
-}
-
 .main {
   background: var(--surface-0);
 }

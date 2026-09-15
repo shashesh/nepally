@@ -72,7 +72,7 @@ export default function Layout({ children }: LayoutProps) {
         />
       </AppShell.Header>
 
-      <AppShell.Navbar className={styles.navbar}>
+      <AppShell.Navbar component="div" visibleFrom="sm" className={styles.navbar}>
         <SideRail user={user} />
       </AppShell.Navbar>
 

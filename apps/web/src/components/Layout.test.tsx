@@ -75,6 +75,9 @@ describe('Layout', () => {
       expect(screen.getByRole('navigation', { name: 'Primary' })).toBeDefined();
       expect(screen.getByRole('navigation', { name: 'Tabs' })).toBeDefined();
       expect(screen.getByRole('main').textContent).toContain('Main content');
+      for (const landmark of screen.getAllByRole('navigation')) {
+        expect(landmark.getAttribute('aria-label')).toBeTruthy();
+      }
     });
 
     it('offers a skip link to the main content', () => {
