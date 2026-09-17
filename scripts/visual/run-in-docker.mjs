@@ -41,6 +41,8 @@ const env = {
   CI: '1',
   NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
   NEXT_PUBLIC_SUPABASE_ANON_KEY: 'ci-placeholder-anon-key',
+  // Keep equal to VISUAL_NOW_ISO in apps/web/e2e/visual/helpers.ts, which asserts it.
+  E2E_FIXED_NOW: '2026-09-14T12:00:00Z',
   ...(writeA11yBaseline ? { A11Y_BASELINE_WRITE: '1' } : {}),
 };
 
