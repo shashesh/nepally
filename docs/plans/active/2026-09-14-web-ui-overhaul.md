@@ -106,6 +106,10 @@ The spec is updated in the same commit as this plan.
    - **Fix:** `aria-label="Search suggestions"` on `Combobox.Options`, so `a11y-baseline.json` gains no entry. Re-probing with axe reports zero serious or critical violations.
    - **Screenshots:** an `aria-label` changes no pixels, so the baselines from that run stay valid.
 17. **The Visual baselines workflow uploads, it does not commit.** It publishes `__screenshots__` and `a11y-baseline.json` as the `visual-baselines` artifact. Someone downloads it, checks the a11y diff, and commits — which is how the PR 0–2 baseline commits were made.
+18. **The fixture clock is pinned for visual runs (Copilot, PR #62).** `page.clock.setFixedTime` freezes `Date` only inside the browser, but `e2e/fixtures/mock-data.ts` builds its timestamps in the Node process with `Date.now()`. Absolute event dates and the listing's `Refreshed Nd ago` text therefore moved with the run day, so the committed screenshots drifted after baseline day. `dynamicMasks` did not cover them: its regex is anchored and matches only bare relative times.
+   - **Fix:** timestamps derive from `FIXTURE_NOW_MS`, which the visual projects pin to `VISUAL_NOW` through `E2E_FIXED_NOW`. Ordinary e2e runs keep the wall clock, because the app itself decides what counts as "upcoming".
+   - **Guard:** five entry points run the visual projects (the two `apps/web` scripts, `run-in-docker.mjs`, `smoke.mjs`, and both workflows), so `prepareVisualPage` asserts the pin. A missed entry point fails loudly instead of drifting silently.
+   - **Not taken:** Copilot also asked for per-node a11y fingerprints instead of rule IDs. The observation is right — a second `color-contrast` violation on an already-baselined page passes — but PRs 1–10 exist to rewrite this markup, so fingerprints would churn and fail for reasons unrelated to accessibility. The baseline reaches `{}` at PR 10, which closes the gap.
 
 ## Live tracker
 
