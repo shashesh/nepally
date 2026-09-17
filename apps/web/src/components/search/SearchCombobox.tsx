@@ -117,7 +117,7 @@ export function SearchCombobox({ layout = 'dropdown', autoFocus = false, onNavig
       </Combobox.Target>
 
       <Combobox.Dropdown hidden={!query}>
-        <Combobox.Options className={styles.options}>
+        <Combobox.Options className={styles.options} aria-label="Search suggestions">
           {error ? <Combobox.Empty>Search is unavailable right now</Combobox.Empty> : null}
           {renderGroup('posts', allMetros ? 'Posts' : `Posts in ${metroLabel}`)}
           {renderGroup('listings', 'Listings')}
