@@ -101,6 +101,11 @@ The spec is updated in the same commit as this plan.
    - **Fix:** `apps/web/vitest.setup.ts` defines a no-op `ResizeObserver`, alongside the existing `scrollIntoView` and `matchMedia` stubs.
    - **Scope:** global to the web suite. All 755 web tests pass with it, so no existing test depended on its absence.
 15. **`next-env.d.ts` churn is not committed.** Running the e2e suite builds for production, which rewrites the file's imports from `./.next/dev/types/…` to `./.next/types/…`; `next dev` flips them back. The committed version keeps the `dev` paths.
+16. **The suggestions listbox needed an accessible name.** The first baselines run recorded `aria-input-field-name` (serious) for `visual-desktop:search-dropdown`.
+   - **Cause:** `Combobox.Options` renders a `div` with `role="listbox"`, and `aria-input-field-name` covers the `listbox` role. The input itself was already named, which is why only the dropdown-open page flagged it.
+   - **Fix:** `aria-label="Search suggestions"` on `Combobox.Options`, so `a11y-baseline.json` gains no entry. Re-probing with axe reports zero serious or critical violations.
+   - **Screenshots:** an `aria-label` changes no pixels, so the baselines from that run stay valid.
+17. **The Visual baselines workflow uploads, it does not commit.** It publishes `__screenshots__` and `a11y-baseline.json` as the `visual-baselines` artifact. Someone downloads it, checks the a11y diff, and commits — which is how the PR 0–2 baseline commits were made.
 
 ## Live tracker
 
@@ -112,7 +117,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 1 Foundation | `feat/web-design-tokens` (stacked on PR 0) | 1.1–1.7 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines generated in CI (db52500) |
 | 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines f19b133 (CI run 35016011832) |
 | 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Completed (pushed, not merged) | 2026-09-15 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
-| 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Completed (local) — awaiting push for baselines | 2026-09-17 | unit + e2e green locally; screenshots need the CI baselines run |
+| 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Completed (pushed, PR #66) | 2026-09-17 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
 | 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
