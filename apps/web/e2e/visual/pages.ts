@@ -107,7 +107,12 @@ export const VISUAL_PAGES: VisualPage[] = [
     path: '/search?q=thapa',
     signedIn: true,
     setup: mockSearchRoutes,
-    ready: (page) => heading(page, /results for “thapa”/i),
+    // The heading renders before the preview resolves, so waiting on it alone
+    // can screenshot the "Searching…" skeleton. Wait for a result instead.
+    ready: async (page) => {
+      await heading(page, /results for “thapa”/i);
+      await expect(page.getByRole('link', { name: new RegExp(MOCK_POSTS[0].title) }).first()).toBeVisible(READY_TIMEOUT);
+    },
   },
   {
     name: 'search-dropdown',

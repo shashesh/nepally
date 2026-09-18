@@ -59,10 +59,32 @@ describe('SearchPage', () => {
     setRoute({ q: 'thapa' });
   });
 
-  it('redirects signed-out visitors to login', async () => {
+  it('redirects signed-out visitors to login without searching', async () => {
     mocks.useAuth.mockReturnValue({ user: null });
     render(<SearchPage />);
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/login'));
+    // The search RPCs are revoked from anon, so they must not be attempted.
+    expect(mocks.useSearchPage).toHaveBeenCalledWith(expect.objectContaining({ query: null }));
+  });
+
+  it('falls back to the user metro until the active location loads', () => {
+    render(<SearchPage />);
+    expect(mocks.useSearchPage).toHaveBeenCalledWith(expect.objectContaining({ metroId: 'metro-nyc' }));
+  });
+
+  it('shows the error instead of a skeleton when the preview fails', () => {
+    mocks.useSearchPage.mockReturnValue(state({ preview: null, counts: null, error: new Error('offline') }));
+    render(<SearchPage />);
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+    expect(screen.queryByText('Searching…')).toBeNull();
+  });
+
+  it('does not claim a tab is empty when its request failed', () => {
+    setRoute({ q: 'thapa', tab: 'listings' });
+    mocks.useSearchPage.mockReturnValue(state({ items: [], error: new Error('offline') }));
+    render(<SearchPage />);
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Search all metros' })).toBeNull();
   });
 
   it('prompts for a query when q is missing', () => {

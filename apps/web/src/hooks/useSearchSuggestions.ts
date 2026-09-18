@@ -5,8 +5,14 @@ import type { SearchSuggestions } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
 
 export interface SearchSuggestionsState {
-  /** The normalized query the data belongs to (null when too short). */
+  /** The normalized query currently being searched (null when too short). */
   query: string | null;
+  /**
+   * The query `data` actually belongs to. Results are kept on screen while the
+   * next request is in flight, so this lags `query` by one request; highlight
+   * with it, or the marks describe a query these results never matched.
+   */
+  resultsQuery: string | null;
   data: SearchSuggestions | null;
   loading: boolean;
   error: Error | null;
@@ -19,21 +25,31 @@ export function useSearchSuggestions(
 ): SearchSuggestionsState {
   const [debounced] = useDebouncedValue(input, SEARCH_DEBOUNCE_MS);
   const query = normalizeSearchInput(debounced);
-  const [state, setState] = useState<Omit<SearchSuggestionsState, 'query'>>({ data: null, loading: false, error: null });
+  const [state, setState] = useState<Omit<SearchSuggestionsState, 'query'>>({
+    resultsQuery: null,
+    data: null,
+    loading: false,
+    error: null,
+  });
   const latestRequest = useRef(0);
   const { metroId, allMetros } = scope;
 
   useEffect(() => {
     const requestId = ++latestRequest.current;
     if (!query) {
-      setState({ data: null, loading: false, error: null });
+      setState({ resultsQuery: null, data: null, loading: false, error: null });
       return;
     }
 
     setState((previous) => ({ ...previous, loading: true, error: null }));
     void searchSuggestions(supabase, query, { metroId, allMetros }).then((result) => {
       if (requestId !== latestRequest.current) return;
-      setState({ data: result.data ?? null, loading: false, error: result.error ?? null });
+      setState({
+        resultsQuery: result.data ? query : null,
+        data: result.data ?? null,
+        loading: false,
+        error: result.error ?? null,
+      });
     });
   }, [query, metroId, allMetros]);
 

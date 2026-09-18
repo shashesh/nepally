@@ -53,7 +53,12 @@ export default function SearchPage() {
   const { q, tab, allMetros } = parseSearchParams(router.query);
   const query = normalizeSearchInput(q);
   const metroLabel = activeLocation ? getShortMetroName(activeLocation.metro_name) : 'My metro';
-  const state = useSearchPage({ query, tab, allMetros, metroId: activeLocation?.metro_area_id ?? null });
+  // LocationProvider fills activeLocation asynchronously; without the fallback a
+  // direct /search?q= load searches global rows only. FeedPage does the same.
+  const metroId = activeLocation?.metro_area_id ?? user?.metro_area_id ?? null;
+  // The search RPCs are revoked from anon, so stay idle until the viewer is
+  // known to be signed in rather than firing calls that must fail.
+  const state = useSearchPage({ query: user ? query : null, tab, allMetros, metroId });
   const { sentinelRef } = useInfiniteScroll({ hasMore: state.hasMore, loading: state.loadingMore, onLoadMore: state.loadMore });
 
   useEffect(() => {
@@ -133,7 +138,10 @@ export default function SearchPage() {
         </Tabs.List>
 
         <Tabs.Panel value="all" className={styles.panel}>
-          {state.loading || !state.preview ? (
+          {/* ErrorState above already explains the failure; a skeleton or an
+              empty state here would claim the request is still running, or that
+              it succeeded with nothing to show. */}
+          {state.error ? null : state.loading || !state.preview ? (
             <LoadingState label="Searching…" />
           ) : totalCount === 0 ? (
             <EmptyState title={`Nothing matches “${query}”`} description={allMetros ? undefined : `Nothing in ${metroLabel} yet.`} action={allMetrosAction} />
@@ -162,7 +170,7 @@ export default function SearchPage() {
 
         {(['posts', 'listings', 'people'] as TypeTab[]).map((key) => (
           <Tabs.Panel key={key} value={key} className={styles.panel}>
-            {state.loading ? (
+            {state.error && state.items.length === 0 ? null : state.loading ? (
               <LoadingState label="Searching…" />
             ) : state.items.length === 0 ? (
               <EmptyState

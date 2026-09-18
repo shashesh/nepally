@@ -23,6 +23,7 @@ const FETCH_TAB: Record<TypeTab, (query: string, options: FetchOptions) => Promi
 };
 
 export interface UseSearchPageOptions {
+  /** Null disables every request — pass null until the viewer is known to be signed in. */
   query: string | null;
   tab: SearchTab;
   allMetros: boolean;
@@ -36,6 +37,7 @@ export interface SearchPageState {
   loading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
+  /** The active tab's error: the preview on "all", the list on a type tab. */
   error: Error | null;
   loadMore: () => void;
   retry: () => void;
@@ -45,18 +47,22 @@ export interface SearchPageState {
 export function useSearchPage({ query, tab, allMetros, metroId }: UseSearchPageOptions): SearchPageState {
   const [preview, setPreview] = useState<SearchSuggestions | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<Error | null>(null);
   const [items, setItems] = useState<SearchResult[]>([]);
   const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState<Error | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
   const [attempt, setAttempt] = useState(0);
   const previewRequest = useRef(0);
   const listRequest = useRef(0);
+  // Ranked ids consumed so far. Hydration can drop rows (deleted, or hidden by
+  // RLS), so items.length would restart the next page too early and repeat results.
+  const rankedOffset = useRef(0);
 
   useEffect(() => {
     const requestId = ++previewRequest.current;
-    setError(null);
+    setPreviewError(null);
     if (!query) {
       setPreview(null);
       setPreviewLoading(false);
@@ -67,7 +73,7 @@ export function useSearchPage({ query, tab, allMetros, metroId }: UseSearchPageO
       if (requestId !== previewRequest.current) return;
       setPreviewLoading(false);
       setPreview(result.data ?? null);
-      if (result.error) setError(result.error);
+      if (result.error) setPreviewError(result.error);
     });
   }, [query, metroId, allMetros, attempt]);
 
@@ -76,6 +82,9 @@ export function useSearchPage({ query, tab, allMetros, metroId }: UseSearchPageO
     setItems([]);
     setHasMore(false);
     setLoadingMore(false);
+    // Each tab owns its error, so switching away from a failed tab clears it.
+    setListError(null);
+    rankedOffset.current = 0;
     if (!query || tab === 'all') {
       setListLoading(false);
       return;
@@ -85,9 +94,10 @@ export function useSearchPage({ query, tab, allMetros, metroId }: UseSearchPageO
       if (requestId !== listRequest.current) return;
       setListLoading(false);
       if (page.error) {
-        setError(page.error);
+        setListError(page.error);
         return;
       }
+      rankedOffset.current = SEARCH_PAGE_SIZE;
       setItems(page.data ?? []);
       setHasMore(Boolean(page.hasMore));
     });
@@ -96,18 +106,24 @@ export function useSearchPage({ query, tab, allMetros, metroId }: UseSearchPageO
   const loadMore = useCallback(() => {
     if (!query || tab === 'all' || loadingMore || !hasMore) return;
     const requestId = listRequest.current;
+    const offset = rankedOffset.current;
     setLoadingMore(true);
-    void FETCH_TAB[tab](query, { metroId, allMetros, limit: SEARCH_PAGE_SIZE, offset: items.length }).then((page) => {
+    void FETCH_TAB[tab](query, { metroId, allMetros, limit: SEARCH_PAGE_SIZE, offset }).then((page) => {
       if (requestId !== listRequest.current) return;
       setLoadingMore(false);
       if (page.error) {
-        setError(page.error);
+        setListError(page.error);
+        // The sentinel is still on screen, so leaving hasMore set would call
+        // loadMore again as soon as loadingMore clears, in a tight loop.
+        setHasMore(false);
         return;
       }
+      rankedOffset.current = offset + SEARCH_PAGE_SIZE;
+      setListError(null);
       setItems((previous) => [...previous, ...(page.data ?? [])]);
       setHasMore(Boolean(page.hasMore));
     });
-  }, [query, tab, metroId, allMetros, loadingMore, hasMore, items.length]);
+  }, [query, tab, metroId, allMetros, loadingMore, hasMore]);
 
   const retry = useCallback(() => setAttempt((count) => count + 1), []);
 
@@ -120,7 +136,7 @@ export function useSearchPage({ query, tab, allMetros, metroId }: UseSearchPageO
     loading: tab === 'all' ? previewLoading : listLoading,
     loadingMore,
     hasMore,
-    error,
+    error: tab === 'all' ? previewError : listError,
     loadMore,
     retry,
   };

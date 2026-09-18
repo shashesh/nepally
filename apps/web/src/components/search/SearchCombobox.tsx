@@ -4,6 +4,7 @@ import { Combobox, Loader, Text, TextInput, useCombobox } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import { getShortMetroName } from '@nepally/shared';
 import type { SearchTab } from '@nepally/shared';
+import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import { useSearchSuggestions } from '../../hooks/useSearchSuggestions';
 import { SearchResultItem, getSearchResultHref, type SearchResult } from './SearchResultItem';
@@ -22,14 +23,19 @@ const GROUP_NOUNS: Record<Exclude<SearchTab, 'all'>, string> = { posts: 'posts',
 
 export function SearchCombobox({ layout = 'dropdown', autoFocus = false, onNavigate }: SearchComboboxProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const { activeLocation } = useLocation();
   const [value, setValue] = useState('');
   const [allMetros, setAllMetros] = useState(false);
   const combobox = useCombobox({ onDropdownClose: () => combobox.resetSelectedOption() });
 
-  const metroId = activeLocation?.metro_area_id ?? null;
+  // LocationProvider fills activeLocation asynchronously. Without the user
+  // fallback an early search sends metroId null with allMetros false, which
+  // matches global rows only and hides the member's own metro. FeedPage does
+  // the same.
+  const metroId = activeLocation?.metro_area_id ?? user?.metro_area_id ?? null;
   const metroLabel = activeLocation ? getShortMetroName(activeLocation.metro_name) : 'your area';
-  const { query, data, loading, error } = useSearchSuggestions(value, { metroId, allMetros });
+  const { query, resultsQuery, data, loading, error } = useSearchSuggestions(value, { metroId, allMetros });
 
   const results = new Map<string, SearchResult>();
   data?.posts.items.forEach((post) => results.set(`post:${post.id}`, { kind: 'post', post }));
@@ -67,7 +73,7 @@ export function SearchCombobox({ layout = 'dropdown', autoFocus = false, onNavig
           const key = `${prefix}:${item.id}`;
           return (
             <Combobox.Option key={key} value={key} className={styles.option}>
-              <SearchResultItem result={results.get(key)!} query={query} compact />
+              <SearchResultItem result={results.get(key)!} query={resultsQuery} compact />
             </Combobox.Option>
           );
         })}
