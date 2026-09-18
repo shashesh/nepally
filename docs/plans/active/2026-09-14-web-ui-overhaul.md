@@ -110,6 +110,10 @@ The spec is updated in the same commit as this plan.
    - **Fix:** timestamps derive from `FIXTURE_NOW_MS`, which the visual projects pin to `VISUAL_NOW` through `E2E_FIXED_NOW`. Ordinary e2e runs keep the wall clock, because the app itself decides what counts as "upcoming".
    - **Guard:** five entry points run the visual projects (the two `apps/web` scripts, `run-in-docker.mjs`, `smoke.mjs`, and both workflows), so `prepareVisualPage` asserts the pin. A missed entry point fails loudly instead of drifting silently.
    - **Not taken:** Copilot also asked for per-node a11y fingerprints instead of rule IDs. The observation is right — a second `color-contrast` violation on an already-baselined page passes — but PRs 1–10 exist to rewrite this markup, so fingerprints would churn and fail for reasons unrelated to accessibility. The baseline reaches `{}` at PR 10, which closes the gap.
+19. **The guards had enforcement gaps (Copilot, PR #63).** All five findings were correct and are fixed; PRs 4–10 write most of the remaining CSS, so they are worth closing before those start.
+   - **CSS guard:** the colour-literal pattern was case-sensitive (`RGB(0 0 0)` passed), named colours were not detected at all (`color: white` passed), and direct primitive references (`var(--ink-900)`) passed despite the semantic-only contract. Named colours match in value position only and never inside a longer identifier, so `--ink-white`, `.whiteBox` and `url(black.png)` stay clean.
+   - **Raw-element allowlist:** it is applied through ESLint `ignores`, which skips a file silently, so a migrated file left in the list would keep hiding new raw elements. `write-raw-element-allowlist.mjs --check` now fails on stale entries, mirroring the CSS guard's clean-file failure, and runs in `lint:guards`.
+   - **CI:** `guards:test` was reachable only through the root `test` script, which no workflow calls — CI's unit-test job runs `test:ci`. PR 1's own `escape-glob.test.mjs` had therefore never run in CI. `test:ci` now runs `guards:test` first.
 
 ## Live tracker
 
