@@ -1,0 +1,33 @@
+/**
+ * Files that still render raw <button>/<input>/<select>/<textarea>.
+ * Each web UI overhaul area PR removes its files; delete the list when empty.
+ * Regenerate: node apps/web/eslint/write-raw-element-allowlist.mjs
+ */
+export const RAW_ELEMENT_ALLOWLIST = [
+  "src/components/Layout.tsx",
+  "src/components/events/EventCard.tsx",
+  "src/components/events/EventFilterBar.tsx",
+  "src/components/marketplace/FilterBar.tsx",
+  "src/components/marketplace/ListingStrip.tsx",
+  "src/components/profile/AboutYouSection.tsx",
+  "src/components/pulse/PulseCard.tsx",
+  "src/components/users/FollowButton.tsx",
+  "src/pages/events/create.page.tsx",
+  "src/pages/events/index.page.tsx",
+  "src/pages/feed.page.tsx",
+  "src/pages/login.page.tsx",
+  "src/pages/marketplace/create.page.tsx",
+  "src/pages/marketplace/listing/[id].page.tsx",
+  "src/pages/marketplace/listing/promote/[id].page.tsx",
+  "src/pages/marketplace/my-listings.page.tsx",
+  "src/pages/messages/[id].page.tsx",
+  "src/pages/onboarding/zip.page.tsx",
+  "src/pages/posts/[id].page.tsx",
+  "src/pages/posts/create.page.tsx",
+  "src/pages/profile.page.tsx",
+  "src/pages/profile/locations.page.tsx",
+  "src/pages/profile/notifications.page.tsx",
+  "src/pages/signup.page.tsx",
+  "src/pages/users/[id].page.tsx",
+  "src/pages/verify-email.page.tsx"
+];

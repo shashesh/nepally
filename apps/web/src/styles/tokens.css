@@ -1,0 +1,148 @@
+/*
+ * Nepally web design tokens — "H1 · Ink & Marigold".
+ * Spec:  docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1
+ * Guide: docs/architecture/web-ui-system.md
+ *
+ * Primitives only feed the semantic layer below them. CSS Modules use semantic
+ * tokens only (scripts/guard-css-tokens.js). Text colour pairs are checked for
+ * WCAG AA by tokens.contrast.test.ts; mantine-theme.ts mirrors these values
+ * (mantine-theme.test.ts). All colours are inside the sRGB gamut.
+ */
+:root {
+  /* ── Primitives: ink (navy) ───────────────────────────── */
+  --ink-900: oklch(19% 0.02 265);
+  --ink-800: oklch(26% 0.07 265);
+  --ink-700: oklch(32% 0.08 265);
+
+  /* ── Primitives: marigold ─────────────────────────────── */
+  --marigold-100: oklch(94% 0.05 85);
+  --marigold-500: oklch(76% 0.15 70);
+  --marigold-700: oklch(42% 0.09 65);
+
+  /* ── Primitives: paper (warm neutrals) ────────────────── */
+  --paper-0: oklch(100% 0 0);
+  --paper-50: oklch(98.2% 0.008 75);
+  --paper-100: oklch(96% 0.01 75);
+  --paper-150: oklch(94% 0.012 75);
+  --paper-200: oklch(92% 0.012 75);
+  --paper-300: oklch(86% 0.014 75);
+  /* 60% measured 3.7:1 on --surface-0; 54% clears 4.5:1 on every surface. */
+  --paper-500: oklch(54% 0.014 75);
+  --paper-700: oklch(44% 0.015 75);
+
+  /* ── Primitives: status hues ──────────────────────────── */
+  --moss-100: oklch(95% 0.025 155);
+  --moss-600: oklch(45% 0.08 155);
+  --moss-700: oklch(35% 0.08 155);
+  --crimson-100: oklch(95% 0.04 25);
+  --crimson-300: oklch(85% 0.08 25);
+  --crimson-600: oklch(50% 0.2 25);
+  --crimson-700: oklch(42% 0.16 25);
+  --amber-600: oklch(55% 0.11 65);
+
+  /* ── Surfaces, text, borders ──────────────────────────── */
+  --surface-0: var(--paper-50);
+  --surface-1: var(--paper-0);
+  --surface-2: var(--paper-100);
+  --surface-sunken: var(--paper-150);
+  --text-1: var(--ink-900);
+  --text-2: var(--paper-700);
+  --text-3: var(--paper-500);
+  --border-subtle: var(--paper-200);
+  --border-solid: var(--paper-300);
+
+  /* ── Action (ink) and accent (marigold — never text) ──── */
+  --action-bg: var(--ink-800);
+  --action-bg-hover: var(--ink-700);
+  --action-fg: var(--paper-0);
+  --accent: var(--marigold-500);
+  --accent-tint: var(--marigold-100);
+  --accent-ink: var(--marigold-700);
+
+  /* ── Trust tiers ──────────────────────────────────────── */
+  --trust-new-fg: oklch(40% 0.01 75);
+  --trust-new-bg: oklch(94% 0.008 75);
+  --trust-verified-fg: var(--moss-700);
+  --trust-verified-bg: var(--moss-100);
+  --trust-contributor-fg: var(--accent-ink);
+  --trust-contributor-bg: var(--accent-tint);
+
+  /* ── Status ───────────────────────────────────────────── */
+  --emergency-fg: var(--crimson-700);
+  --emergency-bg: var(--crimson-100);
+  --emergency-border: var(--crimson-300);
+  --success: var(--moss-600);
+  --warning: var(--amber-600);
+  --danger: var(--crimson-600);
+
+  /* ── Topic dots (decorative; always paired with a label) ─ */
+  --tag-housing: oklch(55% 0.12 155);
+  --tag-jobs: oklch(52% 0.11 255);
+  --tag-help: oklch(65% 0.12 75);
+  --tag-question: oklch(50% 0.11 300);
+  --tag-politics: oklch(45% 0.03 265);
+  --tag-discussion: oklch(55% 0.09 200);
+  --tag-emergency: var(--emergency-fg);
+
+  /* ── Typography ───────────────────────────────────────── */
+  /* FontVariables.tsx overrides both families with the self-hosted faces. */
+  --font-display: 'Gambarino', 'Source Serif Pro', Georgia, serif;
+  --font-body: 'Switzer', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.9375rem;
+  --font-size-base: 1.0625rem;
+  --font-size-lg: 1.1875rem;
+  --font-size-xl: 1.5rem;
+  --font-size-display: clamp(2.25rem, 1.5rem + 2vw, 3rem);
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  /* Switzer is loaded at 400/500/600 only; "bold" means the heaviest loaded weight. */
+  --font-weight-bold: 600;
+  --leading-tight: 1.15;
+  --leading-snug: 1.35;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.7;
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+
+  /* ── Space (4pt) ──────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* ── Radius (purpose-named) ───────────────────────────── */
+  --radius-chip: 4px;
+  --radius-tag: 6px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-overlay: 16px;
+  --radius-full: 9999px;
+
+  /* ── Elevation: borders by default, shadows only for floating layers ── */
+  --shadow-float: 0 12px 40px oklch(19% 0.02 265 / 0.16), 0 2px 6px oklch(19% 0.02 265 / 0.06);
+  --shadow-modal: 0 24px 64px oklch(19% 0.02 265 / 0.22), 0 4px 12px oklch(19% 0.02 265 / 0.08);
+  --focus-ring-halo: 0 0 0 2px var(--surface-1), 0 0 0 6px var(--accent);
+
+  /* ── Motion ───────────────────────────────────────────── */
+  --duration-fast: 160ms;
+  --duration-base: 240ms;
+  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* ── Layout ───────────────────────────────────────────── */
+  --layout-max-width: 1200px;
+  --layout-content-width: 800px;
+  --layout-aside-width: 300px;
+  --layout-rail-width: 240px;
+  --layout-rail-compact-width: 72px;
+  --layout-topbar-height: 60px;
+  --layout-tabbar-height: 64px;
+  --control-height: 44px;
+  --card-padding: var(--space-5);
+}

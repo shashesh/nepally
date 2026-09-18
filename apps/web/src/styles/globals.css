@@ -1,10 +1,24 @@
-@import './design-system.css';
-@import './design-system-next.css';
+@import './tokens.css';
+@import './legacy-aliases.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 * {
-  box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  /* Never synthesise bold/italic Gambarino or unloaded Switzer weights. */
+  font-synthesis: none;
 }
 
 html,
@@ -14,48 +28,80 @@ body {
 }
 
 body {
-  color: var(--color-text-primary);
-  background: var(--color-bg);
+  color: var(--text-1);
+  background: var(--surface-0);
   min-height: 100vh;
-  font-family: var(--font-family);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-normal);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  color: var(--color-primary);
+  color: var(--action-bg);
   text-decoration: none;
 }
 
-a:hover {
-  text-decoration: none;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  color: var(--color-text-primary);
-  line-height: var(--line-height-tight);
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-1);
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-snug);
 }
 
-h1 { font-size: var(--font-size-h1); font-weight: var(--font-weight-extrabold); }
-h2 { font-size: var(--font-size-h2); font-weight: var(--font-weight-bold); }
-h3 { font-size: var(--font-size-h3); font-weight: var(--font-weight-semibold); }
+h1 {
+  font-size: var(--font-size-display);
+  letter-spacing: var(--tracking-tight);
+}
 
-button {
+h2 {
+  font-size: var(--font-size-xl);
+}
+
+h3 {
+  font-size: var(--font-size-lg);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+button:not(:disabled) {
   cursor: pointer;
-  font-family: var(--font-family);
 }
 
-input, textarea, select {
-  font-family: var(--font-family);
-  font-size: var(--font-size-body);
+input,
+textarea,
+select {
+  font-size: var(--font-size-base);
 }
 
-:where(a, button, input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-primary);
+/* Focus ring: ink outline carries the ≥3:1 contrast; the marigold halo is the signature.
+   `.nepally-focus` is Mantine's theme.focusClassName (mantine-theme.ts). */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible,
+.nepally-focus:focus-visible {
+  outline: 2px solid var(--action-bg);
   outline-offset: 2px;
-  border-radius: var(--radius-sm);
+  box-shadow: var(--focus-ring-halo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

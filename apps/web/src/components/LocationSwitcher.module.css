@@ -24,3 +24,7 @@
   flex-shrink: 0;
   color: var(--color-text-tertiary);
 }
+
+.accentIcon {
+  color: var(--action-bg);
+}

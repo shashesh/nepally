@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '../test-utils';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { AppProps } from 'next/app';
 
@@ -18,6 +18,10 @@ vi.mock('../components/Layout', () => ({
     React.createElement('div', { 'data-testid': 'layout' }, children),
 }));
 
+vi.mock('../components/layout/FontVariables', () => ({
+  default: () => null,
+}));
+
 vi.mock('@mantine/core', () => ({
   MantineProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', { 'data-testid': 'mantine-provider' }, children),
@@ -28,7 +32,13 @@ vi.mock('@mantine/notifications', () => ({
 }));
 
 vi.mock('../styles/mantine-theme', () => ({
-  nusaTheme: {},
+  nepallyTheme: {},
+  cssVariablesResolver: () => ({ variables: {}, light: {}, dark: {} }),
+}));
+
+vi.mock('@mantine/modals', () => ({
+  ModalsProvider: ({ children }: { children: React.ReactNode }) =>
+    React.createElement('div', { 'data-testid': 'modals-provider' }, children),
 }));
 
 vi.mock('@mantine/core/styles.css', () => ({}));
@@ -47,9 +57,10 @@ describe('App', () => {
         router: {} as AppProps['router'],
       })
     );
-    expect(screen.getAllByTestId('mantine-provider').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('mantine-provider')).toBeDefined();
     expect(screen.getByTestId('auth-provider')).toBeDefined();
     expect(screen.getByTestId('location-provider')).toBeDefined();
+    expect(screen.getByTestId('modals-provider')).toBeDefined();
     expect(screen.getByTestId('layout')).toBeDefined();
     expect(screen.getByTestId('page')).toBeDefined();
   });
