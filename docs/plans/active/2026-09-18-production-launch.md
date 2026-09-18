@@ -36,7 +36,10 @@ It is monitored and supported by one person. Every kind of failure has a rehears
 - **Database:** only `nusa-staging` exists (24 test accounts, last signup April 2026). There is no production database.
 - **Web deploy:** `deploy-vercel-prod.yml` has never run. Dev deploys run on every merge.
 - **Monitoring:** no error tracking or analytics in any app.
-- **Mobile builds:** `apps/mobile/app.json` has no EAS project id (`eas init` not run), so push tokens cannot register in store builds.
+- **Staging migrations:** `038_search_prefix_fix` is applied on `nusa-staging`, but its tracker row still has the timestamp version `20260918021920`. [migration-workflow.md](../../architecture/migration-workflow.md) still says the tracker ends at `037`.
+- **Mobile builds:**
+  - `apps/mobile/app.json` has no EAS project id (`eas init` not run), so push tokens cannot register in store builds.
+  - `expo-updates` is not installed and there is no `updates.url` / `runtimeVersion`, so over-the-air (OTA) updates are not possible yet. `eas.json` names the channels, but nothing uses them.
 - **Store compliance gaps:**
   - no in-app account deletion
   - no Sign in with Apple, although iOS offers Google sign-in
@@ -49,7 +52,7 @@ It is monitored and supported by one person. Every kind of failure has a rehears
     - `increment_listing_views` / `increment_listing_contacts` let anyone inflate counters. Migration 017 revoked `PUBLIC`, but Supabase's explicit `anon` grant is still in the function ACL.
     - `has_user_liked_post` is granted to both `PUBLIC` and `anon`, and reveals whether a given user liked a post.
 - **Web hardening:** `next.config.js` sets no security headers, and the service worker references a missing `/icon.png`.
-- **Older checklist:** open items from [`phase1-remediation-checklist.md`](phase1-remediation-checklist.md) are mapped into this plan in [Folded-in items](#folded-in-items).
+- **Older plans:** open items from [`phase1-remediation-checklist.md`](phase1-remediation-checklist.md) and all five steps of [`mobile-usability-security-hardening.md`](mobile-usability-security-hardening.md) are mapped into this plan in [Folded-in items](#folded-in-items).
 
 ## Launch markets
 
@@ -125,6 +128,10 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
 ### W1 — Production environment (Sep 21–27)
 
 - [ ] **You + Code:** Create the production Supabase project (`nepally-prod`, us-west-2). You approve the cost; Claude creates it through MCP.
+- [ ] **Code:** Reconcile staging first:
+  - Realign the `038` tracker row on `nusa-staging` (`20260918021920` → `038`).
+  - Update the "After (current)" section of `migration-workflow.md` to `001`–`038`.
+  - Confirm that staging and the repo list the same migrations.
 - [ ] **Code:** Apply `001`–`038` in order on the empty prod database.
   - Use the MCP `apply_migration` tool or the dashboard SQL editor, never `supabase db push`.
   - Realign the tracker rows to `NNN` as [migration-workflow.md](../../architecture/migration-workflow.md) describes.
@@ -151,9 +158,12 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
 - [ ] **Code:** Wire prod env vars into Vercel (production environment) and EAS (production profile). Deploy edge functions and set their secrets on prod.
 - [ ] **Code:** Web security headers in `next.config.js` (CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, frame-ancestors). Add the missing `/icon.png`.
 - [ ] **Code:** First run of `deploy-vercel-prod.yml` against the prod project, with the custom domain attached.
-- [ ] **Code:** Retire the two March plans properly.
-  - `phase1-remediation-checklist.md`: its open items are already mapped in [Folded-in items](#folded-in-items). Set its status to `abandoned` with a pointer to this plan, `git mv` it to `docs/archive/plans/`, and update `docs/INDEX.md` and inbound links.
-  - Review `mobile-usability-security-hardening.md` the same way.
+- [ ] **Code:** Retire the two March plans properly. Every open item from both is already mapped in [Folded-in items](#folded-in-items), so neither loses its tracker. For each file:
+  - set its status to `abandoned`, with a pointer to this plan
+  - `git mv` it to `docs/archive/plans/`
+  - update `docs/INDEX.md` and inbound links
+
+  The mobile plan's "Decisions (Resolved)" section stays readable in the archive.
 
 ### W2 — Observability (Sep 28–Oct 4)
 
@@ -161,7 +171,9 @@ See [Monitoring](#monitoring) for the full spec.
 
 - [ ] **You:** Create Sentry, PostHog and Better Stack (or UptimeRobot) accounts. Install the Sentry and PostHog phone apps for alerts.
 - [ ] **Code:** Sentry in web (`@sentry/nextjs`), mobile (`@sentry/react-native` + Expo plugin, source maps uploaded by EAS), and edge functions (Deno SDK).
-- [ ] **Code:** Analytics event catalogue in `packages/shared` (names + typed properties). Thin PostHog adapters in web and mobile. `promotion_purchased` is sent from `stripe-webhook`, using the same catalogue.
+- [ ] **Code:** Analytics event catalogue in `packages/shared` (names + typed properties). Thin PostHog adapters in web and mobile. `promotion_purchased` is sent from `stripe-webhook`, using the same catalogue. `create-promotion-checkout` adds `platform` to the Stripe metadata; today it carries only promotion, listing and user ids.
+- [ ] **Code:** User-safe error messages on mobile: people see plain guidance, and the raw backend error goes to Sentry (mobile plan Step 1).
+- [ ] **Code:** Daily summary email built from the right sources (see [Alerts](#monitoring)). A scheduled job (GitHub Action or Supabase scheduled function) sends the SQL counts.
 - [ ] **Code:** Session replay with every input and all chat text masked.
 - [ ] **Code:** Revenue queries:
   - SQL over `listing_promotions` for sales by tier and metro
@@ -177,15 +189,31 @@ See [Monitoring](#monitoring) for the full spec.
   - The server side removes the auth user, anonymizes or deletes content per the privacy policy, and deletes storage objects.
   - Also a public web page where people can ask for deletion without the app. Its URL goes into the Play Console.
 - [ ] **Code:** Sign in with Apple on iOS (Supabase Apple provider).
-- [ ] **Code:** Hide the mobile Promote purchase flow. Promoted and sponsored items keep displaying.
+- [ ] **Code:** Mobile auth hardening (mobile plan Step 1):
+  - OAuth callback state and origin validation
+  - media URL validation (block unsafe schemes and private hosts)
+  - recent sign-in required for account deletion and password change
+  - Re-confirm the plan's 30-minute inactivity timeout before building it; it would sign people out of a community app very often.
+- [ ] **Code:** Remove every mobile Promote entry point and unregister the `PromoteListing` route. Promoted and sponsored items keep displaying. The entry points are:
+  - the `promote` action in `MarketplaceHomeScreen`'s menu
+  - the Promote button in `ListingDetailScreen`
+  - the Promote action in `MyListingsScreen`
 - [ ] **You + Code:** `eas init`, then EAS credentials and env.
-  - Validate push delivery end to end on a real iPhone and a real Android phone (edge function secrets, `app.settings.*`) (NOTIF-02).
-  - Validate Google sign-in in store builds (AUTH-01).
+- [ ] **Code:** Set up EAS Update: `npx expo install expo-updates`, then `eas update:configure` (writes `updates.url` and the `runtimeVersion` policy). Commit both. Every OTA step in this plan depends on it.
+- [ ] **You + Code:** Validate push delivery end to end (NOTIF-02):
+  - a real iPhone and a real Android phone (edge function secrets, `app.settings.*`)
+  - a desktop browser through web push. The prod VAPID keys are set: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` in Vercel, the private key as a `send-push-notification` secret. Check the permission prompt, that the subscription is saved, and that delivery arrives.
+- [ ] **You + Code:** Validate Google sign-in in store builds (AUTH-01).
 
 ### W4 — Mobile polish, builds, closed test (Oct 12–18)
 
 - [ ] **Code:** Replace the Home search "Coming Soon" with the shared search API (`037`/`038` already power web search) (UX-02).
 - [ ] **Code:** Chat avatars open the public profile instead of "Coming Soon" (UX-01).
+- [ ] **Code:** Mobile reliability (mobile plan Step 2):
+  - realtime channel cleanup on remount
+  - timeouts on location requests
+  - `LocationContext` update races
+  - Check each against current code first; the React Compiler cleanup (#71) rewrote many of these effects.
 - [ ] **Code:** "Report a problem" in Settings on web and mobile (Sentry User Feedback, which attaches the user id, app version, platform and replay).
 - [ ] **Code:** EAS production builds. Also: TestFlight internal testing, and the Play closed-testing track with the W0 testers. **The 14-day clock must start by Oct 18.**
 
@@ -209,6 +237,10 @@ See [Monitoring](#monitoring) for the full spec.
 
 - [ ] **Code:** Web UI overhaul PR 5 (create flows).
 - [ ] **Code:** Beta fixes from Sentry, feedback and the funnel dashboard.
+- [ ] **Code:** Mobile UX and accessibility baseline (mobile plan Step 3):
+  - touch targets on icon-only actions
+  - loading, empty and error states that let people recover
+  - screen-reader labels on inputs and navigation
 - [ ] **You:** Metro champions and seed content for Atlanta, Houston, the Bay Area and Los Angeles.
 
 ### W8 — Beta wave 2 and App Store submission (Nov 9–15)
@@ -224,11 +256,14 @@ See [Monitoring](#monitoring) for the full spec.
   - Vercel Instant Rollback
   - a harmless EAS Update to the `production` channel, then rolled back. Do it while only testers have builds.
   - turning off a feature flag
-  - restoring a prod database dump (`supabase db dump`) into a throwaway project. Write down the recovery point: with daily backups you can lose up to 24 hours of data.
+  - restoring a Supabase managed daily backup on **staging**. It is the same mechanism a prod incident would use, and the project is unavailable while it restores. Time it, and write down what it covers:
+    - up to 24 hours of data can be lost
+    - auth users are included, because they live in the database
+    - Storage files (photos) are **not** included, so deleted files cannot come back from a database backup
 - [ ] **Code:** Nightly GitHub Action that runs the `test:security:*` smoke tests against **staging** and opens an issue on failure. They create and delete users and content with the service-role key, so they stay off prod.
   - Prod gets read-only probes with the anon key instead (for example, anon cannot read private `users` columns or call the revoked RPCs).
   - Weekly Supabase advisors check on both projects.
-- [ ] **Code:** Coverage gates for notifications, moderation and the auth lifecycle (TEST-01).
+- [ ] **Code:** Coverage gates for notifications, moderation and the auth lifecycle (TEST-01), plus the mobile plan's missing critical tests and full validation pass (Step 5).
 
 ### W10 — Release candidate (Nov 23–29)
 
@@ -243,7 +278,7 @@ See [Monitoring](#monitoring) for the full spec.
 ### W12 — Hypercare (Dec 7–13)
 
 - [ ] **You + Code:** Fix what launch surfaced. Hold the first weekly review, then decide what goes first after launch.
-- [ ] **Code:** Refresh the roadmap's Phase 1 status to match what launched (DOC-01).
+- [ ] **Code:** Refresh `README.md` and the roadmap's Phase 1 status to match what launched (DOC-01).
 
 ## Monitoring
 
@@ -261,7 +296,8 @@ See [Monitoring](#monitoring) for the full spec.
 - Counts (signups, posts per day, listings, promotions sold) come from SQL. PostHog answers behaviour and funnel questions. Don't reconcile two sources for the same number.
 - Event names and property types live in `packages/shared`. The apps and `stripe-webhook` only call an adapter.
 - Never send email, name, phone, message text or post bodies.
-- Attach `platform` and `app_version` to every event. Attach `metro_id` and `trust_level` as soon as they are known.
+- Attach `platform` and `app_version` to every client event. Attach `metro_id` and `trust_level` as soon as they are known.
+- Server events (sent from edge functions such as `stripe-webhook`) carry `source: server` instead of `app_version`. Their `platform` is the originating checkout's, read from the Stripe metadata.
 - Before sign-in (`signup_started`, for example), events carry PostHog's anonymous id. Calling `identify(user_id)` with the Supabase user id at signup merges them into that user.
 
 **Initial events**
@@ -278,7 +314,7 @@ account_deleted
 promotion_checkout_started {type, days}
 sponsored_impression {promotion_id, listing_id, type, placement}
 sponsored_clicked {promotion_id, listing_id, type, placement}
-promotion_purchased {promotion_id, type, days, amount_cents, metro_id}   (server-side, stripe-webhook)
+promotion_purchased {promotion_id, type, days, amount_cents, metro_id, platform, source}   (server-side, stripe-webhook)
 ```
 
 **Dashboards**
@@ -297,7 +333,10 @@ promotion_purchased {promotion_id, type, days, amount_cents, metro_id}   (server
 - Uptime: web down, Supabase REST down, edge functions failing (especially `stripe-webhook`).
 - Supabase: database CPU or disk above 80%; spend cap on.
 - App: Emergency post pending for more than 10 minutes.
-- Daily 8 a.m. email: signups, active users, posts, reports, open errors (PostHog subscription).
+- Daily 8 a.m. summary, each number taken from the tool that owns it:
+  - SQL counts (signups, posts, reports, promotions sold), emailed by the W2 scheduled job
+  - active users and the activation funnel, from a PostHog subscription
+  - open errors, from Sentry's issue digest
 
 ## Support and incident operations
 
@@ -323,10 +362,10 @@ Track work as GitHub issues labelled `p0`–`p3`.
 | Failure | Path | Speed |
 |---|---|---|
 | Bad web deploy | Vercel Instant Rollback | Seconds |
-| Mobile JS bug | EAS Update to the `production` channel; no store review | Minutes |
+| Mobile JS bug | EAS Update to the `production` channel; no store review. Needs the W3 `expo-updates` setup. | Minutes |
 | Mobile native bug | Containment, not rollback: turn the feature off with its PostHog flag or ship a JS workaround through EAS Update. Then ship a fixed build and request an expedited Apple review. | Minutes to contain, days to fix |
 | Feature misbehaving | PostHog feature flags around chat, marketplace, promotions and push | Seconds |
-| Bad migration or data loss | Every migration goes to staging first. Restore from the daily backup; you can lose up to 24 hours of data. | Hours |
+| Bad migration or data loss | Every migration goes to staging first. Restore the managed daily backup (rehearsed on staging in W9). You can lose up to 24 hours of data, and Storage files are not included. | Hours |
 
 **Rhythm**
 
@@ -365,7 +404,9 @@ Track work as GitHub issues labelled `p0`–`p3`.
 
 - [ ] Signup → verify → onboarding → first post works on web, iOS build and Android build against **prod**, for a ZIP in each of the six markets.
 - [ ] Auth email arrives within a minute through custom SMTP.
-- [ ] Push arrives on a real iPhone and a real Android phone.
+- [ ] Push arrives on a real iPhone, a real Android phone and a desktop browser (web push).
+- [ ] An EAS Update published to the `production` channel reaches an installed store build.
+- [ ] No mobile screen leads into the Promote purchase flow.
 - [ ] A live web promotion purchase, its placement and its refund all work.
 - [ ] Account deletion works in the app and through the public request page, and removes the user's data as the privacy policy says.
 - [ ] Sentry receives errors from web, mobile and edge functions. PostHog funnel shows beta traffic.
@@ -399,9 +440,21 @@ Open items from [`phase1-remediation-checklist.md`](phase1-remediation-checklist
 | UX-01 | Chat avatar "Coming Soon" | W4 |
 | UX-02 | Mobile search | W4 |
 | TEST-01 | Coverage gates for notifications, moderation, auth | W9 |
-| DOC-01 | Status lines in sync with reality | Mostly covered by the CI-enforced docs system; roadmap refresh in W12 |
+| DOC-01 | Status lines in sync with reality | `README.md` and roadmap refresh in W12. `PROGRESS.md` is already archived and frozen (superseded by the roadmap), so it needs no sync. |
 | ARCH-01 | Shared metro-lookup helper | After launch |
 | AUTH-02 | Phone OTP onboarding | Not in this plan (deferred since 2026-03-25) |
+
+All five steps of [`mobile-usability-security-hardening.md`](mobile-usability-security-hardening.md) (every one `Not Started` as of 2026-09-18):
+
+| Step | What | Where |
+|---|---|---|
+| 1 Security foundations | Secure storage | W1 (SEC-06) |
+| 1 Security foundations | User-safe errors | W2 |
+| 1 Security foundations | OAuth callback state, media URL validation, session policy and recent-auth | W3 |
+| 2 Reliability and lifecycle | Realtime cleanup, location timeouts, `LocationContext` races | W4 (check against current code first) |
+| 3 UX and accessibility | Touch targets, recoverable states, screen-reader labels | W7 |
+| 4 Proactive enhancements | Realtime over polling, post-draft recovery, contextual nudges | After launch |
+| 5 Tests and release verification | Missing critical tests, full validation pass | W9 (with TEST-01) |
 
 ## After launch
 
@@ -411,4 +464,5 @@ Open items from [`phase1-remediation-checklist.md`](phase1-remediation-checklist
 - Web UI overhaul PRs 6–10.
 - Trust-level admin tools (Level 2 grants) and platform stats in `/moderation`. Use SQL and PostHog until then.
 - pgTAP negative-case RLS tests (SEC-06); shared metro lookup (ARCH-01).
+- Mobile proactive enhancements: realtime over polling, post-draft recovery, contextual nudges (mobile plan Step 4).
 - Phone verification (deferred since 2026-03-25).
