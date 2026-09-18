@@ -114,6 +114,11 @@ The spec is updated in the same commit as this plan.
    - **CSS guard:** the colour-literal pattern was case-sensitive (`RGB(0 0 0)` passed), named colours were not detected at all (`color: white` passed), and direct primitive references (`var(--ink-900)`) passed despite the semantic-only contract. Named colours match in value position only and never inside a longer identifier, so `--ink-white`, `.whiteBox` and `url(black.png)` stay clean.
    - **Raw-element allowlist:** it is applied through ESLint `ignores`, which skips a file silently, so a migrated file left in the list would keep hiding new raw elements. `write-raw-element-allowlist.mjs --check` now fails on stale entries, mirroring the CSS guard's clean-file failure, and runs in `lint:guards`.
    - **CI:** `guards:test` was reachable only through the root `test` script, which no workflow calls — CI's unit-test job runs `test:ci`. PR 1's own `escape-glob.test.mjs` had therefore never run in CI. `test:ci` now runs `guards:test` first.
+20. **The notification bell had three realtime and read-state defects (Copilot, PR #64).**
+   - **Duplicate subscription:** the realtime effect checked only `userId`, so `/notifications` — which passes `pollingEnabled: false` because it owns its own `notifications-page:` channel — still opened a second channel for the same INSERTs. Now gated on `pollingEnabled`.
+   - **Chat notifications leaked into the bell:** `getNotifications` and `getUnreadNotificationCount` both filter `.neq('type', 'message')`, but the handler accepted every INSERT, so a chat notification appeared and bumped the count until the next reload. Message-type payloads are ignored.
+   - **Unchecked write results:** `markRead` and `markAllRead` updated state without checking the returned `{ error }`, showing a false read state after an RLS or network failure. Both now match `remove`, which already checked. Copilot flagged only `markRead`; `markAllRead` had the same defect.
+   - **Not a defect:** the fourth finding said the prompt dialog's Cancel button defaults to `submit`. Mantine's `UnstyledButton` sets `type="button"` for button elements, so it never was. A test pins this, because Cancel precedes Save and would otherwise become the form's default button and swallow Enter.
 
 ## Live tracker
 
