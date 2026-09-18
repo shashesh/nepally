@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { RootStackParamList } from '../types/navigation';
@@ -14,14 +14,9 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export function RootNavigator() {
   const { user, loading: authLoading } = useAuth();
   const { loading: onboardingLoading } = useOnboarding();
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    // Wait for both auth and onboarding to load
-    if (!authLoading && !onboardingLoading) {
-      setIsReady(true);
-    }
-  }, [authLoading, onboardingLoading]);
+  // Wait for both auth and onboarding to load. Both flags only ever go from
+  // true to false, so once ready this stays ready.
+  const isReady = !authLoading && !onboardingLoading;
 
   if (!isReady) {
     return (

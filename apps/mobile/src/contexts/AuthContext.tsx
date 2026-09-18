@@ -176,54 +176,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const loadUser = useCallback(async () => {
-    try {
-      // Check if there's an active session
-      const { data: { session } } = await supabase.auth.getSession();
+  // Resolves the persisted session on startup without touching React state:
+  // signs out an expired session and repairs missing/mismatched timestamps so
+  // expiry is enforced from first load (e.g. after upgrade, storage clear, or
+  // user switch). Returns the auth user of a still-valid session, else null.
+  const restoreSession = useCallback(async (): Promise<SupabaseUser | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return null;
 
-      if (session?.user) {
-        const expired = await isSessionExpired();
-        if (expired) {
-          await supabase.auth.signOut();
-          setSupabaseUser(null);
-          setUser(null);
-          pushRegistrationAttemptedUserIdRef.current = null;
-        } else {
-          // Repair missing/mismatched timestamps so expiry is enforced from
-          // first load (e.g. after upgrade, storage clear, or user switch).
-          const [existingSignInAt, existingUserId] = await Promise.all([
-            AsyncStorage.getItem(STORAGE_KEY_SIGN_IN_AT),
-            AsyncStorage.getItem(STORAGE_KEY_USER_ID),
-          ]);
-          if (!existingSignInAt || existingUserId !== session.user.id) {
-            const now = Date.now().toString();
-            await AsyncStorage.multiSet([
-              [STORAGE_KEY_SIGN_IN_AT, now],
-              [STORAGE_KEY_LAST_ACTIVITY, now],
-              [STORAGE_KEY_USER_ID, session.user.id],
-            ]);
-          }
-          setSupabaseUser(session.user);
-          void registerPushTokenForUser(session.user.id);
-          await refreshUser();
-        }
-      } else {
-        // No valid Supabase session: keep auth state signed out.
-        setSupabaseUser(null);
-        setUser(null);
-        pushRegistrationAttemptedUserIdRef.current = null;
-      }
-    } catch (error) {
-      console.error('Failed to load user:', error);
-    } finally {
-      setLoading(false);
+    if (await isSessionExpired()) {
+      await supabase.auth.signOut();
+      return null;
     }
-  }, [isSessionExpired, refreshUser, registerPushTokenForUser]);
+
+    const [existingSignInAt, existingUserId] = await Promise.all([
+      AsyncStorage.getItem(STORAGE_KEY_SIGN_IN_AT),
+      AsyncStorage.getItem(STORAGE_KEY_USER_ID),
+    ]);
+    if (!existingSignInAt || existingUserId !== session.user.id) {
+      const now = Date.now().toString();
+      await AsyncStorage.multiSet([
+        [STORAGE_KEY_SIGN_IN_AT, now],
+        [STORAGE_KEY_LAST_ACTIVITY, now],
+        [STORAGE_KEY_USER_ID, session.user.id],
+      ]);
+    }
+    return session.user;
+  }, [isSessionExpired]);
 
   // Load user data from storage on mount
   useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const sessionUser = await restoreSession();
+        if (!sessionUser) {
+          // No valid Supabase session: keep auth state signed out.
+          pushRegistrationAttemptedUserIdRef.current = null;
+          if (!cancelled) {
+            setSupabaseUser(null);
+            setUser(null);
+          }
+          return;
+        }
+        if (!cancelled) setSupabaseUser(sessionUser);
+        void registerPushTokenForUser(sessionUser.id);
+        await refreshUser();
+      } catch (error) {
+        console.error('Failed to load user:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [restoreSession, refreshUser, registerPushTokenForUser]);
 
   // Listen for auth state changes
   useEffect(() => {

@@ -1,7 +1,15 @@
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
 import React from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import {
+  getTags,
+  getTotalUnreadCount,
+  getUnreadNotificationCount,
+  getUserLikedPostIds,
+  getUserSavedPostIds,
+} from '@nepally/shared';
 import HomeScreen from './HomeScreen';
+import { isBannerDismissed } from '../utils/storage';
 
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
@@ -63,7 +71,10 @@ jest.mock('../utils/storage', () => ({
 }));
 
 jest.mock('../components/banners/Level0Banner', () => ({
-  Level0Banner: () => null,
+  Level0Banner: () => {
+    const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
+    return <ReactNative.Text>Level 0 banner</ReactNative.Text>;
+  },
 }));
 jest.mock('../components/banners/LocationPermissionBanner', () => ({
   LocationPermissionBanner: () => null,
@@ -91,7 +102,16 @@ jest.mock('../components/cards/SkeletonPostCard', () => ({
   SkeletonPostCard: () => null,
 }));
 jest.mock('../components/filters/TagFilterBar', () => ({
-  TagFilterBar: () => null,
+  TagFilterBar: ({ tags }: { tags: { id: string; name: string }[] }) => {
+    const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
+    return (
+      <ReactNative.View>
+        {tags.map((tag) => (
+          <ReactNative.Text key={tag.id}>{tag.name}</ReactNative.Text>
+        ))}
+      </ReactNative.View>
+    );
+  },
 }));
 jest.mock('../components/sheets/PostMoreSheet', () => ({
   PostMoreSheet: ({ visible, onReport, onClose }: { visible?: boolean; onReport?: () => void; onClose?: () => void }) => {
@@ -324,5 +344,75 @@ describe('HomeScreen', () => {
         })
       );
     });
+  });
+
+  it('loads the tag filter list on mount', async () => {
+    (getTags as jest.Mock).mockResolvedValueOnce({
+      data: [{ id: 'tag-1', name: 'Housing', slug: 'housing' }],
+      error: null,
+    });
+
+    const screen = render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Housing')).toBeTruthy();
+    });
+  });
+
+  it('hides the Level 0 banner when storage says it was dismissed', async () => {
+    mockUseAuth.mockReturnValue({
+      user: {
+        id: 'user-1',
+        full_name: 'Test User',
+        trust_level: 0,
+        is_premium: false,
+        metro_area_id: '35620',
+        zip_code: '10001',
+      },
+    });
+    (isBannerDismissed as jest.Mock).mockResolvedValueOnce(true);
+
+    const screen = render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Level 0 banner')).toBeNull();
+    });
+    expect(isBannerDismissed).toHaveBeenCalledWith('level0-banner');
+  });
+
+  it('keeps the Level 0 banner when storage says it was not dismissed', async () => {
+    mockUseAuth.mockReturnValue({
+      user: {
+        id: 'user-1',
+        full_name: 'Test User',
+        trust_level: 0,
+        is_premium: false,
+        metro_area_id: '35620',
+        zip_code: '10001',
+      },
+    });
+
+    const screen = render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(isBannerDismissed).toHaveBeenCalledWith('level0-banner');
+    });
+    expect(screen.getByText('Level 0 banner')).toBeTruthy();
+  });
+
+  it("loads the signed-in user's unread badges and liked/saved posts", async () => {
+    (getTotalUnreadCount as jest.Mock).mockResolvedValueOnce({ count: 3 });
+    (getUnreadNotificationCount as jest.Mock).mockResolvedValueOnce({ count: 120 });
+
+    const screen = render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('3')).toBeTruthy();
+      expect(screen.getByText('99+')).toBeTruthy();
+    });
+    expect(getTotalUnreadCount).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(getUnreadNotificationCount).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(getUserLikedPostIds).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(getUserSavedPostIds).toHaveBeenCalledWith(expect.anything(), 'user-1');
   });
 });

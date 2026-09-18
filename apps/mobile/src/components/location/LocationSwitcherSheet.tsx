@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   Animated,
   PanResponder,
+  useAnimatedValue,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -43,27 +44,27 @@ export function LocationSwitcherSheet({
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const insets = useSafeAreaInsets();
 
-  const translateY = useRef(new Animated.Value(0)).current;
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  const translateY = useAnimatedValue(0);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 5 && gs.dy > Math.abs(gs.dx),
-      onPanResponderMove: (_, gs) => {
-        if (gs.dy > 0) translateY.setValue(gs.dy);
-      },
-      onPanResponderRelease: (_, gs) => {
-        if (gs.dy > 80 || gs.vy > 0.4) {
-          onCloseRef.current();
-          translateY.setValue(0);
-        } else {
-          Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 100, friction: 10 }).start();
-        }
-      },
-    })
-  ).current;
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gs) => gs.dy > 5 && gs.dy > Math.abs(gs.dx),
+        onPanResponderMove: (_, gs) => {
+          if (gs.dy > 0) translateY.setValue(gs.dy);
+        },
+        onPanResponderRelease: (_, gs) => {
+          if (gs.dy > 80 || gs.vy > 0.4) {
+            onClose();
+            translateY.setValue(0);
+          } else {
+            Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 100, friction: 10 }).start();
+          }
+        },
+      }),
+    [onClose, translateY]
+  );
 
   useEffect(() => {
     if (visible) translateY.setValue(0);
@@ -100,7 +101,11 @@ export function LocationSwitcherSheet({
         </TouchableWithoutFeedback>
 
         <Animated.View style={[styles.sheetContainer, { paddingBottom: spacing.l + insets.bottom, transform: [{ translateY }] }]}>
-          <View style={styles.handleContainer} {...panResponder.panHandlers}>
+          <View
+            style={styles.handleContainer}
+            testID="location-switcher-drag-handle"
+            {...panResponder.panHandlers}
+          >
             <View style={styles.handleBar} />
           </View>
 

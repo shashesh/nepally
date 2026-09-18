@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -45,15 +45,22 @@ export function FilterBar({
   searchDebounceMs = 300,
 }: FilterBarProps) {
   const [searchText, setSearchText] = useState(value.query);
+  const [prevQuery, setPrevQuery] = useState(value.query);
   const [categorySheetOpen, setCategorySheetOpen] = useState(false);
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestValueRef = useRef(value);
-  latestValueRef.current = value;
 
-  useEffect(() => {
+  // Keep the local input in sync when the parent changes value.query externally.
+  if (value.query !== prevQuery) {
+    setPrevQuery(value.query);
     setSearchText(value.query);
-  }, [value.query]);
+  }
+
+  // The debounced onChange reads the latest value, not the one from the keystroke's render.
+  useLayoutEffect(() => {
+    latestValueRef.current = value;
+  });
 
   useEffect(() => {
     return () => {

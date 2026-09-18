@@ -1,6 +1,44 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react-native';
+import { Animated } from 'react-native';
+import { fireEvent, render, type RenderResult } from '@testing-library/react-native';
 import { LocationSwitcherSheet } from './LocationSwitcherSheet';
+
+/**
+ * A single-touch responder event. PanResponder derives dy from the
+ * previous/current page Y of the touch, so this simulates one move of `toY - fromY`.
+ */
+function touchEvent(fromY: number, toY: number, timestamp: number) {
+  return {
+    nativeEvent: { touches: [{}], changedTouches: [{}] },
+    touchHistory: {
+      numberActiveTouches: 1,
+      indexOfSingleActiveTouch: 0,
+      mostRecentTimeStamp: timestamp,
+      touchBank: [
+        {
+          touchActive: true,
+          startPageX: 0,
+          startPageY: fromY,
+          startTimeStamp: 0,
+          currentPageX: 0,
+          currentPageY: toY,
+          currentTimeStamp: timestamp,
+          previousPageX: 0,
+          previousPageY: fromY,
+          previousTimeStamp: 0,
+        },
+      ],
+    },
+  };
+}
+
+/** Drag the sheet handle down by `distance` slowly (low velocity), then release. */
+function dragHandleDown(screen: RenderResult, distance: number) {
+  const handle = screen.getByTestId('location-switcher-drag-handle');
+  fireEvent(handle, 'responderGrant', touchEvent(0, 0, 1));
+  fireEvent(handle, 'responderMove', touchEvent(0, distance, 1000));
+  fireEvent(handle, 'responderRelease', touchEvent(distance, distance, 1001));
+}
 
 const mockNavigate = jest.fn();
 
@@ -87,6 +125,47 @@ describe('LocationSwitcherSheet', () => {
     fireEvent.press(screen.getByText('Manage Locations'));
     expect(baseProps.onClose).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith('ManageLocations');
+  });
+
+  describe('drag to dismiss', () => {
+    it('closes when the handle is dragged down past the threshold', () => {
+      const screen = render(<LocationSwitcherSheet {...baseProps} />);
+
+      dragHandleDown(screen, 120);
+
+      expect(baseProps.onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('springs back without closing on a short drag', () => {
+      const start = jest.fn();
+      const springSpy = jest
+        .spyOn(Animated, 'spring')
+        .mockReturnValue({ start } as unknown as Animated.CompositeAnimation);
+
+      try {
+        const screen = render(<LocationSwitcherSheet {...baseProps} />);
+
+        dragHandleDown(screen, 30);
+
+        expect(baseProps.onClose).not.toHaveBeenCalled();
+        expect(springSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toValue: 0 }));
+        expect(start).toHaveBeenCalledTimes(1);
+      } finally {
+        springSpy.mockRestore();
+      }
+    });
+
+    it('calls the latest onClose after the parent re-renders with a new one', () => {
+      const firstOnClose = jest.fn();
+      const latestOnClose = jest.fn();
+      const screen = render(<LocationSwitcherSheet {...baseProps} onClose={firstOnClose} />);
+      screen.rerender(<LocationSwitcherSheet {...baseProps} onClose={latestOnClose} />);
+
+      dragHandleDown(screen, 120);
+
+      expect(firstOnClose).not.toHaveBeenCalled();
+      expect(latestOnClose).toHaveBeenCalledTimes(1);
+    });
   });
 });
 

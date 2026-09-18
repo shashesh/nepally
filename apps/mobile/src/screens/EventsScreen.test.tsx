@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { RefreshControl } from 'react-native';
+import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 import { getEventsByMetro } from '@nepally/shared';
 import type { Event } from '@nepally/shared';
 import EventsScreen from './EventsScreen';
@@ -360,6 +361,26 @@ describe('EventsScreen', () => {
       setAuthUser({ metro_area_id: '35620' });
       await renderAndSettle();
       expect(mockGetEventsByMetro).toHaveBeenCalledWith({}, '35620', 20, 0);
+    });
+
+    it('refetches the first page on pull-to-refresh', async () => {
+      mockGetEventsByMetro.mockResolvedValueOnce({ data: [CULTURAL_EVENT] });
+      mockGetEventsByMetro.mockResolvedValueOnce({ data: [CAREER_EVENT] });
+
+      const screen = render(<EventsScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Dashain Celebration')).toBeTruthy();
+      });
+
+      fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+
+      await waitFor(() => {
+        expect(screen.getByText('Career Networking Night')).toBeTruthy();
+      });
+      expect(screen.queryByText('Dashain Celebration')).toBeNull();
+      expect(mockGetEventsByMetro).toHaveBeenCalledTimes(2);
+      expect(mockGetEventsByMetro).toHaveBeenLastCalledWith({}, '19100', 20, 0);
+      expect(screen.UNSAFE_getByType(RefreshControl).props.refreshing).toBe(false);
     });
   });
 });

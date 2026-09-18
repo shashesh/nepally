@@ -127,7 +127,22 @@ describe('EventFilterBar', () => {
         <EventFilterBar value={DEFAULT_VALUE} onChange={jest.fn()} />
       );
       rerender(<EventFilterBar value={{ type: 'all', query: 'tihar' }} onChange={jest.fn()} />);
-      expect(getByPlaceholderText('Search events...')).toBeTruthy();
+      expect(getByPlaceholderText('Search events...').props.value).toBe('tihar');
+    });
+
+    it('keeps typed text when the parent re-renders with the same query', () => {
+      const { getByPlaceholderText, rerender } = render(
+        <EventFilterBar value={DEFAULT_VALUE} onChange={jest.fn()} searchDebounceMs={300} />
+      );
+      fireEvent.changeText(getByPlaceholderText('Search events...'), 'teej');
+      rerender(
+        <EventFilterBar
+          value={{ type: 'cultural', query: '' }}
+          onChange={jest.fn()}
+          searchDebounceMs={300}
+        />
+      );
+      expect(getByPlaceholderText('Search events...').props.value).toBe('teej');
     });
   });
 });

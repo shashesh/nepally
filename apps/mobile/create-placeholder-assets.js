@@ -4,7 +4,6 @@
  */
 
 const fs = require('fs');
-const https = require('https');
 const path = require('path');
 
 const assetsDir = path.join(__dirname, 'assets');
@@ -22,30 +21,19 @@ const bluePNG = Buffer.from(
   'base64'
 );
 
-// For now, we'll create simple 1024x1024 colored squares using a data URL approach
-// In a real scenario, you'd use proper image generation or download from a CDN
-
-const createPlaceholderImage = (filename, color = '1565C0') => {
+// Every placeholder is the same minimal 1x1 PNG, which Expo resizes.
+// Replace these with real artwork (see the links printed below) before production.
+const createPlaceholderImage = (filename) => {
   const filePath = path.join(assetsDir, filename);
-
-  // Create a simple SVG and save as .png (this is a workaround)
-  // In production, you'd use actual PNG files
-  const svg = `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" fill="#${color}"/>
-  <text x="512" y="512" font-size="200" fill="white" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-weight="bold">Nepally</text>
-</svg>`;
-
-  // For development, we'll just create a minimal PNG
-  // This creates a 1x1 pixel that Expo will resize
   fs.writeFileSync(filePath, bluePNG);
   console.log(`✓ Created ${filename}`);
 };
 
 // Create all required assets
-createPlaceholderImage('icon.png', '1565C0');
-createPlaceholderImage('adaptive-icon.png', '1565C0');
-createPlaceholderImage('splash.png', '1565C0');
-createPlaceholderImage('favicon.png', '1565C0');
+createPlaceholderImage('icon.png');
+createPlaceholderImage('adaptive-icon.png');
+createPlaceholderImage('splash.png');
+createPlaceholderImage('favicon.png');
 
 console.log('\n✓ All placeholder assets created!');
 console.log('\nNOTE: These are minimal placeholders for development.');

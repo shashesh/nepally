@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Pressable,
   Modal,
+  useAnimatedValue,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,6 +44,7 @@ type ThreadNavProp = NativeStackNavigationProp<ChatStackParamList, 'MessageThrea
 
 export default function MessageThreadScreen() {
   const { user } = useAuth();
+  const userId = user?.id;
   const route = useRoute<ThreadRouteProp>();
   const navigation = useNavigation<ThreadNavProp>();
   const {
@@ -59,9 +61,11 @@ export default function MessageThreadScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [profileMenuVisible, setProfileMenuVisible] = useState(false);
   const [profileMenuPos, setProfileMenuPos] = useState({ top: 0, left: 0 });
+  // Bumped by the Retry button to re-run the message fetch effect.
+  const [reloadKey, setReloadKey] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
-  const keyboardPadding = useRef(new Animated.Value(0)).current;
+  const keyboardPadding = useAnimatedValue(0);
   // Android: track viewport height to detect whether adjustResize compensated
   const baseViewportHeightRef = useRef(viewportHeight);
   const currentViewportHeightRef = useRef(viewportHeight);
@@ -86,27 +90,32 @@ export default function MessageThreadScreen() {
     setProfileMenuVisible(true);
   }, [viewportHeight, viewportWidth]);
 
-  const loadMessages = useCallback(async () => {
-    setLoadError(null);
-    const result = await getMessages(supabase, conversationId);
-    if (result.data) {
-      setMessages(result.data);
-    } else {
-      setLoadError('Could not load messages. Please try again.');
-    }
-    setLoading(false);
-  }, [conversationId]);
-
-  // Load messages and subscribe to realtime
+  // Load messages (re-runs on Retry via reloadKey)
   useEffect(() => {
-    loadMessages();
+    let cancelled = false;
+    getMessages(supabase, conversationId).then((result) => {
+      if (cancelled) return;
+      if (result.data) {
+        setLoadError(null);
+        setMessages(result.data);
+      } else {
+        setLoadError('Could not load messages. Please try again.');
+      }
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, reloadKey]);
 
+  // Subscribe to realtime
+  useEffect(() => {
     const channel = subscribeToMessages(
       supabase,
       conversationId,
       (newMessage) => {
         // Skip messages from current user — already handled by optimistic UI
-        if (newMessage.sender_id === user?.id) {
+        if (newMessage.sender_id === userId) {
           // Still update if the real message replaced a temp one (to sync read status etc.)
           setMessages((prev) =>
             prev.map((m) => (m.id === newMessage.id ? newMessage : m))
@@ -118,7 +127,7 @@ export default function MessageThreadScreen() {
           if (prev.find((m) => m.id === newMessage.id)) return prev;
           return [...prev, newMessage];
         });
-        markAsRead(supabase, conversationId, user?.id || '');
+        markAsRead(supabase, conversationId, userId || '');
         // Scroll to bottom
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
@@ -135,14 +144,14 @@ export default function MessageThreadScreen() {
     return () => {
       channel.unsubscribe();
     };
-  }, [conversationId, loadMessages, user?.id]);
+  }, [conversationId, userId]);
 
   // Mark as read on mount
   useEffect(() => {
-    if (user?.id) {
-      markAsRead(supabase, conversationId, user.id);
+    if (userId) {
+      markAsRead(supabase, conversationId, userId);
     }
-  }, [conversationId, user?.id]);
+  }, [conversationId, userId]);
 
   // Track viewport height changes (Android adjustResize detection)
   useEffect(() => {
@@ -206,18 +215,18 @@ export default function MessageThreadScreen() {
   const handleRetryLoad = () => {
     setLoading(true);
     setLoadError(null);
-    loadMessages();
+    setReloadKey((key) => key + 1);
   };
 
   const handleSend = useCallback(
     async (text: string) => {
-      if (!user?.id) return;
+      if (!userId) return;
 
       // Optimistic UI: add message immediately
       const tempMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
         conversation_id: conversationId,
-        sender_id: user.id,
+        sender_id: userId,
         text,
         type: 'text',
         read: false,
@@ -229,7 +238,7 @@ export default function MessageThreadScreen() {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 50);
 
-      const result = await sendMessage(supabase, conversationId, user.id, text);
+      const result = await sendMessage(supabase, conversationId, userId, text);
       if (result.data) {
         // Replace temp message with real one
         setMessages((prev) =>
@@ -241,7 +250,7 @@ export default function MessageThreadScreen() {
         Alert.alert('Error', 'Failed to send message. Please try again.');
       }
     },
-    [conversationId, user?.id]
+    [conversationId, userId]
   );
 
   const handleBlock = () => {

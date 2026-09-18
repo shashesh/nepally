@@ -73,12 +73,15 @@ jest.mock('@nepally/shared', () => ({
     { key: 'phone', icon: '📞', label: 'Phone', value: '555-1234' },
   ]),
   isBusinessOpenNow: jest.fn(() => ({ isOpen: true, nextChangeLabel: 'Closes 5p' })),
+  getDaysSinceRefresh: jest.requireActual('@nepally/shared').getDaysSinceRefresh,
 }));
 
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
 const mockGetUserSavedListingIds = getUserSavedListingIds as jest.MockedFunction<
   typeof getUserSavedListingIds
 >;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -319,6 +322,23 @@ describe('ListingDetailScreen', () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getAllByText('555-1234').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('shows "Refreshed today" for a listing refreshed moments ago', async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refreshed today')).toBeTruthy();
+    });
+  });
+
+  it('shows whole days since the listing was refreshed', async () => {
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, refreshed_at: new Date(Date.now() - 3 * DAY_MS).toISOString() },
+    } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refreshed 3d ago')).toBeTruthy();
     });
   });
 

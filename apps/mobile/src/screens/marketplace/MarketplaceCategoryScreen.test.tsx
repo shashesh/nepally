@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { FlatList, RefreshControl } from 'react-native';
 import { getCategories, getListingsByMetro, getFeaturedListings } from '@nepally/shared';
 import MarketplaceCategoryScreen from './MarketplaceCategoryScreen';
 
@@ -353,5 +354,83 @@ describe('MarketplaceCategoryScreen', () => {
       expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
     });
     expect(screen.queryByText(/strip:Featured/)).toBeNull();
+  });
+
+  // -- Loading / refresh / pagination ----------------------------------------
+
+  it('swaps the list for the spinner while a new filter set loads its first page', async () => {
+    let resolveSortedPage: (value: Awaited<ReturnType<typeof getListingsByMetro>>) => void = () => {};
+    mockGetListingsByMetro
+      .mockResolvedValueOnce({ data: [MOCK_LISTING] })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSortedPage = resolve;
+          })
+      );
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('mock-set-sort-price-asc'));
+    expect(screen.queryByText('Himalayan Kitchen')).toBeNull();
+
+    resolveSortedPage({ data: [{ ...MOCK_LISTING, id: 'listing-2', title: 'Cheapest Momo' }] });
+    await waitFor(() => {
+      expect(screen.getByText('Cheapest Momo')).toBeTruthy();
+    });
+  });
+
+  it('pull-to-refresh re-fetches the first page and clears the refresh spinner', async () => {
+    mockGetListingsByMetro
+      .mockResolvedValueOnce({ data: [MOCK_LISTING] })
+      .mockResolvedValueOnce({ data: [{ ...MOCK_LISTING, title: 'Himalayan Kitchen (new)' }] });
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+
+    fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen (new)')).toBeTruthy();
+    });
+    expect(mockGetListingsByMetro).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'metro-1',
+      expect.objectContaining({ offset: 0 })
+    );
+    expect(screen.UNSAFE_getByType(RefreshControl).props.refreshing).toBe(false);
+  });
+
+  it('appends the next page when the end of a full page is reached', async () => {
+    const fullPage = Array.from({ length: 20 }, (_, i) => ({ ...MOCK_LISTING, id: `listing-${i}` }));
+    mockGetListingsByMetro
+      .mockResolvedValueOnce({ data: fullPage })
+      .mockResolvedValueOnce({ data: [{ ...MOCK_LISTING, id: 'listing-20' }] });
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(20);
+    });
+
+    fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+    await waitFor(() => {
+      expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(21);
+    });
+    expect(mockGetListingsByMetro).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'metro-1',
+      expect.objectContaining({ offset: 20 })
+    );
+  });
+
+  it('does not request another page after a short (final) page', async () => {
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+
+    fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+    expect(mockGetListingsByMetro).toHaveBeenCalledTimes(1);
   });
 });

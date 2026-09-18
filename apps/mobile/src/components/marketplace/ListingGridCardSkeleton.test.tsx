@@ -1,10 +1,10 @@
 import React from 'react';
-import { Animated } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
 import { render } from '@testing-library/react-native';
-import { SkeletonPostCard } from './SkeletonPostCard';
+import { ListingGridCardSkeleton } from './ListingGridCardSkeleton';
 
-describe('SkeletonPostCard', () => {
-  it('starts loop animation on mount', () => {
+describe('ListingGridCardSkeleton', () => {
+  it('runs the shimmer loop while mounted and stops it on unmount', () => {
     const start = jest.fn();
     const stop = jest.fn();
     const loopSpy = jest
@@ -12,10 +12,11 @@ describe('SkeletonPostCard', () => {
       .mockReturnValue({ start, stop } as unknown as Animated.CompositeAnimation);
 
     try {
-      const { unmount } = render(<SkeletonPostCard />);
+      const { unmount } = render(<ListingGridCardSkeleton width={160} />);
 
       expect(loopSpy).toHaveBeenCalledTimes(1);
       expect(start).toHaveBeenCalledTimes(1);
+      expect(stop).not.toHaveBeenCalled();
 
       unmount();
       expect(stop).toHaveBeenCalledTimes(1);
@@ -24,7 +25,7 @@ describe('SkeletonPostCard', () => {
     }
   });
 
-  it('keeps the same loop running across re-renders', () => {
+  it('keeps the same shimmer loop across re-renders', () => {
     const start = jest.fn();
     const stop = jest.fn();
     const loopSpy = jest
@@ -32,8 +33,8 @@ describe('SkeletonPostCard', () => {
       .mockReturnValue({ start, stop } as unknown as Animated.CompositeAnimation);
 
     try {
-      const { rerender } = render(<SkeletonPostCard />);
-      rerender(<SkeletonPostCard />);
+      const { rerender } = render(<ListingGridCardSkeleton width={160} />);
+      rerender(<ListingGridCardSkeleton width={200} />);
 
       expect(loopSpy).toHaveBeenCalledTimes(1);
       expect(stop).not.toHaveBeenCalled();
@@ -41,5 +42,11 @@ describe('SkeletonPostCard', () => {
       loopSpy.mockRestore();
     }
   });
-});
 
+  it('matches the grid cell width', () => {
+    const screen = render(<ListingGridCardSkeleton width={180} />);
+
+    const card = screen.getByLabelText('Loading listing');
+    expect(StyleSheet.flatten(card.props.style)).toMatchObject({ width: 180 });
+  });
+});

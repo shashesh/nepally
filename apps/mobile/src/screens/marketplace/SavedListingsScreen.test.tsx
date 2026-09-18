@@ -1,14 +1,14 @@
 import { render, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { getSavedListingsByUser } from '@nepally/shared';
 import SavedListingsScreen from './SavedListingsScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
 
-// CRITICAL: useAuth must return a STABLE reference across renders. A fresh object
-// literal each call makes the screen's `useEffect([user])` re-fire every render,
-// triggering an infinite loop that hangs on Ubuntu CI (passes on Windows only
-// because act() converges before the 30s timeout there).
+// Keep useAuth returning a STABLE reference across renders. The screen's fetch
+// effect is now keyed on `user?.id`, but an earlier version keyed on the `user`
+// object re-fired every render with a fresh literal and hung Ubuntu CI.
 const mockUseAuth = jest.fn();
 jest.mock('../../hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
@@ -29,9 +29,13 @@ jest.mock('../../components/marketplace/ListingGridCard', () => {
   };
 });
 
-jest.mock('../../components/marketplace/MarketplaceEmptyState', () => ({
-  MarketplaceEmptyState: () => null,
-}));
+jest.mock('../../components/marketplace/MarketplaceEmptyState', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return {
+    MarketplaceEmptyState: () => ReactLocal.createElement(Text, null, 'empty-state'),
+  };
+});
 
 const mockListing = {
   id: 'l1',
@@ -72,10 +76,15 @@ jest.mock('@nepally/shared', () => {
   };
 });
 
+const mockGetSavedListingsByUser = getSavedListingsByUser as jest.MockedFunction<
+  typeof getSavedListingsByUser
+>;
+
 const STABLE_USER = { id: 'u1', metro_area_id: 'm1', trust_level: 1 };
 
 describe('SavedListingsScreen', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ user: STABLE_USER });
   });
 
@@ -83,6 +92,31 @@ describe('SavedListingsScreen', () => {
     const screen = render(<SavedListingsScreen />);
     await waitFor(() => {
       expect(screen.getByText('Saved thing')).toBeTruthy();
+    });
+  });
+
+  it('fetches saved listings for the signed-in user', async () => {
+    const screen = render(<SavedListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Saved thing')).toBeTruthy();
+    });
+    expect(mockGetSavedListingsByUser).toHaveBeenCalledWith(expect.anything(), 'u1');
+  });
+
+  it('stops loading and shows the empty state when signed out, without fetching', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const screen = render(<SavedListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('empty-state')).toBeTruthy();
+    });
+    expect(mockGetSavedListingsByUser).not.toHaveBeenCalled();
+  });
+
+  it('stops loading and shows the empty state when the fetch fails', async () => {
+    mockGetSavedListingsByUser.mockRejectedValueOnce(new Error('Network error'));
+    const screen = render(<SavedListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('empty-state')).toBeTruthy();
     });
   });
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -39,12 +39,16 @@ export function ReportPostSheet({
 }: ReportPostSheetProps) {
   const [selectedReason, setSelectedReason] = useState<ReportReason | null>(null);
   const [details, setDetails] = useState('');
+  const [prevVisible, setPrevVisible] = useState(visible);
 
-  useEffect(() => {
-    if (!visible) return;
-    setSelectedReason(null);
-    setDetails('');
-  }, [visible]);
+  // Start from a blank form each time the sheet opens.
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    if (visible) {
+      setSelectedReason(null);
+      setDetails('');
+    }
+  }
 
   const isSubmitDisabled = useMemo(() => !selectedReason || submitting, [selectedReason, submitting]);
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -23,43 +23,41 @@ type Nav = NativeStackNavigationProp<MarketplaceStackParamList, 'SavedListings'>
 const GUTTER = 12;
 const CARD_WIDTH = Math.floor((Dimensions.get('window').width - GUTTER * 3) / 2);
 
+/** Resolves to the user's saved listings + saved ids, or null when signed out or on error. */
+async function loadSavedListings(userId: string | undefined) {
+  if (!userId) return null;
+  try {
+    const [saved, ids] = await Promise.all([
+      getSavedListingsByUser(supabase, userId),
+      getUserSavedListingIds(supabase, userId),
+    ]);
+    return { listings: saved.data, savedIds: ids.data };
+  } catch {
+    // Silently handle — empty state will surface in the UI.
+    return null;
+  }
+}
+
 export default function SavedListingsScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const mountedRef = useRef(true);
+  const userId = user?.id;
 
   useEffect(() => {
+    let cancelled = false;
+    loadSavedListings(userId).then((result) => {
+      if (cancelled) return;
+      if (result?.listings) setListings(result.listings);
+      if (result?.savedIds) setSavedIds(new Set(result.savedIds));
+      setLoading(false);
+    });
     return () => {
-      mountedRef.current = false;
+      cancelled = true;
     };
-  }, []);
-
-  const fetchSaved = useCallback(async () => {
-    if (!user) {
-      if (mountedRef.current) setLoading(false);
-      return;
-    }
-    try {
-      const [saved, ids] = await Promise.all([
-        getSavedListingsByUser(supabase, user.id),
-        getUserSavedListingIds(supabase, user.id),
-      ]);
-      if (!mountedRef.current) return;
-      if (saved.data) setListings(saved.data);
-      if (ids.data) setSavedIds(new Set(ids.data));
-    } catch {
-      // Silently handle — empty state will surface in the UI.
-    } finally {
-      if (mountedRef.current) setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchSaved();
-  }, [fetchSaved]);
+  }, [userId]);
 
   const handleToggleSave = useCallback(
     async (listingId: string) => {

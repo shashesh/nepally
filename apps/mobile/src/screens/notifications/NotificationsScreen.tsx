@@ -75,39 +75,49 @@ export function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const loadNotifications = useCallback(async () => {
-    if (!user) return;
-    const result = await getNotifications(supabase, user.id, 50, 0);
-    if (result.data) setNotifications(result.data);
-    setLoading(false);
-    setRefreshing(false);
-  }, [user]);
+  // Bumped by pull-to-refresh, app foregrounding and the polling interval to
+  // re-run the fetch effect below.
+  const [reloadKey, setReloadKey] = useState(0);
+  const userId = user?.id;
 
   useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+    if (!userId) return;
+    let cancelled = false;
+    getNotifications(supabase, userId, 50, 0).then((result) => {
+      if (cancelled) return;
+      if (result.data) setNotifications(result.data);
+      setLoading(false);
+      setRefreshing(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, reloadKey]);
+
+  const reloadNotifications = useCallback(() => {
+    setReloadKey((key) => key + 1);
+  }, []);
 
   // Resilience fallback: refresh notifications when app returns to foreground
   // and on a periodic interval in case realtime events are delayed/missed.
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userId) return;
 
     const appStateSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        loadNotifications();
+        reloadNotifications();
       }
     });
 
     const intervalId = setInterval(() => {
-      loadNotifications();
+      reloadNotifications();
     }, 30000);
 
     return () => {
       appStateSubscription.remove();
       clearInterval(intervalId);
     };
-  }, [user?.id, loadNotifications]);
+  }, [userId, reloadNotifications]);
 
   // Supabase Realtime subscription
   useEffect(() => {
@@ -290,7 +300,7 @@ export function NotificationsScreen() {
           renderItem={renderItem}
           renderSectionHeader={renderSectionHeader}
           contentContainerStyle={styles.listContent}
-          onRefresh={() => { setRefreshing(true); loadNotifications(); }}
+          onRefresh={() => { setRefreshing(true); reloadNotifications(); }}
           refreshing={refreshing}
           stickySectionHeadersEnabled={false}
         />

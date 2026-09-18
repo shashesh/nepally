@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   StatusBar,
   Animated,
+  useAnimatedValue,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
@@ -27,8 +28,8 @@ export function MetroConfirmationScreen() {
 
   const { updateLocation } = useMetroArea();
   const { refreshUser } = useAuth();
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useAnimatedValue(0);
+  const fadeAnim = useAnimatedValue(0);
 
   const handleContinue = useCallback(() => {
     navigation.navigate('Tutorial');

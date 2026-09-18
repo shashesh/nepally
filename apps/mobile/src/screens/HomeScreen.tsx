@@ -11,6 +11,7 @@ import {
   Share,
   Animated,
   ActivityIndicator,
+  useAnimatedValue,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -105,12 +106,13 @@ export default function HomeScreen() {
   const [reportPost, setReportPost] = useState<Post | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
-  const saveToastOpacity = useRef(new Animated.Value(0)).current;
+  const saveToastOpacity = useAnimatedValue(0);
   const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [newPostsCount, setNewPostsCount] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const pillTranslateY = useRef(new Animated.Value(-60)).current;
+  const pillTranslateY = useAnimatedValue(-60);
 
+  const userId = user?.id;
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
   // Derive metroName from activeLocation (or fall back to user's metro)
@@ -129,22 +131,36 @@ export default function HomeScreen() {
     ? 'Visiting'
     : matchedSavedLocation?.label || 'Home';
 
+  // One-off loads on mount: Level 0 banner dismissal and the tag filter list.
   useEffect(() => {
-    loadBannerState();
-    loadTags();
+    let cancelled = false;
+
+    isBannerDismissed('level0-banner').then((dismissed) => {
+      if (!cancelled) setBannerVisible(!dismissed);
+    });
+
+    getTags(supabase).then((result) => {
+      if (!cancelled && result.data) {
+        setAvailableTags(result.data);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const refreshUnreadCount = useCallback(async () => {
-    if (!user?.id) return;
-    const result = await getTotalUnreadCount(supabase, user.id);
+    if (!userId) return;
+    const result = await getTotalUnreadCount(supabase, userId);
     setUnreadCount(result.count);
-  }, [user?.id]);
+  }, [userId]);
 
   const refreshUnreadNotifCount = useCallback(async () => {
-    if (!user?.id) return;
-    const result = await getUnreadNotificationCount(supabase, user.id);
+    if (!userId) return;
+    const result = await getUnreadNotificationCount(supabase, userId);
     setUnreadNotifCount(result.count);
-  }, [user?.id]);
+  }, [userId]);
 
   // Realtime chat unread updates for messages icon badge
   useEffect(() => {
@@ -188,18 +204,6 @@ export default function HomeScreen() {
       supabase.removeChannel(messagesChannel);
     };
   }, [user?.id, refreshUnreadCount]);
-
-  const loadBannerState = async () => {
-    const dismissed = await isBannerDismissed('level0-banner');
-    setBannerVisible(!dismissed);
-  };
-
-  const loadTags = async () => {
-    const result = await getTags(supabase);
-    if (result.data) {
-      setAvailableTags(result.data);
-    }
-  };
 
   const loadPosts = useCallback(async () => {
     if (!metroAreaId) {
@@ -346,20 +350,20 @@ export default function HomeScreen() {
   }, [metroAreaId, user?.id, pillTranslateY]);
 
   const loadLikedPosts = useCallback(async () => {
-    if (!user?.id) return;
-    const result = await getUserLikedPostIds(supabase, user.id);
+    if (!userId) return;
+    const result = await getUserLikedPostIds(supabase, userId);
     if (result.data) {
       setLikedPostIds(new Set(result.data));
     }
-  }, [user?.id]);
+  }, [userId]);
 
   const loadSavedPosts = useCallback(async () => {
-    if (!user?.id) return;
-    const result = await getUserSavedPostIds(supabase, user.id);
+    if (!userId) return;
+    const result = await getUserSavedPostIds(supabase, userId);
     if (result.data) {
       setSavedPostIds(new Set(result.data));
     }
-  }, [user?.id]);
+  }, [userId]);
 
   // Reload posts, liked state, and unread count every time the screen comes into focus
   useFocusEffect(
@@ -565,6 +569,16 @@ export default function HomeScreen() {
 
   const handleMorePress = useCallback((post: Post) => {
     setMorePost(post);
+  }, []);
+
+  // Stable identities: the sheets rebuild their drag PanResponder when onClose changes,
+  // which would reset an in-progress drag.
+  const handleMoreSheetClose = useCallback(() => {
+    setMorePost(null);
+  }, []);
+
+  const handleSwitcherClose = useCallback(() => {
+    setSwitcherVisible(false);
   }, []);
 
   const handleMoreEdit = () => {
@@ -1002,7 +1016,7 @@ export default function HomeScreen() {
       {/* Location Switcher */}
       <LocationSwitcherSheet
         visible={switcherVisible}
-        onClose={() => setSwitcherVisible(false)}
+        onClose={handleSwitcherClose}
         savedLocations={savedLocations}
         activeLocation={activeLocation}
         detectedLocation={detectedLocation}
@@ -1066,7 +1080,7 @@ export default function HomeScreen() {
       <PostMoreSheet
         visible={morePost !== null}
         isOwnPost={morePost?.author_id === user?.id}
-        onClose={() => setMorePost(null)}
+        onClose={handleMoreSheetClose}
         onEdit={handleMoreEdit}
         onDelete={handleMoreDelete}
         onReport={handleMoreReport}
