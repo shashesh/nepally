@@ -56,7 +56,7 @@ export default tseslint.config(
       // Pinned rather than 'detect': eslint-plugin-react's version detection
       // calls context.getFilename(), which ESLint 10 removed, and crashes the
       // whole run. Keep in step with the react version in package.json.
-      react: { version: '19.1.4' },
+      react: { version: '19.2.3' },
     },
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],

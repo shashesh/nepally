@@ -43,7 +43,7 @@ const config = [
   // to bypass detection. Keep in step with the react version in package.json.
   {
     settings: {
-      react: { version: '19.1.4' },
+      react: { version: '19.2.3' },
     },
   },
 

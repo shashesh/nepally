@@ -13,14 +13,14 @@ spec: docs/specs/2026-09-14-web-ui-overhaul-design.md
 
 **Architecture:** `tokens.css` is the single source of truth. A temporary `legacy-aliases.css` re-skins every existing CSS Module at once, and the Mantine theme mirrors the tokens (enforced by a sync test). The 630-line `Layout.tsx` becomes a composition of focused shell components over Mantine `AppShell`. Search is three `SECURITY INVOKER` Postgres functions that return ranked ids. Shared API functions wrap them and hydrate rows with the existing selects. On web, a Mantine `Combobox` and a `/search` page sit on top.
 
-**Tech Stack:** Next.js 16.3 (pages router) · React 19.1.4 · Mantine 8.3.18 (+ `@mantine/modals` 8.3.18) · CSS Modules + postcss-preset-mantine · Vitest 4 + Testing Library · Playwright 1.63 (+ `@axe-core/playwright` 4.13) · culori 4 · Supabase Postgres 17 · TypeScript 7 (`npm run type-check`).
+**Tech Stack:** Next.js 16.3 (pages router) · React 19.2.3 · Mantine 8.3.18 (+ `@mantine/modals` 8.3.18) · CSS Modules + postcss-preset-mantine · Vitest 4 + Testing Library · Playwright 1.63 (+ `@axe-core/playwright` 4.13) · culori 4 · Supabase Postgres 17 · TypeScript 7 (`npm run type-check`).
 
 **Spec:** [docs/specs/2026-09-14-web-ui-overhaul-design.md](../../specs/2026-09-14-web-ui-overhaul-design.md)
 
 ## Global Constraints
 
 - Web only. Do not change anything under `apps/mobile/`.
-- React stays at exactly `19.1.4`. Every `@mantine/*` package stays on `^8.3.18`. Do not install Mantine 9.
+- React stays at exactly `19.2.3` (the Expo SDK 57 pin). Every `@mantine/*` package stays on `^8.3.18`. Do not install Mantine 9.
 - These are the only new dependencies this plan allows: `@mantine/modals@^8.3.18`, `@mantine/dropzone@^8.3.18` (PR 5), `@axe-core/playwright@^4.13.0`, `culori@^4.0.2`, `@types/culori@^4.0.1`.
 - **Never commit on `master`.** Every PR starts with `git switch master && git pull --ff-only && git switch -c <branch>`. Commit, push and open the PR freely on the feature branch. Never push to `master`, and never merge a PR unless the user asks.
 - Commit messages follow Conventional Commits. The last paragraph is `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`. The commit commands below pass it as a second `-m`.
@@ -10225,7 +10225,7 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
 
 ## After the overhaul — Mantine 9
 
-This is a separate PR, created once the Expo 54 → 56+ migration lands React 19.2+:
+This is a separate PR. The Expo SDK 57 migration landed React 19.2.3, so it is unblocked:
 1. Bump every `@mantine/*` package, including `modals` and `dropzone`, to 9.x.
 2. Set `<Notifications pauseResetOnHover="notification" />`.
 3. Run unit, e2e and `test:visual:web`. **Expect zero screenshot diffs**; investigate any diff before re-baselining.

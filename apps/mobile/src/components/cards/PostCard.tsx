@@ -433,7 +433,8 @@ export const PostCard: React.FC<PostCardProps> = React.memo(({
       {reactionVisible && (
         <>
           <Pressable
-            style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]}
+            testID="reaction-dismiss-overlay"
+            style={styles.reactionDismissOverlay}
             onPress={() => setReactionVisible(false)}
           />
           <View style={styles.reactionPicker}>
@@ -593,7 +594,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   mediaOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.overlayMedium,
     alignItems: 'center',
     justifyContent: 'center',
@@ -666,6 +667,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   // Reaction picker
+  reactionDismissOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 10,
+  },
   reactionPicker: {
     position: 'absolute',
     bottom: 54,

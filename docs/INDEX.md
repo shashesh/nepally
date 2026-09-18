@@ -123,5 +123,5 @@ See [archive/](archive/):
 
 - `archive/PROGRESS.md` — historical implementation tracker (superseded by roadmap)
 - `archive/marketplace-category-consolidation-plan.md` — shipped as migration 016
-- `archive/plans/` — 17 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, and the Postgres 15→17 sync
+- `archive/plans/` — 18 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, the Postgres 15→17 sync, and the Expo SDK 54→57 migration
 - `archive/specs/` — 7 design specs for shipped features

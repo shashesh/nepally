@@ -972,7 +972,8 @@ export default function PostDetailScreen() {
             {reactionVisible && (
               <>
                 <Pressable
-                  style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]}
+                  testID="reaction-dismiss-overlay"
+                  style={styles.reactionDismissOverlay}
                   onPress={() => setReactionVisible(false)}
                 />
                 <View style={styles.reactionPicker}>
@@ -1389,7 +1390,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   detailMediaOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.overlayMedium,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1409,7 +1410,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   lightboxBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   lightboxTopRight: {
@@ -1546,6 +1547,10 @@ const styles = StyleSheet.create({
   },
   actionTextDisabled: {
     color: colors.text.disabled,
+  },
+  reactionDismissOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 10,
   },
   reactionPicker: {
     position: 'absolute',

@@ -103,4 +103,4 @@ Already handled:
 - `useLocalStorage` always gets a `defaultValue`.
 - No removed APIs are used.
 
-The upgrade itself waits for React 19.2+ (Expo 56+). When it happens, also set `<Notifications pauseResetOnHover="notification" />`.
+React 19.2.3 landed with the Expo SDK 57 migration, so the upgrade is unblocked; it ships as its own PR. When it happens, also set `<Notifications pauseResetOnHover="notification" />`.

@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { ReportPostSheet } from './ReportPostSheet';
 
 jest.mock('@expo/vector-icons', () => ({
@@ -55,5 +56,26 @@ describe('ReportPostSheet', () => {
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith('Scam', 'Requests payment before visit.');
     });
+  });
+
+  it('positions the backdrop as a full-screen absolute overlay', () => {
+    const screen = render(
+      <ReportPostSheet
+        visible
+        onClose={jest.fn()}
+        onSubmit={jest.fn().mockResolvedValue(undefined)}
+      />
+    );
+
+    const backdrop = screen.getByTestId('report-sheet-backdrop');
+    expect(StyleSheet.flatten(backdrop.props.style)).toEqual(
+      expect.objectContaining({
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      })
+    );
   });
 });

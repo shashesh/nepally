@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   menuOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 90,
   },
   menuItem: {

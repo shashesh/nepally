@@ -14,16 +14,16 @@ Before starting, ensure you have:
 
 ### Check your current version:
 ```bash
-node --version  # Should show v22.x or higher
+node --version  # Needs v22.13+, v24.3+ or v25+ (React Native 0.86 rejects 22.0-22.12, 23.x and 24.0-24.2)
 npm --version   # Should show 10.x.x or higher
 ```
 
 ### If you need to upgrade (Windows):
 ```bash
 # Download and install from https://nodejs.org/
-# Or use nvm-windows:
-nvm install 22
-nvm use 22
+# Or use nvm-windows (24 matches .nvmrc and CI):
+nvm install 24
+nvm use 24
 ```
 
 ## Step 2: Install Dependencies
@@ -171,6 +171,10 @@ npm start
    - Android: Use Expo Go app to scan QR
 
 3. **App loads on your device** with hot reload!
+
+> **Expo Go must match the project's Expo SDK (57).** The stores only carry Expo Go for the newest SDK. If Expo Go reports "Project is incompatible with this version of Expo Go", the phone and the project are on different SDKs. Either upgrade the project, or install the matching Expo Go from https://expo.dev/go and turn off store auto-update for it until the project catches up.
+>
+> **Push notifications do not work in Expo Go.** On Android, even importing `expo-notifications` throws there. So the app loads it lazily and skips push registration in Expo Go (`apps/mobile/src/services/notifications.ts`). Test push in a development or preview build.
 
 ### Test on iOS Simulator (macOS only):
 

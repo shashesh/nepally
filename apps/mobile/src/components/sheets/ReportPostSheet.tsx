@@ -63,7 +63,12 @@ export function ReportPostSheet({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} disabled={submitting} />
+        <Pressable
+          testID="report-sheet-backdrop"
+          style={styles.backdrop}
+          onPress={onClose}
+          disabled={submitting}
+        />
         <View style={styles.sheet}>
           <View style={styles.headerRow}>
             <View style={styles.handle} />
@@ -152,7 +157,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   sheet: {
     backgroundColor: colors.white,

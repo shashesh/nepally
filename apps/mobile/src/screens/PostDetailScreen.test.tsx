@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import PostDetailScreen from './PostDetailScreen';
 import { likePost } from '@nepally/shared';
 
@@ -164,5 +165,30 @@ describe('PostDetailScreen avatar menu', () => {
     await waitFor(() => {
       expect(likePost).toHaveBeenCalled();
     });
+  });
+
+  it('positions the reaction dismiss overlay as a full-screen absolute layer', async () => {
+    const screen = render(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Like')).toBeTruthy();
+    });
+
+    fireEvent(screen.getByText('Like'), 'longPress');
+    await waitFor(() => {
+      expect(screen.getByText('❤️')).toBeTruthy();
+    });
+
+    const overlay = screen.getByTestId('reaction-dismiss-overlay');
+    expect(StyleSheet.flatten(overlay.props.style)).toEqual(
+      expect.objectContaining({
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10,
+      })
+    );
   });
 });
