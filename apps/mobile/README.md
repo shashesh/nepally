@@ -110,7 +110,7 @@ src/
 - **Navigation**: React Navigation v7
 - **State Management**: React Context + Hooks
 - **Backend**: Supabase (PostgreSQL)
-- **Storage**: AsyncStorage
+- **Storage**: AsyncStorage; the auth session is encrypted with a key held in `expo-secure-store` (`src/services/auth/secureSessionStorage.ts`)
 - **Icons**: Expo Vector Icons
 - **TypeScript**: 7.0.x (Full type safety)
 

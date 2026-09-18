@@ -43,6 +43,13 @@
         }
       ],
       [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",

@@ -454,7 +454,7 @@ Does this code contain UI/styling?
 2. **Mobile-specific:**
    - React Native form UI
    - Supabase Auth integration (mobile SDK)
-   - AsyncStorage for session
+   - Encrypted session storage (`services/auth/secureSessionStorage.ts`: AES key in `expo-secure-store`, ciphertext in AsyncStorage)
 
 3. **Web-specific:**
    - HTML form UI
