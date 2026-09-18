@@ -47,8 +47,10 @@ function oneAtATime<T>(operation: () => Promise<T>): Promise<T> {
   return run;
 }
 
-// Hermes has no TextDecoder, so convert through percent-encoding, which every
-// JS engine supports. decodeURIComponent throws on invalid UTF-8.
+// Don't depend on TextDecoder: React Native does not polyfill it and we could
+// not confirm Hermes ships it (Jest runs on Node, which has it, so a test would
+// not catch the gap). Percent-encoding works in every JS engine, and
+// decodeURIComponent throws on invalid UTF-8.
 function utf8ToBytes(text: string): Uint8Array {
   const escaped = encodeURIComponent(text);
   const bytes: number[] = [];
