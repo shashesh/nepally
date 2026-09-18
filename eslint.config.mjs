@@ -85,23 +85,6 @@ export default tseslint.config(
     },
   },
 
-  // eslint-plugin-react-hooks 7 turns on the React Compiler rule set, which
-  // flags 169 pre-existing findings across mobile and web. They are real
-  // signals, but burning them down is application refactoring, not part of
-  // the lint toolchain upgrade — so they report as warnings for now and CI
-  // stays honest about actual errors. Promote these back to 'error' as each
-  // is cleared. See docs/plans/active/react-compiler-lint-cleanup.md.
-  {
-    files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
-    rules: {
-      'react-hooks/refs': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/preserve-manual-memoization': 'warn',
-      'react-hooks/immutability': 'warn',
-      'react-hooks/purity': 'warn',
-    },
-  },
-
   // Keep prettier last so it can turn off stylistic rules the configs above enable.
   prettier
 );
