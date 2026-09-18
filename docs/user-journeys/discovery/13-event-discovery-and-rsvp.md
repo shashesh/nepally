@@ -23,9 +23,11 @@
 ## Prerequisites
 
 **Must Complete First:**
+
 - **Journey #01: Signup and Onboarding** — must have an account and metro area set
 
 **For RSVP (not browse-only):**
+
 - **Journey #02: Trust Level Verification** — must be Level 1+ to RSVP
 
 ---
@@ -48,9 +50,11 @@
 ### Phase 1: Opening the Events Feed
 
 #### Step 1: Tap the Events Tab
+
 **User Action:** Priya taps the calendar icon (Events tab, second position in the bottom nav) on the home screen.
 **System Response:** Navigates to `EventsScreen`. Calls `getEventsByMetro(supabase, metroId)` + `getUserRsvps(supabase, userId)` on mount to hydrate RSVP state.
 **User Sees:**
+
 - Header: "📅 Events · San Jose-Sunnyvale-Santa Clara"
 - Horizontal scrollable filter chips: **All** · Cultural · Religious · Social · Career · Other
 - "All" chip selected by default (highlighted)
@@ -59,19 +63,23 @@
 **Duration:** < 1 second to navigate; 1–2 seconds to load events
 
 **User Thoughts:**
+
 - "Let me see what's happening locally."
 
 **Pain Points:**
+
 - No search bar — users can't keyword-search events (e.g., "Baisakh")
 - **Severity:** Medium
 
 ---
 
 #### Step 2: Browse the Events Feed
+
 **User Action:** Scrolls through the chronological event list.
 **System Response:** Events displayed in ascending date order (soonest first). Past events appear in a "Past Events" section below with muted styling.
 **User Sees:**
 Each **EventCard** shows:
+
 - Event photo thumbnail (140px height, cover crop) or type-colored illustration fallback
 - **EventTypeBadge** pill (e.g., 🎭 Cultural — orange)
 - 📍 Local / 🌐 Global scope badge
@@ -84,23 +92,28 @@ Each **EventCard** shows:
 **Duration:** 30–60 seconds browsing
 
 **User Thoughts:**
+
 - "There are quite a few events. Let me filter for cultural events."
 
 ---
 
 #### Step 3: Filter by Event Type
+
 **User Action:** Taps the "Cultural" filter chip.
 **System Response:** Client-side filter applied immediately (no network request — data already loaded). List narrows to events with `event_type = 'cultural'`.
 **User Sees:**
+
 - "Cultural" chip highlighted, "All" deselected
 - List updates instantly to show only Cultural events
 - Chips are single-select (tapping a new one replaces the current filter; tapping "All" resets)
 **Duration:** Instant (< 100ms)
 
 **User Thoughts:**
+
 - "Better! I can see the Nepali New Year event."
 
 **Pain Points:**
+
 - "More ▼" bottom sheet not implemented yet for Social + Other on mobile — all chips visible in one horizontal scroll
 - **Severity:** Low
 
@@ -109,9 +122,11 @@ Each **EventCard** shows:
 ### Phase 2: Viewing Event Detail
 
 #### Step 4: Tap an Event Card
+
 **User Action:** Priya taps the "Nepali New Year Celebration (Baisakh 2082)" event card.
 **System Response:** Navigates to `EventDetailScreen` with `{ eventId }`. Calls `getEventById(supabase, eventId)` + `getEventAttendees(supabase, eventId)`.
 **User Sees:**
+
 - Hero image (220px height, cover) or cultural-type illustration fallback
 - **EventTypeBadge** (🎭 Cultural) + 📍 Local scope badge in a row
 - Title: "Nepali New Year Celebration (Baisakh 2082)"
@@ -124,20 +139,24 @@ Each **EventCard** shows:
 **Duration:** ~30 seconds reading
 
 **User Thoughts:**
+
 - "This looks perfect! Saturday evening, near downtown, 42 people going — this is legit."
 - "I recognize the organizer's trust badge — good sign."
 
 ---
 
 #### Step 5: View Attendee List (Optional)
+
 **User Action:** Taps "View all attendees" link.
 **System Response:** Opens bottom sheet (mobile) / modal dialog (web) with full attendee list. Calls `getEventAttendees(supabase, eventId)` (already loaded, cached).
 **User Sees:**
+
 - List of attendees: avatar + masked name ("Sanjay T.", "Asha K.", etc.) + trust badge per row
 - If organizer set `rsvp_visibility = 'private'`: shows only "42 people going" count, no names/avatars
 **Duration:** 10 seconds
 
 **User Thoughts:**
+
 - "I see some familiar names. This is a real community event."
 
 ---
@@ -145,8 +164,10 @@ Each **EventCard** shows:
 ### Phase 3: RSVP
 
 #### Step 6: Tap the RSVP Button
+
 **User Action:** Taps the "RSVP — I'm Going" button at the bottom of the event detail screen.
 **System Response:**
+
 - **Optimistic UI:** Button immediately changes to "Going ✓" (green, filled) without waiting for network
 - RSVP count increments by 1 in the UI (e.g., "42 going" → "43 going")
 - Calls `rsvpToEvent(supabase, eventId, userId)` in the background — inserts a row into `event_rsvps`
@@ -158,9 +179,11 @@ Each **EventCard** shows:
 **Duration:** Instant (< 100ms for optimistic update)
 
 **User Thoughts:**
+
 - "Done! I'm going."
 
 **Validation/Constraints:**
+
 - Level 0: Button shows "Verify to RSVP" — disabled, tapping shows verification prompt
 - Organizer cannot RSVP to their own event — button replaced with "You're the organizer"
 - Cancelled event: RSVP button hidden entirely
@@ -169,8 +192,10 @@ Each **EventCard** shows:
 ---
 
 #### Step 7: Cancel RSVP (Optional)
+
 **User Action:** If Priya changes her mind, she taps "Going ✓" button again.
 **System Response:**
+
 - Optimistic UI: button reverts to "RSVP — I'm Going"
 - RSVP count decrements by 1
 - Calls `unrsvpFromEvent(supabase, eventId, userId)` — deletes the `event_rsvps` row
@@ -182,9 +207,11 @@ Each **EventCard** shows:
 ### Phase 4: Post-RSVP
 
 #### Step 8: Navigate Back to Feed
+
 **User Action:** Taps back arrow to return to `EventsScreen`.
 **System Response:** `getUserRsvps` state already reflects the new RSVP — Priya's event card shows "Going ✓" button in the list.
 **User Sees:**
+
 - Event card in the list now shows "Going ✓" (green) button
 - No other changes
 **Duration:** Instant
@@ -198,11 +225,13 @@ Each **EventCard** shows:
 **What User Feels:** Connected — she's committed to attending and knows others are going. Excited to meet community members.
 
 **System State:**
+
 - New row in `event_rsvps`: `{ event_id, user_id, created_at }`
 - `events.rsvp_count` incremented by 1 (via DB trigger)
 - Priya's avatar appears in attendee list if `rsvp_visibility = 'public'`
 
 **Notifications Sent:**
+
 - (Deferred) Push notification to event organizer: "Priya S. is going to your event" — not yet implemented
 - (Deferred) Push reminder to Priya 24h before the event — not yet implemented
 
@@ -250,6 +279,7 @@ User opens Events tab
 ## Platform Considerations
 
 ### Applies To
+
 - [x] Mobile (iOS & Android)
 - [x] Web (Desktop & Mobile Web)
 
@@ -327,26 +357,31 @@ User opens Events tab
 ## Alternative Paths
 
 ### Path 1: Level 0 User Browsing Events
+
 **Trigger:** A new, unverified user opens the Events tab.
 **How Journey Changes:** Steps 1–5 are identical (full view access). Step 6 — RSVP button shows "Verify to RSVP" (disabled). Tapping it shows a prompt directing them to complete phone verification.
 **Outcome:** User is encouraged to verify their account to unlock RSVP. Browsing is unrestricted.
 
 ### Path 2: Viewing a Cancelled Event
+
 **Trigger:** User taps on an event that has since been cancelled by the organizer.
 **How Journey Changes:** `EventDetailScreen` shows a red "This event has been cancelled" banner at the top. RSVP button is hidden. All other info remains visible.
 **Outcome:** User is informed the event is cancelled and navigates back.
 
 ### Path 3: Viewing a Past Event
+
 **Trigger:** User taps on an event whose `start_date` has passed.
 **How Journey Changes:** Event detail shows a grey info banner: "This event has ended." RSVP button shows "Event Has Passed" (disabled, grey).
 **Outcome:** User can still view the event info and attendee list.
 
 ### Path 4: Private Attendee List
+
 **Trigger:** Organizer set `rsvp_visibility = 'private'`.
 **How Journey Changes:** "View all attendees" button still appears, but the modal/sheet shows only the RSVP count ("42 people going") with no names or avatars.
 **Outcome:** User knows how many people are going but cannot see who.
 
 ### Path 5: Global Event Discovery
+
 **Trigger:** A premium user posted a global event — it appears in all metro feeds.
 **How Journey Changes:** Event card shows 🌐 Global badge instead of 📍 Local. Otherwise identical flow.
 **Outcome:** User RSVPs to an event outside their metro area (possible if they're travelling or interested in a national event).
@@ -370,14 +405,17 @@ User opens Events tab
 ## Related Journeys
 
 ### Before This Journey (Prerequisites)
+
 - **Journey #01: Signup and Onboarding** — account + metro area required
 - **Journey #02: Trust Level Verification** — Level 1+ required to RSVP
 
 ### After This Journey (Next Steps)
+
 - **Journey #09: In-App Chat** — user may message the event organizer for more details
 - **Journey #14: Event Creation & Management** — user enjoyed attending and wants to host their own event
 
 ### Related/Parallel Journeys
+
 - **Journey #07: Browse and Search Posts** — same discovery pattern applied to posts
 - **Journey #14: Event Creation & Management** — the organizer's perspective for the same event
 
@@ -451,7 +489,9 @@ User opens Events tab
 ## Technical Requirements
 
 ### Shared API Functions Used
+
 All in `packages/shared/src/api/events.ts`:
+
 - `getEventsByMetro(supabase, metroId, options?)` — load events feed (upcoming + global)
 - `getEventById(supabase, eventId)` — single event with organizer join
 - `getEventAttendees(supabase, eventId)` — attendee list with user info
@@ -461,12 +501,14 @@ All in `packages/shared/src/api/events.ts`:
 - `unrsvpFromEvent(supabase, eventId, userId)` — delete from `event_rsvps`
 
 ### Data Validations
+
 - Trust Level 1+ to RSVP (enforced at UI + RLS layer)
 - Cannot RSVP to own event (enforced at UI layer)
 - Cannot RSVP to cancelled/removed event (enforced at UI layer)
 - Unique RSVP per user per event (enforced by DB unique constraint)
 
 ### Permissions Required
+
 - No special device permissions needed for browse + RSVP
 - Photo library permission only needed for event creation (not this journey)
 
@@ -475,12 +517,14 @@ All in `packages/shared/src/api/events.ts`:
 ## Questions & Assumptions
 
 ### Assumptions
+
 - Events are loaded once on mount and filtered client-side (no refetch per chip tap)
 - RSVP state is hydrated on `EventsScreen` mount via `getUserRsvps()` for all visible events
 - `rsvp_count` in the UI is sourced from `events.rsvp_count` (DB trigger-maintained), not a live count query
 - Attendee list pagination not needed for MVP (events unlikely to have thousands of RSVPs)
 
 ### Open Questions
+
 - [ ] Should cancelled events be shown in the feed (with a "Cancelled" badge) or hidden entirely? Currently shown with badge.
 - [ ] Should past events always be shown below a divider, or should they be hidden by default with a "Show Past Events" toggle?
 - [ ] When push notifications are live, should RSVPing users get a reminder 24h before? 1h before? Both?

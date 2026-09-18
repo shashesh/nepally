@@ -155,6 +155,7 @@ Fontshare `@import`s. *Verify in PR 1* that the ITF Free Font License permits
 self-hosting; if not, load from the Fontshare CDN with `preconnect` and `display=swap`.
 
 **Mantine theme (`mantine-theme.ts`):**
+
 - `colors.ink` and `colors.marigold` 10-shade tuples (literal values; Mantine needs real
   colours to derive variants); `primaryColor: 'ink'`.
 - `fontFamily` / `headings.fontFamily` from the font variables; `headings.fontWeight: '400'`.
@@ -202,6 +203,7 @@ their area PR. `design-system-next.css` is deleted in PR 1 (unused); `legacy-ali
 is deleted in PR 10.
 
 **Enforcement:**
+
 - `scripts/guard-css-tokens.js` (wired into `lint:guards`, modelled on
   `guard-no-catch-any.js`): fails on hex/rgb colour literals or legacy token names in
   `apps/web/src/**/*.module.css`. Starts with an allowlist of current offenders; each area
@@ -237,6 +239,7 @@ No wrappers for Tabs, TextInput, Textarea, Select, Switch, Tooltip — styled on
 theme and used directly.
 
 **`components/<domain>/` — extracted from pages:**
+
 - `layout/`: `AppShell`, `TopBar`, `SideRail`, `BottomTabBar`, `NotificationBell`,
   `AccountMenu`, `PublicShell` (§4.3)
 - `posts/`: `PostCard`, `PostActions`, `PostMeta`, `CommentThread`, `CommentComposer`,
@@ -252,6 +255,7 @@ theme and used directly.
 post create and edit is consolidated; storage calls go through a shared API function.
 
 **Conventions:**
+
 - Navigation elements are links, actions are buttons: `<Button component={Link}>`, never
   `<Link><Button/></Link>`.
 - Clickable cards use the stretched-link pattern (the title link's `::after` covers the
@@ -293,6 +297,7 @@ names ("Notifications, 3 unread"); popover/menus keyboard-operable via Mantine.
 ### 4.4 Global search
 
 **UX (S3 → S1):**
+
 - **Suggestions** (`SearchCombobox`, desktop/tablet top bar): starts at 2 characters,
   250ms debounce, stale responses discarded. Groups: Posts (3), Listings (2), People (3);
   empty groups hidden. Each group's `total_count` says whether it has more; if so it shows
@@ -310,6 +315,7 @@ names ("Notifications, 3 unread"); popover/menus keyboard-operable via Mantine.
   login otherwise).
 
 **Database — `supabase/migrations/037_search.sql` (additive only):**
+
 - `public.post_search_document(title, description)` (IMMUTABLE: title weighted `A`, body
   `B`, `english` config) with a GIN **expression** index on `posts`.
 - `public.person_search_document(full_name)` (IMMUTABLE, `simple` config — names are not
@@ -343,6 +349,7 @@ names ("Notifications, 3 unread"); popover/menus keyboard-operable via Mantine.
   restores the rank order.
 
 **Shared — `packages/shared`:**
+
 - `types/search.ts`: `SearchScope`, `SearchTab`, `PostSearchResult`,
   `ListingSearchResult`, `PersonSearchResult`, `SearchGroup<T> { items, hasMore }`,
   `SearchSuggestions`.
@@ -388,6 +395,7 @@ Each PR is its own branch off `master`; commits, pushes and PR creation are free
 | 10 | **Auth, onboarding, static pages + cleanup** | login, signup, verify-email, onboarding/zip, legal, guidelines, help; delete `legacy-aliases.css`; delete both allowlists; mark `docs/wireframes/00-design-system-foundation` superseded; final `web-ui-system.md` pass. |
 
 **Definition of done — every area PR (4–9, and 10's pages):**
+
 - Its CSS Modules removed from the token-guard allowlist; its files removed from the
   `forbid-elements` allowlist.
 - No native `confirm` / `alert` / `prompt` in the area.

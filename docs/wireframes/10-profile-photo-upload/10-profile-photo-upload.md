@@ -9,6 +9,7 @@
 ## Screen Purpose
 
 Allow users to upload, crop, and set their profile photo. The photo will be displayed on:
+
 - Post cards (author avatar)
 - Post detail screen (author section)
 - Comments (commenter avatar)
@@ -16,6 +17,7 @@ Allow users to upload, crop, and set their profile photo. The photo will be disp
 - Profile screen (large avatar)
 
 **Key Goals:**
+
 - Simple photo upload from camera or library
 - Crop to square (1:1 aspect ratio)
 - Preview before upload
@@ -47,6 +49,7 @@ Allow users to upload, crop, and set their profile photo. The photo will be disp
 ### Photo Picker Modal (Action Sheet)
 
 ::: modal
+
 ### Select Photo
 
 [📷  Take Photo]*
@@ -140,6 +143,7 @@ Failed to upload photo. Check your connection and try again.
 | **Border** | 2px solid #E0E0E0 | 2px solid #E0E0E0 |
 
 **Content:**
+
 - If photo uploaded: Display profile photo
 - If no photo: Display initials (e.g., "JD" for John Doe)
   - Typography: 24pt/22sp Semibold, #FFFFFF (white text)
@@ -163,6 +167,7 @@ Failed to upload photo. Check your connection and try again.
 | **Touch target** | 44×44pt min | 48×48dp min |
 
 **Text:**
+
 - If no photo: "Add Photo"
 - If photo exists: "Change Photo"
 
@@ -194,18 +199,21 @@ Failed to upload photo. Check your connection and try again.
 **Options:** Each option is a tappable row (56px/56dp height):
 
 #### Option 1: Take Photo
+
 - **Icon:** 📷 (camera), 24×24px, #1565C0
 - **Label:** "Take Photo" (17pt/16sp Regular, #212121)
 - **Action:** Open device camera → capture photo → navigate to crop screen
 - **Permissions:** Request camera permission if not granted
 
 #### Option 2: Choose from Library
+
 - **Icon:** 🖼️ (picture frame), 24×24px, #1565C0
 - **Label:** "Choose from Library" (17pt/16sp Regular, #212121)
 - **Action:** Open photo library picker → select photo → navigate to crop screen
 - **Permissions:** Request photo library permission if not granted
 
 #### Option 3: Remove Photo (conditional)
+
 - **Icon:** 🗑️ (trash can), 24×24px, #C62828 (Accent Red)
 - **Label:** "Remove Photo" (17pt/16sp Regular, #C62828)
 - **Display:** Only shown if user has existing photo
@@ -215,17 +223,20 @@ Failed to upload photo. Check your connection and try again.
 - **a11y:** "Remove profile photo, button, destructive action"
 
 #### Cancel Button
+
 - **Style:** Secondary (gray text)
 - **Label:** "Cancel" (17pt/16sp Semibold, #757575)
 - **Action:** Close modal, return to EditProfileScreen
 - **Separator:** 8px gray divider above cancel button
 
 **States:**
+
 - Default: White background, options visible
 - Pressed: Light gray background (#F5F5F5) on tapped option
 - Closing: Slide down animation (300ms)
 
 **a11y:**
+
 - Modal announced: "Select photo, sheet"
 - Each option announced separately
 - Swipe down to dismiss (iOS)
@@ -286,6 +297,7 @@ Failed to upload photo. Check your connection and try again.
 | **Range** | 1×–3× zoom | 1×–3× zoom |
 
 **a11y:**
+
 - "Crop profile photo screen"
 - "Drag image to position, pinch to zoom"
 - "Done button" / "Cancel button"
@@ -297,6 +309,7 @@ Failed to upload photo. Check your connection and try again.
 **Display:** On EditProfileScreen during upload
 
 **Changes:**
+
 - Avatar shows spinner overlay:
   - Background: Black (#000000) at 50% opacity over current avatar
   - Spinner: White circular spinner (24×24px)
@@ -307,12 +320,14 @@ Failed to upload photo. Check your connection and try again.
 **Duration:** 2–5 seconds (typical upload time)
 
 **Success:**
+
 - Avatar updates to show new photo
 - Status text: "Photo updated!" (green text, #2E7D32)
 - Status fades out after 2 seconds
 - Save button re-enabled
 
 **Error:**
+
 - Avatar reverts to previous state (or initials if first upload)
 - Status text: "Upload failed. Try again." (red text, #C62828)
 - Toast notification: "Failed to upload photo. Check your connection and try again."
@@ -360,6 +375,7 @@ Failed to upload photo. Check your connection and try again.
 ## User Interactions
 
 ### Happy Path (Upload Photo)
+
 1. User navigates to EditProfileScreen
 2. User taps "Change Photo" button
 3. Photo picker modal appears (slide-up animation 300ms)
@@ -380,6 +396,7 @@ Failed to upload photo. Check your connection and try again.
 18. User continues editing other profile fields or taps Save
 
 ### Alternative Flow (Take Photo)
+
 1–3 same as above
 4. User selects "Take Photo"
 5. System checks camera permission → granted
@@ -388,6 +405,7 @@ Failed to upload photo. Check your connection and try again.
 8–18 continue from Happy Path step 8
 
 ### Alternative Flow (Remove Photo)
+
 1–3 same as above
 4. User selects "Remove Photo"
 5. Confirmation dialog: "Remove profile photo? This will replace your photo with your initials."
@@ -398,12 +416,15 @@ Failed to upload photo. Check your connection and try again.
 10. Status: "Photo removed" (gray text, fades after 2s)
 
 ### Alternative Flow (Permission Denied)
+
 1–4 same as Happy Path
 5. System checks photo library permission → denied
 6. Alert dialog:
+
    - Title: "Photo Library Access Required"
    - Message: "Please grant photo library access in Settings to choose a profile photo."
    - Buttons: "Cancel", "Open Settings"
+
 7. If user taps "Open Settings": Navigate to system Settings, app permissions
 8. User manually grants permission → returns to app
 9. User repeats flow (now permission granted)
@@ -430,12 +451,14 @@ Failed to upload photo. Check your connection and try again.
 ### Screen Reader Order
 
 **EditProfileScreen:**
+
 1. "Edit profile"
 2. "Profile photo, [name initials or photo description]"
 3. "Change photo button" / "Add photo button"
 4. Profile fields...
 
 **Photo Picker Modal:**
+
 1. "Select photo sheet"
 2. "Take photo button"
 3. "Choose from library button"
@@ -443,16 +466,19 @@ Failed to upload photo. Check your connection and try again.
 5. "Cancel button"
 
 **Crop Screen:**
+
 1. "Crop photo screen"
 2. "Drag image to position, pinch to zoom"
 3. "Cancel button"
 4. "Done button"
 
 **Avatar states:**
+
 - With photo: "Your profile photo"
 - Without photo: "Your initials J D, no photo uploaded"
 
 ### Touch Targets
+
 - Avatar: 64×64px ✓ (exceeds minimum)
 - Change Photo button: 44×44pt / 48×48dp ✓
 - All modal options: 56px height ✓
@@ -487,6 +513,7 @@ Failed to upload photo. Check your connection and try again.
 ### Image Processing
 
 **Upload Requirements:**
+
 - **Max file size:** 5MB (before compression)
 - **Supported formats:** JPEG, PNG
 - **Max dimensions:** 500×500px (after crop and resize)
@@ -494,11 +521,13 @@ Failed to upload photo. Check your connection and try again.
 - **Target file size:** < 500KB (post-compression)
 
 **Cropping:**
+
 - 1:1 aspect ratio (square)
 - Output dimensions: 500×500px
 - Center-crop if user doesn't adjust
 
 **Storage:**
+
 - **Bucket:** `avatars/` in Supabase Storage
 - **Filename:** `{userId}.jpg` (overwrites previous photo)
 - **URL:** `https://{supabase-project}.supabase.co/storage/v1/object/public/avatars/{userId}.jpg`
@@ -507,14 +536,17 @@ Failed to upload photo. Check your connection and try again.
 ### Permissions
 
 **iOS:**
+
 - `NSCameraUsageDescription`: "We need access to your camera to take a profile photo"
 - `NSPhotoLibraryUsageDescription`: "We need access to your photo library to choose a profile photo"
 
 **Android:**
+
 - `android.permission.CAMERA`: "Camera access"
 - `android.permission.READ_EXTERNAL_STORAGE`: "Photo library access"
 
 **Permission Flow:**
+
 1. User taps "Take Photo" or "Choose from Library"
 2. Check if permission granted
 3. If not granted: Show system permission dialog
@@ -524,6 +556,7 @@ Failed to upload photo. Check your connection and try again.
 ### Data Requirements
 
 **Fetch current profile photo:**
+
 ```typescript
 const { data } = await supabase
   .from('users')
@@ -533,6 +566,7 @@ const { data } = await supabase
 ```
 
 **Upload photo:**
+
 ```typescript
 const filePath = `${userId}.jpg`;
 const { data, error } = await supabase.storage
@@ -541,6 +575,7 @@ const { data, error } = await supabase.storage
 ```
 
 **Get public URL:**
+
 ```typescript
 const { data } = supabase.storage
   .from('avatars')
@@ -548,6 +583,7 @@ const { data } = supabase.storage
 ```
 
 **Update user profile:**
+
 ```typescript
 const { error } = await supabase
   .from('users')
@@ -556,6 +592,7 @@ const { error } = await supabase
 ```
 
 **Delete photo:**
+
 ```typescript
 const { error } = await supabase.storage
   .from('avatars')
@@ -572,6 +609,7 @@ await supabase
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] "Change Photo" button opens picker modal
 - [ ] "Take Photo" opens camera (with permission)
 - [ ] "Choose from Library" opens photo library (with permission)
@@ -584,6 +622,7 @@ await supabase
 - [ ] "Cancel" on modal returns to EditProfileScreen
 
 ### Visual Tests
+
 - [ ] Avatar displays correctly (64×64px circle)
 - [ ] Initials display with correct trust-level background color
 - [ ] Photo picker modal slides up from bottom
@@ -592,6 +631,7 @@ await supabase
 - [ ] Success/error status text appears and fades
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all elements in correct order
 - [ ] Touch targets meet 44pt/48dp minimum
 - [ ] Color contrast meets WCAG AA
@@ -599,6 +639,7 @@ await supabase
 - [ ] Destructive "Remove Photo" announced as destructive action
 
 ### Edge Case Tests
+
 - [ ] Image > 5MB: shows error toast
 - [ ] Invalid format: shows error toast
 - [ ] Network failure during upload: reverts avatar, shows error

@@ -23,10 +23,12 @@
 ## Prerequisites
 
 **Must Complete First:**
+
 - **Journey #01: Signup and Onboarding** — must have an account and be in a metro area
 - **Journey #02: Trust Level Verification** — must be Level 1+ to *initiate* a conversation (post authors can reply at any level)
 
 **Should Have:**
+
 - **Journey #02: Browse and Engaging with Posts** — typically entering from a post the user found interesting
 
 ---
@@ -49,9 +51,11 @@
 ### Phase 1: Initiating a Conversation
 
 #### Step 1: Find a Post Worth Messaging About
+
 **User Action:** Sanjay browses the home feed and taps on a Housing post that looks promising.
 **System Response:** Opens `PostDetailScreen` — full post with title, body, tags, author avatar, like/comment/message action bar.
 **User Sees:**
+
 - Full post content
 - Author's avatar (photo or initials), masked name ("Ramesh T."), trust badge
 - Action bar at the bottom: Like · Comments · **Contact Author** button (blue, prominent)
@@ -59,18 +63,22 @@
 **Duration:** ~30 seconds reading
 
 **User Thoughts:**
+
 - "This looks like a good match. Let me ask if the room's still available."
 - "I notice the author is Level 1 verified — that's reassuring."
 
 **Pain Points:**
+
 - None at this step — the CTA is prominent and clear.
 - **Severity:** Low
 
 ---
 
 #### Step 2: Tap "Contact Author"
+
 **User Action:** Taps the blue "Contact Author" button at the bottom of the post detail screen.
 **System Response:**
+
 - Calls `getOrCreateConversation(supabase, userId, userName, photoUrl, authorId)` in the background
 - If no conversation exists: creates a new `conversations` record + two `conversation_participants` records
 - If conversation already exists with this author: returns the existing conversation ID
@@ -79,13 +87,16 @@
 **Duration:** < 1 second (navigation is instant; conversation created in background)
 
 **User Thoughts:**
+
 - "Good — I'm in the chat now. What do I say?"
 
 **Pain Points:**
+
 - If network is slow, conversation creation might lag. No loading indicator shown during navigation.
 - **Severity:** Low
 
 **Alternative Entry Points:**
+
 - Tap the `chatbubble-outline` icon on a post card in the feed → same flow
 - Tap author avatar on post card or post detail → avatar context menu appears with "Chat" option → same `getOrCreateConversation` flow
 - Tap "Message" button on `PublicProfileScreen` → same flow
@@ -94,9 +105,11 @@
 ---
 
 #### Step 3: Compose First Message
+
 **User Action:** Taps the `ChatInput` text field at the bottom of the screen and types a message.
 **System Response:** Keyboard rises. Input field expands up to ~4 lines. Character count is tracked internally (1000 char limit).
 **User Sees:**
+
 - Empty message thread (or previous messages if returning)
 - Multi-line `ChatInput` with placeholder "Message..."
 - Send button (→) appears once text is entered, greyed out when empty
@@ -104,9 +117,11 @@
 **Duration:** ~30 seconds to compose
 
 **User Thoughts:**
+
 - "Let me be polite and introduce myself quickly."
 
 **Validation/Constraints:**
+
 - Max 1000 characters per message
 - Cannot send empty message (send button disabled)
 - No rich formatting — plain text only
@@ -114,8 +129,10 @@
 ---
 
 #### Step 4: Send the Message
+
 **User Action:** Taps the send button (→).
 **System Response:**
+
 - Optimistic send: message appears immediately in the thread as a sent bubble (right-aligned, blue)
 - Calls `sendMessage(supabase, conversationId, senderId, text)` in the background
 - Updates `conversations.last_message` and `conversations.last_message_time`
@@ -128,6 +145,7 @@
 **Duration:** < 0.5 seconds to appear (optimistic)
 
 **User Thoughts:**
+
 - "Sent. Now I wait."
 
 ---
@@ -135,9 +153,11 @@
 ### Phase 2: Waiting for a Reply
 
 #### Step 5: Receive a Push Notification (Background)
+
 *(This step occurs on Ramesh's device — the post author receiving the message)*
 
 **System Response:**
+
 - Supabase Realtime notifies Ramesh's active subscription, or (once push delivery is deployed) sends an Expo push notification to Ramesh's device
 - Ramesh's Messages tab badge updates (unread count + 1, polled every 30s on iOS/Android)
 **Note:** Push notification delivery is scaffolded but not yet live. Currently, the author only sees the message if they open the app and check the Messages tab.
@@ -145,18 +165,22 @@
 ---
 
 #### Step 6: Return to App — Check for Reply
+
 **User Action:** Sanjay opens the app later. Sees the Messages tab has an unread badge (e.g., "1").
 **System Response:** Unread count polled on app focus from `getTotalUnreadCount(supabase, userId)`.
 **User Sees:**
+
 - Red badge on the Messages tab icon in the bottom nav
 **Duration:** Instant on app open (polled every 30s)
 
 ---
 
 #### Step 7: Open Conversation List
+
 **User Action:** Taps the Messages tab (bottom nav).
 **System Response:** `ConversationListScreen` loads via `useFocusEffect` → calls `getConversations(supabase, userId)`.
 **User Sees:**
+
 - List of conversations, most recent first
 - Each `ConversationItem` shows:
   - Author's avatar (photo or colored initials)
@@ -170,13 +194,16 @@
 **Duration:** < 1 second
 
 **User Thoughts:**
+
 - "Ramesh replied!"
 
 ---
 
 #### Step 8: Open the Reply
+
 **User Action:** Taps the conversation row for Ramesh.
 **System Response:**
+
 - Navigates to `MessageThreadScreen`
 - Calls `getMessages(supabase, conversationId)` + `markAsRead(supabase, conversationId, userId)`
 - Subscribes to `subscribeToMessages(supabase, conversationId, callback)` for real-time updates
@@ -188,6 +215,7 @@
 **Duration:** < 1 second
 
 **User Thoughts:**
+
 - "Ramesh confirmed the room is available. Let me ask a follow-up."
 
 ---
@@ -195,15 +223,18 @@
 ### Phase 3: Ongoing Conversation
 
 #### Step 9: Continue the Exchange
+
 **User Action:** Sanjay types follow-up messages. Ramesh replies in real time.
 **System Response:** `subscribeToMessages` callback fires when Ramesh sends a message — new bubble appears instantly at the bottom without requiring a refresh.
 **User Sees:**
+
 - New messages appear in real time at the bottom of the list
 - Auto-scrolls to bottom when a new message arrives (if already near bottom)
 - Ramesh's avatar only shown on the first bubble in a consecutive group (Messenger-style grouping)
 **Duration:** As long as needed
 
 **Pain Points:**
+
 - No typing indicator — user doesn't know if the other person is composing
 - **Severity:** Medium
 - No image attachment support (text only for Phase 1)
@@ -214,6 +245,7 @@
 ### Phase 4: Ending the Conversation
 
 #### Step 10: Navigate Away
+
 **User Action:** Sanjay taps the back arrow to return to `ConversationListScreen`, or navigates to another tab.
 **System Response:** Real-time subscription is unsubscribed on unmount. Messages are saved server-side and will reload on next visit.
 **User Sees:** Returns to previous screen or tab.
@@ -227,12 +259,14 @@
 **What User Feels:** Informed, connected, confident — the platform did its job as a private communication channel without exposing either party's personal contact info.
 
 **System State:**
+
 - `conversations` record exists with updated `last_message` + `last_message_time`
 - `messages` table has all messages, ordered by `timestamp`
 - `conversation_participants.unread_count` is 0 for both parties (after each reads)
 - No email or phone number was ever exposed
 
 **Notifications Sent:**
+
 - (Scaffolded) Push notification to recipient when new message arrives. Currently only visible if app is open or if user checks Messages tab.
 
 ---
@@ -280,6 +314,7 @@ User taps "Contact Author" or chat icon
 ## Platform Considerations
 
 ### Applies To
+
 - [x] Mobile (iOS & Android)
 - [x] Web (Desktop & Mobile Web)
 
@@ -364,26 +399,31 @@ User taps "Contact Author" or chat icon
 ## Alternative Paths
 
 ### Path 1: Returning to an Existing Conversation
+
 **Trigger:** User has already chatted with this author. Tapping "Contact Author" again routes to the existing thread (no duplicate conversations).
 **How Journey Changes:** Steps 2–3 are instant; user lands in existing thread with message history already visible. No new `conversations` record created.
 **Outcome:** Same as new conversation — user can send additional messages.
 
 ### Path 2: Author-Initiated Reply
+
 **Trigger:** Post author receives a message and opens the app to reply.
 **How Journey Changes:** Author enters via Messages tab → Conversation List → Thread (Steps 6–10). Author doesn't need to initiate — they respond. Trust Level 0 authors can still reply.
 **Outcome:** Bidirectional conversation proceeds normally.
 
 ### Path 3: Level 0 User Attempts to Message
+
 **Trigger:** Level 0 user taps "Contact Author" on a post.
 **How Journey Changes:** System checks trust level. User sees a prompt: "Verify your phone number to send messages." Journey ends — user redirected to verification flow.
 **Outcome:** User is prompted to complete trust level verification (Journey #02).
 
 ### Path 4: Blocking an Abusive User
+
 **Trigger:** User receives harassing or unwanted messages.
 **How Journey Changes:** In `MessageThreadScreen`, user taps kebab menu (⋮) → "Block User" → confirmation alert → `blockUser(supabase, userId, otherUserId)` → navigates back to conversation list. Blocked user can no longer message them.
 **Outcome:** Conversation is effectively ended. Future messages from blocked user are prevented at the API layer.
 
 ### Path 5: Entering Chat from Public Profile
+
 **Trigger:** User views another user's `PublicProfileScreen` and taps the "Message" button.
 **How Journey Changes:** Same `getOrCreateConversation` flow as Path 1/2 — navigates to existing or new thread. No post context is attached to the conversation.
 **Outcome:** Same as standard chat — bidirectional messaging.
@@ -407,14 +447,17 @@ User taps "Contact Author" or chat icon
 ## Related Journeys
 
 ### Before This Journey (Prerequisites)
+
 - **Journey #01: Signup and Onboarding** — must have an account
 - **Journey #02: Trust Level Verification** — must be Level 1+ to initiate
 - **Journey #02: Browsing and Engaging with Posts** — typical entry point (found a post to respond to)
 
 ### After This Journey (Next Steps)
+
 - **Journey #10: Report Content or User** — if user receives harassing messages, they can report the conversation
 
 ### Related/Parallel Journeys
+
 - **Journey #08: Respond to a Post** — conceptually precedes this journey; browsing leads to messaging
 - **Journey #10: Report Content** — safety escape hatch from chat
 
@@ -492,7 +535,9 @@ User taps "Contact Author" or chat icon
 ## Technical Requirements
 
 ### Shared API Functions Used
+
 All in `packages/shared/src/api/` — dependency injection pattern (accept `supabase: SupabaseClient`):
+
 - `getOrCreateConversation(supabase, userId, userName, photoUrl, otherUserId)` — idempotent conversation creation
 - `getConversations(supabase, userId)` → `ConversationWithParticipant[]` — inbox list
 - `getMessages(supabase, conversationId)` → `ChatMessage[]` — message history
@@ -503,17 +548,20 @@ All in `packages/shared/src/api/` — dependency injection pattern (accept `supa
 - `blockUser(supabase, blockerId, blockedId)` — insert into `blocked_users`
 
 ### Database Tables
+
 - `conversations` — one record per unique pair of users
 - `conversation_participants` — two records per conversation (one per participant), tracks `unread_count`
 - `messages` — one record per message, ordered by `timestamp`
 - `blocked_users` — one record per block relationship
 
 ### Realtime Subscription
+
 - Supabase Realtime channel: `messages:conversation_id=eq.{conversationId}`
 - Fires on `INSERT` events → appends new bubble to list
 - Unsubscribed on component unmount (`useEffect` cleanup)
 
 ### Permissions Required
+
 - Trust Level 1+ to initiate a new conversation (enforced at UI + RLS layer)
 - Trust Level 0 can receive and reply to messages (enforced at UI — Contact Author button hidden on own posts, but no Level 0 block on replies)
 
@@ -522,12 +570,14 @@ All in `packages/shared/src/api/` — dependency injection pattern (accept `supa
 ## Questions & Assumptions
 
 ### Assumptions
+
 - Users identify each other by masked name ("Firstname L.") — no real name or contact info exposed
 - Chat history is retained indefinitely (no 90-day expiry implemented yet, despite roadmap mention)
 - One conversation per unique user pair — no multi-person group chats in Phase 1
 - Post context (which post sparked the conversation) is stored in `conversation_participants.post_context` and shown in the conversation list item
 
 ### Open Questions
+
 - [ ] Should blocked users be able to see historical messages before the block?
 - [ ] Should there be a "mute conversation" option separate from block?
 - [ ] What happens to a conversation if the linked post is deleted? (post context becomes stale)

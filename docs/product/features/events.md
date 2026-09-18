@@ -28,17 +28,20 @@ Nepally's metro-first location model makes it uniquely positioned to surface the
 ## User Stories
 
 ### Discovery
+
 - As a **community member (Level 0+)**, I want to browse upcoming events in my metro area so I can discover what's happening near me.
 - As a **community member**, I want to filter events by type (Cultural, Religious, Social, Career) so I can find events that match my interests.
 - As a **community member**, I want to see event details (date, time, location, organizer, description) so I can decide whether to attend.
 
 ### Coordination
+
 - As a **verified user (Level 1+)**, I want to RSVP to an event so the organizer knows I'm attending and I get a reminder.
 - As a **verified user**, I want to see who else is attending (when public) so I know if people I know are going.
 - As an **event organizer**, I want to control whether my attendee list is public or private.
 - As an **event organizer**, I want to see everyone who has RSVP'd, regardless of privacy setting.
 
 ### Creation
+
 - As a **verified user (Level 1+)**, I want to create a local event so my community can discover and attend it.
 - As a **premium user**, I want to toggle my event as global so it's visible across all metro areas, not just mine.
 - As an **event organizer**, I want to edit or cancel my event if plans change.
@@ -99,6 +102,7 @@ Nepally's metro-first location model makes it uniquely positioned to surface the
 ### 2. Event Card (in list)
 
 Each event card displays:
+
 - [ ] Event type badge (colored pill): Cultural=orange, Religious=purple, Social=green, Career=blue, Other=gray
 - [ ] Event title (bold, max 2 lines, truncated with ellipsis)
 - [ ] Date/time: human-readable format
@@ -379,6 +383,7 @@ CREATE TRIGGER trg_event_updated_at BEFORE UPDATE ON events
 ### Shared Code (`packages/shared/`)
 
 **Types** (`src/types/events.ts`):
+
 ```typescript
 export type EventType = 'cultural' | 'religious' | 'social' | 'career' | 'other';
 export type EventStatus = 'active' | 'cancelled' | 'removed';
@@ -415,10 +420,12 @@ export interface EventRsvp {
 ```
 
 **Validation** (`src/validation/events.ts`):
+
 - `createEventSchema` — validates all required fields for event creation
 - `updateEventSchema` — partial schema for editing
 
 **API Functions** (`src/api/events.ts`) — all accept `supabase: SupabaseClient` as first param:
+
 - `getEventsByMetro(supabase, metroId, options?)` — upcoming active events for a metro + global events
 - `getEventById(supabase, eventId)` — single event with organizer join
 - `getEventsByOrganizer(supabase, organizerId)` — events created by a user (for profile tab)
@@ -434,18 +441,21 @@ export interface EventRsvp {
 **Utils** — reuse existing `formatPublicName()` from `src/utils/user.ts` for organizer name masking
 
 **Constants** (`src/constants/events.ts`):
+
 - `EVENT_TYPE_LABELS` — display names for each event type
 - `EVENT_TYPE_COLORS` — color tokens per type (for badge styling)
 
 ### Mobile-Specific (`apps/mobile/`)
 
 **Screens:**
+
 - `EventsScreen.tsx` — events list with filter chips (replaces "Coming Soon" placeholder)
 - `EventDetailScreen.tsx` — full event detail
 - `CreateEventScreen.tsx` — create/edit form
 - `EventAttendeesSheet.tsx` — bottom sheet showing full attendee list
 
 **Components:**
+
 - `components/events/EventCard.tsx` — card displayed in list
 - `components/events/EventTypeBadge.tsx` — colored type pill
 - `components/events/RsvpButton.tsx` — RSVP toggle button
@@ -456,11 +466,13 @@ export interface EventRsvp {
 ### Web-Specific (`apps/web/`)
 
 **Pages:**
+
 - `pages/events/index.tsx` — events list (replaces "Coming Soon" page)
 - `pages/events/[id].tsx` — event detail
 - `pages/events/create.tsx` — create event form
 
 **Components:**
+
 - `components/events/EventCard.tsx`
 - `components/events/EventTypeBadge.tsx`
 - `components/events/RsvpButton.tsx`
@@ -473,6 +485,7 @@ export interface EventRsvp {
 ## Success Metrics
 
 ### MVP Launch
+
 - [ ] Events tab replaces "Coming Soon" with real content on mobile and web
 - [ ] Level 1+ users can create, edit, and cancel events
 - [ ] RSVP toggle works with optimistic UI (no full-page reload)
@@ -482,6 +495,7 @@ export interface EventRsvp {
 - [ ] Monorepo test suite passes (`npm run test`)
 
 ### Engagement Targets (Post-Launch)
+
 - [ ] 10+ events posted per metro per month within 60 days of launch
 - [ ] 30% of event detail viewers RSVP
 - [ ] Organizers rate event creation flow 4+/5 in feedback

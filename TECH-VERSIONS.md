@@ -76,11 +76,13 @@ This document serves as the single source of truth for all technology versions u
 ## Why These Versions?
 
 ### React 19.2.3 (Both Mobile & Web — exact pin)
+
 - **Decision Date:** 2026-02-12 (19.1.4); moved to 19.2.3 with the Expo SDK 57 migration
 - **Reason:** Both mobile and web use the exact same React version to avoid workspace conflicts and duplicate-React issues. Enforced via root `overrides`.
 - **Why exact:** React Native bundles its own `react-native-renderer` and enforces an **exact** React version match at runtime (`Incompatible React versions` error). React Native 0.86.3 ships renderer 19.2.3. Change React only together with an Expo SDK upgrade, to that SDK's `facebookReactVersion` (see `https://api.expo.dev/v2/versions/latest`).
 
 ### Next.js 16 (upgraded from 15, 2026-06-05)
+
 - **Reason:** Next 16 (Turbopack) builds and runs cleanly against the pinned React 19.2.3 — the earlier 16.x build failures are resolved. Verified: production build of all routes, plus the full unit + E2E suites.
 - **Historical note:** The project previously pinned Next 15.5.12 because an early Next 16 + React 19 combination failed during build (`Cannot read properties of undefined (reading 'ReactCurrentDispatcher')`). That is no longer the case.
 - **Patch level:** on 16.3.x since 2026-09-10 (16.2.7 → 16.3.4, pulled in by in-range
@@ -108,6 +110,7 @@ This document serves as the single source of truth for all technology versions u
   `AGENTS.md` relocates the block rather than restoring it. Delete both or neither.
 
 ### ESLint 10 + flat config (upgraded from 8, 2026-09-10)
+
 - **Reason:** ESLint 8 is EOL and npm-deprecated, and so is 9 (it is the
   `maintenance` tag), so 10 was the only non-deprecated target. Config moved from
   `.eslintrc.json` to `eslint.config.mjs` at the repo root and in `apps/web`.
@@ -126,6 +129,7 @@ This document serves as the single source of truth for all technology versions u
   itself is not enabled; only its lint rules are.
 
 ### React Navigation 7 (upgraded from 6, 2026-09-10)
+
 - **Reason:** the whole v6 line is npm-deprecated ("This version is no longer
   supported") — native, bottom-tabs, native-stack, core, elements and routers.
 - **No code changes were needed.** The app only uses the dynamic API
@@ -147,6 +151,7 @@ This document serves as the single source of truth for all technology versions u
   unchanged.
 
 ### Expo SDK 57 (upgraded from 54)
+
 - **Reason:** Expo Go in the app stores only runs the latest SDK; SDK 54 stopped opening in store Expo Go.
 - **Ships:** React Native 0.86.3, React 19.2.3. Expo modules now use SDK-aligned versions (`expo-*@57.x`).
 - **App config:** the splash screen is configured through the `expo-splash-screen` plugin in `app.json` (SDK 56 removed the top-level `splash` key).
@@ -170,11 +175,13 @@ These are intentionally held and should be done as dedicated efforts:
 ### When to Update
 
 **Minor/Patch Updates:** Update monthly or as security patches are released
+
 - Example: Next.js 16.2.7 → 16.2.8
 - Risk: Low
 - Process: Update, test, deploy
 
 **Major Updates:** Evaluate carefully, test thoroughly
+
 - Example: the Expo SDK 54 → 57 migration
 - Risk: High
 - Process: Research, plan, test in branch, review breaking changes
@@ -286,6 +293,7 @@ This ensures React 19.2.3 is used throughout the entire monorepo, overriding any
 ### Symptom: "Cannot find module 'react'" or version conflicts
 
 **Solution:**
+
 ```bash
 # Clean all dependencies
 rm -rf node_modules apps/*/node_modules packages/*/node_modules package-lock.json
@@ -298,6 +306,7 @@ npm install --legacy-peer-deps
 
 **Solution:**
 Ensure `@types/react` and `@types/react-dom` are version 19 in web app:
+
 ```bash
 cd apps/web
 npm install --save-dev @types/react@^19 @types/react-dom@^19

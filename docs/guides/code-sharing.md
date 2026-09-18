@@ -18,6 +18,7 @@ This guide explains what code should be shared between mobile and web apps, and 
 **IMPORTANT:** Shared types use **snake_case** matching Supabase database column names. See [ADR: Shared Types Use snake_case](../decisions/2026-02-16-shared-types-snake-case.md).
 
 **Examples:**
+
 ```typescript
 // types/user.ts — snake_case matching Supabase columns
 export interface User {
@@ -42,6 +43,7 @@ export interface Post {
 ```
 
 **Why shared:**
+
 - Ensures type safety across platforms
 - Single source of truth for data structures
 - Prevents mobile/web drift
@@ -51,6 +53,7 @@ export interface Post {
 **Location:** `packages/shared/src/validation/`
 
 **Examples:**
+
 ```typescript
 // validation/post.ts
 import { z } from 'zod';
@@ -66,6 +69,7 @@ export type CreatePostInput = z.infer<typeof createPostSchema>;
 ```
 
 **Usage in apps:**
+
 ```typescript
 // Mobile or web
 import { createPostSchema } from '@nepally/shared';
@@ -77,6 +81,7 @@ if (!result.success) {
 ```
 
 **Why shared:**
+
 - Same validation rules on mobile and web
 - Backend can also use same schemas
 - Reduces duplication and bugs
@@ -86,6 +91,7 @@ if (!result.success) {
 **Location:** `packages/shared/src/utils/`
 
 **Examples:**
+
 ```typescript
 // utils/date.ts
 export function formatRelativeTime(date: Date): string {
@@ -106,6 +112,7 @@ export function formatPhoneNumber(phone: string): string {
 ```
 
 **Why shared:**
+
 - Consistent formatting across platforms
 - Reusable pure functions
 - Easy to test
@@ -115,6 +122,7 @@ export function formatPhoneNumber(phone: string): string {
 **Location:** `packages/shared/src/constants/`
 
 **Examples:**
+
 ```typescript
 // constants/tags.ts
 export const DEFAULT_TAGS = [
@@ -126,6 +134,7 @@ export type DefaultTag = typeof DEFAULT_TAGS[number];
 ```
 
 **Why shared:**
+
 - Single source of truth
 - No magic strings/numbers
 - Easy to update everywhere
@@ -135,6 +144,7 @@ export type DefaultTag = typeof DEFAULT_TAGS[number];
 **Location:** `packages/shared/src/api/`
 
 **Examples:**
+
 ```typescript
 // api/posts.ts
 import { supabase } from './client';
@@ -162,6 +172,7 @@ export async function getPostsByMetro(metroId: string): Promise<Post[]> {
 ```
 
 **Why shared:**
+
 - Same API calls on mobile and web
 - Centralized data fetching logic
 - Easy to mock for testing
@@ -171,6 +182,7 @@ export async function getPostsByMetro(metroId: string): Promise<Post[]> {
 **Location:** `packages/shared/src/utils/` or `packages/shared/src/logic/`
 
 **Examples:**
+
 ```typescript
 // logic/trustLevel.ts
 export function calculateTrustLevel(user: User): TrustLevel {
@@ -196,6 +208,7 @@ export function requiresModeration(tags: string[]): boolean {
 ```
 
 **Why shared:**
+
 - Consistent behavior across platforms
 - Business rules in one place
 - Testable without UI
@@ -205,6 +218,7 @@ export function requiresModeration(tags: string[]): boolean {
 ### 1. UI Components
 
 **❌ Don't share:**
+
 ```typescript
 // ❌ packages/shared/src/components/Button.tsx
 export function Button({ title, onPress }) {
@@ -215,6 +229,7 @@ export function Button({ title, onPress }) {
 **Why:** React Native and React have different components (`TouchableOpacity` vs `button`).
 
 **✅ Instead:** Create separate components in each app:
+
 ```typescript
 // apps/mobile/src/components/Button.tsx (React Native)
 export function Button({ title, onPress }) {
@@ -234,6 +249,7 @@ export function Button({ title, onPress }) {
 ### 2. Navigation
 
 **❌ Don't share:**
+
 ```typescript
 // Navigation is platform-specific
 // Mobile: React Navigation
@@ -245,6 +261,7 @@ export function Button({ title, onPress }) {
 ### 3. Styling
 
 **❌ Don't share:**
+
 ```typescript
 // Mobile: StyleSheet.create()
 // Web: CSS Modules
@@ -255,6 +272,7 @@ export function Button({ title, onPress }) {
 ### 4. Platform-Specific Features
 
 **❌ Don't share:**
+
 ```typescript
 // Camera, push notifications, geolocation, etc.
 // These use different APIs on mobile vs web
@@ -267,6 +285,7 @@ export function Button({ title, onPress }) {
 ### Pattern 1: Shared Logic + Platform UI
 
 **Shared logic:**
+
 ```typescript
 // packages/shared/src/validation/post.ts
 export const createPostSchema = z.object({
@@ -277,6 +296,7 @@ export const createPostSchema = z.object({
 ```
 
 **Mobile UI:**
+
 ```typescript
 // apps/mobile/src/screens/CreatePostScreen.tsx
 import { createPostSchema } from '@nepally/shared';
@@ -303,6 +323,7 @@ export function CreatePostScreen() {
 ```
 
 **Web UI:**
+
 ```typescript
 // apps/web/src/pages/posts/create.tsx
 import { createPostSchema } from '@nepally/shared';
@@ -331,6 +352,7 @@ export default function CreatePost() {
 ### Pattern 2: Shared API + Platform Hooks
 
 **Shared API:**
+
 ```typescript
 // packages/shared/src/api/posts.ts
 export async function getPostsByMetro(metroId: string): Promise<Post[]> {
@@ -339,6 +361,7 @@ export async function getPostsByMetro(metroId: string): Promise<Post[]> {
 ```
 
 **Mobile hook:**
+
 ```typescript
 // apps/mobile/src/hooks/usePosts.ts
 import { getPostsByMetro } from '@nepally/shared';
@@ -356,6 +379,7 @@ export function usePosts(metroId: string) {
 ```
 
 **Web hook:**
+
 ```typescript
 // apps/web/src/hooks/usePosts.ts
 import { getPostsByMetro } from '@nepally/shared';

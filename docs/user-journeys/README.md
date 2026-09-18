@@ -56,6 +56,7 @@ scope; **written** is what exists on disk today.
 **Purpose:** These journeys cover how new users discover Nepally, create accounts, verify their identity, and become trusted members of the community.
 
 **Key Features:**
+
 - ZIP code to metro area mapping
 - Phone verification (SMS OTP)
 - Social media account linking
@@ -75,6 +76,7 @@ scope; **written** is what exists on disk today.
 **Purpose:** Creating tag-based posts (title + body + 1-3 tags) with optional photos — the Reddit-style format used for all post types.
 
 **Key Features:**
+
 - Single unified form: title, body, tag selector (1-3 tags), optional photos (up to 3)
 - Tags: Housing, Jobs, Help, Question, Politics, Discussion, Emergency
 - Photo upload (max 3, auto-compressed to 2MB, reorderable)
@@ -85,6 +87,7 @@ scope; **written** is what exists on disk today.
 - No auto-expiry — posts remain active until deleted by author or removed by moderators
 
 **Prerequisites:**
+
 - Journey #01: Signup (must have account)
 - Journey #02: Trust Level Verification (must be Level 1+)
 
@@ -101,6 +104,7 @@ scope; **written** is what exists on disk today.
 **Purpose:** Finding relevant posts and events in the local metro area, initiating contact with post authors, and RSVPing to community events.
 
 **Key Features:**
+
 - Metro-first local feed (default view) — local + global posts mixed
 - Tag filter chips (All, Housing, Jobs, Help, Question, Politics, Discussion, Emergency)
 - 📍 Local / 🌐 Global badges on post cards and events
@@ -111,6 +115,7 @@ scope; **written** is what exists on disk today.
 - One-tap RSVP with optimistic UI (Level 1+ required)
 
 **Prerequisites:**
+
 - Journey #01: Signup (viewing posts)
 - Journey #02: Trust Level Verification (responding to posts - Level 1+ required)
 
@@ -125,6 +130,7 @@ scope; **written** is what exists on disk today.
 **Purpose:** Real-time messaging between users for inquiries about posts, follow-ups, and coordination.
 
 **Key Features:**
+
 - One-on-one real-time chat (Supabase Realtime)
 - Conversation list (inbox view)
 - Read receipts
@@ -133,6 +139,7 @@ scope; **written** is what exists on disk today.
 - Chat history retained for 90 days
 
 **Prerequisites:**
+
 - Journey #02: Trust Level Verification (Level 1+ to initiate chats)
 - Journey #08: Respond to a Post (typical entry point)
 
@@ -148,6 +155,7 @@ scope; **written** is what exists on disk today.
 **Purpose:** Maintaining community safety through user reporting and moderator review of flagged content.
 
 **Key Features:**
+
 - Report button on all posts and chat messages
 - Report categories: Spam, Scam, Inappropriate Content, Harassment
 - Auto-hide threshold: 3+ reports triggers moderation queue
@@ -156,6 +164,7 @@ scope; **written** is what exists on disk today.
 - Activity logs and audit trail
 
 **Prerequisites:**
+
 - Journey #10: None (anyone can report)
 - Journey #11: Moderator account with email whitelist access
 
@@ -171,17 +180,20 @@ scope; **written** is what exists on disk today.
 **Purpose:** Managing post and event lifecycle — editing, renewing, cancelling, and deleting content.
 
 **Key Features (Posts):**
+
 - Edit post title, body, tags, photos at any time (owner only)
 - Delete post (owner only)
 - Renew or repost expired posts (Journey #12 — planned)
 
 **Key Features (Events):**
+
 - Edit event details after publish (organizer only)
 - Cancel event — marks as cancelled, remains visible to attendees
 - Delete event — removes from all feeds (soft delete)
 - Organizer controls accessible via ⋮ kebab menu on event detail
 
 **Prerequisites:**
+
 - Journey #03-06: User must have created a post previously
 
 ---
@@ -259,20 +271,24 @@ This diagram shows which journeys must be completed before others:
 ### Common User Flows
 
 **1. New User → First Post**
+
 - Journey #01: Signup & Onboarding
 - Journey #02: Trust Level Verification
 - Journey #03: Housing Post Creation
 
 **2. Existing User → Find & Respond**
+
 - Journey #07: Browse & Search Posts
 - Journey #08: Respond to a Post
 - Journey #09: In-App Chat Conversation
 
 **3. Post Author → Manage Post Lifecycle**
+
 - Journey #03: Create Post
 - Journey #12: Renew/Edit Expired Post
 
 **4. Safety & Moderation**
+
 - Journey #10: Report Content (any user)
 - Journey #11: Moderator Review (moderator)
 
@@ -286,6 +302,7 @@ This diagram shows which journeys must be completed before others:
 4. **Finally Support Features:** Document Journeys #09-12 (chat, safety, management)
 
 After all journeys are documented:
+
 - Create wireframes for each journey's key screens
 - Define API requirements
 - Plan user testing scenarios
@@ -296,12 +313,14 @@ After all journeys are documented:
 ## Questions & Assumptions
 
 ### Assumptions
+
 - All journeys assume US-based metro areas with ZIP code coverage
 - Users have smartphones (iOS or Android)
 - Users have stable internet connection
 - Push notifications are enabled (for chat and post expiry)
 
 ### Open Questions
+
 - [ ] Should Journey #08 (Respond to Post) and Journey #09 (In-App Chat) be combined?
 - [ ] Do we need separate journeys for editing vs renewing posts?
 - [ ] Should we create a Journey #13 for "View My Posts" (user's post history)?
@@ -314,16 +333,19 @@ After all journeys are documented:
 Use the `/user-journey` skill to create comprehensive journey documentation.
 
 **Command:**
+
 ```
 /user-journey [journey-name]
 ```
 
 **Example:**
+
 ```
 /user-journey signup-and-onboarding
 ```
 
 The skill will guide you through:
+
 1. Defining scope and prerequisites
 2. Mapping the step-by-step journey
 3. Documenting pain points and metrics

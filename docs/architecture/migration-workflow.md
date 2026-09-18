@@ -19,6 +19,7 @@ This doc defines how database migrations are authored and applied for Nepally, a
 - Each schema change is a **new** incremental file (`034_…`, `035_…`), additive only (`ALTER`/`CREATE`/`CREATE POLICY`), never `DROP TABLE`/`DROP TYPE`.
 
 ### ⚠️ Do NOT run `supabase db push` against this project (without first reading "Adopting the CLI" below)
+
 The repo is **not linked** (`supabase/config.toml` `project_id` is the placeholder `"your-project-id"`). The repo uses numeric version prefixes while the Supabase CLI defaults to 14-digit timestamps. A naive `db push` against a freshly-linked project could try to replay `001` (destructive). Apply via MCP/dashboard instead.
 
 ---
@@ -26,18 +27,22 @@ The repo is **not linked** (`supabase/config.toml` `project_id` is the placehold
 ## 2026-06-07 — Migration tracker realignment
 
 ### What was wrong (drift)
+
 The remote `supabase_migrations.schema_migrations` table had drifted from the repo:
+
 - It mixed **timestamp versions** (`20260303155854`) with inconsistent names — some matched repo files (`001_schema`, `014_marketplace`), some were renamed (`add_saved_posts` = repo `005`, `user_bio` = repo `025`), and some were early ad-hoc dashboard fixes with **no standalone repo file** (`drop_conversations_post_id`, `enable_rls_on_chat_tables`, `fix_conversation_participants_rls_recursion`, etc. — folded into repo `004`/`008`).
 - `email_verification` was recorded twice.
 - Repo files **entirely missing** from the tracker: `002, 003, 012, 013, 026, 028, 029, 030, 031, 032`.
 - Consequence: migration `032`'s `ALTER VIEW user_helper_scores SET (security_invoker = true)` had never actually taken effect on the remote, leaving the view SECURITY DEFINER until `033` fixed it.
 
 ### What was done
+
 The tracker was **rewritten to mirror the repo exactly** (decision: repo numeric scheme stays the source of truth, matching the manual/MCP workflow). All rows were replaced in a single transaction with 33 rows: `version` = numeric prefix (`001`…`033`), `name` = file stem, `statements` = a pointer comment to the canonical repo file.
 
 This changed **only the bookkeeping table** — no schema, data, RLS, or application behavior was touched.
 
 ### Before-snapshot (for reversibility)
+
 The pre-realignment tracker contents (31 rows), captured before the rewrite:
 
 | version (timestamp) | name |
@@ -75,6 +80,7 @@ The pre-realignment tracker contents (31 rows), captured before the rewrite:
 | 20260608021301 | fix_security_definer_view_and_rls_initplan |
 
 ### After (current)
+
 37 rows, `version` `001`–`037`, `name` = repo file stem — an exact mirror of `supabase/migrations/*.sql`. The exception is the `036` row: its `name` is `036_restrict_user_pii_and_chat_participation`, keeping the repo's numeric prefix, unlike every other row.
 
 `034_guard_user_privileged_columns` and `035_emergency_post_moderation` were applied 2026-09-04 via MCP `apply_migration`. That tool records a **timestamp** version (e.g. `20260904162458`), so each row was realigned to its numeric version right after applying (see step 3 below). The reports SELECT-policy change in 035 was added to the file after the initial apply and applied as a delta with `execute_sql`; the tracker row already existed, so no new row was needed.
@@ -99,7 +105,9 @@ The pre-realignment tracker contents (31 rows), captured before the rewrite:
 4. Re-run advisors (`get_advisors`) after DDL to catch new RLS/security/perf issues.
 
 ## Adopting the Supabase CLI later (optional, not done)
+
 If the team wants `supabase db push/pull`:
+
 1. Rename all repo migrations to 14-digit timestamp prefixes (note: touches the FROZEN `001`–`003` filenames — content unchanged).
 2. Set the real `project_id` in `config.toml` and `supabase link`.
 3. `supabase migration repair --status applied <version>` for every migration so none replay.

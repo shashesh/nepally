@@ -67,27 +67,33 @@ See [Monorepo Structure](./docs/architecture/monorepo-structure.md) for details.
 ## Documentation
 
 ### Getting Started
+
 - [Setup & Testing Guide](./docs/guides/setup-and-testing.md) - Complete development setup
 - [TECH-VERSIONS.md](./TECH-VERSIONS.md) - Technology version source of truth
 
 ### Architecture
+
 - [Monorepo Structure](./docs/architecture/monorepo-structure.md) - Codebase organization
 - [Code Sharing Guide](./docs/guides/code-sharing.md) - What to share between mobile/web
 - [Database Schema](./docs/architecture/database-schema.md) - PostgreSQL tables and schema
 
 ### Backend
+
 - [Supabase Setup](./docs/architecture/supabase-setup.md) - Configure Supabase project
 
 ### Deployment
+
 - [Deployment Guide](./docs/guides/deployment.md) - Deploy to production
 
 ### Product
+
 - [Product Roadmap](./docs/product/roadmap.md) - Feature roadmap and phases
 - [Feature Specs](./docs/product/features/) - Detailed feature specifications
 - [User Journeys](./docs/user-journeys/) - User flow documentation
 - [Wireframes](./docs/wireframes/) - Screen wireframe documentation
 
 ### Claude Code
+
 - [CLAUDE.md](./CLAUDE.md) - Claude Code instructions
 
 ## CI/CD
@@ -166,6 +172,7 @@ npm run test:security:emergency-post    # Pending (Emergency) posts, moderator a
 ### Phase 1: Utility Core & Trust Foundation (Current)
 
 **Shipped:**
+
 - Onboarding and metro-area assignment
 - Home feed with tag-based posts (Housing, Jobs, Help, Question, Politics, Discussion, Emergency)
 - Profile management and profile photos
@@ -184,11 +191,13 @@ npm run test:security:emergency-post    # Pending (Emergency) posts, moderator a
 **Next up:** Post photo upload, reporting system, admin dashboard, full notifications system
 
 ### Phase 2: Community Safety & Growth
+
 - Red Alert system (two-step moderator verification)
 - Peer vs. business distinction (business profiles + reviews)
 - Hyper-local filtering (radius-based search)
 
 ### Phase 3: Sustainability & Ecosystem
+
 - Self-service ad portal
 - AI moderation (scam keyword scanning)
 - Billing integration (Stripe/IAP)

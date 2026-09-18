@@ -64,6 +64,7 @@ https://nusa.app/posts/jobs/def456
 ```
 
 Post pages use Server-Side Rendering to:
+
 - Generate proper HTML for search engines
 - Include meta tags (title, description, Open Graph)
 - Load fast for good Core Web Vitals

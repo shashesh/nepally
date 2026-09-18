@@ -13,6 +13,7 @@
 A bottom sheet (mobile) or modal (web) that appears when the app detects the user is in a different metro area than their active location. Gives users three clear choices: browse temporarily, update permanently, or dismiss.
 
 **Key Goals:**
+
 - Inform user that a location mismatch was detected
 - Provide clear, understandable options without jargon
 - Allow snoozing to prevent prompt fatigue
@@ -73,6 +74,7 @@ Would you like to see community posts from this area?
 ### Action: "Browse [Metro]" tapped
 
 **System behavior:**
+
 1. Bottom sheet dismisses (slide down animation)
 2. Home screen header updates: "[Metro Name]" + "(Visiting)" tag
 3. Feed refreshes with posts from detected metro area
@@ -90,6 +92,7 @@ Houston (Visiting) ▼ &emsp; 🔍 🔔
 ### Action: "Update My Location" tapped
 
 **System behavior:**
+
 1. Bottom sheet content transitions to "Save Location" sub-view:
 
 ::: modal
@@ -129,6 +132,7 @@ Suggested: `Home` `Work` `School`
 ### Action: "Keep [Current]" tapped or sheet dismissed
 
 **System behavior:**
+
 1. Bottom sheet dismisses
 2. Feed unchanged (stays on current metro)
 3. If snooze checkbox was checked → save snooze record for detected metro
@@ -190,6 +194,7 @@ Suggested: `Home` `Work` `School`
 | **Bottom margin** | 8px |
 
 **Metro name display rule:** Use the first part of the metro name before the first hyphen. Examples:
+
 - "Houston-The Woodlands-Sugar Land, TX" → "Houston"
 - "Dallas-Fort Worth-Arlington, TX" → "Dallas-Fort Worth"
 - "New York-Newark-Jersey City, NY" → "New York"

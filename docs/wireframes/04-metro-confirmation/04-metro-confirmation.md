@@ -11,6 +11,7 @@
 This screen provides positive feedback after ZIP code validation, confirming the user's metro area mapping. It serves as a brief celebration moment and builds confidence that the user will see relevant local content.
 
 **Key Goals:**
+
 - Confirm correct metro area mapping (visual success feedback)
 - Show user that they're part of an active local community
 - Build excitement for what's next (tutorial and local feed)
@@ -68,6 +69,7 @@ Join 12,503 verified members in your area
 | **Border** | None or subtle white (2px) | None or subtle white (2px) |
 
 **Animation on Load:**
+
 - Circle: Scale from 0 to 1.0 (300ms, ease-out)
 - Checkmark: Draw animation (path animation) from top-left to bottom-right (300ms, starts 100ms after circle)
 - Optional: Subtle pulse effect (scale 1.0 → 1.05 → 1.0) after drawing completes
@@ -89,6 +91,7 @@ Join 12,503 verified members in your area
 | **Line Height** | 1.2× | 1.2× |
 
 **Dynamic Content:**
+
 - Content template: "You're in {metro_name}!"
 - Metro area name fetched from API response
 - Always include exclamation mark for excitement
@@ -109,6 +112,7 @@ Join 12,503 verified members in your area
 | **Max Width** | 320px | 320dp |
 
 **Dynamic Content:**
+
 - Content template: "Join {count} verified members in your area"
 - Member count uses comma separators (2,847 not 2847)
 - If count < 100: Show "Join {count} verified members" (no comma)
@@ -132,11 +136,13 @@ Join 12,503 verified members in your area
 | **Position** | Bottom, 24px above bottom edge / safe area | Bottom, 24dp above bottom edge / safe area |
 
 **States:**
+
 - Default: #1565C0 background, white text
 - Pressed: #104D99 background, scale 0.98
 - Loading: Show spinner (if API call needed), disable tap
 
 **Interaction:** Tap → Navigate to Screen 05 (Onboarding Tutorial) + haptic (iOS light impact)
+
 - No API call needed (metro already saved on previous screen)
 
 **a11y:** Label "Continue", Hint "Continue to onboarding tutorial", min touch target 48×48pt (iOS) / 56×56dp (Android)
@@ -167,11 +173,13 @@ Join 12,503 verified members in your area
 ## User Interactions
 
 ### Primary Flow
+
 1. **Screen loads after successful ZIP validation** → Checkmark animation plays (600ms)
 2. **User reads metro area name and member count** → ~3–5 seconds
 3. **User taps "Continue"** → Navigate to Screen 05 (Onboarding Tutorial)
 
 ### Alternative Flow (Auto-Advance — Optional Enhancement)
+
 - Auto-advance to tutorial after 3 seconds
 - Show countdown indicator: "Continuing in 3... 2... 1..."
 - User can tap "Continue" early to skip countdown
@@ -197,37 +205,47 @@ Join 12,503 verified members in your area
 ## Error States & Edge Cases
 
 ### Edge Case: No Member Count Data
+
 **Scenario:** API doesn't return member count or count is 0
 **Behavior:**
+
 - Show alternative text: "Be among the first members in your area"
 - Or: "You're all set! Let's explore Nepally"
 - Still show checkmark and metro name
 
 ### Edge Case: Very Long Metro Area Name
+
 **Scenario:** Metro name is >40 characters (e.g., "New York-Newark-Jersey City, NY-NJ-PA")
 **Behavior:**
+
 - Allow text to wrap to 2–3 lines
 - Reduce font size slightly (24pt/sp instead of 28pt/sp)
 - Ensure all text remains readable
 
 ### Edge Case: Metro Name Not Available
+
 **Scenario:** API returns metro_area_id but no display name
 **Behavior:**
+
 - Show generic success message: "You're all set!"
 - Show member count if available
 - Log error for debugging
 
 ### Edge Case: User Presses Back Button
+
 **Scenario:** User taps back (Android hardware back or iOS swipe)
 **Behavior:**
+
 - iOS: Disable swipe-back gesture (prevent going back to ZIP entry)
 - Android: Intercept back button, show confirmation: "Go back and change your ZIP code?"
 - Confirmation buttons: "Change ZIP" (returns to Screen 03) and "Cancel" (stays on current screen)
 - **Rationale:** Prevent accidental return to ZIP entry after successful validation
 
 ### Edge Case: API Error (Metro Name Fetch Failed)
+
 **Scenario:** API call to get metro details fails
 **Behavior:**
+
 - Show checkmark and generic success message: "You're all set!"
 - Use cached metro name from Screen 03 if available
 - Continue button still works (no blocking)
@@ -237,15 +255,18 @@ Join 12,503 verified members in your area
 ## Accessibility
 
 ### Screen Reader Order
+
 1. "Success" (checkmark icon)
 2. "You're in Dallas-Fort Worth-Arlington!" (metro name heading)
 3. "Join 2,847 verified members in your area" (member count)
 4. "Continue" button
 
 ### Screen Title
+
 - Announced as: "Location Confirmed"
 
 ### Touch Targets
+
 - Continue button: 48×48pt (iOS) / 56×56dp (Android) — meets minimum
 - Checkmark icon: Not interactive (no touch target needed)
 
@@ -259,6 +280,7 @@ Join 12,503 verified members in your area
 | Checkmark (White on #2E7D32) | 8.5:1 | AAA ✓ |
 
 ### Focus Indicators
+
 - iOS VoiceOver: yellow outline on Continue button
 - Android TalkBack: green rectangle on Continue button
 
@@ -283,11 +305,13 @@ Join 12,503 verified members in your area
 - iOS: Light haptic feedback at checkmark completion (300ms mark)
 
 ### Button Press
+
 - Duration: 150ms, ease-in-out
 - Scale 0.98 + background darkens to #104D99
 - iOS: light haptic | Android: ripple from tap point
 
 ### Screen Exit (Navigate to Tutorial)
+
 - iOS: Slide in from right (300ms, ease-in-out)
 - Android: Slide up from bottom (300ms, material motion)
 
@@ -296,6 +320,7 @@ Join 12,503 verified members in your area
 ## Content & Localization
 
 ### Copy Requirements
+
 - **Metro Name:** Use official US Census Metro Area name
 - **Member Count:** Always show if available (social proof)
 - **Tone:** Celebratory, welcoming ("You're in...!" with exclamation)
@@ -312,10 +337,12 @@ Join 12,503 verified members in your area
 | `metro_confirm_button` | Continue |
 
 ### Dynamic Placeholders
+
 - `{metro_name}`: Dallas-Fort Worth-Arlington
 - `{count}`: 2,847 (formatted with commas)
 
 ### Tone
+
 - **Celebratory:** "You're in...!" (exclamation mark adds excitement)
 - **Welcoming:** "Join X members" (you're part of a community)
 - **Encouraging:** Social proof builds confidence
@@ -326,17 +353,20 @@ Join 12,503 verified members in your area
 ## Technical Notes
 
 ### Identifiers
+
 - Route: `/onboarding/metro-confirmation`
 - iOS: `MetroConfirmationViewController` / `MetroConfirmationScreen`
 - Android: `MetroConfirmationActivity` / `MetroConfirmationFragment`
 
 ### State Management
+
 - `metroAreaId`: string (e.g., "dallas-fort-worth-arlington")
 - `metroName`: string (e.g., "Dallas-Fort Worth-Arlington")
 - `memberCount`: number (e.g., 2847)
 - `animationComplete`: boolean (true after checkmark animation finishes)
 
 **Data Source:**
+
 - Metro area name + ID: Passed from Screen 03 via navigation params
 - Member count: Fetched from API or pre-loaded database
 
@@ -368,12 +398,14 @@ Join 12,503 verified members in your area
 **Timing:** Fetch during Screen 03 (ZIP validation) to avoid delay; fallback: show metro name without count
 
 ### Performance
+
 - Use CSS/native animations (not JavaScript) for smooth 60fps
 - Cache member count in memory
 - Pass metro name via navigation params (no API call needed on this screen)
 - Use vector SVG for checkmark (crisp at all sizes)
 
 ### Design System Components Used
+
 - Success Checkmark Icon (new component — green circle)
 - Primary Button (from design system)
 - H1 Typography (28pt/sp Bold)
@@ -384,6 +416,7 @@ Join 12,503 verified members in your area
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Screen receives metro area name and member count
 - [ ] Checkmark animation plays on load
 - [ ] Metro name displays correctly (with line wrapping if needed)
@@ -392,6 +425,7 @@ Join 12,503 verified members in your area
 - [ ] Back button (Android) shows confirmation dialog
 
 ### Visual Tests
+
 - [ ] Checkmark is centered and sized correctly (80×80px/dp)
 - [ ] Text is center-aligned and readable
 - [ ] Button is positioned at bottom with proper padding
@@ -399,6 +433,7 @@ Join 12,503 verified members in your area
 - [ ] Safe area insets respected (iPhone notch, Android nav bar)
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all elements in order
 - [ ] Checkmark announced as "Success"
 - [ ] Metro name and member count read correctly
@@ -406,6 +441,7 @@ Join 12,503 verified members in your area
 - [ ] Color contrast meets WCAG AA standards
 
 ### Animation Tests
+
 - [ ] Checkmark animation completes in ~600ms
 - [ ] Text fades in after checkmark (stagger effect)
 - [ ] Button appears last (~1 second total)
@@ -413,6 +449,7 @@ Join 12,503 verified members in your area
 - [ ] Haptic feedback triggers on iOS (optional)
 
 ### Edge Case Tests
+
 - [ ] Very long metro name wraps correctly
 - [ ] Zero member count shows alternative text
 - [ ] No member count data handled gracefully

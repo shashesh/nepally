@@ -5,6 +5,7 @@ Complete guide for deploying Nepally mobile and web applications to production.
 ## Overview
 
 Nepally deploys to three platforms:
+
 1. **Web App** → Vercel
 2. **iOS App** → Apple App Store
 3. **Android App** → Google Play Store
@@ -12,6 +13,7 @@ Nepally deploys to three platforms:
 ## Prerequisites
 
 Before deploying, ensure:
+
 - ✅ All tests passing
 - ✅ No TypeScript errors
 - ✅ Supabase project created and configured
@@ -99,6 +101,7 @@ Set these values:
 2. `VERCEL_PROJECT_ID` — single Vercel project used by both dev and production workflows
 
 You do **not** need two separate Vercel projects. One project handles both environments:
+
 - Dev deploys create Preview deployments (unique URL per deploy)
 - Production deploys promote to the Production domain (`nepally.us`)
 
@@ -140,6 +143,7 @@ Since GitHub Actions controls all deployments, Vercel's built-in Git integration
 ### 10. Monitor Deployment
 
 View deployment logs in Vercel dashboard:
+
 - **Deployments** tab shows all deployments
 - Click deployment to see logs
 - Check for build errors
@@ -173,32 +177,39 @@ Rollback options:
 ### 13. Troubleshooting (GitHub Actions + Vercel)
 
 1. **`Error: No existing credentials found` or token failures**
+
   - Confirm `VERCEL_TOKEN` is set in the correct GitHub environment (`dev` or `production`).
   - Regenerate the token in Vercel if it was rotated or revoked.
 
 2. **`Project not found` during `vercel pull`/`vercel deploy`**
+
   - Verify `VERCEL_ORG_ID` and project ID variables match the target Vercel team/project.
   - Ensure `VERCEL_PROJECT_ID` is set correctly in the repository variables (single project ID used by both dev and production workflows).
 
 3. **Production workflow starts but cannot deploy**
+
   - Check `production` GitHub environment protection rules for pending approvals.
   - Confirm the workflow was dispatched from `master`.
 
 4. **Build passes locally but fails in Actions**
+
   - Confirm lockfile is committed and `npm ci` is used.
   - Check Node version parity (workflows run Node 24).
   - Verify required env vars are present in Vercel for the target environment.
 
 5. **Dev deploy did not trigger after a merge**
+
   - Dev deploy uses `workflow_run` — it fires after CI completes on `master`.
   - Confirm CI ran successfully on the merge commit (check Actions → CI workflow).
   - If CI passed but deploy didn't run, the merge may not have changed web-relevant files (`apps/web/`, `packages/shared/`, `package.json`, `package-lock.json`). The deploy workflow skips non-web changes.
 
 6. **Production deploy blocked with missing checks**
+
   - CI runs automatically on push to `master`. Wait for CI to complete before triggering the production workflow.
   - Check CI status at Actions → CI workflow for the target commit.
 
 7. **Production deploy blocked with failed checks**
+
   - Open Actions for the target commit and ensure all required jobs are green:
     - `PR gate`
     - `Lint`
@@ -210,10 +221,12 @@ Rollback options:
   - Re-run CI or merge a fix PR, then retrigger the production workflow.
 
 8. **Wrong environment values in runtime**
+
   - Verify Vercel environment variable scopes (Preview vs Production).
   - Redeploy after env-var updates; Vercel does not retroactively apply new env values to old deployments.
 
 9. **Need urgent rollback**
+
   - Fastest path: redeploy the last known good production deployment from Vercel dashboard.
   - Controlled path: revert `master` and run the manual production workflow again.
 
@@ -270,6 +283,7 @@ The AsyncStorage keys still use the historical `@nusa:` prefix on purpose — re
 ### 4. Build iOS App
 
 #### Prerequisites for iOS:
+
 - **Apple Developer Account** ($99/year)
 - **App Store Connect** app registered
 - **Certificates and profiles** (EAS handles this automatically)
@@ -282,6 +296,7 @@ eas build --platform ios --profile production
 ```
 
 This:
+
 1. Uploads code to Expo servers
 2. Installs dependencies
 3. Compiles React Native to native iOS code
@@ -297,6 +312,7 @@ eas submit --platform ios
 ```
 
 You'll need:
+
 - Apple ID
 - App-specific password (generate in Apple ID settings)
 - Bundle identifier (e.g., `us.nepally.app`)
@@ -304,6 +320,7 @@ You'll need:
 ### 5. Build Android App
 
 #### Prerequisites for Android:
+
 - **Google Play Developer Account** ($25 one-time)
 - **Keystore** for signing (EAS generates automatically)
 
@@ -325,6 +342,7 @@ eas submit --platform android
 ```
 
 You'll need:
+
 - Google Play service account key (JSON file)
 - App bundle identifier (e.g., `us.nepally.app`)
 
@@ -428,6 +446,7 @@ npx supabase functions deploy
 ```
 
 This deploys all Edge Functions:
+
 - `expire-posts`
 - `verify-emergency-post`
 - `get-metro-by-zip`
@@ -529,6 +548,7 @@ jobs:
 ### 3. Automatic Deployments
 
 Now every push to `main` automatically:
+
 1. Builds and deploys web app to Vercel
 2. Builds mobile apps on Expo EAS
 3. Runs tests and linting
@@ -536,16 +556,19 @@ Now every push to `main` automatically:
 ## Environment Management
 
 ### Development
+
 - Local Supabase (via `npx supabase start`)
 - Test data
 - `.env.development`
 
 ### Staging
+
 - Separate Supabase project
 - Test data
 - `.env.staging`
 
 ### Production
+
 - Production Supabase project
 - Real data
 - `.env.production`
@@ -562,6 +585,7 @@ Now every push to `main` automatically:
 ### Mobile Apps
 
 1. For OTA updates:
+
    ```bash
    eas update --branch production --message "Rollback"
    ```

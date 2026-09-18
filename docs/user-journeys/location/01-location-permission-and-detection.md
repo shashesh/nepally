@@ -13,6 +13,7 @@
 **Trigger:** User opens the app for the first time (permission flow) or opens/foregrounds the app (detection flow).
 
 **Success Criteria:**
+
 - User understands why location is needed and grants permission
 - App correctly detects user's metro area from GPS
 - Location changes are detected and user is prompted to act
@@ -24,9 +25,11 @@
 ## Prerequisites
 
 **Must Complete First:**
+
 - App installed on device (mobile) or signup completed (web)
 
 **Should Have:**
+
 - Device GPS enabled (for automatic detection)
 - Internet connectivity (for reverse geocoding and metro lookup)
 
@@ -48,6 +51,7 @@
 
 **Screen:** Location Permission Screen (new)
 **User sees:**
+
 - Nepally logo at top
 - Map pin illustration
 - Headline: "Nepally works best with your location"
@@ -58,6 +62,7 @@
 **User action:** Taps "Enable Location"
 
 **System response:**
+
 - Native Android location permission dialog appears
 - "Allow Nepally to access this device's location?"
 - Options: "While using the app" / "Only this time" / "Don't allow"
@@ -65,6 +70,7 @@
 **User action:** Selects "While using the app"
 
 **System response:**
+
 - Permission granted flag saved to local storage
 - GPS coordinates fetched (lat: 33.4484, lng: -112.0740)
 - Reverse geocode returns ZIP: "85004"
@@ -72,6 +78,7 @@
 - Transition to onboarding with metro area pre-filled
 
 **Edge cases:**
+
 - GPS takes too long (>5 seconds): Show spinner → "Getting your location..." → after 10s timeout, fall back to manual ZIP entry with message: "We couldn't detect your location. Please enter your ZIP code."
 - Reverse geocode returns ZIP not in database: Fall back to manual ZIP entry with message: "We couldn't find your metro area. Please enter your ZIP code."
 
@@ -79,6 +86,7 @@
 
 **Screen:** MetroConfirmationScreen (existing, modified)
 **User sees:**
+
 - "We found your community!"
 - Metro area name: "Phoenix-Mesa-Chandler, AZ"
 - Body: "Based on your location" (instead of "Based on your ZIP code")
@@ -88,6 +96,7 @@
 **User action:** Taps "Confirm"
 
 **System response:**
+
 - User profile updated: `metro_area_id = "38060"`, `zip_code = "85004"`
 - Saved location created: `{ name: "Home", metro_area_id: "38060", zip_code: "85004", is_default: true }`
 - Proceed to Tutorial screen
@@ -97,6 +106,7 @@
 
 **Screen:** HomeScreen
 **User sees:**
+
 - Header: "Phoenix-Mesa-Chandler" with dropdown arrow (tappable)
 - Local feed with posts from Phoenix metro area
 - No location banner (permission was granted)
@@ -124,6 +134,7 @@
 **User action:** Taps "Not Now"
 
 **System response:**
+
 - Permission screen flag set (don't show again)
 - Skip GPS detection
 - Proceed to standard onboarding (Welcome screen)
@@ -140,6 +151,7 @@
 
 **Screen:** HomeScreen
 **User sees:**
+
 - Header: "Seattle-Tacoma-Bellevue" with dropdown arrow
 - **New banner below header:** "Enable location for a better experience" [Turn On] [X]
   - Subtle, non-intrusive, dismissible
@@ -148,18 +160,21 @@
 **User action:** Taps [X] to dismiss
 
 **System response:**
+
 - Banner hidden
 - Dismiss count incremented (now 1 of 3 max)
 - `lastDismissed` timestamp saved
 - Banner won't appear again for 7 days
 
 **Future behavior:**
+
 - After 7 days, banner shows again on home screen visit (dismiss count 2)
 - After 3rd dismissal, banner never shows again
 
 #### Step 3b (alternate): User taps "Turn On"
 
 **System response:**
+
 - iOS: Opens app Settings page (deep link to Nepally in iOS Settings)
 - User enables location permission in system settings
 - On return to app: GPS check runs, location detected
@@ -186,6 +201,7 @@
 **Trigger:** Rajesh opens Nepally while in Houston
 
 **System behavior (invisible to user):**
+
 1. App opens → foreground detection hook fires
 2. Check: location permission granted? Yes
 3. Check: manual override active? No (fresh app open)
@@ -199,6 +215,7 @@
 
 **Screen:** Bottom sheet overlay on HomeScreen
 **User sees:**
+
 - Location pin icon
 - "It looks like you're in Houston"
 - "Would you like to see community posts from this area?"
@@ -211,6 +228,7 @@
 **Option A: User taps "Browse Houston" (temporary)**
 
 **System response:**
+
 - Feed switches to Houston metro area (session only)
 - Header changes to: "Houston-The Woodlands (Visiting)"
 - "Visiting" badge shown in a lighter color
@@ -221,6 +239,7 @@
 **Option B: User taps "Update My Location" (permanent)**
 
 **System response:**
+
 - User's `metro_area_id` updated to "26420" in database
 - Secondary prompt appears: "Save Houston as a location?"
   - Name input pre-filled with "Houston" (or next available default name)
@@ -232,6 +251,7 @@
 **Option C: User taps "Keep Dallas"**
 
 **System response:**
+
 - Prompt dismissed
 - Feed stays on Dallas
 - If "Don't ask for 24 hours" was checked: snooze record saved for metro "26420"
@@ -248,6 +268,7 @@
 **Background:** Lives in Newark (New York metro), works in Philadelphia metro. Commutes weekly. Has both locations saved.
 **Device:** iPhone 16
 **Saved Locations:**
+
 1. "Home" — New York-Newark (CBSA: 35620) [default]
 2. "Work" — Philadelphia-Camden (CBSA: 37980)
 
@@ -259,6 +280,7 @@
 
 **Screen:** Location Switcher Bottom Sheet
 **User sees:**
+
 - Section: "Current Location"
   - GPS dot + "Philadelphia-Camden, PA" (detected via GPS)
   - "Switch to detected location" tappable link
@@ -271,6 +293,7 @@
 **User action:** Taps "Work — Philadelphia-Camden"
 
 **System response:**
+
 - Feed immediately switches to Philadelphia metro posts
 - Header updates to "Philadelphia-Camden"
 - Manual override flag set (won't prompt about location mismatch this session)
@@ -282,6 +305,7 @@
 
 **Screen:** Add Location modal/screen
 **User sees:**
+
 - Search input: "Search by metro name or ZIP code"
 - As user types "Bos", results filter:
   - "Boston-Cambridge-Newton, MA"
@@ -291,6 +315,7 @@
 **User action:** Selects "Boston-Cambridge-Newton"
 
 **System response:**
+
 - Name input appears: "What should we call this location?"
 - Suggested name: "School" (next available default)
 - User types: "Mom's Place"
@@ -304,6 +329,7 @@
 
 **Screen:** Location Management Screen
 **User sees:**
+
 - List of saved locations with edit/delete options:
   1. "Home" — New York-Newark, NY [star icon = default] [Edit] [Delete disabled — is default]
   2. "Work" — Philadelphia-Camden, PA [Edit] [Delete]
@@ -318,15 +344,18 @@
 **User action:** Taps delete on "Mom's Place"
 
 **System response:**
+
 - Confirmation: "Remove Mom's Place (Boston-Cambridge-Newton)?"
 - "Remove" / "Cancel" buttons
 - After confirm: location removed, list updates to 2 items
 
 **Edge case — deleting the active non-default location:**
+
 - Feed switches to default location
 - Header updates accordingly
 
 **Edge case — deleting default location:**
+
 - Not allowed if it's the only location (delete button disabled)
 - If 2+ locations: "Choose a new default location" picker appears before deletion
 
@@ -350,12 +379,14 @@
 
 **Page:** Feed page
 **User sees:**
+
 - Browser's native geolocation permission bar: "nepally.us wants to know your location" [Allow] [Block]
 - Behind the permission bar, a banner on the page: "Allow location access to see posts near you"
 
 **Option A: User clicks "Allow"**
 
 **System response:**
+
 - Browser provides GPS coordinates
 - Reverse geocode → ZIP → metro area lookup
 - Feed loads with detected metro area
@@ -365,6 +396,7 @@
 **Option B: User clicks "Block"**
 
 **System response:**
+
 - Falls back to the user's profile metro area (from onboarding)
 - If no metro area set: shows metro area picker (search input + dropdown)
 - Banner: "Enable location in browser settings for automatic detection" (dismissible, same 3-show limit)
@@ -375,6 +407,7 @@
 
 **UI:** Dropdown popover (not bottom sheet — web pattern)
 **User sees:**
+
 - Current detected location (if geolocation active)
 - Saved locations list
 - Search input to find/add a metro area

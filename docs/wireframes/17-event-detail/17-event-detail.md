@@ -12,6 +12,7 @@
 The Event Detail screen shows the complete information for a single event and is the primary surface for RSVPs. Users arrive by tapping an event card in the Events List.
 
 **Key Goals:**
+
 - Display all event information needed to decide whether to attend
 - Enable RSVP with a single tap (Level 1+)
 - Surface organizer identity and provide a path to message them
@@ -352,6 +353,7 @@ The Event Detail screen shows the complete information for a single event and is
 ### State 8: Attendee List Modal (Public RSVP)
 
 ::: modal
+
 ## 34 Going
 
 ---
@@ -378,6 +380,7 @@ The Event Detail screen shows the complete information for a single event and is
 ### State 9: Cancel Event Confirmation
 
 ::: modal
+
 ## Cancel This Event?
 
 Attendees will see this event as cancelled. Their RSVPs will be preserved.
@@ -392,6 +395,7 @@ Attendees will see this event as cancelled. Their RSVPs will be preserved.
 ### State 10: Delete Event Confirmation
 
 ::: modal
+
 ## Delete This Event?
 
 This will permanently remove the event from all feeds. Attendees will not be notified.
@@ -406,6 +410,7 @@ This will permanently remove the event from all feeds. Attendees will not be not
 ### State 11: Un-RSVP Confirmation
 
 ::: modal
+
 ## Can't Make It?
 
 Remove your RSVP for **Teej Festival 2026**?
@@ -426,6 +431,7 @@ Remove your RSVP for **Teej Festival 2026**?
 ## Event Detail {.grid-2}
 
 ### Left Column — Event Info
+
 ::: hero
 ![Event photo](assets/event-photo-placeholder.png)
 :::
@@ -444,6 +450,7 @@ Remove your RSVP for **Teej Festival 2026**?
 *Teej is a celebrated festival observed by Hindu women and girls. Join our community for an evening of traditional songs, dance, and feasting...*
 
 ### Right Column — Actions & Organizer
+
 ::: card
 **Organizer**
 
@@ -483,9 +490,11 @@ Remove your RSVP for **Teej Festival 2026**?
 
 **Left:** Back arrow (←) — taps to pop screen, returns to Events List
 **Right:** Report button (:flag: icon, 24px, #757575) — opens report flow
+
 - For event organizer: Report replaced by three-dot menu (⋮) with Edit / Cancel / Delete
 
 **a11y:**
+
 - Back: "Back to Events, button"
 - Report: "Report event, button"
 - Three-dot (organizer): "More options, button"
@@ -502,6 +511,7 @@ Remove your RSVP for **Teej Festival 2026**?
 | **Object Fit** | Cover | centerCrop | Cover |
 
 **Fallback (no photo uploaded):**
+
 - Event-type illustration with subtle color background matching event type
   - Cultural: warm orange gradient + stylized dhaka pattern silhouette
   - Religious: purple gradient + diya silhouette
@@ -516,6 +526,7 @@ Remove your RSVP for **Teej Festival 2026**?
 ### 3. Event Type Badge + Scope Badge Row
 
 Below hero image, horizontal row:
+
 - **Left:** Event type badge (same color scheme as events list)
 - **Right:** 📍 Local or 🌐 Global badge
 
@@ -592,6 +603,7 @@ For **past** events: "*(Ended)*" appended, #757575
 | **Layout** | [Avatar] [Name] [✓] ........... [Message Organizer] |
 
 **"Message Organizer" button:**
+
 - Outline style, 13pt/12sp Semibold, #1565C0
 - Level 1+: taps to open/create chat with organizer
 - Level 0: button hidden; replaced with "Verify to message" text link
@@ -606,6 +618,7 @@ For **past** events: "*(Ended)*" appended, #757575
 **Section header:** "Attendance" (15pt/14sp Semibold, #212121)
 
 #### When RSVP is Public:
+
 - Avatar stack: up to 5 circular avatars (24px each, overlapping by 8px)
   - Photos or initials, same avatar component used app-wide
 - RSVP count label: "[N] going" (15pt/14sp Regular, #757575)
@@ -615,12 +628,14 @@ For **past** events: "*(Ended)*" appended, #757575
 - Empty state: "Be the first to RSVP!"
 
 #### When RSVP is Private:
+
 - No avatar stack shown
 - Only: "[N] going" text, center or left aligned
 - No "View all attendees" button
 - Empty state: "No RSVPs yet"
 
 #### Organizer View (regardless of privacy):
+
 - Section header: "Attendance — [N] RSVPs"
 - Always shows full avatar stack and "View all attendees" button
 - Tap "View all attendees" shows full list (organizer always sees names)
@@ -640,11 +655,13 @@ For **past** events: "*(Ended)*" appended, #757575
 | Level 0 | "Verify to RSVP" | Disabled outline | Tap → verification prompt |
 
 **Going state layout:** Two buttons side by side: [Going ✓] (success, left) + [Can't make it] (outline, right)
+
 - Tapping "Can't make it" shows un-RSVP confirmation modal before removing
 
 **Optimistic UI:** Button state updates immediately on tap; reverts with error toast on failure.
 
 **a11y:**
+
 - Default: "RSVP button. I'm going. Double-tap to confirm attendance."
 - Going: "You are going. Double-tap to remove RSVP."
 - Disabled: "Event has passed. Cannot RSVP."
@@ -700,6 +717,7 @@ For **past** events: "*(Ended)*" appended, #757575
 ## User Interactions
 
 ### Primary Flow (View & RSVP)
+
 1. User taps event card in Events List → navigates to Event Detail (slide-in animation)
 2. Screen loads with hero image, title, date/time, location, description
 3. User scrolls down to see organizer and attendance info
@@ -709,34 +727,40 @@ For **past** events: "*(Ended)*" appended, #757575
 7. User can tap "Can't make it" → confirmation modal → removes RSVP
 
 ### Alternative Flow (Message Organizer)
+
 1. User taps "Message Organizer" button
 2. If existing conversation with this organizer: opens that conversation
 3. If new conversation: creates conversation, navigates to message thread
 4. Level 0 user: "Verify to message" taps → navigates to verification flow
 
 ### Alternative Flow (View Organizer Profile)
+
 1. User taps organizer avatar or name
 2. Navigates to organizer's Public Profile screen
 3. Shows organizer's events, posts, masked name, trust badge
 
 ### Alternative Flow (Edit Event — Organizer)
+
 1. Organizer taps ⋮ menu → "Edit Event"
 2. Navigates to Create Event form, pre-filled with current data
 3. Organizer edits fields, saves
 4. Returns to Event Detail with updated content + "Edited" label
 
 ### Alternative Flow (Cancel Event — Organizer)
+
 1. Organizer taps ⋮ menu → "Cancel Event"
 2. Confirmation modal: "Cancel this event? Attendees will see this event as cancelled."
 3. Organizer taps "Yes, Cancel It" → event status set to 'cancelled'
 4. Detail screen updates: red "Cancelled" banner, strikethrough on title/date, RSVP button hidden
 
 ### Alternative Flow (Delete Event — Organizer)
+
 1. Organizer taps ⋮ menu → "Delete Event"
 2. Confirmation modal (destructive): "Delete this event? This permanently removes the event."
 3. Organizer taps "Delete" → navigated back to Events List; event no longer appears
 
 ### Alternative Flow (View Attendees)
+
 1. User taps "View all attendees" (public RSVP events only)
 2. Attendee list modal/sheet slides up
 3. Scrollable list of masked names + avatars + trust badges
@@ -788,6 +812,7 @@ For **past** events: "*(Ended)*" appended, #757575
 ## Accessibility
 
 ### Screen Reader Order (Mobile)
+
 1. "Back to Events, button."
 2. "Report event, button." (or "More options, button" for organizer)
 3. "Event photo." (or "Teej Festival illustration.")
@@ -803,6 +828,7 @@ For **past** events: "*(Ended)*" appended, #757575
 13. "RSVP, I'm going, button." (or "Going, you are attending. Remove RSVP, button.")
 
 ### Touch Targets
+
 - Back arrow: 44×44pt / 48×48dp
 - Report/three-dot: 44×44pt / 48×48dp
 - Organizer avatar: 44×44pt / 48×48dp (larger touch target than 40px visual)
@@ -811,6 +837,7 @@ For **past** events: "*(Ended)*" appended, #757575
 - RSVP button: 48px height × full width — exceeds minimum
 
 ### Color Contrast (WCAG)
+
 | Element | Foreground | Background | Ratio | Level |
 |---------|-----------|-----------|-------|-------|
 | Event title | #212121 | #FFFFFF | 16.9:1 | AAA ✓ |
@@ -882,6 +909,7 @@ For **past** events: "*(Ended)*" appended, #757575
 ## Technical Notes
 
 ### Screen Identifiers
+
 - Mobile: `EventDetailScreen` (registered in HomeStack)
 - Web route: `/events/[id]`
 
@@ -905,6 +933,7 @@ For **past** events: "*(Ended)*" appended, #757575
 ```
 
 ### API Calls
+
 - **On mount:** `getEventById(supabase, eventId)` — includes organizer join
 - **RSVP toggle:** `rsvpToEvent()` or `unrsvpFromEvent()` — optimistic
 - **Load attendees:** `getEventAttendees(supabase, eventId)` — on demand only
@@ -934,6 +963,7 @@ For **past** events: "*(Ended)*" appended, #757575
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Event loads with all fields: title, date/time, location, description, photo
 - [ ] Hero image shows event photo; fallback illustration shown when no photo
 - [ ] Date formats correctly for single-day, multi-day, with/without end time
@@ -957,6 +987,7 @@ For **past** events: "*(Ended)*" appended, #757575
 - [ ] Global event: 🌐 Global badge shown (not 📍 Local)
 
 ### Visual Tests
+
 - [ ] Hero image is full width, 220px tall
 - [ ] Type badge and scope badge on same row, correct colors
 - [ ] RSVP "Going ✓" button is green (#2E7D32)
@@ -966,6 +997,7 @@ For **past** events: "*(Ended)*" appended, #757575
 - [ ] Muted type badge for cancelled events
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all sections in correct order
 - [ ] RSVP button announces correct state ("going" vs "not going")
 - [ ] Trust badge announced alongside organizer name
@@ -973,6 +1005,7 @@ For **past** events: "*(Ended)*" appended, #757575
 - [ ] All touch targets meet 44pt/48dp minimum
 
 ### Edge Case Tests
+
 - [ ] Event not found → error screen with "Back to Events" button
 - [ ] Network error on load → retry option shown
 - [ ] RSVP network error → optimistic state reverted, toast shown

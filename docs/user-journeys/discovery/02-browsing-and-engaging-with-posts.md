@@ -13,6 +13,7 @@
 **Trigger:** User opens app and lands on home feed, or navigates to Home tab.
 
 **Success Criteria:**
+
 - User successfully browses posts with enhanced information (author, description preview)
 - User understands social signals (likes, comments count)
 - User can like posts to bookmark and indicate helpfulness
@@ -23,10 +24,12 @@
 ## Prerequisites
 
 **Must Complete First:**
+
 - User Journey #01: Signup and Onboarding (account created, metro area set)
 - User Journey #02: Phone Verification (trust level 1 achieved) - OR - User can only view, not interact
 
 **Should Have:**
+
 - Active posts in user's metro area
 - User's trust level is 1+ (for likes and comments)
 
@@ -45,6 +48,7 @@
 **Context:** Rajesh is sitting in his living room on Sunday morning, browsing Nepally to find housing posts. He wants to find someone looking for a roommate in his apartment complex or nearby. He also wants to check the credibility of posts by seeing who posted them and what others think (likes, comments).
 
 **Goals:**
+
 1. Find a reliable Nepali roommate
 2. Ask questions about housing arrangements publicly (so others can benefit from the answers)
 3. Like posts that seem promising so he can find them later
@@ -55,11 +59,13 @@
 ### Phase 1: Opening App and Viewing Enhanced Home Feed
 
 #### Step 1: Open App and Land on Home Screen
+
 **User Action:** Rajesh opens the Nepally app from his iPhone home screen.
 
 **System Response:** App loads and displays Home screen with enhanced post feed.
 
 **User Sees:**
+
 - Header: "Dallas-Fort Worth-Arlington, TX" with location pin icon
 - Search icon (top-right)
 - Notifications bell icon (top-right)
@@ -81,6 +87,7 @@
 **Duration:** 2 seconds (app loads)
 
 **User Thoughts:**
+
 - "Oh nice, I can now see who posted each listing"
 - "This post has 12 likes and 3 comments, seems legit"
 - "I can read a bit of the description without clicking in"
@@ -92,11 +99,13 @@
 ---
 
 #### Step 2: Browse Feed and Assess Post Quality
+
 **User Action:** Rajesh scrolls through the feed, reading post cards.
 
 **System Response:** Feed scrolls smoothly, loading more posts as he reaches the bottom (pagination).
 
 **User Sees:**
+
 - Multiple post cards with varying engagement:
   - Post A: 24 likes, 8 comments (high engagement)
   - Post B: 2 likes, 0 comments (new or low quality)
@@ -107,6 +116,7 @@
 **Duration:** 1-2 minutes (browsing 8-10 posts)
 
 **User Thoughts:**
+
 - "Posts with more likes probably have better info"
 - "I recognize some names from the community"
 - "The description previews save me time - I don't have to click into every post"
@@ -120,15 +130,18 @@
 ### Phase 2: Liking a Post
 
 #### Step 3: Like a Promising Post
+
 **User Action:** Rajesh sees a post from "Sita Gurung" offering a room in his preferred area (near UTD). He taps the heart icon to like it.
 
 **System Response:** 
+
 - Heart icon animates (scales up, fills with red color)
 - Like count increments: "12" → "13"
 - System saves like record to database
 - Post is bookmarked for Rajesh to find later (future: "Liked Posts" filter)
 
 **User Sees:**
+
 - Heart icon now filled (solid red)
 - Updated count "13"
 - Smooth animation provides feedback
@@ -136,12 +149,14 @@
 **Duration:** < 1 second (instant feedback)
 
 **User Thoughts:**
+
 - "Good, I've marked this one. I'll come back to it later"
 - "Helpful to see my likes count toward the post's credibility"
 
 **Pain Points:** None
 
 **Validation/Constraints:**
+
 - User must be Level 1+ (Rajesh is, so no issue)
 - User can only like once (enforced by database constraint)
 
@@ -150,25 +165,30 @@
 ---
 
 #### Step 4: Unlike a Post (Change of Mind)
+
 **User Action:** Rajesh continues scrolling and finds a better post. He goes back to the previous post and taps the heart icon again to unlike it.
 
 **System Response:**
+
 - Heart icon animates (unfills back to outline)
 - Like count decrements: "13" → "12"
 - System deletes like record from database
 
 **User Sees:**
+
 - Heart icon now outline (not filled)
 - Updated count "12"
 
 **Duration:** < 1 second (instant feedback)
 
 **User Thoughts:**
+
 - "Easy to change my mind"
 
 **Pain Points:** None
 
 **Validation/Constraints:**
+
 - Can only unlike posts user has already liked
 
 **API Call:** `DELETE /api/likes { post_id, user_id }`
@@ -178,11 +198,13 @@
 ### Phase 3: Viewing Post Details and Comments
 
 #### Step 5: Tap on Post to View Full Details
+
 **User Action:** Rajesh taps on a post card from "Sita Gurung" to see full details.
 
 **System Response:** Navigate to PostDetailScreen.
 
 **User Sees:**
+
 - **Header:** Post title + back button
 - **Top section (interaction-first):**
   - Author avatar + full name "Sita Gurung" + verified badge + subtle "Posted 2h ago"
@@ -208,6 +230,7 @@
 **Duration:** 3 seconds (screen transition + content load)
 
 **User Thoughts:**
+
 - "Good, I can see the full details now"
 - "Sita already answered a question about parking publicly - helpful!"
 - "I have a question too, let me ask in comments so others can see"
@@ -219,11 +242,13 @@
 ---
 
 #### Step 6: Read Existing Comments
+
 **User Action:** Rajesh scrolls down to read the comments section.
 
 **System Response:** Comments list is already loaded and visible.
 
 **User Sees:**
+
 - Top-level comments ordered by most recent activity (new replies bump parent threads)
 - Helpful context: Priya asked about parking, Sita (author) replied
 - Ram expressed interest
@@ -231,6 +256,7 @@
 **Duration:** 10 seconds (reading comments)
 
 **User Thoughts:**
+
 - "Good to see the author is responsive"
 - "Parking is included - that's great!"
 - "Seems like a legitimate post with real engagement"
@@ -244,15 +270,18 @@
 ### Phase 4: Adding a Public Comment
 
 #### Step 7: Write a Comment
+
 **User Action:** Rajesh taps on the comment input box and types: "Hi Sita! I'm also at UTD doing MS in CS. Do you have any pet restrictions?"
 
 **System Response:** 
+
 - Keyboard opens
 - Text input accepts typing
 - Character counter updates: "0/1000" → "87/1000"
 - Send button becomes enabled (blue, tappable)
 
 **User Sees:**
+
 - Active text input with his typed message
 - Character counter showing remaining space
 - Enabled send button
@@ -260,21 +289,25 @@
 **Duration:** 15 seconds (typing)
 
 **User Thoughts:**
+
 - "I'll ask this publicly so others know too"
 - "Character limit is generous, I can write detailed questions"
 
 **Pain Points:** None
 
 **Validation/Constraints:**
+
 - Comment must be 1-1000 characters
 - User must be Level 1+ (Rajesh is verified, so no issue)
 
 ---
 
 #### Step 8: Submit Comment
+
 **User Action:** Rajesh taps the send button.
 
 **System Response:**
+
 - Comment appears in the list immediately (optimistic update)
   - Avatar: Rajesh's initials "RT"
   - Name: "Rajesh Thapa" + verified badge
@@ -288,6 +321,7 @@
 - Section header updates: "Comments (3)" → "Comments (4)"
 
 **User Sees:**
+
 - His comment now appears in the list
 - Empty input box (ready for more comments)
 - Updated comment count
@@ -295,12 +329,14 @@
 **Duration:** < 1 second (instant feedback)
 
 **User Thoughts:**
+
 - "Great! My question is posted for everyone to see"
 - "Hopefully Sita responds soon"
 
 **Pain Points:** None
 
 **Validation/Constraints:**
+
 - User must be Level 1+ (enforced by RLS policy)
 
 **API Call:** `POST /api/comments { post_id, author_id, content }`
@@ -311,9 +347,11 @@
 ### Phase 5: Interacting with Own Comment
 
 #### Step 9: Delete Own Comment (Optional)
+
 **User Action:** Rajesh realizes he made a typo and wants to delete his comment. He taps the trash icon next to his comment.
 
 **System Response:**
+
 - Confirmation dialog appears:
   - Title: "Delete Comment"
   - Message: "Are you sure you want to delete this comment? This cannot be undone."
@@ -324,6 +362,7 @@
 **Duration:** < 1 second
 
 **User Thoughts:**
+
 - "Better confirm before deleting"
 
 **Pain Points:** None
@@ -333,9 +372,11 @@
 ---
 
 #### Step 10: Confirm Deletion
+
 **User Action:** Rajesh taps "Delete" button.
 
 **System Response:**
+
 - Dialog dismisses
 - Comment removed from list (fade-out animation)
 - Post's comments_count decrements: "4" → "3"
@@ -343,6 +384,7 @@
 - System soft-deletes comment in database (is_deleted = true)
 
 **User Sees:**
+
 - Comment disappears from list
 - Updated comment count
 - Can post a new corrected comment if desired
@@ -350,12 +392,14 @@
 **Duration:** < 1 second
 
 **User Thoughts:**
+
 - "Clean removal, no clutter"
 - "I can post a corrected comment now"
 
 **Pain Points:** None
 
 **Validation/Constraints:**
+
 - Can only delete own comments (enforced by RLS policy)
 
 **API Call:** `DELETE /api/comments/:commentId`
@@ -365,11 +409,13 @@
 ### Phase 6: Navigating Back to Home Feed
 
 #### Step 11: Return to Home Feed
+
 **User Action:** Rajesh taps the back button to return to the home feed.
 
 **System Response:** Navigate back to HomeScreen (home feed).
 
 **User Sees:**
+
 - Home feed with same scroll position (or top of feed)
 - Post he just viewed now shows:
   - Updated like count (if he liked it)
@@ -379,6 +425,7 @@
 **Duration:** < 1 second (screen transition)
 
 **User Thoughts:**
+
 - "Good, I can continue browsing"
 - "I can see my like/comment reflected on the card"
 
@@ -391,16 +438,19 @@
 ### Phase 7: Level 0 User Experience (Comparison)
 
 #### Step 12: Level 0 User Attempts to Like a Post
+
 **User Context:** Imagine Rajesh was still Level 0 (not verified).
 
 **User Action:** Taps heart icon on a post card.
 
 **System Response:**
+
 - Heart icon does NOT fill (disabled state)
 - Toast message appears: "Verify your account to like posts"
 - No like record created
 
 **User Sees:**
+
 - Toast notification at bottom: "Verify your account to like posts"
 - Heart icon remains outline (disabled, grayed out)
 - Prompt to verify account
@@ -408,39 +458,46 @@
 **Duration:** 2 seconds (toast display)
 
 **User Thoughts:**
+
 - "I need to verify to interact with posts"
 - "Makes sense for spam prevention"
 
 **Pain Points:** Minor friction, but encourages verification
 
 **Validation/Constraints:**
+
 - Only Level 1+ users can like posts
 
 ---
 
 #### Step 13: Level 0 User Attempts to Comment
+
 **User Context:** Imagine Rajesh was Level 0 on PostDetailScreen.
 
 **User Action:** Taps on comment input box.
 
 **System Response:**
+
 - Comment input is disabled (grayed out)
 - Placeholder text: "Verify your account to comment"
 - Toast message: "Complete verification to comment on posts"
 
 **User Sees:**
+
 - Disabled input with prompt
 - Toast notification
 
 **Duration:** 2 seconds
 
 **User Thoughts:**
+
 - "I can read comments but not post yet"
 - "Let me verify my account"
 
 **Pain Points:** Encourages verification (intentional friction)
 
 **Validation/Constraints:**
+
 - Only Level 1+ users can comment
 
 ---
@@ -448,6 +505,7 @@
 ## Journey Completion
 
 **Final Outcome:**
+
 - ✅ Rajesh successfully browsed enhanced post feed with author info and engagement signals
 - ✅ Rajesh liked a post to bookmark it and indicate helpfulness
 - ✅ Rajesh read existing comments to learn more about the post
@@ -456,12 +514,14 @@
 - ✅ Rajesh can navigate between home feed and post details seamlessly
 
 **Next Steps for User:**
+
 - Wait for author to reply to his comment
 - Message authors of liked posts via chat
 - Continue browsing for more housing options
 - Return to "Liked Posts" filter later (future feature)
 
 **Success Indicators:**
+
 - User engaged with 2-3 posts
 - User liked 1-2 posts
 - User commented on 1 post
@@ -472,16 +532,19 @@
 ## User Insights
 
 ### Pain Points Discovered
+
 1. **None identified** - Enhanced post cards provide all needed context
 2. **Minor:** Level 0 users may feel friction when trying to engage, but this is intentional for spam prevention
 
 ### Positive Feedback
+
 1. "Seeing likes and comments helps me trust posts more"
 2. "Description previews save me time - I don't have to click into every post"
 3. "Public comments let me learn from others' questions"
 4. "Liking posts is a quick way to bookmark for later"
 
 ### Opportunities
+
 1. **Future:** Add "Liked Posts" filter to home feed for easy access to bookmarked posts
 2. **Future:** Add real-time comment updates so author responses appear instantly
 3. **Future:** Show "Liked by [mutual friends]" for social proof
@@ -517,11 +580,13 @@
 ## Dependencies
 
 **Completed:**
+
 - User Journey #01: Signup and Onboarding
 - Feature 5.1-5.4: Post viewing on home feed
 - Feature 8.1-8.7: In-app chat (private messaging)
 
 **Blocked By:**
+
 - Feature 3.5: Profile photo upload (avatar display dependson this)
 - Feature 5.9-5.11: Enhanced post cards, likes, comments (this journey tests these features)
 

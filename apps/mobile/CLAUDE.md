@@ -27,6 +27,7 @@ the intermediate re-render as "pending work" and re-enters its flush loop, which
 **Component-level fix — cancel guard to prevent setState after unmount:**
 
 For `useCallback` + `useEffect` (shared fetch function called from multiple effects):
+
 ```typescript
 const mountedRef = useRef(true);
 useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -38,6 +39,7 @@ const fetchData = useCallback(async () => {
 ```
 
 For inline async IIFE in `useEffect`:
+
 ```typescript
 useEffect(() => {
   let cancelled = false;
@@ -50,6 +52,7 @@ useEffect(() => {
 ```
 
 **Test-level fix — `render()` + `waitFor()`, zero `act()` calls:**
+
 ```typescript
 const screen = render(<Component />);
 await waitFor(() => {
@@ -61,6 +64,7 @@ await waitFor(() => { expect(mockFn).toHaveBeenCalled(); });
 ```
 
 **Additional test-file requirements:**
+
 - Add a local `jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }))` in every
   marketplace test file (global mock alone is insufficient for CI).
 - Use `children?: React.ReactNode` (not `children: unknown`) in SafeAreaView mocks.
@@ -73,6 +77,7 @@ ListingDetailScreen, CreateListingScreen, MarketplaceCategoryScreen, Marketplace
 MyListingsScreen.
 
 ### Global test setup (`jest.setup.ts` already handles)
+
 - `RNTL_SKIP_AUTO_CLEANUP`, synchronous `cleanup()` + event-loop yield in `afterEach`
 - `jest.clearAllTimers()` after cleanup, `jest.useRealTimers()` in `beforeEach`
 - Global `@expo/vector-icons` mock

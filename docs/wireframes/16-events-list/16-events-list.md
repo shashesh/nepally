@@ -12,6 +12,7 @@
 The Events List is the entry point to all community events. It replaces the current "Coming Soon" placeholder in the Events tab. Users see a chronological, filterable list of upcoming events in their metro area (plus global events).
 
 **Key Goals:**
+
 - Surface local community events in a familiar, feed-style layout
 - Enable quick filtering by event type (Cultural, Religious, Social, Career)
 - Let Level 1+ users RSVP directly from the list (via event detail)
@@ -38,6 +39,7 @@ The Events List is the entry point to all community events. It replaces the curr
 🎭 Cultural {.badge-cultural}
 
 ### Teej Festival 2026
+
 📅 Sat, Aug 29 · 6:00 PM
 
 📍 Dallas Convention Center, Dallas, TX
@@ -51,6 +53,7 @@ The Events List is the entry point to all community events. It replaces the curr
 💼 Career {.badge-career} &emsp; 🌐 Global {.badge-global}
 
 ### Nepali Professionals Mixer
+
 📅 Fri, Sep 5 · 7:00 PM
 
 📍 Plano Community Hall
@@ -64,6 +67,7 @@ The Events List is the entry point to all community events. It replaces the curr
 🛐 Religious {.badge-religious}
 
 ### Dashain Gathering
+
 📅 Sun, Sep 14 · 11:00 AM – 4:00 PM
 
 📍 Irving Cultural Center
@@ -77,6 +81,7 @@ The Events List is the entry point to all community events. It replaces the curr
 🤝 Social {.badge-social}
 
 ### Nepali Food & Fun Meetup
+
 📅 Sat, Sep 20 · 5:00 PM
 
 📍 Frisco Community Park
@@ -100,6 +105,7 @@ The Events List is the entry point to all community events. It replaces the curr
 🎭 Cultural {.badge-cultural-muted}
 
 ### ~~Holi Celebration 2026~~ — Past
+
 📅 Sat, Mar 14 · 4:00 PM &emsp; *Ended*
 
 📍 Addison Park, Dallas
@@ -127,6 +133,7 @@ The Events List is the entry point to all community events. It replaces the curr
 🎭 Cultural {.badge-cultural}
 
 ### Teej Festival 2026
+
 📅 Sat, Aug 29 · 6:00 PM
 
 📍 Dallas Convention Center, Dallas, TX
@@ -140,6 +147,7 @@ The Events List is the entry point to all community events. It replaces the curr
 🎭 Cultural {.badge-cultural}
 
 ### Dashain Puja Night
+
 📅 Fri, Oct 3 · 7:30 PM
 
 📍 Richardson Nepali Community Center
@@ -255,6 +263,7 @@ Try a different type or check back later.
 🎭 Cultural {.badge-cultural}
 
 ### Teej Festival 2026
+
 📅 Sat, Aug 29 · 6:00 PM
 
 📍 Dallas Convention Center, Dallas, TX
@@ -268,6 +277,7 @@ Try a different type or check back later.
 💼 Career {.badge-career} &emsp; 🌐 Global {.badge-global}
 
 ### Nepali Professionals Mixer
+
 📅 Fri, Sep 5 · 7:00 PM
 
 📍 Plano Community Hall
@@ -297,6 +307,7 @@ Try a different type or check back later.
 🎭 Cultural {.badge-cultural}
 
 ### Teej Festival 2026
+
 📅 Sat, Aug 29 · 6:00 PM
 
 📍 Dallas Convention Center, Dallas, TX
@@ -311,6 +322,7 @@ Try a different type or check back later.
 ### State 9: More Filters Bottom Sheet
 
 ::: modal
+
 #### Filter by Event Type
 
 - (*) All
@@ -334,6 +346,7 @@ Try a different type or check back later.
 ## Events {.grid-2}
 
 ### Sidebar
+
 **Filter by Type**
 
 - (*) All Events
@@ -350,6 +363,7 @@ Try a different type or check back later.
 Dallas-Fort Worth ▼
 
 ### Main Feed
+
 ::: card
 ![Teej Festival thumbnail](assets/event-thumbnail-cultural.png)
 
@@ -392,15 +406,18 @@ by Rohan S. ✓ &emsp; 12 going
 | **Border** | 1px bottom #E0E0E0 | elevation 2dp | 1px bottom #E0E0E0 |
 
 **Left side:** "📅 Events · [Metro Name]"
+
 - Metro name in #757575, 14pt/13sp
 - "Events" in #212121, 17pt/16sp Semibold
 - For premium users: metro name has chevron (▼) — tap to open location switcher
 
 **Right side:** "Create Event" button
+
 - Level 1+: filled primary blue button, 14pt/13sp Semibold
 - Level 0: button hidden entirely
 
 **a11y:**
+
 - Left: "Events tab. Dallas-Fort Worth"
 - Button: "Create event, button"
 
@@ -415,6 +432,7 @@ by Rohan S. ✓ &emsp; 12 going
 | **Scroll** | Horizontal scroll on mobile | Static sidebar on desktop |
 
 **Chips (mobile):** All · Cultural · Religious · Career · [More ▼]
+
 - "All" always first and always visible
 - Single-select (unlike post tag filter which is multi-select)
 - Active chip: white text on #1565C0 background
@@ -423,6 +441,7 @@ by Rohan S. ✓ &emsp; 12 going
 - Tapping "All" clears any active type filter
 
 **Type badge colors (consistent across chips and event cards):**
+
 | Type | Color | Background |
 |------|-------|-----------|
 | Cultural | #E65100 (Deep Orange) | #FFF3E0 |
@@ -432,6 +451,7 @@ by Rohan S. ✓ &emsp; 12 going
 | Other | #424242 (Dark Gray) | #F5F5F5 |
 
 **a11y:**
+
 - Each chip: "Cultural filter, [selected/not selected]"
 - "More" chip: "More event types, button"
 
@@ -450,6 +470,7 @@ by Rohan S. ✓ &emsp; 12 going
 **Card Layout (top to bottom):**
 
 #### Thumbnail Image
+
 - **Dimensions:** Full card width × 140px height
 - **Corner radius:** 8px top-left and top-right (matches card top corners); 0 on bottom (image bleeds to content area)
 - **Object fit:** Cover (fills area, center-cropped)
@@ -464,9 +485,11 @@ by Rohan S. ✓ &emsp; 12 going
 - **Loading state:** Shimmer skeleton bar of same 140px height
 
 #### Content Padding (below image)
+
 - Padding: 12px horizontal, 10px top, 12px bottom
 
 #### Type Badge Row
+
 - Event type pill (left-aligned): icon + type label
 - Color-coded per type (see table above)
 - 🌐 "Global" badge (right-aligned) if is_global = true — same blue badge as posts
@@ -474,11 +497,13 @@ by Rohan S. ✓ &emsp; 12 going
 - Margin: 0 top (first element after image padding)
 
 #### Title
+
 - Bold, 17pt/16sp Semibold, #212121
 - Max 2 lines, ellipsis if truncated
 - Margin: 6px below badge row
 
 #### Date/Time Row
+
 - Icon: 📅 calendar icon, 16px, #757575
 - Text format:
   - Single-day: "Sat, Aug 29 · 6:00 PM"
@@ -488,6 +513,7 @@ by Rohan S. ✓ &emsp; 12 going
 - Margin: 4px below title
 
 #### Location Row
+
 - Icon: 📍 pin, 16px, #757575
 - Text: location_name only (address omitted from card; shown on detail screen)
 - Typography: 14pt/13sp Regular, #424242
@@ -495,6 +521,7 @@ by Rohan S. ✓ &emsp; 12 going
 - Margin: 4px below date row
 
 #### Organizer + RSVP Row
+
 - Organizer: small avatar (24px circle) + masked name ("Asha K.") + ✓ trust badge (Level 1+)
   - Avatar: profile photo or initials, colored by trust level
   - Name: 13pt/12sp Regular, #757575
@@ -505,6 +532,7 @@ by Rohan S. ✓ &emsp; 12 going
 - Margin: 8px below location row
 
 **Past Event Appearance:**
+
 - Card background: #FAFAFA (slightly off-white)
 - Thumbnail: 60% opacity
 - Type badge: muted (50% opacity)
@@ -513,10 +541,12 @@ by Rohan S. ✓ &emsp; 12 going
 - Tap still navigates to detail
 
 **Interaction:**
+
 - Tap anywhere on card (including thumbnail) → navigate to Event Detail screen
 - No inline RSVP on card (RSVP is on detail screen only)
 
 **a11y:**
+
 - Full card: "Cultural event. Teej Festival 2026. Saturday August 29, 6:00 PM. Dallas Convention Center. By Asha K., verified. 34 going. Double-tap to view details."
 - Thumbnail: decorative (role="presentation"); screen reader skips it
 
@@ -561,6 +591,7 @@ by Rohan S. ✓ &emsp; 12 going
 ### 7. Level 0 Warning Banner
 
 Same pattern as home screen Level 0 banner:
+
 - Background: #FFF3E0 (Light Amber)
 - Text: "Verify your phone to RSVP and create events."
 - Inline "Verify Now" outline button
@@ -603,12 +634,14 @@ Same pattern as home screen Level 0 banner:
 ## User Interactions
 
 ### Primary Flow (Browse & Find Event)
+
 1. User taps Events tab → sees upcoming events in their metro
 2. User taps "Cultural" chip → list narrows to cultural events
 3. User finds "Teej Festival 2026", taps card → navigates to Event Detail
 4. On detail, user taps RSVP → confirms attendance
 
 ### Alternative Flow (Create Event, Level 1+)
+
 1. User taps "Create Event" button in header
 2. Navigates to Create Event form
 3. Fills in details, submits
@@ -616,18 +649,21 @@ Same pattern as home screen Level 0 banner:
 5. Event appears in metro Events feed immediately
 
 ### Alternative Flow (Level 0 Attempts RSVP)
+
 1. Level 0 user sees events list (no Create button, banner shown)
 2. Taps event card → navigates to Event Detail
 3. On detail, RSVP button shows "Verify to RSVP" prompt
 4. Tap → navigates to verification flow
 
 ### Alternative Flow (Filter, No Results)
+
 1. User taps "Career" chip
 2. No career events in this metro
 3. Empty state shown: "No upcoming Career events" + "Clear Filter" button
 4. User taps "Clear Filter" → "All" chip reactivates, full list restores
 
 ### Alternative Flow (Premium Location Switch)
+
 1. Premium user taps metro name in header (has ▼ chevron)
 2. Location switcher sheet opens (reuses existing location-switcher component)
 3. User selects "New York-Newark-Jersey City" (a saved location)
@@ -673,6 +709,7 @@ Same pattern as home screen Level 0 banner:
 ## Accessibility
 
 ### Screen Reader Order (Mobile)
+
 1. "Events tab. Dallas-Fort Worth."
 2. "Create event, button." (Level 1+ only)
 3. "Level 0 warning banner..." (if applicable)
@@ -682,12 +719,14 @@ Same pattern as home screen Level 0 banner:
 7. Past event cards (same pattern)
 
 ### Touch Targets
+
 - Header buttons: 44×44pt / 48×48dp minimum
 - Filter chips: 44×44pt minimum height, full pill width
 - Event cards: Full card tappable (always exceeds minimum)
 - Bottom nav tabs: Full tab width × 56px height
 
 ### Color Contrast (WCAG)
+
 | Element | Foreground | Background | Ratio | Level |
 |---------|-----------|-----------|-------|-------|
 | Event title | #212121 | #FFFFFF | 16.9:1 | AAA ✓ |
@@ -746,6 +785,7 @@ Same pattern as home screen Level 0 banner:
 ## Technical Notes
 
 ### Screen Identifiers
+
 - Mobile route: `EventsScreen` (in HomeStack, already registered)
 - Web route: `/events` (already exists as "Coming Soon" placeholder)
 
@@ -767,6 +807,7 @@ Same pattern as home screen Level 0 banner:
 ```
 
 ### API Calls
+
 - **On mount:** `getEventsByMetro(supabase, metroAreaId)` + `getGlobalEvents(supabase)`
 - **On pull-to-refresh:** Same calls, clear cache first
 - **On filter change:** Client-side filter — no API refetch needed (all events loaded upfront)
@@ -790,6 +831,7 @@ Same pattern as home screen Level 0 banner:
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Events list loads upcoming events sorted chronologically
 - [ ] Global events (is_global = true) appear with 🌐 badge
 - [ ] "All" chip shows all upcoming events (local + global)
@@ -809,6 +851,7 @@ Same pattern as home screen Level 0 banner:
 - [ ] Web sidebar filter works equivalently to mobile chips
 
 ### Visual Tests
+
 - [ ] Event type badges display correct color per type
 - [ ] 🌐 Global badge displays on correct events
 - [ ] Thumbnail image renders at full card width × 140px, cover-cropped
@@ -822,6 +865,7 @@ Same pattern as home screen Level 0 banner:
 - [ ] Web layout: two-column sidebar + feed renders correctly with thumbnails
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all event cards in correct order
 - [ ] Event type, title, date, location, organizer, RSVP count all announced
 - [ ] Filter chips announce "selected" / "not selected" state
@@ -829,6 +873,7 @@ Same pattern as home screen Level 0 banner:
 - [ ] Color contrast passes WCAG AA for all text
 
 ### Edge Case Tests
+
 - [ ] Metro area with 0 upcoming events shows correct empty state
 - [ ] Metro area with only past events — divider and past cards shown, no upcoming section
 - [ ] Event with very long title truncates after 2 lines

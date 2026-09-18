@@ -8,6 +8,7 @@ description: Document detailed user journeys and flows
 When the user invokes `/user-journey [journey-name]`, create a user flow document.
 
 ## Principles
+
 - **One journey per feature.** Never create monolithic journeys.
 - **Keep under 15 steps.** If longer, split into separate journeys.
 - Default: create separate journeys. Only group if features are truly inseparable.
@@ -21,6 +22,7 @@ When the user invokes `/user-journey [journey-name]`, create a user flow documen
 ## Step 1: Define Scope
 
 ASK:
+
 1. **Journey Number & Name:** (e.g., "03 - Housing Post Creation")
 2. **User Persona:** Level 0/1/2, Business, Moderator?
 3. **Starting Point / End Goal / Prerequisites**

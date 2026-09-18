@@ -8,6 +8,7 @@ description: Break large features or roadmap phases into small implementable pie
 Analyzes a roadmap phase and breaks it into small, implementable features with dependencies.
 
 ## Usage
+
 ```
 /break-features <phase-name>
 /break-features "Phase 2"
@@ -28,6 +29,7 @@ Analyzes a roadmap phase and breaks it into small, implementable features with d
 Creates: `docs/phaseX-feature-breakdown.md`
 
 ### Structure
+
 - **Overview**: Total features, timeline, parallel opportunities
 - **Feature Categories**: Grouped by topic
 - **Implementation Sequence**: Milestones with week estimates
@@ -36,18 +38,21 @@ Creates: `docs/phaseX-feature-breakdown.md`
 - **Parallel Work Plan**: Features that can be built simultaneously
 
 ## Principles
+
 - Each feature: 1-5 days, no large epics
 - Focus on WHAT, not HOW (no framework/library choices)
 - Explicit dependencies for proper sequencing
 - Start with foundation → core → enhancements → polish
 
 ## When to Use
+
 - Starting a new development phase
 - Planning a sprint
 - Estimating timelines
 - Scoping MVP (use priority matrix)
 
 ## When NOT to Use
+
 - Single small features → use `/design-feature` directly
 - After development has started
 - Bug fixes or maintenance

@@ -42,16 +42,19 @@ Consolidated from 12 original categories via `016_consolidate_marketplace_catego
 ## Data Model
 
 ### Tables
+
 - **`marketplace_categories`** — Seeded reference table (5 categories)
 - **`marketplace_listings`** — Core listing data with structured fields
 - **`saved_listings`** — User bookmark junction table
 
 ### Enums
+
 - `listing_type`: business, individual
 - `listing_status`: active, inactive, removed
 - `item_condition`: new, used
 
 ### Key Fields (marketplace_listings)
+
 - `owner_id`, `metro_area_id`, `category_id`
 - `listing_type`, `status`, `title`, `description`, `photos`
 - `price` (free-form text)
@@ -62,6 +65,7 @@ Consolidated from 12 original categories via `016_consolidate_marketplace_catego
 - `refreshed_at` — for soft expiry (90-day threshold)
 
 ### Migration
+
 - File: `supabase/migrations/014_marketplace.sql`
 - Includes: tables, enums, indexes (including GIN full-text search), RLS policies, triggers, RPC functions, seed data
 
@@ -70,7 +74,9 @@ Consolidated from 12 original categories via `016_consolidate_marketplace_catego
 ## Screens & Pages
 
 ### Mobile (React Native)
+
 All in `apps/mobile/src/screens/marketplace/`:
+
 - **MarketplaceHomeScreen** — Category grid, search bar, recent listings, FAB for creating
 - **MarketplaceCategoryScreen** — Category-filtered listing list with search and pagination
 - **ListingDetailScreen** — Full listing view, photo carousel, structured fields, Contact/Save actions
@@ -78,7 +84,9 @@ All in `apps/mobile/src/screens/marketplace/`:
 - **MyListingsScreen** — User's listings with status badges, refresh/deactivate/delete actions
 
 ### Web (Next.js)
+
 All in `apps/web/src/pages/marketplace/`:
+
 - **index.page.tsx** — Marketplace home with category grid, search, recent listings
 - **[category].page.tsx** — Category filtered view, supports search mode
 - **listing/[id].page.tsx** — Full listing detail page
@@ -86,6 +94,7 @@ All in `apps/web/src/pages/marketplace/`:
 - **my-listings.page.tsx** — My listings management page
 
 ### Profile Integration
+
 Both mobile and web profile pages include a "Listings" tab showing the user's marketplace listings alongside their posts and saved posts.
 
 ---
@@ -93,12 +102,14 @@ Both mobile and web profile pages include a "Listings" tab showing the user's ma
 ## Shared Package
 
 All business logic in `packages/shared/`:
+
 - **Types:** `src/types/marketplace.ts`
 - **Constants:** `src/constants/marketplace.ts` (categories config, limits, labels)
 - **Validation:** `src/validation/marketplace.ts` (Zod schemas: `createListingSchema`, `updateListingSchema`)
 - **API:** `src/api/marketplace.ts` (16 functions accepting `SupabaseClient` via DI)
 
 ### API Functions
+
 | Function | Purpose |
 |----------|---------|
 | `getCategories` | Fetch all categories sorted by sort_order |
@@ -123,6 +134,7 @@ All business logic in `packages/shared/`:
 ## Phasing
 
 ### Phase 1 (Implemented)
+
 - Full CRUD for listings
 - Category browsing and search
 - Save/bookmark listings
@@ -132,12 +144,14 @@ All business logic in `packages/shared/`:
 - Soft expiry (90 days)
 
 ### Phase 2 (Planned)
+
 - Nepali-Owned badge
 - Community Favorites
 - Share to social
 - Listing Analytics dashboard
 
 ### Phase 3 (Planned)
+
 - Promote to feed (native feed card)
 - Sponsored sidebar section
 - Multi-metro / global listings (paid)

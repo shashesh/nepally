@@ -11,6 +11,7 @@
 This screen captures the user's ZIP code to map them to their local US Census Metro Area. This is critical for Nepally's metro-first location model, ensuring users only see relevant local content.
 
 **Key Goals:**
+
 - Collect ZIP code for metro area mapping
 - Explain why we need location (transparency)
 - Reassure users about privacy (exact address never shared)
@@ -22,6 +23,7 @@ This screen captures the user's ZIP code to map them to their local US Census Me
 ## Visual Wireframe
 
 ::: hero
+
 # Where are you located?
 
 We'll show you posts in your metro area
@@ -45,6 +47,7 @@ e.g., 75080
 ### Validation Success State
 
 ::: hero
+
 # Where are you located?
 
 We'll show you posts in your metro area
@@ -68,6 +71,7 @@ e.g., 75080
 ### Error State: Invalid ZIP Code
 
 ::: hero
+
 # Where are you located?
 
 We'll show you posts in your metro area
@@ -111,6 +115,7 @@ This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code.
 ### Skip Confirmation Dialog
 
 ::: modal
+
 ### Skip location?
 
 You won't see local posts until you set your location.
@@ -175,12 +180,14 @@ You won't see local posts until you set your location.
 | **Keyboard** | Numeric only, "Done" button to dismiss | Numeric only, hardware back dismisses |
 
 **Input Constraints:**
+
 - Type: Numeric keyboard only (`inputmode="numeric"` on web)
 - Max length: 5 characters
 - Format: Exactly 5 digits (no dashes, spaces)
 - Real-time validation: Check as user types
 
 **States:**
+
 - **Default:** Gray border, empty
 - **Focused:** Blue border (2px), numeric keyboard appears
 - **Valid Input (5 digits):** Green checkmark appears on right, "Continue" button enables
@@ -188,6 +195,7 @@ You won't see local posts until you set your location.
 - **Invalid ZIP (after Continue tap):** Red border, error text below
 
 **Interaction:**
+
 - Tap field → Show numeric keyboard
 - Type digits → Display in center-aligned format
 - 5 digits entered → Auto-validate (check if exists in database)
@@ -196,6 +204,7 @@ You won't see local posts until you set your location.
 - Android: Hardware back button dismisses keyboard
 
 **a11y:**
+
 - Label: "Your ZIP Code"
 - Hint: "Enter your 5-digit US ZIP code. For example, 75080."
 - Trait: Text field, numeric keyboard
@@ -236,11 +245,13 @@ You won't see local posts until you set your location.
 **Content:** "ℹ️ We use US Census Metro Areas to show you local content. Your exact address is never shared."
 
 **Purpose:**
+
 - Explain why we need ZIP code (metro area mapping)
 - Reassure privacy concerns (exact address never shared)
 - Build trust with transparency
 
 **a11y:**
+
 - Label: "Information. We use US Census Metro Areas to show you local content. Your exact address is never shared."
 - Trait: Static text
 - Not tappable
@@ -263,12 +274,14 @@ You won't see local posts until you set your location.
 | **Touch Target** | Full button size | Full button size |
 
 **States:**
+
 - **Disabled (Default):** Gray background, white text, no interaction
 - **Enabled (5 valid digits entered):** Blue background, white text
 - **Pressed:** Darker blue (#104D99), scale 0.98
 - **Loading:** Show spinner, disable tap
 
 **Interaction:**
+
 1. User taps button
 2. Show loading spinner inside button
 3. Call API: `POST /users/update-location` with `{ zip_code: "75080" }`
@@ -276,6 +289,7 @@ You won't see local posts until you set your location.
 5. Navigate to Screen 04 (Metro Confirmation)
 
 **a11y:**
+
 - Label: "Continue"
 - Hint: "Validate your ZIP code and continue to next step"
 - Trait: Button
@@ -297,10 +311,12 @@ You won't see local posts until you set your location.
 | **Underline** | On press only | Always shown |
 
 **Interaction:**
+
 - Tap → Show confirmation dialog: "Skip location? You won't see local posts until you set your location."
 - Dialog buttons: "Skip Anyway" (primary) and "Cancel" (secondary)
 
 **a11y:**
+
 - Label: "Skip for now"
 - Hint: "Skip entering your ZIP code. You can set your location later."
 - Trait: Button
@@ -336,6 +352,7 @@ You won't see local posts until you set your location.
 ## User Interactions
 
 ### Primary Flow
+
 1. **Screen loads** → Numeric keyboard auto-appears, input field auto-focused
 2. **User types ZIP code** → Numbers appear center-aligned in large font
 3. **User enters 5th digit** → Real-time validation checks database
@@ -344,12 +361,15 @@ You won't see local posts until you set your location.
 6. **API returns metro area** → Navigate to Screen 04 (Metro Confirmation)
 
 ### Alternative Flow: Skip
+
 1. **User taps "Skip for now"** → Show confirmation dialog
 2. **User taps "Skip Anyway"** → Set metro_area_id = null, proceed to tutorial
 3. **Home screen (later)** → Show "Set your location to see local posts" banner
 
 ### Real-Time Validation Flow
+
 **As user types:**
+
 - 1 digit: No validation, Continue button disabled
 - 2 digits: No validation, Continue button disabled
 - 3 digits: No validation, Continue button disabled
@@ -380,15 +400,18 @@ You won't see local posts until you set your location.
 ## Error States & Edge Cases
 
 ### Error State: Invalid ZIP Code (Not in Database)
+
 **Scenario:** User enters 5 digits, but ZIP doesn't exist in `metro_area_zipcodes` table
 **Trigger:** Real-time validation after 5th digit typed
 **Behavior:**
+
 - Input field border turns red (2px #C62828)
 - Error text appears below input: "This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code."
 - Error text color: #C62828 (Error Red), 13pt/12sp Regular
 - Continue button remains disabled
 
 **Recovery:**
+
 - User taps backspace to delete and retry
 - User taps input to edit
 - Error clears when user starts typing again
@@ -398,15 +421,18 @@ You won't see local posts until you set your location.
 ---
 
 ### Error State: ZIP Not in Metro Database
+
 **Scenario:** User enters valid ZIP code format, but it's not mapped to any metro area in our database
 **Trigger:** After tapping "Continue" and API returns 404
 **Behavior:**
+
 - Show error banner at top: "We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nepally.us"
 - Banner: Red background (#C62828), white text, dismissible
 - Input field remains editable
 - "Contact Support" link in banner opens email client
 
 **Recovery:**
+
 - User can edit ZIP and try different nearby ZIP
 - User can tap "Skip for now" to proceed without metro area
 - User can contact support for help
@@ -414,21 +440,26 @@ You won't see local posts until you set your location.
 ---
 
 ### Error State: Network Error
+
 **Scenario:** User taps "Continue" but API call fails (timeout, no internet)
 **Behavior:**
+
 - Show error banner: "Could not validate ZIP code. Please check your internet connection and try again."
 - Banner: Red background, white text, "Retry" button
 - Continue button returns to enabled state
 
 **Recovery:**
+
 - User taps "Retry" button in banner
 - User can wait and tap "Continue" again
 
 ---
 
 ### Edge Case: Very Long Loading Time
+
 **Scenario:** API takes >3 seconds to validate ZIP
 **Behavior:**
+
 - Show loading spinner inside Continue button
 - After 3 seconds, show text below button: "Still loading... This is taking longer than usual."
 - User can tap "Cancel" to stop loading and retry
@@ -436,8 +467,10 @@ You won't see local posts until you set your location.
 ---
 
 ### Edge Case: User Taps Continue Before Entering ZIP
+
 **Scenario:** User taps Continue button while disabled (no ZIP entered)
 **Behavior:**
+
 - Button does nothing (disabled state)
 - Optional: Subtle shake animation on input field to draw attention
 - No error message (button is clearly disabled)
@@ -447,8 +480,10 @@ You won't see local posts until you set your location.
 ---
 
 ### Edge Case: User Enters Non-Numeric Characters
+
 **Scenario:** User tries to paste text or type letters
 **Behavior:**
+
 - Numeric keyboard prevents non-numeric input
 - If paste contains non-numeric chars, strip them out, keep only digits
 - Example: User pastes "ZIP: 75080" → Input shows "75080"
@@ -456,19 +491,24 @@ You won't see local posts until you set your location.
 ---
 
 ### Edge Case: User Doesn't Know Their ZIP Code
+
 **Scenario:** User is very new to US, doesn't know ZIP code
 **Behavior:**
+
 - User can tap "Skip for now" and set location later
 - **Future Enhancement:** Add "Use my current location" button that uses GPS to find ZIP
 
 **Alternative Solution (Future):**
+
 - Add help text: "Don't know your ZIP? [Look it up here]" → Link to USPS ZIP lookup tool
 
 ---
 
 ### Edge Case: User Changes Mind After Skip
+
 **Scenario:** User taps "Skip for now", sees confirmation dialog, then taps "Cancel"
 **Behavior:**
+
 - Dialog closes, return to ZIP entry screen
 - Input field remains focused, keyboard still visible
 
@@ -477,6 +517,7 @@ You won't see local posts until you set your location.
 ## Accessibility
 
 ### Screen Reader Order
+
 1. "Where are you located?"
 2. "We'll show you posts in your metro area"
 3. "Your ZIP Code, text field. Enter your 5-digit US ZIP code. For example, 75080."
@@ -485,6 +526,7 @@ You won't see local posts until you set your location.
 6. "Skip for now button"
 
 ### Touch Targets
+
 - Input field: Minimum 44×44pt (iOS) / 48×48dp (Android) height — ✓ 56px/dp exceeds
 - Continue button: Minimum 44×44pt / 48×48dp — ✓ 48px/56dp meets/exceeds
 - Skip link: Minimum 44×44pt touch area (add invisible padding)
@@ -500,6 +542,7 @@ You won't see local posts until you set your location.
 | Error text (#C62828 on #FFFFFF) | 7.8:1 | AAA ✓ |
 
 ### Focus Indicators
+
 - iOS VoiceOver: yellow outline on input field
 - Android TalkBack: green rectangle on input field
 - Keyboard navigation: Blue focus ring
@@ -536,11 +579,13 @@ You won't see local posts until you set your location.
 | 2 | Error text | 100ms | 200ms | Slide down from input field |
 
 ### Loading State
+
 - Spinner appears inside Continue button, replaces "Continue" text
 - Spinner color: White
 - Indefinite rotation animation
 
 ### Button Press
+
 - Duration: 150ms, ease-in-out
 - Scale 0.98 + background darkens
 - iOS: light haptic | Android: ripple from tap point
@@ -550,6 +595,7 @@ You won't see local posts until you set your location.
 ## Content & Localization
 
 ### Copy Requirements
+
 - **Title:** Question format, friendly ("Where are you located?")
 - **Subtitle:** Clear value proposition (why we need this)
 - **Info Box:** Explain metro areas + privacy reassurance (under 100 characters)
@@ -570,6 +616,7 @@ You won't see local posts until you set your location.
 | `zipcode_error_no_coverage` | We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nepally.us |
 
 ### Tone & Voice
+
 - **Friendly:** "Where are you located?" (not "Enter ZIP")
 - **Transparent:** Explain why we need ZIP (metro areas)
 - **Reassuring:** Privacy message addresses concerns
@@ -580,6 +627,7 @@ You won't see local posts until you set your location.
 ## Technical Notes
 
 ### Identifiers
+
 - Route: `/onboarding/zip-code`
 - iOS: `ZipCodeEntryViewController` / `ZipCodeEntryScreen`
 - Android: `ZipCodeEntryActivity` / `ZipCodeEntryFragment`
@@ -595,6 +643,7 @@ You won't see local posts until you set your location.
 | `showCheckmark` | `boolean` | True if validation passed |
 
 **Validation Logic:**
+
 ```javascript
 function validateZipCode(zip) {
   if (zip.length !== 5) return { valid: false, error: null };
@@ -623,6 +672,7 @@ function validateZipCode(zip) {
 **Endpoint:** `POST /users/update-location`
 
 **Request:**
+
 ```json
 {
   "user_id": "abc123",
@@ -631,6 +681,7 @@ function validateZipCode(zip) {
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -641,6 +692,7 @@ function validateZipCode(zip) {
 ```
 
 **Error Response (404 — ZIP not in database):**
+
 ```json
 {
   "success": false,
@@ -650,6 +702,7 @@ function validateZipCode(zip) {
 ```
 
 **Error Response (400 — Invalid format):**
+
 ```json
 {
   "success": false,
@@ -661,6 +714,7 @@ function validateZipCode(zip) {
 ### Database Query
 
 **Real-time validation:**
+
 ```sql
 SELECT metro_area_id, metro_name, state
 FROM metro_area_zipcodes
@@ -668,6 +722,7 @@ WHERE zip_code = '75080';
 ```
 
 **Update user record:**
+
 ```sql
 UPDATE users
 SET metro_area_id = 'dallas-fort-worth-arlington',
@@ -677,18 +732,21 @@ WHERE id = 'user_id';
 ```
 
 ### Performance Considerations
+
 - **Debounce validation:** Wait 300ms after 5th digit before API call (in case user deletes/retypes)
 - **Cache metro area data:** Store in memory for instant lookup
 - **Optimize API:** ZIP validation should be <500ms response time
 - **Keyboard handling:** Ensure smooth keyboard animation, no lag
 
 ### Design System Components Used
+
 - Text Input (Large, centered style)
 - Primary Button (from design system)
 - Info Box (new component — light blue callout)
 - H1 Typography (34pt/sp Bold)
 
 ### Inspiration
+
 - **Nextdoor ZIP Entry:** Simple, single input focus
 - **Airbnb Location Entry:** Large, centered input with real-time validation
 - **WhatsApp Phone Entry:** Clean, minimal design with auto-focus
@@ -698,6 +756,7 @@ WHERE id = 'user_id';
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Input accepts numeric only (5 digits)
 - [ ] Real-time validation triggers after 5th digit
 - [ ] Valid ZIP shows checkmark, enables Continue button
@@ -708,6 +767,7 @@ WHERE id = 'user_id';
 - [ ] Confirmation dialog "Cancel" returns to ZIP entry
 
 ### Visual Tests
+
 - [ ] Input field displays large, centered numbers
 - [ ] Numeric keyboard appears on screen load
 - [ ] Info box has light blue background
@@ -717,6 +777,7 @@ WHERE id = 'user_id';
 - [ ] Error text appears below input when invalid
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all elements in order
 - [ ] Input field announced as "text field, numeric keyboard"
 - [ ] Continue button disabled state announced
@@ -724,6 +785,7 @@ WHERE id = 'user_id';
 - [ ] Touch targets meet 44pt/48dp minimum
 
 ### Integration Tests
+
 - [ ] API validates ZIP correctly
 - [ ] Database query returns metro area
 - [ ] User record updated with ZIP and metro area
@@ -731,6 +793,7 @@ WHERE id = 'user_id';
 - [ ] Error states handled gracefully
 
 ### Edge Case Tests
+
 - [ ] Invalid ZIP format shows error
 - [ ] ZIP not in database shows error
 - [ ] Network error shows retry option

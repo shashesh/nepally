@@ -10,6 +10,7 @@ When the user invokes `/design-feature [feature-name]`, create a structured feat
 ## Step 1: Clarify
 
 ASK:
+
 1. **Problem Statement:** What user problem does this solve?
 2. **Target Users:** New users, verified, moderators, businesses?
 3. **Metro Scope:** Local, metro-wide, or global?
@@ -24,6 +25,7 @@ Enter plan mode. Review `docs/product/roadmap.md`, check for conflicts with trus
 ## Step 3: Create Feature Spec
 
 Create `docs/product/features/[feature-name].md` with these sections:
+
 - **Metadata**: Status, Phase, Owner, Date
 - **Overview & Problem Statement**
 - **User Story**: As a [type], I want [action], so that [benefit]

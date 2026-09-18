@@ -11,6 +11,7 @@
 Full-detail view of a single post with an interaction-first hierarchy (similar to Reddit/Facebook). The screen prioritizes conversation context first, then engagement actions, then metadata. It bridges browsing (home feed) to public discussion and private chat.
 
 **Key Goals:**
+
 - Prioritize author + content + discussion over metadata clutter
 - Keep engagement actions immediately under content (Like, Comments, Save, Share)
 - Move metadata into a compact row so it does not overshadow conversation
@@ -94,6 +95,7 @@ Posted Feb 1, 2026 • Dallas-Fort Worth
 :::
 
 ::: card
+
 # Looking for Nepali Roommate near UTD
 
 `📍 Local`{.badge .green}
@@ -137,6 +139,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 | **Kebab Menu** | ⋮ icon, 24px, #757575 | ⋮ icon, 24dp, #757575 |
 
 **Kebab menu items:**
+
 - "Report Post" (future), "Share" (future)
 - For author's own post: "Edit Post", "Delete Post" (future)
 
@@ -186,6 +189,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 | **Position** | 4px below title | 4dp below title |
 
 **Badge variants:**
+
 | Badge | Text Color | Background |
 |-------|-----------|------------|
 | 📍 Local | #388E3C | #E8F5E9 |
@@ -221,6 +225,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 | **Display** | Full text (no truncation) | Full text (no truncation) |
 
 **Location Row:**
+
 | Property | iOS | Android |
 |----------|-----|---------|
 | **Icon** | 📍 Pin, 20px | 📍 Pin, 20dp |
@@ -240,6 +245,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 | **Color** | #757575 | #757575 |
 
 **Components:**
+
 - **Like Button:** ❤️ Heart + count (e.g., "12")
   - Tappable to toggle like (Level 1+)
   - Level 0: grayed out, tap shows verification toast
@@ -270,6 +276,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 **Interaction:** Tap author avatar → show popup menu with "View Profile" / "Chat"
 
 **Avatar Tap Menu:**
+
 - Position: Popup anchored to avatar
 - Options: "View Profile" and "Chat"
 - Chat option hidden on own posts
@@ -321,6 +328,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 | **Timestamp Font** | 12pt Regular, #757575 | 11sp Regular, #757575 |
 
 **Avatar background by trust level:**
+
 | Level | Color |
 |-------|-------|
 | Level 0 | Gray |
@@ -330,6 +338,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 **Timestamp format:** "5m ago", "2h ago", "1d ago", "2w ago"
 
 **Delete Button (own comments only):**
+
 | Property | iOS | Android |
 |----------|-----|---------|
 | **Icon** | 🗑️, 18px, #C62828 | 🗑️, 18dp, #C62828 |
@@ -395,6 +404,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 | Error | #C62828 (red) | Blue, re-enabled | Show toast, allow retry |
 
 **Interaction flow:**
+
 1. User taps input → keyboard opens
 2. User types comment (1–1000 chars)
 3. Character counter updates in real-time
@@ -455,6 +465,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 ## User Interactions
 
 ### Primary Flow (Chat via Avatar Menu)
+
 1. User taps PostCard on HomeScreen → navigates here
 2. User reviews post details (scrolls through fields, photos)
 3. User taps author avatar → popup menu appears
@@ -464,6 +475,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 7. Navigate to MessageThreadScreen
 
 ### Comment Flow (Level 1+)
+
 1. User scrolls to comments section
 2. User taps comment input → keyboard opens
 3. User types comment → send button enables
@@ -473,6 +485,7 @@ Are you sure you want to delete this comment? This cannot be undone.
 7. Comment count updates in header and engagement row
 
 ### Scroll Behavior
+
 - Full page scroll (not nested scroll views)
 - Comment input sticky at bottom of comments section
 
@@ -516,16 +529,19 @@ Are you sure you want to delete this comment? This cannot be undone.
 ## Technical Notes
 
 ### Identifiers
+
 - Route: `/post/:postId`
 - iOS: `PostDetailScreen`
 - Android: `PostDetailActivity` / `PostDetailFragment`
 
 ### Params Received
+
 - `postId: string` — which post to display
 
 ### Data Requirements
 
 **Fetch post:**
+
 ```typescript
 const { data } = await supabase
   .from('posts')
@@ -538,6 +554,7 @@ const { data } = await supabase
 ```
 
 **Fetch comments:**
+
 ```typescript
 const { data } = await supabase
   .from('comments')
@@ -549,6 +566,7 @@ const { data } = await supabase
 ```
 
 **Check existing conversation between user pair:**
+
 ```typescript
 const { data } = await supabase
   .rpc('find_conversation_between_users', {
@@ -558,6 +576,7 @@ const { data } = await supabase
 ```
 
 **Post a comment:**
+
 ```typescript
 const { data } = await supabase
   .from('comments')
@@ -583,6 +602,7 @@ const { data } = await supabase
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Post title, description, tags, badge display correctly
 - [ ] Photo carousel swipes and shows correct count
 - [ ] Avatar menu "Chat" option navigates to MessageThreadScreen
@@ -599,6 +619,7 @@ const { data } = await supabase
 - [ ] "Show all comments" expands when > 3 comments
 
 ### Visual Tests
+
 - [ ] Layout matches wireframe on all screen sizes
 - [ ] Tag pills wrap to next line if many tags
 - [ ] Photo carousel has correct height and radius
@@ -606,6 +627,7 @@ const { data } = await supabase
 - [ ] Character counter turns red at 950+ characters
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all elements in correct order
 - [ ] Touch targets meet 44pt/48dp minimum
 - [ ] Tag and badge colors meet WCAG AA contrast
@@ -613,6 +635,7 @@ const { data } = await supabase
 - [ ] CTA disabled state clearly communicated
 
 ### Edge Case Tests
+
 - [ ] No photos: carousel section hidden
 - [ ] No comments: empty state displayed
 - [ ] Network error: retry banner shown

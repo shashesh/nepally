@@ -39,6 +39,7 @@ Add social engagement features to posts: likes (helpful votes) and public commen
 ## Problem Statement
 
 Current post cards on the home feed are minimal, showing only title and basic metadata. Users cannot:
+
 - See who posted without clicking into the detail screen
 - Preview the post description
 - Publicly indicate if a post is helpful (like/helpful vote)
@@ -50,6 +51,7 @@ This creates friction in discovery and reduces community trust signals.
 ## User Stories
 
 **Primary:**
+
 - As a user browsing the home feed, I want to see the post author's photo and name so that I can quickly assess credibility
 - As a user, I want to preview the post description on the feed so that I can decide if it's relevant before clicking
 - As a user, I want to like helpful posts so that I can bookmark them and help others discover quality content
@@ -57,6 +59,7 @@ This creates friction in discovery and reduces community trust signals.
 - As a user, I want to read and write public comments on posts so that I can ask questions that benefit everyone
 
 **Secondary:**
+
 - As a Level 0 user, I want to see likes and comments so that I understand the community value (but cannot interact until verified)
 - As a post author, I want to see who liked my post and respond to comments so that I can engage with interested people
 - As a moderator, I want to review flagged comments so that I can remove inappropriate content
@@ -73,6 +76,7 @@ This creates friction in discovery and reduces community trust signals.
 | **3.5** Profile Photo Display | Show user avatars throughout app (already in roadmap, now prioritized) | Must-have |
 
 **Out of scope (this iteration):**
+
 - Multi-level nested replies (single-level replies only)
 - Comment likes/upvotes
 - True "most liked" comment sorting (comment likes table not implemented yet)
@@ -88,6 +92,7 @@ This creates friction in discovery and reduces community trust signals.
 #### Enhanced Post Card UI (5.9)
 
 **Home Feed Post Card:**
+
 - [ ] Display author avatar (40x40px circle, top-left corner)
   - Show profile photo if uploaded
   - Fallback to initials (first letter of first + last name)
@@ -110,6 +115,7 @@ This creates friction in discovery and reduces community trust signals.
 - [ ] Card elevation and padding (unchanged)
 
 **Tap Behaviors:**
+
 - Tap card body → Navigate to PostDetailScreen
 - Tap author avatar/name → Navigate to user profile (future feature, show toast "Coming soon" for now)
 - Tap like button → Toggle like (heart fills/unfills)
@@ -118,6 +124,7 @@ This creates friction in discovery and reduces community trust signals.
 - Tap "View More" → Navigate to PostDetailScreen
 
 **Level 0 User Restrictions:**
+
 - Can view all content (likes, comments)
 - Like button shows but is disabled with toast: "Verify your account to like posts"
 - Comment button navigates to detail screen, but comment input is disabled with prompt: "Verify to comment"
@@ -125,6 +132,7 @@ This creates friction in discovery and reduces community trust signals.
 #### Post Likes (5.10)
 
 **Like Button Behavior:**
+
 - [ ] Heart icon outline when not liked, filled when liked
 - [ ] Tap to like: icon animates (scale + fill), count increments, record saved to DB
 - [ ] Tap to unlike: icon animates (unfill), count decrements, record deleted from DB
@@ -134,18 +142,21 @@ This creates friction in discovery and reduces community trust signals.
 - [ ] Like count displays next to button (e.g., "24" or "0" if none)
 
 **Like Counter Display:**
+
 - [ ] Show "0" if no likes (not hidden)
 - [ ] Show exact count if < 1000 (e.g., "24")
 - [ ] Show "1K", "1.2K" etc. if >= 1000
 - [ ] Counter updates in real-time when user likes/unlikes
 
 **Database:**
+
 - [ ] `post_likes` table with: id, post_id, user_id, created_at
 - [ ] Unique constraint on (post_id, user_id)
 - [ ] `posts.likes_count` column (cached counter, updated via trigger)
 - [ ] RLS: Anyone can view, Level 1+ can insert/delete own likes
 
 **API Endpoints:**
+
 - [ ] `likePost(postId, userId)` - Create like record
 - [ ] `unlikePost(postId, userId)` - Delete like record
 - [ ] `getUserLikedPosts(userId)` - Get list of post IDs user liked (for UI state)
@@ -154,6 +165,7 @@ This creates friction in discovery and reduces community trust signals.
 #### Post Comments (5.11)
 
 **Comment Display (PostDetailScreen):**
+
 - [ ] Post detail layout prioritizes conversation:
   1. Author row (avatar, name, trust, subtle timestamp)
   2. Title + full description
@@ -179,6 +191,7 @@ This creates friction in discovery and reduces community trust signals.
   - Level 0 users see: "Verify your account to comment"
 
 **Comment Creation:**
+
 - [ ] User types top-level comment or reply (1-1000 chars)
 - [ ] Tap send → comment posted, appears in list immediately (optimistic)
 - [ ] Comment saved to DB
@@ -187,6 +200,7 @@ This creates friction in discovery and reduces community trust signals.
 - [ ] Error handling: show toast, revert optimistic update
 
 **Comment Deletion:**
+
 - [ ] Only comment author can delete their own comment
 - [ ] Tap trash icon → confirmation dialog: "Delete this comment?"
 - [ ] On confirm → comment removed from list, DB record soft-deleted (`is_deleted = true`)
@@ -194,18 +208,21 @@ This creates friction in discovery and reduces community trust signals.
 - [ ] Cannot be undone
 
 **Comment Counter on PostCard:**
+
 - [ ] Show "0" if no comments (not hidden)
 - [ ] Show exact count if < 1000 (e.g., "5")
 - [ ] Show "1K", "1.2K" etc. if >= 1000
 - [ ] Counter updates when user adds/deletes comment
 
 **Database:**
+
 - [ ] `post_comments` table with: id, post_id, author_id, content, is_deleted, created_at, updated_at
 - [ ] `parent_comment_id` field (nullable, for future nested replies, unused in Phase 1)
 - [ ] `posts.comments_count` column (cached counter, updated via trigger)
 - [ ] RLS: Anyone can view non-deleted comments, Level 1+ can insert/delete own comments
 
 **API Endpoints:**
+
 - [ ] `getPostComments(postId)` - Get all comments for a post
 - [ ] `createComment(postId, authorId, content, parentCommentId?)` - Create top-level comment or single-level reply
 - [ ] `deleteComment(commentId, userId)` - Soft-delete comment (checks ownership)
@@ -213,6 +230,7 @@ This creates friction in discovery and reduces community trust signals.
 #### Profile Photo Display (3.5)
 
 **Profile Photo Upload (EditProfileScreen):**
+
 - [ ] Photo section at top of EditProfileScreen
 - [ ] Display current photo (or initials avatar if none)
 - [ ] "Change Photo" button opens picker:
@@ -229,6 +247,7 @@ This creates friction in discovery and reduces community trust signals.
 - [ ] Error handling: show toast if upload fails
 
 **Avatar Component:**
+
 - [ ] Display profile photo if URL exists and loads successfully
 - [ ] Fallback to initials avatar if:
   - No photo uploaded
@@ -247,6 +266,7 @@ This creates friction in discovery and reduces community trust signals.
 - [ ] Sizes: 32px (comments), 40px (post cards), 64px (profile screen)
 
 **Display Locations:**
+
 - [ ] Home feed post cards (40x40px)
 - [ ] Post detail screen (author section, 40x40px)
 - [ ] Comment list (32x32px per comment)
@@ -423,6 +443,7 @@ CREATE POLICY "Moderators can update any comment"
 ## UI/UX Specifications
 
 See detailed wireframe updates:
+
 - [Home Screen with Enhanced Post Cards](../../wireframes/06-home-screen-level-0/06-home-screen-level-0.md#post-card-enhanced)
 - [Post Detail with Comments](../../wireframes/09-post-detail/09-post-detail.md#comments-section)
 - [Profile Photo Upload](../../wireframes/10-profile-photo-upload/10-profile-photo-upload.md)
@@ -434,27 +455,32 @@ See detailed wireframe updates:
 ### New Components
 
 **`Avatar.tsx`**
+
 - Props: `userId`, `photoUrl`, `name`, `trustLevel`, `size` (32 | 40 | 64)
 - Displays profile photo or initials fallback
 - Background color based on trust level
 
 **`LikeButton.tsx`**
+
 - Props: `postId`, `initialLiked`, `initialCount`, `disabled`
 - Heart icon that toggles filled/outline
 - Handles optimistic updates
 - Emits `onLikeToggle` event
 
 **`CommentItem.tsx`**
+
 - Props: `comment`, `canDelete`, `onDelete`
 - Displays single comment with author info
 - Shows delete button for comment author
 
 **`CommentsList.tsx`**
+
 - Props: `postId`, `comments`, `onCommentAdded`, `onCommentDeleted`
 - List container for comments
 - Empty state handling
 
 **`CommentInput.tsx`**
+
 - Props: `postId`, `authorId`, `onCommentAdded`, `disabled`
 - Text input with character counter
 - Send button
@@ -463,17 +489,20 @@ See detailed wireframe updates:
 ### Updated Components
 
 **`PostCard.tsx`**
+
 - Add author avatar, name, trust badge
 - Add description preview with "View More"
 - Add action bar with like, comment, message buttons
 - Handle Level 0 disabled states
 
 **`PostDetailScreen.tsx`**
+
 - Add like button to header/action section
 - Add comments section below post details
 - Add comment input (Level 1+ only)
 
 **`EditProfileScreen.tsx`**
+
 - Add photo upload section at top
 - Image picker integration
 - Supabase Storage upload
@@ -481,6 +510,7 @@ See detailed wireframe updates:
 ### New API Services
 
 **`services/api/likes.ts`**
+
 ```typescript
 export async function likePost(postId: string, userId: string)
 export async function unlikePost(postId: string, userId: string)
@@ -489,6 +519,7 @@ export async function isPostLikedByUser(postId: string, userId: string): Promise
 ```
 
 **`services/api/comments.ts`**
+
 ```typescript
 export async function getPostComments(postId: string): Promise<Comment[]>
 export async function createComment(postId: string, authorId: string, content: string)
@@ -497,6 +528,7 @@ export async function subscribeToComments(postId: string, callback: (comment: Co
 ```
 
 **`services/api/storage.ts`**
+
 ```typescript
 export async function uploadProfilePhoto(userId: string, imageUri: string): Promise<string>
 export async function deleteProfilePhoto(userId: string)
@@ -508,16 +540,19 @@ export async function getProfilePhotoUrl(userId: string): Promise<string | null>
 ## Success Metrics
 
 **Engagement:**
+
 - 40%+ of active users like at least one post per week
 - 20%+ of active users comment on at least one post per week
 - Average 3-5 likes per post
 - Average 1-2 comments per post
 
 **Quality:**
+
 - < 5% of comments flagged as spam or inappropriate
 - Posts with 10+ likes have 2x higher conversion rate (messages sent to author)
 
 **User Satisfaction:**
+
 - Users report home feed is more informative and trustworthy
 - Reduction in "Why did you ask this via private message?" responses (questions should be public comments)
 
@@ -538,11 +573,13 @@ export async function getProfilePhotoUrl(userId: string): Promise<string | null>
 ## Dependencies
 
 **Must Complete First:**
+
 - Feature 1.1-1.5: User authentication (✅ Done)
 - Feature 3.1: Basic profile creation (✅ Done)
 - Feature 5.1-5.4: Post viewing (✅ Done)
 
 **Blocks:**
+
 - Feature 9.1: Reporting system (comments need to be reportable)
 
 ---

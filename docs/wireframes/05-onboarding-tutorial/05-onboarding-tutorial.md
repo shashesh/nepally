@@ -11,6 +11,7 @@
 This tutorial educates new users about Nepally's three core concepts through a horizontal swipeable card interface. It's designed to be skippable but valuable, providing context that improves the user experience.
 
 **Key Goals:**
+
 - Explain metro-first local feed concept
 - Introduce 3-tier trust level system
 - Showcase 4 main post categories and auto-expiry
@@ -113,21 +114,25 @@ Emergency: 7 days · Travel: 2 days {.caption}
 | **Style** | Simple line-art, not photorealistic | Simple line-art, not photorealistic |
 
 **Card 1 — Metro-First Feed:**
+
 - Map pin 📍 + circular radius
 - Primary Blue (#1565C0) pin, light blue (#E3F2FD) background circle
 - Subtle Nepali organic curve in pin design
 
 **Card 2 — Trust Levels:**
+
 - Shield icon with three badges: ○ (Level 0), ✓ (Level 1), ✓✓ (Level 2)
 - Gray for Level 0, Green (#2E7D32) for Level 1, Blue (#1565C0) for Level 2
 - Horizontal row of badges
 
 **Card 3 — Four Categories:**
+
 - Four icons in row: 🏠 💼 🚨 ✈️ (Housing, Jobs, Emergency, Travel)
 - 24×24px each, 16px spacing between
 - Each icon uses its category color
 
 **a11y:**
+
 - Card 1: "Map pin showing local metro area"
 - Card 2: "Trust level badges showing Level 0, Level 1, and Level 2"
 - Card 3: "Four category icons: Housing, Jobs, Emergency, Travel"
@@ -145,6 +150,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 | **Semantic** | H2 | H2 |
 
 **Content:**
+
 - Card 1: "Metro-First Local Feed"
 - Card 2: "Verified Community Members"
 - Card 3: "Four Main Categories"
@@ -165,6 +171,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 | **Max Lines** | 4 (truncate if longer) | 4 (truncate if longer) |
 
 **Content:**
+
 - **Card 1:** "See only housing, jobs, and emergencies in Dallas-Fort Worth. No noise from other cities."
   - Dynamic: Replace "Dallas-Fort Worth" with user's actual metro area name
 - **Card 2:** "Level 1 users are phone-verified. Level 2 users are highly trusted by the community. You're Level 0 right now."
@@ -213,11 +220,13 @@ Emergency: 7 days · Travel: 2 days {.caption}
 | **Text (Card 3)** | 17pt Semibold, White, "Get Started" | 14sp Medium, White, "GET STARTED" |
 
 **States:**
+
 - Default: #1565C0 background, white text
 - Pressed: #104D99 background, scale 0.98
 - Disabled: N/A (always enabled)
 
 **Interaction:**
+
 - Cards 1-2: Tap "Next" → animate to next card (300ms slide)
 - Card 3: Tap "Get Started" → mark onboarding complete, navigate to Screen 06 (Home Screen)
 - iOS: haptic feedback on tap
@@ -239,6 +248,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 | **Visibility** | Cards 1-2: Visible / Card 3: Hidden | Cards 1-2: Visible / Card 3: Hidden |
 
 **Interaction:**
+
 - Tap: Skip directly to Screen 06 (Home Screen)
 - Optional confirmation dialog: "Skip tutorial? You can always access help later." with "Skip Tutorial" (primary) and "Continue Learning" (secondary)
 
@@ -275,6 +285,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 ## User Interactions
 
 ### Primary Flow (Complete Tutorial)
+
 1. **User lands on Card 1** → Reads content (~10 seconds)
 2. **User taps "Next"** → Animate to Card 2 (300ms slide)
 3. **User reads Card 2** → ~10-15 seconds
@@ -285,12 +296,14 @@ Emergency: 7 days · Travel: 2 days {.caption}
 **Total Tutorial Time:** 35-45 seconds for users who read everything
 
 ### Alternative Flow (Skip Tutorial)
+
 1. **User lands on Card 1** → Starts reading
 2. **User taps "Skip"** → Confirmation dialog appears (if enabled)
 3. **User taps "Skip Tutorial"** → Navigate to Screen 06 immediately
 4. **Onboarding marked complete** (with flag: `tutorial_skipped = true`)
 
 ### Alternative Flow (Swipe Navigation)
+
 1. **User lands on Card 1**
 2. **User swipes left** → Animate to Card 2 (instead of tapping "Next")
 3. **User swipes left** → Animate to Card 3
@@ -317,24 +330,29 @@ Emergency: 7 days · Travel: 2 days {.caption}
 ## Error States & Edge Cases
 
 ### Swipe Past Last Card
+
 - **iOS:** Slight bounce effect (rubber-band), returns to Card 3
 - **Android:** Edge glow effect, stays on Card 3
 - No navigation action
 
 ### Back Button Pressed
+
 - **Card 1:** Go back to Screen 04 (Metro Confirmation)
 - **Cards 2-3:** Go back to previous card (Card 2→1, Card 3→2)
 
 ### Very Long Metro Area Name (Card 1)
+
 - Metro name >40 characters: abbreviate (e.g., "Dallas-Fort Worth" instead of full name)
 - Or use generic: "See only posts in your metro area"
 
 ### Rapid Swiping
+
 - Allow rapid swiping (don't block)
 - Final card shows "Get Started" immediately
 - User can tap button to proceed
 
 ### App Close Mid-Tutorial
+
 - Resume from Card 1 on reopen (tutorial is only 3 cards, quick to redo)
 - Recommended: restart from Card 1 (simpler implementation)
 
@@ -343,6 +361,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 ## Accessibility
 
 ### Screen Reader Order (per card)
+
 1. "Onboarding Tutorial, Card [X] of 3"
 2. Illustration alt text
 3. Card Title
@@ -351,11 +370,13 @@ Emergency: 7 days · Travel: 2 days {.caption}
 6. "Skip" button (if visible)
 
 ### Swipe Gestures (VoiceOver/TalkBack)
+
 - Three-finger swipe left: Next card
 - Three-finger swipe right: Previous card
 - Or: Focus on "Next" button and activate with tap
 
 ### Touch Targets
+
 | Element | iOS | Android | Meets Min |
 |---------|-----|---------|-----------|
 | Next / Get Started button | 48px | 56dp | ✓ |
@@ -363,6 +384,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 | Progress dots | Not tappable | Not tappable | N/A |
 
 ### Color Contrast (WCAG)
+
 | Element | Ratio | Level |
 |---------|-------|-------|
 | Title (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
@@ -381,22 +403,26 @@ Emergency: 7 days · Travel: 2 days {.caption}
 | 2 | Card 1 content | 300ms | 200ms | Fade in (ease-out) |
 
 ### Card Swipe Animation
+
 - **Duration:** 300ms
 - **Easing:** Ease-in-out (slight deceleration at end)
 - **Effect:** Current card slides out left, next card slides in from right
 - **Optional:** Parallax effect — outgoing card moves faster than incoming card
 
 ### Progress Dot Animation
+
 - Active dot animates to next position (200ms, ease-in-out)
 - Optional scale: active dot 8px → 10px (100ms)
 - Color fade: gray → blue (200ms)
 
 ### Button Press
+
 - **Duration:** 150ms
 - **Effect:** Scale 0.98, background darkens
 - iOS: light haptic | Android: ripple effect
 
 ### Skip Confirmation Dialog (if used)
+
 - **Duration:** 200ms
 - Background: semi-transparent black overlay (50% opacity)
 - Dialog: slide up from bottom (iOS) or fade in (Android)
@@ -406,6 +432,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 ## Content & Localization
 
 ### Copy Requirements
+
 - **Titles:** Clear, descriptive (not clever or punny)
 - **Descriptions:** Under 100 characters, action-oriented
 - **Expiry Info:** Specific, not vague ("30 days" not "soon")
@@ -429,6 +456,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 **Dynamic placeholder:** `{metro_name}` — User's metro area name (e.g., "Dallas-Fort Worth")
 
 ### Tone & Voice
+
 - **Educational:** Explain concepts clearly
 - **Friendly:** "You're Level 0 right now" (not "You are currently Level 0")
 - **Concise:** Short sentences, max 3-4 lines per card
@@ -439,6 +467,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 ## Technical Notes
 
 ### Identifiers
+
 - Route: `/onboarding/tutorial`
 - iOS: `OnboardingTutorialViewController` / `TutorialPageViewController`
 - Android: `OnboardingTutorialActivity` / `TutorialPagerFragment`
@@ -446,11 +475,13 @@ Emergency: 7 days · Travel: 2 days {.caption}
 ### State Management
 
 **Screen State:**
+
 - `currentCardIndex`: number (0, 1, or 2)
 - `tutorialCards`: array of 3 card objects
 - `metroName`: string (for dynamic Card 1 description)
 
 **Card Object:**
+
 ```javascript
 {
   id: 1,
@@ -462,6 +493,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 ```
 
 **Persistent State:**
+
 - `onboarding_tutorial_completed`: boolean (stored in user profile)
 - `tutorial_skipped`: boolean (optional analytics flag)
 
@@ -477,11 +509,13 @@ Emergency: 7 days · Travel: 2 days {.caption}
 **On exit:** `UPDATE users SET onboarding_completed = true, tutorial_skipped = [true/false], onboarding_completed_at = NOW() WHERE id = 'user_id';`
 
 ### API Integration
+
 - **No API calls needed** on this screen
 - Metro name passed from previous screen via navigation params
 - Card content is static (pre-defined)
 
 ### Performance
+
 - Pre-load all card content (only 3 cards, don't lazy-load)
 - Optimize illustrations: vector SVG or 2×/3× PNG (~20KB per image)
 - Smooth animations: use native scroll views for 60fps
@@ -492,6 +526,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Swipe left advances to next card
 - [ ] Swipe right returns to previous card
 - [ ] Tap "Next" advances to next card
@@ -501,6 +536,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 - [ ] Back button navigates to previous card or Screen 04
 
 ### Visual Tests
+
 - [ ] All 3 cards display correctly
 - [ ] Illustrations render at correct size (120×120px/dp)
 - [ ] Text is center-aligned and readable
@@ -509,6 +545,7 @@ Emergency: 7 days · Travel: 2 days {.caption}
 - [ ] Safe area insets respected
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all elements in order
 - [ ] Swipe gestures work with screen reader
 - [ ] Progress announced: "Page 1 of 3", etc.
@@ -516,18 +553,21 @@ Emergency: 7 days · Travel: 2 days {.caption}
 - [ ] Color contrast meets WCAG AA
 
 ### Animation Tests
+
 - [ ] Card swipe animation is smooth (60fps)
 - [ ] Progress dot animation works
 - [ ] No animation jank or lag
 - [ ] Haptic feedback triggers on iOS (button press)
 
 ### Integration Tests
+
 - [ ] Metro name dynamically inserted in Card 1
 - [ ] Onboarding completion flag saved to database
 - [ ] Navigation to Home Screen works
 - [ ] Skip flag saved correctly
 
 ### Edge Case Tests
+
 - [ ] Swipe past last card shows bounce effect
 - [ ] Very long metro name handled
 - [ ] Rapid swiping works smoothly

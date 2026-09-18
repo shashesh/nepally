@@ -30,6 +30,7 @@ Once your project is ready:
 3. Add these to your environment files:
 
 **apps/web/.env.local:**
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
@@ -37,6 +38,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
 **apps/mobile/.env:**
+
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
@@ -67,10 +69,12 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    - **Vonage**
 
 **Twilio Setup:**
+
 1. Create account at [Twilio](https://www.twilio.com/)
 2. Get Account SID and Auth Token
 3. Get a phone number
 4. Add credentials in Supabase:
+
    ```
    Twilio Account SID: ACxxxxxxxxxxxx
    Twilio Auth Token: your-auth-token
@@ -78,6 +82,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    ```
 
 **Rate Limits:**
+
 - Free tier: Reasonable limits for development
 - Production: Configure rate limiting in Authentication settings
 
@@ -90,9 +95,11 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create OAuth 2.0 Client ID
    - Add authorized redirect URIs:
+
      ```
      https://xxxxx.supabase.co/auth/v1/callback
      ```
+
 5. Add Client ID and Secret in Supabase
 
 ### 4. Enable Facebook OAuth (Optional)
@@ -104,9 +111,11 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    - Go to [Facebook Developers](https://developers.facebook.com/)
    - Create app and get App ID and App Secret
    - Add redirect URI:
+
      ```
      https://xxxxx.supabase.co/auth/v1/callback
      ```
+
 5. Add App ID and Secret in Supabase
 
 ### 5. Configure Site URL and Redirect URLs
@@ -114,6 +123,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 1. Go to **Authentication** > **URL Configuration**
 2. Set **Site URL**: Your production domain (e.g., `https://nepally.us`)
 3. Add **Redirect URLs**:
+
    ```
    http://localhost:3000/**
    https://nepally.us/**
@@ -192,6 +202,7 @@ seed();
 ```
 
 Run the seed script:
+
 ```bash
 # First, copy and fill in your API keys:
 cp scripts/.env.example scripts/.env
@@ -210,6 +221,7 @@ Storage is enabled by default. Configure buckets:
 2. Create buckets:
 
 **Profile Photos Bucket:**
+
 ```
 Name: user-profiles
 Public: true
@@ -218,6 +230,7 @@ Allowed MIME types: image/jpeg, image/png, image/webp
 ```
 
 **Post Photos Bucket:**
+
 ```
 Name: post-photos
 Public: true
@@ -226,6 +239,7 @@ Allowed MIME types: image/jpeg, image/png, image/webp
 ```
 
 **Chat Images Bucket:**
+
 ```
 Name: chat-images
 Public: false (only participants can access)
@@ -486,6 +500,7 @@ supabase start
 ```
 
 This starts:
+
 - **Database**: `postgresql://postgres:postgres@localhost:54322/postgres`
 - **API**: `http://localhost:54321`
 - **Studio**: `http://localhost:54323`
@@ -496,18 +511,21 @@ This starts:
 Update your environment files for local development:
 
 **apps/web/.env.local:**
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
 ```
 
 **apps/mobile/.env:**
+
 ```env
 EXPO_PUBLIC_SUPABASE_URL=http://localhost:54321
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
 ```
 
 Get local keys with:
+
 ```bash
 supabase status
 ```
@@ -597,10 +615,12 @@ const subscription = supabase
 ### 1. View Logs
 
 **Database Logs:**
+
 1. Go to **Logs** > **Database**
 2. Filter by query, error, or slow queries
 
 **Edge Function Logs:**
+
 ```bash
 # View logs for specific function
 supabase functions logs expire-posts
@@ -610,6 +630,7 @@ supabase functions logs expire-posts --follow
 ```
 
 **API Logs:**
+
 1. Go to **Logs** > **API**
 2. Monitor requests, errors, and performance
 
@@ -700,6 +721,7 @@ psql "postgresql://postgres:[PASSWORD]@db.xxxxx.supabase.co:5432/postgres"
 ### Issue: RLS policies not working
 
 **Solution:**
+
 1. Verify RLS is enabled: `ALTER TABLE users ENABLE ROW LEVEL SECURITY;`
 2. Check policy with `auth.uid()` matches actual user ID
 3. Test in SQL Editor with `set request.jwt.claims` to simulate user
@@ -724,6 +746,7 @@ SELECT * FROM posts WHERE author_id = 'user-uuid-here';
 ### Issue: Edge Functions timing out
 
 **Solution:**
+
 1. Increase function timeout in `supabase/functions/function-name/index.ts`
 2. Optimize database queries
 3. Use connection pooling
@@ -732,10 +755,13 @@ SELECT * FROM posts WHERE author_id = 'user-uuid-here';
 ### Issue: Realtime not working
 
 **Solution:**
+
 1. Enable Realtime on table:
+
    ```sql
    ALTER PUBLICATION supabase_realtime ADD TABLE posts;
    ```
+
 2. Check RLS policies allow user to read
 3. Verify subscription filter syntax
 
@@ -744,12 +770,14 @@ SELECT * FROM posts WHERE author_id = 'user-uuid-here';
 ### 1. Connection Pooling
 
 Supabase provides connection pooling by default:
+
 - Direct connection: `db.xxxxx.supabase.co:5432`
 - Pooled connection: `db.xxxxx.supabase.co:6543` (recommended for serverless)
 
 ### 2. Indexes
 
 Ensure proper indexes exist (already in migration):
+
 ```sql
 -- Check index usage
 SELECT schemaname, tablename, indexname, idx_scan
@@ -790,6 +818,7 @@ const { data, error } = useSWR('posts', async () => {
 ## Scaling Considerations
 
 ### Free Tier Limits
+
 - 500 MB database space
 - 1 GB file storage
 - 2 GB bandwidth
@@ -797,6 +826,7 @@ const { data, error } = useSWR('posts', async () => {
 - 2 million Edge Function invocations
 
 ### Pro Tier ($25/month)
+
 - 8 GB database space
 - 100 GB file storage
 - 250 GB bandwidth
@@ -804,6 +834,7 @@ const { data, error } = useSWR('posts', async () => {
 - Email support
 
 ### Enterprise Tier
+
 - Custom resources
 - SLA
 - Dedicated support

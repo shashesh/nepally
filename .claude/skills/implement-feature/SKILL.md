@@ -10,6 +10,7 @@ When the user invokes `/implement-feature [feature-name]`, follow this context-f
 ## Step 0: Identify the Feature
 
 ASK:
+
 1. **Feature Name:** What feature? (e.g., "housing-post-creation")
 2. **Platform:** Mobile, Web, or Both? (Default: Both)
 3. **Scope:** Full feature or specific screens?
@@ -22,6 +23,7 @@ ASK:
 ## Step 1: Gather Context
 
 Read these files (skip any that don't exist):
+
 - `docs/product/features/[feature-name].md` — Feature spec: requirements, edge cases, metrics
 - `docs/user-journeys/[category]/[number]-[journey-name].md` — Step-by-step flow, pain points, API needs
 - `docs/wireframes/[screen-name].md` — Layout, component specs, states, validation
@@ -36,6 +38,7 @@ Read these files (skip any that don't exist):
 **Use EnterPlanMode for non-trivial implementations.**
 
 Plan should cover:
+
 1. **Shared layer** — Types, API functions, validation schemas, utils, constants needed in `packages/shared/`
 2. **Platform UI** — Screens, components, navigation for each target platform
 3. **File list** — All files to create/modify, organized by package
@@ -43,6 +46,7 @@ Plan should cover:
 5. **Validation checklist** — How you'll verify against docs
 
 **Red flags (stop and restructure if you see these):**
+
 - Types/interfaces defined in `apps/` instead of `packages/shared/src/types/`
 - Supabase query logic in `apps/` instead of `packages/shared/src/api/`
 - Validation schemas in `apps/` instead of `packages/shared/src/validation/`
@@ -68,6 +72,7 @@ Exit plan mode and get user approval before coding.
 For each target platform:
 
 ### Mobile (`apps/mobile/`)
+
 - Create screens in `src/screens/[category]/`
 - Build components importing types/validation/API from `@nepally/shared`
 - Use `StyleSheet.create()` for all styles (never inline)
@@ -75,6 +80,7 @@ For each target platform:
 - Add tests in `src/**/*.test.tsx`
 
 ### Web (`apps/web/`)
+
 - Create pages in `src/pages/`
 - Build components importing from `@nepally/shared`
 - Use CSS Modules for all styles (never inline `style={{}}`)
@@ -87,6 +93,7 @@ Match wireframes: layout, spacing tokens, colors, all interactive states (defaul
 ## Step 5: Validate
 
 Before marking complete:
+
 - [ ] All types/API/validation/utils/constants in `packages/shared/` (none in `apps/`)
 - [ ] `packages/shared/src/index.ts` exports all new code
 - [ ] Apps import from `@nepally/shared` only

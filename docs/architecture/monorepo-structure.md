@@ -106,28 +106,33 @@ The root `package.json` defines workspaces:
 ```
 
 This tells npm that:
+
 - All folders in `apps/` are workspaces
 - All folders in `packages/` are workspaces
 
 ## Benefits of Monorepo
 
 ### 1. Code Sharing
+
 - Share TypeScript types between mobile and web
 - Share business logic and utilities
 - Share validation schemas
 - Single source of truth
 
 ### 2. Coordinated Changes
+
 - Update shared code and both apps in one commit
 - No version conflicts between packages
 - Atomic changes across the stack
 
 ### 3. Simplified Development
+
 - One `git clone` gets entire codebase
 - One `npm install` installs all dependencies
 - Run all apps from root directory
 
 ### 4. Consistent Tooling
+
 - Same ESLint, Prettier, TypeScript config everywhere
 - Shared CI/CD configuration
 - Unified testing strategy
@@ -186,17 +191,20 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 ## Adding a New App
 
 1. Create folder in `apps/`:
+
    ```bash
    mkdir apps/admin
    ```
 
 2. Initialize package:
+
    ```bash
    cd apps/admin
    npm init -y
    ```
 
 3. Update `package.json`:
+
    ```json
    {
      "name": "@nepally/admin",
@@ -207,6 +215,7 @@ npm resolves it to `packages/shared` (no need for `npm link`).
    ```
 
 4. Install from root:
+
    ```bash
    cd ../..
    npm install
@@ -215,17 +224,20 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 ## Adding a New Package
 
 1. Create folder in `packages/`:
+
    ```bash
    mkdir packages/ui-mobile
    ```
 
 2. Initialize package:
+
    ```bash
    cd packages/ui-mobile
    npm init -y
    ```
 
 3. Update `package.json`:
+
    ```json
    {
      "name": "@nepally/ui-mobile",
@@ -237,6 +249,7 @@ npm resolves it to `packages/shared` (no need for `npm link`).
    ```
 
 4. Install from root:
+
    ```bash
    cd ../..
    npm install
@@ -247,21 +260,25 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 ### Daily Development
 
 1. **Start Supabase locally** (terminal 1):
+
    ```bash
    npx supabase start
    ```
 
 2. **Build shared package in watch mode** (terminal 2):
+
    ```bash
    npm run dev --workspace=packages/shared
    ```
 
 3. **Start mobile app** (terminal 3):
+
    ```bash
    npm run mobile
    ```
 
 4. **Start web app** (terminal 4):
+
    ```bash
    npm run web
    ```
@@ -269,15 +286,18 @@ npm resolves it to `packages/shared` (no need for `npm link`).
 ### Making Changes
 
 #### Shared Package
+
 1. Edit files in `packages/shared/src`
 2. TypeScript auto-compiles (if in watch mode)
 3. Mobile and web apps hot-reload
 
 #### Mobile App
+
 1. Edit files in `apps/mobile/src`
 2. Expo hot-reloads automatically
 
 #### Web App
+
 1. Edit files in `apps/web/src`
 2. Next.js hot-reloads automatically
 
@@ -299,21 +319,25 @@ npm run format
 When building for production, follow this order:
 
 1. **Shared package** (must be built first):
+
    ```bash
    npm run build --workspace=packages/shared
    ```
 
 2. **Web app**:
+
    ```bash
    npm run build --workspace=apps/web
    ```
 
 3. **Mobile app**:
+
    ```bash
    eas build --platform all
    ```
 
 4. **Supabase Edge Functions**:
+
    ```bash
    npx supabase functions deploy
    ```
@@ -321,6 +345,7 @@ When building for production, follow this order:
 ## CI/CD Pipeline
 
 GitHub Actions automatically:
+
 1. Installs all dependencies
 2. Builds shared package
 3. Lints and type-checks all code
@@ -335,6 +360,7 @@ See `.github/workflows/ci.yml` for details.
 ### Issue: Module not found `@nepally/shared`
 
 **Solution:** Build the shared package:
+
 ```bash
 npm run build --workspace=packages/shared
 ```
@@ -342,11 +368,13 @@ npm run build --workspace=packages/shared
 ### Issue: Changes in shared package not reflecting
 
 **Solution:** Ensure shared package is in watch mode:
+
 ```bash
 npm run dev --workspace=packages/shared
 ```
 
 Or rebuild:
+
 ```bash
 npm run build --workspace=packages/shared
 ```
@@ -354,6 +382,7 @@ npm run build --workspace=packages/shared
 ### Issue: Conflicting dependencies
 
 **Solution:** Delete all `node_modules` and reinstall:
+
 ```bash
 npm run clean
 npm install
@@ -362,6 +391,7 @@ npm install
 ## Best Practices
 
 1. **Never use relative imports between workspaces**
+
    ```typescript
    // ❌ Bad
    import { Post } from '../../../packages/shared/src/types/post';
@@ -386,6 +416,7 @@ npm install
 ## Future Expansion
 
 Potential additions:
+
 - `packages/ui-mobile` - Shared mobile UI components
 - `packages/ui-web` - Shared web UI components
 - `packages/api-client` - API client (if we add REST API)

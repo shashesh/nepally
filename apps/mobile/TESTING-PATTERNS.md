@@ -9,6 +9,7 @@ React 19's `act()` awaits pending scheduler work before closing. A real `setInte
 ### How to check if a component needs fake timers
 
 Grep the component source for:
+
 - `setInterval` / `clearInterval`
 - `setTimeout` with state updates in the callback
 - Any hook that internally uses intervals (e.g., countdown hooks)
@@ -44,11 +45,13 @@ describe('ComponentWithTimers', () => {
 ## Async Testing Patterns
 
 - Use `await act(async () => {})` after `fireEvent` to flush the microtask chain:
+
   ```typescript
   fireEvent.press(button);
   await act(async () => {});
   expect(mockFn).toHaveBeenCalled();
   ```
+
 - For synchronous state updates (validation errors), assert directly after `fireEvent`.
 
 ## Expire Intervals Before Async Assertions

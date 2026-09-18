@@ -13,12 +13,14 @@ Before starting, ensure you have:
 ## Step 1: Verify Node.js Version
 
 ### Check your current version:
+
 ```bash
 node --version  # Needs v22.13+, v24.3+ or v25+ (React Native 0.86 rejects 22.0-22.12, 23.x and 24.0-24.2)
 npm --version   # Should show 10.x.x or higher
 ```
 
 ### If you need to upgrade (Windows):
+
 ```bash
 # Download and install from https://nodejs.org/
 # Or use nvm-windows (24 matches .nvmrc and CI):
@@ -57,11 +59,13 @@ npm install
 
 1. **Create project** at https://supabase.com
 2. **Run database migrations**:
+
    ```bash
    # The schema is in supabase/migrations/001_schema.sql
    # Copy and paste it into Supabase SQL Editor
    # Then run 002_seed_data.sql and 003_storage.sql
    ```
+
 3. **Get credentials** (same as Option A)
 
 ### Important: Seed Metro Area Data
@@ -71,12 +75,14 @@ Metro areas and ZIP codes are seeded from the Census Bureau and HUD APIs (~390 m
 **Option A: Run the automated seed script (recommended)**
 
 1. Copy the env template and fill in your API keys:
+
    ```bash
    cp scripts/.env.example scripts/.env
    # Edit scripts/.env with your keys (see file for registration URLs)
    ```
 
 2. Run the seed script:
+
    ```bash
    npm run seed:metro
    ```
@@ -118,6 +124,7 @@ cp .env.example .env
 ```
 
 **apps/mobile/.env:**
+
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
@@ -134,6 +141,7 @@ cd ../web
 ```
 
 **apps/web/.env.local:**
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
@@ -151,6 +159,7 @@ npm start
 ```
 
 **You should see:**
+
 ```
 › Metro waiting on exp://192.168.x.x:8081
 › Scan the QR code above with Expo Go (Android) or Camera app (iOS)
@@ -205,6 +214,7 @@ npm run dev
 ```
 
 **You should see:**
+
 ```
    ▲ Next.js 16.2.7 (Turbopack)
    - Local:        http://localhost:3000
@@ -397,6 +407,7 @@ npm start
 
 - Make sure you inserted sample ZIP codes in Supabase (Step 3)
 - Check `metro_area_zipcodes` table has data:
+
   ```sql
   SELECT * FROM metro_area_zipcodes LIMIT 10;
   ```
@@ -511,6 +522,7 @@ npm run test:coverage --workspace=packages/shared
    - VS Code: For editing files
 
 **Hot Reload Works!** Edit any file and see changes instantly:
+
 - Mobile: Shake device → "Reload"
 - Web: Browser auto-refreshes
 
@@ -536,12 +548,14 @@ VALUES (
 ### Check Logs
 
 **Mobile app logs:**
+
 ```bash
 # In the terminal running npm start
 # All console.log() and errors appear here
 ```
 
 **Web app logs:**
+
 ```bash
 # Terminal running npm run dev shows server logs
 # Browser console (F12) shows client logs
@@ -655,6 +669,7 @@ npm run test:coverage
 **That's it!** You should now have both apps running. Start with the mobile app using the test ZIP codes and walk through the complete onboarding flow.
 
 **Test ZIP Codes:**
+
 - `75001` - Dallas-Fort Worth-Arlington, TX (CBSA 19100)
 - `10001` - New York-Newark-Jersey City, NY (CBSA 35620)
 - `90001` - Los Angeles-Long Beach-Anaheim, CA (CBSA 31080)
