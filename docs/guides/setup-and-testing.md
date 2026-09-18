@@ -413,6 +413,22 @@ cd apps/web
 npm run type-check
 ```
 
+### Issue: `react-hooks/*` lint errors (React Compiler rules)
+
+`eslint-plugin-react-hooks` 7 enforces the React Compiler rules as errors in every
+workspace. The React Compiler itself is **not** enabled, so keep `useCallback`/`useMemo`
+where something depends on their identity. Fix the code; don't disable the rule:
+
+| Rule | Usual fix here |
+| --- | --- |
+| `refs` | `useRef(new Animated.Value(x)).current` → `useAnimatedValue(x)` from `react-native`. A "latest value" ref is written in `useLayoutEffect`, not during render. `PanResponder.create` goes in `useMemo` with its real deps (callbacks inside it may not read `ref.current`) |
+| `set-state-in-effect` | Derive the value during render; or adjust state when a prop changes ([react.dev](https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)); or start `loading` as `true`. Fetch inside the effect and set state after the `await`, behind a `cancelled` flag. For refresh/retry, bump a `reloadKey` state that the effect depends on |
+| `immutability` ("accessed before declared") | An effect calling a loader declared below it — move the fetch into the effect as above |
+| `preserve-manual-memoization` | Deps don't match the body, e.g. `[user?.id]`. Hoist `const userId = user?.id` and use it in both |
+| `purity` | No `Date.now()` in render: `const now = useNow()` (each app's `hooks/useNow.ts`, refreshed every minute), passed to pure shared helpers such as `getDaysSinceRefresh(refreshedAt, now)` |
+
+Rule docs: [react.dev/reference/eslint-plugin-react-hooks](https://react.dev/reference/eslint-plugin-react-hooks).
+
 ### Issue: Port 3000 already in use (Web)
 
 ```bash

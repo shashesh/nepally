@@ -1,8 +1,46 @@
 ---
 title: React Compiler lint cleanup
-status: planned
+status: implemented
 created: 2026-09-10
 ---
+
+> **Outcome (2026-09-18):** done in one pass on `chore/fix-lint-warnings`.
+> `npm run lint` went from 174 warnings (135 mobile, 39 web, including 2
+> `no-unused-vars` in `apps/mobile/create-placeholder-assets.js`) to 0. The
+> `warn` overrides were deleted from both ESLint configs, so all five rules are
+> back to the plugin's `recommended` severity, `error`. No `eslint-disable` was
+> added, and four stale `react-hooks/exhaustive-deps` disables were removed.
+> Fixes are code changes, not suppressions. The fix patterns, each checked
+> against the plugin, are summarised in
+> [setup-and-testing.md](../../guides/setup-and-testing.md#issue-react-hooks-lint-errors-react-compiler-rules).
+> Several fixes also closed real bugs:
+>
+> - Stale responses overwriting newer ones: cancel flags on every
+>   effect-driven fetch.
+> - FollowButton showing an enabled "Follow" before the status loaded.
+> - The web home-metro lookup overwriting a metro the user had just picked.
+> - A second ProfileScreen toast being wiped mid-fade.
+> - Pull-to-refresh spinners stuck on the no-metro and no-user paths.
+>
+> The "days since refresh" and "days until soft expiry" math, previously
+> duplicated across both apps, now lives in `@nepally/shared`
+> (`getDaysSinceRefresh`, `getDaysUntilSoftExpiry`). Components get the time
+> from a `useNow()` hook, one in each app, which updates every minute. That
+> keeps "Open now" and day counts current on screens that stay mounted, such
+> as the mobile Profile tab.
+>
+> Follow-ups deliberately left out of scope:
+>
+> - Shared `formatRelativeTime` still reads the clock itself. Give it a `now`
+>   parameter.
+> - The feed first-page load, the web post-edit form and web notifications
+>   realtime depend on the whole `user` object, which is replaced on every
+>   token refresh. They should depend on `user?.id`.
+> - The web active location was never actually restored from localStorage, so
+>   the dead read was removed. Restoring the last-chosen metro is a product
+>   decision.
+> - Three pre-existing `exhaustive-deps` disables remain in mobile
+>   `CreatePostScreen.tsx`: the draft prompt and the header `setOptions`.
 
 # React Compiler Lint Cleanup
 
