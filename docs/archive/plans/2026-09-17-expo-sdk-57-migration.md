@@ -107,7 +107,7 @@ In short, SDK 54 was never fully aligned. This migration fixes all three checks.
 | `manipulateAsync` deprecated | 52+ | Still exported in 57.0.18. Stays; follow-up. |
 | `expo/src/launch/registerRootComponent` deep import (`apps/mobile/index.js`) | n/a | Still resolves in 57.0.23. Stays; follow-up. |
 | Config plugin options for `expo-location`, `expo-image-picker`, `expo-notifications` | n/a | Every option in `app.json` still exists in the 57 plugin types. |
-| Node minimum ^20.19.4 / ^22.13.0 / ^24.3.0 | 55 | OK: root `engines` is `>=22`, CI and local run Node 24. |
+| Node minimum ^20.19.4 / ^22.13.0 / ^24.3.0 | 55 | CI and local run Node 24, but root `engines` `>=22` still admitted 22.0–22.12, 23.x and 24.0–24.2, which React Native 0.86.3 / Metro 0.84 reject. Raised to `^22.13.0 \|\| ^24.3.0 \|\| >=25.0.0` after PR review (decision 10). |
 
 ### Other facts the plan relies on
 
@@ -138,11 +138,20 @@ Record every deviation from this plan here, with the reason.
 2. **Task 2, Step 9's grep false-positives** on `@tabler/icons-react`, `@floating-ui/react-dom` and `@testing-library/react`, because the pattern is not anchored. An anchored scan of `package-lock.json` (every `packages` key ending in `node_modules/react` or `node_modules/react-dom`) found exactly one of each, at 19.2.3.
 3. **`@react-native-async-storage/async-storage` `2.2.0` and `@react-native-community/datetimepicker` `9.1.0` are exact pins on purpose.** SDK 57's `bundledNativeModules.json` lists both without a range, so any patch drift would show up as an `expo-doctor` version mismatch. Bump them only with the next SDK.
 4. **npm 12 blocks the `esbuild` and `unrs-resolver` postinstall scripts** (`install-scripts ... not covered by allowScripts`). This comes from npm 12's own install-script gating, not repo config, and those versions did not change. Their platform binaries (`@esbuild/win32-x64`, `@unrs/resolver-binding-win32-x64-msvc`) are installed and both packages load, so nothing breaks.
-5. **React Native 0.86 removed `StyleSheet.absoluteFillObject`, which the audit missed.** Type-check caught 9 sites in 6 mobile files. At runtime the value is `undefined`, and spreading `undefined` or putting it in a style array fails silently, so all unit tests still passed while media overlays, the lightbox and sheet backdrops, the upload and menu overlays, and the reaction-dismiss layer lost `position: 'absolute'`. Fixed in 5750bd8 with `StyleSheet.absoluteFill`. The two inline `{ zIndex: 10 }` styles moved into `StyleSheet.create`. Regression tests pin the ReportPostSheet backdrop and the PostCard reaction-dismiss overlay (5750bd8) and the PostDetailScreen one (d36acfd). Each was seen failing without the fix. No other `StyleSheet` member the app uses was removed.
+5. **React Native 0.86 removed `StyleSheet.absoluteFillObject`, which the audit missed.** Type-check caught 9 sites in 6 mobile files. At runtime the value is `undefined`, and spreading `undefined` or putting it in a style array fails silently, so all unit tests still passed while media overlays, the lightbox and sheet backdrops, the upload and menu overlays, and the reaction-dismiss layer lost `position: 'absolute'`. Fixed in 5750bd8 with `StyleSheet.absoluteFill`. The two inline `{ zIndex: 10 }` styles moved into `StyleSheet.create`. Regression tests pin the ReportPostSheet backdrop and the PostCard reaction-dismiss overlay (5750bd8) and the PostDetailScreen one (d36acfd). Each was seen failing without the fix. No other `StyleSheet` member the app uses was removed. The guard against reintroduction is `npm run type-check`, which is CI-gated: the RN 0.86 typings no longer declare `absoluteFillObject`, so any use fails to compile. The tests pin one site per pattern (spread and style array), not all nine.
 6. **The local web e2e first failed 101/101 for an environmental reason:** `@playwright/test` 1.63.0 (unchanged by this branch) needs chromium-headless-shell build 1243, and the machine only had 1223. `npx playwright install chromium` fixed it, and then all 101 passed on React 19.2.3.
 7. **Task 8: two additions, and one stale line the plan missed.** TECH-VERSIONS' Expo SDK 57 section gained a `StyleSheet.absoluteFillObject` bullet (decision 5). The Web table's Mantine row still said "9.x waits for React 19.2"; it was fixed in 3a243cf. The web-UI-overhaul plan's lines 2839 and 2855 still say the same, but they are fenced records of text that completed PR 1 Task 1.6 wrote, so they stay as history. The setup guide has no `playwright install` step to annotate.
 8. **`master` moved during implementation.** PR #68 (react-navigation 7.4.1 / 7.19.2 / core 7.22.1, which clears `decode-uri-component`) conflicted in `package-lock.json`. Merged in 6fa1792 by taking master's lockfile and re-running `npx -y npm@12 install`, which kept both the SDK 57 versions and the security bump. Re-verified afterwards: libc 0; one React; all expo-* on 57.x; type-check, lint (135/39/0), test:ci (523/768/514/12) and expo-doctor 21/21 all pass.
 9. **Task 7's first device run crashed at startup, and the audit had called this "already handled".** Expo Go SDK 57 on Android showed `[runtime not ready]: Error: expo-notifications: Android Push notifications ... removed from Expo Go`. The package's `index.js` re-exports from `DevicePushTokenAutoRegistration.fx`, which calls `addPushTokenListener` on import, and since SDK 55 `warnOfExpoGoPushUsage` throws in Expo Go on Android. So the top-level `import * as Notifications from 'expo-notifications'` in `services/notifications.ts` (loaded by AuthContext) crashed the app before the `isExpoGo` early return could run. The audit only read the top of `index.js` and missed the side-effect import. `expo-notifications` 57.0.20 has the same code, so there is no upstream fix. Fixed in a2cbe9c: a type-only import, plus a lazy `require` behind the `isExpoGo` guard. The regression test makes the mocked module throw on import in Expo Go; it failed at `notifications.ts:1:1` before the fix. The review found no other `expo-*` package this app uses that throws when loaded in Expo Go. The rule is now recorded in TECH-VERSIONS and the setup guide. Task 7 Step 2's expected yellow `expo-notifications functionality is not fully supported in Expo Go` warning no longer appears, because the module is never loaded in Expo Go.
+10. **Copilot's review of PR #70 (on ff4bf27).**
+    - **Accepted:**
+      - The root `engines.node` was `>=22.0.0`, which admits 22.0–22.12, 23.x and 24.0–24.2. React Native 0.86.3 and Metro 0.84 reject those versions. It is now `^22.13.0 || ^24.3.0 || >=25.0.0`, the repo's Node 22 floor intersected with React Native's range. The lockfile's root `engines` was synced with npm 12 (a one-line diff), and TECH-VERSIONS and the setup guide were updated to match.
+      - The Files table now lists the source and test files that Tasks 6–7 changed.
+      - Task 7 Step 2 no longer expects an `expo-notifications` warning.
+    - **Already done:** the PR description was rewritten one second after the review ran.
+    - **Declined:**
+      - *Tick every checkbox before archiving.* This repo's archived plans keep their checkboxes unticked, and the Live tracker plus `status:` are the record. Ticking every box would also claim that the conditional Task 5 Steps 2–3 were run; they were skipped because `expo-doctor` was already clean.
+      - *Add tests for the remaining six `absoluteFill` sites.* The reintroduction guard is the CI-gated type-check (decision 5), and each pattern already has a failing-first test.
 
 ## Live tracker
 
@@ -180,7 +189,19 @@ One task is `In Progress` at a time. Update this table when a task starts and wh
 | `docs/plans/active/2026-09-14-web-ui-overhaul.md` | Modify | React pin constraint 19.1.4 → 19.2.3 |
 | `docs/INDEX.md` | Modify | This plan's entry (added now, moved to archive in Task 9) |
 
-No app source file changes are planned. If Task 6 or 7 forces one, add it to this table under "Decisions made during implementation".
+The plan expected no app source changes. Tasks 6 and 7 forced these (decisions 5 and 9), and the final review and the PR review added docs:
+
+| Path | Change | Responsibility |
+|---|---|---|
+| `apps/mobile/src/components/cards/PostCard.tsx` + `.test.tsx` | Modify | `absoluteFill`; reaction-dismiss style moved into `StyleSheet.create`; regression test |
+| `apps/mobile/src/screens/PostDetailScreen.tsx` + `.test.tsx` | Modify | `absoluteFill` (3 sites); reaction-dismiss style; regression test |
+| `apps/mobile/src/components/sheets/ReportPostSheet.tsx` + `.test.tsx` | Modify | `absoluteFill` backdrop; regression test |
+| `apps/mobile/src/components/location/LocationSwitcherSheet.tsx` | Modify | `absoluteFill` overlay |
+| `apps/mobile/src/screens/chat/MessageThreadScreen.tsx` | Modify | `absoluteFill` menu overlay |
+| `apps/mobile/src/screens/profile/EditProfileScreen.tsx` | Modify | `absoluteFill` upload overlay |
+| `apps/mobile/src/services/notifications.ts` + `.test.ts` | Modify | Lazy `expo-notifications` load behind `isExpoGo`; import-throws regression tests |
+| `apps/mobile/assets/README.md` | Modify | Splash asset guidance for the plugin-drawn splash |
+| `.clauderc`, `.github/copilot-instructions.md`, `docs/plans/active/2026-09-14-web-ui-overhaul.md` | Merge | Brought in from master (PR #69, docs only) |
 
 ---
 
@@ -600,7 +621,7 @@ On Android, install or update **Expo Go** from the Play Store. If you sideloaded
 npm run mobile
 ```
 
-Scan the QR code with Expo Go. Expected: the app loads with no red screen and no `Incompatible React versions` error. One yellow `expo-notifications functionality is not fully supported in Expo Go` warning in the terminal is expected.
+Scan the QR code with Expo Go. Expected: the app loads with no red screen and no `Incompatible React versions` error. No `expo-notifications` warning or error should appear either, because the app never loads that module in Expo Go (decision 9). Any `expo-notifications` message means someone added an eager import.
 
 - [ ] **Step 3: Walk the flows that exercise each native module**
 
