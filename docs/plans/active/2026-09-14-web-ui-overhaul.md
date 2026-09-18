@@ -110,7 +110,7 @@ The spec is updated in the same commit as this plan.
    - **Fix:** `apps/web/vitest.setup.ts` defines a no-op `ResizeObserver`, alongside the existing `scrollIntoView` and `matchMedia` stubs.
    - **Scope:** global to the web suite. All 755 web tests pass with it, so no existing test depended on its absence.
 
-15. **`next-env.d.ts` churn is not committed.** Running the e2e suite builds for production, which rewrites the file's imports from `./.next/dev/types/…` to `./.next/types/…`; `next dev` flips them back. The committed version keeps the `dev` paths.
+15. **`next-env.d.ts` churn is not committed.** Running the e2e suite builds for production, which rewrites the file's imports from `./.next/dev/types/…` to `./.next/types/…`; `next dev` flips them back. Since then the file is untracked and listed in `apps/web/.gitignore`, as the Next.js docs recommend, so the churn no longer shows up in git.
 16. **The suggestions listbox needed an accessible name.** The first baselines run recorded `aria-input-field-name` (serious) for `visual-desktop:search-dropdown`.
 
    - **Cause:** `Combobox.Options` renders a `div` with `role="listbox"`, and `aria-input-field-name` covers the `listbox` role. The input itself was already named, which is why only the dropdown-open page flagged it.
