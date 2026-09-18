@@ -29,7 +29,7 @@ This document serves as the single source of truth for all technology versions u
 |---------|---------|-------|
 | **next** | 16.3.x | Turbopack; works with React 19.2.3 |
 | **eslint-config-next** | 16.x | Flat config, exported as a config array; requires ESLint >= 9 |
-| **@mantine/core / hooks / form / notifications / modals** | 8.3.x | All on one version; 9.x waits for React 19.2 (see Deferred Upgrades) |
+| **@mantine/core / hooks / form / notifications / modals** | 8.3.x | All on one version; 9.x is unblocked by React 19.2.3 but ships as its own PR (see Deferred Upgrades) |
 
 ### Shared Package (`packages/shared`)
 
@@ -310,7 +310,7 @@ part of an Expo SDK upgrade, to that SDK's React version.
 - [React 19 Release Notes](https://react.dev/blog/2024/12/05/react-19)
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Expo SDK 57 changelog](https://expo.dev/changelog/sdk-57)
-- [React Native blog (0.86 release notes)](https://reactnative.dev/blog)
+- [React Native blog (release notes)](https://reactnative.dev/blog)
 
 ---
 
