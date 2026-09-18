@@ -60,10 +60,11 @@
 
 ## Git Workflow Rules (Non-Negotiable)
 - **NEVER commit or push directly to the master branch.**
-- Before every `git commit` or `git push`, verify the current branch is NOT master.
+- Before every `git commit`, `git push` or `gh pr create`, verify the current branch is NOT master.
 - If on master, create or switch to a feature branch first.
 - All changes must go through feature branches and pull requests.
-- Never auto-commit or auto-push — always confirm with the user first.
+- On a feature branch, commit, push, and open a pull request against master without asking first.
+- Never merge a pull request into master unless the user asks.
 
 ## Project-Specific Conventions
 - Web route logic lives in `apps/web/src/pages/*` with providers in `apps/web/src/pages/_app.tsx`.

@@ -21,7 +21,7 @@
 1. **Plan First, Execute Second**
    - For any request involving multiple steps or decisions, ALWAYS enter plan mode
    - Present the plan with options and rationale
-   - Wait for approval before proceeding
+   - Wait for approval of the plan before executing it
 
 2. **Structured Thinking**
    - Break down requests into clear phases
@@ -38,12 +38,12 @@
    - Keep the docs/product/roadmap.md as the single source of truth
    - Create separate documents for detailed specifications
 
-5. **Git Workflow - User Controls Commits**
-   - NEVER commit changes unless user explicitly requests it
-   - NEVER push to remote unless user explicitly requests it
-   - User will decide when and how to commit/push
+5. **Git Workflow - Feature Branches Only**
+   - NEVER commit or push to `master`; verify the current branch before every commit, push and `gh pr create`
+   - On a feature branch, commit, push, and open a PR against `master` without asking
+   - Never merge a PR into `master` unless the user asks
+   - Never force-push to `master`
    - Only create/modify files when requested
-   - User will say "commit" or "commit and push" when ready
 
 6. **Shared-First Code Architecture (MANDATORY)**
    - ALL non-UI code (types, API calls, validation, utils, constants) MUST live in `packages/shared/`
