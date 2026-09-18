@@ -11,6 +11,8 @@ jest.mock('../config/supabase', () => ({
         data: { subscription: { unsubscribe: jest.fn() } },
       })),
       signOut: jest.fn(),
+      startAutoRefresh: jest.fn(),
+      stopAutoRefresh: jest.fn(),
     },
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
@@ -35,6 +37,7 @@ jest.mock('../services/notifications', () => ({
 }));
 
 import React from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { renderHook, act } from '@testing-library/react-native';
 import { AuthContext, AuthProvider } from './AuthContext';
 import { supabase } from '../config/supabase';
@@ -172,7 +175,7 @@ describe('AuthContext', () => {
     expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
   });
 
-  it('initializes session timestamps when missing on cold start with existing session', async () => {
+  it('keeps a persisted session however long the user has been away', async () => {
     mockAuth.getSession.mockResolvedValue({
       data: { session: { user: { id: 'user-1', email: 'test@nusa.com' } } },
       error: null,
@@ -183,37 +186,52 @@ describe('AuthContext', () => {
     } as GetUserResult);
     mockGetMyProfile.mockResolvedValue({ data: { id: 'user-1', email: 'test@nusa.com', full_name: 'Test User', trust_level: 1, is_premium: false } });
 
-    // No timestamps in storage — simulates first launch after upgrade or storage clear
-    renderHook(() => React.useContext(AuthContext), { wrapper });
-    await act(async () => {});
-    await act(async () => {});
-    await act(async () => {});
-
-    const signInAt = await AsyncStorage.getItem('@nusa:session_sign_in_at');
-    const lastActivity = await AsyncStorage.getItem('@nusa:session_last_activity');
-    const userId = await AsyncStorage.getItem('@nusa:session_user_id');
-    expect(signInAt).not.toBeNull();
-    expect(lastActivity).not.toBeNull();
-    expect(userId).toBe('user-1');
-  });
-
-  it('signs out when session timestamps are corrupted (NaN)', async () => {
-    mockAuth.getSession.mockResolvedValue({
-      data: { session: { user: { id: 'user-1', email: 'test@nusa.com' } } },
-      error: null,
-    } as GetSessionResult);
-    mockAuth.signOut.mockResolvedValue({ error: null } as SignOutResult);
-
-    await AsyncStorage.setItem('@nusa:session_last_activity', 'corrupted');
-    await AsyncStorage.setItem('@nusa:session_sign_in_at', 'corrupted');
+    // Timestamps an older build left behind: last active 90 days ago,
+    // signed in 400 days ago. Sessions no longer expire on either.
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    await AsyncStorage.setItem('@nusa:session_last_activity', String(Date.now() - 90 * DAY_MS));
+    await AsyncStorage.setItem('@nusa:session_sign_in_at', String(Date.now() - 400 * DAY_MS));
 
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
     await act(async () => {});
     await act(async () => {});
     await act(async () => {});
 
-    expect(supabase.auth.signOut).toHaveBeenCalled();
-    expect(result.current.user).toBeNull();
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
+    expect(result.current.user?.id).toBe('user-1');
+  });
+
+  it('refreshes the session token only while the app is in the foreground', async () => {
+    let handleAppStateChange: ((state: AppStateStatus) => void) | null = null;
+    // The react-native Jest preset already mocks addEventListener; override
+    // one call only so later tests keep the preset's default subscription.
+    jest.spyOn(AppState, 'addEventListener').mockImplementationOnce((_type, handler) => {
+      handleAppStateChange = handler as (state: AppStateStatus) => void;
+      return { remove: jest.fn() };
+    });
+
+    renderHook(() => React.useContext(AuthContext), { wrapper });
+    await act(async () => {});
+
+    expect(handleAppStateChange).not.toBeNull();
+
+    act(() => handleAppStateChange!('background'));
+    expect(mockAuth.stopAutoRefresh).toHaveBeenCalledTimes(1);
+    expect(mockAuth.startAutoRefresh).not.toHaveBeenCalled();
+
+    act(() => handleAppStateChange!('active'));
+    expect(mockAuth.startAutoRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops listening for app state changes on unmount', async () => {
+    const remove = jest.fn();
+    jest.spyOn(AppState, 'addEventListener').mockImplementationOnce(() => ({ remove }));
+
+    const { unmount } = renderHook(() => React.useContext(AuthContext), { wrapper });
+    await act(async () => {});
+    unmount();
+
+    expect(remove).toHaveBeenCalledTimes(1);
   });
 
   it('signs out and clears user', async () => {

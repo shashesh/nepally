@@ -137,10 +137,10 @@ Exit Criteria
 
 Acceptance Criteria (Decision-Aligned)
 
-- Session inactivity timeout is enforced at 30 minutes.
-- Absolute session max age is enforced at 30 days from sign-in.
-- Sensitive actions require recent auth within 5 minutes.
-- Silent refresh is blocked once absolute max age is exceeded.
+- ~~Session inactivity timeout is enforced at 30 minutes.~~ Superseded by the [long-lived sessions ADR](../../decisions/2026-09-18-long-lived-sessions.md).
+- ~~Absolute session max age is enforced at 30 days from sign-in.~~ Superseded by the same ADR.
+- Sensitive actions require re-authentication (password, or an emailed code for Google/Apple accounts) — per the ADR.
+- ~~Silent refresh is blocked once absolute max age is exceeded.~~ Superseded by the same ADR.
 - Media URL policy Stage A is implemented: block unsafe schemes and local/private hosts, warn and fallback on unknown hosts, emit telemetry for blocked and warned URLs.
 
 ---
@@ -401,6 +401,8 @@ Exit Criteria
 ## 12) Decisions (Resolved)
 
 ### Session Timeout Policy
+
+> **Superseded 2026-09-18** by [ADR: long-lived sessions](../../decisions/2026-09-18-long-lived-sessions.md). Sessions now stay signed in until sign-out, with no inactivity timeout or maximum age. Sensitive actions re-authenticate instead. The text below is kept for history.
 
 Decision: Adopt a hybrid timeout model.
 
