@@ -1,7 +1,8 @@
 import 'react-native-get-random-values';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import * as aesjs from 'aes-js';
+import { gcm } from '@noble/ciphers/aes.js';
+import { bytesToHex, hexToBytes } from '@noble/ciphers/utils.js';
 
 /**
  * Supabase auth storage that keeps the session encrypted at rest.
@@ -10,18 +11,19 @@ import * as aesjs from 'aes-js';
  * so the refresh token must not sit in plain AsyncStorage. Adapted from
  * Supabase's LargeSecureStore pattern for Expo: the session is too large for
  * the keychain, so a random AES-256 key lives in expo-secure-store (iOS
- * Keychain / Android Keystore) and the session, encrypted with it in CTR mode,
- * lives in AsyncStorage.
+ * Keychain / Android Keystore) and the session, encrypted with it, lives in
+ * AsyncStorage.
  *
  * Differences from the Supabase sample:
- * - One key per entry, created on first write, and a random 128-bit initial
- *   counter per write (stored with the ciphertext) so no keystream is reused.
- *   Each write then touches AsyncStorage only, so an app killed mid-write
- *   keeps the previous session instead of pairing a new key with old
- *   ciphertext.
+ * - AES-256-GCM (@noble/ciphers, audited) instead of unauthenticated AES-CTR,
+ *   so a tampered or corrupted record fails to decrypt instead of returning
+ *   altered data. Every write uses a random 96-bit nonce.
+ * - One key per entry, created on first write. Each write then touches
+ *   AsyncStorage only, so an app killed mid-write keeps the previous session.
  * - Operations run one at a time, so racing first writes cannot create two keys.
- * - Encrypted values carry a prefix, so a plain-text session saved by an older
- *   build is recognised and re-encrypted in place instead of being lost.
+ * - UTF-8 conversion handles 4-byte characters (emoji). The sample's aes-js
+ *   decoder corrupts them, which breaks the session JSON.
+ * - A plain-text session saved by an older build is re-encrypted in place.
  * - On iOS the key is readable after first unlock and never leaves the device.
  *   On Android the expo-secure-store config plugin keeps it out of backups. A
  *   backup restored onto a new phone therefore holds ciphertext without its
@@ -30,7 +32,8 @@ import * as aesjs from 'aes-js';
 
 const ENCRYPTED_PREFIX = 'enc:v1:';
 const KEY_BYTES = 32;
-const COUNTER_BYTES = 16;
+const NONCE_BYTES = 12;
+const KEY_HEX_PATTERN = /^[0-9a-f]{64}$/;
 
 const KEYCHAIN_OPTIONS: SecureStore.SecureStoreOptions = {
   keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
@@ -44,32 +47,51 @@ function oneAtATime<T>(operation: () => Promise<T>): Promise<T> {
   return run;
 }
 
+// Hermes has no TextDecoder, so convert through percent-encoding, which every
+// JS engine supports. decodeURIComponent throws on invalid UTF-8.
+function utf8ToBytes(text: string): Uint8Array {
+  const escaped = encodeURIComponent(text);
+  const bytes: number[] = [];
+  for (let i = 0; i < escaped.length; i++) {
+    if (escaped[i] === '%') {
+      bytes.push(parseInt(escaped.slice(i + 1, i + 3), 16));
+      i += 2;
+    } else {
+      bytes.push(escaped.charCodeAt(i));
+    }
+  }
+  return Uint8Array.from(bytes);
+}
+
+function bytesToUtf8(bytes: Uint8Array): string {
+  let escaped = '';
+  for (const byte of bytes) escaped += `%${byte.toString(16).padStart(2, '0')}`;
+  return decodeURIComponent(escaped);
+}
+
 async function getOrCreateKey(key: string): Promise<Uint8Array> {
   const existing = await SecureStore.getItemAsync(key, KEYCHAIN_OPTIONS);
-  if (existing) return aesjs.utils.hex.toBytes(existing);
+  if (existing && KEY_HEX_PATTERN.test(existing)) return hexToBytes(existing);
 
+  // No key yet, or a malformed one that could never decrypt anything.
   const created = crypto.getRandomValues(new Uint8Array(KEY_BYTES));
-  await SecureStore.setItemAsync(key, aesjs.utils.hex.fromBytes(created), KEYCHAIN_OPTIONS);
+  await SecureStore.setItemAsync(key, bytesToHex(created), KEYCHAIN_OPTIONS);
   return created;
 }
 
 function encrypt(encryptionKey: Uint8Array, value: string): string {
-  const counter = crypto.getRandomValues(new Uint8Array(COUNTER_BYTES));
-  const cipher = new aesjs.ModeOfOperation.ctr(encryptionKey, new aesjs.Counter(counter));
-  const encrypted = cipher.encrypt(aesjs.utils.utf8.toBytes(value));
-  return `${ENCRYPTED_PREFIX}${aesjs.utils.hex.fromBytes(counter)}:${aesjs.utils.hex.fromBytes(encrypted)}`;
+  const nonce = crypto.getRandomValues(new Uint8Array(NONCE_BYTES));
+  const sealed = gcm(encryptionKey, nonce).encrypt(utf8ToBytes(value));
+  return `${ENCRYPTED_PREFIX}${bytesToHex(nonce)}:${bytesToHex(sealed)}`;
 }
 
-function decrypt(encryptionKey: Uint8Array, stored: string): string | null {
-  const [counterHex, encryptedHex] = stored.slice(ENCRYPTED_PREFIX.length).split(':');
-  if (!counterHex || counterHex.length !== COUNTER_BYTES * 2 || encryptedHex === undefined) {
-    return null;
+// Throws when the record is malformed, tampered with, or sealed under another key.
+function decrypt(encryptionKey: Uint8Array, stored: string): string {
+  const [nonceHex, sealedHex] = stored.slice(ENCRYPTED_PREFIX.length).split(':');
+  if (nonceHex?.length !== NONCE_BYTES * 2 || !sealedHex) {
+    throw new Error('Malformed session record');
   }
-  const cipher = new aesjs.ModeOfOperation.ctr(
-    encryptionKey,
-    new aesjs.Counter(aesjs.utils.hex.toBytes(counterHex))
-  );
-  return aesjs.utils.utf8.fromBytes(cipher.decrypt(aesjs.utils.hex.toBytes(encryptedHex)));
+  return bytesToUtf8(gcm(encryptionKey, hexToBytes(nonceHex)).decrypt(hexToBytes(sealedHex)));
 }
 
 async function writeEncrypted(key: string, value: string): Promise<void> {
@@ -111,9 +133,12 @@ async function readItem(key: string): Promise<string | null> {
     return null;
   }
 
-  const decrypted = decrypt(aesjs.utils.hex.toBytes(keyHex), stored);
-  if (decrypted === null) console.warn('Stored session is malformed; ignoring it');
-  return decrypted;
+  try {
+    return decrypt(hexToBytes(keyHex), stored);
+  } catch (error) {
+    console.warn('Stored session could not be decrypted; ignoring it:', error);
+    return null;
+  }
 }
 
 async function removeEntry(key: string): Promise<void> {

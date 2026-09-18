@@ -131,6 +131,44 @@ describe('secureSessionStorage', () => {
     await expect(secureSessionStorage.getItem(STORAGE_KEY)).resolves.toBe(SESSION);
   });
 
+  it('round-trips non-ASCII text such as Nepali names', async () => {
+    const session = JSON.stringify({ user: { full_name: 'सीता गुरुङ', note: 'नमस्ते 🙏' } });
+
+    await secureSessionStorage.setItem(STORAGE_KEY, session);
+
+    await expect(secureSessionStorage.getItem(STORAGE_KEY)).resolves.toBe(session);
+  });
+
+  it('rejects a tampered session instead of returning altered data', async () => {
+    await secureSessionStorage.setItem(STORAGE_KEY, SESSION);
+    const stored = (await AsyncStorage.getItem(STORAGE_KEY))!;
+    const lastChar = stored.slice(-1);
+    await AsyncStorage.setItem(STORAGE_KEY, stored.slice(0, -1) + (lastChar === '0' ? '1' : '0'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(secureSessionStorage.getItem(STORAGE_KEY)).resolves.toBeNull();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('returns null instead of throwing when the stored key is malformed', async () => {
+    await secureSessionStorage.setItem(STORAGE_KEY, SESSION);
+    mockSecureStore.set(STORAGE_KEY, 'abcd');
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(secureSessionStorage.getItem(STORAGE_KEY)).resolves.toBeNull();
+    warn.mockRestore();
+  });
+
+  it('replaces a malformed key on the next write', async () => {
+    mockSecureStore.set(STORAGE_KEY, 'abcd');
+
+    await secureSessionStorage.setItem(STORAGE_KEY, SESSION);
+
+    expect(mockSecureStore.get(STORAGE_KEY)).toMatch(/^[0-9a-f]{64}$/);
+    await expect(secureSessionStorage.getItem(STORAGE_KEY)).resolves.toBe(SESSION);
+  });
+
   it('removes both the encrypted session and its key', async () => {
     await secureSessionStorage.setItem(STORAGE_KEY, SESSION);
 
