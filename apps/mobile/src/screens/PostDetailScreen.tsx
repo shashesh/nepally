@@ -972,6 +972,7 @@ export default function PostDetailScreen() {
             {reactionVisible && (
               <>
                 <Pressable
+                  testID="reaction-dismiss-overlay"
                   style={styles.reactionDismissOverlay}
                   onPress={() => setReactionVisible(false)}
                 />
