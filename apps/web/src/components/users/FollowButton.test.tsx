@@ -57,6 +57,15 @@ describe('FollowButton (web)', () => {
     expect(mocks.isFollowing).toHaveBeenCalledWith(supabase, 'viewer', 'target');
   });
 
+  it('hides the button when the follow status cannot be loaded', async () => {
+    mocks.isFollowing.mockResolvedValue({ error: new Error('network') });
+    render(<FollowButton supabase={supabase} viewerId="viewer" targetUserId="target" />);
+
+    expect(getButton().disabled).toBe(true);
+    await waitFor(() => expect(screen.queryByTestId('follow-button')).toBeNull());
+    expect(mocks.followUser).not.toHaveBeenCalled();
+  });
+
   it('follows the user and reports the change', async () => {
     const onChange = vi.fn();
     render(

@@ -163,6 +163,39 @@ describe('PostDetailPage', () => {
       expect(screen.queryByText('Looking for a roommate')).toBeNull();
     });
 
+    it('shows "Post not found" instead of the previous post when the new post is missing', async () => {
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: null });
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+
+      navigateToSecondPost(rerender);
+
+      await waitFor(() => expect(screen.getByText('Post not found')).toBeDefined());
+      expect(screen.queryByText('Looking for a roommate')).toBeNull();
+    });
+
+    it("does not show the previous post's comments under the new post", async () => {
+      const firstPostComments = [
+        { id: 'c-1', post_id: 'post-1', content: 'First', parent_comment_id: null },
+        { id: 'c-2', post_id: 'post-1', content: 'Second', parent_comment_id: null },
+      ];
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: secondPost });
+      postDetailMocks.getPostCommentsMock
+        .mockResolvedValueOnce({ data: firstPostComments })
+        .mockReturnValueOnce(new Promise(() => {}));
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Comments (2)')).toBeDefined());
+
+      navigateToSecondPost(rerender);
+
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+      expect(screen.getByText('Comments (0)')).toBeDefined();
+    });
+
     it('starts the photo carousel at the first photo of the new post', async () => {
       postDetailMocks.getPostByIdMock
         .mockResolvedValueOnce({

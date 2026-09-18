@@ -55,6 +55,19 @@ describe('FollowButton', () => {
     expect(mockIsFollowing).toHaveBeenCalledWith(supabase, 'viewer', 'target');
   });
 
+  it('hides the button when the follow status cannot be loaded', async () => {
+    mockIsFollowing.mockResolvedValue({ error: new Error('network') });
+    const screen = render(
+      <FollowButton supabase={supabase} viewerId="viewer" targetUserId="target" />
+    );
+
+    expect(screen.getByTestId('follow-button')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByTestId('follow-button')).toBeNull();
+    });
+    expect(mockFollowUser).not.toHaveBeenCalled();
+  });
+
   it('follows the user and reports the change', async () => {
     const onChange = jest.fn();
     const screen = render(

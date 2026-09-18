@@ -365,18 +365,16 @@ export default function PostDetailScreen() {
 
     getPostById(supabase, postId).then((result) => {
       if (cancelled) return;
-      if (result.data) {
-        setPost(result.data);
-        setLocalLikesCount(result.data.likes_count ?? 0);
-      }
+      // A missing post clears the previous one, so the screen shows "Post not found"
+      // instead of the last post for the new postId.
+      setPost(result.data ?? null);
+      setLocalLikesCount(result.data?.likes_count ?? 0);
       setLoading(false);
     });
 
     getPostComments(supabase, postId).then((result) => {
       if (cancelled) return;
-      if (result.data) {
-        setComments(result.data);
-      }
+      setComments(result.data ?? []);
       setCommentsLoadedForPostId(postId);
     });
 

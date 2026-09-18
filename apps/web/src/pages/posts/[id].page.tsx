@@ -57,6 +57,13 @@ export default function PostDetailPage() {
   // Route id whose post request has finished; any other id is still loading.
   const [loadedPostId, setLoadedPostId] = useState<string | null>(null);
   const loading = !routePostId || loadedPostId !== routePostId;
+  // On a different post, drop the previous post's comments right away rather
+  // than showing them under the new post until its own comments arrive.
+  const [commentsPostId, setCommentsPostId] = useState(routePostId);
+  if (commentsPostId !== routePostId) {
+    setCommentsPostId(routePostId);
+    setComments([]);
+  }
   const [submitting, setSubmitting] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [avatarMenuUser, setAvatarMenuUser] = useState<AvatarMenuUser | null>(null);
@@ -82,17 +89,15 @@ export default function PostDetailPage() {
     let cancelled = false;
     getPostById(supabase, routePostId).then((result) => {
       if (cancelled) return;
-      if (result.data) {
-        setPost(result.data);
-        setLikesCount(result.data.likes_count || 0);
-      }
+      // A missing post clears the previous one, so the page shows "Post not found"
+      // instead of the last post under the new URL.
+      setPost(result.data ?? null);
+      setLikesCount(result.data?.likes_count || 0);
       setLoadedPostId(routePostId);
     });
     getPostComments(supabase, routePostId).then((result) => {
       if (cancelled) return;
-      if (result.data) {
-        setComments(result.data);
-      }
+      setComments(result.data ?? []);
     });
 
     return () => {

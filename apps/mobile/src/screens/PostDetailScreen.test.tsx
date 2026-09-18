@@ -239,6 +239,23 @@ describe('PostDetailScreen data loading', () => {
     });
   });
 
+  it('shows "Post not found" instead of the previous post when the new postId is missing', async () => {
+    const screen = render(<PostDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Post title')).toBeTruthy();
+    });
+
+    (getPostById as jest.Mock).mockResolvedValueOnce({ data: null });
+    mockUseRoute.mockReturnValue({ params: { postId: 'missing-post' } });
+    screen.rerender(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Post not found')).toBeTruthy();
+    });
+    expect(screen.queryByText('Post title')).toBeNull();
+    expect(getPostById).toHaveBeenLastCalledWith(expect.anything(), 'missing-post');
+  });
+
   it("loads the viewer's like and save state for this post", async () => {
     (getUserLikedPostIds as jest.Mock).mockResolvedValueOnce({ data: ['post-1'] });
     (getUserSavedPostIds as jest.Mock).mockResolvedValueOnce({ data: ['post-1'] });
