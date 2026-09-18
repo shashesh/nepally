@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { PostCard } from './PostCard';
 
 jest.mock('@expo/vector-icons', () => ({
@@ -113,5 +114,33 @@ describe('PostCard avatar menu', () => {
 
     expect(screen.getByText('1.2K likes')).toBeTruthy();
     expect(screen.getByText('1 comment')).toBeTruthy();
+  });
+
+  it('positions the reaction dismiss overlay as a full-screen absolute layer', () => {
+    const screen = render(
+      <PostCard
+        title="Need a roommate"
+        timestamp="2026-03-01T10:00:00Z"
+        authorName="Jane Doe"
+        authorTrustLevel={1}
+        authorId="other-user-1"
+        currentUserId="current-user-1"
+        onPress={jest.fn()}
+      />
+    );
+
+    fireEvent(screen.getByText('Like'), 'longPress', { stopPropagation: jest.fn() });
+
+    const overlay = screen.getByTestId('reaction-dismiss-overlay');
+    expect(StyleSheet.flatten(overlay.props.style)).toEqual(
+      expect.objectContaining({
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10,
+      })
+    );
   });
 });

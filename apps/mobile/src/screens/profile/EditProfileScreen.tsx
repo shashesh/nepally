@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   uploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 40,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
