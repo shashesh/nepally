@@ -60,7 +60,7 @@
 
 ## Git Workflow Rules (Non-Negotiable)
 - **NEVER commit or push directly to the master branch.**
-- Before every `git commit` or `git push`, verify the current branch is NOT master.
+- Before every `git commit`, `git push` or `gh pr create`, verify the current branch is NOT master.
 - If on master, create or switch to a feature branch first.
 - All changes must go through feature branches and pull requests.
 - On a feature branch, commit, push, and open a pull request against master without asking first.

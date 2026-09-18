@@ -21,7 +21,7 @@
 1. **Plan First, Execute Second**
    - For any request involving multiple steps or decisions, ALWAYS enter plan mode
    - Present the plan with options and rationale
-   - Wait for approval before proceeding
+   - Wait for approval of the plan before executing it
 
 2. **Structured Thinking**
    - Break down requests into clear phases
@@ -39,7 +39,7 @@
    - Create separate documents for detailed specifications
 
 5. **Git Workflow - Feature Branches Only**
-   - NEVER commit or push to `master`; verify the current branch before every commit and push
+   - NEVER commit or push to `master`; verify the current branch before every commit, push and `gh pr create`
    - On a feature branch, commit, push, and open a PR against `master` without asking
    - Never merge a PR into `master` unless the user asks
    - Never force-push to `master`
