@@ -31,8 +31,8 @@
     "postcss": "^8.4.31",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
-    "react": "19.1.4",
-    "react-dom": "19.1.4"
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

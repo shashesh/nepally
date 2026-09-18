@@ -38,8 +38,8 @@
     "seed:metro": "tsx --env-file=scripts/.env scripts/seed-metro-data.ts"
   },
   "overrides": {
-    "react": "19.1.4",
-    "react-dom": "19.1.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "ts-api-utils": "2.4.0",
     "vite": "^7",
     "eslint": "$eslint",
