@@ -370,7 +370,7 @@ names ("Notifications, 3 unread"); popover/menus keyboard-operable via Mantine.
 
 ## 5. Rollout
 
-Each PR is its own branch off `master`; commits are free, pushes require approval.
+Each PR is its own branch off `master`; commits, pushes and PR creation are free on the branch, and merging into `master` is the user's call.
 
 | # | PR | Contents |
 |---|---|---|

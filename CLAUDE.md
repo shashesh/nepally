@@ -4,10 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Workflow Rules (Non-Negotiable)
 
-- **NEVER commit to `master`.** Always verify the current branch before `git commit` / `git push`. If HEAD is on `master`, stop and ask the user which branch to switch to (or create) before committing.
-- **`git commit` does NOT require permission.** Commit freely on feature branches as work progresses. Use clear, conventional commit messages.
-- **`git push` ALWAYS requires explicit user confirmation.** Show a summary of what will be pushed (branch, commits, diff stat) and wait for approval before running `git push`.
-- Never auto-push at the end of a task.
+- **NEVER commit or push to `master`.** Always verify the current branch before `git commit` / `git push` / `gh pr create`. If HEAD is on `master`, stop and ask the user which branch to switch to (or create) before committing.
+- **On a feature branch, commit, push and raise the PR without asking.** Commit as work progresses, `git push -u origin <branch>`, then open a PR against `master` with `gh pr create`, filling in `.github/pull_request_template.md`. Use clear, conventional commit messages.
+- **Merging into `master` is the user's call.** Never merge a PR unless the user asks.
 - Never force-push to `master` under any circumstance.
 
 ## Project Overview

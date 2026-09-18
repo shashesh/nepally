@@ -342,7 +342,7 @@ npm run test:visual:docker --workspace=apps/web -- --update
 npm run test:visual:smoke --workspace=apps/web
 ```
 
-- **No Docker?** Push the branch (with approval), run **Actions → Visual baselines** on it, and unzip the `visual-baselines` artifact into `apps/web/e2e/visual/`.
+- **No Docker?** Push the branch, run **Actions → Visual baselines** on it, and unzip the `visual-baselines` artifact into `apps/web/e2e/visual/`.
 - **Feature branches:** `workflow_dispatch` only works once the workflow is on `master`. Before that, push a commit whose message contains `[visual-baselines]` to trigger the same run on the branch.
 - **Add a page:** append an entry to `apps/web/e2e/visual/pages.ts`.
 - **Accessibility baseline:** `apps/web/e2e/visual/a11y-baseline.json` records known serious/critical axe violations per `project:page`, and tests fail on anything new. After fixing violations, regenerate with `-- --update --write-a11y-baseline`. The diff of that file must only delete lines.
