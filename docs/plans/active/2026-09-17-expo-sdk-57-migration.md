@@ -134,7 +134,7 @@ In short, SDK 54 was never fully aligned. This migration fixes all three checks.
 
 Record every deviation from this plan here, with the reason.
 
-1. **Task 2, Step 5 is pending: the ESLint `settings.react.version` lines still say `19.1.4`.** A config-protection PreToolUse hook blocks every Edit/Write to files named `eslint.config.mjs`, and the agent did not work around it. The user decides whether to make the two one-line edits by hand, lift the hook for them, or leave them. The setting only tells eslint-plugin-react which React version to assume, and no rule result differs between 19.1 and 19.2.
+1. **Task 2, Step 5 (the ESLint `settings.react.version` lines) landed separately, in a78623b.** A config-protection PreToolUse hook blocks every Edit/Write to files named `eslint.config.mjs`, so the dependency commit left both lines at `19.1.4` and the agents did not work around the hook. Once the user explicitly approved the change, a script replaced exactly that one line in each file and nothing else. Lint results did not change (0 errors; 135 / 39 / 0 warnings).
 2. **Task 2, Step 9's grep false-positives** on `@tabler/icons-react`, `@floating-ui/react-dom` and `@testing-library/react`, because the pattern is not anchored. An anchored scan of `package-lock.json` (every `packages` key ending in `node_modules/react` or `node_modules/react-dom`) found exactly one of each, at 19.2.3.
 3. **`@react-native-async-storage/async-storage` `2.2.0` and `@react-native-community/datetimepicker` `9.1.0` are exact pins on purpose.** SDK 57's `bundledNativeModules.json` lists both without a range, so any patch drift would show up as an `expo-doctor` version mismatch. Bump them only with the next SDK.
 4. **npm 12 blocks the `esbuild` and `unrs-resolver` postinstall scripts** (`install-scripts ... not covered by allowScripts`). This comes from npm 12's own install-script gating, not repo config, and those versions did not change. Their platform binaries (`@esbuild/win32-x64`, `@unrs/resolver-binding-win32-x64-msvc`) are installed and both packages load, so nothing breaks.
@@ -151,12 +151,12 @@ One task is `In Progress` at a time. Update this table when a task starts and wh
 | Task | Title | Status | Last updated | Notes |
 |---|---|---|---|---|
 | 1 | Baseline on SDK 54 | Completed | 2026-09-17 | type-check pass; lint 0 errors, warnings mobile 135 / web 39 / shared 0; test:ci mobile 520, web 768, shared 514, guards 12 all pass; expo-doctor 15/18 (the 3 Findings failures) |
-| 2 | Move the monorepo to SDK 57 versions and React 19.2.3 | Completed (except Step 5) | 2026-09-17 | 15ea9b6; spec ✅, quality ✅; Step 5 (ESLint react.version) pending, see decision 1 |
+| 2 | Move the monorepo to SDK 57 versions and React 19.2.3 | Completed | 2026-09-18 | 15ea9b6; spec ✅, quality ✅; Step 5 (ESLint react.version) in a78623b, see decision 1 |
 | 3 | Move the splash config to the `expo-splash-screen` plugin | Completed | 2026-09-17 | be62548; spec ✅, quality ✅; introspect generates Android `splashscreen_background` #1565C0 and the iOS SplashScreen storyboard |
 | 4 | Let Expo configure Metro for the monorepo | Completed | 2026-09-18 | 0f0c66c; spec ✅, quality ✅; Android + iOS `expo export` bundle cleanly (1511 / 1505 modules) with `packages/shared` code present; block list still prunes `apps/web` from the crawl |
 | 5 | `expo-doctor` reports no issues | Completed | 2026-09-18 | `21/21 checks passed. No issues detected!` (baseline was 15/18); no changes needed |
 | 6 | Automated gates: types, lint, unit, coverage, web build + e2e | Completed | 2026-09-18 | Fix 5750bd8 + test d36acfd (decision 5). Final: type-check pass; lint 0 errors, warnings 135/39/0 (= baseline); unit mobile 523, web 768, shared 514, guards 12; coverage thresholds met; web e2e 101/101 (decision 6) |
-| 7 | Device smoke test in Expo Go SDK 57 | In Progress | 2026-09-18 | Run 1: startup crash on Android (decision 9), fixed a2cbe9c (spec ✅, quality ✅). Run 2: waiting on the user |
+| 7 | Device smoke test in Expo Go SDK 57 | Completed | 2026-09-18 | Run 1: startup crash on Android (decision 9), fixed a2cbe9c (spec ✅, quality ✅). Run 2 (user, Android, store Expo Go SDK 57): all 10 flows pass |
 | 8 | Update the docs | Completed | 2026-09-18 | 066ffd2 + 3a243cf; spec ✅, quality ✅ (decision 7) |
 | 9 | Close out the plan and ready the PR | Not Started | 2026-09-17 | |
 
