@@ -11,6 +11,7 @@
 The Welcome Screen is the first screen users see after launching Nepally. It introduces the app's purpose, establishes trust through clear messaging, and provides entry points for signup or login.
 
 **Key Goals:**
+
 - Establish brand identity and mission (utility-first community platform)
 - Build trust through clear value proposition
 - Provide friction-free entry to signup flow
@@ -103,6 +104,7 @@ No internet connection. Please check your connection and try again.
 | **Text** | 17pt Semibold, White, "Sign Up" | 14sp Medium, White, "SIGN UP" |
 
 **States:**
+
 - Default: #1565C0 background, white text
 - Pressed: #104D99 background, scale 0.98
 - Focused (Android): 2px darker border
@@ -122,6 +124,7 @@ No internet connection. Please check your connection and try again.
 | **Text** | 17pt Regular, #1565C0, "Log In" | 14sp Medium, #1565C0, "LOG IN" |
 
 **States:**
+
 - Default: Transparent background, blue border/text
 - Pressed: #E3F2FD background (10% opacity), scale 0.98
 - Focused (Android): 3px border
@@ -172,11 +175,13 @@ No internet connection. Please check your connection and try again.
 ## User Interactions
 
 ### Primary Flow
+
 1. **App launches** → Logo fade-in animation (300ms)
 2. **User reads content** → ~10–15 seconds
 3. **User taps "Sign Up"** → Navigate to Screen 02 (Signup Method Selection)
 
 ### Alternative Flows
+
 - **Tap "Log In"** → Navigate to Login Screen (out of scope)
 - **Tap Terms/Privacy links** → Open modal web view, return to this screen on close
 - **Close and reopen app** → Show this screen again until signup complete
@@ -201,23 +206,28 @@ No internet connection. Please check your connection and try again.
 ## Error States & Edge Cases
 
 ### No Internet Connection
+
 - Screen loads normally (static content)
 - Sign Up tap → error banner: red (#C62828) background, white text, dismissible
 - Recovery: retry after connecting
 
 ### Terms Link Failure
+
 - Error toast: "Could not load page. Please try again later."
 - Fallback: "Contact Support" link
 
 ### Orientation Change
+
 - iOS: Lock to portrait
 - Android: Allow rotation, adjust horizontal padding
 
 ### Small Screens (iPhone SE 1st gen, < 568px)
+
 - Logo shrinks to 64×64px
 - Top padding reduced to 32px
 
 ### Large Accessibility Text
+
 - Support Dynamic Type (iOS) / Large Text (Android)
 - Buttons expand vertically
 - Footer must not overlap buttons
@@ -227,6 +237,7 @@ No internet connection. Please check your connection and try again.
 ## Accessibility
 
 ### Screen Reader Order
+
 1. "Nepally logo"
 2. "Your Local Nepali Community in the USA"
 3. "Find housing, jobs, and emergency help from verified community members in your metro area."
@@ -235,10 +246,12 @@ No internet connection. Please check your connection and try again.
 6. "By continuing, you agree to Terms of Service and Privacy Policy"
 
 ### Touch Targets
+
 - Buttons: min 44×44pt (iOS) / 48×48dp (Android)
 - Footer links: min 44×44pt touch area (invisible padding)
 
 ### Color Contrast (WCAG)
+
 | Element | Ratio | Level |
 |---------|-------|-------|
 | Tagline (#212121 on #F5F5F5) | 16.9:1 | AAA ✓ |
@@ -247,6 +260,7 @@ No internet connection. Please check your connection and try again.
 | Links (#1565C0 on #F5F5F5) | 7.2:1 | AAA ✓ |
 
 ### Focus Indicators
+
 - iOS VoiceOver: yellow outline
 - Android TalkBack: green rectangle
 - Android keyboard: blue focus ring
@@ -256,6 +270,7 @@ No internet connection. Please check your connection and try again.
 ## Animations & Transitions
 
 ### On Screen Load
+
 | Step | Element | Delay | Duration | Effect |
 |------|---------|-------|----------|--------|
 | 1 | Logo | 0ms | 300ms | Opacity 0→1, scale 0.9→1.0 (ease-out) |
@@ -266,6 +281,7 @@ No internet connection. Please check your connection and try again.
 **Total:** ~600ms
 
 ### Button Press
+
 - Duration: 150ms, ease-in-out
 - Scale 0.98 + background darkens
 - iOS: light haptic | Android: ripple from tap point
@@ -275,12 +291,14 @@ No internet connection. Please check your connection and try again.
 ## Content & Localization
 
 ### Copy Requirements
+
 - Tagline: < 40 characters (single-line)
 - Value proposition: < 140 characters (scannable)
 - Button labels: imperative verbs ("Sign Up", not "Create Account")
 - Footer: must mention both Terms and Privacy (legal)
 
 ### String Keys
+
 | Key | Value |
 |-----|-------|
 | `welcome_tagline` | Your Local Nepali Community in the USA |
@@ -290,6 +308,7 @@ No internet connection. Please check your connection and try again.
 | `footer_terms` | By continuing, you agree to Terms of Service and Privacy Policy |
 
 ### Tone
+
 - Friendly/welcoming: "Your Local Nepali Community"
 - Trust-building: "verified community members"
 - Action-oriented: clear CTAs
@@ -300,14 +319,17 @@ No internet connection. Please check your connection and try again.
 ## Technical Notes
 
 ### Identifiers
+
 - Route: `/welcome`
 - iOS: `WelcomeScreen`
 - Android: `WelcomeActivity` / `WelcomeFragment`
 
 ### State Management
+
 - Stateless screen — no form inputs, API calls, or local storage
 
 ### Navigation
+
 | Direction | Trigger | Destination |
 |-----------|---------|-------------|
 | Entry | App launch (unauthenticated) | This screen |
@@ -317,6 +339,7 @@ No internet connection. Please check your connection and try again.
 | Modal | Tap Terms/Privacy | Web view (returns here on close) |
 
 ### Performance
+
 - Pre-load logo asset for instant display
 - Lazy load Terms/Privacy web content (only on tap)
 - Logo: ~10KB PNG or vector SVG
@@ -326,6 +349,7 @@ No internet connection. Please check your connection and try again.
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Sign Up button navigates to Screen 02
 - [ ] Log In button navigates to Login Screen
 - [ ] Terms of Service link opens web view
@@ -333,6 +357,7 @@ No internet connection. Please check your connection and try again.
 - [ ] Back from web view returns to Welcome Screen
 
 ### Visual Tests
+
 - [ ] Logo displays correctly at all screen sizes
 - [ ] Text wraps properly on narrow screens (320px width)
 - [ ] Buttons have correct height (48px/56dp)
@@ -340,6 +365,7 @@ No internet connection. Please check your connection and try again.
 - [ ] Safe area insets respected (notch, nav bar)
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all elements in correct order
 - [ ] Touch targets meet 44pt/48dp minimum
 - [ ] Color contrast meets WCAG AA
@@ -347,6 +373,7 @@ No internet connection. Please check your connection and try again.
 - [ ] Keyboard navigation works (Android)
 
 ### Edge Case Tests
+
 - [ ] No internet: Screen loads, buttons show error on tap
 - [ ] Very small screen (iPhone SE): All content visible
 - [ ] Very large text: Layout doesn't break

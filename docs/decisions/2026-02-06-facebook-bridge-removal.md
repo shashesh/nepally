@@ -79,14 +79,17 @@ This was intended to solve the cold-start problem by leveraging existing Faceboo
 ## Alternatives Considered
 
 ### Alternative 1: Manual Content Curation
+
 **Description:** Moderators manually recreate 50-100 high-quality Facebook posts as structured app posts
 
 **Pros:**
+
 - Legal (moderators own the content they create)
 - Ensures structured data quality
 - 2-3 weeks of work vs. 3-6 months automation
 
 **Cons:**
+
 - Labor intensive (requires moderator time)
 - Limited scale (can't replicate thousands of FB posts)
 - Still doesn't solve cold-start entirely
@@ -96,14 +99,17 @@ This was intended to solve the cold-start problem by leveraging existing Faceboo
 ---
 
 ### Alternative 2: Official Facebook Partnership
+
 **Description:** Pursue formal partnership with Meta for authorized API access
 
 **Pros:**
+
 - Legal and compliant
 - Potential for official integration
 - Could be powerful marketing angle
 
 **Cons:**
+
 - Multi-month negotiation process
 - Extremely unlikely for small startup
 - Meta rarely grants partnerships for data extraction
@@ -114,14 +120,17 @@ This was intended to solve the cold-start problem by leveraging existing Faceboo
 ---
 
 ### Alternative 3: Hybrid Approach (Selected Initially)
+
 **Description:** Manual curation for Phase 1, automation in Phase 2/3 if partnership secured
 
 **Pros:**
+
 - Pragmatic middle ground
 - Some seeded content for launch
 - Leaves door open for future automation
 
 **Cons:**
+
 - Still diverts moderator resources from safety/community building
 - Partial solution doesn't solve core cold-start problem
 
@@ -160,23 +169,28 @@ After evaluating alternatives, the decision was made to **remove the Facebook Br
 ### Positive Outcomes
 
 ✅ **Faster Time to Market**
+
 - Saves 2-3 months development time
 - Reduces Phase 1 complexity significantly
 
 ✅ **Eliminates Legal Risk**
+
 - No Facebook ToS violations
 - No risk of IP bans or legal action
 
 ✅ **Focuses on Core Strengths**
+
 - Structured data from Day 1
 - Trust levels enforced consistently
 - Metro-first model not compromised by untagged FB content
 
 ✅ **Better Resource Allocation**
+
 - Moderators focus on safety and community building
 - Development focuses on user experience (chat, photos)
 
 ✅ **Authentic Growth**
+
 - Real users creating real content
 - Higher quality signal for success metrics
 - Stronger community foundation
@@ -184,16 +198,19 @@ After evaluating alternatives, the decision was made to **remove the Facebook Br
 ### Negative Trade-offs
 
 ⚠️ **Cold-Start Problem**
+
 - App will have minimal content at launch
 - First users may see empty feeds
 - **Mitigation:** Launch with tight beta (50-100 users per metro) who commit to posting
 
 ⚠️ **Slower Initial Growth**
+
 - No "instant" content library
 - Requires more effort to attract first users
 - **Mitigation:** Leverage existing Nepally Facebook group for targeted outreach
 
 ⚠️ **Higher User Acquisition Cost**
+
 - Need to actively recruit early adopters
 - Can't rely on FB content to provide passive value
 - **Mitigation:** Focus on 5 metros initially for concentrated critical mass
@@ -211,15 +228,18 @@ After evaluating alternatives, the decision was made to **remove the Facebook Br
 ### Roadmap Changes
 
 **Removed:**
+
 - Section C: "The 'Bridge' Strategy (FB → App Sync)" entirely deleted from Phase 1
 
 **Added:**
+
 - Section C: In-App Communication System (chat)
 - Section D: Photo Upload & Storage
 - Section E: Basic Reporting System
 - Section F: Admin Dashboard
 
 **Modified:**
+
 - Success metrics no longer reference "full app on Day 1"
 - Next Steps removed "Facebook Graph API access strategy" research
 - Timeline estimates reduced to 3.5-4.5 months

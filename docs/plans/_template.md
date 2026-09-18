@@ -17,6 +17,7 @@ Use this plan as a live tracker during execution.
 - If scope changes, add/update steps before coding.
 
 ### Step Status Legend
+
 - `Not Started`
 - `In Progress`
 - `Completed`
@@ -41,10 +42,12 @@ Describe the user-facing outcome this implementation must deliver.
 ## 2) Scope and Non-Goals
 
 ### In Scope
+
 - <item>
 - <item>
 
 ### Out of Scope
+
 - <item>
 - <item>
 
@@ -84,21 +87,27 @@ Before coding, verify source docs are current and aligned:
 ### Step 1 — <Layer/Area>
 
 **Goal**
+
 - <goal>
 
 **Deliverables**
+
 - <deliverable>
 
 **File Changes**
+
 - <path>
 
 **Tests / Validation**
+
 - <command>
 
 **Exit Criteria**
+
 - <clear measurable completion>
 
 **Status Update Rule**
+
 - Set this step to `In Progress` before coding.
 - Set to `Completed` only after tests/validation for this step pass.
 
@@ -107,21 +116,27 @@ Before coding, verify source docs are current and aligned:
 ### Step 2 — <Layer/Area>
 
 **Goal**
+
 - <goal>
 
 **Deliverables**
+
 - <deliverable>
 
 **File Changes**
+
 - <path>
 
 **Tests / Validation**
+
 - <command>
 
 **Exit Criteria**
+
 - <clear measurable completion>
 
 **Status Update Rule**
+
 - Set this step to `In Progress` before coding.
 - Set to `Completed` only after tests/validation for this step pass.
 
@@ -130,21 +145,27 @@ Before coding, verify source docs are current and aligned:
 ### Step 3 — <Layer/Area>
 
 **Goal**
+
 - <goal>
 
 **Deliverables**
+
 - <deliverable>
 
 **File Changes**
+
 - <path>
 
 **Tests / Validation**
+
 - <command>
 
 **Exit Criteria**
+
 - <clear measurable completion>
 
 **Status Update Rule**
+
 - Set this step to `In Progress` before coding.
 - Set to `Completed` only after tests/validation for this step pass.
 
@@ -153,6 +174,7 @@ Before coding, verify source docs are current and aligned:
 ## 6) Testing Strategy (Required)
 
 ### Change Classification
+
 - **New functionality:** add new unit tests in same change.
 - **Updated functionality:** update existing unit tests for behavior changes.
 - **Cross-surface user flow change:** add/update e2e tests where user path is impacted.
@@ -167,6 +189,7 @@ Before coding, verify source docs are current and aligned:
 | Mobile UI/logic | New or update | Unit + e2e (if available/flow changes) | `apps/mobile/src/**/*.test.ts(x)` |
 
 ### Coverage and Quality Gates
+
 - [ ] New logic paths have unit tests
 - [ ] Modified logic paths have updated tests
 - [ ] E2E coverage added/updated for changed critical flow
@@ -186,10 +209,12 @@ Use when schema/types or payload shapes are added/changed.
 ## 8) File Checklist
 
 ### New Files
+
 - <path>
 - <path>
 
 ### Modified Files
+
 - <path>
 - <path>
 
@@ -198,6 +223,7 @@ Use when schema/types or payload shapes are added/changed.
 ## 9) Verification Matrix (Definition of Done)
 
 ### Automated
+
 - [ ] `npm run test --workspace=<workspace>`
 - [ ] `npm run test:coverage --workspace=<workspace>`
 - [ ] `npm run lint`
@@ -205,11 +231,13 @@ Use when schema/types or payload shapes are added/changed.
 - [ ] `npm run test`
 
 ### Manual
+
 - [ ] <user flow 1>
 - [ ] <user flow 2>
 - [ ] <edge case>
 
 ### Plan Hygiene
+
 - [ ] Live step tracker statuses are fully up to date
 - [ ] Any blocked step has explicit blocker + next action
 

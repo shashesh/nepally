@@ -1,0 +1,21 @@
+// markdownlint config — read by the VS Code markdownlint extension and by `npx markdownlint-cli2`.
+{
+  "config": {
+    // Prose docs use long lines; wrapping them adds diff noise without helping readers.
+    "MD013": false,
+    // Tables use `| a | b |` rows with `|---|---|` separators, which matches no MD060 style.
+    "MD060": false,
+    // Bold lead-in labels ("**Why:**") are intentional, not headings.
+    "MD036": false,
+    // Allow the same subheading (e.g. "Notes") under different parent sections.
+    "MD024": { "siblings_only": true }
+  },
+  // Archived docs are frozen; .agents/ and the vercel-*/frontend-* skills are installed third-party copies.
+  "ignores": [
+    "**/node_modules/**",
+    "docs/archive/**",
+    ".agents/**",
+    ".claude/skills/vercel-*/**",
+    ".claude/skills/frontend-*/**"
+  ]
+}

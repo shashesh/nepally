@@ -71,6 +71,7 @@ Build the core infrastructure that everything else depends on.
 #### 🔐 Authentication & Identity
 
 **1.1 User Registration**
+
 - **What:** Create new user accounts with email and password
 - **Acceptance Criteria:**
   - User can enter email, password, confirm password
@@ -83,6 +84,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 2-3 days
 
 **1.2 User Login**
+
 - **What:** Authenticate existing users
 - **Acceptance Criteria:**
   - User can enter email and password
@@ -94,6 +96,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 1-2 days
 
 **1.3 Password Reset**
+
 - **What:** Allow users to reset forgotten passwords
 - **Acceptance Criteria:**
   - User enters email address
@@ -104,6 +107,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 2 days
 
 **1.4 User Logout**
+
 - **What:** End user session
 - **Acceptance Criteria:**
   - User clicks logout button
@@ -114,6 +118,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 0.5 days
 
 **1.5 Session Management**
+
 - **What:** Maintain user authentication state across app restarts
 - **Acceptance Criteria:**
   - Remember logged-in user on app restart
@@ -128,6 +133,7 @@ Build the core infrastructure that everything else depends on.
 #### 📍 Location & Metro System
 
 **2.1 ZIP Code Input**
+
 - **What:** Collect user's ZIP code during onboarding
 - **Acceptance Criteria:**
   - Input field for 5-digit ZIP code
@@ -138,6 +144,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 1 day
 
 **2.2 ZIP to Metro Area Mapping**
+
 - **What:** Convert ZIP code to US Census Metro Area ID
 - **Acceptance Criteria:**
   - Lookup ZIP code in metro area database/API
@@ -149,6 +156,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 3 days (includes data source integration)
 
 **2.3 Metro Area Storage**
+
 - **What:** Store user's metro area in their profile
 - **Acceptance Criteria:**
   - Save metro area ID to user profile
@@ -158,6 +166,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 1 day
 
 **2.4 Metro Area Filter**
+
 - **What:** Filter content by metro area
 - **Acceptance Criteria:**
   - Query posts by metro area ID
@@ -172,6 +181,7 @@ Build the core infrastructure that everything else depends on.
 #### 👤 User Profiles
 
 **3.1 Basic Profile Creation**
+
 - **What:** Store essential user information
 - **Acceptance Criteria:**
   - First name (required)
@@ -183,6 +193,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 1 day
 
 **3.2 Profile Display**
+
 - **What:** Show user their own profile
 - **Acceptance Criteria:**
   - Display name, email, metro area
@@ -193,6 +204,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 1-2 days
 
 **3.3 Profile Editing**
+
 - **What:** Allow users to update their profile
 - **Acceptance Criteria:**
   - Edit first/last name
@@ -204,6 +216,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 1-2 days
 
 **3.4 Public Profile View**
+
 - **What:** View another user's profile (limited info)
 - **Acceptance Criteria:**
   - Display first name + last initial (e.g., "Shashank K.")
@@ -215,6 +228,7 @@ Build the core infrastructure that everything else depends on.
 - **Estimated Effort:** 1 day
 
 **3.5 Profile Photo Upload & Display** ⭐ (PRIORITY)
+
 - **What:** Allow users to upload profile photos and display avatars throughout app
 - **Acceptance Criteria:**
   - Upload photo from camera or photo library
@@ -253,6 +267,7 @@ Build the trust level system that prevents spam.
 #### 🏆 Trust Level System
 
 **4.1 Trust Level Storage**
+
 - **What:** Track user's current trust level
 - **Acceptance Criteria:**
   - Default all new users to Level 0
@@ -262,6 +277,7 @@ Build the trust level system that prevents spam.
 - **Estimated Effort:** 1 day
 
 **4.2 Trust Level Display**
+
 - **What:** Show trust level to users
 - **Acceptance Criteria:**
   - Badge/icon showing Level 0, 1, or 2
@@ -273,6 +289,7 @@ Build the trust level system that prevents spam.
 - **Estimated Effort:** 1-2 days
 
 **4.3 Phone Verification Flow**
+
 - **What:** Verify user's phone number via SMS OTP
 - **Acceptance Criteria:**
   - User enters phone number (10 digits, US format)
@@ -285,6 +302,7 @@ Build the trust level system that prevents spam.
 - **Estimated Effort:** 3-5 days (includes SMS service integration)
 
 **4.4 Phone Verification UI**
+
 - **What:** UI screens for phone verification
 - **Acceptance Criteria:**
   - Phone number input screen
@@ -296,6 +314,7 @@ Build the trust level system that prevents spam.
 - **Estimated Effort:** 2 days
 
 **4.5 Social Media Verification (Optional)** 🔄
+
 - **What:** Alternative to phone verification via OAuth
 - **Acceptance Criteria:**
   - "Sign in with Facebook" or "Sign in with Google" button
@@ -307,6 +326,7 @@ Build the trust level system that prevents spam.
 - **Note:** Can be skipped for MVP if phone verification is sufficient
 
 **4.6 Trust Level Enforcement - Posting**
+
 - **What:** Enforce trust level restrictions on post creation
 - **Acceptance Criteria:**
   - Level 0: Max 1 post per day
@@ -318,6 +338,7 @@ Build the trust level system that prevents spam.
 - **Estimated Effort:** 2 days
 
 **4.7 Post Count Tracking for Level 2**
+
 - **What:** Track metrics for Level 2 promotion
 - **Acceptance Criteria:**
   - Count total approved posts per user
@@ -328,6 +349,7 @@ Build the trust level system that prevents spam.
 - **Estimated Effort:** 2 days
 
 **4.8 Moderator Endorsement for Level 2**
+
 - **What:** Allow moderators to promote users to Level 2
 - **Acceptance Criteria:**
   - Moderator views user profile in admin dashboard
@@ -347,6 +369,7 @@ Build the structured post engine.
 #### 📝 Post Engine - Core
 
 **5.1 Post Data Model**
+
 - **What:** Define structure for all posts
 - **Acceptance Criteria:**
   - Post ID (unique identifier)
@@ -363,6 +386,7 @@ Build the structured post engine.
 - **Estimated Effort:** 2 days
 
 **5.2 Post Creation Form - Reddit-Style (Single Screen)**
+
 - **What:** Simplified single-screen create post form
 - **Acceptance Criteria:**
   - Title input (required, 5-200 characters)
@@ -381,6 +405,7 @@ Build the structured post engine.
 - **Estimated Effort:** 3 days
 
 **5.3 Post Feed - Local Metro + Global**
+
 - **What:** Display posts from user's metro area plus global posts
 - **Acceptance Criteria:**
   - List view of posts (most recent first)
@@ -394,6 +419,7 @@ Build the structured post engine.
 - **Estimated Effort:** 3-4 days
 
 **5.4 Post Detail View**
+
 - **What:** Full view of a single post
 - **Acceptance Criteria:**
   - Display post title, body (full text), tag pills
@@ -409,6 +435,7 @@ Build the structured post engine.
 - **Estimated Effort:** 2-3 days
 
 **5.5 Post Editing**
+
 - **What:** Allow users to edit their own posts
 - **Acceptance Criteria:**
   - Only post author can edit
@@ -421,6 +448,7 @@ Build the structured post engine.
 - **Estimated Effort:** 2 days
 
 **5.6 Post Deletion**
+
 - **What:** Allow users to delete their own posts
 - **Acceptance Criteria:**
   - Only post author can delete
@@ -432,6 +460,7 @@ Build the structured post engine.
 - **Estimated Effort:** 1 day
 
 **5.7 Post Search**
+
 - **What:** Search posts by keyword
 - **Acceptance Criteria:**
   - Search bar in feed
@@ -443,6 +472,7 @@ Build the structured post engine.
 - **Estimated Effort:** 2-3 days
 
 **5.8 Post Filtering by Tags**
+
 - **What:** Filter feed by tags using horizontal filter chips
 - **Acceptance Criteria:**
   - Scrollable horizontal chip bar above the feed
@@ -456,6 +486,7 @@ Build the structured post engine.
 - **Estimated Effort:** 1-2 days
 
 **5.9 Enhanced Post Card UIgith Social Engagement** (NEW)
+
 - **What:** Redesign post cards with author info and engagement actions
 - **Acceptance Criteria:**
   - Display author avatar (40x40px circle): profile photo or initials with trust-level colored background
@@ -476,6 +507,7 @@ Build the structured post engine.
 - **Related:** Feature 5.10 (Likes), 5.11 (Comments)
 
 **5.10 Post Likes / Helpful Votes** (NEW)
+
 - **What:** Users can like posts to indicate helpfulness
 - **Acceptance Criteria:**
   - Like button on post cards and post detail screen
@@ -496,6 +528,7 @@ Build the structured post engine.
 - **Database:** Adds `post_likes` table, `posts.likes_count` column, triggers
 
 **5.11 Post Comments / Public Replies** (NEW)
+
 - **What:** Public comment threads on posts
 - **Acceptance Criteria:**
   - Comments section on PostDetailScreen below "Contact Author" button
@@ -528,6 +561,7 @@ Build the structured post engine.
 -  **Database:** Adds `post_comments` table, `posts.comments_count` column, triggers
 
 **5.12 Post Sorting** (formerly 5.9)
+
 - **What:** Sort posts by different criteria
 - **Acceptance Criteria:**
   - Sort by: Most Recent (default), Most Liked, Most Commented
@@ -537,6 +571,7 @@ Build the structured post engine.
 - **Estimated Effort:** 1-2 days
 
 **5.13 Draft Posts** (formerly 5.10) 🔄
+
 - **What:** Save incomplete posts as drafts
 - **Acceptance Criteria:**
   - Auto-save form data every 30 seconds
@@ -553,6 +588,7 @@ Build the structured post engine.
 #### �️ Tag System & Premium Features
 
 **5.14 Tag System (Database-Driven)**
+
 - **What:** Scalable tag system stored in database (replaces old category enum)
 - **Acceptance Criteria:**
   - `tags` table with: id, name, slug, icon, color, description, is_system, requires_moderation, sort_order
@@ -567,6 +603,7 @@ Build the structured post engine.
 - **Estimated Effort:** 2 days
 
 **5.15 Post-Tag Assignment**
+
 - **What:** Allow posts to have 1-3 tags
 - **Acceptance Criteria:**
   - Create post form shows tag selector (chips/pills)
@@ -579,6 +616,7 @@ Build the structured post engine.
 - **Estimated Effort:** 2 days
 
 **5.16 Premium Subscription & Global Posts**
+
 - **What:** Premium flag on users + global post creation
 - **Acceptance Criteria:**
   - `is_premium` boolean on users table (default false)
@@ -602,6 +640,7 @@ Build the in-app chat system.
 #### 💬 In-App Chat
 
 **8.1 Chat Data Model**
+
 - **What:** Structure for conversations and messages
 - **Acceptance Criteria:**
   - Conversation ID (unique per pair of users)
@@ -614,6 +653,7 @@ Build the in-app chat system.
 - **Estimated Effort:** 2 days
 
 **8.2 Initiate Chat from Post**
+
 - **What:** Start conversation with post author
 - **Acceptance Criteria:**
   - "Contact Author" button on post detail view
@@ -626,6 +666,7 @@ Build the in-app chat system.
 - **Estimated Effort:** 2 days
 
 **8.3 Conversation List**
+
 - **What:** View all active chats
 - **Acceptance Criteria:**
   - List of conversations, sorted by most recent message
@@ -638,6 +679,7 @@ Build the in-app chat system.
 - **Estimated Effort:** 3 days
 
 **8.4 Message Thread View**
+
 - **What:** View messages in a conversation
 - **Acceptance Criteria:**
   - Display messages in chronological order
@@ -650,6 +692,7 @@ Build the in-app chat system.
 - **Estimated Effort:** 3-4 days
 
 **8.5 Send Message**
+
 - **What:** Send text messages in chat
 - **Acceptance Criteria:**
   - Text input at bottom of thread
@@ -662,6 +705,7 @@ Build the in-app chat system.
 - **Estimated Effort:** 2-3 days
 
 **8.6 Read Receipts**
+
 - **What:** Show when messages are read
 - **Acceptance Criteria:**
   - Mark message as "read" when recipient views thread
@@ -671,6 +715,7 @@ Build the in-app chat system.
 - **Estimated Effort:** 1-2 days
 
 **8.7 Block User**
+
 - **What:** Block abusive users from messaging
 - **Acceptance Criteria:**
   - "Block User" option in conversation
@@ -682,6 +727,7 @@ Build the in-app chat system.
 - **Estimated Effort:** 2 days
 
 **8.8 Report Conversation**
+
 - **What:** Flag abusive chats for moderator review
 - **Acceptance Criteria:**
   - "Report" button in conversation
@@ -701,6 +747,7 @@ Build photo upload capability.
 #### 📸 Photo Upload
 
 **7.1 Photo Upload - Core** 🔄
+
 - **What:** Infrastructure for uploading photos
 - **Acceptance Criteria:**
   - Select photo from device gallery
@@ -713,6 +760,7 @@ Build photo upload capability.
 - **Estimated Effort:** 3 days
 
 **7.2 Photo Compression**
+
 - **What:** Resize/compress photos before upload
 - **Acceptance Criteria:**
   - Resize to max 1200px width (maintain aspect ratio)
@@ -723,6 +771,7 @@ Build photo upload capability.
 - **Estimated Effort:** 2 days
 
 **7.3 Multi-Photo Upload**
+
 - **What:** Upload up to 3 photos per post
 - **Acceptance Criteria:**
   - Select multiple photos (max 3)
@@ -734,6 +783,7 @@ Build photo upload capability.
 - **Estimated Effort:** 2-3 days
 
 **7.4 Photo Display in Posts**
+
 - **What:** Show photos in feed and post detail view
 - **Acceptance Criteria:**
   - Display first photo as thumbnail in feed
@@ -745,6 +795,7 @@ Build photo upload capability.
 - **Estimated Effort:** 2-3 days
 
 **7.5 Thumbnail Generation**
+
 - **What:** Create small thumbnails for feed
 - **Acceptance Criteria:**
   - Generate 300px width thumbnail for each photo
@@ -763,6 +814,7 @@ Build reporting and admin tools.
 #### 🚨 Reporting System
 
 **9.1 Report Post**
+
 - **What:** Allow users to flag posts
 - **Acceptance Criteria:**
   - "Report" button on post detail view
@@ -775,6 +827,7 @@ Build reporting and admin tools.
 - **Estimated Effort:** 2 days
 
 **9.2 Auto-Hide Flagged Content**
+
 - **What:** Automatically hide posts with 3+ reports
 - **Acceptance Criteria:**
   - Count reports per post
@@ -786,6 +839,7 @@ Build reporting and admin tools.
 - **Estimated Effort:** 1-2 days
 
 **9.3 Report Photo**
+
 - **What:** Allow users to flag inappropriate photos
 - **Acceptance Criteria:**
   - "Report Photo" option in photo viewer
@@ -797,6 +851,7 @@ Build reporting and admin tools.
 - **Estimated Effort:** 1-2 days
 
 **9.4 Report User Profile** 🔄
+
 - **What:** Flag user profiles for review
 - **Acceptance Criteria:**
   - "Report User" option on public profile
@@ -812,6 +867,7 @@ Build reporting and admin tools.
 #### 🛡️ Admin Dashboard
 
 **10.1 Admin Authentication**
+
 - **What:** Secure login for moderators
 - **Acceptance Criteria:**
   - Whitelist of moderator email addresses
@@ -823,6 +879,7 @@ Build reporting and admin tools.
 - **Estimated Effort:** 2 days
 
 **10.2 Flagged Content Queue**
+
 - **What:** View all reported posts/photos/chats
 - **Acceptance Criteria:**
   - List of flagged content, sorted by report count (highest first)
@@ -835,6 +892,7 @@ Build reporting and admin tools.
 - **Estimated Effort:** 3-4 days
 
 **10.3 Moderate Flagged Content**
+
 - **What:** Review and take action on reports
 - **Acceptance Criteria:**
   - View full content (post, photo, or chat)
@@ -847,6 +905,7 @@ Build reporting and admin tools.
 - **Estimated Effort:** 3 days
 
 **10.4 User Management**
+
 - **What:** View and manage user accounts
 - **Acceptance Criteria:**
   - Search users by name or email
@@ -859,6 +918,7 @@ Build reporting and admin tools.
 - **Estimated Effort:** 3-4 days
 
 **10.5 Platform Statistics**
+
 - **What:** Dashboard with key metrics
 - **Acceptance Criteria:**
   - Total users, verified users (Level 1+), contributor users (Level 2)
@@ -871,6 +931,7 @@ Build reporting and admin tools.
 - **Estimated Effort:** 2-3 days
 
 **10.6 Audit Trail**
+
 - **What:** Log all moderator actions
 - **Acceptance Criteria:**
   - Log: Moderator ID, action type, target (post/user), timestamp, reason
@@ -889,6 +950,7 @@ Build the premium subscription scaffolding and global post features.
 #### 👑 Premium & Global Posts
 
 **15.1 Premium User Flag**
+
 - **What:** Add premium status to user accounts
 - **Acceptance Criteria:**
   - `is_premium` column on users table
@@ -900,6 +962,7 @@ Build the premium subscription scaffolding and global post features.
 - **Estimated Effort:** 2 days
 
 **15.2 Global Post Creation**
+
 - **What:** Premium users can create posts visible everywhere
 - **Acceptance Criteria:**
   - "Global" toggle on create post form (premium only)
@@ -911,6 +974,7 @@ Build the premium subscription scaffolding and global post features.
 - **Estimated Effort:** 2 days
 
 **15.3 Global Posts in Feed**
+
 - **What:** Show global posts alongside local posts in all metro feeds
 - **Acceptance Criteria:**
   - Feed query includes `is_global = true` posts from any metro area
@@ -929,6 +993,7 @@ Build push notification system.
 #### 🔔 Notifications
 
 **12.1 Push Notification Setup** 🔄
+
 - **What:** Infrastructure for sending push notifications
 - **Acceptance Criteria:**
   - Register device for push notifications
@@ -939,6 +1004,7 @@ Build push notification system.
 - **Estimated Effort:** 2-3 days
 
 **12.2 Chat Message Notifications**
+
 - **What:** Notify users of new chat messages
 - **Acceptance Criteria:**
   - Send push when new message received
@@ -950,6 +1016,7 @@ Build push notification system.
 - **Estimated Effort:** 2 days
 
 **12.3 In-App Notifications List** 🔄
+
 - **What:** View notification history in-app
 - **Acceptance Criteria:**
   - List of notifications (newest first)
@@ -962,6 +1029,7 @@ Build push notification system.
 - **Note:** Lower priority, can be post-MVP
 
 **12.4 Notification Preferences** 🔄
+
 - **What:** Let users control notification settings
 - **Acceptance Criteria:**
   - Toggle: Chat messages (on/off)
@@ -980,6 +1048,7 @@ Build push notification system.
 This is a user journey that combines multiple features built above:
 
 **13.1 Complete Onboarding Flow**
+
 - **What:** Guide new users through setup
 - **Steps:**
   1. User Registration (1.1)
@@ -998,22 +1067,27 @@ This is a user journey that combines multiple features built above:
 ## Testing & Polish Features
 
 **14.1 Error Handling**
+
 - **What:** Graceful error messages throughout app
 - **Estimated Effort:** Ongoing, 3-5 days total
 
 **14.2 Loading States**
+
 - **What:** Skeleton screens, spinners while data loads
 - **Estimated Effort:** Ongoing, 2-3 days total
 
 **14.3 Empty States**
+
 - **What:** Helpful messages when no data (empty feed, no chats, etc.)
 - **Estimated Effort:** 1-2 days
 
 **14.4 Input Validation**
+
 - **What:** Client-side validation for all forms
 - **Estimated Effort:** Ongoing, 2-3 days total
 
 **14.5 Accessibility**
+
 - **What:** Screen reader support, color contrast, font sizing
 - **Estimated Effort:** 3-5 days
 
@@ -1022,7 +1096,9 @@ This is a user journey that combines multiple features built above:
 ## Feature Priority Matrix
 
 ### Must-Have (MVP Blockers)
+
 Cannot launch without these:
+
 - All Authentication features (1.1-1.5)
 - All Location features (2.1-2.4)
 - Basic Profile (3.1-3.3)
@@ -1040,7 +1116,9 @@ Cannot launch without these:
 **Total Must-Have Features:** 43
 
 ### Should-Have (Important but can defer)
+
 Significantly improves UX but not blockers:
+
 - Password Reset (1.3)
 - Public Profile View (3.4)
 - Profile Photo (3.5)
@@ -1058,7 +1136,9 @@ Significantly improves UX but not blockers:
 **Total Should-Have Features:** 13
 
 ### Nice-to-Have (Post-MVP)
+
 Can be added in future updates:
+
 - Session Management advanced (1.5)
 - Draft Posts (5.10)
 - Social Media Verification (4.5)
@@ -1087,21 +1167,27 @@ Features marked with 🔄 can be built in parallel by different developers:
 Map features to Phase 1 success metrics:
 
 **Metric: 1,000 verified (Level 1+) users**
+
 - Depends on: Onboarding (13.1), Phone Verification (4.3-4.4)
 
 **Metric: 500+ active listings**
+
 - Depends on: Post Engine (5.1-5.6), Tag System (5.14-5.15), Premium (15.1-15.3)
 
 **Metric: <5% spam/scam rate**
+
 - Depends on: Trust Levels (4.1-4.6), Reporting (9.1-9.2), Admin Dashboard (10.2-10.3)
 
 **Metric: 200+ emergency help requests**
+
 - Depends on: Emergency Tag + Moderation (5.14, 4.6), Chat (8.1-8.5)
 
 **Metric: 50+ chat messages per day**
+
 - Depends on: Chat System (8.1-8.5), Notifications (12.2)
 
 **Metric: 80%+ posts include photos**
+
 - Depends on: Photo Upload (7.1-7.4), Create Post Form (5.2)
 
 ---

@@ -35,6 +35,7 @@ The new design shifts to a Reddit-style simplified posting model with a scalable
 
 **Old flow:** CategorySelect screen → Category-specific form with 5-10 mandatory fields  
 **New flow:** Single screen with:
+
 - **Title** (required, 5-200 chars)
 - **Body** (required, 10-5000 chars)
 - **Tag selector** (chip/pill buttons, 1-3 required)
@@ -71,6 +72,7 @@ All category-specific structured fields (rent amount, move-in date, pay range, c
 
 **Old:** Category tabs (All, Housing, Jobs, Emergency, Travel)  
 **New:** Unified feed with **filter chips** for each tag
+
 - Scrollable horizontal chip bar showing all available tags
 - "All" chip selected by default
 - Multiple chips can be selected for multi-tag filtering
@@ -80,6 +82,7 @@ All category-specific structured fields (rent amount, move-in date, pay range, c
 ### 7. Emergency Tag Special Handling
 
 Emergency remains as a tag with `requires_moderation = true`. When a user selects the Emergency tag:
+
 - No extra structured fields (same Title + Body as other posts)
 - Emergency disclaimer shown before submission: "This is NOT a replacement for 911"
 - Post created with `status = 'pending'` instead of `'active'`
@@ -91,14 +94,17 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 ## Database Changes Summary
 
 ### New Tables
+
 - `tags` — Tag lookup table (id, name, slug, icon, color, description, is_system, requires_moderation, sort_order, created_at)
 - `post_tags` — Junction table (post_id, tag_id)
 
 ### Modified Tables
+
 - `posts` — Add `is_global` (boolean, default false); Remove `category`, `fields`, `expiry_date` after migration
 - `users` — Add `is_premium` (boolean, default false)
 
 ### Removed
+
 - `post_category` ENUM type (after migration completes)
 - `expire-posts` Edge Function (no more auto-expiry)
 
@@ -107,9 +113,11 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 ## Files Affected
 
 ### Database
+
 - Migration: `001_schema.sql` (consolidated; originally `005_tags_and_premium.sql`)
 
 ### Shared Package (`packages/shared/`)
+
 - `src/types/post.ts` — Remove PostCategory, add Tag/PostTag types, update Post interface
 - `src/types/user.ts` — Add is_premium to User
 - `src/constants/postCategories.ts` → rename to `src/constants/tags.ts`
@@ -124,6 +132,7 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 - `src/index.ts` — Update exports
 
 ### Mobile App (`apps/mobile/`)
+
 - `src/screens/post/CreatePostScreen.tsx` — Complete rewrite (Reddit-style)
 - `src/screens/post/CategorySelectScreen.tsx` — Delete
 - `src/screens/HomeScreen.tsx` — Replace category tabs with filter chips, add badges
@@ -132,11 +141,13 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 - `src/navigation/` — Update post creation navigator
 
 ### Web App (`apps/web/`)
+
 - `src/pages/feed.tsx` — Replace category tabs with filter chips, add badges
 - New: `src/pages/posts/create.tsx` — Create post page
 - `src/components/` — PostCard updates
 
 ### Documentation
+
 - `docs/database-schema.md` — Add tags table, update posts table
 - `product-roadmap.md` — Update Phase 1 sections B, C
 - `docs/features/phase1-feature-breakdown.md` — Update post engine features
@@ -147,6 +158,7 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 - `docs/code-sharing-guide.md` — Minor updates if needed
 
 ### Supabase Functions
+
 - `supabase/functions/expire-posts/` — Mark as deprecated/remove
 
 ---
@@ -167,6 +179,7 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 ## Implementation Order
 
 ### Phase A: Database & Shared Layer (Foundation)
+
 1. Tags and premium are now part of consolidated `001_schema.sql`
 2. Update shared types (Post, User, Tag, PostTag)
 3. Update shared constants (tags config, remove post expiry)
@@ -175,6 +188,7 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 6. Clean up deprecated shared code (housing/jobs validation, category-specific utils)
 
 ### Phase B: Mobile App
+
 7. Rewrite CreatePostScreen (Reddit-style)
 8. Remove CategorySelectScreen
 9. Update navigation (PostStackParamList)
@@ -182,11 +196,13 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 11. Update PostCard (tag pills + Local/Global badge)
 
 ### Phase C: Web App
+
 12. Create post page
 13. Update feed page (filter chips + badges)
 14. Update PostCard component
 
 ### Phase D: Documentation
+
 15. Update database-schema.md
 16. Update product-roadmap.md
 17. Update phase1-feature-breakdown.md

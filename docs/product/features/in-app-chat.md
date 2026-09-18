@@ -17,10 +17,12 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 ## User Stories
 
 **Primary:**
+
 - As a verified user, I want to message another community member so that I can communicate with them privately.
 - As a user, I want to receive and respond to messages so that I can connect with interested people.
 
 **Secondary:**
+
 - As a user, I want to see all my conversations in one place so that I can track ongoing discussions.
 - As a user, I want to know when my messages have been read so that I know the other person saw my inquiry.
 - As a user, I want to block abusive users so that I can protect myself from harassment.
@@ -40,6 +42,7 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 | 8.7 Block User | Block abusive users from messaging | Should-have |
 
 **Out of scope (this iteration):**
+
 - 8.8 Report Conversation (depends on Reporting System)
 - Image messages (Phase 1 Photo Upload feature)
 - Group chats (not in roadmap)
@@ -52,6 +55,7 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 ### Functional Requirements
 
 **Chat Initiation (8.2):**
+
 - [ ] Avatar tap menu on post cards and post detail (tap avatar → popup with "View Profile" / "Chat")
 - [ ] Check if conversation already exists between these two users
 - [ ] If exists → navigate to existing conversation
@@ -61,6 +65,7 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 - [ ] Cannot message yourself (hide Chat option on own posts)
 
 **Conversation List (8.3):**
+
 - [ ] List all conversations sorted by most recent message (newest first)
 - [ ] Display other participant's name and initials avatar
 - [ ] Display last message preview (first 50 chars, truncated)
@@ -71,6 +76,7 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 - [ ] Total unread count on Messages tab badge
 
 **Message Thread (8.4):**
+
 - [ ] Display messages in chronological order (oldest at top, newest at bottom)
 - [ ] Differentiate sent vs. received messages (right/left alignment, different colors)
 - [ ] Show message timestamp (group by day: "Today", "Yesterday", "Feb 14")
@@ -79,6 +85,7 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 - [ ] Real-time updates: new messages appear instantly via Supabase Realtime subscription
 
 **Send Message (8.5):**
+
 - [ ] Text input at bottom of thread (multi-line, max 1000 chars)
 - [ ] Send button (disabled when input is empty)
 - [ ] Message appears in thread immediately (optimistic UI)
@@ -88,12 +95,14 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 - [ ] Keyboard avoidance: input stays above keyboard
 
 **Read Receipts (8.6):**
+
 - [ ] Mark all messages as "read" when recipient opens the conversation thread
 - [ ] Show read status on sent messages (single check = sent, double check = read)
 - [ ] Update read status in real-time via Supabase subscription
 - [ ] Reset unread_count to 0 for current user when thread is opened
 
 **Block User (8.7):**
+
 - [ ] "Block" option accessible from thread header (menu/kebab icon)
 - [ ] Confirmation dialog: "Block [Name]? They won't be able to message you."
 - [ ] Blocked user cannot send new messages (RLS policy enforces)
@@ -117,12 +126,14 @@ The schema is already defined in `docs/architecture/database-schema.md` and `sup
 ### Existing Tables (verify they exist in migration)
 
 **`conversations`** — One per user pair
+
 - `id` UUID PK
 - `last_message` TEXT
 - `last_message_time` TIMESTAMPTZ
 - `created_at`, `updated_at`
 
 **`conversation_participants`** — Junction table (2 rows per conversation)
+
 - `id` BIGSERIAL PK
 - `conversation_id` UUID FK → conversations
 - `user_id` UUID FK → users
@@ -133,6 +144,7 @@ The schema is already defined in `docs/architecture/database-schema.md` and `sup
 - UNIQUE(conversation_id, user_id)
 
 **`messages`** — Individual messages
+
 - `id` UUID PK
 - `conversation_id` UUID FK → conversations
 - `sender_id` UUID FK → users
@@ -145,6 +157,7 @@ The schema is already defined in `docs/architecture/database-schema.md` and `sup
 ### New Table Needed
 
 **`blocked_users`** — Block list
+
 ```sql
 CREATE TABLE blocked_users (
   id BIGSERIAL PRIMARY KEY,
@@ -168,7 +181,7 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ### Flow 1: Initiate Chat from Avatar
 
-```
+```text
 1. User browses home feed or post detail
 2. User taps another user's avatar on a post card or post detail
 3. User selects "Chat" from avatar menu
@@ -186,7 +199,7 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ### Flow 2: View Conversations
 
-```
+```text
 1. User taps Messages tab in bottom nav
 2. ConversationListScreen loads
 3. Displays all conversations sorted by last_message_time DESC
@@ -196,7 +209,7 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ### Flow 3: Block User
 
-```
+```text
 1. User is in MessageThread
 2. User taps kebab menu (⋮) in header
 3. Selects "Block User"
@@ -240,14 +253,17 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 ### New Files to Create
 
 **Screens:**
+
 - `apps/mobile/src/screens/chat/ConversationListScreen.tsx` — Messages tab content
 - `apps/mobile/src/screens/chat/MessageThreadScreen.tsx` — Individual chat thread
 - `apps/mobile/src/screens/PostDetailScreen.tsx` — Full post view with avatar menu chat option
 
 **Navigation:**
+
 - `apps/mobile/src/navigation/ChatNavigator.tsx` — Stack: ConversationList → MessageThread
 
 **Components:**
+
 - `apps/mobile/src/components/chat/ConversationItem.tsx` — Row in conversation list
 - `apps/mobile/src/components/chat/MessageBubble.tsx` — Individual message bubble
 - `apps/mobile/src/components/chat/ChatInput.tsx` — Text input + send button

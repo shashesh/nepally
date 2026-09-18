@@ -11,6 +11,7 @@
 The Messages tab content. Shows all active conversations sorted by most recent message. Each row displays the other participant's name, last message preview, timestamp, and unread badge. This is the hub for all in-app communication.
 
 **Key Goals:**
+
 - Quick overview of all ongoing conversations
 - Easy identification of unread messages
 - One-tap access to any conversation thread
@@ -151,6 +152,7 @@ Tap any user's avatar on a post to start chatting.
 | **Visibility** | Only when unread_count > 0 | Same |
 
 **States:**
+
 - **Unread:** Name bold, last message bold, badge visible
 - **Read:** Name regular weight, last message gray, no badge
 - **Pressed:** Background #F5F5F5
@@ -216,6 +218,7 @@ Tap any user's avatar on a post to start chatting.
 ## User Interactions
 
 ### Primary Flow (Open Conversation)
+
 1. User taps Messages tab in bottom nav
 2. Conversation list loads (sorted by `last_message_time` DESC)
 3. User sees unread conversations at top (bold text, badge)
@@ -223,11 +226,13 @@ Tap any user's avatar on a post to start chatting.
 5. Navigate to MessageThreadScreen with `conversation_id`
 
 ### Pull-to-Refresh
+
 - Pull down to refresh conversation list
 - Spinner appears at top
 - List updates with latest data
 
 ### Swipe Actions (future enhancement)
+
 - Swipe left: "Delete" (archive conversation)
 - Swipe right: "Mark as Read" / "Mark as Unread"
 - Not in initial implementation
@@ -266,14 +271,17 @@ Tap any user's avatar on a post to start chatting.
 ## Accessibility
 
 ### Screen Reader Order
+
 1. "Messages" (screen title)
 2. Each conversation row as single tappable element with full context
 3. Empty state text (when applicable)
 
 ### Touch Targets
+
 - Full row height (72px/dp) exceeds 44pt/48dp minimum
 
 ### Color Contrast (WCAG)
+
 | Element | Ratio | Level |
 |---------|-------|-------|
 | Name unread (#212121 on #FFFFFF) | 17.2:1 | AAA ✓ |
@@ -282,6 +290,7 @@ Tap any user's avatar on a post to start chatting.
 | Tab badge (#FFFFFF on #DC143C) | 4.5:1 | AA ✓ |
 
 ### Checklist
+
 - [ ] Screen title announced: "Messages"
 - [ ] Each conversation row is a single tappable element
 - [ ] Unread count announced with each row
@@ -294,17 +303,20 @@ Tap any user's avatar on a post to start chatting.
 ## Animations & Transitions
 
 ### On Screen Load
+
 | Step | Element | Delay | Duration | Effect |
 |------|---------|-------|----------|--------|
 | 1 | Header | 0ms | 0ms | Instant render |
 | 2 | Conversation rows | 0ms | 200ms | Fade in (ease-out) |
 
 ### Row Interaction
+
 - **Press:** Background change to #F5F5F5 (100ms)
 - **iOS:** Subtle haptic on tap
 - **Android:** Ripple from tap point (200ms)
 
 ### Pull-to-Refresh
+
 - Spinner fade in (150ms) on pull threshold
 - Rows refresh in place (no flicker)
 
@@ -313,6 +325,7 @@ Tap any user's avatar on a post to start chatting.
 ## Content & Localization
 
 ### String Keys
+
 | Key | Value |
 |-----|-------|
 | `messages_title` | Messages |
@@ -328,6 +341,7 @@ Tap any user's avatar on a post to start chatting.
 ## Technical Notes
 
 ### Identifiers
+
 - Route: `/messages`
 - iOS: `ConversationListScreen`
 - Android: `ConversationListFragment`
@@ -335,6 +349,7 @@ Tap any user's avatar on a post to start chatting.
 ### Data Requirements
 
 **API Query:**
+
 ```sql
 SELECT c.*, cp.unread_count,
   other_cp.name as other_name, other_cp.user_id as other_user_id
@@ -348,6 +363,7 @@ LIMIT 20;
 ```
 
 **Data per row:**
+
 - `conversation_id` — for navigation
 - `other_user_name` — display name
 - `other_user_id` — for avatar initials
@@ -366,6 +382,7 @@ LIMIT 20;
 | Exit | Tap other bottom tabs | Respective tab |
 
 ### State Management
+
 - Real-time subscription to conversations table for new message updates
 - Unread count synced from `conversation_participants.unread_count`
 - Pagination: 20 items per page, infinite scroll
@@ -375,6 +392,7 @@ LIMIT 20;
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Messages tab navigates to conversation list
 - [ ] Conversations sorted by most recent message
 - [ ] Tapping row navigates to MessageThreadScreen
@@ -384,6 +402,7 @@ LIMIT 20;
 - [ ] Pagination loads next 20 conversations on scroll
 
 ### Visual Tests
+
 - [ ] Unread rows render bold name + bold message
 - [ ] Read rows render regular weight + gray text
 - [ ] Avatar initials display correctly
@@ -392,6 +411,7 @@ LIMIT 20;
 - [ ] Dividers inset correctly after avatar
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads full conversation context per row
 - [ ] Touch targets: full row height (72px) meets minimum
 - [ ] Color contrast meets WCAG AA
@@ -399,6 +419,7 @@ LIMIT 20;
 - [ ] Screen title announced on tab switch
 
 ### Edge Case Tests
+
 - [ ] Zero conversations shows empty state
 - [ ] Deleted user shows "[Deleted User]" with gray avatar
 - [ ] Network error shows error banner

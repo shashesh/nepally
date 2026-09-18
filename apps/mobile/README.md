@@ -13,11 +13,13 @@ React Native mobile application for the Nepally platform (Nepalese United Suppor
 ### Installation
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
 
 2. Create a `.env` file from the example:
+
    ```bash
    cp .env.example .env
    ```
@@ -59,7 +61,7 @@ npx expo build:android
 
 ### Directory Structure
 
-```
+```text
 src/
 ├── components/        # Reusable UI components
 │   ├── buttons/       # Button components

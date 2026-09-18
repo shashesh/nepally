@@ -22,6 +22,7 @@ created: 2026-03-23
 - Do not mark Completed until acceptance criteria and required tests pass.
 
 ### Status Legend
+
 - Not Started
 - In Progress
 - Blocked
@@ -59,12 +60,14 @@ created: 2026-03-23
 ## 2) Scope
 
 ### In Scope
+
 - Security hardening for shipped features.
 - Production readiness for notifications and moderation.
 - Completion of partially implemented auth/UX paths.
 - Documentation and test quality alignment.
 
 ### Out of Scope
+
 - Marketplace feature implementation.
 - Phase 2/3 net-new initiatives beyond remediation.
 - Large UX redesign not tied to identified gaps.
@@ -74,41 +77,49 @@ created: 2026-03-23
 ## 3) Detailed Acceptance Criteria
 
 ### SEC-01 Chat RLS
+
 - Tables conversations, messages, and conversation_participants are confirmed protected by effective RLS in live environment.
 - Cross-user read/write attempts fail in automated test checks.
 - CI includes a repeatable auth isolation smoke test.
 
 ### MOD-01 and MOD-02 Reporting and Moderation Wiring
+
 - Shared report API supports creating reports with category and target metadata.
 - Mobile and web report actions persist data, not only local alerts.
 - Report records are visible in a moderation review workflow.
 - Auto-hide threshold behavior is defined and implemented where required.
 
 ### NOTIF-01/02/03 Notifications End-to-End
+
 - Token registration runs after login/session restore on both platforms.
 - Push edge function is deployed and invoked by a defined event source.
 - Web push uses a complete VAPID-signed delivery path.
 - Notification taps route to the correct entity type based on payload.
 
 ### AUTH-01/02 Mobile Auth Completion
+
 - Signup method options for Google and Phone no longer route to Coming Soon.
 - Happy-path and error-path unit tests exist for both auth methods.
 - Trust level progression behavior is explicit and tested.
 
 ### UX-01/02 UX Gaps
+
 - Chat avatar actions route to public profiles in conversation list and thread.
 - Search entry no longer dead-ends with placeholder behavior.
 
 ### ARCH-01 Shared-First Alignment
+
 - Metro display lookups are centralized in shared layer.
 - Mobile/web duplicate query logic removed where feasible.
 
 ### DOC-01 Documentation Integrity
+
 - PROGRESS status lines match implemented behavior.
 - README next-up section no longer lists already shipped items.
 - Roadmap and progress references are mutually consistent.
 
 ### TEST-01 Coverage Gates
+
 - New/changed logic has adjacent unit tests.
 - Critical modules meet minimum target thresholds agreed by the team.
 - CI fails on regression below threshold.
@@ -118,18 +129,21 @@ created: 2026-03-23
 ## 4) Suggested Sprint Slice
 
 ### Sprint 1 (Safety and Truth)
+
 - SEC-01
 - MOD-01
 - MOD-02
 - DOC-01
 
 ### Sprint 2 (Notification Reliability)
+
 - NOTIF-01
 - NOTIF-02
 - NOTIF-03
 - TEST-01
 
 ### Sprint 3 (Completion and UX)
+
 - AUTH-01
 - AUTH-02
 - UX-01

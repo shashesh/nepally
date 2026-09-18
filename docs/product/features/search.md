@@ -28,6 +28,7 @@ Signed-in members can search community posts, marketplace listings and people fr
 | `/search?q=&tab=&scope=` | Tabs All · Posts · Listings · People with counts. "All" previews each type; type tabs scroll infinitely. Tab and scope live in the URL (shareable, Back-safe). Matching words are highlighted |
 
 **Scope rules:**
+
 - Posts and listings show the member's metro plus global items, or every metro with `scope=all`.
 - People are searched nationwide, with members in the viewer's metro first.
 - Only active posts and listings appear. Banned members never appear.

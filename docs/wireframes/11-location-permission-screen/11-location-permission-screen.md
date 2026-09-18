@@ -13,6 +13,7 @@
 This is a custom pre-permission screen shown before the native OS location dialog. It explains why Nepally needs location access in plain, reassuring language. Shown only once (first app launch, before onboarding). This is NOT the native OS dialog — it's a branded screen that prepares the user.
 
 **Key Goals:**
+
 - Build trust by explaining location usage transparently
 - Increase permission grant rate (users who understand "why" grant more often)
 - Provide a clear opt-out path ("Not Now") that doesn't block onboarding
@@ -172,6 +173,7 @@ We use your location to show you community posts, housing, jobs, and events near
 | **Position** | ~80px from bottom of screen |
 
 **States:**
+
 - Default: #1565C0 background, white text
 - Pressed: #104D99 background, scale 0.98
 - Loading: Spinner + "Getting your location..." text, button disabled
@@ -193,6 +195,7 @@ We use your location to show you community posts, housing, jobs, and events near
 | **Bottom margin** | 40px from bottom of safe area |
 
 **States:**
+
 - Default: Secondary text color, no underline
 - Pressed: Underline + slightly darker color
 
@@ -233,6 +236,7 @@ We use your location to show you community posts, housing, jobs, and events near
 ## Accessibility
 
 ### Screen Reader Order
+
 1. "Map illustration" (decorative)
 2. "Nepally works best with your location"
 3. Body text (location usage explanation)
@@ -241,14 +245,17 @@ We use your location to show you community posts, housing, jobs, and events near
 6. "Not Now" link
 
 ### Touch Targets
+
 - "Enable Location" button: min 44×44pt (iOS) / 48×48dp (Android)
 - "Not Now" link: min 44×44pt touch area (invisible padding)
 
 ### Color Contrast
+
 - All text meets WCAG AA contrast ratios on white background
 - Button text (white on #1565C0): AAA compliant
 
 ### Focus Indicators
+
 - iOS VoiceOver: yellow outline
 - Android TalkBack: green rectangle
 
@@ -257,16 +264,19 @@ We use your location to show you community posts, housing, jobs, and events near
 ## Platform Notes
 
 ### iOS
+
 - Requests `requestForegroundPermissionsAsync()` from `expo-location`
 - Permission options: "Allow While Using App" / "Don't Allow"
 - If previously denied, "Enable Location" opens iOS Settings via `Linking.openSettings()`
 
 ### Android
+
 - Requests `ACCESS_FINE_LOCATION` permission
 - Permission options: "While using the app" / "Only this time" / "Don't allow"
 - "Don't allow" twice triggers "Don't ask again" — subsequent taps open App Info settings
 
 ### Web
+
 - Triggers `navigator.geolocation.getCurrentPosition()`
 - Browser shows its own permission bar
 - No custom pre-permission screen on web (browser handles it)

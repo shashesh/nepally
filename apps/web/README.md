@@ -30,7 +30,7 @@ npm start
 
 ## Project Structure
 
-```
+```text
 src/
 ├── pages/         # Next.js pages (routes)
 │   ├── index.tsx        # Home page
@@ -58,12 +58,13 @@ src/
 
 Each post has a dedicated URL for SEO:
 
-```
+```text
 https://nusa.app/posts/housing/abc123
 https://nusa.app/posts/jobs/def456
 ```
 
 Post pages use Server-Side Rendering to:
+
 - Generate proper HTML for search engines
 - Include meta tags (title, description, Open Graph)
 - Load fast for good Core Web Vitals

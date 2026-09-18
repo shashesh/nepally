@@ -14,6 +14,7 @@ Replace the static ZIP-code-only location model with a dynamic, GPS-aware locati
 ## Problem Statement
 
 Currently, location is set once during onboarding via manual ZIP code entry and never changes. This creates problems for:
+
 - **Travelers**: Users visiting another city see their home feed, not local content
 - **Movers**: Users who relocate must somehow know to update their ZIP code (no guidance)
 - **Commuters**: Users who work in a different metro area can't easily switch between home and work feeds
@@ -22,12 +23,14 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 ## User Stories
 
 **Primary:**
+
 - As a new user, I want the app to detect my location automatically so I don't have to manually type my ZIP code
 - As a traveling user, I want the app to notice I'm in a different city and offer to show me local content
 - As a commuter, I want to save my Home and Work locations so I can quickly switch between feeds
 - As a privacy-conscious user, I want to understand why the app needs my location before granting access
 
 **Secondary:**
+
 - As a user who denied location access, I want to still use the app with my onboarding ZIP code location
 - As a user who denied location access, I want periodic gentle reminders about enabling location
 - As a user browsing a temporary location, I want to return to my home feed easily
@@ -51,6 +54,7 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 | **L.10** Web Location Support | Browser Geolocation API + manual metro picker fallback for Next.js web app | Must-have |
 
 **Out of scope (this iteration):**
+
 - Radius-based filtering within a metro area (Phase 2: Hyper-Local)
 - Background location tracking (only check on app open/foreground)
 - Location-based push notifications
@@ -64,10 +68,12 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 ### L.1 — Location Permission Screen
 
 **When shown:**
+
 - First app launch, before onboarding screens begin
 - Only shown once (tracked via AsyncStorage/localStorage flag)
 
 **Content:**
+
 - App logo/branding
 - Illustration of a map pin or community
 - Headline: "Nepally works best with your location"
@@ -76,10 +82,12 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 - Secondary CTA: "Not Now" → skips to manual ZIP code onboarding
 
 **Behavior after native dialog:**
+
 - **Granted**: Get GPS coordinates → map to metro area → pre-fill ZIP/metro for onboarding confirmation
 - **Denied**: Proceed to manual ZIP code entry (existing onboarding flow)
 
 **Platform differences:**
+
 - iOS: Requests "When In Use" permission only (not "Always")
 - Android: Requests `ACCESS_FINE_LOCATION` permission
 - Web: Uses browser `navigator.geolocation.getCurrentPosition()`
@@ -89,20 +97,24 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 **Approach:** Reverse geocoding GPS coordinates to a ZIP code, then using existing `metro_area_zipcodes` lookup.
 
 **Flow:**
+
 1. Get device GPS coordinates (lat, lng)
 2. Reverse geocode to get ZIP code (using Expo Location's `reverseGeocodeAsync` on mobile, or a lightweight geocoding service on web)
 3. Look up metro area via existing `getMetroByZip()` shared API function
 4. Return the `MetroArea` object
 
 **Shared utility (packages/shared):**
-```
+
+```text
 mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 ```
+
 - `reverseGeocodeFn` is a platform-injected function (dependency injection)
 - Mobile passes `expo-location` reverse geocoder
 - Web passes browser-based or API-based reverse geocoder
 
 **Edge cases:**
+
 - GPS coordinates outside any known metro area → show "We couldn't determine your metro area" + manual picker
 - GPS coordinates map to a ZIP not in `metro_area_zipcodes` table → same fallback
 - Reverse geocoding fails (network error) → silently fall back to cached/stored location
@@ -110,11 +122,13 @@ mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 ### L.3 — Location Change Detection
 
 **When it runs:**
+
 - Every time the app is opened (cold start)
 - Every time the app returns to foreground (from background)
 - Does NOT run in the background
 
 **Logic:**
+
 1. Check if location permission is granted
 2. If no permission → skip detection, use stored location
 3. If permission granted → get current GPS coordinates
@@ -125,6 +139,7 @@ mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 8. If manual override is active (L.9) → skip detection for this session
 
 **Snooze check (L.8):**
+
 - Before showing the prompt, check if a snooze is active
 - If snoozed within last 24 hours for this specific detected metro area → skip prompt
 - Snooze data stored locally: `{ metroAreaId: string, snoozedUntil: timestamp }`
@@ -134,6 +149,7 @@ mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 **UI:** Bottom sheet / modal overlay
 
 **Content:**
+
 - Map pin icon + detected metro name
 - Headline: "It looks like you're in [Metro Name]"
 - Body: "Would you like to see community posts from this area?"
@@ -144,12 +160,14 @@ mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 - Snooze toggle: "Don't ask again for 24 hours" checkbox/link
 
 **After "Browse [Metro Name]" (temporary):**
+
 - Home screen header shows: "[Metro Name] (Visiting)" with a subtle indicator
 - Feed switches to the detected metro area
 - On next app restart, reverts to stored home location
 - Location switcher shows "Return to [Home Metro]" option
 
 **After "Update My Location" (permanent):**
+
 - Database `metro_area_id` updated
 - Secondary prompt: "Save [Metro Name] as a location?" with name input field
 - If user has fewer than their max saved locations (1 for free, 5 for premium), pre-fill name suggestion ("Home", "Work", or metro name)
@@ -158,7 +176,8 @@ mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 ### L.5 — Saved Locations
 
 **Data model:**
-```
+
+```text
 user_saved_locations table:
   id: UUID (PK)
   user_id: UUID (FK → users.id)
@@ -178,6 +197,7 @@ Constraints:
 ```
 
 **Behavior:**
+
 - During onboarding, the first location is auto-saved as "Home" with `is_default = true`
 - Users can add, rename, and delete saved locations
 - Deleting the default location promotes the next one to default
@@ -190,6 +210,7 @@ Constraints:
 **Trigger:** Tap on the metro area name in the home screen header (currently static text)
 
 **UI:** Bottom sheet with:
+
 - **Current location** indicator (GPS dot + "Current: [Detected Metro]") — only if permission granted and detected metro differs from active
 - **Saved locations list** (up to 5 items, each with name + metro name)
   - Active location has a checkmark
@@ -198,6 +219,7 @@ Constraints:
 - **"Manage Locations"** link → opens full location management screen (rename, delete, reorder)
 
 **Switching behavior:**
+
 - Tapping a saved location immediately switches the feed
 - Sets that location as the active session location
 - Manual override flag set (L.9) — GPS detection won't prompt again this session
@@ -206,11 +228,13 @@ Constraints:
 ### L.7 — Permission Denied Fallback
 
 **Behavior when location permission is denied:**
+
 - App works normally using the onboarding ZIP code metro area
 - Location change detection (L.3) is disabled
 - Location switcher (L.6) still works (manual selection only, no "Current location" row)
 
 **Periodic reminder:**
+
 - Show a dismissible banner on the home screen: "Enable location for a better experience" with a "Turn On" button
 - Banner frequency rules:
   - Show on first home screen visit after denial
@@ -219,12 +243,14 @@ Constraints:
 - Banner stored in local storage: `{ dismissCount: number, lastDismissed: timestamp }`
 
 **"Turn On" button behavior:**
+
 - Mobile: Opens app settings (deep link to iOS Settings / Android App Info)
 - Web: Re-triggers `navigator.geolocation.getCurrentPosition()` permission prompt
 
 ### L.8 — Snooze Prompt
 
 **When user selects "Don't ask for 24 hours":**
+
 - Store snooze record locally: `{ metroAreaId: "19100", snoozedUntil: <now + 24h> }`
 - Can have multiple snooze records (one per metro area)
 - On next location check, if detected metro has an active snooze → skip prompt
@@ -233,10 +259,12 @@ Constraints:
 ### L.9 — Manual Override
 
 **When triggered:**
+
 - User manually selects a location from saved locations (L.6)
 - User manually searches/enters a metro area
 
 **Behavior:**
+
 - Sets a session-level flag: `manualOverrideActive = true`
 - While flag is active, location change detection (L.3) skips GPS check
 - Flag resets on app restart (cold start)
@@ -245,16 +273,19 @@ Constraints:
 ### L.10 — Web Location Support
 
 **Browser Geolocation:**
+
 - On first visit (after signup/login), prompt for browser geolocation permission
 - If granted: same GPS-to-metro flow as mobile
 - If denied: manual metro area picker
 
 **Manual Metro Picker (fallback):**
+
 - Search input: type metro name or ZIP code
 - Dropdown results from `metro_areas` table (filtered as user types)
 - Select to set active location
 
 **Web-specific differences:**
+
 - No "app open" detection — check location on page load of feed page
 - Snooze and session override stored in `localStorage`
 - Banner reminder uses same rules as mobile but styled as a web toast/banner
@@ -323,6 +354,7 @@ WHERE metro_area_id IS NOT NULL;
 ## Shared Package Additions (`packages/shared/`)
 
 ### Types (`src/types/location.ts`)
+
 - `SavedLocation` — matches `user_saved_locations` table schema
 - `LocationChangePromptAction` — enum: 'browse_temporarily' | 'update_location' | 'keep_current'
 - `LocationPermissionStatus` — enum: 'granted' | 'denied' | 'undetermined'
@@ -330,6 +362,7 @@ WHERE metro_area_id IS NOT NULL;
 - `ReverseGeocodeFn` — type for platform-injected reverse geocoding function
 
 ### API Functions (`src/api/savedLocations.ts`)
+
 - `getSavedLocations(supabase, userId)` → `SavedLocation[]`
 - `addSavedLocation(supabase, userId, metroAreaId, name, zipCode, isDefault)` → `SavedLocation`
 - `updateSavedLocation(supabase, locationId, updates)` → `SavedLocation`
@@ -338,16 +371,19 @@ WHERE metro_area_id IS NOT NULL;
 - `getSavedLocationCount(supabase, userId)` → `number`
 
 ### API Functions (`src/api/metroArea.ts` — additions)
+
 - `searchMetroAreas(supabase, query)` → `MetroArea[]` (search by name or ZIP)
 - `getMetroByCoordinates(supabase, lat, lng, reverseGeocodeFn)` → `MetroArea | null`
 
 ### Utils (`src/utils/location.ts`)
+
 - `isSnoozeActive(snoozeRecords, metroAreaId)` → `boolean`
 - `createSnoozeRecord(metroAreaId, durationHours)` → `LocationSnoozeRecord`
 - `cleanExpiredSnoozes(snoozeRecords)` → `LocationSnoozeRecord[]`
 - `suggestLocationName(existingNames)` → `string` (suggests next available default name)
 
 ### Constants (`src/constants/location.ts`)
+
 - `MAX_SAVED_LOCATIONS_FREE = 1`
 - `MAX_SAVED_LOCATIONS_PREMIUM = 5`
 - `SNOOZE_DURATION_HOURS = 24`
@@ -360,6 +396,7 @@ WHERE metro_area_id IS NOT NULL;
 ## Platform-Specific Code
 
 ### Mobile (`apps/mobile/`)
+
 - **`expo-location`** package for GPS + reverse geocoding
 - **Location permission hook**: `useLocationPermission()` — manages permission state, request, settings deep link
 - **Location detection hook**: `useLocationDetection()` — runs on app foreground, manages snooze/override state
@@ -369,6 +406,7 @@ WHERE metro_area_id IS NOT NULL;
 - **AsyncStorage keys**: Permission screen shown flag, snooze records, manual override flag, reminder dismiss count
 
 ### Web (`apps/web/`)
+
 - **Browser Geolocation API** for GPS coordinates
 - **Location detection hook**: `useLocationDetection()` — checks on feed page load
 - **Metro Search Component**: Search input + dropdown for manual metro selection
@@ -387,6 +425,7 @@ WHERE metro_area_id IS NOT NULL;
 | `@gorhom/bottom-sheet` or similar | Mobile | Bottom sheet for location prompts (if not already installed) |
 
 ### Existing Packages Used
+
 - `@supabase/supabase-js` — database queries
 - `@react-navigation/native` — navigation for new screens
 - `react-native-safe-area-context` — safe area handling

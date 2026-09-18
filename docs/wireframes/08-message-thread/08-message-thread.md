@@ -11,6 +11,7 @@
 Full chat thread between two users (1:1 DM). Displays messages chronologically with real-time updates via Supabase Realtime. WhatsApp-inspired design with sent messages on the right (blue) and received on the left (gray).
 
 **Key Goals:**
+
 - Clear, familiar chat interface (WhatsApp-like)
 - Real-time message delivery
 - Easy send flow with keyboard management
@@ -187,6 +188,7 @@ You can't message this user.
 | **Alignment** | Center | Center |
 
 **Date format rules:**
+
 - Today → "Today"
 - Yesterday → "Yesterday"
 - This week → Day name ("Monday")
@@ -232,6 +234,7 @@ You can't message this user.
 | **Timestamp Color** | rgba(255,255,255,0.7) | rgba(255,255,255,0.7) |
 
 **Read Receipt Icon (after timestamp):**
+
 - ✓ (single check) = Sent, not yet read — rgba(255,255,255,0.7)
 - ✓✓ (double check) = Read — #FFFFFF (bright white)
 - **Position:** Bottom-right of bubble
@@ -280,12 +283,14 @@ You can't message this user.
 | **Position** | Right of text input, 8px gap | Right of text input, 8dp gap |
 
 **States:**
+
 - **Disabled:** Background #E0E0E0 (Gray), when input is empty
 - **Enabled:** Background #1565C0 (Primary Blue), when input has text
 - **Pressed:** Background #104D99 (Darker blue)
 - **Sending:** Brief scale animation (0.9 → 1.0)
 
 **Keyboard behavior:**
+
 - Input bar moves up with keyboard (KeyboardAvoidingView)
 - Messages scroll up to keep newest visible
 - Tap outside input or scroll dismisses keyboard
@@ -327,6 +332,7 @@ You can't message this user.
 ## User Interactions
 
 ### Sending a Message
+
 1. User taps text input → keyboard appears
 2. Input bar slides up above keyboard
 3. Message list scrolls to keep latest messages visible
@@ -338,6 +344,7 @@ You can't message this user.
 9. On failure: show error indicator (red ⚠️ icon), tap to retry
 
 ### Receiving a Message (Real-time)
+
 1. Supabase Realtime subscription fires INSERT event on messages table
 2. New message bubble animates in from bottom
 3. Message list auto-scrolls to bottom (if user was at bottom)
@@ -345,11 +352,13 @@ You can't message this user.
 5. Mark message as read (update `read` field, `read_at` timestamp)
 
 ### Read Receipt Updates
+
 1. When recipient opens thread: all unread messages marked as read
 2. Supabase Realtime fires UPDATE event
 3. Sender's message bubbles update: ✓ → ✓✓
 
 ### Block User Flow
+
 1. User taps ⋮ menu → "Block User"
 2. Confirmation dialog appears
 3. User taps "Block":
@@ -379,6 +388,7 @@ You can't message this user.
 ## Data Requirements
 
 **Initial Load:**
+
 ```sql
 SELECT * FROM messages
 WHERE conversation_id = {conversation_id}
@@ -387,6 +397,7 @@ LIMIT 50 OFFSET (total - 50);
 ```
 
 **Real-time Subscription:**
+
 ```typescript
 supabase.channel('messages:conversation_id')
   .on('postgres_changes', {
@@ -405,6 +416,7 @@ supabase.channel('messages:conversation_id')
 ```
 
 **Send Message:**
+
 ```typescript
 await supabase.from('messages').insert({
   conversation_id,
@@ -415,6 +427,7 @@ await supabase.from('messages').insert({
 ```
 
 **Mark as Read (on thread open):**
+
 ```typescript
 await supabase.from('messages')
   .update({ read: true, read_at: new Date().toISOString() })
@@ -433,14 +446,17 @@ await supabase.from('conversation_participants')
 ## Navigation
 
 **Entry Points:**
+
 - Tap conversation row in ConversationListScreen
 - Tap "Chat" on avatar menu (creates conversation first)
 
 **Exit Points:**
+
 - Back button → ConversationListScreen
 - Block user → ConversationListScreen (conversation removed)
 
 **Params received:**
+
 - `conversationId: string` — which conversation to display
 - `otherUserName: string` — for header display
 - `otherUserTrustLevel: number` — for trust badge

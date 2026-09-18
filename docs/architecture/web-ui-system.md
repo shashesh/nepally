@@ -98,6 +98,7 @@ The raw-element allowlist stores plain file paths. `apps/web/eslint.config.mjs` 
 ## Mantine 9 readiness
 
 Already handled:
+
 - `defaultRadius` is explicit.
 - `light` variants are self-defined.
 - `useLocalStorage` always gets a `defaultValue`.

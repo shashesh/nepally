@@ -23,6 +23,7 @@
 ## Prerequisites
 
 **Must Complete First:**
+
 - **Journey #01: Signup and Onboarding** — account + metro area required
 - **Journey #02: Trust Level Verification** — Level 1+ required to create events
 
@@ -46,9 +47,11 @@
 ### Phase 1: Starting Event Creation
 
 #### Step 1: Tap "Create Event"
+
 **User Action:** Opens the Events tab. Taps the "Create Event" pill button in the top-right of `EventsScreen`.
 **System Response:** Navigates to `CreateEventScreen` (modal presentation on iOS — slides up from bottom).
 **User Sees:**
+
 - Modal screen: "Create Event" title in nav bar
 - ✕ Cancel button (top-left), inactive "Create" button (top-right, greyed out until form is valid)
 - Empty form fields below
@@ -56,50 +59,60 @@
 **Duration:** Instant
 
 **User Thoughts:**
+
 - "Let me fill in the event details."
 
 **Validation/Constraints:**
+
 - Level 0 users: "Create Event" button is hidden entirely on the Events feed
 - Must be Level 1+ (enforced at UI and RLS)
 
 ---
 
 #### Step 2: Enter Event Name
+
 **User Action:** Taps the "Event Name" field and types "Nepali New Year Celebration (Baisakh 2082)".
 **System Response:** Real-time validation via `createEventSchema.safeParse()` (debounced). Character count tracked.
 **User Sees:**
+
 - Text appears as typed
 - No error shown while typing (validation on blur)
 - After tapping away: green checkmark if valid (5–150 chars)
 **Duration:** ~20 seconds
 
 **Validation/Constraints:**
+
 - Required, 5–150 characters
 - Error on blur if too short: "Event name must be at least 5 characters"
 
 ---
 
 #### Step 3: Select Event Type
+
 **User Action:** Taps one of the event type chip buttons — selects "Cultural".
 **System Response:** "Cultural" chip fills with its color (orange background, white text from `EVENT_TYPE_COLORS`). All other chips remain outlined.
 **User Sees:**
+
 - Type chips: Cultural · Religious · Social · Career · Other
 - "Cultural" chip selected (orange filled)
 - Single-select — tapping another deselects the current
 **Duration:** ~5 seconds
 
 **Validation/Constraints:**
+
 - Required — one type must be selected
 
 ---
 
 #### Step 4: Set Start Date & Time
+
 **User Action:** Taps the "Start Date & Time" field. Native date/time picker opens.
 **System Response:** Platform date picker (iOS: wheel picker; Android: dialog; Web: `<input type="date">` + `<input type="time">`).
 **User Sees:** Date picker pre-set to tomorrow. Binita selects April 14, 2026, 5:00 PM.
 **Duration:** ~15 seconds
 
 **Validation/Constraints:**
+
 - Required
 - Must be in the future (validation: `start_date > now()`)
 - Error: "Start date must be in the future"
@@ -107,12 +120,14 @@
 ---
 
 #### Step 5: Set End Date & Time (Optional)
+
 **User Action:** Taps the "End Date & Time" field. Selects April 14, 2026, 10:00 PM.
 **System Response:** End date picker. Validates that end is after start.
 **User Sees:** End date/time shown.
 **Duration:** ~10 seconds
 
 **Validation/Constraints:**
+
 - Optional
 - If provided: must be after `start_date`
 - Error: "End date must be after start date"
@@ -120,36 +135,43 @@
 ---
 
 #### Step 6: Enter Location
+
 **User Action:** Types "San Jose Convention Center" in Location Name field. Optionally fills "150 W San Carlos St, San Jose, CA" in Location Address.
 **System Response:** Text input, no autocomplete in Phase 1.
 **User Sees:** Text fields filled.
 **Duration:** ~20 seconds
 
 **Validation/Constraints:**
+
 - Location Name: required, 5–100 characters
 - Location Address: optional, ≤200 characters
 
 **Pain Points:**
+
 - No address autocomplete (Google Maps / MapKit) — users type manually
 - **Severity:** Medium
 
 ---
 
 #### Step 7: Write Description
+
 **User Action:** Taps the Description field and types event details — cultural program, food, dress code, ticket info (free), etc.
 **System Response:** Multi-line text input. Character counter shown (e.g., "342 / 3000").
 **User Sees:** Growing text area, counter updating.
 **Duration:** ~60 seconds
 
 **Validation/Constraints:**
+
 - Required, 10–3000 characters
 - Error: "Description must be at least 10 characters"
 
 ---
 
 #### Step 8: Upload Event Photo (Optional)
+
 **User Action:** Taps the photo upload area. Selects a photo from her camera roll.
 **System Response:**
+
 - Image picker opens (expo-image-picker on mobile; `<input type="file">` on web)
 - Photo selected → `uploadEventPhoto(supabase, { file, eventId? })` called → uploads to Supabase Storage `event-photos/` bucket
 - Returns `photo_url` stored with the event
@@ -157,6 +179,7 @@
 **Duration:** ~20 seconds including upload
 
 **Validation/Constraints:**
+
 - Optional — one photo per event
 - JPEG/PNG only
 - Auto-compressed; max 2MB
@@ -164,18 +187,21 @@
 ---
 
 #### Step 9: Set RSVP Visibility
+
 **User Action:** Taps a radio button to choose "Public" (show attendee names) or "Count Only" (show RSVP number, no names).
 **System Response:** Selected option highlighted.
 **User Sees:** Two radio options: "Public — show who's going" / "Count only — show number only"
 **Duration:** ~5 seconds
 
 **Validation/Constraints:**
+
 - Required, defaults to "Public"
 - Maps to `rsvp_visibility: 'public' | 'private'` in the DB
 
 ---
 
 #### Step 10: Toggle Global (Premium Only)
+
 **User Action:** Binita does not have premium — the Global toggle is not shown to her.
 **System Response:** Toggle only visible to `is_premium = true` users. For premium users: toggle makes event appear in all metro feeds (🌐 Global).
 **User Sees (non-premium):** Footer card: "📍 Posting to: San Jose-Sunnyvale-Santa Clara" (no toggle)
@@ -186,8 +212,10 @@
 ### Phase 2: Submitting the Event
 
 #### Step 11: Review and Submit
+
 **User Action:** Binita reviews all fields. Taps the "Create" button (now active — all required fields valid).
 **System Response:**
+
 - "Create" button shows loading spinner
 - Calls `createEvent(supabase, { title, description, event_type, start_date, end_date, location_name, location_address, photo_url, rsvp_visibility, is_global, organizer_id, metro_area_id })`
 - On success: navigates to the new event's `EventDetailScreen`
@@ -196,14 +224,17 @@
 **Duration:** 1–2 seconds
 
 **User Thoughts:**
+
 - "Done! Let me see how it looks."
 
 ---
 
 #### Step 12: View Published Event
+
 **User Action:** Lands on `EventDetailScreen` for the newly created event.
 **System Response:** `getEventById` loads the new event record. Shows as organizer's own event.
 **User Sees:**
+
 - Full event detail with all her info
 - "You're the organizer" label replacing the RSVP button
 - Three-dot menu (⋮) in the top-right header: Edit Event / Cancel Event / Delete Event
@@ -212,6 +243,7 @@
 **Duration:** 30 seconds review
 
 **User Thoughts:**
+
 - "Looks great! Now I need to share this with the community."
 
 ---
@@ -219,12 +251,14 @@
 ### Phase 3: Managing the Event
 
 #### Step 13: Edit Event Details
+
 **User Action:** Taps ⋮ → "Edit Event".
 **System Response:** Opens `CreateEventScreen` in edit mode — all fields pre-filled with existing event data. Nav title changes to "Edit Event". Submit button changes to "Save".
 **User Sees:** Same form as creation, with all fields pre-populated. She can change any field.
 **Duration:** As long as needed
 
 **User Thoughts:**
+
 - "I forgot to mention parking. Let me add that to the description."
 
 After editing: Taps "Save" → calls `updateEvent(supabase, eventId, partialPayload)` → returns to event detail with updated info.
@@ -232,6 +266,7 @@ After editing: Taps "Save" → calls `updateEvent(supabase, eventId, partialPayl
 ---
 
 #### Step 14: Cancel the Event (If Needed)
+
 **User Action:** Taps ⋮ → "Cancel Event".
 **System Response:** Confirmation alert: "Cancel this event? Attendees will see it as cancelled."
 **User Sees:** Alert with "Keep Event" (cancel) and "Yes, Cancel" (confirm) buttons.
@@ -240,6 +275,7 @@ After editing: Taps "Save" → calls `updateEvent(supabase, eventId, partialPayl
 **Duration:** ~10 seconds
 
 **User Thoughts:**
+
 - "I had to cancel due to venue issues. At least people will know."
 
 **Note:** Cancel ≠ Delete. Cancelled events remain visible so attendees can see the status change. Push notifications to attendees are deferred (not yet implemented).
@@ -247,6 +283,7 @@ After editing: Taps "Save" → calls `updateEvent(supabase, eventId, partialPayl
 ---
 
 #### Step 15: Delete the Event
+
 **User Action:** Taps ⋮ → "Delete Event".
 **System Response:** Confirmation alert: "Delete this event? This cannot be undone."
 **User Sees:** Alert with "Keep Event" and "Delete" (destructive, red) buttons.
@@ -263,19 +300,21 @@ After editing: Taps "Save" → calls `updateEvent(supabase, eventId, partialPayl
 **What User Feels:** Accomplished — the community event is announced and discoverable. Confident in the RSVP count visibility setting she chose.
 
 **System State:**
+
 - New row in `events` table with `status = 'active'`
 - `rsvp_count = 0` (incremented by DB trigger as RSVPs come in)
 - Event appears in `getEventsByMetro()` results for San Jose metro
 - If `is_global = true` (premium): also appears in all other metro feeds
 
 **Notifications Sent:**
+
 - (Deferred) Push notification to metro area followers: "New event in your area" — not yet implemented
 
 ---
 
 ## Decision Points
 
-```
+```text
 User taps "Create Event"
   │
   ├─> Trust Level check (UI layer)
@@ -317,6 +356,7 @@ User taps "Create Event"
 ## Platform Considerations
 
 ### Applies To
+
 - [x] Mobile (iOS & Android)
 - [x] Web (Desktop & Mobile Web)
 
@@ -407,26 +447,31 @@ User taps "Create Event"
 ## Alternative Paths
 
 ### Path 1: Discard During Creation
+
 **Trigger:** Binita taps ✕ Cancel mid-form with fields filled ("dirty form").
 **How Journey Changes:** Confirmation alert: "Discard Event? Your changes will be lost." → "Keep Editing" or "Discard". Tapping Discard closes the modal with no event created.
 **Outcome:** No event created. User returns to Events feed.
 
 ### Path 2: Validation Errors on Submit
+
 **Trigger:** Binita taps "Create" with one or more fields invalid (e.g., description too short).
 **How Journey Changes:** Inline error messages appear below each invalid field. "Create" button may have been active (client-side schema check lags), but `createEventSchema.safeParse()` catches errors on submit. User corrects errors and resubmits.
 **Outcome:** Event created after correction.
 
 ### Path 3: Premium — Create Global Event
+
 **Trigger:** Binita upgrades to premium and creates an event for a national Nepali diaspora summit visible in all metros.
 **How Journey Changes:** Step 10 — "🌐 Make Global" toggle is visible and she enables it. Footer card changes to "🌐 Posting Globally". `is_global = true` stored.
 **Outcome:** Event appears in all metro event feeds, not just San Jose.
 
 ### Path 4: Edit Mode (Returning Organizer)
+
 **Trigger:** Binita wants to update the event description after noticing a typo.
 **How Journey Changes:** From `EventDetailScreen` ⋮ menu → "Edit Event" → `CreateEventScreen` pre-filled → changes description → taps "Save" → `updateEvent()` → returns to detail.
 **Outcome:** Event detail updated. All existing RSVPs remain intact.
 
 ### Path 5: Web-First Organizer
+
 **Trigger:** Binita creates the event on her laptop at work via the web app.
 **How Journey Changes:** Navigates to `/events/create`. Same fields, but uses HTML date/time inputs. Photo upload via file input. Submits → redirected to `/events/[id]` detail page.
 **Outcome:** Identical result — event published to the same feed accessible on both mobile and web.
@@ -450,14 +495,17 @@ User taps "Create Event"
 ## Related Journeys
 
 ### Before This Journey (Prerequisites)
+
 - **Journey #01: Signup and Onboarding** — account + metro area required
 - **Journey #02: Trust Level Verification** — Level 1+ required
 
 ### After This Journey (Next Steps)
+
 - **Journey #09: In-App Chat** — attendees may message the organizer with questions
 - **Journey #13: Event Discovery & RSVP** — the attendee perspective of this same event
 
 ### Related/Parallel Journeys
+
 - **Journey #13: Event Discovery & RSVP** — what attendees experience after this journey
 - **Journey #03: Post Creation** — analogous creation flow for community posts
 
@@ -465,7 +513,7 @@ User taps "Create Event"
 
 ## Visual Flow Diagram
 
-```
+```text
 ┌─────────────────────────────┐
 │    Events Tab               │
 │    Tap "Create Event" btn   │
@@ -539,7 +587,9 @@ User taps "Create Event"
 ## Technical Requirements
 
 ### Shared API Functions Used
+
 All in `packages/shared/src/api/events.ts` + `storage.ts`:
+
 - `createEvent(supabase, payload)` — create new event
 - `updateEvent(supabase, eventId, payload)` — edit event fields
 - `cancelEvent(supabase, eventId)` — set `status = 'cancelled'`
@@ -547,11 +597,14 @@ All in `packages/shared/src/api/events.ts` + `storage.ts`:
 - `uploadEventPhoto(supabase, { file })` — upload to `event-photos/` Storage bucket, returns `photo_url`
 
 ### Shared Validation Used
+
 `packages/shared/src/validation/events.ts`:
+
 - `createEventSchema` — validates all required + optional fields
 - `updateEventSchema` — partial version of `createEventSchema`
 
 ### Data Validations (from `createEventSchema`)
+
 | Field | Required | Constraints |
 |-------|----------|-------------|
 | `title` | Yes | 5–150 chars |
@@ -566,6 +619,7 @@ All in `packages/shared/src/api/events.ts` + `storage.ts`:
 | `is_global` | Yes | Boolean (default: `false`; premium gate in UI) |
 
 ### Permissions Required
+
 - Trust Level 1+ (enforced at UI + RLS INSERT policy on `events` table)
 - Photo library / camera permission for photo upload (mobile only)
 - Premium `is_premium = true` for global toggle (UI gate only — RLS does not enforce)
@@ -575,6 +629,7 @@ All in `packages/shared/src/api/events.ts` + `storage.ts`:
 ## Questions & Assumptions
 
 ### Assumptions
+
 - Event creation flow is identical on mobile and web except for date picker and modal presentation
 - `organizer_id` and `metro_area_id` are set automatically from `useAuth()` and `LocationContext` — not shown as form fields
 - The "Create Event" button on the Events tab is the only entry point for new events (no FAB, no deep link)
@@ -582,6 +637,7 @@ All in `packages/shared/src/api/events.ts` + `storage.ts`:
 - Deleting an event sets `status = 'removed'` (soft delete) — the record remains in the DB for audit purposes
 
 ### Open Questions
+
 - [ ] Should organizers be able to set a maximum attendee count (capacity)? Not in scope for Phase 1 but common need.
 - [ ] Should the `event-photos/` Storage bucket require a separate migration entry, or is it added to `003_storage.sql`? (Current: created on demand — needs pre-provisioning)
 - [ ] When organizer cancels, should attendees receive push notifications automatically? (Currently deferred to notifications infrastructure)

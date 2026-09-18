@@ -11,6 +11,7 @@
 A single-screen, Reddit-style post creation form. Users write a title and body, select 1-3 tags, optionally add photos, and premium users can toggle global visibility.
 
 **Key Goals:**
+
 - Simple, fast post creation (< 60 seconds for typical post)
 - Mandatory tags for content organization (1–3 tags)
 - Optional photo attachments
@@ -124,17 +125,20 @@ You need to verify your phone number before you can create posts.
 | **Border** | 1px bottom #E0E0E0 | 1px bottom #E0E0E0 |
 
 #### Cancel Button (Left)
+
 - **Label:** "Cancel" (iOS) or ✕ icon (Android)
 - **Typography:** 17pt/16sp Regular, #1565C0 (Primary Blue)
 - **Touch Target:** 44x44pt / 48x48dp
 - **Interaction:** Tap to dismiss screen (with discard confirmation if content entered)
 
 #### Screen Title (Center)
+
 - **Label:** "Create Post"
 - **Typography:** 17pt/16sp Semibold, #212121
 - **Alignment:** Center
 
 #### Post Button (Right)
+
 - **Label:** "Post"
 - **Typography:** 17pt/16sp Semibold
 - **Colors:**
@@ -145,6 +149,7 @@ You need to verify your phone number before you can create posts.
 - **Interaction:** Tap to submit post (enabled only when form is valid)
 
 **Post Button Enable Conditions:**
+
 - Title is non-empty (minimum 5 characters)
 - Body is non-empty (minimum 10 characters)
 - At least 1 tag selected
@@ -169,12 +174,14 @@ You need to verify your phone number before you can create posts.
 - **Counter Color:** #757575, turns #C62828 (Error Red) at 140+
 
 **Validation:**
+
 - Minimum 5 characters
 - Maximum 150 characters
 - No empty/whitespace-only titles
 - Error shown inline below field: "Title must be at least 5 characters"
 
 **Accessibility:**
+
 - Label: "Post title, required"
 - Hint: "Enter a title for your post"
 
@@ -198,11 +205,13 @@ You need to verify your phone number before you can create posts.
 - **Character Counter:** Shown at 4500+ characters ("4500/5000")
 
 **Validation:**
+
 - Minimum 10 characters
 - Maximum 5000 characters
 - Error shown inline: "Body must be at least 10 characters"
 
 **Accessibility:**
+
 - Label: "Post body, required"
 - Hint: "Enter the details of your post"
 
@@ -233,6 +242,7 @@ You need to verify your phone number before you can create posts.
 | Emergency | ⚠️ | #F44336 |
 
 **Chip Styling:**
+
 - **Shape:** Pill (border-radius: 20px/dp)
 - **Height:** 36px/dp
 - **Padding:** 12px/dp horizontal, 8px/dp vertical
@@ -240,12 +250,14 @@ You need to verify your phone number before you can create posts.
 - **Spacing:** 8px/dp horizontal, 8px/dp vertical between rows
 
 **States:**
+
 - **Unselected:** #F5F5F5 background, 1px #E0E0E0 border, #757575 text
 - **Selected:** Tag color at 15% opacity background, tag color border (2px), tag color text
 - **Disabled (max reached):** Unselected chips become 50% opacity when 3 tags selected
 - **Selected + can deselect:** Tap selected chip to deselect
 
 **Emergency Tag Special Behavior:**
+
 - When Emergency is selected, show inline warning:
   - ⚠️ "Emergency posts require moderator approval before becoming visible."
   - Typography: 12pt/11sp Regular, #C62828 (Error Red)
@@ -253,11 +265,13 @@ You need to verify your phone number before you can create posts.
   - Includes "Learn More" link (#1565C0)
 
 **Validation:**
+
 - Minimum 1 tag required
 - Maximum 3 tags allowed
 - Error shown below chips: "Please select at least 1 tag"
 
 **Accessibility:**
+
 - Section: "Tags section, 1 to 3 required"
 - Each chip: "Housing tag, not selected" or "Housing tag, selected, 1 of 3"
 - When max reached: "Maximum 3 tags selected. Deselect a tag to change."
@@ -280,6 +294,7 @@ You need to verify your phone number before you can create posts.
 - **Interaction:** Tap to open photo picker (camera or gallery)
 
 **Photo Thumbnails (when photos added):**
+
 - **Size:** 80x80px/dp squares
 - **Corner Radius:** 8px/dp
 - **Layout:** Horizontal scroll, 8px/dp spacing
@@ -288,6 +303,7 @@ You need to verify your phone number before you can create posts.
 - **Position:** Below the "Add Photos" button
 
 **Accessibility:**
+
 - "Add photos, optional. 0 of 5 photos added."
 - Each thumbnail: "Photo 1, remove button"
 
@@ -308,6 +324,7 @@ You need to verify your phone number before you can create posts.
 - **Note:** This is the user's active metro area. Not editable on this screen.
 
 **Accessibility:**
+
 - "Posting to Dallas-Fort Worth. This post will appear in the Dallas-Fort Worth feed."
 
 ---
@@ -328,14 +345,17 @@ You need to verify your phone number before you can create posts.
 | **Toggle On** | UISwitch, blue track (#1565C0) | Material Switch, blue track (#1565C0) |
 
 **Behavior:**
+
 - **Default:** OFF (post is local to user's metro area)
 - **ON:** Post will be visible in all metro area feeds with 🌐 Global badge
 - **Animation:** Smooth toggle (200ms)
 
 **Non-Premium Users:**
+
 - This entire section is hidden (not shown at all, no upsell)
 
 **Accessibility:**
+
 - "Post globally toggle, off. When on, your post will be visible in all metro areas."
 
 ---
@@ -355,6 +375,7 @@ You need to verify your phone number before you can create posts.
 ## User Interactions
 
 ### Primary Flow (Create Local Post)
+
 1. **User taps FAB (+) on home screen** → Navigate to this screen
 2. **User types title** → Character counter appears at 120+
 3. **User types body** → Textarea expands as needed
@@ -364,12 +385,14 @@ You need to verify your phone number before you can create posts.
 7. **Success:** Navigate back to home screen, new post visible at top
 
 ### Alternative Flow (Premium Global Post)
+
 1. Steps 1-5 same as above
 2. **User toggles "Post Globally" ON** → Toggle animation
 3. **User taps "Post" button** → Post created with is_global = true
 4. **Success:** Post visible in all metro area feeds with 🌐 badge
 
 ### Alternative Flow (Emergency Tag)
+
 1. Steps 1-3 same as above
 2. **User selects "Emergency" tag** → Warning banner appears
 3. **User reads warning** → Post will require moderator approval
@@ -378,6 +401,7 @@ You need to verify your phone number before you can create posts.
 6. **Navigate back to home screen** → Post NOT visible until approved
 
 ### Alternative Flow (Cancel with Content)
+
 1. **User has entered some content**
 2. **User taps Cancel/✕**
 3. **Confirmation dialog appears:**
@@ -388,6 +412,7 @@ You need to verify your phone number before you can create posts.
 5. **User taps "Keep Editing"** → Dialog closes, continue editing
 
 ### Alternative Flow (Cancel Empty)
+
 1. **User taps Cancel/✕** with no content entered
 2. **Navigate back immediately** (no confirmation needed)
 
@@ -409,35 +434,45 @@ You need to verify your phone number before you can create posts.
 ## Error States & Edge Cases
 
 ### Edge Case: Network Error on Submit
+
 **Scenario:** User taps "Post" but network fails
 **Behavior:**
+
 - Show error toast: "Could not create post. Please check your connection and try again."
 - Post button re-enables for retry
 - Content preserved in form
 
 ### Edge Case: Image Upload Fails
+
 **Scenario:** One of the photos fails to upload
 **Behavior:**
+
 - Show error on specific thumbnail: Red border + retry icon
 - Other photos upload successfully
 - User can tap retry or remove failed photo
 
 ### Edge Case: Session Expires During Creation
+
 **Scenario:** Auth session expires while user is composing
 **Behavior:**
+
 - On submit: Show error "Session expired. Please log in again."
 - Navigate to login screen, then back to create post with content preserved (if possible)
 
 ### Edge Case: User is Level 0
+
 **Scenario:** Level 0 user somehow reaches create post screen
 **Behavior:**
+
 - Show full-screen message: "Verify your phone to create posts"
 - CTA: "Verify Now" → Navigate to verification flow
 - Back button returns to home
 
 ### Edge Case: All 3 Tags Selected, User Tries to Add More
+
 **Scenario:** User has 3 tags selected and taps a 4th
 **Behavior:**
+
 - Unselected chips are visually disabled (50% opacity)
 - Tap does nothing (no toast needed, visual state is clear)
 - User must deselect one tag before selecting another
@@ -447,6 +482,7 @@ You need to verify your phone number before you can create posts.
 ## Accessibility
 
 ### Screen Reader Order
+
 1. "Cancel button"
 2. "Create Post, heading"
 3. "Post button, disabled"
@@ -458,6 +494,7 @@ You need to verify your phone number before you can create posts.
 9. (Premium only) "Post globally toggle, off"
 
 ### Touch Targets
+
 - Cancel button: 44x44pt / 48x48dp ✓
 - Post button: 44x44pt / 48x48dp ✓
 - Tag chips: 36px height, 44px touch target ✓
@@ -465,6 +502,7 @@ You need to verify your phone number before you can create posts.
 - Toggle: Standard switch size ✓
 
 ### Color Contrast
+
 | Element | Ratio | Level |
 |---------|-------|-------|
 | Title text (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
@@ -477,20 +515,24 @@ You need to verify your phone number before you can create posts.
 ## Animations & Transitions
 
 ### Screen Entry
+
 - iOS: Slide up from bottom (modal presentation, 300ms)
 - Android: Slide up from bottom (material motion, 300ms)
 
 ### Tag Chip Selection
+
 - Duration: 150ms
 - Effect: Background fills with tag color, border color changes
 - Scale: Brief 1.05 → 1.0 bounce
 
 ### Post Submission
+
 - Post button shows inline spinner (replace "Post" text with spinner)
 - Duration: Loading until API responds
 - Success: Dismiss screen with slide-down animation
 
 ### Photo Add
+
 - Thumbnail fades in (200ms) when photo selected
 - Remove: Thumbnail fades out + shifts remaining photos left (200ms)
 
@@ -499,11 +541,13 @@ You need to verify your phone number before you can create posts.
 ## Technical Notes
 
 ### Screen Identifier
+
 - iOS: `CreatePostViewController`
 - Android: `CreatePostActivity` / `CreatePostFragment`
 - Route name: `/create-post`
 
 ### State Management
+
 ```javascript
 {
   title: "",                    // string, max 150
@@ -523,7 +567,8 @@ You need to verify your phone number before you can create posts.
 ### API Integration
 
 **Submit Post:**
-```
+
+```http
 POST /posts
 Content-Type: application/json
 Authorization: Bearer {token}
@@ -542,6 +587,7 @@ Authorization: Bearer {token}
 ```
 
 **Response (Success):**
+
 ```json
 {
   "id": "new-post-uuid",
@@ -551,6 +597,7 @@ Authorization: Bearer {token}
 ```
 
 **Response (Emergency - Pending):**
+
 ```json
 {
   "id": "new-post-uuid",
@@ -561,9 +608,11 @@ Authorization: Bearer {token}
 ```
 
 **Fetch Tags:**
-```
+
+```http
 GET /tags
 ```
+
 Returns all tags sorted by `sort_order`. Cache locally for session duration.
 
 ---
@@ -571,6 +620,7 @@ Returns all tags sorted by `sort_order`. Cache locally for session duration.
 ## Content & Localization
 
 ### Placeholder Text
+
 - Title: "What's this about?"
 - Body: "Write your post details here..."
 
@@ -603,6 +653,7 @@ Returns all tags sorted by `sort_order`. Cache locally for session duration.
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Title input accepts text, enforces 150 char max
 - [ ] Body textarea expands, enforces 5000 char max
 - [ ] 1-3 tags can be selected, chips toggle correctly
@@ -619,6 +670,7 @@ Returns all tags sorted by `sort_order`. Cache locally for session duration.
 - [ ] Global toggle sets is_global on submission
 
 ### Visual Tests
+
 - [ ] Tag chips display correct colors for each tag
 - [ ] Selected chips have filled background
 - [ ] Post button pill shape with correct enabled/disabled states
@@ -627,12 +679,14 @@ Returns all tags sorted by `sort_order`. Cache locally for session duration.
 - [ ] Emergency warning has red background
 
 ### Accessibility Tests
+
 - [ ] All form fields have labels
 - [ ] Tag chips announce selected state
 - [ ] Post button announces enabled/disabled
 - [ ] Screen reader reads through form in logical order
 
 ### Edge Case Tests
+
 - [ ] Network error preserves form content
 - [ ] Image upload failure shows retry
 - [ ] Very long title truncates at 150 chars

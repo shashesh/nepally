@@ -16,7 +16,7 @@ Context gathered upfront (spec, journey, wireframes) eliminates the two most exp
 
 ## The 7-Stage Workflow
 
-```
+```text
 Stage 0: Scope          /break-features      (for complex features only)
 Stage 1: Spec           /design-feature
 Stage 2: Journey        /user-journey        (one per key flow)
@@ -37,7 +37,8 @@ Stage 6: Validate       /shared-first-check + tests
 **What it does:** Breaks the feature into phases (what ships in Phase 1 vs. Phase 2), identifies must-have vs. nice-to-have sub-features, and surfaces dependencies.
 
 **Prompt:**
-```
+
+```text
 /break-features events
 ```
 
@@ -54,11 +55,13 @@ Stage 6: Validate       /shared-first-check + tests
 **When to run:** After you know the scope from Stage 0 (or immediately for small features). Design only the scoped Phase 1 portion — not the full eventual feature.
 
 **Prompt:**
-```
+
+```text
 /design-feature events
 ```
 
 **Output:** `docs/product/features/events.md` containing:
+
 - Problem statement and user story
 - Functional requirements (scoped to what you are building now)
 - Non-functional requirements (performance, trust level gating, RLS)
@@ -77,13 +80,15 @@ Stage 6: Validate       /shared-first-check + tests
 **When to run:** After the feature spec is approved. Create one journey per distinct user flow within the feature. Do not combine multiple flows into one journey doc.
 
 **Prompt examples for Events:**
-```
+
+```text
 /user-journey event-browsing
 /user-journey event-creation
 /user-journey event-rsvp
 ```
 
 **Output per journey:** `docs/user-journeys/[category]/[number]-[journey-name].md` containing:
+
 - User persona and context
 - Step-by-step flow with every screen and every action documented
 - Pain points and emotional states
@@ -102,7 +107,8 @@ Stage 6: Validate       /shared-first-check + tests
 **When to run:** After user journeys are documented. Wireframe every screen identified in the journeys, including empty states, error states, and loading states.
 
 **Prompt examples for Events:**
-```
+
+```text
 /wireframe-old event-list-screen
 /wireframe-old event-detail-screen
 /wireframe-old event-creation-screen
@@ -110,6 +116,7 @@ Stage 6: Validate       /shared-first-check + tests
 ```
 
 **Output per screen:** `docs/wireframes/[number]-[screen-name]/[screen-name].md` containing:
+
 - ASCII layout showing exact component hierarchy
 - Component specs (sizes, colors, touch targets)
 - All interactive states: default, pressed, disabled, error, loading, empty
@@ -118,6 +125,7 @@ Stage 6: Validate       /shared-first-check + tests
 - Accessibility requirements
 
 **Key check before moving on:**
+
 - Every screen in every user journey has a wireframe
 - Every error state from the journey has a matching wireframe state
 - The design system (`docs/wireframes/00-design-system-foundation/00-design-system-foundation.md`) colors and spacing are referenced correctly
@@ -131,7 +139,8 @@ Stage 6: Validate       /shared-first-check + tests
 **This is the most skipped step and the one that prevents the most mistakes.**
 
 **Prompt:**
-```
+
+```text
 Using docs/plans/_template.md as the template, create an implementation plan
 for the events feature. Reference the spec at docs/product/features/events.md, the user journeys
 at docs/user-journeys/events/, and the wireframes at docs/wireframes/[relevant screens].
@@ -145,6 +154,7 @@ The plan must include:
 ```
 
 **Critical checks in the plan:**
+
 - DB changes must reference a NEW incremental migration file (`004_events.sql`, `005_marketplace.sql`, etc.). Never reference `001_schema.sql`, `002_seed_data.sql`, or `003_storage.sql` — these are frozen and destructive.
 - Every step must have explicit exit criteria (how you know the step is done)
 - Shared layer steps come before platform UI steps (types → API → validation → utils → mobile UI → web UI)
@@ -160,7 +170,8 @@ The plan must include:
 **When to run:** After the implementation plan is reviewed and approved.
 
 **Prompt:**
-```
+
+```text
 /implement-feature events
 ```
 
@@ -177,6 +188,7 @@ The skill will gather all context docs (spec, journeys, wireframes, design syste
 **During implementation, add tests immediately as each layer is built** — not at the end. See Stage 6 for test placement rules.
 
 **Red flags to watch for:**
+
 - Types defined inside `apps/` instead of `packages/shared/src/types/`
 - Supabase `.from()` calls inside `apps/` instead of `packages/shared/src/api/`
 - `style={{}}` inline styles in web JSX
@@ -192,6 +204,7 @@ The skill will gather all context docs (spec, journeys, wireframes, design syste
 **Skill:** `/shared-first-check`
 
 Run this before closing the feature. It checks:
+
 1. No types/interfaces defined in `apps/` that belong in `packages/shared/`
 2. No Supabase query logic living in `apps/` instead of `packages/shared/src/api/`
 3. No duplicated validation schemas or constants
@@ -209,6 +222,7 @@ Run this before closing the feature. It checks:
 | Mobile screens/hooks/services | `apps/mobile/src/**/*.test.ts(x)` |
 
 Tests should cover:
+
 - Pure logic paths (utils, validation, API behavior with mocked Supabase client)
 - Loading, success, and error states for hooks/contexts
 - Trust-level gating (Level 0 vs Level 1 behavior)
@@ -301,7 +315,7 @@ These features share properties that make the process especially important:
 
 ## Example: Full Prompt Sequence for Events
 
-```
+```text
 # 1. Scope
 /break-features events
 

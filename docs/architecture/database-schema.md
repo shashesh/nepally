@@ -36,6 +36,7 @@ Nepally uses **PostgreSQL** via Supabase, a relational database with powerful qu
 **Primary Key:** `id` (UUID, references auth.users)
 
 **Schema:**
+
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -127,6 +128,7 @@ CREATE POLICY "Moderators can delete users"
 ```
 
 **Example:**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -157,6 +159,7 @@ CREATE POLICY "Moderators can delete users"
 **Primary Key:** `id` (TEXT, CBSA code — e.g., `'19100'` for Dallas-Fort Worth)
 
 **Schema:**
+
 ```sql
 CREATE TABLE metro_areas (
   id TEXT PRIMARY KEY,           -- CBSA code (e.g., '19100')
@@ -189,6 +192,7 @@ CREATE POLICY "Only service role can modify metro areas"
 **Primary Key:** `id` (auto-increment)
 
 **Schema:**
+
 ```sql
 CREATE TABLE metro_area_zipcodes (
   id BIGSERIAL PRIMARY KEY,
@@ -217,6 +221,7 @@ CREATE POLICY "Only service role can modify metro ZIP codes"
 ```
 
 **Example:**
+
 ```json
 // metro_areas
 {
@@ -246,6 +251,7 @@ CREATE POLICY "Only service role can modify metro ZIP codes"
 **Primary Key:** `id` (UUID)
 
 **Schema:**
+
 ```sql
 CREATE TABLE tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -283,6 +289,7 @@ CREATE POLICY "Only moderators can modify tags"
 ```
 
 **Seed Data:**
+
 ```sql
 INSERT INTO tags (name, slug, icon, color, description, is_system, requires_moderation, sort_order) VALUES
   ('Housing',    'housing',    'home',      '#4CAF50', 'Rent, roommates, apartments, housing questions', true, false, 1),
@@ -295,6 +302,7 @@ INSERT INTO tags (name, slug, icon, color, description, is_system, requires_mode
 ```
 
 **Example:**
+
 ```json
 {
   "id": "a1b2c3d4-...",
@@ -319,6 +327,7 @@ INSERT INTO tags (name, slug, icon, color, description, is_system, requires_mode
 **Primary Key:** `id` (UUID)
 
 **Schema:**
+
 ```sql
 CREATE TYPE post_status AS ENUM ('active', 'removed', 'pending');
 
@@ -433,6 +442,7 @@ CREATE POLICY "Authors and moderators can delete posts"
 **Table:** `post_tags`
 
 **Schema:**
+
 ```sql
 CREATE TABLE post_tags (
   id BIGSERIAL PRIMARY KEY,
@@ -488,6 +498,7 @@ CREATE POLICY "Post authors can delete tags"
 ```
 
 **Example:**
+
 ```json
 // Post with 2 tags (Housing + Question)
 [
@@ -497,6 +508,7 @@ CREATE POLICY "Post authors can delete tags"
 ```
 
 **Example (Post):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440001",
@@ -529,6 +541,7 @@ CREATE POLICY "Post authors can delete tags"
 **Primary Key:** `id` (UUID)
 
 **Schema:**
+
 ```sql
 CREATE TABLE conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -579,6 +592,7 @@ CREATE POLICY "Participants can update conversations"
 **Primary Key:** `id` (auto-increment)
 
 **Schema:**
+
 ```sql
 CREATE TABLE conversation_participants (
   id BIGSERIAL PRIMARY KEY,
@@ -633,6 +647,7 @@ CREATE POLICY "Users can update own participation"
 **Primary Key:** `id` (UUID)
 
 **Schema:**
+
 ```sql
 CREATE TYPE message_type AS ENUM ('text', 'image', 'system');
 
@@ -694,6 +709,7 @@ CREATE POLICY "Senders can delete own messages"
 ```
 
 **Example:**
+
 ```json
 // Conversation
 {
@@ -735,6 +751,7 @@ CREATE POLICY "Senders can delete own messages"
 **Primary Key:** `id` (UUID)
 
 **Schema:**
+
 ```sql
 CREATE TYPE report_target_type AS ENUM ('post', 'user', 'message');
 CREATE TYPE report_status AS ENUM ('pending', 'reviewed', 'dismissed', 'actioned');
@@ -812,6 +829,7 @@ CREATE POLICY "Moderators can delete reports"
 ```
 
 **Example:**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440004",
@@ -834,6 +852,7 @@ CREATE POLICY "Moderators can delete reports"
 **Primary Key:** `id` (UUID)
 
 **Schema:**
+
 ```sql
 CREATE TYPE notification_type AS ENUM ('message', 'post_response', 'emergency_alert', 'system');
 
@@ -877,6 +896,7 @@ CREATE POLICY "Users can update own notifications"
 **Migration:** `001_schema.sql` (initial schema)
 
 **Schema:**
+
 ```sql
 CREATE TABLE post_likes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -918,6 +938,7 @@ CREATE POLICY "Users can unlike their own likes"
 **Migration:** `001_schema.sql` (initial schema)
 
 **Schema:**
+
 ```sql
 CREATE TABLE post_comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -960,6 +981,7 @@ CREATE POLICY "Authors can delete own comments"
 **Migration:** `004_consolidated_chat_and_fixes.sql`
 
 **Schema:**
+
 ```sql
 CREATE TABLE blocked_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -995,6 +1017,7 @@ CREATE POLICY "Users can unblock"
 **Migration:** `005_add_saved_posts.sql`
 
 **Schema:**
+
 ```sql
 CREATE TABLE user_saved_posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1029,6 +1052,7 @@ CREATE POLICY "Users can unsave posts"
 **Migration:** `006_events.sql`
 
 **Schema:**
+
 ```sql
 CREATE TYPE event_type AS ENUM ('cultural', 'religious', 'social', 'career', 'other');
 CREATE TYPE event_status AS ENUM ('active', 'cancelled', 'removed');
@@ -1081,6 +1105,7 @@ CREATE POLICY "Organizers can delete their events"
 **Triggers:** `trg_event_updated_at` auto-updates `updated_at`. `trg_rsvp_insert` / `trg_rsvp_delete` increment/decrement `rsvp_count`.
 
 **Example:**
+
 ```json
 {
   "id": "evt-uuid-1",
@@ -1106,6 +1131,7 @@ CREATE POLICY "Organizers can delete their events"
 **Migration:** `006_events.sql`
 
 **Schema:**
+
 ```sql
 CREATE TABLE event_rsvps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

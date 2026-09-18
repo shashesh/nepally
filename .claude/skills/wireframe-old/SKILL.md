@@ -10,6 +10,7 @@ When the user invokes `/wireframe [screen-name]`, create wireframe documentation
 ## Step 1: Gather Context
 
 ASK:
+
 1. **Screen Purpose:** Primary goal of this screen?
 2. **Platform Scope:** Mobile only, Web only, or Both? (Default: Both)
 3. **User Entry Point:** How does the user get here?
@@ -20,7 +21,8 @@ ASK:
 ### Output Structure
 
 Each wireframe gets its own folder:
-```
+
+```text
 docs/wireframes/[screen-name]/
 ├── [screen-name].md              # WireMD source (single source of truth)
 └── [screen-name]-wireframe.html  # Rendered wireframe (no styles)
@@ -42,7 +44,7 @@ docs/wireframes/[screen-name]/
 
 ### Required Document Sections
 
-```
+```markdown
 # Wireframe: [Screen Name]
 > Metadata: Screen number, Status, Date, Journey link, User story
 
@@ -63,6 +65,7 @@ docs/wireframes/[screen-name]/
 ## Step 3: Render Wireframe
 
 After creating the `.md` file, render a single unstyled wireframe HTML:
+
 ```bash
 wiremd docs/wireframes/[name]/[name].md -o docs/wireframes/[name]/[name]-wireframe.html
 ```

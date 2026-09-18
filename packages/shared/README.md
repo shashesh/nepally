@@ -4,7 +4,7 @@ Shared TypeScript code for Nepally mobile and web applications.
 
 ## Structure
 
-```
+```text
 src/
 ├── api/          # API client functions (Supabase, etc.)
 ├── types/        # TypeScript interfaces and types

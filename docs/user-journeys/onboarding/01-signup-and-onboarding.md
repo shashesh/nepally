@@ -13,6 +13,7 @@
 **Trigger:** User needs housing/roommate and searches for community resources, or receives recommendation from friend.
 
 **Success Criteria:**
+
 - User successfully creates account
 - User's ZIP code is mapped to correct metro area
 - User understands what Nepally is and sees local feed
@@ -23,9 +24,11 @@
 ## Prerequisites
 
 **Must Complete First:**
+
 - None (This is the entry point)
 
 **Should Have:**
+
 - Smartphone with iOS or Android
 - Valid US ZIP code
 - Internet connection
@@ -43,11 +46,13 @@
 **Language:** Fluent in English and Nepali
 
 **Context:** Priya is overwhelmed by Facebook groups with too much noise and spam. She saw someone post about Nepally in a "Nepali Students in DFW" Facebook group, mentioning it's specifically for the Nepali community with verified listings. She's looking for:
+
 1. A safe, affordable room near UT Dallas campus
 2. Ideally a Nepali roommate who understands her culture
 3. Trustworthy information without scams
 
 **Pain Points Before Nepally:**
+
 - Facebook groups have 1000s of posts, hard to filter local Dallas posts
 - Many scam/spam posts offering "too good to be true" deals
 - No way to verify if posters are real or trustworthy
@@ -58,35 +63,42 @@
 ### Phase 1: Discovery (How Priya Finds Nepally)
 
 #### Step 1: Discovery via Facebook Recommendation
+
 **User Action:** Priya is scrolling through "Nepali Students in DFW" Facebook group looking for housing posts.
 
 **System Response:** N/A (happens on Facebook, not in Nepally app yet)
 
 **User Sees:**
+
 - A post from someone saying: "Found my roommate through Nepally app! So much better than these Facebook groups. Only shows Dallas area posts and people are verified ✓"
 - Post has 15 likes and 8 comments asking "what's Nepally?"
 
 **Duration:** 30 seconds (reading the post)
 
 **User Thoughts:**
+
 - "Hmm, Nepally app? Never heard of it"
 - "Only Dallas posts? That would save me so much time"
 - "Verified people... that sounds safer than random FB accounts"
 
 **Pain Points:**
+
 - None yet - curiosity is piqued
 
 **Validation/Constraints:**
+
 - N/A
 
 ---
 
 #### Step 2: Search for Nepally in App Store
+
 **User Action:** Priya opens iOS App Store, searches "Nepally Nepal"
 
 **System Response:** App Store shows Nepally app listing
 
 **User Sees:**
+
 - **App Icon:** Nepally logo
 - **Title:** "Nepally - Nepalese United Support Alliance"
 - **Subtitle:** "Community platform for Nepali diaspora in USA"
@@ -98,26 +110,31 @@
 **Duration:** 1 minute (reading description, checking screenshots)
 
 **User Thoughts:**
+
 - "Okay, this looks legit - good ratings"
 - "Screenshots show exactly what I need - housing posts in Dallas"
 - "Verified community members - that's what I want"
 - "It's free? Perfect!"
 
 **Pain Points:**
+
 - **Mild concern:** "Is this app safe? Will my data be secure?"
 - **Severity:** Low (good ratings help build trust)
 
 **Validation/Constraints:**
+
 - Requires iOS 14.0 or later (Priya has iOS 16, no issue)
 
 ---
 
 #### Step 3: Download and Install
+
 **User Action:** Taps "GET" button, authenticates with Face ID
 
 **System Response:** App downloads and installs on home screen
 
 **User Sees:**
+
 - Download progress bar
 - "Nepally" app icon appears on home screen
 - "OPEN" button becomes active
@@ -125,10 +142,12 @@
 **Duration:** 30 seconds (download time varies by connection speed)
 
 **User Thoughts:**
+
 - "Downloading... hope this is worth it"
 - "17 MB, not too big"
 
 **Pain Points:**
+
 - None (standard App Store flow)
 
 ---
@@ -136,11 +155,13 @@
 ### Phase 2: First Launch & Account Creation
 
 #### Step 4: Launch App - Welcome Screen
+
 **User Action:** Taps "OPEN" or taps Nepally icon on home screen
 
 **System Response:** App launches, shows welcome/splash screen
 
 **User Sees:**
+
 - **Nepally logo** (large, centered)
 - **Tagline:** "Your Local Nepali Community in the USA"
 - **Brief intro text:** "Find housing, jobs, and emergency help from verified community members in your metro area."
@@ -152,25 +173,30 @@
 **Duration:** 20 seconds (reading intro)
 
 **User Thoughts:**
+
 - "Okay, looks professional"
 - "Local community - that's exactly what I need"
 - "I need to sign up since I don't have an account yet"
 
 **Pain Points:**
+
 - **Minor:** "Should I read Terms of Service? Too long, I'll skip for now"
 - **Severity:** Low (common user behavior)
 
 **Validation/Constraints:**
+
 - None at this screen
 
 ---
 
 #### Step 5: Choose Signup Method
+
 **User Action:** Taps "Sign Up" button
 
 **System Response:** Navigate to signup method selection screen
 
 **User Sees:**
+
 - **Screen title:** "Create Your Account"
 - **Subtitle:** "Join the Nepali community in your area"
 - **Three signup options:**
@@ -183,27 +209,33 @@
 **Duration:** 15 seconds (choosing method)
 
 **User Thoughts:**
+
 - "Google is easiest - I'm already signed in"
 - "But wait, do I want to link my Google account?"
 - "Phone number seems more private... but I'll go with Google for speed"
 
 **Pain Points:**
+
 - **Decision paralysis:** "Which method should I use?"
 - **Severity:** Low (clear options help)
 
 **Validation/Constraints:**
+
 - Must choose one method to proceed
 
 ---
 
 #### Step 6: Sign Up with Google (OAuth Flow)
+
 **User Action:** Taps "Continue with Google"
 
 **System Response:**
+
 - Redirect to Google OAuth consent screen
 - Shows permissions: "Nepally wants to access: Your name, email address, profile picture"
 
 **User Sees:**
+
 - Google account picker (if multiple accounts)
 - Permission request screen
 - "Allow" and "Cancel" buttons
@@ -211,24 +243,29 @@
 **Duration:** 30 seconds (selecting account, reviewing permissions)
 
 **User Thoughts:**
+
 - "Okay, just name and email - that's reasonable"
 - "I'll use my personal Gmail, not my university email"
 
 **Pain Points:**
+
 - **Concern:** "What will Nepally do with my email?"
 - **Severity:** Medium (trust issue for new users)
 - **Mitigation:** Permission screen is standard Google OAuth, builds trust
 
 **Validation/Constraints:**
+
 - Must approve Google permissions to continue
 - Redirects back to Nepally app after approval
 
 ---
 
 #### Step 7: Google OAuth Success - Return to App
+
 **User Action:** Taps "Allow" on Google permission screen
 
 **System Response:**
+
 - Redirect back to Nepally app
 - Show loading indicator: "Creating your account..."
 - Create user record in Supabase with:
@@ -240,20 +277,24 @@
   - createdAt: current timestamp
 
 **User Sees:**
+
 - Brief loading screen (1-2 seconds)
 - Then automatically proceeds to next screen
 
 **Duration:** 3 seconds
 
 **User Thoughts:**
+
 - "Great, that was easy!"
 - "Now what?"
 
 **Pain Points:**
+
 - **Impatience:** "Loading... how long will this take?"
 - **Severity:** Low (only 2-3 seconds)
 
 **Validation/Constraints:**
+
 - Google OAuth token must be valid
 - Email from Google must be unique (not already registered)
 
@@ -262,11 +303,13 @@
 ### Phase 3: Onboarding Flow - Location Setup
 
 #### Step 8: Enter ZIP Code
+
 **User Action:** User sees ZIP code entry screen
 
 **System Response:** Display ZIP code input form
 
 **User Sees:**
+
 - **Screen title:** "Where are you located?"
 - **Subtitle:** "We'll show you posts in your metro area"
 - **Input field (large, centered):**
@@ -280,16 +323,19 @@
 **Duration:** 30 seconds (entering ZIP)
 
 **User Thoughts:**
+
 - "Okay, they need my location to show me Dallas posts - makes sense"
 - "UT Dallas ZIP code is 75080... let me type that"
 - "Good that they clarify my exact address isn't shared"
 
 **Pain Points:**
+
 - **Concern:** "What if I don't remember my ZIP code?"
 - **Severity:** Low (most people know their ZIP)
 - **Mitigation:** Could add "Use my current location" button as alternative
 
 **Validation/Constraints:**
+
 - Must be exactly 5 digits
 - Must be a valid US ZIP code in database
 - Real-time validation: shows error if invalid ZIP
@@ -298,9 +344,11 @@
 ---
 
 #### Step 9: ZIP Code Validation & Metro Mapping
+
 **User Action:** Types "75080" and taps "Continue"
 
 **System Response:**
+
 - Validate ZIP code against `metro_areas` table
 - Query: `SELECT * FROM metro_area_zipcodes WHERE zip_code = '75080'`
 - Returns: metro_area_id = 'dallas-fort-worth-arlington'
@@ -308,6 +356,7 @@
 - Show confirmation screen
 
 **User Sees:**
+
 - Brief loading (1 second): "Finding your metro area..."
 - Then confirmation screen:
   - **Large checkmark icon** (green)
@@ -318,16 +367,19 @@
 **Duration:** 2 seconds (loading) + 5 seconds (reading confirmation)
 
 **User Thoughts:**
+
 - "Perfect! That's exactly where I am"
 - "X verified members - good, there's an active community here"
 - "This was easier than I expected"
 
 **Pain Points:**
+
 - **Confusion if wrong metro:** "What if it shows wrong city?"
 - **Severity:** Low (95% of ZIPs map correctly)
 - **Mitigation:** Could add "This looks wrong? Contact support" link
 
 **Validation/Constraints:**
+
 - ZIP must exist in `metro_area_zipcodes` table
 - If ZIP not found, show error: "We don't have coverage in this area yet. Please enter a different ZIP or contact support."
 
@@ -336,11 +388,13 @@
 ### Phase 4: Onboarding Flow - Understanding Nepally
 
 #### Step 10: Quick Tutorial - What is Nepally?
+
 **User Action:** Taps "Continue" from metro confirmation
 
 **System Response:** Show first onboarding tutorial card
 
 **User Sees:**
+
 - **Tutorial card 1 of 3:**
   - **Icon:** Home icon
   - **Title:** "Metro-First Local Feed"
@@ -353,10 +407,12 @@
 **Duration:** 10 seconds (reading)
 
 **User Thoughts:**
+
 - "Oh nice, only Dallas posts - no more scrolling through NYC or LA posts on Facebook"
 - "This is exactly what I need"
 
 **Pain Points:**
+
 - **Impatience:** "I just want to start browsing, not read tutorials"
 - **Severity:** Medium (common with onboarding)
 - **Mitigation:** Keep cards brief (max 3 cards), allow skip
@@ -364,11 +420,13 @@
 ---
 
 #### Step 11: Quick Tutorial - Trust Levels
+
 **User Action:** Taps "Next"
 
 **System Response:** Show second tutorial card
 
 **User Sees:**
+
 - **Tutorial card 2 of 3:**
   - **Icon:** Shield with checkmark
   - **Title:** "Verified Community Members"
@@ -382,11 +440,13 @@
 **Duration:** 15 seconds (reading and understanding)
 
 **User Thoughts:**
+
 - "Oh, I need to verify my phone to post and message people"
 - "Level system makes sense - prevents spam"
 - "I should verify my phone after this tutorial"
 
 **Pain Points:**
+
 - **Frustration:** "Wait, I can't post yet? I just signed up!"
 - **Severity:** Medium (user expectations)
 - **Mitigation:** Clear explanation that verification is quick (2 minutes)
@@ -394,11 +454,13 @@
 ---
 
 #### Step 12: Quick Tutorial - Post Categories
+
 **User Action:** Taps "Next"
 
 **System Response:** Show third tutorial card
 
 **User Sees:**
+
 - **Tutorial card 3 of 3:**
   - **Icon:** Four category icons (House, Briefcase, Alert, Plane)
   - **Title:** "Four Main Categories"
@@ -412,11 +474,13 @@
 **Duration:** 15 seconds (reading)
 
 **User Thoughts:**
+
 - "Four categories - simple and clear"
 - "Auto-expiry is great! No more seeing 6-month-old posts"
 - "Alright, I'm ready to browse housing posts now!"
 
 **Pain Points:**
+
 - None (final card, user is ready to proceed)
 
 ---
@@ -424,15 +488,18 @@
 ### Phase 5: Success - Onboarding Complete
 
 #### Step 13: Land on Home Screen (Local Feed)
+
 **User Action:** Taps "Get Started"
 
 **System Response:**
+
 - Mark onboarding as completed in user profile
 - Navigate to main app home screen (Local Feed)
 - Show local feed filtered by metro area
 - Display Level 0 banner at top
 
 **User Sees:**
+
 - **Top navigation bar:**
   - "Dallas-Fort Worth" (location name with dropdown icon)
   - Search icon (top right)
@@ -458,6 +525,7 @@
 **Duration:** 20 seconds (scanning feed)
 
 **User Thoughts:**
+
 - "Great! I can see actual Dallas housing posts!"
 - "These look recent and legitimate"
 - "Verified user badges make me trust these posts more"
@@ -465,11 +533,13 @@
 - "But wait, I should verify my phone first so I can message the poster"
 
 **Pain Points:**
+
 - **Desire to message immediately:** "I found a good post but can't message yet"
 - **Severity:** Medium (creates urgency to verify)
 - **Mitigation:** Clear banner with "Verify Now" CTA addresses this
 
 **Validation/Constraints:**
+
 - Level 0 users can view all posts
 - Level 0 users CANNOT:
   - Create posts
@@ -481,17 +551,20 @@
 ## Success State
 
 **What User Sees:**
+
 - Nepally home screen with local Dallas-Fort Worth housing posts
 - Level 0 banner indicating next step (verification)
 - Active community with recent posts
 
 **What User Feels:**
+
 - **Relieved:** "Finally, a platform that shows me only Dallas posts!"
 - **Confident:** "This looks much better than Facebook groups"
 - **Motivated:** "I should verify my phone so I can reach out to these posters"
 - **Curious:** "Let me browse a few more posts before verifying"
 
 **System State:**
+
 - User record created in `users` table:
   - id: [UUID from Supabase Auth]
   - email: priya.sharma@gmail.com
@@ -505,9 +578,11 @@
 - User is authenticated and session is active
 
 **Notifications:**
+
 - None sent at this point (no push notification setup yet)
 
 **Next Steps:**
+
 - User will likely:
   1. Browse housing posts for 2-5 minutes
   2. Click on a post that interests them
@@ -518,7 +593,7 @@
 
 ## Decision Points
 
-```
+```text
 Start (App Discovery)
   │
   ├──> Found via Facebook recommendation (Primary path)
@@ -618,6 +693,7 @@ At Home Screen:
 | Home screen (Step 13) | Excited, Motivated | Very High | None | Seeing actual Dallas posts = success! |
 
 **Overall Journey Emotion Arc:**
+
 - Starts: Curious but cautious
 - Middle: Building trust through familiar patterns (Google OAuth)
 - End: Excited and validated (seeing real local posts)
@@ -681,6 +757,7 @@ At Home Screen:
      - Link to Privacy Policy
 
 ### Potential Improvements
+
 - Add "Most users choose this" badge to Google signup (social proof)
 - Allow ZIP lookup via GPS location (reduce cognitive load)
 - Make tutorial dismissible after card 1 (user can always access help later)
@@ -723,9 +800,11 @@ At Home Screen:
 ## Alternative Paths
 
 ### Path 1: Signup via Phone Number (Instead of Google)
+
 **Trigger:** User chooses "Continue with Phone Number" at Step 5
 
 **How Journey Changes:**
+
 - Step 6 becomes: Enter phone number
 - Step 6.5 (new): Enter SMS OTP code
 - Step 7: Account created with phone as primary identifier
@@ -734,15 +813,18 @@ At Home Screen:
 **Outcome:** Same success state, but user has phone_verified = true from signup (skips part of Journey #02)
 
 **Trade-offs:**
+
 - Slower signup (requires SMS wait + OTP entry)
 - But user is partially verified immediately (Level 1 requirement)
 
 ---
 
 ### Path 2: Signup via Email (Instead of Google)
+
 **Trigger:** User chooses "Continue with Email" at Step 5
 
 **How Journey Changes:**
+
 - Step 6 becomes: Enter email + create password
 - Step 6.5 (new): "Check your email to verify" screen
 - User must verify email before proceeding
@@ -751,6 +833,7 @@ At Home Screen:
 **Outcome:** Same success state, but slower due to email verification step
 
 **Trade-offs:**
+
 - Most control (no OAuth dependencies)
 - But requires remembering password
 - Extra step (email verification click)
@@ -758,9 +841,11 @@ At Home Screen:
 ---
 
 ### Path 3: Skip ZIP Code Entry
+
 **Trigger:** User taps "Skip for now" at Step 8
 
 **How Journey Changes:**
+
 - Step 9 skipped (no metro mapping)
 - User proceeds to tutorial
 - Home screen shows "Set your location to see local posts" banner
@@ -773,9 +858,11 @@ At Home Screen:
 ---
 
 ### Path 4: Skip Tutorial
+
 **Trigger:** User taps "Skip" during tutorial (Steps 10-12)
 
 **How Journey Changes:**
+
 - Tutorial dismissed immediately
 - User lands on home screen
 - May see tooltip hints on first interactions ("Tap here to verify phone")
@@ -783,6 +870,7 @@ At Home Screen:
 **Outcome:** Same end state, but less context/education
 
 **Trade-offs:**
+
 - Faster to home screen
 - But may not understand trust levels or post categories
 
@@ -810,21 +898,24 @@ At Home Screen:
 ## Related Journeys
 
 ### Before This Journey (Prerequisites)
+
 - **None** - This is the entry point for all new users
 
 ### After This Journey (Next Steps)
+
 - **Journey #02: Trust Level Verification** - Priya will proceed here to verify her phone and unlock posting/messaging (85% of users do this within 24 hours)
 - **Journey #07: Browse and Search Posts** - Priya can browse posts as Level 0 immediately (100% of users do this after onboarding)
 - **Journey #10: Report Content** - If Priya sees spam, she can report (rare, but available at Level 0)
 
 ### Related/Parallel Journeys
+
 - **Journey #07: Browse and Search Posts** - Closely related; Priya is already on the home screen browsing after Step 13
 
 ---
 
 ## Visual Flow Diagram
 
-```
+```text
 ┌─────────────────┐
 │   Discovery     │
 │ (Facebook post) │
@@ -966,21 +1057,25 @@ At Home Screen:
 ### Data Validations
 
 **ZIP Code Input:**
+
 - **Format:** Exactly 5 digits, numeric only
 - **Validation:** Must exist in `metro_area_zipcodes` table
 - **Error message:** "Please enter a valid 5-digit US ZIP code"
 
 **Email (if email signup):**
+
 - **Format:** Valid email format (RFC 5322)
 - **Uniqueness:** Must not already exist in `users` table
 - **Error message:** "This email is already registered"
 
 **Phone (if phone signup):**
+
 - **Format:** US phone format (10 digits)
 - **Uniqueness:** Must not already exist in `users` table
 - **Error message:** "This phone number is already registered"
 
 **Name (from OAuth):**
+
 - **Min length:** 2 characters
 - **Max length:** 100 characters
 - **Allowed:** Letters, spaces, hyphens, apostrophes
@@ -988,14 +1083,17 @@ At Home Screen:
 ### Permissions Required
 
 **iOS Permissions (requested during journey):**
+
 - None required for basic signup and onboarding
 - Optional: Location permission (if we add "Use current location" feature)
 
 **Android Permissions (requested during journey):**
+
 - None required for basic signup and onboarding
 - Optional: Location permission (if we add "Use current location" feature)
 
 **Supabase Permissions:**
+
 - Public access to `/auth/signup/*` endpoints
 - Public read access to `metro_areas` and `metro_area_zipcodes` tables
 - Authenticated write access to `users` table (via RLS policies)

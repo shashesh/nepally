@@ -7,42 +7,49 @@ This document defines the aesthetic principles, style tokens, and quality standa
 ## Craft Foundations
 
 ### Surface & Elevation
+
 - Use subtle layering to create depth — not drop shadows on everything, but intentional elevation where it communicates hierarchy
 - Background surfaces should have barely-perceptible tonal differences (e.g., `#fafafa` vs `#ffffff`) to separate zones
 - Cards and elevated elements: prefer soft shadows (`0 1px 3px rgba(0,0,0,0.08)`) over hard borders where possible
 - Reserve strong elevation (larger shadows) for elements that genuinely float: modals, dropdowns, tooltips
 
 ### Borders & Dividers
+
 - Borders are a last resort for separation — prefer spacing, background contrast, or subtle shadows first
 - When borders are needed: 1px, low-contrast (e.g., `rgba(0,0,0,0.06)` not `#cccccc`)
 - Never stack borders — if a card has a border, don't also put a border on its container
 - Dividers between list items: use `border-bottom` on items, not `border-top` — avoids double-line at edges
 
 ### Spacing System
+
 - Use a consistent scale: 4px base unit — 4, 8, 12, 16, 24, 32, 48, 64, 96
 - Generous padding inside containers (min 16px, prefer 24px)
 - Group related elements tightly (8px gap), separate unrelated groups with more space (24px+)
 - Whitespace is a feature, not wasted space — let content breathe
 
 ### Color Intent
+
 - Every color must have a job: primary action, success feedback, warning, error, or brand accent
 - Avoid decorative color — if it doesn't communicate something, it shouldn't be colored
 - Use color sparingly so it retains meaning. A page with 6 colors everywhere has zero color hierarchy
 - Tint backgrounds with brand color at very low opacity (2-5%) for subtle warmth without distraction
 
 ### Typography
+
 - Limit to 2 font weights in most UIs: regular (400) for body, semibold (600) for headings/emphasis
 - Size scale: 12px (captions) / 14px (body) / 16px (large body) / 20px (h3) / 24px (h2) / 32px (h1)
 - Line-height: 1.5 for body text, 1.2-1.3 for headings
 - Letter-spacing: slight positive tracking on all-caps labels (+0.5px), default elsewhere
 
 ### Animation & Transitions
+
 - Default transition: `150ms ease-out` for hover states, `200ms ease-out` for layout changes
 - Entrance animations: fade + slight translate (8-12px), staggered by 50ms between siblings
 - Never animate purely for decoration — motion should communicate state change or guide attention
 - Respect `prefers-reduced-motion`: wrap animations in `@media (prefers-reduced-motion: no-preference)`
 
 ### Interactive States
+
 - Every clickable element needs: default, hover, active (pressed), focus-visible, disabled
 - Hover: subtle background shift or shadow increase — not color change
 - Active/pressed: slight scale-down (`transform: scale(0.98)`) or darker background

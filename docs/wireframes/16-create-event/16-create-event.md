@@ -12,6 +12,7 @@
 A scrollable form for creating a new community event. Users fill in event details, pick a type, set dates/times, add an optional photo, and configure RSVP visibility. Premium users can toggle global visibility. The form validates inline and enables the submit button only when all required fields are valid.
 
 **Key Goals:**
+
 - Fast, guided event creation (< 2 minutes for a typical event)
 - Mandatory type selection for feed filtering
 - Optional photo and address for richer event pages
@@ -258,6 +259,7 @@ A scrollable form for creating a new community event. Users fill in event detail
 ### State 7: Level 0 Access Blocked
 
 ::: modal
+
 ## Verify Your Account
 
 You need to verify your account to create events.
@@ -283,6 +285,7 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 | **Background** | #FFFFFF | #FFFFFF | #FFFFFF |
 
 **States:**
+
 - Create button disabled: `#BDBDBD` text, no tap action
 - Create button enabled: `#1565C0` text (iOS) / filled primary (Android/Web)
 
@@ -402,6 +405,7 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 ## User Interactions
 
 ### Primary Flow (Standard User)
+
 1. User taps "Create Event" in Events tab header
 2. Create Event screen slides up (modal on iOS, full-screen on Android/Web)
 3. User enters Event Name
@@ -461,6 +465,7 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 ## Accessibility
 
 ### Screen Reader Order (Mobile)
+
 1. Navigation: Cancel button
 2. Navigation: "Create Event" heading
 3. Navigation: Create button (announced as disabled until valid)
@@ -478,11 +483,13 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 15. "Posting to" summary
 
 ### Touch Targets
+
 - All chips: min 44×44pt (iOS) / 48×48dp (Android)
 - All inputs: min 48px tap height
 - Cancel / Create buttons: min 44×44pt
 
 ### Color Contrast (WCAG)
+
 | Element | Ratio | Level |
 |---------|-------|-------|
 | Form labels on #FFFFFF | 14.7:1 | AAA ✓ |
@@ -509,6 +516,7 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 ## Content & Localization
 
 ### String Keys
+
 | Key | Default Value |
 |-----|---------------|
 | `create_event_title` | Create Event |
@@ -548,21 +556,25 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 ## Technical Notes
 
 ### Identifiers
+
 - Mobile route: `CreateEventScreen` in `HomeStack`
 - Web route: `/events/create`
 - Edit mode: same screen, `eventId` param passed via navigation; submit label becomes "Save Changes", calls `updateEvent()` instead of `createEvent()`
 
 ### Validation
+
 - All validation via `createEventSchema` (Zod) from `packages/shared/src/validation/events.ts`
 - Real-time inline validation: debounced on `onChange` for text fields; immediate on `onBlur`
 - Submit disabled until `createEventSchema.safeParse()` returns `success: true`
 
 ### Photo Upload
+
 - Compress client-side with `expo-image-manipulator` (mobile) / Canvas API (web) before upload
 - Upload to Supabase Storage bucket `event-photos/`
 - Photo URL stored as `photo_url` in events table
 
 ### Navigation
+
 | Direction | Trigger | Destination |
 |-----------|---------|-------------|
 | Entry | "Create Event" in events header | Events list |
@@ -576,6 +588,7 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Event Name field rejects < 5 chars and > 150 chars with inline errors
 - [ ] Event Type chips are single-select; only one can be active at a time
 - [ ] Start date picker disallows dates in the past
@@ -595,6 +608,7 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 - [ ] Level 0 user cannot reach this screen (redirected to verification modal)
 
 ### Visual Tests
+
 - [ ] Selected event type chip shows correct color per type
 - [ ] Unselected chips show outlined style
 - [ ] Error fields show red border + error message below
@@ -602,12 +616,14 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 - [ ] Character counter turns amber at 2700+, red at 3000
 
 ### Accessibility Tests
+
 - [ ] Screen reader announces each form field label before input
 - [ ] Event type chips announced as toggle buttons with selected/unselected state
 - [ ] Create button announces "dimmed" or "unavailable" when disabled
 - [ ] Error messages programmatically associated with their fields (accessibilityHint)
 
 ### Edge Case Tests
+
 - [ ] Form submits without optional fields (end date, address, photo) → succeeds
 - [ ] Network error during submit → error toast, form stays open with all data preserved
 - [ ] Premium user submits with global ON → event's `is_global = true` in DB

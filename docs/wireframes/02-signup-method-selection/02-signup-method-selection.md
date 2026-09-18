@@ -11,6 +11,7 @@
 This screen allows users to select their preferred signup method. It emphasizes ease and privacy to build trust while providing multiple options for different user preferences.
 
 **Key Goals:**
+
 - Present three clear signup options
 - Reduce decision paralysis with guidance (recommend Google for speed)
 - Build trust with privacy reassurance
@@ -96,6 +97,7 @@ This email is already registered. Please log in or use a different account.
 | **Tap Area** | 44×44pt minimum | 48×48dp minimum |
 
 **Interaction:**
+
 - Tap/Click: Navigate back to Screen 01 (Welcome Screen)
 - iOS: Swipe right from left edge also goes back
 - Android: Hardware back button also goes back
@@ -153,11 +155,13 @@ This email is already registered. Please log in or use a different account.
 | **Icon** | Google "G" logo (multicolor), 24×24px | Google "G" logo (multicolor), 24×24dp |
 
 **Content Layout:**
+
 - Left: Google icon (24×24, 16px/dp from left edge)
 - Center: "Continue with Google" (main label) + "Quick signup • Verification required later" (benefit)
 - Right: Chevron indicator (optional, light gray)
 
 **States:**
+
 - Default: White bg, gray border
 - Pressed: #F5F5F5 bg, scale 0.99
 - Focused (Android): Blue 2px border
@@ -179,6 +183,7 @@ This email is already registered. Please log in or use a different account.
 | **Icon** | 📱 or system phone icon, 24×24px, #1565C0 | Material "phone" icon, 24×24dp, #1565C0 |
 
 **Content Layout:**
+
 - Left: Phone icon (24×24, 16px/dp from left edge, #1565C0)
 - Center: "Continue with Phone Number" (main label) + "Quick signup • Verification required later" (benefit)
 - Right: Chevron indicator (optional)
@@ -200,6 +205,7 @@ This email is already registered. Please log in or use a different account.
 | **Icon** | ✉ or system mail icon, 24×24px, #1565C0 | Material "email" icon, 24×24dp, #1565C0 |
 
 **Content Layout:**
+
 - Left: Email icon (24×24, 16px/dp from left edge, #1565C0)
 - Center: "Continue with Email" (main label) + "Quick signup • Verification required later" (benefit)
 - Right: Chevron indicator (optional)
@@ -270,6 +276,7 @@ This email is already registered. Please log in or use a different account.
 ## User Interactions
 
 ### Primary Flow
+
 1. **User lands on screen from Welcome Screen**
 2. **User reads three options** → Takes 5–10 seconds to decide
 3. **User taps "Continue with Google"** (most common choice)
@@ -277,13 +284,16 @@ This email is already registered. Please log in or use a different account.
 5. **User approves permissions** → Return to app, create account
 
 ### Alternative Flows
+
 - **User taps "Continue with Phone Number"** → Navigate to phone entry screen
 - **User taps "Continue with Email"** → Navigate to email entry screen
 - **User taps "Log In"** → Navigate to Login Screen
 - **User taps Back** → Return to Screen 01 (Welcome Screen)
 
 ### Decision Guidance
+
 **Recommendations to reduce decision paralysis:**
+
 - Consider adding "Most popular" or "Recommended" badge on Google option
 - Benefit text emphasizes all are "Quick signup"
 - Privacy reassurance reduces concern about linking Google account
@@ -308,34 +318,41 @@ This email is already registered. Please log in or use a different account.
 ## Error States & Edge Cases
 
 ### Google OAuth Cancelled
+
 - **Scenario:** User taps Google option, but cancels Google permission screen
 - **Behavior:** Return to this screen (no navigation); show brief toast "Signup cancelled. Please choose a method to continue."; no error UI, allow retry
 - **Recovery:** User can tap Google option again
 
 ### Google OAuth Error
+
 - **Scenario:** Google OAuth fails (network error, timeout, server error)
 - **Behavior:** Return to this screen; error banner at top: red (#C62828) bg, white text, dismissible; buttons remain enabled
 - **Recovery:** User can tap "Try Again" in banner, or choose Phone/Email instead
 
 ### No Internet Connection
+
 - **Scenario:** User taps any signup option with no internet
 - **Behavior:** Error banner immediately: red (#C62828) bg, white text, dismissible; buttons remain enabled
 - **Recovery:** Dismiss banner and retry after connecting; banner auto-dismisses when connection restored
 
 ### User Already Registered
+
 - **Scenario:** User attempts to sign up with a Google account that's already registered
 - **Behavior:** After OAuth, backend detects duplicate email; error banner: "This email is already registered. Please log in or use a different account."; "Log In Instead" button in banner
 - **Recovery:** Tap "Log In Instead" → navigate to Login Screen; or go back and choose a different method
 
 ### Google Account Picker (Multiple Accounts)
+
 - **Scenario:** User has multiple Google accounts on device
 - **Behavior:** Google OAuth shows account picker automatically; user selects which account; proceed with selected account
 - **Note:** Handled by Google, not Nepally UI
 
 ### Very Small Screen (iPhone SE 1st gen, 320×568px)
+
 - **Behavior:** Reduce option card height to 48px; reduce font sizes slightly (15pt/14sp main labels); reduce spacing between cards to 12px; all content still visible and tappable
 
 ### Large Accessibility Text (200%+)
+
 - **Behavior:** Support Dynamic Type (iOS) / Large Text (Android); option cards expand vertically to fit text; may require vertical scrolling; maintain readability
 
 ---
@@ -343,6 +360,7 @@ This email is already registered. Please log in or use a different account.
 ## Accessibility
 
 ### Screen Reader Order
+
 1. "Back button"
 2. "Create Your Account"
 3. "Join the Nepali community in your area"
@@ -353,6 +371,7 @@ This email is already registered. Please log in or use a different account.
 8. "Already have an account? Log In"
 
 ### Touch Targets
+
 - All option cards: min 44×44pt (iOS) / 48×48dp (Android) — exceeds (56px/64dp height) ✓
 - Back button: min 44×44pt / 48×48dp ✓
 - Log In link: min 44×44pt touch area (add invisible padding if needed)
@@ -367,6 +386,7 @@ This email is already registered. Please log in or use a different account.
 | Privacy text (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
 
 ### Focus Indicators
+
 - iOS VoiceOver: yellow outline on focused card
 - Android TalkBack: green rectangle on focused card
 - Android keyboard navigation: blue focus ring around entire card
@@ -376,6 +396,7 @@ This email is already registered. Please log in or use a different account.
 ## Animations & Transitions
 
 ### Screen Entry
+
 | Step | Element | Delay | Duration | Effect |
 |------|---------|-------|----------|--------|
 | 1 | Screen slide | 0ms | 300ms | Slide from right (iOS) / Slide up (Android), ease-in-out |
@@ -384,15 +405,18 @@ This email is already registered. Please log in or use a different account.
 | 4 | Email card | 200ms | 200ms | Fade in (ease-out), staggered |
 
 ### Option Card Press
+
 - Duration: 150ms, ease-in-out
 - Scale 0.99 + background to #F5F5F5
 - iOS: light haptic feedback | Android: ripple from tap point
 
 ### Loading State (Google OAuth)
+
 - Spinner in center of Google card, hide main text
 - Disable all other buttons, gray out other options
 
 ### Error Banner
+
 - Slide down from top: 300ms, ease-out
 - Auto-dismiss after 5 seconds or user taps X
 
@@ -401,6 +425,7 @@ This email is already registered. Please log in or use a different account.
 ## Content & Localization
 
 ### Copy Requirements
+
 - **Title:** Clear, action-oriented ("Create Your Account")
 - **Subtitle:** Emphasize community and local focus
 - **Option Labels:** Start with "Continue with..." for consistency
@@ -421,6 +446,7 @@ This email is already registered. Please log in or use a different account.
 | `signup_login_link` | Already have an account? Log In |
 
 ### Tone
+
 - **Friendly:** "Join the Nepali community"
 - **Reassuring:** Privacy text addresses concerns
 - **Clear:** Simple, jargon-free language
@@ -431,11 +457,13 @@ This email is already registered. Please log in or use a different account.
 ## Technical Notes
 
 ### Identifiers
+
 - Route: `/signup-method`
 - iOS: `SignupMethodViewController` / `SignupMethodScreen`
 - Android: `SignupMethodActivity` / `SignupMethodFragment`
 
 ### State Management
+
 | Variable | Type | Description |
 |----------|------|-------------|
 | `selectedMethod` | `null \| 'google' \| 'phone' \| 'email'` | Currently selected signup method |
@@ -457,6 +485,7 @@ No persistent state across sessions.
 | Exit | Log In link | Login Screen (out of scope) |
 
 ### API Integration — Google OAuth Flow
+
 1. User taps "Continue with Google"
 2. Set `isLoading = true`, show spinner
 3. Initiate OAuth: `GoogleSignIn.signIn()`
@@ -469,17 +498,20 @@ No persistent state across sessions.
 10. Navigate to Screen 03 (ZIP Code Entry)
 
 **Error Handling:**
+
 - OAuth cancelled → toast, reset `isLoading`
 - OAuth error → error banner, reset `isLoading`
 - Network error → error banner with retry
 - Server error → generic error banner
 
 ### Performance
+
 - Pre-load Google SDK for instant OAuth (load on app launch)
 - Icons: vector or 2×/3× PNG for crisp display
 - Animate cards on screen entry for polish (stagger fade-in)
 
 ### Design System Components Used
+
 - Large Button (Card style) — adapted from Primary Button
 - H1 Typography (34pt/sp Bold)
 - Body Typography (17pt/16sp Regular)
@@ -490,6 +522,7 @@ No persistent state across sessions.
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Google option initiates OAuth flow
 - [ ] Phone option navigates to phone entry screen
 - [ ] Email option navigates to email entry screen
@@ -499,6 +532,7 @@ No persistent state across sessions.
 - [ ] OAuth error shows error banner
 
 ### Visual Tests
+
 - [ ] All three option cards display correctly
 - [ ] Icons are aligned and sized properly
 - [ ] Text wraps correctly on narrow screens (320px width)
@@ -507,6 +541,7 @@ No persistent state across sessions.
 - [ ] Safe area insets respected
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all elements in correct order
 - [ ] All touch targets meet 44pt/48dp minimum
 - [ ] Color contrast meets WCAG AA standards
@@ -514,6 +549,7 @@ No persistent state across sessions.
 - [ ] Focus indicators visible
 
 ### Integration Tests
+
 - [ ] Google OAuth completes successfully
 - [ ] Session token stored securely
 - [ ] Navigation to Screen 03 works

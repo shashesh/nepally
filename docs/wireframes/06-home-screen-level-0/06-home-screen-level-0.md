@@ -9,12 +9,14 @@
 ## Screen Purpose + Key Goals
 
 This is the success state of the onboarding journey - the main home screen (local feed). For Level 0 users, it shows:
+
 - Local posts from their metro area + global posts from premium users
 - Level 0 banner promoting verification
 - Tag filter chips for filtering content (Housing, Jobs, Help, Question, Politics, Discussion, Emergency)
 - Floating + button (slightly disabled for Level 0)
 
 **Key Goals:**
+
 - Show user that onboarding worked (seeing real local posts)
 - Encourage verification through prominent banner
 - Enable browsing and exploring content
@@ -43,6 +45,7 @@ This is the success state of the onboarding journey - the main home screen (loca
 **[SG]** &nbsp; Sita Gurung ✓ &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; 2h ago
 
 ### Looking for Nepali Roommate
+
 📍 Local {.badge-local}
 
 Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet environment. Rent is $800/month including utilities... [View More]{.outline}
@@ -60,6 +63,7 @@ Looking for Nepali roommate to share 2BR apartment near UTD campus. Clean, quiet
 **[RK]** &nbsp; Rajesh K. ✓ &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; 5h ago
 
 ### Hiring Line Cooks - Nepali Rest.
+
 🌐 Global {.badge-global}
 
 We're hiring experienced line cooks for our new Nepali restaurant...
@@ -114,6 +118,7 @@ Could not load posts. Please check your connection and try again.
 ### FAB Verification Modal (Level 0)
 
 ::: modal
+
 ### Verify Your Phone to Post
 
 You need to verify your phone number to create posts and message others.
@@ -137,6 +142,7 @@ You need to verify your phone number to create posts and message others.
 **Components (left to right):**
 
 #### Location Dropdown
+
 - **Label:** User's metro area name (e.g., "New York-Newark-Jersey City")
 - **Icon:** Location pin (📍) prefix, Chevron down (▼) suffix, 16px/dp, #757575
 - **Typography:** 17pt/16sp Semibold, #212121
@@ -147,6 +153,7 @@ You need to verify your phone number to create posts and message others.
 - **Visiting Indicator:** "(Visiting)" label shown when browsing temporarily
 
 #### Search Icon
+
 - **Icon:** Magnifying glass (🔍), 24x24px/dp
 - **Position:** Top-right, first icon in icon group
 - **Touch Target:** 44x44pt / 48x48dp
@@ -154,6 +161,7 @@ You need to verify your phone number to create posts and message others.
 - **Color:** #757575 (Medium Gray)
 
 #### Messages Icon (NEW)
+
 - **Icon:** Chat bubbles (💬), 24x24px/dp
 - **Position:** Between Search and Notifications icons
 - **Touch Target:** 44x44pt / 48x48dp
@@ -166,6 +174,7 @@ You need to verify your phone number to create posts and message others.
 - **Color:** #757575 (Medium Gray), badge: #DC143C (Accent Red)
 
 #### Notification Bell Icon
+
 - **Icon:** Bell (🔔), 24x24px/dp
 - **Position:** Far top-right, 16px/dp from edge
 - **Touch Target:** 44x44pt / 48x48dp
@@ -174,6 +183,7 @@ You need to verify your phone number to create posts and message others.
 - **Color:** #757575 (Medium Gray), badge: #DC143C (Accent Red)
 
 **a11y:**
+
 - Location: "Dallas-Fort Worth, button, change location"
 - Search: "Search button"
 - Notifications: "Notifications, [X unread]"
@@ -193,17 +203,20 @@ You need to verify your phone number to create posts and message others.
 **Components (left to right):**
 
 #### Warning Icon
+
 - **Icon:** ⚠️ (warning triangle), 20x20px/dp
 - **Color:** #E65100 (Dark Amber)
 - **Position:** Left side, 12px/dp from edge
 
 #### Message Text
+
 - **Content:** "You're viewing only. Verify phone to post and message."
 - **Typography:** 15pt/14sp Regular, #E65100 (Dark Amber)
 - **Max Lines:** 2 lines (wraps on narrow screens)
 - **Alignment:** Left
 
 #### Verify Now Button (Inline CTA)
+
 - **Label:** "Verify Now"
 - **Style:** Text button (not filled)
 - **Typography:** 15pt/14sp Semibold, #1565C0 (Primary Blue)
@@ -212,6 +225,7 @@ You need to verify your phone number to create posts and message others.
 - **Interaction:** Tap to start verification flow (Journey #02)
 
 #### Dismiss Button (X)
+
 - **Icon:** X (close), 16x16px/dp
 - **Color:** #E65100 (Dark Amber)
 - **Position:** Far right, 12px/dp from edge
@@ -219,17 +233,20 @@ You need to verify your phone number to create posts and message others.
 - **Interaction:** Tap to dismiss banner (hides for current session, reappears on next launch)
 
 **States:**
+
 - Default: Visible for Level 0 users
 - Dismissed: Hidden until next app launch
 - Pressed (Verify Now): Darken blue text color
 - Pressed (X): Fade out banner (300ms)
 
 **a11y:**
+
 - Full text: "Warning. You're viewing only. Verify phone to post and message. Verify Now button. Close button."
 - Verify Now: "Verify Now, button"
 - Dismiss: "Close banner, button"
 
 **Behavior:**
+
 - Always shown on first home screen load for Level 0 users
 - Dismissible per session (reappears on next app launch)
 - Permanently hidden once user reaches Level 1
@@ -247,6 +264,7 @@ You need to verify your phone number to create posts and message others.
 | **Layout** | Flexbox row, no horizontal scroll | Flexbox row, no horizontal scroll |
 
 **Visible Chips (4-5 based on screen width):**
+
 - All (always first, always visible)
 - Housing
 - Jobs
@@ -254,6 +272,7 @@ You need to verify your phone number to create posts and message others.
 - [More ▼] (always last, opens sheet with remaining tags)
 
 **"More" Dropdown Sheet:**
+
 - **Trigger:** Tap "More" chip
 - **Type:** Bottom sheet modal
 - **Content:** Grid/list of remaining tags (Question, Politics, Discussion, Emergency)
@@ -262,6 +281,7 @@ You need to verify your phone number to create posts and message others.
 - **Close:** Tap outside, swipe down, or tap Apply
 
 **Chip Styling:**
+
 - **Shape:** Pill-shaped (border-radius: 20px/dp)
 - **Height:** 32px/dp
 - **Padding:** 12px/dp horizontal, 6px/dp vertical
@@ -275,6 +295,7 @@ You need to verify your phone number to create posts and message others.
 - **Spacing:** 8px/dp between chips
 
 **Interaction:**
+
 - Tap visible chip → Toggle filter on/off (multi-select supported)
 - Tap "More" chip → Open tag selector sheet
 - "All" chip resets all filters (clears both visible and "More" selections)
@@ -283,17 +304,20 @@ You need to verify your phone number to create posts and message others.
 - Multiple chips can be active simultaneously (e.g., Housing + Jobs + Question)
 
 **a11y:**
+
 - Each chip: "Housing filter, selected" or "Jobs filter, not selected"
 - "More" chip: "More filters, button, 2 selected" (if applicable)
 - VoiceOver/TalkBack: Navigate between chips
 - Sheet is fully accessible with focus trap
 
 **Initial State:**
+
 - "All" chip is active (no filtering)
 - Feed shows all posts (local + global)
 - "More" chip shows no badge (no additional filters active)
 
 **Responsive Behavior:**
+
 - On narrow screens: Show 4 chips + "More"
 - On wider screens: Show 5 chips + "More"
 - Chips don't wrap to second line
@@ -310,11 +334,13 @@ You need to verify your phone number to create posts and message others.
 | **Pull-to-Refresh** | Native iOS refresh control | Material SwipeRefreshLayout |
 
 **Empty State:**
+
 - If no posts matching selected tags: Show illustration + message
 - Message: "No posts matching your filters in this area. Try different tags!"
 - Illustration: Empty state graphic (subtle mountain silhouette)
 
 **Loading State:**
+
 - Show skeleton cards (3 placeholder cards with shimmer animation)
 - Or show spinner in center if first load
 
@@ -335,6 +361,7 @@ You need to verify your phone number to create posts and message others.
 **Card Layout (top to bottom):**
 
 #### Author Row (NEW)
+
 - **Author Avatar:** 40x40px/dp circle, left-aligned
   - If profile photo exists: Display photo
   - If no photo: Display initials (e.g., "JD" for John Doe)
@@ -357,6 +384,7 @@ You need to verify your phone number to create posts and message others.
 - **Margin:** 0-16px/dp from top (if first card element)
 
 #### Header Row (Title)
+
 - **Title:** "Looking for Nepali Roommate" (17pt/16sp Semibold, #212121)
 - **Layout:** Title only (left-aligned, wraps to 2 lines max)
 - **Margin:** 12px/dp from author row
@@ -377,6 +405,7 @@ You need to verify your phone number to create posts and message others.
 - **Visibility:** Always shown on every post card
 
 #### Description Preview (NEW)
+
 - **Content:** First 150 characters of post description
 - **Typography:** 14pt/13sp Regular, #424242
 - **Max Lines:** 2 lines with ellipsis if truncated
@@ -391,6 +420,7 @@ You need to verify your phone number to create posts and message others.
 - **Margin:** 8px/dp from badge
 
 #### Photo Thumbnail (if post has photo)
+
 - **Dimensions:** Full card width x 160px/dp height
 - **Corner Radius:** 8px/dp
 - **Margin:** 12px/dp top and bottom
@@ -399,6 +429,7 @@ You need to verify your phone number to create posts and message others.
 - **Position:** After description preview
 
 #### Tag Pills Row (NEW)
+
 - **Type:** Horizontal row of pill-shaped tag badges
 - **Position:** Below photo (or below description if no photo)
 - **Margin:** 8px/dp from photo, 12px/dp before action bar
@@ -427,6 +458,7 @@ You need to verify your phone number to create posts and message others.
 | **Layout** | Horizontal row, 2 actions, evenly spaced | Horizontal row, 2 actions, evenly spaced |
 
 **Action 1: Like Button**
+
 - **Icon:** Heart outline (not liked) or Heart filled (liked)
   - Size: 20x20px/dp
   - Color: #757575 (outline), #DC143C Accent Red (filled)
@@ -447,6 +479,7 @@ You need to verify your phone number to create posts and message others.
 - **a11y:** "Like button, [liked/not liked], 24 likes"
 
 **Action 2: Comment Button**
+
 - **Icon:** Chat bubble outline
   - Size: 20x20px/dp
   - Color: #757575
@@ -465,11 +498,13 @@ You need to verify your phone number to create posts and message others.
 - **a11y:** "Comment button, 5 comments"
 
 **Action Bar Layout:**
+
 - [❤️ 24] ............ [💬 5]
 - Equal spacing between actions
 - Left-aligned within card padding
 
 **States:**
+
 - Default: All icons outline, light gray
 - Like Active: Heart filled, red color
 - Pressed (Like): Scale animation, instant feedback
@@ -477,6 +512,7 @@ You need to verify your phone number to create posts and message others.
 - Disabled (Level 0): Like icon grayed out, tooltip on tap
 
 **Interaction:**
+
 - **Tap card body:** Open post detail screen
 - **Tap author avatar/name:** Show popup menu with "View Profile" / "Chat" (hidden on own posts)
 - **Tap like button:** Toggle like (Level 1+), show verification toast (Level 0)
@@ -484,6 +520,7 @@ You need to verify your phone number to create posts and message others.
 - **Tap "View More":** Navigate to post detail screen
 
 **a11y:**
+
 - Full card structure:
   - "Posted by Sita Gurung, verified, 2 hours ago"
   - "Looking for Nepali Roommate. Local post."
@@ -513,6 +550,7 @@ You need to verify your phone number to create posts and message others.
 | Chat | chat-bubble-outline, 20px/dp, #212121 | Open/create 1:1 conversation |
 
 **Option Row Styling:**
+
 - Height: 44px / 48dp
 - Padding: 16px/dp horizontal
 - Font: 15pt/14sp Regular, #212121
@@ -520,6 +558,7 @@ You need to verify your phone number to create posts and message others.
 - Touch target: Full row width, 44px/48dp height
 
 **Visibility Rules:**
+
 - Chat option hidden on own posts
 - Chat requires Level 1+; Level 0 users see "Verify to Message" prompt on tap
 - Menu not shown when tapping own avatar (no Chat option means only "View Profile")
@@ -542,11 +581,13 @@ You need to verify your phone number to create posts and message others.
 | **Shadow** | 0 4px 8px rgba(0,0,0,0.2) | elevation 6dp |
 
 **States:**
+
 - Level 0 (current): 50% opacity, semi-transparent
 - Level 1+: Full opacity (100%), bright blue
 - Pressed: Scale 0.95, darker blue
 
 **Interaction:**
+
 - **Tap (Level 0):** Show modal with verification prompt
   - Modal title: "Verify Your Phone to Post"
   - Modal message: "You need to verify your phone number to create posts and message others."
@@ -554,11 +595,13 @@ You need to verify your phone number to create posts and message others.
 - **Tap (Level 1+):** Open "Create Post" screen (not in this journey)
 
 **a11y:**
+
 - Label: "Create post, button, requires verification"
 - Hint: "Verify your phone to unlock posting"
 - Trait: Button
 
 **Visual Cue:**
+
 - Semi-transparent appearance signals "not fully enabled"
 - Users can still tap to learn why it's disabled
 
@@ -608,6 +651,7 @@ You need to verify your phone number to create posts and message others.
 **Total Visible Height:** ~800px (fits 2-2.5 cards on screen at once)
 
 ### Horizontal Layout
+
 - Screen margins: 16px/dp on both sides
 - Post cards: Full width minus 32px/dp (16px margins × 2)
 - Feed background: Full width (edge to edge)
@@ -617,6 +661,7 @@ You need to verify your phone number to create posts and message others.
 ## User Interactions
 
 ### Primary Flow (Browse Posts)
+
 1. **User lands on home screen after onboarding**
 2. **User sees Level 0 banner** → Reads message (5 seconds)
 3. **User dismisses banner** (optional) → Tap X
@@ -628,12 +673,14 @@ You need to verify your phone number to create posts and message others.
 9. **Navigate to Journey #02 (Trust Level Verification)**
 
 ### Alternative Flow (Create Post Attempt)
+
 1. **User taps FAB (+ button)**
 2. **Modal appears:** "Verify Your Phone to Post"
 3. **User taps "Verify Now"** → Navigate to Journey #02
 4. **User taps "Cancel"** → Modal closes, returns to feed
 
 ### Alternative Flow (Filter by Tag)
+
 1. **User taps "Jobs" chip**
 2. **Chip fills with blue** (selected state)
 3. **Feed updates to show only posts tagged with Jobs** (loading spinner, then posts)
@@ -641,6 +688,7 @@ You need to verify your phone number to create posts and message others.
 5. **User taps "All" chip** to reset all filters
 
 ### Alternative Flow (Search)
+
 1. **User taps Search icon (top-right)**
 2. **Navigate to Search screen** (out of scope for this journey)
 
@@ -663,8 +711,10 @@ You need to verify your phone number to create posts and message others.
 ## Error States & Edge Cases
 
 ### Edge Case: No Posts Matching Tags
+
 **Scenario:** User selects "Emergency" filter chip, but no emergency-tagged posts in their metro area
 **Behavior:**
+
 - Show empty state illustration (mountain silhouette)
 - Message: "No posts matching your filters. That's okay!"
 - Subtext: "Try different tags or check back later."
@@ -672,8 +722,10 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Edge Case: No Posts in Metro Area (First User)
+
 **Scenario:** User is the first person in a new metro area, no posts at all
 **Behavior:**
+
 - Show empty state illustration
 - Message: "Be the first to post in [Metro Name]!"
 - CTA button: "Verify Phone to Post" (navigates to verification)
@@ -681,8 +733,10 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Edge Case: Network Error (Feed Fails to Load)
+
 **Scenario:** API call to fetch posts fails (timeout, no internet)
 **Behavior:**
+
 - Show error banner at top: "Could not load posts. Please check your connection and try again."
 - Banner: Red background (#C62828), white text, "Retry" button
 - Keep previous posts visible if cached
@@ -690,8 +744,10 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Edge Case: User Taps Post Without Verification (Level 0)
+
 **Scenario:** User taps post card to view details
 **Behavior:**
+
 - Navigate to post detail screen
 - Show banner on detail screen: "Verify phone to contact poster"
 - Contact info is hidden behind "Click to Reveal" (requires Level 1)
@@ -700,8 +756,10 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Edge Case: User Dismisses Banner Multiple Times
+
 **Scenario:** User dismisses Level 0 banner repeatedly across sessions
 **Behavior:**
+
 - Banner reappears on each app launch (for first 7 days)
 - After 7 days or 5 dismissals: Show less frequently (every 3rd launch)
 - Banner permanently hides once user reaches Level 1
@@ -709,16 +767,20 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Edge Case: Very Long Metro Area Name
+
 **Scenario:** Metro name is >25 characters (e.g., "New York-Newark-Jersey City")
 **Behavior:**
+
 - Truncate in top nav: "New York-Newark-J..."
 - Show full name in dropdown/tooltip on tap
 
 ---
 
 ### Edge Case: User Has Slow Internet (Images Don't Load)
+
 **Scenario:** Post card images fail to load
 **Behavior:**
+
 - Show placeholder: Gray box with house icon
 - "Image unavailable" text (caption)
 - Card layout remains intact, rest of post visible
@@ -726,8 +788,10 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Edge Case: User Scrolls to Bottom of Feed (Pagination)
+
 **Scenario:** User reaches end of loaded posts
 **Behavior:**
+
 - Show loading spinner at bottom
 - Load next 10 posts automatically (infinite scroll)
 - If no more posts: Show "You've reached the end" message
@@ -737,6 +801,7 @@ You need to verify your phone number to create posts and message others.
 ## Accessibility
 
 ### Screen Reader Support
+
 - **Screen Title:** "Home Screen, Dallas-Fort Worth"
 - **Reading Order:**
   1. "Dallas-Fort Worth, button, change location"
@@ -749,6 +814,7 @@ You need to verify your phone number to create posts and message others.
   8. "Create post, button, requires verification"
 
 ### Touch Targets
+
 - All nav buttons (Location, Search, Notifications): 44x44pt / 48x48dp — ✓
 - Banner buttons (Verify Now, X): 44x44pt / 48x48dp — ✓
 - Category tabs: Full height (48px/dp), minimum 44x44pt / 48x48dp width
@@ -767,6 +833,7 @@ You need to verify your phone number to create posts and message others.
 | Post metadata (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
 
 ### Focus Indicators
+
 - All interactive elements have clear focus states
 - iOS: VoiceOver yellow outline
 - Android: TalkBack green rectangle
@@ -785,6 +852,7 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Pull-to-Refresh
+
 - Pull down from top of feed
 - Show refresh indicator (spinner + "Fetching latest posts...")
 - Feed updates, cards fade in (200ms per card)
@@ -792,6 +860,7 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Tab Switch (Chip Toggle)
+
 - **Duration:** 150ms
 - **Easing:** Ease-in-out
 - Chip fills with color (active) or returns to neutral (inactive)
@@ -800,6 +869,7 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Post Card Tap
+
 - **Duration:** 150ms
 - **Effect:** Background color to light gray (#F5F5F5), scale 0.99
 - Navigation to detail screen: Slide in from right (iOS) or shared element transition (Android)
@@ -807,6 +877,7 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### FAB Tap (Level 0 Modal)
+
 - Background overlay: Fade in to 50% black (200ms)
 - Modal: Slide up from bottom (iOS) or fade in (Android)
 - **Duration:** 300ms, ease-out
@@ -814,6 +885,7 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Banner Dismiss
+
 - **Duration:** 300ms
 - **Effect:** Banner fades out + slides up
 - Feed cards move up to fill space (animate layout change)
@@ -823,6 +895,7 @@ You need to verify your phone number to create posts and message others.
 ## Content & Localization
 
 ### Copy Requirements
+
 - **Banner Message:** Clear, concise (under 80 characters)
 - **Empty State Messages:** Friendly, helpful (provide next steps)
 - **Error Messages:** Specific, actionable (tell user what to do)
@@ -844,6 +917,7 @@ You need to verify your phone number to create posts and message others.
 | `home_badge_global` | Global |
 
 ### Tone & Voice
+
 - **Welcoming:** User just completed onboarding, celebrate their arrival
 - **Helpful:** Banner guides user to next step (verification)
 - **Transparent:** Explain why Level 0 is limited
@@ -854,6 +928,7 @@ You need to verify your phone number to create posts and message others.
 ## Technical Notes
 
 ### Screen Identifier
+
 - iOS: `HomeViewController` or `FeedViewController`
 - Android: `HomeActivity` or `FeedFragment`
 - Route name: `/home` or `/feed`
@@ -861,6 +936,7 @@ You need to verify your phone number to create posts and message others.
 ### State Management
 
 **Screen State:**
+
 - `selectedTags`: string[] (tag slugs, empty = "All")
 - `availableTags`: Tag[] (from tags table)
 - `posts`: array of post objects (with tags and is_global)
@@ -871,6 +947,7 @@ You need to verify your phone number to create posts and message others.
 - `metroName`: string
 
 **Post Object:**
+
 ```javascript
 {
   id: "post_123",
@@ -915,12 +992,14 @@ You need to verify your phone number to create posts and message others.
 **Endpoint:** `GET /posts?metro_area_id={id}&tags={slugs}&limit=10&offset=0`
 
 **Request Params:**
+
 - `metro_area_id`: User's metro area ID (from user profile)
 - `tags`: Comma-separated tag slugs (optional, empty = all tags)
 - `limit`: Number of posts to fetch (default: 10)
 - `offset`: Pagination offset (default: 0)
 
 **Response:**
+
 ```json
 {
   "posts": [
@@ -953,6 +1032,7 @@ You need to verify your phone number to create posts and message others.
 **Note:** Feed includes both local posts (metro_area_id match) AND global posts (is_global = true) from any metro area. Global posts are mixed into the feed chronologically, not separated.
 
 **Caching:**
+
 - Cache posts in memory for current session
 - Invalidate cache on pull-to-refresh
 - Persist last 50 posts to disk for offline viewing
@@ -960,6 +1040,7 @@ You need to verify your phone number to create posts and message others.
 ---
 
 ### Performance Considerations
+
 - **Lazy load images:** Use progressive JPEG or WebP, load thumbnails first
 - **Pagination:** Load 10 posts at a time (infinite scroll)
 - **Skeleton loading:** Show placeholder cards while fetching
@@ -971,12 +1052,14 @@ You need to verify your phone number to create posts and message others.
 ## Design References
 
 ### Inspiration
+
 - **Reddit Feed:** Tag-based filtering with pill badges
 - **Nextdoor Feed:** Local posts with community content
 - **Airbnb Listings:** Clean card-based feed with photos
 - **Facebook Marketplace:** Verified badges, card layout
 
 ### Design System Components Used
+
 - Top Navigation Bar
 - Banner (Level 0 warning)
 - Filter Chips (Tag filter bar)
@@ -988,6 +1071,7 @@ You need to verify your phone number to create posts and message others.
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Feed loads posts from user's metro area + global posts
 - [ ] Tag filter chips filter posts correctly (multi-select)
 - [ ] "All" chip resets filters
@@ -1001,6 +1085,7 @@ You need to verify your phone number to create posts and message others.
 - [ ] Tags load dynamically from database
 
 ### Visual Tests
+
 - [ ] All components display correctly
 - [ ] Post cards have correct spacing and styling
 - [ ] Tag pills display with correct colors
@@ -1011,6 +1096,7 @@ You need to verify your phone number to create posts and message others.
 - [ ] Safe area insets respected
 
 ### Accessibility Tests
+
 - [ ] VoiceOver/TalkBack reads all elements in order
 - [ ] All touch targets meet 44pt/48dp minimum
 - [ ] Color contrast meets WCAG AA
@@ -1018,6 +1104,7 @@ You need to verify your phone number to create posts and message others.
 - [ ] Tab navigation works with screen reader
 
 ### Integration Tests
+
 - [ ] API fetches posts correctly
 - [ ] Posts filtered by tags and metro area
 - [ ] Global posts appear in local feed
@@ -1027,6 +1114,7 @@ You need to verify your phone number to create posts and message others.
 - [ ] Empty states show correct messages
 
 ### Edge Case Tests
+
 - [ ] No posts matching tags shows empty state
 - [ ] Network error shows retry option
 - [ ] Very long metro name truncates correctly

@@ -13,6 +13,7 @@
 The location switcher is triggered by tapping the metro name in the home screen header. It provides quick access to saved locations, current GPS-detected location, and the ability to add/manage locations.
 
 **Key Goals:**
+
 - Enable fast switching between saved locations (1 tap)
 - Show current GPS-detected location when it differs from active location
 - Provide entry points to add new locations and manage existing ones
@@ -381,6 +382,7 @@ Houston-The Woodlands, TX will be removed from your saved locations.
 **Trigger:** Tap edit icon on a saved location
 
 **Inline edit:**
+
 - Name text becomes an editable input (same position)
 - Keyboard opens (mobile) / input focuses (web)
 - Save on blur or Enter key
@@ -394,6 +396,7 @@ Houston-The Woodlands, TX will be removed from your saved locations.
 **Confirmation alert (mobile):** See delete confirmation modal in wireframe above.
 
 **Rules:**
+
 - Cannot delete the default location (delete icon hidden/disabled)
 - Cannot delete if only 1 location remains
 - If deleting the currently active (non-default) location: switch feed to default
@@ -404,6 +407,7 @@ Houston-The Woodlands, TX will be removed from your saved locations.
 **Trigger:** Tap "Set as default" link
 
 **System behavior:**
+
 - Previous default loses star, gains "Set as default" link
 - New default gains star, loses "Set as default" link
 - Database: old default `is_default = false`, new default `is_default = true`

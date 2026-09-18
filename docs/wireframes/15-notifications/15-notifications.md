@@ -11,6 +11,7 @@
 Delivers real-time notifications to users across web and mobile platforms via push delivery (Expo Push on mobile, Web Push API on web) and an in-app notification center. Covers four capabilities: push infrastructure setup (12.1), chat message notifications (12.2), in-app notification list (12.3), and notification preferences (12.4).
 
 **Key Goals:**
+
 - Notify users of chat messages, comments, likes, and emergency alerts in real time
 - Provide a persistent in-app notification list with unread/read state
 - Let users control which notification types they receive
@@ -26,6 +27,7 @@ Delivers real-time notifications to users across web and mobile platforms via pu
 ---
 
 ::: card
+
 ### :bell: Notifications {.dropdown}
 
 ---
@@ -87,6 +89,7 @@ Your account has been verified. You can now post freely.
 ---
 
 ::: card
+
 ### :bell: Notifications
 
 ---
@@ -323,6 +326,7 @@ No new notifications. Messages, comments, likes, and local emergency alerts will
 ## Screen G — Mobile: Push Permission Prompt (First Launch)
 
 ::: modal
+
 ## :bell: Stay in the Loop
 
 Get notified when someone messages you, comments on your post, or when there's an emergency in your local area.
@@ -352,9 +356,11 @@ Enable them in Settings → Nepally to receive messages and emergency alerts.
 ## Screen I — Web: Browser Push Permission Prompt (System)
 
 ::: modal
+
 ## :bell: Enable Push Notifications
 
 Nepally wants to send you push notifications for:
+
 - Chat messages when the app is closed
 - Emergency alerts in your metro area
 
@@ -391,6 +397,7 @@ You'll receive alerts even when the app is closed.
 
 **Chat Messages**
 Get notified when someone sends you a message.
+
 - (*) Every message
 - ( ) Batched (every 30 min)
 - ( ) Off
@@ -399,6 +406,7 @@ Get notified when someone sends you a message.
 
 **Comments**
 Get notified when someone comments on your post.
+
 - (*) On
 - ( ) Off
 
@@ -406,6 +414,7 @@ Get notified when someone comments on your post.
 
 **Likes**
 Get notified when people like your posts.
+
 - ( ) Every like
 - (*) When 5+ likes received
 - ( ) Off
@@ -415,6 +424,7 @@ Get notified when people like your posts.
 **Emergency Alerts**
 Metro-wide alerts verified by community moderators.
 *(Cannot be disabled while push is enabled — for your safety)*
+
 - [x] Emergency alerts (required)
 
 :::
@@ -439,6 +449,7 @@ Metro-wide alerts verified by community moderators.
 
 **Push Notifications**
 Receive alerts when app is in background
+
 - [x] Enabled
 
 *(Tap to open device settings if permissions are denied)*
@@ -456,6 +467,7 @@ Receive alerts when app is in background
 
 **:speech_balloon: Chat Messages**
 New messages from conversations
+
 - (*) Every message
 - ( ) Batched (every 30 min)
 - ( ) Off
@@ -464,6 +476,7 @@ New messages from conversations
 
 **:speech_balloon: Comments**
 When someone comments on your post
+
 - (*) On
 - ( ) Off
 
@@ -471,6 +484,7 @@ When someone comments on your post
 
 **:heart: Likes**
 When people like your posts
+
 - ( ) Every like
 - (*) When 5+ likes received
 - ( ) Off
@@ -480,6 +494,7 @@ When people like your posts
 **:shield: Emergency Alerts**
 Verified metro-wide emergency broadcasts
 *(Required — cannot be disabled)*
+
 - [x] Emergency alerts
 
 :::
@@ -505,6 +520,7 @@ Verified metro-wide emergency broadcasts
 | **Dropdown max-height** | 480px, scrollable |
 
 **States:**
+
 - No unread: Outline bell, no badge
 - 1–9 unread: Filled bell, red badge with count
 - 9+ unread: Filled bell, red "9+" badge
@@ -593,6 +609,7 @@ Verified metro-wide emergency broadcasts
 ## User Interactions
 
 ### Primary Flow — Receiving a Chat Notification (Mobile Push)
+
 1. User is in background or device locked
 2. Expo Push sends notification via APNs/FCM
 3. System shows banner: "Rajan Thapa: Hey, is the room still availab..."
@@ -600,6 +617,7 @@ Verified metro-wide emergency broadcasts
 5. Notification marked as read automatically
 
 ### Primary Flow — Receiving a Chat Notification (Web Push)
+
 1. User has browser open (different tab or minimized)
 2. Service worker receives push event via Web Push API
 3. Browser shows OS notification: "Nepally — Rajan Thapa: Hey, is the room..."
@@ -607,6 +625,7 @@ Verified metro-wide emergency broadcasts
 5. Notification marked as read
 
 ### Primary Flow — In-App Bell Dropdown (Web)
+
 1. User clicks bell icon in nav
 2. Dropdown opens with last 8 notifications, sorted newest first
 3. Unread items shown with blue left border + unread background
@@ -616,6 +635,7 @@ Verified metro-wide emergency broadcasts
 7. "See all notifications →" → navigates to `/notifications` full page
 
 ### Primary Flow — Viewing Notifications List (Mobile)
+
 1. User taps "Alerts" tab in bottom tab bar
 2. Notifications list loads, grouped by day
 3. Emergency alerts pinned at top
@@ -625,6 +645,7 @@ Verified metro-wide emergency broadcasts
 7. Swipe left on item → "Dismiss" red button → removes from list
 
 ### Primary Flow — Enabling Push (Mobile First Launch)
+
 1. User opens app for first time (or after sign-in)
 2. System modal shown: "Stay in the Loop"
 3. User taps "Allow Notifications" → OS permission dialog (iOS/Android) shown
@@ -632,6 +653,7 @@ Verified metro-wide emergency broadcasts
 5. On deny: banner shown in-app for next 3 sessions offering to re-enable
 
 ### Primary Flow — Enabling Browser Push (Web)
+
 1. User signs in to web app
 2. After 30s delay, soft prompt shown: "Enable Push Notifications"
 3. User clicks "Enable Push" → browser permission dialog
@@ -639,6 +661,7 @@ Verified metro-wide emergency broadcasts
 5. On deny: no repeat prompt for 7 days
 
 ### Alternative Flows
+
 - **Chat active (mobile):** Supabase Realtime delivers message in-app; push NOT sent if user is currently viewing that conversation (suppress logic)
 - **Emergency alert:** Always delivered via push regardless of preferences, shown first in list with red styling
 - **Preferences change:** User disables "Likes" → no new like notifications from that point, existing ones remain in list
@@ -677,17 +700,20 @@ Verified metro-wide emergency broadcasts
 ## Accessibility
 
 ### Screen Reader Order (Mobile Notifications Screen)
+
 1. Screen title: "Notifications"
 2. Settings gear button: "Notification preferences"
 3. Section header: "Today"
 4. Each notification: type + sender + preview + time ago + read/unread status
 
 ### Touch Targets
+
 - All notification items: min 44×44pt (iOS) / 48×48dp (Android)
 - Bell icon: min 44×44pt tap target with padding
 - Dismiss / action buttons: min 44×44pt
 
 ### Color Contrast (WCAG AA)
+
 | Element | Ratio | Level |
 |---------|-------|-------|
 | Title text on white | 7:1 | AAA ✓ |
@@ -697,6 +723,7 @@ Verified metro-wide emergency broadcasts
 | Timestamp (#757575) on white | 4.6:1 | AA ✓ |
 
 ### Additional A11y
+
 - Badge count announced by screen reader: "3 unread notifications"
 - Unread items: accessibility label includes "Unread" prefix
 - Emergency items: announced with "Emergency alert" prefix
@@ -730,19 +757,22 @@ Verified metro-wide emergency broadcasts
 ### Data Requirements
 
 **Supabase `notifications` table** (already exists in `001_schema.sql`):
-```
+
+```text
 id, user_id, type (message|post_response|emergency_alert|system),
 title, body, data (JSONB), read, read_at, sent_at
 ```
 
 **New table needed — `device_tokens`** (to be added to `001_schema.sql`):
-```
+
+```text
 id, user_id, token (TEXT), platform (expo|web_push),
 endpoint (TEXT, for web push), p256dh (TEXT), auth_key (TEXT),
 created_at, last_used_at
 ```
 
 **Notification triggers (Supabase Edge Functions or DB triggers):**
+
 - New message inserted in `messages` → insert into `notifications` → push delivery
 - New comment inserted in `comments` → insert into `notifications` → push delivery
 - New like inserted in `likes` → batch/check threshold → insert into `notifications`
@@ -763,12 +793,14 @@ created_at, last_used_at
 ### Push Delivery Architecture
 
 **Mobile (Expo Push):**
+
 1. App registers with Expo → gets `ExponentPushToken[xxx]`
 2. Token stored in `device_tokens` table
 3. Edge Function sends via `https://exp.host/--/api/v2/push/send`
 4. Handles APNs (iOS) + FCM (Android) transparently
 
 **Web (Web Push API):**
+
 1. Service worker subscribes → gets `PushSubscription` (endpoint + keys)
 2. Subscription stored in `device_tokens` (endpoint, p256dh, auth columns)
 3. Edge Function sends VAPID-signed push to browser endpoint
@@ -779,6 +811,7 @@ created_at, last_used_at
 ## Testing Checklist
 
 ### Functional Tests
+
 - [ ] Unread badge count increments on new notification (web + mobile)
 - [ ] Badge resets to 0 when all notifications marked as read
 - [ ] Tapping notification navigates to correct screen
@@ -792,6 +825,7 @@ created_at, last_used_at
 - [ ] Device token cleaned up / refreshed on token expiry
 
 ### Visual Tests
+
 - [ ] Unread items show blue left border and tinted background
 - [ ] Emergency items show red styling and always appear first
 - [ ] Badge shows "9+" when more than 9 unread
@@ -800,6 +834,7 @@ created_at, last_used_at
 - [ ] Section grouping (Today / Yesterday / Earlier) correct
 
 ### Accessibility Tests
+
 - [ ] Badge count announced as "X unread notifications"
 - [ ] Screen reader reads notification type + sender + preview + time
 - [ ] All tap targets meet 44×44pt (iOS) / 48×48dp (Android)
@@ -807,6 +842,7 @@ created_at, last_used_at
 - [ ] Emergency items announced with "Emergency alert" prefix
 
 ### Edge Case Tests
+
 - [ ] Notification for deleted post shows graceful message
 - [ ] 0 notifications shows empty state (not blank screen)
 - [ ] Offline state shows cached list with offline banner

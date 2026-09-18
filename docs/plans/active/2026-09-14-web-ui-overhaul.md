@@ -84,42 +84,61 @@ The spec is updated in the same commit as this plan.
 8. **AppShell navbar.** `AppShell.Navbar` renders with `component="div"`, so `SideRail`'s `<nav aria-label="Primary">` is the only navigation landmark there. It is hidden below 48em with `visibleFrom="sm"`, because `navbar.collapsed.mobile` only moves the navbar off-canvas and never sets `display`. `Layout.test.tsx` asserts that every navigation landmark has an accessible name.
 9. **Top-bar search deferred to PR 3b.** The old top-bar search input led to `/search`, which did not exist. PR 2 drops it, and PR 3b fills `TopBar`'s `search` slot with `SearchCombobox`.
 10. **Baselines are always fully rewritten.** The first PR 2 baseline run left seven stale pre-PR-2 screenshots: phone `messages`, `notifications`, `post-detail` and `create-post`, and desktop `landing`, `login` and `signup`.
+
    - **Why:** Playwright's default `--update-snapshots` rewrites only snapshots that fail comparison. A near-white tab bar on a near-white page stays within `maxDiffPixelRatio: 0.01`, so those snapshots never failed.
    - **Fix:** the Visual baselines workflow, `scripts/visual/run-in-docker.mjs` and `test:visual:update` now pass `--update-snapshots=all`.
    - **Coverage:** pixel diffs cannot see low-contrast chrome, so the phone e2e suite now asserts the tab bar is visible on `/messages`, `/notifications` and post detail.
+
 11. **Search tokenizer keeps Devanagari words whole.** Migration 037's `build_prefix_tsquery` splits input on `[[:space:][:punct:]!-/:-@[-`{-~]+`, not on `[^[:alnum:]]+` as first planned.
+
    - **Why:** Postgres `[:alnum:]` excludes combining marks, so the planned pattern split `राम थापा` into `{र,म,थ,प}` and made Devanagari names unsearchable.
    - **Evidence:** before the migration was written, read-only queries on the live project confirmed three things about the chosen pattern. It keeps `{राम, थाप}`, it still strips every tsquery operator character, and it produces `'thapa' & 'nclex' & 'pr':*` for the English example.
+
 12. **Migration 037 is live, and the tracker is realigned.** 037 was applied to `nusa-staging` on 2026-09-15 with the user's approval.
+
    - **Verification:** functions, indexes and the anon denial were checked. Postgres and `authenticated` returned the same counts (people 20/20, posts 100/100, listings 3/3), so invoker rights work. The advisors raised no new lints. The users PII smoke test, extended for `search_people`, passes.
    - **Tracker:** 036 still had its timestamp version, so 036 and 037 were both realigned to numeric versions in `supabase_migrations.schema_migrations`.
+
 13. **Carried into PR 3b.**
+
    - **Total count:** a page past the end reports `totalCount` 0, so `useSearchPage` must keep the total from page 1.
    - **Suggestion errors:** `searchSuggestions` is all-or-nothing on error. Enter still opens `/search`, where each tab loads on its own.
    - **Resolved in 3b.5:** tab counts read from the `searchSuggestions` preview, never from a paged list response, so a past-the-end `totalCount` cannot corrupt them.
+
 14. **jsdom needs a `ResizeObserver` stub.** Mantine renders `Tabs.List` through `FloatingIndicator`, which constructs a `ResizeObserver` on mount. jsdom has no such API, so every `/search` page test threw `ReferenceError: ResizeObserver is not defined`.
+
    - **Fix:** `apps/web/vitest.setup.ts` defines a no-op `ResizeObserver`, alongside the existing `scrollIntoView` and `matchMedia` stubs.
    - **Scope:** global to the web suite. All 755 web tests pass with it, so no existing test depended on its absence.
+
 15. **`next-env.d.ts` churn is not committed.** Running the e2e suite builds for production, which rewrites the file's imports from `./.next/dev/types/…` to `./.next/types/…`; `next dev` flips them back. The committed version keeps the `dev` paths.
 16. **The suggestions listbox needed an accessible name.** The first baselines run recorded `aria-input-field-name` (serious) for `visual-desktop:search-dropdown`.
+
    - **Cause:** `Combobox.Options` renders a `div` with `role="listbox"`, and `aria-input-field-name` covers the `listbox` role. The input itself was already named, which is why only the dropdown-open page flagged it.
    - **Fix:** `aria-label="Search suggestions"` on `Combobox.Options`, so `a11y-baseline.json` gains no entry. Re-probing with axe reports zero serious or critical violations.
    - **Screenshots:** an `aria-label` changes no pixels, so the baselines from that run stay valid.
+
 17. **The Visual baselines workflow uploads, it does not commit.** It publishes `__screenshots__` and `a11y-baseline.json` as the `visual-baselines` artifact. Someone downloads it, checks the a11y diff, and commits — which is how the PR 0–2 baseline commits were made.
 18. **The fixture clock is pinned for visual runs (Copilot, PR #62).** `page.clock.setFixedTime` freezes `Date` only inside the browser, but `e2e/fixtures/mock-data.ts` builds its timestamps in the Node process with `Date.now()`. Absolute event dates and the listing's `Refreshed Nd ago` text therefore moved with the run day, so the committed screenshots drifted after baseline day. `dynamicMasks` did not cover them: its regex is anchored and matches only bare relative times.
+
    - **Fix:** timestamps derive from `FIXTURE_NOW_MS`, which the visual projects pin to `VISUAL_NOW` through `E2E_FIXED_NOW`. Ordinary e2e runs keep the wall clock, because the app itself decides what counts as "upcoming".
    - **Guard:** five entry points run the visual projects (the two `apps/web` scripts, `run-in-docker.mjs`, `smoke.mjs`, and both workflows), so `prepareVisualPage` asserts the pin. A missed entry point fails loudly instead of drifting silently.
    - **Not taken:** Copilot also asked for per-node a11y fingerprints instead of rule IDs. The observation is right — a second `color-contrast` violation on an already-baselined page passes — but PRs 1–10 exist to rewrite this markup, so fingerprints would churn and fail for reasons unrelated to accessibility. The baseline reaches `{}` at PR 10, which closes the gap.
+
 19. **The guards had enforcement gaps (Copilot, PR #63).** All five findings were correct and are fixed; PRs 4–10 write most of the remaining CSS, so they are worth closing before those start.
+
    - **CSS guard:** the colour-literal pattern was case-sensitive (`RGB(0 0 0)` passed), named colours were not detected at all (`color: white` passed), and direct primitive references (`var(--ink-900)`) passed despite the semantic-only contract. Named colours match in value position only and never inside a longer identifier, so `--ink-white`, `.whiteBox` and `url(black.png)` stay clean.
    - **Raw-element allowlist:** it is applied through ESLint `ignores`, which skips a file silently, so a migrated file left in the list would keep hiding new raw elements. `write-raw-element-allowlist.mjs --check` now fails on stale entries, mirroring the CSS guard's clean-file failure, and runs in `lint:guards`.
    - **CI:** `guards:test` was reachable only through the root `test` script, which no workflow calls — CI's unit-test job runs `test:ci`. PR 1's own `escape-glob.test.mjs` had therefore never run in CI. `test:ci` now runs `guards:test` first.
+
 20. **The notification bell had three realtime and read-state defects (Copilot, PR #64).**
+
    - **Duplicate subscription:** the realtime effect checked only `userId`, so `/notifications` — which passes `pollingEnabled: false` because it owns its own `notifications-page:` channel — still opened a second channel for the same INSERTs. Now gated on `pollingEnabled`.
    - **Chat notifications leaked into the bell:** `getNotifications` and `getUnreadNotificationCount` both filter `.neq('type', 'message')`, but the handler accepted every INSERT, so a chat notification appeared and bumped the count until the next reload. Message-type payloads are ignored.
    - **Unchecked write results:** `markRead` and `markAllRead` updated state without checking the returned `{ error }`, showing a false read state after an RLS or network failure. Both now match `remove`, which already checked. Copilot flagged only `markRead`; `markAllRead` had the same defect.
    - **Not a defect:** the fourth finding said the prompt dialog's Cancel button defaults to `submit`. Mantine's `UnstyledButton` sets `type="button"` for button elements, so it never was. A test pins this, because Cancel precedes Save and would otherwise become the form's default button and swallow Enter.
+
 21. **Prefix search was broken mid-word; migration 038 fixes it (review of PR #65).** 037 indexed posts and listings with `english` and built the tsquery with `english` too, so both sides were stemmed. A `:*` prefix on a stemmed term cannot match a shorter stem.
+
    - **Verified on `nusa-staging`:** for the document `'avail':2 'hous':1 'queen':4`, typing `hous` matched, `housi` and `housin` matched nothing, and `housing` matched again. With a 250ms debounce the suggestion dropdown went empty for two keystrokes on every `-ing`/`-ed`/`-ment` word — much of the housing and jobs vocabulary. `search_people` was unaffected because it uses `simple`.
    - **Fix:** the documents carry both `english` stems and `simple` raw lexemes, and `build_search_tsquery` ORs a stemmed tsquery with a raw prefix tsquery. Verified against the live `search_posts`: `hous`, `housi`, `housin`, `housing` and `houses` now all return 17, so prefixes hold at every keystroke while `houses` still finds `Housing` by stem.
    - **Posts use a STORED column.** `posts.search_document` is generated, so `ts_rank` reads it instead of re-deriving the tsvector for every matching row. 037 avoided a stored column on the grounds it would appear in `select('*')`, but every posts read goes through the explicit `POST_SELECT` — the premise did not hold. Measured on staging: the same query went from **50.7 ms to 7.5 ms**.
@@ -130,7 +149,9 @@ The spec is updated in the same commit as this plan.
    - **Pagination:** every search wrapper now ends its sort with `id`. Without it, offset paging duplicated and dropped rows: `simple` applies no weights, so verified on staging, "Bikash Thapa", "Sita Thapa" and "Ram Thapa" all score exactly `0.0607927`.
    - **Applied to `nusa-staging` 2026-09-17.** Grants re-verified (anon denied, authenticated allowed on all three), no new advisor lints, and search returns no duplicate rows.
    - **Still open from that review:** `count(*) OVER ()` still materializes the whole match set for the window total; `totalCount` still comes from `rows[0]`, so an empty page reports 0; `EMPTY_PAGE` is still a shared mutable singleton; `.slice()` can still split a surrogate pair; highlighting still does not mirror stemming; and the indexes were created without `CONCURRENTLY`, which matters when this reaches production.
+
 22. **The search UI shared one error field between two requests (Copilot, PR #66).** `useSearchPage` ran a preview request and a list request but exposed a single `error`, which only the preview effect cleared. That one gap produced four wrong states: a failed tab kept its error after switching tabs, a failed preview left the All tab on a permanent skeleton, a failed type tab rendered "No … match" beside the error, and a failed `loadMore` was never cleared by a later success. Preview and list errors are now separate and the hook returns the active tab's.
+
    - **Tight retry loop:** a failed `loadMore` left `hasMore` true while the sentinel was still on screen, so `useInfiniteScroll` re-fired as soon as `loadingMore` cleared. It now stops and waits for the explicit retry.
    - **Paging offset:** `items.length` was used as the next offset, but hydration drops rows that were deleted or hidden by RLS, so one dropped row made the next request start too early and repeat results. A ranked offset now advances by the page size regardless of how many rows survived.
    - **Signed-out requests:** `/search` ran its effects before the auth guard, calling RPCs that are revoked from `anon` before redirecting. The query is null until the viewer is known to be signed in.
@@ -193,6 +214,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 ### Task 0.1: Decouple unit tests from Mantine internals
 
 **Files:**
+
 - Modify: `apps/web/src/pages/login.test.tsx` (test "disables submit button while signing in")
 - Modify: `apps/web/src/pages/signup.test.tsx` (test "shows loading state while submitting")
 - Modify: `apps/web/src/components/events/RsvpButton.test.tsx` (four "is disabled when …" tests)
@@ -275,12 +297,14 @@ git commit -m "test(web): assert user-visible state instead of Mantine internals
 ### Task 0.2: Announce unread messages in the link name; role-based e2e selectors
 
 **Files:**
+
 - Modify: `apps/web/src/components/Layout.tsx:417-427` (Messages `ActionIcon`)
 - Modify: `apps/web/src/components/Layout.test.tsx` (inside `describe('when user is logged in')`)
 - Modify: `apps/web/e2e/tests/06-profile.spec.ts` (test "navigating to /profile from feed works")
 - Modify: `apps/web/e2e/tests/07-messages-badge.spec.ts` (whole file)
 
 **Interfaces:**
+
 - Produces: the Messages link accessible name is `"Messages"` when nothing is unread, or `"Messages, N unread"` otherwise. PR 2's `TopBar` must keep this contract.
 
 - [ ] **Step 1: Write the failing unit tests**
@@ -395,9 +419,11 @@ git commit -m "fix(web): announce unread message count in the Messages link name
 ### Task 0.3: Deterministic fallback for unmocked Supabase REST calls
 
 **Files:**
+
 - Modify: `apps/web/e2e/helpers/supabase-mock.ts`
 
 **Interfaces:**
+
 - Produces: `export async function mockUnhandledRest(page: Page): Promise<void>`. `mockSupabaseLoggedIn` calls it first.
 
 - [ ] **Step 1: Add the fallback helper**
@@ -460,6 +486,7 @@ git commit -m "test(web): answer unmocked Supabase REST calls deterministically 
 ### Task 0.4: Visual and accessibility harness
 
 **Files:**
+
 - Modify: `apps/web/playwright.config.ts` (whole file)
 - Modify: `apps/web/package.json` (scripts, devDependency)
 - Modify: `package.json` (root script)
@@ -469,6 +496,7 @@ git commit -m "test(web): answer unmocked Supabase REST calls deterministically 
 - Create: `scripts/visual/smoke.mjs`
 
 **Interfaces:**
+
 - Consumes: `mockUnhandledRest`, `mockSupabaseLoggedIn` (Task 0.3); `injectAuthSession` (existing).
 - Produces (later PRs add pages and call these):
   - `VISUAL_NOW: Date`
@@ -855,12 +883,14 @@ git commit -m "test(web): add visual regression and axe harness for key pages" -
 ### Task 0.5: Linux baselines — Docker runner, CI job, baseline workflow
 
 **Files:**
+
 - Create: `scripts/visual/run-in-docker.mjs`
 - Create: `.github/workflows/visual-baselines.yml`
 - Modify: `.github/workflows/ci.yml` (append the `web_visual` job)
 - Create (generated): `apps/web/e2e/visual/__screenshots__/**`, `apps/web/e2e/visual/a11y-baseline.json`
 
 **Interfaces:**
+
 - Consumes: the `visual-desktop` / `visual-phone` projects (Task 0.4).
 - Produces: `npm run test:visual:docker --workspace=apps/web [-- --update] [--write-a11y-baseline]`, used by every later PR to re-baseline.
 
@@ -1062,6 +1092,7 @@ git commit -m "ci(web): run visual regression in the Playwright container and ad
 ### Task 0.6: Document the workflow and verify PR 0
 
 **Files:**
+
 - Modify: `docs/guides/setup-and-testing.md` (insert before `### Policy reminder`)
 - Modify: `TECH-VERSIONS.md` (Testing Stack table)
 
@@ -1162,12 +1193,14 @@ Push `test/web-visual-safety-net` and open its PR. Update the tracker row for PR
 ### Task 1.1: Token file with contrast guarantees
 
 **Files:**
+
 - Create: `apps/web/src/styles/tokens.testutil.ts`
 - Create: `apps/web/src/styles/tokens.contrast.test.ts`
 - Create: `apps/web/src/styles/tokens.css`
 - Modify: `apps/web/package.json` (devDependencies)
 
 **Interfaces:**
+
 - Produces `readTokenMap(css?: string): Map<string, string>`, which parses the first `:root { … }` block into a name → raw value map. It reads `tokens.css` by default.
 - Produces `resolveToken(map: Map<string, string>, name: string): string`, which follows `var(--x)` chains to a literal and throws on unknown or circular tokens.
 - Produces every token name in `tokens.css`. All later CSS uses these names.
@@ -1443,6 +1476,7 @@ git commit -m "feat(web): add H1 design tokens with WCAG AA contrast test" -m "C
 ### Task 1.2: Self-hosted fonts
 
 **Files:**
+
 - Create: `apps/web/src/styles/fonts/Gambarino-Regular.woff2`, `Switzer-Regular.woff2`, `Switzer-Medium.woff2`, `Switzer-Semibold.woff2`
 - Create: `apps/web/src/styles/fonts.ts`
 - Create: `apps/web/src/components/layout/FontVariables.tsx`
@@ -1450,6 +1484,7 @@ git commit -m "feat(web): add H1 design tokens with WCAG AA contrast test" -m "C
 - Modify: `apps/web/src/pages/_app.page.tsx`, `apps/web/src/pages/_app.test.tsx`
 
 **Interfaces:**
+
 - Produces `displayFont` and `bodyFont` (`next/font/local` results; `.style.fontFamily: string`).
 - Produces `FontVariables(): JSX.Element`, rendered once in `_app`.
 
@@ -1599,12 +1634,14 @@ git commit -m "feat(web): self-host Gambarino and Switzer via next/font" -m "Co-
 ### Task 1.3: Legacy aliases, new globals, retire the old design-system files
 
 **Files:**
+
 - Create: `apps/web/src/styles/legacy-aliases.test.ts`
 - Create: `apps/web/src/styles/legacy-aliases.css`
 - Rewrite: `apps/web/src/styles/globals.css`
 - Delete: `apps/web/src/styles/design-system.css`, `apps/web/src/styles/design-system-next.css`
 
 **Interfaces:**
+
 - Consumes `readTokenMap`, `resolveToken` (Task 1.1).
 - Produces the global class `nepally-focus` (focus ring used by the Mantine theme in Task 1.4).
 - Every old `design-system.css` variable name keeps resolving until PR 10.
@@ -1949,6 +1986,7 @@ git commit -m "feat(web): bridge legacy design-system variables to H1 tokens" -m
 ### Task 1.4: Mantine theme mirrors the tokens
 
 **Files:**
+
 - Create: `apps/web/src/styles/mantine-theme.test.ts`
 - Rewrite: `apps/web/src/styles/mantine-theme.ts`
 - Create: `apps/web/src/styles/mantine-components.module.css`
@@ -1957,6 +1995,7 @@ git commit -m "feat(web): bridge legacy design-system variables to H1 tokens" -m
 - Modify: `apps/web/package.json` (`@mantine/modals`)
 
 **Interfaces:**
+
 - Consumes: `readTokenMap`, `resolveToken`, and the global class `nepally-focus`.
 - Produces:
   - `nepallyTheme: MantineThemeOverride`: colours `ink` and `marigold`; `primaryColor: 'ink'`, `primaryShade: 8`; `defaultRadius: 'md'`
@@ -2431,6 +2470,7 @@ git commit -m "feat(web): rebuild Mantine theme from design tokens" -m "Adds ink
 ### Task 1.5: Guards against regressions
 
 **Files:**
+
 - Create: `scripts/guard-css-tokens.js`
 - Create: `scripts/guard-css-tokens.test.js`
 - Create (generated): `scripts/guard-css-tokens.allowlist.json`
@@ -2440,6 +2480,7 @@ git commit -m "feat(web): rebuild Mantine theme from design tokens" -m "Adds ink
 - Create: `apps/web/eslint/write-raw-element-allowlist.mjs`
 
 **Interfaces:**
+
 - Produces `findViolations(content: string): Array<{ line: number; kind: 'colour literal' | 'legacy token'; text: string }>` (CommonJS export).
 - Produces commands that every area PR runs:
   - `node scripts/guard-css-tokens.js --write-allowlist`
@@ -2747,6 +2788,7 @@ git commit -m "chore: guard CSS Modules to tokens and interactive elements to Ma
 ### Task 1.6: Evergreen docs
 
 **Files:**
+
 - Create: `docs/architecture/web-ui-system.md`
 - Modify: `docs/INDEX.md` (Architecture section)
 - Modify: `TECH-VERSIONS.md` (Web App + Testing Stack tables)
@@ -2888,6 +2930,7 @@ git commit -m "docs: add web UI system guide for tokens, theme and guards" -m "C
 ### Task 1.7: Re-baseline and verify PR 1
 
 **Files:**
+
 - Update (generated): `apps/web/e2e/visual/__screenshots__/**`, `apps/web/e2e/visual/a11y-baseline.json`
 
 **Interfaces:** none.
@@ -2901,6 +2944,7 @@ Run: `npm run test:visual:docker --workspace=apps/web -- --update`
 Run: `git status --short apps/web/e2e/visual/__screenshots__`
 
 Open each changed image and check:
+
 - paper background, Switzer body text and Gambarino headings
 - ink buttons
 - no clipped text, overlapping elements or invisible (same-colour) text
@@ -2947,6 +2991,7 @@ Push `feat/web-design-tokens` and open its PR. Update the tracker row for PR 1.
 **Branch:** `feat/web-app-shell`, created from `master` after PR 1 merges.
 
 **Outcome:**
+
 - The UI building blocks (`components/ui/`) exist, each with tests.
 - `Layout.tsx` is a thin composition over Mantine `AppShell`.
 - Phones get bottom tabs, and tablets get an icon-only rail.
@@ -2976,11 +3021,13 @@ Push `feat/web-design-tokens` and open its PR. Update the tracker row for PR 1.
 ### Task 2.1: Shared initials and avatar tones
 
 **Files:**
+
 - Modify: `packages/shared/src/utils/user.ts`, `packages/shared/src/utils/user.test.ts`
 - Modify: `apps/web/src/styles/tokens.css`, `apps/web/src/styles/tokens.contrast.test.ts`
 - Rewrite: `apps/web/src/components/Avatar.tsx`, `apps/web/src/components/Avatar.module.css`, `apps/web/src/components/Avatar.test.tsx`
 
 **Interfaces:**
+
 - Produces (shared):
   - `getInitials(fullName: string): string`. Returns `'?'` for an empty name, the first two letters for a single word, otherwise the first and last initials, all uppercased.
   - `getAvatarToneIndex(name: string, toneCount: number): number`. Returns an index in `[0, toneCount)`, the same for the same name.
@@ -3253,6 +3300,7 @@ git commit -m "feat: share avatar initials and give placeholders token tones" -m
 ### Task 2.2: State and header primitives
 
 **Files:**
+
 - Create: `apps/web/src/components/ui/EmptyState.tsx`, `EmptyState.module.css`, `EmptyState.test.tsx`
 - Create: `apps/web/src/components/ui/LoadingState.tsx`, `LoadingState.module.css`, `LoadingState.test.tsx`
 - Create: `apps/web/src/components/ui/ErrorState.tsx`, `ErrorState.test.tsx`
@@ -3260,6 +3308,7 @@ git commit -m "feat: share avatar initials and give placeholders token tones" -m
 - Create: `apps/web/src/components/ui/index.ts`
 
 **Interfaces:**
+
 - Produces:
   - `EmptyState({ icon?: ReactNode; title: string; description?: ReactNode; action?: ReactNode })`
   - `LoadingState({ variant?: 'list' | 'card' | 'detail'; count?: number; label?: string })`
@@ -3692,12 +3741,14 @@ git commit -m "feat(web): add empty, loading, error and page header primitives" 
 ### Task 2.3: Chips and badges
 
 **Files:**
+
 - Create: `apps/web/src/components/ui/TagChip.tsx`, `TagChip.module.css`, `TagChip.test.tsx`
 - Create: `apps/web/src/components/ui/ScopeBadge.tsx`, `ScopeBadge.module.css`, `ScopeBadge.test.tsx`
 - Create: `apps/web/src/components/ui/TrustBadge.tsx`, `TrustBadge.module.css`, `TrustBadge.test.tsx`
 - Modify: `apps/web/src/components/ui/index.ts`
 
 **Interfaces:**
+
 - Produces:
   - `TagChip({ slug: string; label: string })`. Uses the dot style; slug `emergency` gets the emergency styling.
   - `ScopeBadge({ isGlobal: boolean; metroLabel?: string })`. Renders "Global", "Local · {metroLabel}" or "Local".
@@ -3983,10 +4034,12 @@ git commit -m "feat(web): add tag chip, scope and trust badges" -m "Co-Authored-
 ### Task 2.4: `ActionMenu`
 
 **Files:**
+
 - Create: `apps/web/src/components/ui/ActionMenu.tsx`, `ActionMenu.test.tsx`
 - Modify: `apps/web/src/components/ui/index.ts`
 
 **Interfaces:**
+
 - Produces `ActionMenu({ label: string; items: ActionMenuItem[]; target?: ReactElement; position?: MenuProps['position'] })`.
 - `ActionMenuItem = { key: string; label: string; icon?: ReactNode; onClick?: () => void; href?: string; danger?: boolean; disabled?: boolean }`.
 - A custom `target` must be one element that forwards its ref (a Mantine component or `forwardRef`).
@@ -4125,10 +4178,12 @@ git commit -m "feat(web): add accessible ActionMenu primitive" -m "Co-Authored-B
 ### Task 2.5: Confirm and prompt dialogs
 
 **Files:**
+
 - Create: `apps/web/src/components/ui/dialogs.tsx`, `dialogs.test.tsx`
 - Modify: `apps/web/src/components/ui/index.ts`
 
 **Interfaces:**
+
 - Produces:
   - `useConfirm(): (options: ConfirmOptions) => Promise<boolean>`
   - `usePrompt(): (options: PromptOptions) => Promise<string | null>`. Resolves `null` on cancel or close.
@@ -4391,9 +4446,11 @@ git commit -m "feat(web): add promise-based confirm and prompt dialogs" -m "Co-A
 ### Task 2.6: `useInfiniteScroll`
 
 **Files:**
+
 - Create: `apps/web/src/hooks/useInfiniteScroll.ts`, `apps/web/src/hooks/useInfiniteScroll.test.tsx`
 
 **Interfaces:**
+
 - Produces `useInfiniteScroll(options: { hasMore: boolean; loading: boolean; onLoadMore: () => void; rootMargin?: string }): { sentinelRef: React.RefCallback<HTMLDivElement | null> }`.
 - Render `<div ref={sentinelRef} />` after the last item. PRs 3b, 4, 7 and 8 replace the three copied IntersectionObserver blocks with it.
 
@@ -4506,11 +4563,13 @@ git commit -m "feat(web): add useInfiniteScroll hook" -m "Co-Authored-By: Claude
 ### Task 2.7: Move unread-count and notification logic into hooks
 
 **Files:**
+
 - Create: `apps/web/src/hooks/useUnreadMessageCount.ts`, `apps/web/src/hooks/useUnreadMessageCount.test.tsx`
 - Create: `apps/web/src/hooks/useNotificationsFeed.ts`, `apps/web/src/hooks/useNotificationsFeed.test.tsx`
 - Create: `apps/web/src/components/notifications/notificationHref.ts`, `notificationHref.test.ts`
 
 **Interfaces:**
+
 - Produces `useUnreadMessageCount(userId: string | null): number`.
 - Produces `useNotificationsFeed(options: { userId: string | null; pollingEnabled: boolean }): NotificationsFeed`, where `NotificationsFeed = { unreadCount: number; items: Notification[]; markRead(n: Notification): Promise<void>; markAllRead(): Promise<void>; remove(n: Notification): Promise<boolean> }`.
 - Produces `getNotificationHref(notification: Notification): string`.
@@ -4999,10 +5058,12 @@ git commit -m "refactor(web): extract unread and notification feed logic into ho
 ### Task 2.8: `NotificationItem` and `NotificationBell`
 
 **Files:**
+
 - Create: `apps/web/src/components/notifications/NotificationItem.tsx`, `NotificationItem.module.css`, `NotificationItem.test.tsx`
 - Create: `apps/web/src/components/layout/NotificationBell.tsx`, `NotificationBell.module.css`, `NotificationBell.test.tsx`
 
 **Interfaces:**
+
 - Consumes the `Notification` type.
 - Produces `NotificationItem({ notification: Notification; onOpen(n): void; onDelete(n): void })`, with two sibling buttons and no nested interactive elements. PR 9 reuses it on `/notifications`.
 - Produces `NotificationBell({ unreadCount: number; items: Notification[]; onOpen(n): void; onMarkAllRead(): void; onDelete(n): void })`.
@@ -5452,10 +5513,12 @@ git commit -m "feat(web): add NotificationItem and popover NotificationBell" -m 
 ### Task 2.9: `AccountMenu` and `TopBar`
 
 **Files:**
+
 - Create: `apps/web/src/components/layout/AccountMenu.tsx`, `AccountMenu.module.css`
 - Create: `apps/web/src/components/layout/TopBar.tsx`, `TopBar.module.css`, `TopBar.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `NotificationBell` (2.8), `NotificationsFeed` (2.7), `LocationSwitcher`, `Avatar`.
 - Produces `AccountMenu({ user: User; onSignOut(): void })`. The trigger is named "Open account menu"; items are View Profile, Manage Locations and Sign Out.
 - Produces `TopBar({ user: User; unreadMessages: number; notifications: NotificationsFeed; onOpenNotification(n): void; onSignOut(): void; search?: ReactNode })`.
@@ -5764,6 +5827,7 @@ git commit -m "feat(web): add TopBar and AccountMenu shell components" -m "Co-Au
 ### Task 2.10: Navigation model, side rail, bottom tabs, topic pills
 
 **Files:**
+
 - Create: `apps/web/src/components/layout/navItems.ts`, `navItems.test.ts`
 - Create: `apps/web/src/components/layout/SideRail.tsx`, `SideRail.module.css`, `SideRail.test.tsx`
 - Create: `apps/web/src/components/layout/BottomTabBar.tsx`, `BottomTabBar.module.css`, `BottomTabBar.test.tsx`
@@ -5771,6 +5835,7 @@ git commit -m "feat(web): add TopBar and AccountMenu shell components" -m "Co-Au
 - Modify: `apps/web/src/pages/feed.page.tsx`, `apps/web/src/styles/Feed.module.css`
 
 **Interfaces:**
+
 - Produces (`navItems.ts`):
   - `TASK_ROUTES: string[]` and `isTaskRoute(pathname: string): boolean`
   - `isSectionActive(pathname: string, href: string): boolean`
@@ -6425,6 +6490,7 @@ export function TopicPills() {
 ```
 
 In `apps/web/src/pages/feed.page.tsx`:
+
 1. Change `import { useClickOutside } from '@mantine/hooks';` to `import { useClickOutside, useMediaQuery } from '@mantine/hooks';`.
 2. Add these imports:
 
@@ -6474,12 +6540,14 @@ git commit -m "feat(web): add responsive side rail, phone bottom tabs and topic 
 ### Task 2.11: Compose the new Layout
 
 **Files:**
+
 - Create: `apps/web/src/components/layout/PublicShell.tsx`, `PublicShell.module.css`
 - Rewrite: `apps/web/src/components/Layout.tsx`, `apps/web/src/components/Layout.module.css`, `apps/web/src/components/Layout.test.tsx`
 - Modify: `apps/web/playwright.config.ts`, `apps/web/package.json` (`test:e2e` script)
 - Create: `apps/web/e2e/tests/phone/navigation.spec.ts`
 
 **Interfaces:**
+
 - Consumes everything from Tasks 2.7–2.10.
 - `Layout` keeps its default export and `{ children }` prop.
 - `main#main-content` is the skip-link target.
@@ -6908,6 +6976,7 @@ Expected: all PASS.
 - [ ] **Step 6: Add the `phone` Playwright project and a navigation spec**
 
 In `apps/web/playwright.config.ts`:
+
 - Change the `chromium` project to
 
   ```ts
@@ -6992,12 +7061,14 @@ git commit -m "feat(web): compose the app shell from focused components over Man
 ### Task 2.12: Settings & more, broken links, docs, re-baseline
 
 **Files:**
+
 - Modify: `apps/web/src/pages/profile.page.tsx`, `apps/web/src/pages/profile.test.tsx`, `apps/web/src/styles/Profile.module.css`
 - Modify: `apps/web/src/pages/users/[id].page.tsx:269,381`
 - Modify: `docs/architecture/web-ui-system.md`
 - Update (generated): allowlists, `apps/web/e2e/visual/__screenshots__/**`, `a11y-baseline.json`
 
 **Interfaces:**
+
 - Consumes `getSettingsLinks` (2.10).
 
 - [ ] **Step 1: Write the failing profile tests** — append inside `describe('ProfilePage', …)` in `profile.test.tsx`:
@@ -7028,6 +7099,7 @@ Expected: the two new tests FAIL.
 - [ ] **Step 2: Implement the section**
 
 In `profile.page.tsx`:
+
 - Add `IconChevronRight` to the imports (`import { IconChevronRight } from '@tabler/icons-react';`).
 - Add `import { getSettingsLinks } from '../components/layout/navItems';`.
 - Insert this immediately after the closing `</div>` of `<div className={styles.profileCard}>` (before the page wrapper's closing `</div>`):
@@ -7143,6 +7215,7 @@ git diff apps/web/e2e/visual/a11y-baseline.json
 ```
 
 Expected:
+
 - The desktop PNGs show the new rail and top bar; the phone PNGs show bottom tabs.
 - The second command PASSES, with no new axe violations.
 - The baseline diff only removes lines.
@@ -7191,9 +7264,11 @@ Push `feat/web-app-shell` and open its PR. Update the tracker row for PR 2.
 ### Task 3a.1: Migration `037_search.sql`
 
 **Files:**
+
 - Create: `supabase/migrations/037_search.sql`
 
 **Interfaces:** each function returns `SETOF` rows. The shared API orders and pages them with PostgREST.
+
 - `public.search_posts(p_query text, p_metro_id text, p_all_metros boolean DEFAULT false)` returns `id uuid, rank real, created_at timestamptz, total_count bigint`.
 - `public.search_listings(p_query text, p_metro_id text, p_all_metros boolean DEFAULT false)` returns `id uuid, rank real, refreshed_at timestamptz, total_count bigint`.
 - `public.search_people(p_query text, p_metro_id text)` returns `id uuid, full_name text, profile_photo text, trust_level integer, metro_area_id text, follower_count integer, is_local boolean, rank real, total_count bigint`.
@@ -7408,6 +7483,7 @@ SELECT has_function_privilege('anon', 'public.search_people(text, text)', 'EXECU
 ```
 
 Expected:
+
 - Six functions, all with `prosecdef = false`.
 - Both indexes present.
 - `anon_can_search = false` and `members_can_search = true`.
@@ -7429,12 +7505,14 @@ git commit -m "feat(db): add ranked search for posts, listings and people (037)"
 ### Task 3a.2: Search constants, types and query utils
 
 **Files:**
+
 - Create: `packages/shared/src/constants/search.ts`
 - Create: `packages/shared/src/types/search.ts`
 - Create: `packages/shared/src/utils/searchQuery.ts`, `packages/shared/src/utils/searchQuery.test.ts`
 - Modify: `packages/shared/src/index.ts`, `packages/shared/src/types/index.ts`, `packages/shared/src/utils/index.ts`
 
 **Interfaces:**
+
 - Produces constants: `SEARCH_MIN_QUERY_LENGTH = 2`, `SEARCH_MAX_QUERY_LENGTH = 100`, `SEARCH_DEBOUNCE_MS = 250`, `SEARCH_PAGE_SIZE = 20`, `SEARCH_SUGGESTION_LIMITS = { posts: 3, listings: 2, people: 3 }`.
 - Produces types:
   - `SearchTab = 'all' | 'posts' | 'listings' | 'people'`
@@ -7665,10 +7743,12 @@ git commit -m "feat(shared): add search constants, types and query helpers" -m "
 ### Task 3a.3: Search API functions
 
 **Files:**
+
 - Create: `packages/shared/src/api/search.ts`, `packages/shared/src/api/search.test.ts`
 - Modify: `packages/shared/src/api/marketplace.ts:37` (export `LISTING_SELECT`), `packages/shared/src/api/index.ts`
 
 **Interfaces:**
+
 - Consumes: `POST_SELECT`, `flattenPostTags` (posts.ts); `LISTING_SELECT` (marketplace.ts); `normalizeSearchInput`; `SEARCH_SUGGESTION_LIMITS`; the 037 functions.
 - Produces:
   - `searchPosts(supabase: SupabaseClient, query: string, options: SearchPageOptions): Promise<SearchPage<Post>>`
@@ -8041,6 +8121,7 @@ git commit -m "feat(shared): add ranked search API for posts, listings and peopl
 ### Task 3a.4: Security smoke test and schema docs
 
 **Files:**
+
 - Modify: `scripts/security/users-pii-smoke.ts`
 - Modify: `docs/architecture/database-schema.md` (insert before `## Data Migration from Firestore`)
 
@@ -8166,6 +8247,7 @@ Push `feat/search-data` and open its PR. Update the tracker row for PR 3a, and n
 **Branch:** `feat/search-web`, created from `master` after PR 3a merges **and** migration 037 is live.
 
 **Outcome:**
+
 - Typing in the top bar shows live suggestions (3 posts, 2 listings, 3 people), with a "N more" link per group.
 - "See all results" and Enter open `/search`, which has tabs, counts, a metro scope toggle and infinite scroll.
 - On phones, a search icon opens a full-screen overlay with the same behaviour.
@@ -8187,10 +8269,12 @@ Push `feat/search-data` and open its PR. Update the tracker row for PR 3a, and n
 ### Task 3b.1: URL helpers and `useSearchSuggestions`
 
 **Files:**
+
 - Create: `apps/web/src/components/search/searchUrl.ts`, `searchUrl.test.ts`
 - Create: `apps/web/src/hooks/useSearchSuggestions.ts`, `useSearchSuggestions.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `searchSuggestions`, `normalizeSearchInput`, `SEARCH_DEBOUNCE_MS`, `SearchTab`, `SearchSuggestions` (PR 3a).
 - Produces:
   - `parseSearchParams(query: ParsedUrlQuery): { q: string; tab: SearchTab; allMetros: boolean }`
@@ -8431,9 +8515,11 @@ git commit -m "feat(web): add search URL helpers and debounced suggestions hook"
 ### Task 3b.2: `Highlight` and `SearchResultItem`
 
 **Files:**
+
 - Create: `apps/web/src/components/search/SearchResultItem.tsx`, `SearchResultItem.module.css`, `SearchResultItem.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `highlightSegments`, `formatRelativeTime`, `getShortMetroName`; `TagChip`, `ScopeBadge`, `TrustBadge`, `Avatar`.
 - Produces:
   - `type SearchResult = { kind: 'post'; post: Post } | { kind: 'listing'; listing: MarketplaceListing } | { kind: 'person'; person: PersonSearchResult }`
@@ -8730,9 +8816,11 @@ git commit -m "feat(web): add search result rendering with match highlighting" -
 ### Task 3b.3: `SearchCombobox`
 
 **Files:**
+
 - Create: `apps/web/src/components/search/SearchCombobox.tsx`, `SearchCombobox.module.css`, `SearchCombobox.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `useSearchSuggestions` and `buildSearchHref` (3b.1); `SearchResultItem` and `getSearchResultHref` (3b.2); `useLocation`; `getShortMetroName`.
 - Produces `SearchCombobox({ layout?: 'dropdown' | 'inline'; autoFocus?: boolean; onNavigate?: () => void })`.
   - The input is labelled "Search Nepally".
@@ -9068,6 +9156,7 @@ git commit -m "feat(web): add keyboard-accessible search combobox with live sugg
 ### Task 3b.4: Phone overlay and top-bar search entry
 
 **Files:**
+
 - Create: `apps/web/src/components/layout/breakpoints.ts`
 - Create: `apps/web/src/components/search/SearchOverlay.tsx`
 - Create: `apps/web/src/components/layout/SearchEntry.tsx`, `SearchEntry.test.tsx`
@@ -9075,6 +9164,7 @@ git commit -m "feat(web): add keyboard-accessible search combobox with live sugg
 - Modify: `apps/web/src/components/Layout.tsx`, `apps/web/src/components/Layout.test.tsx`
 
 **Interfaces:**
+
 - Produces `PHONE_MEDIA_QUERY = '(max-width: 47.99em)'`.
 - Produces `SearchOverlay({ opened: boolean; onClose(): void })`.
 - Produces `SearchEntry()`. On phones it is a "Search" icon button that opens the overlay; on wider screens it is the inline `SearchCombobox`.
@@ -9240,10 +9330,12 @@ git commit -m "feat(web): add search to the top bar with a full-screen phone ove
 ### Task 3b.5: Results page
 
 **Files:**
+
 - Create: `apps/web/src/hooks/useSearchPage.ts`, `useSearchPage.test.tsx`
 - Create: `apps/web/src/pages/search.page.tsx`, `apps/web/src/pages/search.test.tsx`, `apps/web/src/styles/Search.module.css`
 
 **Interfaces:**
+
 - Consumes: `searchSuggestions`, `searchPosts`, `searchListings`, `searchPeople`, `SEARCH_PAGE_SIZE`; `parseSearchParams`, `buildSearchHref`, `SearchResultItem`, `getSearchResultHref`; `useInfiniteScroll`; `PageHeader`, `EmptyState`, `ErrorState`, `LoadingState`.
 - Produces `useSearchPage(options: { query: string | null; tab: SearchTab; allMetros: boolean; metroId: string | null }): SearchPageState`, where `SearchPageState = { preview: SearchSuggestions | null; counts: { posts: number; listings: number; people: number } | null; items: SearchResult[]; loading: boolean; loadingMore: boolean; hasMore: boolean; error: Error | null; loadMore(): void; retry(): void }`.
 - Produces the route `/search?q=&tab=&scope=`.
@@ -9836,6 +9928,7 @@ git commit -m "feat(web): add /search results page with tabs, counts and metro s
 ### Task 3b.6: E2E, screenshots, feature doc, verification
 
 **Files:**
+
 - Create: `apps/web/e2e/helpers/search-mock.ts`
 - Create: `apps/web/e2e/tests/12-search.spec.ts`, `apps/web/e2e/tests/phone/search.spec.ts`
 - Modify: `apps/web/e2e/visual/pages.ts`, `apps/web/e2e/visual/pages.visual.spec.ts`
@@ -9843,6 +9936,7 @@ git commit -m "feat(web): add /search results page with tabs, counts and metro s
 - Modify: `docs/INDEX.md`
 
 **Interfaces:**
+
 - Produces `mockSearchRoutes(page: Page): Promise<void>`.
 - `VisualPage` gains an optional `projects?: Array<'visual-desktop' | 'visual-phone'>`.
 
@@ -9964,6 +10058,7 @@ Expected: all specs PASS, including `12-search` (chromium) and `phone/search` (p
 - [ ] **Step 4: Add search screenshots**
 
 In `apps/web/e2e/visual/pages.ts`:
+
 - Add `import { mockSearchRoutes } from '../helpers/search-mock';`.
 - Add `projects?: Array<'visual-desktop' | 'visual-phone'>;` to `VisualPage`, with the comment `/** Limit to these projects (default: both). */`.
 - Append these entries to `VISUAL_PAGES`:
@@ -10005,6 +10100,7 @@ git diff apps/web/e2e/visual/a11y-baseline.json
 ```
 
 Expected:
+
 - New `search-results` PNGs for desktop and phone, and a desktop `search-dropdown` PNG.
 - The second run PASSES.
 - The a11y diff adds **no** entries for the new search pages and removes nothing else. If it adds any, fix those violations in the search components, re-run, and do not keep them in the baseline.
@@ -10226,6 +10322,7 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
 ## After the overhaul — Mantine 9
 
 This is a separate PR. The Expo SDK 57 migration landed React 19.2.3, so it is unblocked:
+
 1. Bump every `@mantine/*` package, including `modals` and `dropzone`, to 9.x.
 2. Set `<Notifications pauseResetOnHover="notification" />`.
 3. Run unit, e2e and `test:visual:web`. **Expect zero screenshot diffs**; investigate any diff before re-baselining.
