@@ -150,6 +150,7 @@ This document serves as the single source of truth for all technology versions u
 - **App config:** the splash screen is configured through the `expo-splash-screen` plugin in `app.json` (SDK 56 removed the top-level `splash` key).
 - **`expo.install.exclude: ["typescript"]`** in `apps/mobile/package.json`: the `typescript` alias wrapper reports 6.0.2 while SDK 57 expects `~6.0.3`; see the TypeScript row above.
 - **Global fetch:** since SDK 56, `expo/fetch` is `globalThis.fetch` (supabase-js uses it). Opt out with `EXPO_PUBLIC_USE_RN_FETCH=1` if a network regression shows up.
+- **Never import `expo-notifications` at module scope.** Importing it registers a push-token listener as a side effect, and since SDK 55 that throws in Expo Go on Android, which crashes the app at startup. `apps/mobile/src/services/notifications.ts` loads it lazily, after its `isExpoGo` check. Route new notification code through that service.
 - **`StyleSheet.absoluteFillObject` is gone** (React Native 0.86). Use `StyleSheet.absoluteFill`, a plain object you can spread. The old name is `undefined` at runtime, so spreading it fails silently; `npm run type-check` catches it.
 - **Plan:** `docs/archive/plans/2026-09-17-expo-sdk-57-migration.md`
 
