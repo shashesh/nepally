@@ -37,5 +37,5 @@ The re-authentication and sign-out options are scheduled in `docs/plans/active/2
 
 - People stay signed in between visits on mobile, matching web and the apps they already use.
 - A stolen, unlocked phone stays signed in until the owner uses **Sign out of all devices** or changes their password. Re-authentication limits the damage to actions that cannot be undone.
-- The session is now a long-term credential on the device, so storing it in `expo-secure-store` instead of AsyncStorage (SEC-06) matters more.
+- The old timeout also gave some protection: an expired session called `signOut()`, whose default `scope: 'global'` revoked every session for the user, including any refresh token copied off the device. Without the timeout, the session is a long-term credential, so it must be encrypted at rest. The mobile session is encrypted with an AES key held in `expo-secure-store` (#76, part of SEC-06), and that PR merges before this one.
 - `recordActivity`, `isWithinSensitiveActionWindow` and `apps/mobile/src/utils/sessionActivity.ts` are removed. Old builds left `@nusa:session_*` keys in AsyncStorage. Nothing reads them any more, and they are cleared on sign-out.
