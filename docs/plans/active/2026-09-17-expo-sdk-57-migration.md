@@ -132,7 +132,12 @@ In short, SDK 54 was never fully aligned. This migration fixes all three checks.
 
 ## Decisions made during implementation
 
-_None yet. Record every deviation from this plan here, with the reason._
+Record every deviation from this plan here, with the reason.
+
+1. **Task 2, Step 5 is pending: the ESLint `settings.react.version` lines still say `19.1.4`.** A config-protection PreToolUse hook blocks every Edit/Write to files named `eslint.config.mjs`, and the agent did not work around it. The user decides whether to make the two one-line edits by hand, lift the hook for them, or leave them. The setting only tells eslint-plugin-react which React version to assume, and no rule result differs between 19.1 and 19.2.
+2. **Task 2, Step 9's grep false-positives** on `@tabler/icons-react`, `@floating-ui/react-dom` and `@testing-library/react`, because the pattern is not anchored. An anchored scan of `package-lock.json` (every `packages` key ending in `node_modules/react` or `node_modules/react-dom`) found exactly one of each, at 19.2.3.
+3. **`@react-native-async-storage/async-storage` `2.2.0` and `@react-native-community/datetimepicker` `9.1.0` are exact pins on purpose.** SDK 57's `bundledNativeModules.json` lists both without a range, so any patch drift would show up as an `expo-doctor` version mismatch. Bump them only with the next SDK.
+4. **npm 12 blocks the `esbuild` and `unrs-resolver` postinstall scripts** (`install-scripts ... not covered by allowScripts`). This comes from npm 12's own install-script gating, not repo config, and those versions did not change. Their platform binaries (`@esbuild/win32-x64`, `@unrs/resolver-binding-win32-x64-msvc`) are installed and both packages load, so nothing breaks.
 
 ## Live tracker
 
@@ -140,9 +145,9 @@ One task is `In Progress` at a time. Update this table when a task starts and wh
 
 | Task | Title | Status | Last updated | Notes |
 |---|---|---|---|---|
-| 1 | Baseline on SDK 54 | Not Started | 2026-09-17 | |
-| 2 | Move the monorepo to SDK 57 versions and React 19.2.3 | Not Started | 2026-09-17 | |
-| 3 | Move the splash config to the `expo-splash-screen` plugin | Not Started | 2026-09-17 | |
+| 1 | Baseline on SDK 54 | Completed | 2026-09-17 | type-check pass; lint 0 errors, warnings mobile 135 / web 39 / shared 0; test:ci mobile 520, web 768, shared 514, guards 12 all pass; expo-doctor 15/18 (the 3 Findings failures) |
+| 2 | Move the monorepo to SDK 57 versions and React 19.2.3 | Completed (except Step 5) | 2026-09-17 | 15ea9b6; spec ✅, quality ✅; Step 5 (ESLint react.version) pending, see decision 1 |
+| 3 | Move the splash config to the `expo-splash-screen` plugin | In Progress | 2026-09-17 | |
 | 4 | Let Expo configure Metro for the monorepo | Not Started | 2026-09-17 | |
 | 5 | `expo-doctor` reports no issues | Not Started | 2026-09-17 | |
 | 6 | Automated gates: types, lint, unit, coverage, web build + e2e | Not Started | 2026-09-17 | |
