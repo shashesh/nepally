@@ -172,6 +172,10 @@ npm start
 
 3. **App loads on your device** with hot reload!
 
+> **Expo Go must match the project's Expo SDK (57).** The stores only carry Expo Go for the newest SDK. If Expo Go reports "Project is incompatible with this version of Expo Go", the phone and the project are on different SDKs. Either upgrade the project, or install the matching Expo Go from https://expo.dev/go and turn off store auto-update for it until the project catches up.
+>
+> **Push notifications do not work in Expo Go.** On Android the push APIs throw there, so the app skips push registration in Expo Go (`apps/mobile/src/services/notifications.ts`). Test push in a development or preview build.
+
 ### Test on iOS Simulator (macOS only):
 
 ```bash

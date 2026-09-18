@@ -102,9 +102,9 @@ src/
 
 ### Tech Stack
 
-- **React**: 19.1.4
-- **React Native**: 0.81.5
-- **Expo**: 54.0
+- **React**: 19.2.3
+- **React Native**: 0.86.3
+- **Expo**: SDK 57
 - **Navigation**: React Navigation v7
 - **State Management**: React Context + Hooks
 - **Backend**: Supabase (PostgreSQL)
@@ -112,7 +112,7 @@ src/
 - **Icons**: Expo Vector Icons
 - **TypeScript**: 7.0.x (Full type safety)
 
-> **Note:** Both mobile and web apps use React 19.1.4 for consistency across the monorepo.
+> **Note:** Both mobile and web apps use React 19.2.3 for consistency across the monorepo.
 
 ## Features Implemented (Phase 1)
 

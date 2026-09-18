@@ -1,6 +1,6 @@
 # Nepally Technology Versions
 
-**Last Updated:** 2026-09-15
+**Last Updated:** 2026-09-18
 
 This document serves as the single source of truth for all technology versions used in the Nepally project.
 
@@ -10,15 +10,15 @@ This document serves as the single source of truth for all technology versions u
 
 | Package | Version | Location | Notes |
 |---------|---------|----------|-------|
-| **react** | 19.1.4 | Both mobile & web | Unified version across platforms |
-| **react-dom** | 19.1.4 | Web only | Matches React version |
+| **react** | 19.2.3 | Both mobile & web | Unified version across platforms; exact match required by React Native 0.86.3 |
+| **react-dom** | 19.2.3 | Web only | Matches React version |
 
 ### Mobile App (`apps/mobile`)
 
 | Package | Version | Notes |
 |---------|---------|-------|
-| **react-native** | 0.81.5 | Compatible with Expo 54 |
-| **expo** | ~54.0.0 | Latest stable |
+| **react-native** | 0.86.3 | Ships with Expo SDK 57 |
+| **expo** | ~57.0.23 | Latest stable (SDK 57) |
 | **@react-navigation/native** | 7.x | Navigation library |
 | **@react-navigation/bottom-tabs** | 7.x | Tab navigation |
 | **@react-navigation/native-stack** | 7.x | Stack navigation |
@@ -27,7 +27,7 @@ This document serves as the single source of truth for all technology versions u
 
 | Package | Version | Notes |
 |---------|---------|-------|
-| **next** | 16.3.x | Turbopack; works with React 19.1.4 |
+| **next** | 16.3.x | Turbopack; works with React 19.2.3 |
 | **eslint-config-next** | 16.x | Flat config, exported as a config array; requires ESLint >= 9 |
 | **@mantine/core / hooks / form / notifications / modals** | 8.3.x | All on one version; 9.x waits for React 19.2 (see Deferred Upgrades) |
 
@@ -63,8 +63,8 @@ This document serves as the single source of truth for all technology versions u
 |------|---------|----------|-------|
 | **vitest** | ^4.1.8 | Root / web / shared | Unit test runner for web and shared |
 | **@vitest/coverage-v8** | ^4.1.8 | Root | Coverage provider for Vitest |
-| **jest** | ^29.7.0 | apps/mobile | Unit test runner for mobile (pinned by jest-expo 54) |
-| **jest-expo** | ^54.0.14 | apps/mobile | Expo preset for Jest |
+| **jest** | ^29.7.0 | apps/mobile | Unit test runner for mobile (jest-expo 57 still depends on jest 29) |
+| **jest-expo** | ~57.0.5 | apps/mobile | Expo preset for Jest |
 | **@testing-library/react-native** | ^13.3.3 | apps/mobile | Hook/component testing utilities |
 | **@testing-library/react** | ^16.2.0 | apps/web | Hook/component testing utilities |
 | **@testing-library/dom** | ^10.4.1 | apps/web | Required peer of @testing-library/react 16 |
@@ -75,13 +75,13 @@ This document serves as the single source of truth for all technology versions u
 
 ## Why These Versions?
 
-### React 19.1.4 (Both Mobile & Web — exact pin)
-- **Decision Date:** 2026-02-12
-- **Reason:** Expo 54 requires React 19. Both mobile and web use the exact same React version (19.1.4) to avoid workspace conflicts and duplicate-React issues. Enforced via root `overrides`.
-- **Why not React 19.2.x:** React Native 0.81 bundles `react-native-renderer@19.1.x` and enforces an **exact** React version match at runtime (`Incompatible React versions` error). React 19.2 is therefore blocked until the Expo SDK 54→56 migration (which ships RN 0.85 + renderer 19.2). This also blocks Mantine 9 (requires React ^19.2). See Deferred Upgrades.
+### React 19.2.3 (Both Mobile & Web — exact pin)
+- **Decision Date:** 2026-02-12 (19.1.4); moved to 19.2.3 with the Expo SDK 57 migration
+- **Reason:** Both mobile and web use the exact same React version to avoid workspace conflicts and duplicate-React issues. Enforced via root `overrides`.
+- **Why exact:** React Native bundles its own `react-native-renderer` and enforces an **exact** React version match at runtime (`Incompatible React versions` error). React Native 0.86.3 ships renderer 19.2.3. Change React only together with an Expo SDK upgrade, to that SDK's `facebookReactVersion` (see `https://api.expo.dev/v2/versions/latest`).
 
 ### Next.js 16 (upgraded from 15, 2026-06-05)
-- **Reason:** Next 16 (Turbopack) builds and runs cleanly against the pinned React 19.1.4 — the earlier 16.x build failures are resolved. Verified: production build of all routes, plus the full unit + E2E suites.
+- **Reason:** Next 16 (Turbopack) builds and runs cleanly against the pinned React 19.2.3 — the earlier 16.x build failures are resolved. Verified: production build of all routes, plus the full unit + E2E suites.
 - **Historical note:** The project previously pinned Next 15.5.12 because an early Next 16 + React 19 combination failed during build (`Cannot read properties of undefined (reading 'ReactCurrentDispatcher')`). That is no longer the case.
 - **Patch level:** on 16.3.x since 2026-09-10 (16.2.7 → 16.3.4, pulled in by in-range
   security bumps). The exact version lives in the dependency table above — this heading
@@ -141,9 +141,14 @@ This document serves as the single source of truth for all technology versions u
 - **`decode-uri-component` stays flagged:** v7 still depends on
   `query-string@7`, which pulls it in. Upstream.
 
-### Expo 54.0 (Not 53.x or earlier)
-- **Reason:** Latest stable version with React 19 support
-- **Required by:** React Native 0.81.5
+### Expo SDK 57 (upgraded from 54)
+- **Reason:** Expo Go in the app stores only runs the latest SDK; SDK 54 stopped opening in store Expo Go.
+- **Ships:** React Native 0.86.3, React 19.2.3. Expo modules now use SDK-aligned versions (`expo-*@57.x`).
+- **App config:** the splash screen is configured through the `expo-splash-screen` plugin in `app.json` (SDK 56 removed the top-level `splash` key).
+- **`expo.install.exclude: ["typescript"]`** in `apps/mobile/package.json`: the `typescript` alias wrapper reports 6.0.2 while SDK 57 expects `~6.0.3`; see the TypeScript row above.
+- **Global fetch:** since SDK 56, `expo/fetch` is `globalThis.fetch` (supabase-js uses it). Opt out with `EXPO_PUBLIC_USE_RN_FETCH=1` if a network regression shows up.
+- **`StyleSheet.absoluteFillObject` is gone** (React Native 0.86). Use `StyleSheet.absoluteFill`, a plain object you can spread. The old name is `undefined` at runtime, so spreading it fails silently; `npm run type-check` catches it.
+- **Plan:** `docs/archive/plans/2026-09-17-expo-sdk-57-migration.md`
 
 ## Deferred Upgrades
 
@@ -151,9 +156,8 @@ These are intentionally held and should be done as dedicated efforts:
 
 | Upgrade | Blocked by / Reason |
 |---------|---------------------|
-| **Expo SDK 54 → 56** | Coordinated migration; unlocks React 19.2, RN 0.85, jest 30 |
-| **React 19.2 / Mantine 9** | RN 0.81 renderer requires exact React match → needs Expo 56 first |
-| **jest / @types/jest 30** | jest-expo 54 peer-requires jest 29; moves with Expo 56 |
+| **Mantine 9** | Unblocked by React 19.2.3; ships as its own PR after the web UI overhaul (see that plan's "After the overhaul — Mantine 9") |
+| **jest / @types/jest 30** | jest-expo 57 still depends on jest 29 (`babel-jest`, `@jest/globals` `^29.2.1`); moves when a jest-expo release does |
 
 ## Version Update Policy
 
@@ -165,7 +169,7 @@ These are intentionally held and should be done as dedicated efforts:
 - Process: Update, test, deploy
 
 **Major Updates:** Evaluate carefully, test thoroughly
-- Example: the Expo SDK 54 → 56 migration (see Deferred Upgrades)
+- Example: the Expo SDK 54 → 57 migration
 - Risk: High
 - Process: Research, plan, test in branch, review breaking changes
 
@@ -185,22 +189,22 @@ These are intentionally held and should be done as dedicated efforts:
 ```json
 {
   "overrides": {
-    "react": "19.1.4",
-    "react-dom": "19.1.4"
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   }
 }
 ```
 
-This ensures React 19.1.4 is used throughout the entire monorepo, overriding any peer dependency requirements.
+This ensures React 19.2.3 is used throughout the entire monorepo, overriding any peer dependency requirements.
 
 ### Mobile package.json
 
 ```json
 {
   "dependencies": {
-    "react": "19.1.4",
-    "react-native": "0.81.5",
-    "expo": "~54.0.0"
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "expo": "~57.0.23"
   }
 }
 ```
@@ -210,8 +214,8 @@ This ensures React 19.1.4 is used throughout the entire monorepo, overriding any
 ```json
 {
   "dependencies": {
-    "react": "19.1.4",
-    "react-dom": "19.1.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "next": "^16.2.7"
   },
   "devDependencies": {
@@ -295,18 +299,18 @@ npm install --save-dev @types/react@^19 @types/react-dom@^19
 
 ### Symptom: "Incompatible React versions" at runtime (mobile)
 
-**Cause:** React was bumped above 19.1.4 while React Native 0.81 ships
-`react-native-renderer@19.1.x`, which requires an exact match.
+**Cause:** React was bumped away from the version React Native's bundled
+`react-native-renderer` requires (19.2.3 for React Native 0.86.3).
 
-**Solution:** Keep React pinned at 19.1.4 (root `overrides`) until the Expo SDK
-54→56 migration. Do not bump `react`/`react-dom` independently.
+**Solution:** Keep React pinned at 19.2.3 (root `overrides`). Change it only as
+part of an Expo SDK upgrade, to that SDK's React version.
 
 ## References
 
 - [React 19 Release Notes](https://react.dev/blog/2024/12/05/react-19)
 - [Next.js Documentation](https://nextjs.org/docs)
-- [Expo 54 Release Notes](https://blog.expo.dev/)
-- [React Native 0.81 Release Notes](https://reactnative.dev/)
+- [Expo SDK 57 changelog](https://expo.dev/changelog/sdk-57)
+- [React Native blog (0.86 release notes)](https://reactnative.dev/blog)
 
 ---
 

@@ -38,12 +38,12 @@ For detailed setup instructions, see [Setup & Testing Guide](./docs/guides/setup
 
 | Component | Technology |
 |-----------|-----------|
-| **Mobile App** | React Native (Expo 54) |
+| **Mobile App** | React Native (Expo 57) |
 | **Web App** | Next.js 16 |
 | **Backend** | Supabase (PostgreSQL, Realtime, Auth, Storage) |
 | **Auth** | Supabase Auth (email + Google OAuth; phone SMS removed 2026-03-25) |
 | **Language** | TypeScript |
-| **React** | 19.1.4 (unified) |
+| **React** | 19.2.3 (unified) |
 | **Node** | >=22 (CI runs 24) |
 
 See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for full version details.
