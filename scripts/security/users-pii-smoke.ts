@@ -31,6 +31,9 @@ const PII_COLUMNS = ['email', 'phone', 'zip_code', 'ban_reason', 'reports_receiv
 /** Postgres insufficient_privilege — what a column-grant violation surfaces as. */
 const PERMISSION_DENIED_CODE = '42501';
 
+/** PostgREST hides a function the caller has no EXECUTE on, rather than raising 42501. */
+const FUNCTION_NOT_EXPOSED_CODE = 'PGRST202';
+
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -268,7 +271,13 @@ async function main(): Promise<void> {
       }
     }
 
-    const { data: bannedRows } = await viewerClient.rpc('search_people', { p_query: banned.fullName, p_metro_id: null });
+    const { data: bannedRows, error: bannedError } = await viewerClient.rpc('search_people', {
+      p_query: banned.fullName,
+      p_metro_id: null,
+    });
+    // Without this the RPC could fail, leave bannedRows null, and the absence
+    // assertion below would pass while proving nothing.
+    assertCondition(!bannedError, `search_people banned-member probe failed: ${bannedError?.message}`);
     assertCondition(
       !((bannedRows ?? []) as Record<string, unknown>[]).some((row) => row.id === banned.id),
       'search_people must hide banned members'
@@ -276,6 +285,12 @@ async function main(): Promise<void> {
 
     const { error: anonSearchError } = await anon.rpc('search_people', { p_query: target.fullName, p_metro_id: null });
     assertCondition(!!anonSearchError, 'anon must not be able to call search_people');
+    // Insist on a revocation shape, so a renamed or dropped function, or a
+    // changed argument list, cannot masquerade as a pass.
+    assertCondition(
+      anonSearchError?.code === PERMISSION_DENIED_CODE || anonSearchError?.code === FUNCTION_NOT_EXPOSED_CODE,
+      `anon call to search_people was rejected for an unexpected reason: ${anonSearchError?.code} ${anonSearchError?.message}`
+    );
 
     console.log('PASS: users PII smoke test verified column-level read restrictions.');
   } finally {

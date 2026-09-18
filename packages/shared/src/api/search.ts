@@ -49,6 +49,9 @@ async function fetchRankedIds(
     .rpc(fn, { p_query: query, p_metro_id: options.metroId, p_all_metros: options.allMetros })
     .order('rank', { ascending: false })
     .order(tiebreaker, { ascending: false })
+    // Each page is a separate query, so without a unique final key rows tied on
+    // rank and timestamp can repeat on one page and never appear on another.
+    .order('id', { ascending: true })
     .range(options.offset, options.offset + options.limit - 1);
 
   if (error) throw error;
@@ -114,6 +117,10 @@ export async function searchPeople(
       .order('is_local', { ascending: false })
       .order('rank', { ascending: false })
       .order('follower_count', { ascending: false })
+      // `simple` applies no weights, so every two-token name matching one query
+      // token scores identically; without a unique final key, offset paging
+      // duplicates and drops members.
+      .order('id', { ascending: true })
       .range(options.offset, options.offset + options.limit - 1);
     if (error) throw error;
 

@@ -129,7 +129,13 @@ describe('searchPeople', () => {
     });
     const result = await searchPeople(mock.supabase, 'thapa', { metroId: 'metro-nyc', limit: 1, offset: 0 });
     expect(mock.rpc).toHaveBeenCalledWith('search_people', { p_query: 'thapa', p_metro_id: 'metro-nyc' });
-    expect(mock.rpcBuilders.search_people.order.mock.calls.map((call) => call[0])).toEqual(['is_local', 'rank', 'follower_count']);
+    // `id` last keeps offset paging stable when rank and follower_count tie.
+    expect(mock.rpcBuilders.search_people.order.mock.calls.map((call) => call[0])).toEqual([
+      'is_local',
+      'rank',
+      'follower_count',
+      'id',
+    ]);
     expect(result.data).toEqual([
       {
         id: 'u1',
