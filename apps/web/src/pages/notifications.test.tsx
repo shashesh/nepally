@@ -239,6 +239,21 @@ describe('NotificationsPage', () => {
     await waitFor(() => expect(screen.getByText('Could not load notifications. Please try again.')).toBeDefined());
   });
 
+  it('reloads notifications when Try again is clicked after a failure', async () => {
+    mocks.useAuthMock.mockReturnValue({ user: mockUser, loading: false });
+    mocks.getNotificationsMock.mockResolvedValueOnce({ error: new Error('DB error') });
+    mocks.getNotificationsMock.mockResolvedValueOnce({ data: [sampleNotif] });
+    render(<NotificationsPage />);
+    await waitFor(() => expect(screen.getByText('Try again')).toBeDefined());
+
+    fireEvent.click(screen.getByText('Try again'));
+
+    await waitFor(() => expect(screen.getByText('New comment on your post')).toBeDefined());
+    expect(screen.queryByText('Could not load notifications. Please try again.')).toBeNull();
+    expect(mocks.getNotificationsMock).toHaveBeenCalledTimes(2);
+    expect(mocks.getNotificationsMock).toHaveBeenLastCalledWith(expect.anything(), 'u1', 20, 0);
+  });
+
   it('renders emergency notifications in their own group', async () => {
     const emergencyNotif = {
       ...sampleNotif,

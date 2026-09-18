@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -83,6 +83,9 @@ export default function NotificationsPage() {
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  // Bumped by "Try again" to re-run the first-page fetch effect.
+  const [reloadKey, setReloadKey] = useState(0);
+  const userId = user?.id;
 
   useEffect(() => {
     if (authLoading) return;
@@ -93,30 +96,37 @@ export default function NotificationsPage() {
     }
   }, [authLoading, user, router]);
 
-  const loadInitial = useCallback(async () => {
-    if (!user) return;
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [listResult, countResult] = await Promise.all([
+          getNotifications(supabase, userId, PAGE_SIZE, 0),
+          getUnreadNotificationCount(supabase, userId),
+        ]);
+        if (cancelled) return;
+        if (listResult.error) throw listResult.error;
+        setNotifications(listResult.data ?? []);
+        setUnreadCount(countResult.count);
+        setHasMore((listResult.data?.length ?? 0) === PAGE_SIZE);
+        setPage(0);
+      } catch {
+        if (!cancelled) setLoadError('Could not load notifications. Please try again.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, reloadKey]);
+
+  const handleRetry = () => {
     setLoading(true);
     setLoadError(null);
-    try {
-      const [listResult, countResult] = await Promise.all([
-        getNotifications(supabase, user.id, PAGE_SIZE, 0),
-        getUnreadNotificationCount(supabase, user.id),
-      ]);
-      if (listResult.error) throw listResult.error;
-      setNotifications(listResult.data ?? []);
-      setUnreadCount(countResult.count);
-      setHasMore((listResult.data?.length ?? 0) === PAGE_SIZE);
-      setPage(0);
-    } catch {
-      setLoadError('Could not load notifications. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) loadInitial();
-  }, [user, loadInitial]);
+    setReloadKey((key) => key + 1);
+  };
 
   // Realtime: new notifications while on this page
   useEffect(() => {
@@ -230,7 +240,7 @@ export default function NotificationsPage() {
           <Center p="xl">
             <Stack align="center">
               <Text c="red">{loadError}</Text>
-              <Button onClick={loadInitial}>Try again</Button>
+              <Button onClick={handleRetry}>Try again</Button>
             </Stack>
           </Center>
         )}

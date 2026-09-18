@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, RefreshControl } from 'react-native';
 import { getListingsByOwner, deactivateListing, reactivateListing, deleteListing, refreshListing } from '@nepally/shared';
 import MyListingsScreen from './MyListingsScreen';
 
@@ -18,7 +18,7 @@ jest.mock('react-native-safe-area-context', () => {
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
-const mockAddListener = jest.fn(() => jest.fn());
+const mockAddListener = jest.fn<jest.Mock, [string, () => void]>(() => jest.fn());
 const mockUseAuth = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
@@ -87,7 +87,7 @@ jest.mock('@nepally/shared', () => ({
   reactivateListing: jest.fn(async () => ({ error: null })),
   deleteListing: jest.fn(async () => ({ error: null })),
   refreshListing: jest.fn(async () => ({ error: null })),
-  LISTING_SOFT_EXPIRY_DAYS: 90,
+  getDaysUntilSoftExpiry: jest.requireActual('@nepally/shared').getDaysUntilSoftExpiry,
   LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
 }));
 
@@ -233,6 +233,26 @@ describe('MyListingsScreen', () => {
     });
   });
 
+  it('shows the exact days left before soft expiry', async () => {
+    // 80 days old → 10 days left (ms arithmetic so a DST change can't shift the day count)
+    const nearExpiry = new Date(Date.now() - 80 * 24 * 60 * 60 * 1000);
+    mockGetListingsByOwner.mockResolvedValue({
+      data: [makeListing({ refreshed_at: nearExpiry.toISOString() })],
+    });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Expires in 10 days — refresh to stay visible')).toBeTruthy();
+    });
+  });
+
+  it('does not show the expiry warning for a freshly refreshed listing', async () => {
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Restaurant')).toBeTruthy();
+    });
+    expect(screen.queryByText(/Expires in/)).toBeNull();
+  });
+
   it('renders listing price', async () => {
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
@@ -342,5 +362,48 @@ describe('MyListingsScreen', () => {
     });
     fireEvent.press(screen.getByText('Create your first listing'));
     expect(mockNavigate).toHaveBeenCalledWith('CreateListing');
+  });
+
+  it('re-fetches listings after Refresh is pressed', async () => {
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+    expect(mockGetListingsByOwner).toHaveBeenCalledTimes(1);
+    fireEvent.press(screen.getByText('Refresh'));
+    await waitFor(() => {
+      expect(mockGetListingsByOwner).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('pull-to-refresh re-fetches, shows the new data and clears the spinner', async () => {
+    mockGetListingsByOwner
+      .mockResolvedValueOnce({ data: [makeListing()] })
+      .mockResolvedValueOnce({ data: [makeListing({ title: 'Renamed Restaurant' })] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('My Restaurant')).toBeTruthy();
+    });
+    fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+    await waitFor(() => {
+      expect(screen.getByText('Renamed Restaurant')).toBeTruthy();
+    });
+    expect(screen.UNSAFE_getByType(RefreshControl).props.refreshing).toBe(false);
+  });
+
+  it('re-fetches when the screen gains focus and shows the latest result', async () => {
+    // React Navigation emits `focus` as the screen mounts; simulate that here.
+    mockAddListener.mockImplementationOnce((_event, callback) => {
+      callback();
+      return jest.fn();
+    });
+    mockGetListingsByOwner
+      .mockResolvedValueOnce({ data: [makeListing({ title: 'Stale Title' })] })
+      .mockResolvedValueOnce({ data: [makeListing({ title: 'Fresh Title' })] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Fresh Title')).toBeTruthy();
+    });
+    expect(mockGetListingsByOwner).toHaveBeenCalledTimes(2);
   });
 });

@@ -71,32 +71,47 @@ export function LocationProvider({ children }: LocationProviderProps) {
   const isInitializingRef = useRef(false);
   const isRefreshingLocationsRef = useRef(false);
 
-  // Load active location from storage and saved locations from DB on mount
+  // Load active location and snoozes from storage on mount
   useEffect(() => {
-    loadInitialState();
+    let cancelled = false;
+    (async () => {
+      const [stored, storedSnoozes] = await Promise.all([
+        getActiveLocation(),
+        getLocationSnoozes(),
+      ]);
+      if (cancelled) return;
+
+      // Filter out expired snoozes
+      const activeSnoozes = storedSnoozes.filter(
+        (s) => new Date(s.snoozed_until) > new Date()
+      );
+      setSnoozes(activeSnoozes);
+
+      // Clear temporary locations on app restart: don't use the temporary
+      // location; fall through to user's metro
+      if (stored && !stored.is_temporary) {
+        setActiveLocation(stored);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  async function loadInitialState() {
-    const [stored, storedSnoozes] = await Promise.all([
-      getActiveLocation(),
-      getLocationSnoozes(),
-    ]);
-
-    // Filter out expired snoozes
-    const activeSnoozes = storedSnoozes.filter(
-      (s) => new Date(s.snoozed_until) > new Date()
-    );
-    setSnoozes(activeSnoozes);
-
-    if (stored) {
-      // Clear temporary locations on app restart
-      if (stored.is_temporary) {
-        // Don't use the temporary location; fall through to user's metro
-      } else {
-        setActiveLocation(stored);
-        return;
-      }
-    }
+  // Signed out: drop the previous user's location state during render
+  // (react.dev "Adjusting some state when a prop changes"), before any of it
+  // is shown.
+  if (
+    !user &&
+    (activeLocation !== null ||
+      savedLocations.length > 0 ||
+      detectedLocation !== null ||
+      showChangePrompt)
+  ) {
+    setActiveLocation(null);
+    setSavedLocations([]);
+    setDetectedLocation(null);
+    setShowChangePrompt(false);
   }
 
   const initActiveLocationFromUser = useCallback(async () => {
@@ -288,25 +303,23 @@ export function LocationProvider({ children }: LocationProviderProps) {
     }
   }, [activeLocation, snoozes]);
 
-  // When user changes (login/logout), reload locations
+  // When user changes (login/logout), reload locations. The signed-out state
+  // reset happens during render above.
   useEffect(() => {
-    if (user) {
-      refreshSavedLocations();
-      const shouldInitForUser = initializedUserIdRef.current !== user.id;
-      if (shouldInitForUser) {
-        initializedUserIdRef.current = user.id;
-      }
-
-      // Initialize from user metro only once per signed-in user to avoid loops
-      if (shouldInitForUser && !activeLocation && user.metro_area_id) {
-        initActiveLocationFromUser();
-      }
-    } else {
+    if (!user) {
       initializedUserIdRef.current = null;
-      setActiveLocation(null);
-      setSavedLocations([]);
-      setDetectedLocation(null);
-      setShowChangePrompt(false);
+      return;
+    }
+
+    refreshSavedLocations();
+    const shouldInitForUser = initializedUserIdRef.current !== user.id;
+    if (shouldInitForUser) {
+      initializedUserIdRef.current = user.id;
+    }
+
+    // Initialize from user metro only once per signed-in user to avoid loops
+    if (shouldInitForUser && !activeLocation && user.metro_area_id) {
+      initActiveLocationFromUser();
     }
   }, [user, activeLocation, refreshSavedLocations, initActiveLocationFromUser]);
 

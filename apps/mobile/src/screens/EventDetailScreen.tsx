@@ -68,6 +68,7 @@ export default function EventDetailScreen() {
   const route = useRoute<Route>();
   const { eventId } = route.params;
   const { user } = useAuth();
+  const userId = user?.id;
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,7 +79,7 @@ export default function EventDetailScreen() {
   const [attendeesModalVisible, setAttendeesModalVisible] = useState(false);
   const [attendeesLoading, setAttendeesLoading] = useState(false);
 
-  const isOrganizer = event?.organizer_id === user?.id;
+  const isOrganizer = event?.organizer_id === userId;
   const isPast = event
     ? new Date(event.end_date ?? event.start_date) < new Date()
     : false;
@@ -100,11 +101,11 @@ export default function EventDetailScreen() {
       : false;
 
   const refreshRsvpState = useCallback(async () => {
-    if (!user?.id) return;
+    if (!userId) return;
 
     const [eventResult, rsvpStateResult] = await Promise.all([
       getEventById(supabase, eventId),
-      hasUserRsvp(supabase, eventId, user.id),
+      hasUserRsvp(supabase, eventId, userId),
     ]);
 
     if (eventResult.data) {
@@ -114,33 +115,40 @@ export default function EventDetailScreen() {
     if (rsvpStateResult.data !== undefined) {
       setIsGoing(rsvpStateResult.data);
     }
-  }, [eventId, user?.id]);
+  }, [eventId, userId]);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const result = await getEventById(supabase, eventId);
+        if (cancelled) return;
         if (result.error) {
           setError(result.error.message);
         } else if (result.data) {
           setEvent(result.data);
-          if (user?.id) {
-            const rsvpStateResult = await hasUserRsvp(supabase, eventId, user.id);
+          if (userId) {
+            const rsvpStateResult = await hasUserRsvp(supabase, eventId, userId);
+            if (cancelled) return;
             if (rsvpStateResult.data !== undefined) {
               setIsGoing(rsvpStateResult.data);
             }
           }
         }
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Failed to load event.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [eventId, user?.id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, userId]);
 
   const handleRsvpToggle = useCallback(async () => {
-    if (!user?.id || rsvpLoading || !event) return;
+    if (!userId || rsvpLoading || !event) return;
     setRsvpLoading(true);
     const prevGoing = isGoing;
     const nextGoing = !prevGoing;
@@ -148,8 +156,8 @@ export default function EventDetailScreen() {
     setIsGoing(nextGoing);
 
     const result = prevGoing
-      ? await unrsvpFromEvent(supabase, eventId, user.id)
-      : await rsvpToEvent(supabase, eventId, user.id);
+      ? await unrsvpFromEvent(supabase, eventId, userId)
+      : await rsvpToEvent(supabase, eventId, userId);
 
     if (result.error) {
       // Revert
@@ -159,7 +167,7 @@ export default function EventDetailScreen() {
 
     await refreshRsvpState();
     setRsvpLoading(false);
-  }, [user?.id, event, isGoing, rsvpLoading, eventId, refreshRsvpState]);
+  }, [userId, event, isGoing, rsvpLoading, eventId, refreshRsvpState]);
 
   const handleShowAttendees = useCallback(async () => {
     setAttendeesModalVisible(true);
@@ -216,7 +224,7 @@ export default function EventDetailScreen() {
   };
 
   const handleMessageOrganizer = useCallback(async () => {
-    if (!event?.organizer || !user?.id) return;
+    if (!event?.organizer || !userId) return;
     navigation.getParent()?.navigate?.('MessageThread', {
       conversationId: '',
       otherUserId: event.organizer.id,
@@ -224,7 +232,7 @@ export default function EventDetailScreen() {
       otherUserTrustLevel: event.organizer.trust_level,
       otherUserPhotoUrl: event.organizer.profile_photo,
     });
-  }, [event, user?.id, navigation]);
+  }, [event, userId, navigation]);
 
   const handleViewOrganizerProfile = useCallback(() => {
     if (!event?.organizer) return;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { SectionList } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { NotificationsScreen } from './NotificationsScreen';
 
@@ -212,5 +213,28 @@ describe('NotificationsScreen', () => {
     });
     // Notification should remain visible when delete fails
     expect(getByText('Delete should fail')).toBeTruthy();
+  });
+
+  it('refetches notifications on pull-to-refresh', async () => {
+    mockGetNotifications.mockResolvedValueOnce({
+      data: [baseNotification({ id: 'notif-old', title: 'Old notification' })],
+    });
+    mockGetNotifications.mockResolvedValueOnce({
+      data: [baseNotification({ id: 'notif-new', title: 'Fresh notification' })],
+    });
+
+    const screen = render(<NotificationsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Old notification')).toBeTruthy();
+    });
+
+    fireEvent(screen.UNSAFE_getByType(SectionList), 'refresh');
+
+    await waitFor(() => {
+      expect(screen.getByText('Fresh notification')).toBeTruthy();
+    });
+    expect(mockGetNotifications).toHaveBeenCalledTimes(2);
+    expect(mockGetNotifications).toHaveBeenLastCalledWith(expect.anything(), 'user-1', 50, 0);
+    expect(screen.UNSAFE_getByType(SectionList).props.refreshing).toBe(false);
   });
 });

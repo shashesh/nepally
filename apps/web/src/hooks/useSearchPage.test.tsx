@@ -119,6 +119,67 @@ describe('useSearchPage', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('reports loading while the first page of a type tab is in flight', () => {
+    mocks.searchPosts.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useSearchPage({ ...base, tab: 'posts' }));
+    expect(result.current.loading).toBe(true);
+    expect(result.current.items).toEqual([]);
+  });
+
+  it('clears the preview when the query is cleared', async () => {
+    const { result, rerender } = renderHook(
+      (props: { query: string | null }) => useSearchPage({ ...base, query: props.query, tab: 'all' }),
+      { initialProps: { query: 'thapa' as string | null } }
+    );
+    await waitFor(() => expect(result.current.counts).not.toBeNull());
+
+    rerender({ query: null });
+    expect(result.current.preview).toBeNull();
+    expect(result.current.counts).toBeNull();
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('ignores a first page that lands after switching to another tab', async () => {
+    let resolvePosts!: (page: unknown) => void;
+    mocks.searchPosts.mockReturnValueOnce(new Promise((resolve) => {
+      resolvePosts = resolve;
+    }));
+    mocks.searchListings.mockResolvedValue({ data: [{ id: 'l1' }], totalCount: 1, hasMore: false });
+    const { result, rerender } = renderHook((props: { tab: SearchTab }) => useSearchPage({ ...base, tab: props.tab }), {
+      initialProps: { tab: 'posts' as SearchTab },
+    });
+
+    rerender({ tab: 'listings' as SearchTab });
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    await act(async () => {
+      resolvePosts({ data: [{ id: 'p1' }, { id: 'p2' }], totalCount: 2, hasMore: false });
+    });
+    expect(result.current.items).toEqual([{ kind: 'listing', listing: { id: 'l1' } }]);
+  });
+
+  it('ignores a further page that lands after switching to another tab', async () => {
+    mocks.searchListings.mockResolvedValue({ data: [{ id: 'l1' }], totalCount: 1, hasMore: false });
+    const { result, rerender } = renderHook((props: { tab: SearchTab }) => useSearchPage({ ...base, tab: props.tab }), {
+      initialProps: { tab: 'posts' as SearchTab },
+    });
+    await waitFor(() => expect(result.current.items).toHaveLength(2));
+
+    let resolveMore!: (page: unknown) => void;
+    mocks.searchPosts.mockReturnValueOnce(new Promise((resolve) => {
+      resolveMore = resolve;
+    }));
+    act(() => result.current.loadMore());
+    expect(result.current.loadingMore).toBe(true);
+
+    rerender({ tab: 'listings' as SearchTab });
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    await act(async () => {
+      resolveMore({ data: [{ id: 'p3' }], totalCount: 3, hasMore: false });
+    });
+    expect(result.current.items).toEqual([{ kind: 'listing', listing: { id: 'l1' } }]);
+    expect(result.current.loadingMore).toBe(false);
+  });
+
   it('pages by ranked offset, not by how many rows survived hydration', async () => {
     const { result } = renderHook(() => useSearchPage({ ...base, tab: 'posts' }));
     await waitFor(() => expect(result.current.items).toHaveLength(2));

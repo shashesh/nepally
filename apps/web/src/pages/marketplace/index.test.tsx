@@ -256,4 +256,52 @@ describe('MarketplaceIndexPage', () => {
       expect(screen.getByText('Create Listing')).toBeDefined();
     });
   });
+
+  it('shows skeletons until the home sections have loaded', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    render(React.createElement(MarketplaceIndexPage));
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getByRole('region', { name: 'Trending' })).toBeDefined();
+    });
+    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+  });
+
+  it('shows skeletons again while a newly applied filter loads, then the filtered grid', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    const { rerender } = render(React.createElement(MarketplaceIndexPage));
+    await waitFor(() => {
+      expect(screen.getByRole('region', { name: 'Trending' })).toBeDefined();
+    });
+    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+
+    let resolveFiltered: (value: { data: (typeof MOCK_LISTING)[] }) => void = () => {};
+    mocks.getListingsByMetro.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFiltered = resolve;
+        })
+    );
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants' }));
+    rerender(React.createElement(MarketplaceIndexPage));
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+
+    await act(async () => {
+      resolveFiltered({ data: [{ ...MOCK_LISTING, id: 'food-1', title: 'Filtered Momo' }] });
+    });
+    expect(screen.getByText('Filtered Momo')).toBeDefined();
+    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+  });
+
+  it('filtered state with no data shows the no-match empty state', async () => {
+    mocks.getListingsByMetro.mockResolvedValue({ data: null });
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants' }));
+    render(React.createElement(MarketplaceIndexPage));
+    await waitFor(() => {
+      expect(screen.getByText('No listings match your filters')).toBeDefined();
+    });
+  });
 });

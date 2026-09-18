@@ -2,11 +2,39 @@ import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import PostDetailScreen from './PostDetailScreen';
-import { likePost } from '@nepally/shared';
+import { Image } from 'expo-image';
+import {
+  formatRelativeTime,
+  getPostById,
+  getPostComments,
+  getUserLikedPostIds,
+  getUserSavedPostIds,
+  likePost,
+} from '@nepally/shared';
+import { colors } from '../styles/colors';
 
 const mockUseRoute = jest.fn();
 const mockUseNavigation = jest.fn();
 const mockGetOrCreateConversation = jest.fn();
+const mockPost = {
+  id: 'post-1',
+  author_id: 'other-user',
+  title: 'Post title',
+  description: 'Post body',
+  created_at: '2026-03-01T10:00:00Z',
+  likes_count: 2,
+  is_global: false,
+  photos: [] as string[],
+  tags: [],
+  location_city: 'Dallas',
+  location_state: 'TX',
+  author: {
+    id: 'other-user',
+    full_name: 'Author User',
+    trust_level: 1,
+    profile_photo: null,
+  },
+};
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: () => null,
@@ -47,27 +75,7 @@ jest.mock('../config/supabase', () => ({
 }));
 
 jest.mock('@nepally/shared', () => ({
-  getPostById: jest.fn(async () => ({
-    data: {
-      id: 'post-1',
-      author_id: 'other-user',
-      title: 'Post title',
-      description: 'Post body',
-      created_at: '2026-03-01T10:00:00Z',
-      likes_count: 2,
-      is_global: false,
-      photos: [],
-      tags: [],
-      location_city: 'Dallas',
-      location_state: 'TX',
-      author: {
-        id: 'other-user',
-        full_name: 'Author User',
-        trust_level: 1,
-        profile_photo: null,
-      },
-    },
-  })),
+  getPostById: jest.fn(async () => ({ data: mockPost })),
   getOrCreateConversation: (...args: unknown[]) => mockGetOrCreateConversation(...args),
   likePost: jest.fn(async () => ({})),
   unlikePost: jest.fn(async () => ({})),
@@ -79,6 +87,7 @@ jest.mock('@nepally/shared', () => ({
   createComment: jest.fn(async () => ({ data: null })),
   deleteComment: jest.fn(async () => ({ error: null })),
   buildSingleLevelCommentThreads: jest.fn(() => []),
+  formatRelativeTime: jest.fn(() => '2h ago'),
   logClientEvent: jest.fn(),
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
   TAG_EMOJI: {},
@@ -190,5 +199,102 @@ describe('PostDetailScreen avatar menu', () => {
         zIndex: 10,
       })
     );
+  });
+});
+
+describe('PostDetailScreen data loading', () => {
+  beforeEach(() => {
+    mockUseRoute.mockReturnValue({ params: { postId: 'post-1' } });
+    mockUseNavigation.mockReturnValue({
+      getParent: () => ({ navigate: jest.fn() }),
+    });
+  });
+
+  it('renders the post timestamp with the shared relative-time formatter', async () => {
+    const screen = render(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('2h ago')).toBeTruthy();
+    });
+    expect(formatRelativeTime).toHaveBeenCalledWith(new Date('2026-03-01T10:00:00Z'));
+  });
+
+  it('shows the empty-comments state only after comments finish loading', async () => {
+    let resolveComments: (value: { data: never[] }) => void = () => undefined;
+    (getPostComments as jest.Mock).mockImplementationOnce(
+      () => new Promise((resolve) => { resolveComments = resolve; })
+    );
+    const screen = render(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Post title')).toBeTruthy();
+    });
+    expect(screen.queryByText('No comments yet. Be the first to comment!')).toBeNull();
+    expect(getPostComments).toHaveBeenCalledWith(expect.anything(), 'post-1');
+
+    resolveComments({ data: [] });
+
+    await waitFor(() => {
+      expect(screen.getByText('No comments yet. Be the first to comment!')).toBeTruthy();
+    });
+  });
+
+  it('shows "Post not found" instead of the previous post when the new postId is missing', async () => {
+    const screen = render(<PostDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Post title')).toBeTruthy();
+    });
+
+    (getPostById as jest.Mock).mockResolvedValueOnce({ data: null });
+    mockUseRoute.mockReturnValue({ params: { postId: 'missing-post' } });
+    screen.rerender(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Post not found')).toBeTruthy();
+    });
+    expect(screen.queryByText('Post title')).toBeNull();
+    expect(getPostById).toHaveBeenLastCalledWith(expect.anything(), 'missing-post');
+  });
+
+  it("loads the viewer's like and save state for this post", async () => {
+    (getUserLikedPostIds as jest.Mock).mockResolvedValueOnce({ data: ['post-1'] });
+    (getUserSavedPostIds as jest.Mock).mockResolvedValueOnce({ data: ['post-1'] });
+    const screen = render(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(StyleSheet.flatten(screen.getByText('Like').props.style)).toEqual(
+        expect.objectContaining({ color: colors.accent.red })
+      );
+      expect(StyleSheet.flatten(screen.getByText('Save').props.style)).toEqual(
+        expect.objectContaining({ color: colors.primary.main })
+      );
+    });
+    expect(getUserLikedPostIds).toHaveBeenCalledWith(expect.anything(), 'current-user');
+    expect(getUserSavedPostIds).toHaveBeenCalledWith(expect.anything(), 'current-user');
+  });
+
+  it('opens the photo lightbox at the tapped photo and closes it', async () => {
+    (getPostById as jest.Mock).mockResolvedValueOnce({
+      data: { ...mockPost, photos: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] },
+    });
+    const screen = render(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Post title')).toBeTruthy();
+    });
+    expect(screen.queryByLabelText('Close image viewer')).toBeNull();
+
+    // Tap the second photo in the detail grid.
+    fireEvent.press(screen.UNSAFE_getAllByType(Image)[1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('2 / 2')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Close image viewer'));
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Close image viewer')).toBeNull();
+    });
   });
 });

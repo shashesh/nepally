@@ -50,9 +50,14 @@ export default function EventsScreen() {
   const [userResponses, setUserResponses] = useState<UserEventResponses>({});
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  // Bumped by pull-to-refresh and Retry to re-run the first-page fetch effect.
+  const [reloadKey, setReloadKey] = useState(0);
   const loadingMoreRef = useRef(false);
 
+  const userId = user?.id;
   const metroId = user?.metro_area_id ?? '';
+  // Without a metro there is nothing to fetch, so the screen is never "loading".
+  const isLoading = metroId !== '' && loading;
   const isLevel0 = (user?.trust_level ?? 0) < TrustLevel.VERIFIED;
   const canCreate = !isLevel0;
   const canInteract = !isLevel0;
@@ -64,28 +69,30 @@ export default function EventsScreen() {
     };
   }, []);
 
-  const fetchEvents = useCallback(async () => {
-    if (!metroId) {
+  useEffect(() => {
+    if (!metroId) return;
+    let cancelled = false;
+    getEventsByMetro(supabase, metroId, EVENTS_PAGE_SIZE, 0).then((result) => {
+      if (cancelled) return;
+      if (result.error) {
+        setError(result.error.message);
+        setHasMore(false);
+      } else {
+        setError(null);
+        setEvents(result.data ?? []);
+        setHasMore(Boolean(result.hasMore));
+      }
       setLoading(false);
-      return;
-    }
-    setError(null);
-    const result = await getEventsByMetro(supabase, metroId, EVENTS_PAGE_SIZE, 0);
-    if (!mountedRef.current) return;
-    if (result.error) {
-      setError(result.error.message);
-      setHasMore(false);
-    } else {
-      setEvents(result.data ?? []);
-      setHasMore(Boolean(result.hasMore));
-    }
-    setLoading(false);
-    setRefreshing(false);
-  }, [metroId]);
+      setRefreshing(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [metroId, reloadKey]);
 
   const loadMoreEvents = useCallback(async () => {
     if (loadingMoreRef.current) return;
-    if (!metroId || !hasMore || loading || refreshing) return;
+    if (!metroId || !hasMore || isLoading || refreshing) return;
 
     loadingMoreRef.current = true;
     setLoadingMore(true);
@@ -114,33 +121,34 @@ export default function EventsScreen() {
       loadingMoreRef.current = false;
       if (mountedRef.current) setLoadingMore(false);
     }
-  }, [metroId, hasMore, loading, refreshing, events.length]);
-
-  const fetchUserResponses = useCallback(async () => {
-    if (!user?.id) return;
-    const result = await getUserEventResponses(supabase, user.id);
-    if (!mountedRef.current) return;
-    if (!result.error && result.data) {
-      setUserResponses(result.data);
-    }
-  }, [user?.id]);
+  }, [metroId, hasMore, isLoading, refreshing, events.length]);
 
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    if (!userId) return;
+    let cancelled = false;
+    getUserEventResponses(supabase, userId).then((result) => {
+      if (cancelled) return;
+      if (!result.error && result.data) {
+        setUserResponses(result.data);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
-  useEffect(() => {
-    fetchUserResponses();
-  }, [fetchUserResponses]);
+  const reloadEvents = useCallback(() => {
+    setReloadKey((key) => key + 1);
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchEvents();
-  }, [fetchEvents]);
+    reloadEvents();
+  }, [reloadEvents]);
 
   const handleResponseChange = useCallback(
     async (eventId: string, status: RsvpStatus | null) => {
-      if (!user?.id) return;
+      if (!userId) return;
 
       const previous = userResponses[eventId] ?? null;
 
@@ -174,8 +182,8 @@ export default function EventsScreen() {
 
       // Persist to DB
       const result = status === null
-        ? await removeEventResponse(supabase, eventId, user.id)
-        : await setEventResponse(supabase, eventId, user.id, status);
+        ? await removeEventResponse(supabase, eventId, userId)
+        : await setEventResponse(supabase, eventId, userId, status);
 
       if (result.error) {
         // Roll back on failure
@@ -202,7 +210,7 @@ export default function EventsScreen() {
         );
       }
     },
-    [user?.id, userResponses]
+    [userId, userResponses]
   );
 
   const { upcoming, past } = useMemo(() => {
@@ -305,7 +313,7 @@ export default function EventsScreen() {
 
       <EventFilterBar value={filters} onChange={setFilters} />
 
-      {loading ? (
+      {isLoading ? (
         <View style={styles.loadingContainer}>
           {[1, 2, 3].map((n) => (
             <View key={n} style={styles.skeletonCard} />
@@ -318,7 +326,8 @@ export default function EventsScreen() {
             style={styles.retryButton}
             onPress={() => {
               setLoading(true);
-              fetchEvents();
+              setError(null);
+              reloadEvents();
             }}
           >
             <Text style={styles.retryText}>Retry</Text>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import MessageThreadScreen from './MessageThreadScreen';
 
 const mockUseRoute = jest.fn();
@@ -35,6 +35,7 @@ jest.mock('@nepally/shared', () => ({
 
 describe('MessageThreadScreen avatar menu', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     mockUseRoute.mockReturnValue({
       params: {
         conversationId: 'conv-1',
@@ -76,5 +77,23 @@ describe('MessageThreadScreen avatar menu', () => {
 
     expect(screen.getByText('View Profile')).toBeTruthy();
     expect(screen.queryByText('Chat')).toBeNull();
+  });
+
+  it('reloads messages on Retry without re-subscribing to realtime', async () => {
+    mockGetMessages.mockResolvedValueOnce({ data: null, error: new Error('Network error') });
+    const screen = render(<MessageThreadScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Could not load messages. Please try again.')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Retry'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Hello there')).toBeTruthy();
+    });
+    expect(screen.queryByText('Could not load messages. Please try again.')).toBeNull();
+    expect(mockGetMessages).toHaveBeenCalledTimes(2);
+    expect(mockSubscribeToMessages).toHaveBeenCalledTimes(1);
   });
 });

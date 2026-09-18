@@ -48,6 +48,17 @@ function parseView(raw: string): DiscoveryView {
   return raw === 'featured' || raw === 'trending' ? raw : null;
 }
 
+/** Home state: three strips + sponsored + the unified "All Listings" grid, fetched in parallel. */
+function fetchHomeSections(metroId: string) {
+  return Promise.all([
+    getFeaturedListings(supabase, metroId, { limit: STRIP_LIMIT }),
+    getListingsByMetro(supabase, metroId, { sortBy: 'newest', limit: STRIP_LIMIT }),
+    getTrendingListings(supabase, metroId, { limit: STRIP_LIMIT }),
+    getListingsByMetro(supabase, metroId, { sortBy: 'newest', limit: GRID_LIMIT }),
+    getStickyBusinessListings(supabase, metroId, { limit: 5 }),
+  ]);
+}
+
 export default function MarketplaceIndexPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -65,7 +76,6 @@ export default function MarketplaceIndexPage() {
   const [trending, setTrending] = useState<MarketplaceListing[]>([]);
   const [gridListings, setGridListings] = useState<MarketplaceListing[]>([]);
   const [sponsoredListings, setSponsoredListings] = useState<SponsoredListing[]>([]);
-  const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingMoreRef = useRef(false);
@@ -73,6 +83,12 @@ export default function MarketplaceIndexPage() {
 
   const metroId = user?.metro_area_id ?? '';
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
+
+  // Skeletons show until the results for the current metro + filters have landed,
+  // so changing any filter shows skeletons again.
+  const queryKey = JSON.stringify([metroId, category, sort, q, view]);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
+  const loading = loadedQueryKey !== queryKey;
 
   useEffect(() => {
     if (!user) {
@@ -106,47 +122,43 @@ export default function MarketplaceIndexPage() {
     [isFiltered, view, category, q, sort, metroId]
   );
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
     if (!metroId || !router.isReady) return;
-    setLoading(true);
+    let cancelled = false;
 
     if (isFiltered) {
-      const result = await fetchGridPage(0);
-      if (result.data) {
-        setGridListings(result.data);
-        setHasMore(Boolean(result.hasMore));
-      } else {
-        setGridListings([]);
-        setHasMore(false);
-      }
-      setLoading(false);
-      return;
-    }
-
-    // Home state: fetch three strips + sponsored + unified "All Listings" grid in parallel
-    const [featRes, recentRes, trendRes, allRes, sponsoredRes] = await Promise.all([
-      getFeaturedListings(supabase, metroId, { limit: STRIP_LIMIT }),
-      getListingsByMetro(supabase, metroId, { sortBy: 'newest', limit: STRIP_LIMIT }),
-      getTrendingListings(supabase, metroId, { limit: STRIP_LIMIT }),
-      getListingsByMetro(supabase, metroId, { sortBy: 'newest', limit: GRID_LIMIT }),
-      getStickyBusinessListings(supabase, metroId, { limit: 5 }),
-    ]);
-    if (featRes.data) setFeatured(featRes.data);
-    if (recentRes.data) setRecent(recentRes.data);
-    if (trendRes.data) setTrending(trendRes.data);
-    if (allRes.data) {
-      setGridListings(allRes.data);
-      setHasMore(Boolean(allRes.hasMore));
+      fetchGridPage(0).then((result) => {
+        if (cancelled) return;
+        if (result.data) {
+          setGridListings(result.data);
+          setHasMore(Boolean(result.hasMore));
+        } else {
+          setGridListings([]);
+          setHasMore(false);
+        }
+        setLoadedQueryKey(queryKey);
+      });
     } else {
-      setHasMore(false);
+      fetchHomeSections(metroId).then(([featRes, recentRes, trendRes, allRes, sponsoredRes]) => {
+        if (cancelled) return;
+        if (featRes.data) setFeatured(featRes.data);
+        if (recentRes.data) setRecent(recentRes.data);
+        if (trendRes.data) setTrending(trendRes.data);
+        if (allRes.data) {
+          setGridListings(allRes.data);
+          setHasMore(Boolean(allRes.hasMore));
+        } else {
+          setHasMore(false);
+        }
+        if (sponsoredRes.data) setSponsoredListings(sponsoredRes.data);
+        setLoadedQueryKey(queryKey);
+      });
     }
-    if (sponsoredRes.data) setSponsoredListings(sponsoredRes.data);
-    setLoading(false);
-  }, [metroId, router.isReady, isFiltered, fetchGridPage]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    return () => {
+      cancelled = true;
+    };
+  }, [metroId, router.isReady, isFiltered, fetchGridPage, queryKey]);
 
   const loadMoreListings = useCallback(async () => {
     if (loadingMoreRef.current) return;

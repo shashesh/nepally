@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../test-utils';
+import { render, screen, fireEvent, waitFor, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -213,6 +213,114 @@ describe('FeedPage', () => {
         0
       );
     });
+  });
+
+  it('requests the first page only once when the URL already has tags', async () => {
+    feedMocks.useRouterMock.mockReturnValue({
+      replace: mockReplace,
+      push: mockPush,
+      query: { tags: 'housing' },
+      isReady: true,
+    });
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+    render(<FeedPage />);
+
+    await waitFor(() => expect(screen.getByText(/No posts yet/)).toBeDefined());
+    expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies URL tags once the router becomes ready', async () => {
+    feedMocks.useRouterMock.mockReturnValue({
+      replace: mockReplace,
+      push: mockPush,
+      query: {},
+      isReady: false,
+    });
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [] });
+    const { rerender } = render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText(/No posts yet/)).toBeDefined());
+    expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenLastCalledWith(
+      expect.anything(), '19100', undefined, 20, 0
+    );
+
+    feedMocks.useRouterMock.mockReturnValue({
+      replace: mockReplace,
+      push: mockPush,
+      query: { tags: 'jobs,housing' },
+      isReady: true,
+    });
+    rerender(<FeedPage />);
+
+    await waitFor(() => {
+      expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenLastCalledWith(
+        expect.anything(), '19100', ['jobs', 'housing'], 20, 0
+      );
+    });
+    expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('reloads posts for a tag when its chip is clicked', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'HOUSING' }));
+
+    await waitFor(() => {
+      expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenLastCalledWith(
+        expect.anything(), '19100', ['housing'], 20, 0
+      );
+    });
+    expect(mockReplace).toHaveBeenCalledWith(
+      { pathname: '/feed', query: { tags: 'housing' } },
+      undefined,
+      { shallow: true }
+    );
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+  });
+
+  it('shows the loading state and reloads posts when Retry is pressed', async () => {
+    let resolveRetry: (value: unknown) => void = () => {};
+    feedMocks.getPostsByMetroAreaMock
+      .mockResolvedValueOnce({ error: new Error('DB error') })
+      .mockReturnValueOnce(new Promise((resolve) => { resolveRetry = resolve; }));
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText(/Could not load posts/)).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(screen.getByTestId('feed-loading')).toBeDefined();
+    expect(screen.queryByText(/Could not load posts/)).toBeNull();
+
+    resolveRetry({ data: mockPosts });
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+    expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores a superseded response when the metro changes mid-load', async () => {
+    let resolveDallas: (value: unknown) => void = () => {};
+    feedMocks.getPostsByMetroAreaMock
+      .mockReturnValueOnce(new Promise((resolve) => { resolveDallas = resolve; }))
+      .mockResolvedValueOnce({
+        data: [{ ...mockPosts[0], id: 'post-2', title: 'Jobs fair in Austin' }],
+      });
+    const { rerender } = render(<FeedPage />);
+
+    feedMocks.useLocationMock.mockReturnValue({
+      activeLocation: { ...mockActiveLocation, metro_area_id: '12420', metro_name: 'Austin' },
+    });
+    rerender(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Jobs fair in Austin')).toBeDefined());
+
+    await act(async () => {
+      resolveDallas({ data: mockPosts });
+    });
+
+    expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenLastCalledWith(
+      expect.anything(), '12420', undefined, 20, 0
+    );
+    expect(screen.getByText('Jobs fair in Austin')).toBeDefined();
+    expect(screen.queryByText('Roommate needed in Dallas')).toBeNull();
   });
 
   it('shows like count on posts', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SEARCH_PAGE_SIZE, searchListings, searchPeople, searchPosts, searchSuggestions } from '@nepally/shared';
 import type { SearchPage, SearchSuggestions, SearchTab } from '@nepally/shared';
 import type { SearchResult } from '../components/search/SearchResultItem';
@@ -43,100 +43,149 @@ export interface SearchPageState {
   retry: () => void;
 }
 
-/** Data for /search: top results + counts for every tab, and a paged list for the active type tab. */
-export function useSearchPage({ query, tab, allMetros, metroId }: UseSearchPageOptions): SearchPageState {
-  const [preview, setPreview] = useState<SearchSuggestions | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState<Error | null>(null);
-  const [items, setItems] = useState<SearchResult[]>([]);
-  const [listLoading, setListLoading] = useState(false);
-  const [listError, setListError] = useState<Error | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const previewRequest = useRef(0);
-  const listRequest = useRef(0);
+/** What a piece of state was requested for; `attempt` changes on every retry. */
+interface PreviewRequest {
+  query: string | null;
+  metroId: string | null;
+  allMetros: boolean;
+  attempt: number;
+}
+
+interface ListRequest extends PreviewRequest {
+  tab: SearchTab;
+}
+
+interface PreviewState {
+  request: PreviewRequest;
+  data: SearchSuggestions | null;
+  loading: boolean;
+  error: Error | null;
+}
+
+interface ListState {
+  request: ListRequest;
+  items: SearchResult[];
+  loading: boolean;
+  loadingMore: boolean;
+  hasMore: boolean;
+  error: Error | null;
   // Ranked ids consumed so far. Hydration can drop rows (deleted, or hidden by
   // RLS), so items.length would restart the next page too early and repeat results.
-  const rankedOffset = useRef(0);
+  nextOffset: number;
+}
+
+function sameRequest<T extends PreviewRequest>(a: T, b: T): boolean {
+  return (Object.keys(b) as Array<keyof T>).every((key) => a[key] === b[key]);
+}
+
+/** The previous preview stays on screen until the new one arrives. */
+function startPreview(request: PreviewRequest, previous: SearchSuggestions | null): PreviewState {
+  return { request, data: request.query ? previous : null, loading: Boolean(request.query), error: null };
+}
+
+/** A list starts empty. Each tab owns its error, so switching away from a failed tab clears it. */
+function startList(request: ListRequest): ListState {
+  return {
+    request,
+    items: [],
+    loading: Boolean(request.query) && request.tab !== 'all',
+    loadingMore: false,
+    hasMore: false,
+    error: null,
+    nextOffset: 0,
+  };
+}
+
+/** Data for /search: top results + counts for every tab, and a paged list for the active type tab. */
+export function useSearchPage({ query, tab, allMetros, metroId }: UseSearchPageOptions): SearchPageState {
+  const [attempt, setAttempt] = useState(0);
+  const previewRequest: PreviewRequest = { query, metroId, allMetros, attempt };
+  const listRequest: ListRequest = { ...previewRequest, tab };
+  const [preview, setPreview] = useState<PreviewState>(() => startPreview(previewRequest, null));
+  const [list, setList] = useState<ListState>(() => startList(listRequest));
+
+  // A new request resets its state during render (react.dev "Adjusting some
+  // state when a prop changes"); the effects below only fetch. A response is
+  // applied only while the request it answers is still the current one.
+  if (!sameRequest(preview.request, previewRequest)) {
+    setPreview(startPreview(previewRequest, preview.data));
+  }
+  if (!sameRequest(list.request, listRequest)) {
+    setList(startList(listRequest));
+  }
 
   useEffect(() => {
-    const requestId = ++previewRequest.current;
-    setPreviewError(null);
-    if (!query) {
-      setPreview(null);
-      setPreviewLoading(false);
-      return;
-    }
-    setPreviewLoading(true);
-    void searchSuggestions(supabase, query, { metroId, allMetros }).then((result) => {
-      if (requestId !== previewRequest.current) return;
-      setPreviewLoading(false);
-      setPreview(result.data ?? null);
-      if (result.error) setPreviewError(result.error);
-    });
-  }, [query, metroId, allMetros, attempt]);
-
-  useEffect(() => {
-    const requestId = ++listRequest.current;
-    setItems([]);
-    setHasMore(false);
-    setLoadingMore(false);
-    // Each tab owns its error, so switching away from a failed tab clears it.
-    setListError(null);
-    rankedOffset.current = 0;
-    if (!query || tab === 'all') {
-      setListLoading(false);
-      return;
-    }
-    setListLoading(true);
-    void FETCH_TAB[tab](query, { metroId, allMetros, limit: SEARCH_PAGE_SIZE, offset: 0 }).then((page) => {
-      if (requestId !== listRequest.current) return;
-      setListLoading(false);
-      if (page.error) {
-        setListError(page.error);
-        return;
+    const request = preview.request;
+    if (!request.query) return;
+    void searchSuggestions(supabase, request.query, { metroId: request.metroId, allMetros: request.allMetros }).then(
+      (result) => {
+        setPreview((previous) =>
+          previous.request === request
+            ? { request, data: result.data ?? null, loading: false, error: result.error ?? null }
+            : previous
+        );
       }
-      rankedOffset.current = SEARCH_PAGE_SIZE;
-      setItems(page.data ?? []);
-      setHasMore(Boolean(page.hasMore));
+    );
+  }, [preview.request]);
+
+  useEffect(() => {
+    const request = list.request;
+    const { query: listQuery, tab: listTab } = request;
+    if (!listQuery || listTab === 'all') return;
+    const options = { metroId: request.metroId, allMetros: request.allMetros, limit: SEARCH_PAGE_SIZE, offset: 0 };
+    void FETCH_TAB[listTab](listQuery, options).then((page) => {
+      setList((previous) => {
+        if (previous.request !== request) return previous;
+        if (page.error) return { ...previous, loading: false, error: page.error };
+        return {
+          ...previous,
+          loading: false,
+          items: page.data ?? [],
+          hasMore: Boolean(page.hasMore),
+          nextOffset: SEARCH_PAGE_SIZE,
+        };
+      });
     });
-  }, [query, tab, metroId, allMetros, attempt]);
+  }, [list.request]);
 
   const loadMore = useCallback(() => {
-    if (!query || tab === 'all' || loadingMore || !hasMore) return;
-    const requestId = listRequest.current;
-    const offset = rankedOffset.current;
-    setLoadingMore(true);
-    void FETCH_TAB[tab](query, { metroId, allMetros, limit: SEARCH_PAGE_SIZE, offset }).then((page) => {
-      if (requestId !== listRequest.current) return;
-      setLoadingMore(false);
-      if (page.error) {
-        setListError(page.error);
-        // The sentinel is still on screen, so leaving hasMore set would call
-        // loadMore again as soon as loadingMore clears, in a tight loop.
-        setHasMore(false);
-        return;
-      }
-      rankedOffset.current = offset + SEARCH_PAGE_SIZE;
-      setListError(null);
-      setItems((previous) => [...previous, ...(page.data ?? [])]);
-      setHasMore(Boolean(page.hasMore));
+    const { request, loadingMore, hasMore, nextOffset } = list;
+    const { query: listQuery, tab: listTab } = request;
+    if (!listQuery || listTab === 'all' || loadingMore || !hasMore) return;
+    setList((previous) => (previous.request === request ? { ...previous, loadingMore: true } : previous));
+    const options = { metroId: request.metroId, allMetros: request.allMetros, limit: SEARCH_PAGE_SIZE, offset: nextOffset };
+    void FETCH_TAB[listTab](listQuery, options).then((page) => {
+      setList((previous) => {
+        if (previous.request !== request) return previous;
+        if (page.error) {
+          // The sentinel is still on screen, so leaving hasMore set would call
+          // loadMore again as soon as loadingMore clears, in a tight loop.
+          return { ...previous, loadingMore: false, hasMore: false, error: page.error };
+        }
+        return {
+          ...previous,
+          loadingMore: false,
+          error: null,
+          items: [...previous.items, ...(page.data ?? [])],
+          hasMore: Boolean(page.hasMore),
+          nextOffset: nextOffset + SEARCH_PAGE_SIZE,
+        };
+      });
     });
-  }, [query, tab, metroId, allMetros, loadingMore, hasMore]);
+  }, [list]);
 
   const retry = useCallback(() => setAttempt((count) => count + 1), []);
 
   return {
-    preview,
-    counts: preview
-      ? { posts: preview.posts.totalCount, listings: preview.listings.totalCount, people: preview.people.totalCount }
+    preview: preview.data,
+    counts: preview.data
+      ? { posts: preview.data.posts.totalCount, listings: preview.data.listings.totalCount, people: preview.data.people.totalCount }
       : null,
-    items,
-    loading: tab === 'all' ? previewLoading : listLoading,
-    loadingMore,
-    hasMore,
-    error: tab === 'all' ? previewError : listError,
+    items: list.items,
+    loading: tab === 'all' ? preview.loading : list.loading,
+    loadingMore: list.loadingMore,
+    hasMore: list.hasMore,
+    error: tab === 'all' ? preview.error : list.error,
     loadMore,
     retry,
   };

@@ -36,10 +36,15 @@ export default function EventsPage() {
   const [userResponses, setUserResponses] = useState<UserEventResponses>({});
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  // Bumped by the Retry button to re-run the first-page fetch effect.
+  const [reloadKey, setReloadKey] = useState(0);
   const loadingMoreRef = useRef(false);
   const loadSentinelRef = useRef<HTMLDivElement | null>(null);
 
+  const userId = user?.id;
   const metroId = user?.metro_area_id ?? '';
+  // Without a metro there is nothing to fetch, so the page is never "loading".
+  const isLoading = metroId !== '' && loading;
   const trustLevel = user?.trust_level ?? 0;
   const isLevel0 = trustLevel < TrustLevel.VERIFIED;
   const canCreate = !isLevel0;
@@ -51,33 +56,42 @@ export default function EventsPage() {
     }
   }, [user, router]);
 
-  const fetchAll = useCallback(async () => {
-    if (!metroId) { setLoading(false); return; }
-    setError(null);
-    const [eventsRes, responsesRes] = await Promise.all([
-      getEventsByMetro(supabase, metroId, EVENTS_PAGE_SIZE, 0),
-      user?.id ? getUserEventResponses(supabase, user.id) : Promise.resolve({ data: {} as UserEventResponses, error: undefined }),
-    ]);
-    if (eventsRes.error) {
-      setError(eventsRes.error.message);
-      setHasMore(false);
-    } else {
-      setEvents(eventsRes.data ?? []);
-      setHasMore(Boolean(eventsRes.hasMore));
-    }
-    if (!responsesRes.error && responsesRes.data) {
-      setUserResponses(responsesRes.data);
-    }
-    setLoading(false);
-  }, [metroId, user?.id]);
-
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    if (!metroId) return;
+    let cancelled = false;
+    (async () => {
+      const [eventsRes, responsesRes] = await Promise.all([
+        getEventsByMetro(supabase, metroId, EVENTS_PAGE_SIZE, 0),
+        userId ? getUserEventResponses(supabase, userId) : Promise.resolve({ data: {} as UserEventResponses, error: undefined }),
+      ]);
+      if (cancelled) return;
+      if (eventsRes.error) {
+        setError(eventsRes.error.message);
+        setHasMore(false);
+      } else {
+        setError(null);
+        setEvents(eventsRes.data ?? []);
+        setHasMore(Boolean(eventsRes.hasMore));
+      }
+      if (!responsesRes.error && responsesRes.data) {
+        setUserResponses(responsesRes.data);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [metroId, userId, reloadKey]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setReloadKey((key) => key + 1);
+  };
 
   const loadMoreEvents = useCallback(async () => {
     if (loadingMoreRef.current) return;
-    if (!metroId || !hasMore || loading) return;
+    if (!metroId || !hasMore || isLoading) return;
 
     loadingMoreRef.current = true;
     setLoadingMore(true);
@@ -105,12 +119,12 @@ export default function EventsPage() {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [metroId, hasMore, loading, events.length]);
+  }, [metroId, hasMore, isLoading, events.length]);
 
   useEffect(() => {
     const node = loadSentinelRef.current;
     if (!node) return;
-    if (!hasMore || loading) return;
+    if (!hasMore || isLoading) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -122,11 +136,11 @@ export default function EventsPage() {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [hasMore, loading, loadMoreEvents]);
+  }, [hasMore, isLoading, loadMoreEvents]);
 
   const handleResponseChange = useCallback(
     async (eventId: string, status: RsvpStatus | null) => {
-      if (!user?.id) return;
+      if (!userId) return;
 
       // Capture previous atomically inside the updater — removes userResponses from deps
       // so this callback is stable and doesn't cause all EventCards to re-render on each RSVP.
@@ -156,8 +170,8 @@ export default function EventsPage() {
 
       // Persist to DB
       const result = status === null
-        ? await removeEventResponse(supabase, eventId, user.id)
-        : await setEventResponse(supabase, eventId, user.id, status);
+        ? await removeEventResponse(supabase, eventId, userId)
+        : await setEventResponse(supabase, eventId, userId, status);
 
       if (result.error) {
         // Roll back on failure
@@ -183,7 +197,7 @@ export default function EventsPage() {
         );
       }
     },
-    [user?.id]
+    [userId]
   );
 
   const { upcoming, past } = useMemo(() => {
@@ -253,7 +267,7 @@ export default function EventsPage() {
 
           {/* Feed */}
           <div className={styles.feed}>
-            {loading ? (
+            {isLoading ? (
               <>
                 <Skeleton height={280} radius="md" />
                 <Skeleton height={280} radius="md" />
@@ -265,7 +279,7 @@ export default function EventsPage() {
             ) : error ? (
               <div className={`${styles.emptyStateWrapper} ${styles.errorContainer}`}>
                 <Text c="red" size="sm">{error}</Text>
-                <Button mt="sm" onClick={() => { setLoading(true); fetchAll(); }}>
+                <Button mt="sm" onClick={handleRetry}>
                   Retry
                 </Button>
               </div>

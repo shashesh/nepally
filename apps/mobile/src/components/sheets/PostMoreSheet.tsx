@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Pressable,
   Animated,
   PanResponder,
+  useAnimatedValue,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../styles/colors';
@@ -44,27 +45,27 @@ export function PostMoreSheet({
   isSaved,
   onSave,
 }: PostMoreSheetProps) {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  const translateY = useAnimatedValue(0);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 5 && gs.dy > Math.abs(gs.dx),
-      onPanResponderMove: (_, gs) => {
-        if (gs.dy > 0) translateY.setValue(gs.dy);
-      },
-      onPanResponderRelease: (_, gs) => {
-        if (gs.dy > 80 || gs.vy > 0.4) {
-          onCloseRef.current();
-          translateY.setValue(0);
-        } else {
-          Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 100, friction: 10 }).start();
-        }
-      },
-    })
-  ).current;
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gs) => gs.dy > 5 && gs.dy > Math.abs(gs.dx),
+        onPanResponderMove: (_, gs) => {
+          if (gs.dy > 0) translateY.setValue(gs.dy);
+        },
+        onPanResponderRelease: (_, gs) => {
+          if (gs.dy > 80 || gs.vy > 0.4) {
+            onClose();
+            translateY.setValue(0);
+          } else {
+            Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 100, friction: 10 }).start();
+          }
+        },
+      }),
+    [onClose, translateY]
+  );
 
   useEffect(() => {
     if (visible) translateY.setValue(0);
@@ -105,6 +106,7 @@ export function PostMoreSheet({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
           style={[styles.sheet, { transform: [{ translateY }] }]}
+          testID="post-more-sheet"
           {...panResponder.panHandlers}
         >
           {/* Drag Handle */}

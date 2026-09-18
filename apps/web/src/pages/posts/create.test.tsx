@@ -102,6 +102,19 @@ describe('CreatePostPage', () => {
     expect(screen.getByText('Create Post')).toBeDefined();
   });
 
+  it('shows the loading-tags hint until tags arrive', async () => {
+    let resolveTags: (value: unknown) => void = () => {};
+    createMocks.getTagsMock.mockReturnValue(new Promise((resolve) => { resolveTags = resolve; }));
+    render(<CreatePostPage />);
+
+    expect(screen.getByText('Loading tags...')).toBeDefined();
+    expect(screen.queryByText('Please select at least 1 tag')).toBeNull();
+
+    resolveTags({ data: mockTags });
+    await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
+    expect(screen.queryByText('Loading tags...')).toBeNull();
+  });
+
   it('shows available tags after loading', async () => {
     render(<CreatePostPage />);
     await waitFor(() => {
@@ -284,5 +297,63 @@ describe('CreatePostPage', () => {
       expect(screen.getByText('Edit Post')).toBeDefined();
       expect(screen.getByText('Save')).toBeDefined();
     });
+  });
+
+  it('shows a loading hint and then fills the form with the post being edited', async () => {
+    createMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { edit: 'post-existing' },
+    });
+    let resolvePost: (value: unknown) => void = () => {};
+    createMocks.getPostByIdMock.mockReturnValue(new Promise((resolve) => { resolvePost = resolve; }));
+    render(<CreatePostPage />);
+
+    await waitFor(() => expect(screen.getByText('Loading post...')).toBeDefined());
+    expect(screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled')).toBe(true);
+
+    resolvePost({
+      data: {
+        id: 'post-existing',
+        author_id: 'user-1',
+        title: 'Existing post',
+        description: 'Existing body text',
+        tags: [mockTags[0]],
+        is_global: false,
+        photos: [],
+      },
+    });
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Post title, required') as HTMLInputElement).value).toBe('Existing post');
+    });
+    expect(screen.queryByText('Loading post...')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled')).toBe(false);
+    expect(createMocks.getPostByIdMock).toHaveBeenCalledTimes(1);
+    expect(createMocks.getPostByIdMock).toHaveBeenCalledWith(expect.anything(), 'post-existing');
+  });
+
+  it('refuses to edit a post owned by someone else', async () => {
+    createMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { edit: 'post-existing' },
+    });
+    createMocks.getPostByIdMock.mockResolvedValue({
+      data: {
+        id: 'post-existing',
+        author_id: 'someone-else',
+        title: 'Their post',
+        description: 'Their body text',
+        tags: [],
+        is_global: false,
+        photos: [],
+      },
+    });
+    render(<CreatePostPage />);
+
+    await waitFor(() => expect(screen.getByText('You can only edit your own posts.')).toBeDefined());
+    expect(screen.queryByText('Loading post...')).toBeNull();
+    expect((screen.getByLabelText('Post title, required') as HTMLInputElement).value).toBe('');
   });
 });

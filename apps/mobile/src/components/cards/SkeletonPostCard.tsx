@@ -1,10 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Animated, StyleSheet, useAnimatedValue } from 'react-native';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 
 export const SkeletonPostCard: React.FC = () => {
-  const opacity = useRef(new Animated.Value(0.4)).current;
+  const opacity = useAnimatedValue(0.4);
 
   useEffect(() => {
     const loopAnimation = Animated.loop(

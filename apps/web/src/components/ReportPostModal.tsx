@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button, Group, Modal, Radio, Stack, Text, Textarea } from '@mantine/core';
 import styles from './ReportPostModal.module.css';
 
@@ -30,13 +30,17 @@ export default function ReportPostModal({ opened, onClose, onSubmit, submitting 
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [prevOpened, setPrevOpened] = useState(opened);
 
-  useEffect(() => {
-    if (!opened) return;
-    setReason('');
-    setDescription('');
-    setErrorMessage(null);
-  }, [opened]);
+  // Start from a blank form each time the modal opens.
+  if (opened !== prevOpened) {
+    setPrevOpened(opened);
+    if (opened) {
+      setReason('');
+      setDescription('');
+      setErrorMessage(null);
+    }
+  }
 
   async function handleSubmit() {
     const trimmedReason = reason.trim();

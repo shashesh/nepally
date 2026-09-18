@@ -25,12 +25,14 @@ import {
   getOrCreateConversation,
   getActivePromotionForListing,
   getListingHighlights,
+  getDaysSinceRefresh,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   BUSINESS_HOURS_DAYS,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
+import { useNow } from '../../hooks/useNow';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -56,6 +58,7 @@ export default function ListingDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [hasActivePromotion, setHasActivePromotion] = useState(false);
+  const now = useNow();
 
   useEffect(() => {
     let cancelled = false;
@@ -181,10 +184,8 @@ export default function ListingDetailScreen() {
 
   const categoryColor = listing.category?.color ?? '#9E9E9E';
   const isOwner = user?.id === listing.owner_id;
-  const daysAgo = Math.floor(
-    (Date.now() - new Date(listing.refreshed_at).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  const highlights = getListingHighlights(listing, new Date());
+  const daysAgo = getDaysSinceRefresh(listing.refreshed_at, now);
+  const highlights = getListingHighlights(listing, now);
 
   return (
     <SafeAreaView style={styles.container}>

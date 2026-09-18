@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
+import { useNow } from '../../hooks/useNow';
 import { supabase } from '../../lib/supabase';
 import {
   getListingsByOwner,
@@ -12,7 +13,7 @@ import {
   reactivateListing,
   deleteListing,
   refreshListing,
-  LISTING_SOFT_EXPIRY_DAYS,
+  getDaysUntilSoftExpiry,
   type MarketplaceListing,
 } from '@nepally/shared';
 import styles from './marketplace.module.css';
@@ -20,9 +21,13 @@ import styles from './marketplace.module.css';
 export default function MyListingsPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const userId = user?.id;
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
+  // Bumping this re-runs the fetch effect after a listing is changed.
+  const [reloadKey, setReloadKey] = useState(0);
+  const now = useNow();
 
   const getStatusClass = (status: string): string => {
     const statusClassMap: Record<string, string> = {
@@ -39,38 +44,44 @@ export default function MyListingsPage() {
     }
   }, [user, router]);
 
-  const fetchListings = useCallback(async () => {
-    if (!user) return;
-    const result = await getListingsByOwner(supabase, user.id);
-    if (result.data) setListings(result.data);
-    setLoading(false);
-  }, [user]);
-
   useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
+    if (!userId) return;
+    let cancelled = false;
+    getListingsByOwner(supabase, userId).then((result) => {
+      if (cancelled) return;
+      if (result.data) setListings(result.data);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, reloadKey]);
+
+  const reloadListings = useCallback(() => {
+    setReloadKey((key) => key + 1);
+  }, []);
 
   const handleDeactivate = useCallback(async (id: string) => {
     if (!confirm('Deactivate this listing? It will be hidden from the marketplace.')) return;
     await deactivateListing(supabase, id);
-    fetchListings();
-  }, [fetchListings]);
+    reloadListings();
+  }, [reloadListings]);
 
   const handleReactivate = useCallback(async (id: string) => {
     await reactivateListing(supabase, id);
-    fetchListings();
-  }, [fetchListings]);
+    reloadListings();
+  }, [reloadListings]);
 
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Delete this listing permanently?')) return;
     await deleteListing(supabase, id);
-    fetchListings();
-  }, [fetchListings]);
+    reloadListings();
+  }, [reloadListings]);
 
   const handleRefresh = useCallback(async (id: string) => {
     await refreshListing(supabase, id);
-    fetchListings();
-  }, [fetchListings]);
+    reloadListings();
+  }, [reloadListings]);
 
   if (!user) return null;
 
@@ -103,11 +114,7 @@ export default function MyListingsPage() {
           </div>
         ) : (
           listings.map((listing) => {
-            const daysUntilExpiry = Math.max(
-              0,
-              LISTING_SOFT_EXPIRY_DAYS -
-                Math.floor((Date.now() - new Date(listing.refreshed_at).getTime()) / (1000 * 60 * 60 * 24))
-            );
+            const daysUntilExpiry = getDaysUntilSoftExpiry(listing.refreshed_at, now);
             const isExpiringSoon = daysUntilExpiry <= 14 && listing.status === 'active';
 
             return (

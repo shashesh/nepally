@@ -58,6 +58,25 @@ describe('ReportPostSheet', () => {
     });
   });
 
+  it('clears the previous reason and details when reopened', () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const onClose = jest.fn();
+    const screen = render(
+      <ReportPostSheet visible onClose={onClose} onSubmit={onSubmit} />
+    );
+
+    fireEvent.press(screen.getByLabelText('Reason Spam'));
+    fireEvent.changeText(screen.getByPlaceholderText('Add anything helpful for review'), 'Old details');
+
+    screen.rerender(<ReportPostSheet visible={false} onClose={onClose} onSubmit={onSubmit} />);
+    screen.rerender(<ReportPostSheet visible onClose={onClose} onSubmit={onSubmit} />);
+
+    expect(screen.getByPlaceholderText('Add anything helpful for review').props.value).toBe('');
+    // No reason is selected any more, so submitting does nothing
+    fireEvent.press(screen.getByText('Submit Report'));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('positions the backdrop as a full-screen absolute overlay', () => {
     const screen = render(
       <ReportPostSheet

@@ -35,6 +35,11 @@ type Route = RouteProp<MarketplaceStackParamList, 'MarketplaceCategory'>;
 
 const PAGE_SIZE = 20;
 
+interface ListingsPage {
+  listings: MarketplaceListing[] | null;
+  featured: MarketplaceListing[];
+}
+
 export default function MarketplaceCategoryScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
@@ -60,6 +65,18 @@ export default function MarketplaceCategoryScreen() {
   const metroId = user?.metro_area_id ?? '';
   const mountedRef = useRef(true);
 
+  // A new metro / filter set / search mode means a fresh first page: show the
+  // full-screen spinner until it lands (adjusted during render, not in an effect).
+  const [pageQuery, setPageQuery] = useState({ metroId, filters, isSearchMode });
+  if (
+    pageQuery.metroId !== metroId ||
+    pageQuery.filters !== filters ||
+    pageQuery.isSearchMode !== isSearchMode
+  ) {
+    setPageQuery({ metroId, filters, isSearchMode });
+    setLoading(true);
+  }
+
   useEffect(() => {
     return () => {
       mountedRef.current = false;
@@ -84,12 +101,10 @@ export default function MarketplaceCategoryScreen() {
     [navigation]
   );
 
-  const fetchListings = useCallback(
-    async (offset = 0, isRefresh = false) => {
-      if (!metroId) {
-        setLoading(false);
-        return;
-      }
+  // Pure fetch — resolves to null when there is no metro or the request fails.
+  const fetchPage = useCallback(
+    async (offset: number): Promise<ListingsPage | null> => {
+      if (!metroId) return null;
 
       try {
         const [result, featuredResult] = await Promise.all([
@@ -107,53 +122,62 @@ export default function MarketplaceCategoryScreen() {
               })
             : Promise.resolve({ data: [] as MarketplaceListing[] }),
         ]);
-
-        if (!mountedRef.current) return;
-
-        if (result.data) {
-          if (isRefresh || offset === 0) {
-            setListings(result.data);
-          } else {
-            setListings((prev) => [...prev, ...result.data!]);
-          }
-          setHasMore(result.data.length === PAGE_SIZE);
-        }
-
-        // Always reset featured state on a fresh fetch. In search mode the
-        // parallel fetch above short-circuits to an empty array, which clears
-        // any stale strip carried over from a previous category load.
-        if (offset === 0) {
-          setFeaturedListings(featuredResult.data ?? []);
-        }
+        return { listings: result.data ?? null, featured: featuredResult.data ?? [] };
       } catch {
         // Silently handle — empty listings will surface in the UI.
-      } finally {
-        if (mountedRef.current) {
-          setLoading(false);
-          setRefreshing(false);
-          setLoadingMore(false);
-        }
+        return null;
       }
     },
     [metroId, filters, isSearchMode]
   );
 
-  useEffect(() => {
-    setLoading(true);
-    fetchListings(0, true);
-  }, [fetchListings]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchListings(0, true);
-  }, [fetchListings]);
-
-  const onEndReached = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      setLoadingMore(true);
-      fetchListings(listings.length);
+  // Applies a fetched page (if any) and clears every loading indicator.
+  const applyPage = useCallback((page: ListingsPage | null, offset: number) => {
+    if (page?.listings) {
+      const pageListings = page.listings;
+      if (offset === 0) {
+        setListings(pageListings);
+      } else {
+        setListings((prev) => [...prev, ...pageListings]);
+      }
+      setHasMore(pageListings.length === PAGE_SIZE);
     }
-  }, [loadingMore, hasMore, listings.length, fetchListings]);
+
+    // Always reset featured state on a fresh fetch. In search mode the parallel
+    // fetch short-circuits to an empty array, which clears any stale strip
+    // carried over from a previous category load.
+    if (page && offset === 0) {
+      setFeaturedListings(page.featured);
+    }
+
+    setLoading(false);
+    setRefreshing(false);
+    setLoadingMore(false);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPage(0).then((page) => {
+      if (!cancelled) applyPage(page, 0);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchPage, applyPage]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const page = await fetchPage(0);
+    if (mountedRef.current) applyPage(page, 0);
+  }, [fetchPage, applyPage]);
+
+  const onEndReached = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const offset = listings.length;
+    const page = await fetchPage(offset);
+    if (mountedRef.current) applyPage(page, offset);
+  }, [loadingMore, hasMore, listings.length, fetchPage, applyPage]);
 
   const handleFilterChange = useCallback(
     (next: FilterBarValue) => {

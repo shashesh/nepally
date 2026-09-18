@@ -74,26 +74,31 @@ const MOCK_LISTING = {
   owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
-vi.mock('@nepally/shared', () => ({
-  getListingById: vi.fn(async () => ({ data: null })),
-  saveListing: vi.fn(async () => ({ error: null })),
-  unsaveListing: vi.fn(async () => ({ error: null })),
-  getUserSavedListingIds: vi.fn(async () => ({ data: [] })),
-  incrementListingViews: vi.fn(async () => {}),
-  incrementListingContacts: vi.fn(async () => {}),
-  LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
-  ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
-  BUSINESS_HOURS_DAYS: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-  getListingHighlights: vi.fn(() => [
-    { key: 'phone', icon: '📞', label: 'Phone', value: '555-1234' },
-  ]),
-  isBusinessOpenNow: vi.fn(() => ({ isOpen: true, nextChangeLabel: 'Closes 5p' })),
-}));
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
+  return {
+    getListingById: vi.fn(async () => ({ data: null })),
+    saveListing: vi.fn(async () => ({ error: null })),
+    unsaveListing: vi.fn(async () => ({ error: null })),
+    getUserSavedListingIds: vi.fn(async () => ({ data: [] })),
+    incrementListingViews: vi.fn(async () => {}),
+    incrementListingContacts: vi.fn(async () => {}),
+    LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
+    ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
+    BUSINESS_HOURS_DAYS: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    getListingHighlights: vi.fn(() => [
+      { key: 'phone', icon: '📞', label: 'Phone', value: '555-1234' },
+    ]),
+    isBusinessOpenNow: vi.fn(() => ({ isOpen: true, nextChangeLabel: 'Closes 5p' })),
+    getDaysSinceRefresh: actual.getDaysSinceRefresh,
+  };
+});
 
 import ListingDetailPage from './[id].page';
 
 const mockGetListingById = getListingById as ReturnType<typeof vi.fn>;
 const mockGetUserSavedListingIds = getUserSavedListingIds as ReturnType<typeof vi.fn>;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe('ListingDetailPage', () => {
   const mockReplace = vi.fn();
@@ -227,6 +232,25 @@ describe('ListingDetailPage', () => {
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
       expect(screen.getAllByText('555-1234').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('shows "Refreshed today" for a listing refreshed moments ago', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(ListingDetailPage));
+    await waitFor(() => {
+      expect(screen.getByText('Refreshed today')).toBeDefined();
+    });
+  });
+
+  it('shows whole days since the listing was refreshed', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, refreshed_at: new Date(Date.now() - 3 * DAY_MS).toISOString() },
+    });
+    render(React.createElement(ListingDetailPage));
+    await waitFor(() => {
+      expect(screen.getByText('Refreshed 3d ago')).toBeDefined();
     });
   });
 

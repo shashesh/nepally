@@ -16,6 +16,7 @@ import {
   Pressable,
   Animated,
   findNodeHandle,
+  useAnimatedValue,
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -47,6 +48,7 @@ import {
   createComment,
   deleteComment,
   buildSingleLevelCommentThreads,
+  formatRelativeTime,
   logClientEvent,
   TrustLevel,
   TAG_EMOJI,
@@ -101,8 +103,8 @@ function PinchableLightboxImage({
   viewportHeight: number;
 }) {
   // Scale
-  const baseScale = useRef(new Animated.Value(1)).current;
-  const pinchScale = useRef(new Animated.Value(1)).current;
+  const baseScale = useAnimatedValue(1);
+  const pinchScale = useAnimatedValue(1);
   // displayScale is the same Animated.multiply pattern as the original working code
   const displayScale = useMemo(() => Animated.multiply(baseScale, pinchScale), [baseScale, pinchScale]);
   const currentScale = useRef(1);
@@ -111,8 +113,8 @@ function PinchableLightboxImage({
   // Using setOffset/flattenOffset for accumulation avoids Animated.add, which requires
   // panDelta to be registered via a live Animated.event. With single values, the transform
   // registration is sufficient.
-  const translateX = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
+  const translateX = useAnimatedValue(0);
+  const translateY = useAnimatedValue(0);
   const currentPanX = useRef(0);
   const currentPanY = useRef(0);
   const panActive = useRef(false);
@@ -132,7 +134,9 @@ function PinchableLightboxImage({
     };
   }, [viewportWidth, viewportHeight]);
 
-  const resetAll = useCallback((animated: boolean) => {
+  // Animated reset back to 1x, centred. There is no reset-on-uri effect: the lightbox keys
+  // each slide by its uri, so a different image always mounts a fresh, unzoomed instance.
+  const resetAll = useCallback(() => {
     currentScale.current = 1;
     currentPanX.current = 0;
     currentPanY.current = 0;
@@ -143,23 +147,12 @@ function PinchableLightboxImage({
     translateY.flattenOffset();
     setIsZoomed(false);
     onZoomChange(false);
-    if (animated) {
-      Animated.parallel([
-        Animated.spring(baseScale, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 0 }),
-        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, speed: 18, bounciness: 0 }),
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 18, bounciness: 0 }),
-      ]).start();
-    } else {
-      baseScale.setValue(1);
-      translateX.setValue(0);
-      translateY.setValue(0);
-    }
+    Animated.parallel([
+      Animated.spring(baseScale, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 0 }),
+      Animated.spring(translateX, { toValue: 0, useNativeDriver: true, speed: 18, bounciness: 0 }),
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 18, bounciness: 0 }),
+    ]).start();
   }, [baseScale, pinchScale, translateX, translateY, onZoomChange]);
-
-  useEffect(() => {
-    resetAll(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uri]);
 
   // --- Pinch gesture (identical structure to original working code) ---
   const onPinchEvent = useMemo(
@@ -255,7 +248,7 @@ function PinchableLightboxImage({
       lastTapTime.current = 0;
       onInteract();
       if (currentScale.current > 1) {
-        resetAll(true);
+        resetAll();
       } else {
         currentScale.current = DOUBLE_TAP_ZOOM_SCALE;
         setIsZoomed(true);
@@ -316,7 +309,7 @@ export default function PostDetailScreen() {
   const commentsRef = useRef<View>(null);
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const keyboardPadding = useRef(new Animated.Value(0)).current;
+  const keyboardPadding = useAnimatedValue(0);
   // Android: track viewport height to detect whether adjustResize compensated
   const baseViewportHeightRef = useRef(viewportHeight);
   const currentViewportHeightRef = useRef(viewportHeight);
@@ -336,12 +329,14 @@ export default function PostDetailScreen() {
   // Save state
   const [isSaved, setIsSaved] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
-  const saveToastOpacity = useRef(new Animated.Value(0)).current;
+  const saveToastOpacity = useAnimatedValue(0);
   const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Comments state
   const [comments, setComments] = useState<PostComment[]>([]);
-  const [commentsLoading, setCommentsLoading] = useState(false);
+  // Comments count as loading until the fetch for the current postId has settled.
+  const [commentsLoadedForPostId, setCommentsLoadedForPostId] = useState<string | null>(null);
+  const commentsLoading = commentsLoadedForPostId !== postId;
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [replyTarget, setReplyTarget] = useState<PostComment | null>(null);
@@ -354,21 +349,61 @@ export default function PostDetailScreen() {
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lightboxScrollRef = useRef<ScrollView>(null);
 
+  const userId = user?.id;
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
-  const isOwnPost = post?.author_id === user?.id;
+  const isOwnPost = post?.author_id === userId;
   const commentThreads = useMemo(() => buildSingleLevelCommentThreads(comments), [comments]);
   const allPostPhotos = (post?.photos || []).filter(Boolean) as string[];
+  const photoCount = allPostPhotos.length;
   const postPhotos = allPostPhotos.slice(0, 4);
-  const extraPhotoCount = allPostPhotos.length - 4;
+  const extraPhotoCount = photoCount - 4;
   const contentWidth = Math.max(viewportWidth - spacing.s * 2, 1);
 
+  // Load the post and its comments whenever the post changes.
   useEffect(() => {
-    loadPost();
-    loadComments();
-    loadLikeState();
-    loadSaveState();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let cancelled = false;
+
+    getPostById(supabase, postId).then((result) => {
+      if (cancelled) return;
+      // A missing post clears the previous one, so the screen shows "Post not found"
+      // instead of the last post for the new postId.
+      setPost(result.data ?? null);
+      setLocalLikesCount(result.data?.likes_count ?? 0);
+      setLoading(false);
+    });
+
+    getPostComments(supabase, postId).then((result) => {
+      if (cancelled) return;
+      setComments(result.data ?? []);
+      setCommentsLoadedForPostId(postId);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [postId]);
+
+  // Load the viewer's like/save state for this post.
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+
+    getUserLikedPostIds(supabase, userId).then((result) => {
+      if (!cancelled && result.data) {
+        setIsLiked(result.data.includes(postId));
+      }
+    });
+
+    getUserSavedPostIds(supabase, userId).then((result) => {
+      if (!cancelled && result.data) {
+        setIsSaved(result.data.includes(postId));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [postId, userId]);
 
 
   useEffect(() => {
@@ -455,21 +490,14 @@ export default function PostDetailScreen() {
     }, DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS);
   }, [clearLightboxChromeTimer]);
 
-  useEffect(() => {
-    if (!lightboxVisible) {
-      clearLightboxChromeTimer();
-      setLightboxChromeVisible(true);
-      return;
-    }
-
-    resetLightboxChromeTimer();
-  }, [lightboxVisible, clearLightboxChromeTimer, resetLightboxChromeTimer]);
-
+  // Opening shows the chrome and starts its auto-hide timer; handleCloseLightbox
+  // clears the timer and restores the chrome for next time.
   const handleOpenLightbox = useCallback(
     (startIndex: number) => {
-      const normalizedIndex = Math.min(Math.max(startIndex, 0), Math.max(allPostPhotos.length - 1, 0));
+      const normalizedIndex = Math.min(Math.max(startIndex, 0), Math.max(photoCount - 1, 0));
       setLightboxIndex(normalizedIndex);
       setLightboxVisible(true);
+      resetLightboxChromeTimer();
       setTimeout(() => {
         lightboxScrollRef.current?.scrollTo({
           x: normalizedIndex * viewportWidth,
@@ -477,7 +505,7 @@ export default function PostDetailScreen() {
         });
       }, 0);
     },
-    [allPostPhotos.length, viewportWidth]
+    [photoCount, viewportWidth, resetLightboxChromeTimer]
   );
 
   const handleCloseLightbox = useCallback(() => {
@@ -487,40 +515,6 @@ export default function PostDetailScreen() {
     setLightboxChromeVisible(true);
     setLightboxIsZoomed(false);
   }, [clearLightboxChromeTimer]);
-
-  const loadPost = async () => {
-    const result = await getPostById(supabase, postId);
-    if (result.data) {
-      setPost(result.data);
-      setLocalLikesCount(result.data.likes_count ?? 0);
-    }
-    setLoading(false);
-  };
-
-  const loadComments = async () => {
-    setCommentsLoading(true);
-    const result = await getPostComments(supabase, postId);
-    if (result.data) {
-      setComments(result.data);
-    }
-    setCommentsLoading(false);
-  };
-
-  const loadLikeState = async () => {
-    if (!user?.id) return;
-    const result = await getUserLikedPostIds(supabase, user.id);
-    if (result.data) {
-      setIsLiked(result.data.includes(postId));
-    }
-  };
-
-  const loadSaveState = async () => {
-    if (!user?.id) return;
-    const result = await getUserSavedPostIds(supabase, user.id);
-    if (result.data) {
-      setIsSaved(result.data.includes(postId));
-    }
-  };
 
   const showSaveToast = (message: string) => {
     setSaveToast(message);
@@ -631,18 +625,6 @@ export default function PostDetailScreen() {
         },
       ]
     );
-  };
-
-  const getRelativeTime = (dateStr: string): string => {
-    const diffMs = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    if (days < 7) return `${days}d ago`;
-    return `${Math.floor(days / 7)}w ago`;
   };
 
   const handleAvatarChat = async () => {
@@ -806,7 +788,7 @@ export default function PostDetailScreen() {
                     />
                   )}
                 </View>
-                <Text style={styles.authorMeta}>{getRelativeTime(post.created_at)}</Text>
+                <Text style={styles.authorMeta}>{formatRelativeTime(new Date(post.created_at))}</Text>
               </View>
             </View>
           )}
@@ -1074,7 +1056,7 @@ export default function PostDetailScreen() {
                               <Text style={styles.authorBadgeText}>Author</Text>
                             </View>
                           )}
-                          <Text style={styles.commentTime}>{getRelativeTime(thread.parent.created_at)}</Text>
+                          <Text style={styles.commentTime}>{formatRelativeTime(new Date(thread.parent.created_at))}</Text>
                         </View>
                         <Text style={styles.commentText}>{thread.parent.content}</Text>
                         <View style={styles.commentActionsInline}>
@@ -1130,7 +1112,7 @@ export default function PostDetailScreen() {
                           <View style={styles.commentContent}>
                             <View style={styles.commentHeader}>
                               <Text style={styles.commentAuthorName}>{reply.author?.full_name || 'User'}</Text>
-                              <Text style={styles.commentTime}>{getRelativeTime(reply.created_at)}</Text>
+                              <Text style={styles.commentTime}>{formatRelativeTime(new Date(reply.created_at))}</Text>
                             </View>
                             <Text style={styles.commentText}>{reply.content}</Text>
                           </View>
@@ -1177,9 +1159,9 @@ export default function PostDetailScreen() {
               ]}
               pointerEvents="box-none"
             >
-              {allPostPhotos.length > 1 && (
+              {photoCount > 1 && (
                 <View style={styles.lightboxCounterPill}>
-                  <Text style={styles.lightboxCounterText}>{lightboxIndex + 1} / {allPostPhotos.length}</Text>
+                  <Text style={styles.lightboxCounterText}>{lightboxIndex + 1} / {photoCount}</Text>
                 </View>
               )}
               <TouchableOpacity

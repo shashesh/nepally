@@ -52,10 +52,15 @@ export default function MarketplaceCategoryPage() {
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [featuredListings, setFeaturedListings] = useState<MarketplaceListing[]>([]);
-  const [loading, setLoading] = useState(true);
   const categories = useCachedCategories();
 
   const metroId = user?.metro_area_id ?? '';
+
+  // Skeletons show until the results for the current metro / category / search /
+  // sort have landed, so changing any of them shows skeletons again.
+  const queryKey = JSON.stringify([metroId, slug, q, sort]);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
+  const loading = loadedQueryKey !== queryKey;
 
   useEffect(() => {
     if (!user) {
@@ -63,10 +68,10 @@ export default function MarketplaceCategoryPage() {
     }
   }, [user, router]);
 
-  const fetchListings = useCallback(async () => {
+  useEffect(() => {
     if (!metroId || !router.isReady) return;
-    setLoading(true);
-    const [result, featuredResult] = await Promise.all([
+    let cancelled = false;
+    Promise.all([
       getListingsByMetro(supabase, metroId, {
         categorySlug: isSearch ? undefined : slug,
         searchQuery: q || undefined,
@@ -76,18 +81,19 @@ export default function MarketplaceCategoryPage() {
       !isSearch
         ? getFeaturedListings(supabase, metroId, { categorySlug: slug, limit: 10 })
         : Promise.resolve({ data: [] as MarketplaceListing[] }),
-    ]);
-    if (result.data) setListings(result.data);
-    // Always reset featured state. In search mode the parallel fetch above
-    // short-circuits to an empty array, which clears any stale strip carried
-    // over from a previous category instance of this page.
-    setFeaturedListings(featuredResult.data ?? []);
-    setLoading(false);
-  }, [metroId, slug, q, sort, isSearch, router.isReady]);
-
-  useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
+    ]).then(([result, featuredResult]) => {
+      if (cancelled) return;
+      if (result.data) setListings(result.data);
+      // Always reset featured state. In search mode the parallel fetch above
+      // short-circuits to an empty array, which clears any stale strip carried
+      // over from a previous category instance of this page.
+      setFeaturedListings(featuredResult.data ?? []);
+      setLoadedQueryKey(queryKey);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [metroId, slug, q, sort, isSearch, router.isReady, queryKey]);
 
   const filterValue: FilterBarValue = useMemo(
     () => ({ category: isSearch ? '' : slug, sort, query: q }),

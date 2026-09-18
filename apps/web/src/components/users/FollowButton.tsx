@@ -11,20 +11,25 @@ interface Props {
 }
 
 export function FollowButton({ supabase, viewerId, targetUserId, onChange }: Props) {
-  const [loading, setLoading] = useState<boolean>(true);
+  // The viewer/target pair whose follow-status lookup has finished, and whether it failed.
+  // `loading` is derived from it, so it is true until the status for the *current* pair arrives
+  // (e.g. when viewerId resolves after mount or the target user changes).
+  const [loadedFor, setLoadedFor] = useState<{
+    viewerId: string;
+    targetUserId: string;
+    failed: boolean;
+  } | null>(null);
   const [following, setFollowing] = useState<boolean>(false);
+  const [toggling, setToggling] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!viewerId || viewerId === targetUserId) {
-      setLoading(false);
-      return;
-    }
+    if (!viewerId || viewerId === targetUserId) return;
     let cancelled = false;
     (async () => {
       const res = await isFollowing(supabase, viewerId, targetUserId);
       if (!cancelled) {
-        setFollowing(Boolean(res.data));
-        setLoading(false);
+        if (!res.error) setFollowing(Boolean(res.data));
+        setLoadedFor({ viewerId, targetUserId, failed: Boolean(res.error) });
       }
     })();
     return () => {
@@ -34,9 +39,16 @@ export function FollowButton({ supabase, viewerId, targetUserId, onChange }: Pro
 
   if (!viewerId || viewerId === targetUserId) return null;
 
+  const loadedCurrentPair =
+    loadedFor?.viewerId === viewerId && loadedFor?.targetUserId === targetUserId;
+  // Without a known follow status the button can't truthfully offer "Follow" or "Following".
+  if (loadedCurrentPair && loadedFor?.failed) return null;
+
+  const loading = toggling || !loadedCurrentPair;
+
   const toggle = async () => {
     if (loading) return;
-    setLoading(true);
+    setToggling(true);
     const prev = following;
     setFollowing(!prev);
     const res = prev
@@ -44,7 +56,7 @@ export function FollowButton({ supabase, viewerId, targetUserId, onChange }: Pro
       : await followUser(supabase, viewerId, targetUserId);
     if (res.error) setFollowing(prev);
     else onChange?.(!prev);
-    setLoading(false);
+    setToggling(false);
   };
 
   return (

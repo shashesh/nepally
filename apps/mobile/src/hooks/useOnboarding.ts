@@ -24,24 +24,26 @@ export function useOnboarding(): UseOnboardingReturn {
 
   // Load onboarding state on mount
   useEffect(() => {
-    loadOnboardingState();
+    let cancelled = false;
+    (async () => {
+      try {
+        const [step, complete] = await Promise.all([
+          getOnboardingStep(),
+          checkOnboardingComplete(),
+        ]);
+        if (cancelled) return;
+        setCurrentStep(step || 0);
+        setIsComplete(complete);
+      } catch (error) {
+        console.error('Failed to load onboarding state:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  const loadOnboardingState = async () => {
-    try {
-      const [step, complete] = await Promise.all([
-        getOnboardingStep(),
-        checkOnboardingComplete(),
-      ]);
-
-      setCurrentStep(step || 0);
-      setIsComplete(complete);
-    } catch (error) {
-      console.error('Failed to load onboarding state:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const setStep = useCallback(async (step: number) => {
     try {

@@ -144,4 +144,39 @@ describe('FilterBar', () => {
     fireEvent.press(getByLabelText('Clear search'));
     expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'newest', query: '' });
   });
+
+  it('syncs search text when value.query changes externally', () => {
+    const { getByLabelText, rerender } = render(
+      <FilterBar categories={CATEGORIES} value={defaultValue} onChange={jest.fn()} />
+    );
+    rerender(
+      <FilterBar
+        categories={CATEGORIES}
+        value={{ ...defaultValue, query: 'dal bhat' }}
+        onChange={jest.fn()}
+      />
+    );
+    expect(getByLabelText('Search listings').props.value).toBe('dal bhat');
+  });
+
+  it('debounced search uses the latest filter value and keeps the typed text', () => {
+    const onChange = jest.fn();
+    const { getByLabelText, rerender } = render(
+      <FilterBar categories={CATEGORIES} value={defaultValue} onChange={onChange} />
+    );
+    fireEvent.changeText(getByLabelText('Search listings'), 'momo');
+    // Parent changes sort while the search debounce is still pending
+    rerender(
+      <FilterBar
+        categories={CATEGORIES}
+        value={{ ...defaultValue, sort: 'price_asc' }}
+        onChange={onChange}
+      />
+    );
+    expect(getByLabelText('Search listings').props.value).toBe('momo');
+    act(() => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'price_asc', query: 'momo' });
+  });
 });

@@ -96,12 +96,15 @@ export default function CreateEventPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { edit } = router.query;
-  const isEditMode = !!edit && typeof edit === 'string';
+  const editId = typeof edit === 'string' && edit ? edit : null;
+  const isEditMode = editId !== null;
 
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [loadingEdit, setLoadingEdit] = useState(isEditMode);
+  // Id of the event whose data has been loaded into the form (edit mode only).
+  const [loadedEditId, setLoadedEditId] = useState<string | null>(null);
+  const loadingEdit = isEditMode && loadedEditId !== editId;
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -132,9 +135,11 @@ export default function CreateEventPage() {
   }, [user, trustLevel, router]);
 
   useEffect(() => {
-    if (!isEditMode) { setLoadingEdit(false); return; }
+    if (!editId) return;
+    let cancelled = false;
     (async () => {
-      const result = await getEventById(supabase, edit as string);
+      const result = await getEventById(supabase, editId);
+      if (cancelled) return;
       if (result.data) {
         const e = result.data;
         setForm({
@@ -150,9 +155,12 @@ export default function CreateEventPage() {
           is_global: e.is_global,
         });
       }
-      setLoadingEdit(false);
+      setLoadedEditId(editId);
     })();
-  }, [isEditMode, edit]);
+    return () => {
+      cancelled = true;
+    };
+  }, [editId]);
 
   // Revoke the object URL on unmount to avoid memory leaks
   useEffect(() => {

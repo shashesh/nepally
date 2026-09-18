@@ -1,7 +1,7 @@
 import React from 'react';
-import { render, screen, waitFor } from '../../test-utils';
+import { render, screen, waitFor, fireEvent } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getListingsByOwner } from '@nepally/shared';
+import { deleteListing, getListingsByOwner, refreshListing } from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -70,18 +70,25 @@ function makeListing(overrides: Record<string, unknown> = {}) {
   };
 }
 
-vi.mock('@nepally/shared', () => ({
-  getListingsByOwner: vi.fn(async () => ({ data: [] })),
-  deactivateListing: vi.fn(async () => ({ error: null })),
-  reactivateListing: vi.fn(async () => ({ error: null })),
-  deleteListing: vi.fn(async () => ({ error: null })),
-  refreshListing: vi.fn(async () => ({ error: null })),
-  LISTING_SOFT_EXPIRY_DAYS: 90,
-}));
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
+  return {
+    getListingsByOwner: vi.fn(async () => ({ data: [] })),
+    deactivateListing: vi.fn(async () => ({ error: null })),
+    reactivateListing: vi.fn(async () => ({ error: null })),
+    deleteListing: vi.fn(async () => ({ error: null })),
+    refreshListing: vi.fn(async () => ({ error: null })),
+    getDaysUntilSoftExpiry: actual.getDaysUntilSoftExpiry,
+  };
+});
 
 import MyListingsPage from './my-listings.page';
 
 const mockGetListingsByOwner = getListingsByOwner as ReturnType<typeof vi.fn>;
+const mockRefreshListing = refreshListing as ReturnType<typeof vi.fn>;
+const mockDeleteListing = deleteListing as ReturnType<typeof vi.fn>;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const AUTHED_USER = { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' };
 
 describe('MyListingsPage', () => {
   const mockReplace = vi.fn();
@@ -181,5 +188,59 @@ describe('MyListingsPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/Back to Marketplace/)).toBeDefined();
     });
+  });
+
+  it('warns with the days left when a listing is close to soft expiry', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mockGetListingsByOwner.mockResolvedValue({
+      data: [makeListing({ refreshed_at: new Date(Date.now() - 80 * DAY_MS).toISOString() })],
+    });
+    render(React.createElement(MyListingsPage));
+    await waitFor(() => {
+      expect(screen.getByText(/Expires in 10 days/)).toBeDefined();
+    });
+  });
+
+  it('does not warn about expiry for a freshly refreshed listing', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+    render(React.createElement(MyListingsPage));
+    await waitFor(() => {
+      expect(screen.getByText('My Restaurant')).toBeDefined();
+    });
+    expect(screen.queryByText(/Expires in/)).toBeNull();
+  });
+
+  it('re-fetches listings after a listing is refreshed', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mockGetListingsByOwner
+      .mockResolvedValueOnce({ data: [makeListing()] })
+      .mockResolvedValueOnce({ data: [makeListing({ title: 'My Restaurant (refreshed)' })] });
+    render(React.createElement(MyListingsPage));
+    await waitFor(() => {
+      expect(screen.getByText('My Restaurant')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText(/Refresh/));
+    await waitFor(() => {
+      expect(screen.getByText('My Restaurant (refreshed)')).toBeDefined();
+    });
+    expect(mockRefreshListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
+    expect(mockGetListingsByOwner).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not delete or re-fetch when the delete confirmation is cancelled', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+    render(React.createElement(MyListingsPage));
+    await waitFor(() => {
+      expect(screen.getByText('My Restaurant')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText(/Delete/));
+    expect(mockDeleteListing).not.toHaveBeenCalled();
+    expect(mockGetListingsByOwner).toHaveBeenCalledTimes(1);
+    confirmSpy.mockRestore();
   });
 });

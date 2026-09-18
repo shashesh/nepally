@@ -29,8 +29,10 @@ import {
   getTags,
   getPostById,
   createPost,
+  uploadPostPhotos,
 } from '@nepally/shared';
 import type { Tag } from '@nepally/shared';
+import * as ImagePicker from 'expo-image-picker';
 
 jest.mock('@nepally/shared', () => ({
   getTags: jest.fn().mockResolvedValue({ data: [] }),
@@ -76,6 +78,10 @@ jest.spyOn(Alert, 'alert');
 const mockGetTags = getTags as jest.MockedFunction<typeof getTags>;
 const mockGetPostById = getPostById as jest.MockedFunction<typeof getPostById>;
 const mockCreatePost = createPost as jest.MockedFunction<typeof createPost>;
+const mockUploadPostPhotos = uploadPostPhotos as jest.MockedFunction<typeof uploadPostPhotos>;
+const mockRequestMediaLibraryPermissions =
+  ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock;
+const mockLaunchImageLibrary = ImagePicker.launchImageLibraryAsync as jest.Mock;
 // updatePost is mocked via jest.mock above; cast not needed in current tests
 
 // --- Mock tags ---
@@ -283,6 +289,15 @@ describe('CreatePostScreen', () => {
     it('calls getTags on mount', async () => {
       await renderAndSettle();
       expect(mockGetTags).toHaveBeenCalledWith({});
+    });
+
+    it('shows "Loading tags..." until tags arrive', () => {
+      mockGetTags.mockReturnValue(new Promise(() => {}));
+      const { getByText, queryByText } = render(
+        <CreatePostScreen navigation={mockNavigation} route={mockRoute} />,
+      );
+      expect(getByText('Loading tags...')).toBeTruthy();
+      expect(queryByText('Please select at least 1 tag')).toBeNull();
     });
 
     it('shows error when tags fail to load', async () => {
@@ -527,6 +542,25 @@ describe('CreatePostScreen', () => {
       expect(getByTestId('post-body-input').props.value).toBe('Original body description text');
     });
 
+    it('shows "Loading post..." until the post being edited loads', async () => {
+      let resolvePost: (value: Awaited<ReturnType<typeof getPostById>>) => void = () => {};
+      mockGetPostById.mockReturnValue(
+        new Promise((resolve) => {
+          resolvePost = resolve;
+        }),
+      );
+      const { getByText, queryByText, getByTestId } = await renderAndSettle({ route: mockEditRoute });
+      expect(getByText('Loading post...')).toBeTruthy();
+
+      await act(async () => {
+        resolvePost({ data: EXISTING_POST });
+      });
+
+      expect(queryByText('Loading post...')).toBeNull();
+      expect(getByTestId('post-title-input').props.value).toBe('Original Title');
+      expect(mockGetPostById).toHaveBeenCalledTimes(1);
+    });
+
     it('shows error alert when post fails to load for editing', async () => {
       mockGetPostById.mockResolvedValue({
         error: new Error('Not found'),
@@ -596,6 +630,53 @@ describe('CreatePostScreen', () => {
       // canSubmit would be true from form perspective but handleSubmit has trust level check
       // Same as above — we verify the guard path exists
       expect(mockCreatePost).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── Photo Upload on Submit ─────────────────────────────────────────
+
+  describe('photo upload on submit', () => {
+    it('uploads photos picked after the header submit handler was registered', async () => {
+      mockRequestMediaLibraryPermissions.mockResolvedValue({ granted: true });
+      mockLaunchImageLibrary.mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: 'file:///photo-1.jpg', mimeType: 'image/jpeg', fileName: 'photo-1.jpg', fileSize: 1000 }],
+      });
+      const { getByTestId, getByText, getByLabelText } = await renderAndSettle();
+
+      // Once the form is dirty and valid, picking a photo does not re-register
+      // the header, so its submit handler only sees the photo through the ref.
+      fireEvent.changeText(getByTestId('post-title-input'), 'Valid Title Here');
+      fireEvent.changeText(getByTestId('post-body-input'), 'This is a long enough body text for validation.');
+      fireEvent.press(getByText(/Housing/));
+      const headerOptions = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)?.[0];
+
+      fireEvent.press(getByLabelText(/Add photos, optional/));
+      await act(async () => {});
+      await act(async () => {});
+      expect(getByText('1/4')).toBeTruthy();
+      expect((mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)?.[0]).toBe(headerOptions);
+
+      // headerRight() returns <View><TouchableOpacity onPress={handleSubmit}>. Call the
+      // registered handler directly: rendering the header as a second tree makes the
+      // global synchronous cleanup overlap act() scopes.
+      const submitButton = headerOptions.headerRight().props.children as React.ReactElement<{
+        onPress: () => void;
+      }>;
+      act(() => {
+        submitButton.props.onPress();
+      });
+      await act(async () => {});
+      await act(async () => {});
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(mockUploadPostPhotos).toHaveBeenCalledWith({}, [
+        expect.objectContaining({ mime_type: 'image/jpeg', file_name: 'photo-1.jpg' }),
+      ]);
+      expect(mockCreatePost).toHaveBeenCalled();
+      // Last step of the submit chain, so nothing is left running after the test.
+      expect(Alert.alert).toHaveBeenCalledWith('Post Published!', expect.any(String), expect.any(Array));
     });
   });
 

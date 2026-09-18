@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -41,23 +41,27 @@ const TUTORIAL_CARDS = [
   },
 ];
 
+// FlatList does not support changing viewabilityConfig after mount, so it lives at module scope.
+const VIEWABILITY_CONFIG = {
+  itemVisiblePercentThreshold: 50,
+};
+
 export function TutorialScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'Tutorial'>>();
   const { completeOnboarding } = useOnboarding();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  const onViewableItemsChanged = useRef(
+  // FlatList throws if onViewableItemsChanged changes identity, so this must stay stable
+  // (it only uses the state setter, hence the empty deps).
+  const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0) {
         setCurrentIndex(viewableItems[0].index || 0);
       }
-    }
-  ).current;
-
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50,
-  }).current;
+    },
+    []
+  );
 
   const handleNext = () => {
     if (currentIndex < TUTORIAL_CARDS.length - 1) {
@@ -108,7 +112,7 @@ export function TutorialScreen() {
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
+          viewabilityConfig={VIEWABILITY_CONFIG}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TutorialCard

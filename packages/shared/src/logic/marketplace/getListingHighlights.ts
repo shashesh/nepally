@@ -1,5 +1,6 @@
 import type { MarketplaceListing } from '../../types/marketplace';
 import { isBusinessOpenNow } from './isBusinessOpenNow';
+import { getDaysSinceRefresh } from './listingAge';
 
 export interface HighlightChip {
   key: string;
@@ -9,8 +10,7 @@ export interface HighlightChip {
 }
 
 function formatPostedAgo(refreshedAt: string, now: Date): string {
-  const then = new Date(refreshedAt).getTime();
-  const days = Math.floor((now.getTime() - then) / (1000 * 60 * 60 * 24));
+  const days = getDaysSinceRefresh(refreshedAt, now);
   if (days <= 0) return 'Posted today';
   if (days === 1) return 'Posted 1d ago';
   return `Posted ${days}d ago`;

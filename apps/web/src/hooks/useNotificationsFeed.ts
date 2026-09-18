@@ -27,24 +27,47 @@ export interface UseNotificationsFeedOptions {
   pollingEnabled: boolean;
 }
 
+interface BellFeed {
+  unreadCount: number;
+  /** Null when the list request failed, so the items on screen are kept. */
+  items: Notification[] | null;
+}
+
+async function fetchBellFeed(userId: string): Promise<BellFeed> {
+  const [countResult, listResult] = await Promise.all([
+    getUnreadNotificationCount(supabase, userId),
+    getNotifications(supabase, userId, BELL_LIMIT, 0),
+  ]);
+  return { unreadCount: countResult.count, items: listResult.data ?? null };
+}
+
 /** Unread count + recent notifications for the top-bar bell. */
 export function useNotificationsFeed({ userId, pollingEnabled }: UseNotificationsFeedOptions): NotificationsFeed {
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<Notification[]>([]);
 
+  const applyFeed = useCallback((feed: BellFeed) => {
+    setUnreadCount(feed.unreadCount);
+    if (feed.items) setItems(feed.items);
+  }, []);
+
+  // The poll and tab-focus refresh go through this.
   const load = useCallback(async () => {
     if (!userId) return;
-    const [countResult, listResult] = await Promise.all([
-      getUnreadNotificationCount(supabase, userId),
-      getNotifications(supabase, userId, BELL_LIMIT, 0),
-    ]);
-    setUnreadCount(countResult.count);
-    if (listResult.data) setItems(listResult.data);
-  }, [userId]);
+    applyFeed(await fetchBellFeed(userId));
+  }, [userId, applyFeed]);
 
+  // Initial load for each user; a response for a previous user is dropped.
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!userId) return;
+    let cancelled = false;
+    void fetchBellFeed(userId).then((feed) => {
+      if (!cancelled) applyFeed(feed);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, applyFeed]);
 
   useEffect(() => {
     if (!userId || !pollingEnabled) return;

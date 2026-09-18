@@ -122,6 +122,68 @@ describe('CreateEventPage', () => {
     expect(screen.getByText('🌐 Make Global')).toBeDefined();
   });
 
+  it('shows loading, then fills the form with the event being edited', async () => {
+    const { getEventById } = await import('@nepally/shared');
+    vi.mocked(getEventById).mockResolvedValueOnce({
+      data: {
+        id: 'edit-event',
+        title: 'Tihar Gathering',
+        description: 'Lights, sweets and deusi-bhailo.',
+        event_type: 'cultural',
+        start_date: '2026-11-01T18:00:00.000Z',
+        location_name: 'Irving Community Center',
+        location_address: null,
+        photo_url: null,
+        rsvp_visibility: 'public',
+        is_global: false,
+      },
+    } as unknown as Awaited<ReturnType<typeof getEventById>>);
+    mocks.useRouter.mockReturnValue({
+      query: { edit: 'edit-event' },
+      replace: mockReplace,
+      push: mockPush,
+    });
+
+    render(React.createElement(CreateEventPage));
+    expect(screen.getByText('Loading...')).toBeDefined();
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Edit Event' })).toBeDefined();
+    });
+    expect(getEventById).toHaveBeenCalledWith({}, 'edit-event');
+    expect(
+      (screen.getByPlaceholderText('e.g. Dashain Celebration 2026') as HTMLInputElement).value
+    ).toBe('Tihar Gathering');
+  });
+
+  it('shows loading when the edit query arrives after the first render', async () => {
+    const { getEventById } = await import('@nepally/shared');
+    type EventByIdResult = Awaited<ReturnType<typeof getEventById>>;
+    let resolveEvent: (value: EventByIdResult) => void = () => {};
+    vi.mocked(getEventById).mockReturnValueOnce(
+      new Promise<EventByIdResult>((resolve) => {
+        resolveEvent = resolve;
+      })
+    );
+
+    // Statically optimized pages render once with an empty query before hydration.
+    const { rerender } = render(React.createElement(CreateEventPage));
+    expect(screen.getByRole('heading', { name: 'Create Event' })).toBeDefined();
+
+    mocks.useRouter.mockReturnValue({
+      query: { edit: 'edit-event' },
+      replace: mockReplace,
+      push: mockPush,
+    });
+    rerender(React.createElement(CreateEventPage));
+    expect(screen.getByText('Loading...')).toBeDefined();
+
+    resolveEvent({ error: new Error('Event not found') });
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Edit Event' })).toBeDefined();
+    });
+  });
+
   it('calls createEvent with valid form data', async () => {
     const { createEvent } = await import('@nepally/shared');
     render(React.createElement(CreateEventPage));

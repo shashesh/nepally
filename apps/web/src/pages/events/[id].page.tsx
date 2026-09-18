@@ -152,15 +152,16 @@ export default function EventDetailPage() {
     router.push('/events');
   };
 
+  const organizer = event?.organizer;
   const handleMessageOrganizer = useCallback(async () => {
-    if (!user || !event?.organizer || messagingLoading) return;
+    if (!user || !organizer || messagingLoading) return;
     setMessagingLoading(true);
     const result = await getOrCreateConversation(
       supabase,
       user.id,
       user.full_name,
-      event.organizer.id,
-      event.organizer.full_name
+      organizer.id,
+      organizer.full_name
     );
     setMessagingLoading(false);
 
@@ -169,7 +170,7 @@ export default function EventDetailPage() {
     } else {
       alert('Failed to start conversation. Please try again.');
     }
-  }, [user, event?.organizer, messagingLoading, router]);
+  }, [user, organizer, messagingLoading, router]);
 
   const formatFullDate = (startDate: string, endDate?: string) => {
     const start = new Date(startDate);

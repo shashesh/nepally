@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, StyleSheet, View, useAnimatedValue } from 'react-native';
 import { spacing } from '../../styles/spacing';
 import { warmBorder, warmRadius, warmShadow, warmSurface } from '../../styles/warmTokens';
 
@@ -9,7 +9,7 @@ interface ListingGridCardSkeletonProps {
 }
 
 export function ListingGridCardSkeleton({ width }: ListingGridCardSkeletonProps) {
-  const shimmer = useRef(new Animated.Value(0)).current;
+  const shimmer = useAnimatedValue(0);
 
   useEffect(() => {
     const loop = Animated.loop(

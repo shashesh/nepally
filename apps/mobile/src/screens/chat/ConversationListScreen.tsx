@@ -26,20 +26,21 @@ type ChatNavProp = NativeStackNavigationProp<ChatStackParamList>;
 
 export default function ConversationListScreen() {
   const { user } = useAuth();
+  const userId = user?.id;
   const navigation = useNavigation<ChatNavProp>();
   const [conversations, setConversations] = useState<ConversationWithParticipant[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadConversations = useCallback(async () => {
-    if (!user?.id) return;
-    const result = await getConversations(supabase, user.id);
+    if (!userId) return;
+    const result = await getConversations(supabase, userId);
     if (result.data) {
       setConversations(result.data);
     }
     setLoading(false);
     setRefreshing(false);
-  }, [user?.id]);
+  }, [userId]);
 
   // Reload whenever screen comes into focus
   useFocusEffect(

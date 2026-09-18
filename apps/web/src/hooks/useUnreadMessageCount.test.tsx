@@ -71,6 +71,27 @@ describe('useUnreadMessageCount', () => {
     await waitFor(() => expect(result.current).toBe(6));
   });
 
+  it("drops a previous user's count that arrives after switching users", async () => {
+    let resolveFirst!: (value: { count: number }) => void;
+    mocks.getTotalUnreadCount
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirst = resolve;
+        })
+      )
+      .mockResolvedValue({ count: 5 });
+    const { result, rerender } = renderHook(({ userId }) => useUnreadMessageCount(userId), {
+      initialProps: { userId: 'user-1' },
+    });
+
+    rerender({ userId: 'user-2' });
+    await waitFor(() => expect(result.current).toBe(5));
+    await act(async () => {
+      resolveFirst({ count: 9 });
+    });
+    expect(result.current).toBe(5);
+  });
+
   it('returns 0 and does nothing without a user', () => {
     const { result } = renderHook(() => useUnreadMessageCount(null));
     expect(result.current).toBe(0);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -31,13 +31,17 @@ export function TagSelectorSheet({
   onApply,
 }: TagSelectorSheetProps) {
   const [localSelectedSlugs, setLocalSelectedSlugs] = useState<string[]>(selectedSlugs);
+  const [prevVisible, setPrevVisible] = useState(visible);
+  const [prevSelectedSlugs, setPrevSelectedSlugs] = useState(selectedSlugs);
 
-  // Sync local state when sheet opens
-  useEffect(() => {
+  // Sync local state when the sheet opens, or when the parent's selection changes while open
+  if (visible !== prevVisible || selectedSlugs !== prevSelectedSlugs) {
+    setPrevVisible(visible);
+    setPrevSelectedSlugs(selectedSlugs);
     if (visible) {
       setLocalSelectedSlugs(selectedSlugs);
     }
-  }, [visible, selectedSlugs]);
+  }
 
   const handleTagPress = (slug: string) => {
     setLocalSelectedSlugs((prev) => {

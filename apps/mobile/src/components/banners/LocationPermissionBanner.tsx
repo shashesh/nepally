@@ -20,29 +20,35 @@ import {
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 
+/**
+ * The banner only shows when location permission is denied and the stored
+ * show-count / cooldown state still allows another prompt.
+ */
+async function shouldShowBanner(): Promise<boolean> {
+  const permStatus = await getLocationPermissionStatus();
+  if (permStatus !== 'denied') return false;
+
+  const state = await getPermissionBannerState();
+  return shouldShowPermissionBanner(
+    state.show_count,
+    state.last_shown_at,
+    PERMISSION_BANNER_MAX_SHOWS,
+    PERMISSION_BANNER_COOLDOWN_DAYS
+  );
+}
+
 export function LocationPermissionBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    checkShouldShow();
+    let cancelled = false;
+    shouldShowBanner().then((show) => {
+      if (!cancelled && show) setVisible(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  async function checkShouldShow() {
-    const permStatus = await getLocationPermissionStatus();
-    if (permStatus !== 'denied') return;
-
-    const state = await getPermissionBannerState();
-    if (
-      shouldShowPermissionBanner(
-        state.show_count,
-        state.last_shown_at,
-        PERMISSION_BANNER_MAX_SHOWS,
-        PERMISSION_BANNER_COOLDOWN_DAYS
-      )
-    ) {
-      setVisible(true);
-    }
-  }
 
   const handleTurnOn = () => {
     Linking.openSettings();
@@ -71,6 +77,8 @@ export function LocationPermissionBanner() {
       <TouchableOpacity
         onPress={handleDismiss}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss location banner"
       >
         <Ionicons name="close" size={20} color={colors.text.secondary} />
       </TouchableOpacity>

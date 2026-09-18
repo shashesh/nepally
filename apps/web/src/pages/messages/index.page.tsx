@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Badge, Center, Text, UnstyledButton } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -13,6 +13,7 @@ import styles from '../../styles/Messages.module.css';
 export default function MessagesPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const userId = user?.id;
   const [conversations, setConversations] = useState<
     ConversationWithParticipant[]
   >([]);
@@ -20,23 +21,26 @@ export default function MessagesPage() {
   const [openAvatarMenuId, setOpenAvatarMenuId] = useState<string | null>(null);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
 
-  const loadConversations = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    const result = await getConversations(supabase, user.id);
-    if (result.data) {
-      setConversations(result.data);
-    }
-    setLoading(false);
-  }, [user]);
-
   useEffect(() => {
     if (!user) {
       router.replace('/login');
-      return;
     }
-    loadConversations();
-  }, [user, router, loadConversations]);
+  }, [user, router]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    getConversations(supabase, userId).then((result) => {
+      if (cancelled) return;
+      if (result.data) {
+        setConversations(result.data);
+      }
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   // Close avatar dropdown on outside click
   useEffect(() => {

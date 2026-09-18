@@ -43,6 +43,7 @@ type AvatarMenuUser = {
 export default function PostDetailPage() {
   const router = useRouter();
   const { id } = router.query;
+  const routePostId = typeof id === 'string' ? id : null;
   const { user } = useAuth();
 
   const [post, setPost] = useState<Post | null>(null);
@@ -53,7 +54,16 @@ export default function PostDetailPage() {
   const [commentText, setCommentText] = useState('');
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
+  // Route id whose post request has finished; any other id is still loading.
+  const [loadedPostId, setLoadedPostId] = useState<string | null>(null);
+  const loading = !routePostId || loadedPostId !== routePostId;
+  // On a different post, drop the previous post's comments right away rather
+  // than showing them under the new post until its own comments arrive.
+  const [commentsPostId, setCommentsPostId] = useState(routePostId);
+  if (commentsPostId !== routePostId) {
+    setCommentsPostId(routePostId);
+    setComments([]);
+  }
   const [submitting, setSubmitting] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [avatarMenuUser, setAvatarMenuUser] = useState<AvatarMenuUser | null>(null);
@@ -74,14 +84,26 @@ export default function PostDetailPage() {
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!id || typeof id !== 'string') return;
-    loadPost(id);
-    loadComments(id);
-  }, [id]);
+    if (!routePostId) return;
 
-  useEffect(() => {
-    setCurrentPhotoIndex(0);
-  }, [post?.id]);
+    let cancelled = false;
+    getPostById(supabase, routePostId).then((result) => {
+      if (cancelled) return;
+      // A missing post clears the previous one, so the page shows "Post not found"
+      // instead of the last post under the new URL.
+      setPost(result.data ?? null);
+      setLikesCount(result.data?.likes_count || 0);
+      setLoadedPostId(routePostId);
+    });
+    getPostComments(supabase, routePostId).then((result) => {
+      if (cancelled) return;
+      setComments(result.data ?? []);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routePostId]);
 
   useEffect(() => {
     return () => {
@@ -139,23 +161,6 @@ export default function PostDetailPage() {
     avatarDropdownRef.current.style.top = `${avatarMenuPosition.top}px`;
     avatarDropdownRef.current.style.left = `${avatarMenuPosition.left}px`;
   }, [avatarMenuOpen, avatarMenuPosition]);
-
-  async function loadPost(postId: string) {
-    setLoading(true);
-    const result = await getPostById(supabase, postId);
-    if (result.data) {
-      setPost(result.data);
-      setLikesCount(result.data.likes_count || 0);
-    }
-    setLoading(false);
-  }
-
-  async function loadComments(postId: string) {
-    const result = await getPostComments(supabase, postId);
-    if (result.data) {
-      setComments(result.data);
-    }
-  }
 
   async function handleLike() {
     if (!user || !post) return;
@@ -340,6 +345,21 @@ export default function PostDetailPage() {
   const commentThreads = buildSingleLevelCommentThreads(comments);
   const postPhotos = (post?.photos || []).filter(Boolean).slice(0, 3);
 
+  // When a different post (or photo set) is shown, start the carousel over:
+  // first photo, chrome visible. Adjusted during render so the new post never
+  // renders with the previous post's photo index.
+  const [carouselShownFor, setCarouselShownFor] = useState({
+    postId: post?.id,
+    photoCount: postPhotos.length,
+  });
+  if (carouselShownFor.postId !== post?.id || carouselShownFor.photoCount !== postPhotos.length) {
+    setCarouselShownFor({ postId: post?.id, photoCount: postPhotos.length });
+    if (carouselShownFor.postId !== post?.id) {
+      setCurrentPhotoIndex(0);
+    }
+    setCarouselChromeVisible(true);
+  }
+
   const clearCarouselChromeTimer = useCallback(() => {
     if (carouselChromeHideTimeoutRef.current) {
       clearTimeout(carouselChromeHideTimeoutRef.current);
@@ -347,24 +367,28 @@ export default function PostDetailPage() {
     }
   }, []);
 
-  const resetCarouselChromeTimer = useCallback(() => {
-    setCarouselChromeVisible(true);
-    if (postPhotos.length <= 1) return;
+  const scheduleCarouselChromeHide = useCallback(() => {
     clearCarouselChromeTimer();
     carouselChromeHideTimeoutRef.current = setTimeout(() => {
       setCarouselChromeVisible(false);
     }, DETAIL_CAROUSEL_CHROME_HIDE_DELAY_MS);
-  }, [postPhotos.length, clearCarouselChromeTimer]);
+  }, [clearCarouselChromeTimer]);
 
+  const resetCarouselChromeTimer = useCallback(() => {
+    setCarouselChromeVisible(true);
+    if (postPhotos.length <= 1) return;
+    scheduleCarouselChromeHide();
+  }, [postPhotos.length, scheduleCarouselChromeHide]);
+
+  // Auto-hide the carousel chrome for a newly shown multi-photo post.
   useEffect(() => {
     if (postPhotos.length <= 1) {
       clearCarouselChromeTimer();
-      setCarouselChromeVisible(true);
       return;
     }
 
-    resetCarouselChromeTimer();
-  }, [post?.id, postPhotos.length, clearCarouselChromeTimer, resetCarouselChromeTimer]);
+    scheduleCarouselChromeHide();
+  }, [post?.id, postPhotos.length, clearCarouselChromeTimer, scheduleCarouselChromeHide]);
 
   useEffect(() => {
     if (lightboxPhotos.length === 0) return;

@@ -12,15 +12,24 @@ const POLL_INTERVAL_MS = 30_000;
 export function useUnreadMessageCount(userId: string | null): number {
   const [count, setCount] = useState(0);
 
+  // Realtime events and the poll refresh through this.
   const refresh = useCallback(async () => {
     if (!userId) return;
     const result = await getTotalUnreadCount(supabase, userId);
     setCount(result.count);
   }, [userId]);
 
+  // Initial load for each user; a response for a previous user is dropped.
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (!userId) return;
+    let cancelled = false;
+    void getTotalUnreadCount(supabase, userId).then((result) => {
+      if (!cancelled) setCount(result.count);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;

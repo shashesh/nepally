@@ -11,6 +11,7 @@ import {
   Modal,
   Dimensions,
   Animated,
+  useAnimatedValue,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -18,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
+import { useNow } from '../../hooks/useNow';
 import { getMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
 import { ProfileStackParamList } from '../../types/navigation';
@@ -30,7 +32,7 @@ import {
   getTrustLabel,
 } from '@nepally/shared';
 import type { Post, MarketplaceListing } from '@nepally/shared';
-import { getListingsByOwner, LISTING_SOFT_EXPIRY_DAYS } from '@nepally/shared';
+import { getListingsByOwner, getDaysUntilSoftExpiry } from '@nepally/shared';
 import { Avatar } from '../../components/Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
@@ -38,10 +40,28 @@ import { spacing, borderRadius } from '../../styles/spacing';
 
 type Navigation = NativeStackNavigationProp<ProfileStackParamList, 'ProfileView'>;
 
+const SAVE_TOAST_VISIBLE_MS = 2200;
+const SAVE_TOAST_FADE_MS = 300;
+
+/** "City, ST" for the user's metro: the cached metro first, then a Supabase lookup. */
+async function fetchMetroLabel(metroAreaId: string | null): Promise<string | null> {
+  const cached = await getMetroArea();
+  if (cached) return `${cached.name}, ${cached.state}`;
+
+  if (!metroAreaId) return null;
+  const { data } = await supabase
+    .from('metro_areas')
+    .select('name, state')
+    .eq('id', metroAreaId)
+    .single();
+  return data ? `${data.name}, ${data.state}` : null;
+}
+
 export function ProfileScreen() {
   const navigation = useNavigation<Navigation>();
   const { user, signOut } = useAuth();
   const userId = user?.id ?? null;
+  const metroAreaId = user?.metro_area_id ?? null;
   const [metroName, setMetroName] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
@@ -50,19 +70,25 @@ export function ProfileScreen() {
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [userListings, setUserListings] = useState<MarketplaceListing[]>([]);
+  const now = useNow();
   const [listingsLoading, setListingsLoading] = useState(false);
   const [postsLoading, setPostsLoading] = useState(false);
   const [savedLoading, setSavedLoading] = useState(false);
   const [postsError, setPostsError] = useState<string | null>(null);
   const [savedError, setSavedError] = useState<string | null>(null);
-  const [saveToast, setSaveToast] = useState<string | null>(null);
-  const saveToastOpacity = useRef(new Animated.Value(0)).current;
-  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // `id` changes on every toast so a repeat of the same message still restarts the dismiss timer.
+  const [saveToast, setSaveToast] = useState<{ id: number; message: string } | null>(null);
+  const saveToastOpacity = useAnimatedValue(0);
 
   useEffect(() => {
-    loadMetroArea();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.metro_area_id]);
+    let cancelled = false;
+    fetchMetroLabel(metroAreaId).then((label) => {
+      if (!cancelled && label) setMetroName(label);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [metroAreaId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -123,38 +149,25 @@ export function ProfileScreen() {
     };
   }, [userId]);
 
-  const loadMetroArea = async () => {
-    // Try cached first
-    const cached = await getMetroArea();
-    if (cached) {
-      setMetroName(`${cached.name}, ${cached.state}`);
-      return;
-    }
-
-    // Fallback to Supabase
-    if (user?.metro_area_id) {
-      const { data } = await supabase
-        .from('metro_areas')
-        .select('name, state')
-        .eq('id', user.metro_area_id)
-        .single();
-      if (data) {
-        setMetroName(`${data.name}, ${data.state}`);
-      }
-    }
-  };
-
-  const showSaveToast = (message: string) => {
-    setSaveToast(message);
-    saveToastOpacity.setValue(1);
-    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
-    saveToastTimerRef.current = setTimeout(() => {
+  // Auto-dismiss: each new toast restarts the timer, and unmounting cancels it.
+  useEffect(() => {
+    if (!saveToast) return;
+    const timer = setTimeout(() => {
       Animated.timing(saveToastOpacity, {
         toValue: 0,
-        duration: 300,
+        duration: SAVE_TOAST_FADE_MS,
         useNativeDriver: true,
-      }).start(() => setSaveToast(null));
-    }, 2200);
+      }).start(({ finished }) => {
+        // A newer toast interrupts the fade via setValue(1); don't clear that one.
+        if (finished) setSaveToast(null);
+      });
+    }, SAVE_TOAST_VISIBLE_MS);
+    return () => clearTimeout(timer);
+  }, [saveToast, saveToastOpacity]);
+
+  const showSaveToast = (message: string) => {
+    setSaveToast((prev) => ({ id: (prev?.id ?? 0) + 1, message }));
+    saveToastOpacity.setValue(1);
   };
 
   const handleUnsave = (postId: string) => {
@@ -270,11 +283,7 @@ export function ProfileScreen() {
           const statusBg =
             listing.status === 'active' ? '#E8F5E9' :
             listing.status === 'inactive' ? '#FFF3E0' : '#FFEBEE';
-          const daysUntilExpiry = Math.max(
-            0,
-            LISTING_SOFT_EXPIRY_DAYS -
-              Math.floor((Date.now() - new Date(listing.refreshed_at).getTime()) / (1000 * 60 * 60 * 24))
-          );
+          const daysUntilExpiry = getDaysUntilSoftExpiry(listing.refreshed_at, now);
 
           return (
             <TouchableOpacity
@@ -351,6 +360,8 @@ export function ProfileScreen() {
                 style={styles.savedPostMenuBtn}
                 onPress={() => handleUnsave(post.id)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={`Unsave ${post.title}`}
               >
                 <Ionicons name="ellipsis-vertical" size={18} color={colors.text.secondary} />
               </TouchableOpacity>
@@ -523,7 +534,7 @@ export function ProfileScreen() {
 
       {saveToast && (
         <Animated.View style={[styles.saveToast, { opacity: saveToastOpacity }]} pointerEvents="none">
-          <Text style={styles.saveToastText}>{saveToast}</Text>
+          <Text style={styles.saveToastText}>{saveToast.message}</Text>
         </Animated.View>
       )}
     </SafeAreaView>

@@ -41,6 +41,14 @@ import styles from '../styles/Feed.module.css';
 const LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
 const LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
 
+function parseTagSlugsParam(param: string | undefined): string[] {
+  return param ? param.split(',').filter(Boolean) : [];
+}
+
+function haveSameTagSlugs(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((slug, index) => slug === b[index]);
+}
+
 interface FeedPageProps {
   routeBasePath?: string;
 }
@@ -70,32 +78,33 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [stickyListings, setStickyListings] = useState<SponsoredListing[]>([]);
   const [sponsoredFeedListings, setSponsoredFeedListings] = useState<SponsoredListing[]>([]);
-  const latestLoadRequestId = useRef(0);
+  const [feedReloadToken, setFeedReloadToken] = useState(0);
   const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Tag-based filtering (multi-select) — set via sidebar nav links
-  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
   const pageTitle = routeBasePath === '/' ? 'Home - Nepally' : 'Feed - Nepally';
   const queryTags = router.query.tags;
+  const queryTagsParam = typeof queryTags === 'string' ? queryTags : undefined;
+  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>(() =>
+    router.isReady ? parseTagSlugsParam(queryTagsParam) : []
+  );
 
-  // Parse tag filters from URL query
-  useEffect(() => {
-    if (!router.isReady) return;
-
-    const nextTags = queryTags && typeof queryTags === 'string'
-      ? queryTags.split(',').filter(Boolean)
-      : [];
-
-    setSelectedTagSlugs((prev) => {
-      if (
-        prev.length === nextTags.length &&
-        prev.every((slug, index) => slug === nextTags[index])
-      ) {
-        return prev;
+  // Mirror tag filters from the URL query once the router is ready. Adjusting
+  // state during render (not in an effect) means the first posts request
+  // already uses the URL's tags.
+  const [syncedTagQuery, setSyncedTagQuery] = useState({
+    isReady: router.isReady,
+    param: queryTagsParam,
+  });
+  if (syncedTagQuery.isReady !== router.isReady || syncedTagQuery.param !== queryTagsParam) {
+    setSyncedTagQuery({ isReady: router.isReady, param: queryTagsParam });
+    if (router.isReady) {
+      const nextTags = parseTagSlugsParam(queryTagsParam);
+      if (!haveSameTagSlugs(selectedTagSlugs, nextTags)) {
+        setSelectedTagSlugs(nextTags);
       }
-      return nextTags;
-    });
-  }, [router.isReady, queryTags]);
+    }
+  }
 
   // Redirect if not logged in or no metro area set
   useEffect(() => {
@@ -110,6 +119,34 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
   const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
   const userNeedsMetroOnboarding = Boolean(user && !user.metro_area_id);
+
+  // When an input of the first-page request changes (or Retry is pressed),
+  // show the loading state — or clear the feed when there is nothing to load —
+  // during render. The request itself runs in the effect further down.
+  const feedRequestInputs = [
+    authLoading,
+    user,
+    userNeedsMetroOnboarding,
+    metroAreaId,
+    selectedTagSlugs,
+    feedReloadToken,
+  ] as const;
+  const [prevFeedRequestInputs, setPrevFeedRequestInputs] =
+    useState<typeof feedRequestInputs | null>(null);
+  if (
+    !prevFeedRequestInputs ||
+    feedRequestInputs.some((input, index) => input !== prevFeedRequestInputs[index])
+  ) {
+    setPrevFeedRequestInputs(feedRequestInputs);
+    if (!authLoading) {
+      const canLoadFeed = Boolean(user) && !userNeedsMetroOnboarding && Boolean(metroAreaId);
+      setLoading(canLoadFeed);
+      setLoadError(null);
+      if (!canLoadFeed) {
+        setPosts([]);
+      }
+    }
+  }
 
   function handleReportPost(postId: string) {
     setReportModalPostId(postId);
@@ -149,86 +186,77 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     }
   }
 
-  const loadPosts = useCallback(async () => {
-    if (authLoading) return;
+  // Load the first page of posts. The cleanup cancels a superseded request, so
+  // only the latest one updates state.
+  useEffect(() => {
+    if (authLoading || !user || userNeedsMetroOnboarding || !metroAreaId) return;
 
-    const requestId = ++latestLoadRequestId.current;
-
-    if (!user) {
-      setPosts([]);
-      setLoadError(null);
-      setLoading(false);
-      return;
-    }
-
-    if (userNeedsMetroOnboarding || !metroAreaId) {
-      setPosts([]);
-      setLoadError(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setLoadError(null);
+    let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    try {
-      const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
-      const requestPromise = getPostsByMetroArea(
-        supabase,
-        metroAreaId,
-        slugs,
-        FEED_PAGE_SIZE,
-        0
-      );
-      const timeoutPromise = new Promise<{ error: Error }>((resolve) => {
-        timeoutId = setTimeout(
-          () => resolve({ error: new Error('Timed out while loading posts') }),
-          12000
+
+    (async () => {
+      try {
+        const slugs = selectedTagSlugs.length > 0 ? selectedTagSlugs : undefined;
+        const requestPromise = getPostsByMetroArea(
+          supabase,
+          metroAreaId,
+          slugs,
+          FEED_PAGE_SIZE,
+          0
         );
-      });
-      const result = await Promise.race([requestPromise, timeoutPromise]);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+        const timeoutPromise = new Promise<{ error: Error }>((resolve) => {
+          timeoutId = setTimeout(
+            () => resolve({ error: new Error('Timed out while loading posts') }),
+            12000
+          );
+        });
+        const result = await Promise.race([requestPromise, timeoutPromise]);
+        if (cancelled) return;
 
-      if (requestId !== latestLoadRequestId.current) return;
+        if (!result || typeof result !== 'object') {
+          setPosts([]);
+          setHasMorePosts(false);
+          setLoadError('Could not load posts. Please check your connection and try again.');
+          return;
+        }
 
-      if (!result || typeof result !== 'object') {
+        if ('error' in result && result.error) {
+          setPosts([]);
+          setHasMorePosts(false);
+          setLoadError('Could not load posts. Please check your connection and try again.');
+          return;
+        }
+
+        if ('data' in result && result.data) {
+          setPosts(result.data);
+          setHasMorePosts(Boolean((result as { hasMore?: boolean }).hasMore));
+        } else {
+          setPosts([]);
+          setHasMorePosts(false);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Failed to load posts:', error);
         setPosts([]);
         setHasMorePosts(false);
         setLoadError('Could not load posts. Please check your connection and try again.');
-        return;
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
+    })();
 
-      if ('error' in result && result.error) {
-        setPosts([]);
-        setHasMorePosts(false);
-        setLoadError('Could not load posts. Please check your connection and try again.');
-        return;
-      }
-
-      if ('data' in result && result.data) {
-        setPosts(result.data);
-        setHasMorePosts(Boolean((result as { hasMore?: boolean }).hasMore));
-      } else {
-        setPosts([]);
-        setHasMorePosts(false);
-      }
-    } catch (error) {
-      if (requestId !== latestLoadRequestId.current) return;
-      console.error('Failed to load posts:', error);
-      setPosts([]);
-      setHasMorePosts(false);
-      setLoadError('Could not load posts. Please check your connection and try again.');
-    } finally {
+    return () => {
+      cancelled = true;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      if (requestId === latestLoadRequestId.current) {
-        setLoading(false);
-      }
-    }
-  }, [authLoading, user, userNeedsMetroOnboarding, metroAreaId, selectedTagSlugs]);
+    };
+  }, [authLoading, user, userNeedsMetroOnboarding, metroAreaId, selectedTagSlugs, feedReloadToken]);
 
   const loadMorePosts = useCallback(async () => {
     if (loadingMoreRef.current) return;
@@ -361,10 +389,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       showSaveToast(wasSaved ? 'Post unsaved.' : 'Post saved.');
     }
   }
-
-  useEffect(() => {
-    loadPosts();
-  }, [loadPosts]);
 
   useEffect(() => {
     return () => {
@@ -504,7 +528,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   }
 
   function handleRetryLoad() {
-    loadPosts();
+    setFeedReloadToken((token) => token + 1);
   }
 
   function handleAvatarViewProfile(authorId: string) {
@@ -976,16 +1000,14 @@ function PostCard({
 }) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [postMenuOpen, setPostMenuOpen] = useState(false);
+  // FeedPage keys each PostCard by post id, so a different post always gets a
+  // fresh card and mediaIndex starts over at 0.
   const [mediaIndex, setMediaIndex] = useState(0);
   const avatarMenuRef = useClickOutside(() => setAvatarMenuOpen(false));
   const postMenuRef = useClickOutside(() => setPostMenuOpen(false));
   const mediaTouchStartXRef = useRef<number | null>(null);
   const isOwnPost = currentUserId === post.author_id;
   const photoUrls = (post.photos || []).filter(Boolean).slice(0, 3);
-
-  useEffect(() => {
-    setMediaIndex(0);
-  }, [post.id]);
 
   function handleEditPost(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();

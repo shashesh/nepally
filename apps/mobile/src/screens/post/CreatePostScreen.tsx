@@ -81,7 +81,8 @@ export default function CreatePostScreen({ navigation, route }: Props) {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [tagsLoading, setTagsLoading] = useState(false);
+  // Tags are requested on mount, so the screen starts out loading them.
+  const [tagsLoading, setTagsLoading] = useState(true);
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [loadingExistingPost, setLoadingExistingPost] = useState(false);
   const [initialForm, setInitialForm] = useState<{
@@ -99,7 +100,9 @@ export default function CreatePostScreen({ navigation, route }: Props) {
   });
 
   // Keep ref in sync so handleSubmit always reads the latest photos
-  selectedPhotosRef.current = selectedPhotos;
+  useLayoutEffect(() => {
+    selectedPhotosRef.current = selectedPhotos;
+  }, [selectedPhotos]);
 
   const initialTagSet = new Set(initialForm.selectedTagIds);
   const currentTagSet = new Set(selectedTagIds);
@@ -144,12 +147,79 @@ export default function CreatePostScreen({ navigation, route }: Props) {
       : null;
 
   useEffect(() => {
-    loadTags();
+    let cancelled = false;
+    getTags(supabase).then((result) => {
+      if (cancelled) return;
+      if (result.data) {
+        setAvailableTags(result.data);
+      } else {
+        setTagsError('Unable to load tags. Pull to refresh or reopen this screen.');
+      }
+      setTagsLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // When an input of the existing-post request changes, flag during render
+  // whether a load is starting. The request itself runs in the effect below.
+  const [existingPostRequestInputs, setExistingPostRequestInputs] = useState({
+    editPostId,
+    tagCount: availableTags.length,
+  });
+  if (
+    existingPostRequestInputs.editPostId !== editPostId ||
+    existingPostRequestInputs.tagCount !== availableTags.length
+  ) {
+    setExistingPostRequestInputs({ editPostId, tagCount: availableTags.length });
+    setLoadingExistingPost(Boolean(isEditing && editPostId && availableTags.length > 0));
+  }
 
   useEffect(() => {
     if (!isEditing || !editPostId || availableTags.length === 0) return;
-    loadExistingPost(editPostId);
+
+    let cancelled = false;
+    getPostById(supabase, editPostId).then((result) => {
+      if (cancelled) return;
+
+      if (!result.data) {
+        Alert.alert('Error', result.error?.message || 'Unable to load post for editing.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+        setLoadingExistingPost(false);
+        return;
+      }
+
+      if (user?.id && result.data.author_id !== user.id) {
+        Alert.alert('Not Allowed', 'You can only edit your own posts.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+        setLoadingExistingPost(false);
+        return;
+      }
+
+      const existingTagIds = (result.data.tags || []).map((tag) => tag.id);
+      setTitle(result.data.title || '');
+      setBody(result.data.description || '');
+      setSelectedTagIds(existingTagIds);
+      setIsGlobal(Boolean(result.data.is_global));
+      setExistingPhotos(result.data.photos || []);
+      setRemovedExistingPhotoPaths([]);
+      setInitialForm({
+        title: result.data.title || '',
+        body: result.data.description || '',
+        selectedTagIds: existingTagIds,
+        isGlobal: Boolean(result.data.is_global),
+        existingPhotos: result.data.photos || [],
+      });
+      setLoadingExistingPost(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, editPostId, availableTags.length]);
 
@@ -267,55 +337,6 @@ export default function CreatePostScreen({ navigation, route }: Props) {
     loadingExistingPost,
     isEditing,
   ]);
-
-  async function loadTags() {
-    setTagsLoading(true);
-    setTagsError(null);
-    const result = await getTags(supabase);
-    if (result.data) {
-      setAvailableTags(result.data);
-    } else {
-      setTagsError('Unable to load tags. Pull to refresh or reopen this screen.');
-    }
-    setTagsLoading(false);
-  }
-
-  async function loadExistingPost(postId: string) {
-    setLoadingExistingPost(true);
-    const result = await getPostById(supabase, postId);
-
-    if (!result.data) {
-      Alert.alert('Error', result.error?.message || 'Unable to load post for editing.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-      setLoadingExistingPost(false);
-      return;
-    }
-
-    if (user?.id && result.data.author_id !== user.id) {
-      Alert.alert('Not Allowed', 'You can only edit your own posts.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-      setLoadingExistingPost(false);
-      return;
-    }
-
-    const existingTagIds = (result.data.tags || []).map((tag) => tag.id);
-    setTitle(result.data.title || '');
-    setBody(result.data.description || '');
-    setSelectedTagIds(existingTagIds);
-    setIsGlobal(Boolean(result.data.is_global));
-    setExistingPhotos(result.data.photos || []);
-    setRemovedExistingPhotoPaths([]);
-    setInitialForm({
-      title: result.data.title || '',
-      body: result.data.description || '',
-      selectedTagIds: existingTagIds,
-      isGlobal: Boolean(result.data.is_global),
-      existingPhotos: result.data.photos || [],
-    });
-    setLoadingExistingPost(false);
-  }
 
   function handleCancel() {
     if (isDirty) {

@@ -120,8 +120,10 @@ This document serves as the single source of truth for all technology versions u
 - **The `--ext` flags are gone** from the lint scripts; flat config selects files
   through the `files` patterns each config object declares.
 - **eslint-plugin-react-hooks 7** brings the React Compiler rule set, which flagged
-  169 pre-existing findings. They are set to `warn` pending
-  `docs/plans/active/react-compiler-lint-cleanup.md`.
+  169 pre-existing findings. They were `warn` until the cleanup
+  (`docs/archive/plans/react-compiler-lint-cleanup.md`, 2026-09-18) fixed every
+  finding and returned them to the plugin's default, `error`. The React Compiler
+  itself is not enabled; only its lint rules are.
 
 ### React Navigation 7 (upgraded from 6, 2026-09-10)
 - **Reason:** the whole v6 line is npm-deprecated ("This version is no longer
