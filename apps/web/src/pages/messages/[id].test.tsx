@@ -64,9 +64,10 @@ describe('MessageThreadPage', () => {
 
   it('returns null and redirects when user is not logged in', async () => {
     threadMocks.useAuthMock.mockReturnValue({ user: null });
-    const { container } = render(<MessageThreadPage />);
-    // MantineProvider injects style tags; verify no meaningful UI content
-    expect(container.querySelector('[class*="message"], [class*="thread"], main, article')).toBeNull();
+    render(<MessageThreadPage />);
+    expect(screen.queryByText('Loading messages...')).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('main')).toBeNull();
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 

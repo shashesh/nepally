@@ -20,6 +20,7 @@
     "test:e2e:web:headed": "npm run test:e2e --workspace=apps/web -- --headed",
     "test:e2e:web:ui": "npm run test:e2e:ui --workspace=apps/web",
     "test:e2e:web:report": "npm run test:e2e --workspace=apps/web -- --reporter=html && npm exec --workspace=apps/web playwright show-report",
+    "test:visual:web": "npm run test:visual:docker --workspace=apps/web",
     "test:e2e:mobile": "npm run test:e2e --workspace=apps/mobile",
     "test:security:chat-rls": "tsx scripts/security/chat-rls-smoke.ts",
     "test:security:users-privilege": "tsx scripts/security/users-privilege-smoke.ts",
