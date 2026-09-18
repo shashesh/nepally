@@ -1,0 +1,21 @@
+.root {
+  height: auto;
+  padding: 2px var(--space-2);
+  border: none;
+  font-size: var(--font-size-xs);
+}
+
+.new {
+  background: var(--trust-new-bg);
+  color: var(--trust-new-fg);
+}
+
+.verified {
+  background: var(--trust-verified-bg);
+  color: var(--trust-verified-fg);
+}
+
+.contributor {
+  background: var(--trust-contributor-bg);
+  color: var(--trust-contributor-fg);
+}

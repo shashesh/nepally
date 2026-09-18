@@ -1,35 +1,14 @@
 {
-  "visual-desktop:create-post": [
-    "color-contrast"
-  ],
   "visual-desktop:event-detail": [
     "color-contrast"
   ],
   "visual-desktop:events": [
     "color-contrast"
   ],
-  "visual-desktop:feed": [
-    "color-contrast"
-  ],
-  "visual-desktop:landing": [
-    "color-contrast"
-  ],
   "visual-desktop:listing-detail": [
     "color-contrast"
   ],
-  "visual-desktop:login": [
-    "color-contrast"
-  ],
   "visual-desktop:marketplace": [
-    "color-contrast"
-  ],
-  "visual-desktop:messages": [
-    "color-contrast"
-  ],
-  "visual-desktop:notifications": [
-    "color-contrast"
-  ],
-  "visual-desktop:post-detail": [
     "color-contrast"
   ],
   "visual-desktop:profile": [
@@ -38,49 +17,22 @@
   "visual-desktop:public-profile": [
     "color-contrast"
   ],
-  "visual-desktop:signup": [
-    "color-contrast"
-  ],
-  "visual-phone:create-post": [
-    "color-contrast"
-  ],
   "visual-phone:event-detail": [
     "color-contrast"
   ],
   "visual-phone:events": [
     "color-contrast"
   ],
-  "visual-phone:feed": [
-    "color-contrast"
-  ],
-  "visual-phone:landing": [
-    "color-contrast"
-  ],
   "visual-phone:listing-detail": [
     "color-contrast"
   ],
-  "visual-phone:login": [
-    "color-contrast"
-  ],
   "visual-phone:marketplace": [
-    "color-contrast"
-  ],
-  "visual-phone:messages": [
-    "color-contrast"
-  ],
-  "visual-phone:notifications": [
-    "color-contrast"
-  ],
-  "visual-phone:post-detail": [
     "color-contrast"
   ],
   "visual-phone:profile": [
     "color-contrast"
   ],
   "visual-phone:public-profile": [
-    "color-contrast"
-  ],
-  "visual-phone:signup": [
     "color-contrast"
   ]
 }

@@ -1,0 +1,57 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 100%;
+  padding: 0 var(--space-4);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  color: var(--action-bg);
+  white-space: nowrap;
+}
+
+.brandDot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.location {
+  display: none;
+}
+
+.search {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.account {
+  display: none;
+}
+
+@media (min-width: $mantine-breakpoint-sm) {
+  .location,
+  .account {
+    display: block;
+  }
+
+  .search {
+    justify-content: flex-start;
+    max-width: 440px;
+  }
+}

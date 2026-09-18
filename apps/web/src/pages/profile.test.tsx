@@ -444,4 +444,22 @@ describe('ProfilePage', () => {
       );
     });
   });
+
+  it('lists settings and secondary pages under "Settings & more"', async () => {
+    render(<ProfilePage />);
+    const settings = await screen.findByRole('navigation', { name: 'Settings & more' });
+    const hrefs = Array.from(settings.querySelectorAll('a')).map((link) => link.getAttribute('href'));
+    expect(hrefs).toEqual(['/profile/locations', '/profile/notifications', '/guidelines', '/help', '/privacy', '/terms']);
+  });
+
+  it('includes Moderation for moderators', async () => {
+    profileMocks.useAuthMock.mockReturnValue({
+      user: { ...mockUser, is_moderator: true },
+      signOut: mockSignOut,
+      refreshUser: mockRefreshUser,
+    });
+    render(<ProfilePage />);
+    const settings = await screen.findByRole('navigation', { name: 'Settings & more' });
+    expect(Array.from(settings.querySelectorAll('a')).map((link) => link.getAttribute('href'))).toContain('/moderation');
+  });
 });

@@ -1,1 +1,30 @@
-/* Avatar placeholder styling handled via Mantine color prop with name-based colors */
+.root {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.verifiedMark {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--trust-verified-fg);
+  color: var(--action-fg);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 0 0 2px var(--surface-1);
+}
+
+.tone1 { background: var(--avatar-tone-1-bg); color: var(--avatar-tone-1-fg); }
+.tone2 { background: var(--avatar-tone-2-bg); color: var(--avatar-tone-2-fg); }
+.tone3 { background: var(--avatar-tone-3-bg); color: var(--avatar-tone-3-fg); }
+.tone4 { background: var(--avatar-tone-4-bg); color: var(--avatar-tone-4-fg); }
+.tone5 { background: var(--avatar-tone-5-bg); color: var(--avatar-tone-5-fg); }
+.tone6 { background: var(--avatar-tone-6-bg); color: var(--avatar-tone-6-fg); }
+.tone7 { background: var(--avatar-tone-7-bg); color: var(--avatar-tone-7-fg); }
+.tone8 { background: var(--avatar-tone-8-bg); color: var(--avatar-tone-8-fg); }

@@ -390,3 +390,33 @@
   justify-content: flex-start;
 }
 
+/* ── Settings & more ─────────────────────── */
+.settingsCard {
+  margin-top: var(--space-5);
+  padding: var(--card-padding);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+
+.settingsList {
+  margin-top: var(--space-3);
+  list-style: none;
+}
+
+.settingsLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-base);
+  color: var(--text-1);
+}
+
+.settingsDanger {
+  border-bottom: none;
+  color: var(--danger);
+}
+

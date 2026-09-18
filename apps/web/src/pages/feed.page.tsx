@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { ActionIcon, Badge, Button, CloseButton, Skeleton, Stack, Text, UnstyledButton } from '@mantine/core';
-import { useClickOutside } from '@mantine/hooks';
+import { useClickOutside, useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from '../hooks/useLocation';
@@ -33,6 +33,8 @@ type FeedEntry =
 import Avatar from '../components/Avatar';
 import ReportPostModal from '../components/ReportPostModal';
 import { MetroPulseStrip } from '../components/pulse/MetroPulseStrip';
+import LocationSwitcher from '../components/LocationSwitcher';
+import { TopicPills } from '../components/layout/TopicPills';
 import styles from '../styles/Feed.module.css';
 
 const LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
@@ -45,6 +47,7 @@ interface FeedPageProps {
 export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const isPhone = useMediaQuery('(max-width: 47.99em)');
   const { activeLocation } = useLocation();
   const FEED_PAGE_SIZE = 20;
   const [posts, setPosts] = useState<Post[]>([]);
@@ -623,6 +626,13 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                 />
               </div>
             )}
+
+            {isPhone ? (
+              <div className={styles.phoneFilters}>
+                <LocationSwitcher />
+                <TopicPills />
+              </div>
+            ) : null}
 
             <div className={styles.composerCard}>
               <Avatar

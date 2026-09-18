@@ -28,6 +28,10 @@ const TEXT_PAIRS: Array<[foreground: string, background: string]> = [
   ['--warning', '--surface-1'],
 ];
 
+for (let tone = 1; tone <= 8; tone++) {
+  TEXT_PAIRS.push([`--avatar-tone-${tone}-fg`, `--avatar-tone-${tone}-bg`]);
+}
+
 describe('design token contrast (WCAG AA)', () => {
   it.each(TEXT_PAIRS)('%s on %s is at least 4.5:1', (foreground, background) => {
     const ratio = wcagContrast(resolveToken(tokens, foreground), resolveToken(tokens, background));

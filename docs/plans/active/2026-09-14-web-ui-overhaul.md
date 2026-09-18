@@ -74,6 +74,19 @@ The spec is updated in the same commit as this plan.
 2. **Native buttons keep a pointer cursor.** Task 1.3's `globals.css` includes `button:not(:disabled) { cursor: pointer; }`. The original rewrite had dropped the old `button { cursor: pointer; }` rule.
 3. **Allowlist paths are glob-escaped.** Minimatch reads Next.js `[id]` route names as glob character classes, so Task 1.5's ESLint `ignores` pass allowlist paths through `escapeGlobLiteral` (`apps/web/eslint/escape-glob.mjs`, with `escape-glob.test.mjs`). `guards:test` now also runs `apps/web/eslint/*.test.mjs`.
 4. **`URL` in Vitest on Windows.** Vitest's jsdom global `URL` mis-parses `file:///C:/…` on Windows, so test utilities that read files import Node's `URL` explicitly (`import { URL as NodeURL } from 'node:url'`).
+5. **Mantine test environment.** `apps/web/src/test-utils.tsx` renders `MantineProvider` with `env="test"`. Mantine's `Popover.Dropdown` hides itself (`display: none`) when floating-ui reports its reference as detached. jsdom has no layout, so that check misfires and hides popovers and menus from role queries. `env="test"` is Mantine's documented test-runner switch. It also collapses transitions and renders portals inline, so test transition and positioning behaviour in Playwright.
+6. **Primitive behaviour tightened in review.**
+   - `TrustBadge` clamps its level to the three known tiers, so style, icon and label always agree.
+   - `ActionMenu` never renders a disabled item as a link, because an `<a>` ignores `disabled`.
+   - `getInitials` works on code points.
+   - `Avatar`'s verified mark is announced as "Verified".
+7. **Allowlists stay green per commit.** Task 2.11 removed the `Layout.module.css` and `Layout.tsx` allowlist entries in the same commit as the rewrite, because the CSS guard fails on an allowlisted file that is clean.
+8. **AppShell navbar.** `AppShell.Navbar` renders with `component="div"`, so `SideRail`'s `<nav aria-label="Primary">` is the only navigation landmark there. It is hidden below 48em with `visibleFrom="sm"`, because `navbar.collapsed.mobile` only moves the navbar off-canvas and never sets `display`. `Layout.test.tsx` asserts that every navigation landmark has an accessible name.
+9. **Top-bar search deferred to PR 3b.** The old top-bar search input led to `/search`, which did not exist. PR 2 drops it, and PR 3b fills `TopBar`'s `search` slot with `SearchCombobox`.
+10. **Baselines are always fully rewritten.** The first PR 2 baseline run left seven stale pre-PR-2 screenshots: phone `messages`, `notifications`, `post-detail` and `create-post`, and desktop `landing`, `login` and `signup`.
+   - **Why:** Playwright's default `--update-snapshots` rewrites only snapshots that fail comparison. A near-white tab bar on a near-white page stays within `maxDiffPixelRatio: 0.01`, so those snapshots never failed.
+   - **Fix:** the Visual baselines workflow, `scripts/visual/run-in-docker.mjs` and `test:visual:update` now pass `--update-snapshots=all`.
+   - **Coverage:** pixel diffs cannot see low-contrast chrome, so the phone e2e suite now asserts the tab bar is visible on `/messages`, `/notifications` and post detail.
 
 ## Live tracker
 
@@ -82,8 +95,8 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | PR | Branch | Tasks | Status | Last updated | Notes |
 |---|---|---|---|---|---|
 | 0 Safety net | `test/web-visual-safety-net` | 0.1–0.6 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines generated in CI (no local Docker) |
-| 1 Foundation | `feat/web-design-tokens` (stacked on PR 0) | 1.1–1.7 | In Progress | 2026-09-15 | tasks done; awaiting CI baselines |
-| 2 Shell + primitives | `feat/web-app-shell` | 2.1–2.12 | Not Started | 2026-09-14 | |
+| 1 Foundation | `feat/web-design-tokens` (stacked on PR 0) | 1.1–1.7 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines generated in CI (db52500) |
+| 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | In Progress | 2026-09-15 | tasks done; awaiting CI baselines |
 | 3a Search: data + shared | `feat/search-data` | 3a.1–3a.4 | Not Started | 2026-09-14 | migration applied before 3b deploys |
 | 3b Search: web | `feat/search-web` | 3b.1–3b.6 | Not Started | 2026-09-14 | |
 | 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |

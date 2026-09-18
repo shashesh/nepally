@@ -43,24 +43,28 @@ const mockEvents = [
   },
 ];
 
-vi.mock('@nepally/shared', () => ({
-  getEventsByMetro: vi.fn(async () => ({ data: mockEvents })),
-  getUserEventResponses: vi.fn(async () => ({ data: {} })),
-  setEventResponse: vi.fn(async () => ({})),
-  removeEventResponse: vi.fn(async () => ({})),
-  EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],
-  EVENT_TYPE_LABELS: { cultural: 'Cultural', religious: 'Religious', social: 'Social', career: 'Career', other: 'Other' },
-  EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
-  EVENT_TYPE_COLORS: {
-    cultural: { text: '#E65100', background: '#FFF3E0' },
-    religious: { text: '#6A1B9A', background: '#F3E5F5' },
-    social: { text: '#1B5E20', background: '#E8F5E9' },
-    career: { text: '#0D47A1', background: '#E3F2FD' },
-    other: { text: '#424242', background: '#F5F5F5' },
-  },
-  TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
-  formatPublicName: (name: string) => name,
-}));
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
+  return {
+    ...actual,
+    getEventsByMetro: vi.fn(async () => ({ data: mockEvents })),
+    getUserEventResponses: vi.fn(async () => ({ data: {} })),
+    setEventResponse: vi.fn(async () => ({})),
+    removeEventResponse: vi.fn(async () => ({})),
+    EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],
+    EVENT_TYPE_LABELS: { cultural: 'Cultural', religious: 'Religious', social: 'Social', career: 'Career', other: 'Other' },
+    EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
+    EVENT_TYPE_COLORS: {
+      cultural: { text: '#E65100', background: '#FFF3E0' },
+      religious: { text: '#6A1B9A', background: '#F3E5F5' },
+      social: { text: '#1B5E20', background: '#E8F5E9' },
+      career: { text: '#0D47A1', background: '#E3F2FD' },
+      other: { text: '#424242', background: '#F5F5F5' },
+    },
+    TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
+    formatPublicName: (name: string) => name,
+  };
+});
 
 import EventsPage from './index.page';
 

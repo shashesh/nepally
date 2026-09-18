@@ -39,7 +39,7 @@ jobs:
 
       - name: Update screenshots and accessibility baseline
         working-directory: apps/web
-        run: npx playwright test --project=visual-desktop --project=visual-phone --update-snapshots --workers=1
+        run: npx playwright test --project=visual-desktop --project=visual-phone --update-snapshots=all --workers=1
         env:
           CI: 'true'
           A11Y_BASELINE_WRITE: '1'

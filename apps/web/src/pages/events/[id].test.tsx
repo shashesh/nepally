@@ -39,27 +39,31 @@ const MOCK_EVENT: Event = {
   organizer: { id: 'user-1', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
-vi.mock('@nepally/shared', () => ({
-  getEventById: vi.fn(async () => ({ data: MOCK_EVENT })),
-  getEventAttendees: vi.fn(async () => ({ data: [] })),
-  hasUserRsvp: vi.fn(async () => ({ data: false })),
-  getOrCreateConversation: vi.fn(async () => ({ data: { conversationId: 'conv-1', isNew: true } })),
-  rsvpToEvent: vi.fn(async () => ({})),
-  unrsvpFromEvent: vi.fn(async () => ({})),
-  cancelEvent: vi.fn(async () => ({})),
-  deleteEvent: vi.fn(async () => ({})),
-  formatPublicName: (name: string) => name,
-  TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
-  EVENT_TYPE_COLORS: {
-    cultural: { text: '#E65100', background: '#FFF3E0' },
-    religious: { text: '#6A1B9A', background: '#F3E5F5' },
-    social: { text: '#1B5E20', background: '#E8F5E9' },
-    career: { text: '#0D47A1', background: '#E3F2FD' },
-    other: { text: '#424242', background: '#F5F5F5' },
-  },
-  EVENT_TYPE_LABELS: { cultural: 'Cultural', religious: 'Religious', social: 'Social', career: 'Career', other: 'Other' },
-  EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
-}));
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
+  return {
+    ...actual,
+    getEventById: vi.fn(async () => ({ data: MOCK_EVENT })),
+    getEventAttendees: vi.fn(async () => ({ data: [] })),
+    hasUserRsvp: vi.fn(async () => ({ data: false })),
+    getOrCreateConversation: vi.fn(async () => ({ data: { conversationId: 'conv-1', isNew: true } })),
+    rsvpToEvent: vi.fn(async () => ({})),
+    unrsvpFromEvent: vi.fn(async () => ({})),
+    cancelEvent: vi.fn(async () => ({})),
+    deleteEvent: vi.fn(async () => ({})),
+    formatPublicName: (name: string) => name,
+    TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
+    EVENT_TYPE_COLORS: {
+      cultural: { text: '#E65100', background: '#FFF3E0' },
+      religious: { text: '#6A1B9A', background: '#F3E5F5' },
+      social: { text: '#1B5E20', background: '#E8F5E9' },
+      career: { text: '#0D47A1', background: '#E3F2FD' },
+      other: { text: '#424242', background: '#F5F5F5' },
+    },
+    EVENT_TYPE_LABELS: { cultural: 'Cultural', religious: 'Religious', social: 'Social', career: 'Career', other: 'Other' },
+    EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
+  };
+});
 
 import EventDetailPage from './[id].page';
 

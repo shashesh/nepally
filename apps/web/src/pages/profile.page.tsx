@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { ActionIcon, Badge, Button, Center, Text, UnstyledButton } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { IconChevronRight } from '@tabler/icons-react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -23,6 +24,7 @@ import type { Post, TrustLevel, MarketplaceListing } from '@nepally/shared';
 import { getListingsByOwner, LISTING_SOFT_EXPIRY_DAYS } from '@nepally/shared';
 import Avatar from '../components/Avatar';
 import { AboutYouSection, type AboutYouValues } from '../components/profile/AboutYouSection';
+import { getSettingsLinks } from '../components/layout/navItems';
 import styles from '../styles/Profile.module.css';
 
 type ProfileTab = 'posts' | 'listings' | 'saved' | 'about';
@@ -772,6 +774,27 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+
+        <nav aria-labelledby="settings-heading" className={styles.settingsCard}>
+          <h2 id="settings-heading" className={styles.sectionTitle}>
+            Settings &amp; more
+          </h2>
+          <ul className={styles.settingsList}>
+            {getSettingsLinks(user).map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className={styles.settingsLink}>
+                  {link.label}
+                  <IconChevronRight size={16} aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+            <li>
+              <UnstyledButton className={`${styles.settingsLink} ${styles.settingsDanger}`} onClick={handleMenuLogout}>
+                Sign out
+              </UnstyledButton>
+            </li>
+          </ul>
+        </nav>
       </div>
     </>
   );
