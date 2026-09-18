@@ -27,6 +27,12 @@ It is monitored and supported by one person. Every kind of failure has a rehears
 3. **Launch markets:** Dallas–Fort Worth, Atlanta, New York, Houston, San Francisco Bay Area, Los Angeles. The beta runs in two of them first (see [Launch markets](#launch-markets)).
 4. **Free to use at launch. Paid promotions and sponsored placements are on for anyone who wants them.** The three existing tiers stay on sale: Featured Listing ($1.99/day), Sponsored Feed ($2.99/day) and Sticky Business ($4.99/day). Purchases happen on the **web** for v1.0 (see [Payments on mobile](#payments-on-mobile)).
 5. **If App Review slips, web and Android launch on schedule** and iOS joins when approved.
+6. **Long-lived sign-in, like Facebook and Reddit.**
+   - People stay signed in on a device until they sign out. There is no inactivity timeout and no maximum session age.
+   - Access tokens stay short-lived (1 hour) and refresh silently. Refresh tokens rotate on every use.
+   - Sensitive actions ask you to confirm who you are again: deleting the account, or changing email or password. Email accounts re-enter the password; Google and Apple accounts confirm an emailed one-time code.
+   - This replaces the March mobile plan's 30-minute inactivity timeout and 30-day maximum age. The mobile app enforces those today (`apps/mobile/src/contexts/AuthContext.tsx`). Removing them ships in its own PR, before W1.
+   - The web app already behaves this way.
 
 ## Where things stand (verified 2026-09-18)
 
@@ -146,9 +152,10 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
 - [ ] **Code:** SEC-06 hardening backlog:
   - storage bucket `allowed_mime_types` and `file_size_limit` (avatars, post photos, listing photos)
   - a shared-secret header on the `expire-posts` and `expire-promotions` cron functions
-  - mobile session storage moved to `expo-secure-store`
+  - mobile session storage moved to `expo-secure-store`. This matters more now that sessions are long-lived (Decision 6).
 - [ ] **You:** In both projects:
   - Turn on leaked-password protection.
+  - Under Auth → Sessions, leave "Time-box user sessions" and "Inactivity timeout" at never, and "Single session per user" off (Decision 6).
   - Confirm email confirmations are on in prod auth (`enable_confirmations`). The trust ladder does nothing without them.
 - [ ] **You:** Set up custom SMTP (Resend or Postmark) for auth email in both projects. The built-in sender allows only a few emails per hour, so launch-day signups would stall at "verify your email".
 - [ ] **You:** In prod auth settings, add:
@@ -192,8 +199,10 @@ See [Monitoring](#monitoring) for the full spec.
 - [ ] **Code:** Mobile auth hardening (mobile plan Step 1):
   - OAuth callback state and origin validation
   - media URL validation (block unsafe schemes and private hosts)
-  - recent sign-in required for account deletion and password change
-  - Re-confirm the plan's 30-minute inactivity timeout before building it; it would sign people out of a community app very often.
+- [ ] **Code:** Account security, Facebook/Reddit style (Decision 6), on web and mobile:
+  - Confirm identity again before deleting the account or changing email or password: the password for email accounts, an emailed code through `supabase.auth.reauthenticate()` for Google and Apple accounts.
+  - After a password change, sign out every other device (`signOut({ scope: 'others' })`).
+  - A **Sign out of all devices** option in Settings (`signOut({ scope: 'global' })`) for a lost or stolen phone.
 - [ ] **Code:** Remove every mobile Promote entry point and unregister the `PromoteListing` route. Promoted and sponsored items keep displaying. The entry points are:
   - the `promote` action in `MarketplaceHomeScreen`'s menu
   - the Promote button in `ListingDetailScreen`
@@ -450,7 +459,8 @@ All five steps of [`mobile-usability-security-hardening.md`](mobile-usability-se
 |---|---|---|
 | 1 Security foundations | Secure storage | W1 (SEC-06) |
 | 1 Security foundations | User-safe errors | W2 |
-| 1 Security foundations | OAuth callback state, media URL validation, session policy and recent-auth | W3 |
+| 1 Security foundations | OAuth callback state, media URL validation, confirming identity before sensitive actions | W3 |
+| 1 Security foundations | 30-minute inactivity timeout, 30-day maximum session age | Dropped; replaced by Decision 6 |
 | 2 Reliability and lifecycle | Realtime cleanup, location timeouts, `LocationContext` races | W4 (check against current code first) |
 | 3 UX and accessibility | Touch targets, recoverable states, screen-reader labels | W7 |
 | 4 Proactive enhancements | Realtime over polling, post-draft recovery, contextual nudges | After launch |
