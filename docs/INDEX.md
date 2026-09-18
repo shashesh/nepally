@@ -56,6 +56,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 ## Plans (in-flight only — finished plans move to `archive/plans/`)
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
+- [plans/active/2026-09-18-production-launch.md](plans/active/2026-09-18-production-launch.md) — 12-week production launch (public launch Dec 1, 2026): prod environment, store compliance, monitoring, support operations, six launch markets, week-by-week tracker
 - [plans/active/2026-09-14-web-ui-overhaul.md](plans/active/2026-09-14-web-ui-overhaul.md) — web UI overhaul: PRs 0–3b task by task (visual/a11y safety net, H1 tokens + Mantine theme, responsive shell, global search), PRs 4–10 scoped
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
@@ -65,7 +66,6 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 - [specs/2026-09-14-web-ui-overhaul-design.md](specs/2026-09-14-web-ui-overhaul-design.md) — web UI overhaul: H1 Ink & Marigold tokens, Mantine-8 component library (v9-ready), responsive shell with phone bottom tabs, global search, PR rollout
 
 Shipped designs live in [archive/specs/](archive/specs/).
-
 
 ## User journeys
 

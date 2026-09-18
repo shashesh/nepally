@@ -566,6 +566,8 @@ See [TECH-VERSIONS.md](../../TECH-VERSIONS.md) for exact versions.
 
 ## Next Steps
 
+The dated, week-by-week schedule for these items (and the rest of the launch work) lives in [plans/active/2026-09-18-production-launch.md](../plans/active/2026-09-18-production-launch.md).
+
 ### Immediate Actions
 
 1. Get the legal pages reviewed by counsel (governing law, refunds) and create the `support@nepally.us` mailbox
