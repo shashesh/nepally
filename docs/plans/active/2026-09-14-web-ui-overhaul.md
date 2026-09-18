@@ -1123,9 +1123,9 @@ git add docs/guides/setup-and-testing.md TECH-VERSIONS.md
 git commit -m "docs: document web visual regression and accessibility tests" -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
-- [ ] **Step 5: Ask to push**
+- [ ] **Step 5: Push and open the PR**
 
-Show the user `git log --oneline master..HEAD` and `git diff --stat master...HEAD`, and ask for approval to push `test/web-visual-safety-net` and open the PR. Do not push without a yes. Update the tracker row for PR 0.
+Push `test/web-visual-safety-net` and open its PR. Update the tracker row for PR 0.
 
 ---
 
@@ -2931,14 +2931,14 @@ npm run docs:check
 
 Expected: all succeed.
 
-- [ ] **Step 5: Commit and ask to push**
+- [ ] **Step 5: Commit, push and open the PR**
 
 ```bash
 git add apps/web/e2e/visual
 git commit -m "test(web): re-baseline screenshots for the H1 design tokens" -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
-Show `git log --oneline master..HEAD` and `git diff --stat master...HEAD`, and ask for approval to push `feat/web-design-tokens`. Update the tracker row for PR 1.
+Push `feat/web-design-tokens` and open its PR. Update the tracker row for PR 1.
 
 ---
 
@@ -7147,7 +7147,7 @@ Expected:
 - The second command PASSES, with no new axe violations.
 - The baseline diff only removes lines.
 
-- [ ] **Step 7: Full verification, commit, ask to push**
+- [ ] **Step 7: Full verification, commit, push**
 
 ```bash
 npm run lint
@@ -7166,7 +7166,7 @@ git add apps/web/src/pages/profile.page.tsx apps/web/src/pages/profile.test.tsx 
 git commit -m "feat(web): add Settings & more to Profile and fix broken create links" -m "Re-baselines screenshots for the new shell and shrinks the token and raw-element allowlists." -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
-Show `git log --oneline master..HEAD` and `git diff --stat master...HEAD`, and ask for approval to push `feat/web-app-shell`. Update the tracker row for PR 2.
+Push `feat/web-app-shell` and open its PR. Update the tracker row for PR 2.
 
 ---
 
@@ -8141,7 +8141,7 @@ supabase.rpc('search_posts', { p_query, p_metro_id, p_all_metros })
 Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calling the functions directly.
 ````
 
-- [ ] **Step 4: Full verification, commit, ask to push**
+- [ ] **Step 4: Full verification, commit, push**
 
 ```bash
 npm run lint
@@ -8157,7 +8157,7 @@ git add scripts/security/users-pii-smoke.ts docs/architecture/database-schema.md
 git commit -m "test(security): cover search_people in the users PII smoke test" -m "Documents the migration 037 search functions in the schema guide." -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
-Show `git log --oneline master..HEAD` and `git diff --stat master...HEAD`, and ask for approval to push `feat/search-data`. Update the tracker row for PR 3a, and note in it that migration 037 is applied.
+Push `feat/search-data` and open its PR. Update the tracker row for PR 3a, and note in it that migration 037 is applied.
 
 ---
 
@@ -10067,7 +10067,7 @@ In `docs/INDEX.md` → **Feature specs**, add after the `post-likes-and-comments
 - [product/features/search.md](product/features/search.md) — global search: suggestions, results page, metro scope
 ```
 
-- [ ] **Step 6: Shrink allowlists, full verification, commit, ask to push**
+- [ ] **Step 6: Shrink allowlists, full verification, commit, push**
 
 ```bash
 node scripts/guard-css-tokens.js --write-allowlist
@@ -10089,7 +10089,7 @@ git add apps/web/e2e docs/product/features/search.md docs/INDEX.md scripts/guard
 git commit -m "test(web): cover global search in e2e and visual tests; document the feature" -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
-Confirm with the user that migration 037 is live on the target project. Then show `git log --oneline master..HEAD` and `git diff --stat master...HEAD`, and ask for approval to push `feat/search-web`. Update the tracker row for PR 3b.
+Confirm with the user that migration 037 is live on the target project. Then push `feat/search-web` and open its PR. Update the tracker row for PR 3b.
 
 ---
 
@@ -10119,7 +10119,7 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
    4. move the CSS Modules to semantic tokens
    5. fix accessibility
    6. update and re-baseline
-5. Meet the **definition of done** below, then ask to push.
+5. Meet the **definition of done** below, then push and open the PR.
 
 ## Definition of done (every area PR)
 
