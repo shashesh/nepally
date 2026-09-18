@@ -41,6 +41,13 @@ created: 2026-09-10
 >   decision.
 > - Three pre-existing `exhaustive-deps` disables remain in mobile
 >   `CreatePostScreen.tsx`: the draft prompt and the header `setOptions`.
+> - From PR #71's review: a profile fetch that is in flight when the user
+>   signs out can repopulate the signed-out user. Web `fetchUserProfile` and
+>   mobile `refreshUser` both need a sign-out generation guard.
+> - Also from that review: the mobile home-metro lookup
+>   (`initActiveLocationFromUser`) can overwrite a metro picked while it is
+>   pending. Web fixed this in #71; mobile needs its own change because of its
+>   once-per-user init guard.
 
 # React Compiler Lint Cleanup
 
