@@ -1,6 +1,6 @@
 ---
 title: Expo SDK 54 → 57 migration — implementation plan
-status: planned
+status: implemented
 created: 2026-09-17
 ---
 
@@ -158,7 +158,7 @@ One task is `In Progress` at a time. Update this table when a task starts and wh
 | 6 | Automated gates: types, lint, unit, coverage, web build + e2e | Completed | 2026-09-18 | Fix 5750bd8 + test d36acfd (decision 5). Final: type-check pass; lint 0 errors, warnings 135/39/0 (= baseline); unit mobile 523 (526 after a2cbe9c), web 768, shared 514, guards 12; coverage thresholds met; web e2e 101/101 (decision 6) |
 | 7 | Device smoke test in Expo Go SDK 57 | Completed | 2026-09-18 | Run 1: startup crash on Android (decision 9), fixed a2cbe9c (spec ✅, quality ✅). Run 2 (user, Android, store Expo Go SDK 57): all 10 flows pass |
 | 8 | Update the docs | Completed | 2026-09-18 | 066ffd2 + 3a243cf; spec ✅, quality ✅ (decision 7) |
-| 9 | Close out the plan and ready the PR | Not Started | 2026-09-17 | |
+| 9 | Close out the plan and ready the PR | Completed | 2026-09-18 | Final whole-branch review: ready. master merged again (ba7bb83, docs only). Plan archived; PR #70 marked ready |
 
 ## Files
 

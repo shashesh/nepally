@@ -57,7 +57,6 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
 - [plans/active/2026-09-14-web-ui-overhaul.md](plans/active/2026-09-14-web-ui-overhaul.md) — web UI overhaul: PRs 0–3b task by task (visual/a11y safety net, H1 tokens + Mantine theme, responsive shell, global search), PRs 4–10 scoped
-- [plans/active/2026-09-17-expo-sdk-57-migration.md](plans/active/2026-09-17-expo-sdk-57-migration.md) — Expo SDK 54 → 57 migration (React Native 0.86.3, monorepo React 19.2.3), so the app runs in store Expo Go again
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 - [plans/active/react-compiler-lint-cleanup.md](plans/active/react-compiler-lint-cleanup.md) — burn down the 169 React Compiler lint findings surfaced by the ESLint 10 upgrade
@@ -124,5 +123,5 @@ See [archive/](archive/):
 
 - `archive/PROGRESS.md` — historical implementation tracker (superseded by roadmap)
 - `archive/marketplace-category-consolidation-plan.md` — shipped as migration 016
-- `archive/plans/` — 17 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, and the Postgres 15→17 sync
+- `archive/plans/` — 18 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, the Postgres 15→17 sync, and the Expo SDK 54→57 migration
 - `archive/specs/` — 7 design specs for shipped features
