@@ -1,8 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../../test-utils';
+import { render, screen, fireEvent, waitFor, act } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
+type MockImageProps = { src: string; alt: string; className?: string };
 
 const postDetailMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
@@ -67,6 +68,10 @@ vi.mock('next/link', () => ({
   default: ({ href, children, className }: MockLinkProps) =>
     React.createElement('a', { href, className }, children),
 }));
+vi.mock('next/image', () => ({
+  default: ({ src, alt, className }: MockImageProps) =>
+    React.createElement('img', { src, alt, className }),
+}));
 
 const mockPost = {
   id: 'post-1',
@@ -110,6 +115,72 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockReturnValue(new Promise(() => {}));
     render(<PostDetailPage />);
     expect(screen.getByText('Loading...')).toBeDefined();
+  });
+
+  describe('when the route id changes', () => {
+    const secondPost = { ...mockPost, id: 'post-2', title: 'Second post' };
+
+    function navigateToSecondPost(rerender: (ui: React.ReactElement) => void) {
+      postDetailMocks.useRouterMock.mockReturnValue({
+        query: { id: 'post-2' },
+        push: mockPush,
+      });
+      rerender(<PostDetailPage />);
+    }
+
+    it('shows the loading state and then the new post', async () => {
+      let resolveSecond: (value: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+
+      navigateToSecondPost(rerender);
+      expect(screen.getByText('Loading...')).toBeDefined();
+
+      resolveSecond({ data: secondPost });
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+      expect(postDetailMocks.getPostByIdMock).toHaveBeenLastCalledWith(expect.anything(), 'post-2');
+      expect(postDetailMocks.getPostCommentsMock).toHaveBeenLastCalledWith(expect.anything(), 'post-2');
+    });
+
+    it('ignores a late response for the previous post', async () => {
+      let resolveFirst: (value: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock
+        .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+        .mockResolvedValueOnce({ data: secondPost });
+      const { rerender } = render(<PostDetailPage />);
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+
+      await act(async () => {
+        resolveFirst({ data: mockPost });
+      });
+
+      expect(screen.getByText('Second post')).toBeDefined();
+      expect(screen.queryByText('Looking for a roommate')).toBeNull();
+    });
+
+    it('starts the photo carousel at the first photo of the new post', async () => {
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({
+          data: { ...mockPost, photos: ['https://example.com/a.jpg', 'https://example.com/b.jpg'] },
+        })
+        .mockResolvedValueOnce({
+          data: { ...secondPost, photos: ['https://example.com/c.jpg', 'https://example.com/d.jpg'] },
+        });
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByAltText('Post image 1')).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Next image' }));
+      expect(screen.getByAltText('Post image 2').getAttribute('src')).toBe('https://example.com/b.jpg');
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+      expect(screen.getByAltText('Post image 1').getAttribute('src')).toBe('https://example.com/c.jpg');
+    });
   });
 
   it('shows "Post not found" when post does not exist', async () => {

@@ -149,6 +149,32 @@ describe('useNotificationsFeed', () => {
     expect(result.current.items[0].read).toBe(false);
   });
 
+  it("drops a previous user's feed that arrives after switching users", async () => {
+    let resolveFirstCount!: (value: { count: number }) => void;
+    mocks.getUnreadNotificationCount
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirstCount = resolve;
+        })
+      )
+      .mockResolvedValue({ count: 3 });
+    mocks.getNotifications
+      .mockResolvedValueOnce({ data: [{ ...base, id: 'n-old', user_id: 'user-1' }] })
+      .mockResolvedValue({ data: [{ ...base, id: 'n-new', user_id: 'user-2' }] });
+    const { result, rerender } = renderHook(
+      ({ userId }) => useNotificationsFeed({ userId, pollingEnabled: false }),
+      { initialProps: { userId: 'user-1' } }
+    );
+
+    rerender({ userId: 'user-2' });
+    await waitFor(() => expect(result.current.items[0]?.id).toBe('n-new'));
+    await act(async () => {
+      resolveFirstCount({ count: 9 });
+    });
+    expect(result.current.unreadCount).toBe(3);
+    expect(result.current.items.map((item) => item.id)).toEqual(['n-new']);
+  });
+
   it('does not subscribe to realtime when the notifications page owns it', async () => {
     renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: false }));
     await waitFor(() => expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(1));

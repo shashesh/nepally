@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -60,37 +60,40 @@ export default function ModerationPage() {
     }
   }, [authLoading, user, router]);
 
-  const loadQueue = useCallback(async () => {
-    setLoading(true);
-
-    const [postsResult, reportsResult] = await Promise.all([
-      getPendingPosts(supabase),
-      listReports(supabase, { status: 'pending' }),
-    ]);
-
-    const loadError = postsResult.error ?? reportsResult.error;
-    if (loadError) showError(loadError);
-
-    const nextReports = reportsResult.data ?? [];
-    setPendingPosts(postsResult.data ?? []);
-    setReports(nextReports);
-
-    // Reported posts are fetched in one batched query so the queue can show
-    // the title and author (and offer "Ban author") without leaving the page.
-    const postIds = Array.from(
-      new Set(nextReports.filter((r) => r.target_type === 'post').map((r) => r.target_id))
-    );
-    const { data: fetchedPosts } = await getPostsByIds(supabase, postIds);
-    setReportedPosts(Object.fromEntries((fetchedPosts ?? []).map((post) => [post.id, post])));
-
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    if (isModerator) {
-      void loadQueue();
-    }
-  }, [isModerator, loadQueue]);
+    if (!isModerator) return;
+    let cancelled = false;
+
+    (async () => {
+      const [postsResult, reportsResult] = await Promise.all([
+        getPendingPosts(supabase),
+        listReports(supabase, { status: 'pending' }),
+      ]);
+      if (cancelled) return;
+
+      const loadError = postsResult.error ?? reportsResult.error;
+      if (loadError) showError(loadError);
+
+      const nextReports = reportsResult.data ?? [];
+      setPendingPosts(postsResult.data ?? []);
+      setReports(nextReports);
+
+      // Reported posts are fetched in one batched query so the queue can show
+      // the title and author (and offer "Ban author") without leaving the page.
+      const postIds = Array.from(
+        new Set(nextReports.filter((r) => r.target_type === 'post').map((r) => r.target_id))
+      );
+      const { data: fetchedPosts } = await getPostsByIds(supabase, postIds);
+      if (cancelled) return;
+      setReportedPosts(Object.fromEntries((fetchedPosts ?? []).map((post) => [post.id, post])));
+
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isModerator]);
 
   async function decidePost(post: Post, status: ModerationPostStatus): Promise<void> {
     setBusyId(post.id);

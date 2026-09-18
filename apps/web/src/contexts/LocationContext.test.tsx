@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { render, waitFor } from '../test-utils';
+import { act, render, waitFor } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const locationMocks = vi.hoisted(() => ({
@@ -12,15 +12,18 @@ const locationMocks = vi.hoisted(() => ({
   detectLocationMetroMock: vi.fn(),
   refreshUserMock: vi.fn(),
   metroSingleMock: vi.fn(),
+  signedOut: false,
 }));
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
-    user: {
-      id: 'user-1',
-      metro_area_id: '19100',
-      zip_code: '75001',
-    },
+    user: locationMocks.signedOut
+      ? null
+      : {
+          id: 'user-1',
+          metro_area_id: '19100',
+          zip_code: '75001',
+        },
     refreshUser: locationMocks.refreshUserMock,
   }),
 }));
@@ -66,6 +69,7 @@ describe('LocationProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    locationMocks.signedOut = false;
 
     locationMocks.metroSingleMock.mockResolvedValue({
       data: { id: '19100', name: 'Dallas-Fort Worth-Arlington', state: 'TX' },
@@ -161,5 +165,100 @@ describe('LocationProvider', () => {
       expect(locationMocks.hasMetroChangedMock).toHaveBeenCalled();
       expect(latest.showChangePrompt).toBe(true);
     });
+  });
+
+  it('checks the detected metro against unexpired snoozes from localStorage', async () => {
+    const activeSnooze = { metro_area_id: '35620', snoozed_until: new Date(Date.now() + 3_600_000).toISOString() };
+    const expiredSnooze = { metro_area_id: '31080', snoozed_until: new Date(Date.now() - 1_000).toISOString() };
+    localStorage.setItem('@nusa:web_snoozes', JSON.stringify([activeSnooze, expiredSnooze]));
+    locationMocks.isMetroSnoozedMock.mockReturnValue(true);
+    const snapshots: Array<React.ContextType<typeof LocationContext>> = [];
+
+    render(
+      <LocationProvider>
+        <ContextProbe onSnapshot={(v) => snapshots.push(v)} />
+      </LocationProvider>
+    );
+
+    await waitFor(() => {
+      expect(snapshots[snapshots.length - 1].activeLocation?.metro_area_id).toBe('19100');
+    });
+
+    await act(async () => {
+      await snapshots[snapshots.length - 1].checkLocationChange();
+    });
+
+    expect(locationMocks.isMetroSnoozedMock).toHaveBeenCalledWith('35620', [activeSnooze]);
+    expect(snapshots[snapshots.length - 1].showChangePrompt).toBe(false);
+  });
+
+  it('keeps a location picked while the home metro is still loading', async () => {
+    let resolveMetro!: (value: unknown) => void;
+    locationMocks.metroSingleMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveMetro = resolve;
+      })
+    );
+    const snapshots: Array<React.ContextType<typeof LocationContext>> = [];
+
+    render(
+      <LocationProvider>
+        <ContextProbe onSnapshot={(v) => snapshots.push(v)} />
+      </LocationProvider>
+    );
+
+    await waitFor(() => {
+      expect(locationMocks.metroSingleMock).toHaveBeenCalled();
+    });
+
+    act(() => {
+      snapshots[snapshots.length - 1].browseMetro({
+        metro_area_id: '35620',
+        metro_name: 'New York-Newark-Jersey City',
+        metro_state: 'NY',
+        source: 'gps',
+        is_temporary: true,
+      });
+    });
+
+    await act(async () => {
+      resolveMetro({ data: { id: '19100', name: 'Dallas-Fort Worth-Arlington', state: 'TX' }, error: null });
+    });
+
+    // The late home-metro lookup must not replace the metro the user picked.
+    expect(snapshots[snapshots.length - 1].activeLocation?.metro_area_id).toBe('35620');
+  });
+
+  it('clears location state on sign-out before rendering any of it', async () => {
+    locationMocks.getSavedLocationsMock.mockResolvedValue({
+      data: [{ id: 'loc-1', user_id: 'user-1', metro_area_id: '19100', label: 'Home' }],
+    });
+    const snapshots: Array<React.ContextType<typeof LocationContext>> = [];
+    const tree = () => (
+      <LocationProvider>
+        <ContextProbe onSnapshot={(v) => snapshots.push(v)} />
+      </LocationProvider>
+    );
+
+    const view = render(tree());
+
+    await waitFor(() => {
+      const latest = snapshots[snapshots.length - 1];
+      expect(latest.activeLocation?.metro_area_id).toBe('19100');
+      expect(latest.savedLocations).toHaveLength(1);
+    });
+
+    const renderedBeforeSignOut = snapshots.length;
+    locationMocks.signedOut = true;
+    view.rerender(tree());
+
+    const afterSignOut = snapshots.slice(renderedBeforeSignOut);
+    expect(afterSignOut.length).toBeGreaterThan(0);
+    for (const snapshot of afterSignOut) {
+      expect(snapshot.activeLocation).toBeNull();
+      expect(snapshot.savedLocations).toEqual([]);
+      expect(snapshot.detectedLocation).toBeNull();
+      expect(snapshot.showChangePrompt).toBe(false);
+    }
   });
 });

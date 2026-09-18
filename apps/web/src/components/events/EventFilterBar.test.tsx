@@ -108,4 +108,21 @@ describe('EventFilterBar (web)', () => {
       expect(onChange).toHaveBeenCalledWith({ type: 'career', query: '' });
     });
   });
+
+  describe('external value sync', () => {
+    it('syncs search text when value.query changes externally', () => {
+      const { rerender } = render(<EventFilterBar value={DEFAULT_VALUE} onChange={vi.fn()} />);
+      rerender(<EventFilterBar value={{ type: 'all', query: 'tihar' }} onChange={vi.fn()} />);
+      const input = screen.getByRole('searchbox', { name: 'Search events' }) as HTMLInputElement;
+      expect(input.value).toBe('tihar');
+    });
+
+    it('keeps typed text when the parent re-renders with the same query', () => {
+      const { rerender } = render(<EventFilterBar value={DEFAULT_VALUE} onChange={vi.fn()} />);
+      const input = screen.getByRole('searchbox', { name: 'Search events' }) as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'teej' } });
+      rerender(<EventFilterBar value={{ type: 'cultural', query: '' }} onChange={vi.fn()} />);
+      expect(input.value).toBe('teej');
+    });
+  });
 });

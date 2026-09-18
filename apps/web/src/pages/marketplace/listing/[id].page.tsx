@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../hooks/useAuth';
+import { useNow } from '../../../hooks/useNow';
 import { supabase } from '../../../lib/supabase';
 import {
   getListingById,
@@ -14,6 +15,7 @@ import {
   incrementListingViews,
   incrementListingContacts,
   getListingHighlights,
+  getDaysSinceRefresh,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   BUSINESS_HOURS_DAYS,
@@ -46,6 +48,7 @@ export default function ListingDetailPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const now = useNow();
 
   useEffect(() => {
     if (!user) {
@@ -114,12 +117,10 @@ export default function ListingDetailPage() {
   }
 
   const isOwner = user.id === listing.owner_id;
-  const daysAgo = Math.floor(
-    (Date.now() - new Date(listing.refreshed_at).getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const daysAgo = getDaysSinceRefresh(listing.refreshed_at, now);
   const categoryThemeClass =
     CATEGORY_THEME_CLASS_BY_SLUG[listing.category?.slug ?? ''] ?? styles.categoryThemeOther;
-  const highlights = getListingHighlights(listing, new Date());
+  const highlights = getListingHighlights(listing, now);
 
   const sidebarContent = !isOwner ? (
     <>

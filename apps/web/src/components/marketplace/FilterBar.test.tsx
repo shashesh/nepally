@@ -189,4 +189,49 @@ describe('FilterBar (web)', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'newest', query: 'mo' });
   });
+
+  it('syncs the search input when value.query changes externally', () => {
+    const { rerender } = render(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: DEFAULT_VALUE,
+        onChange: vi.fn(),
+      })
+    );
+    rerender(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: { ...DEFAULT_VALUE, query: 'dal bhat' },
+        onChange: vi.fn(),
+      })
+    );
+    const input = screen.getByLabelText('Search listings') as HTMLInputElement;
+    expect(input.value).toBe('dal bhat');
+  });
+
+  it('debounced search uses the latest filter value and keeps the typed text', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: DEFAULT_VALUE,
+        onChange,
+      })
+    );
+    const input = screen.getByLabelText('Search listings') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'momo' } });
+
+    // Parent changes sort while the search debounce is still pending
+    rerender(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: { ...DEFAULT_VALUE, sort: 'price_asc' },
+        onChange,
+      })
+    );
+    expect(input.value).toBe('momo');
+
+    act(() => { vi.advanceTimersByTime(300); });
+    expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'price_asc', query: 'momo' });
+  });
 });

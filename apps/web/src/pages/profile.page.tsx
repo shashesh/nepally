@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
+import { useNow } from '../hooks/useNow';
 import { supabase } from '../lib/supabase';
 import {
   TRUST_LEVELS,
@@ -21,7 +22,7 @@ import {
   updateUserProfile,
 } from '@nepally/shared';
 import type { Post, TrustLevel, MarketplaceListing } from '@nepally/shared';
-import { getListingsByOwner, LISTING_SOFT_EXPIRY_DAYS } from '@nepally/shared';
+import { getListingsByOwner, getDaysUntilSoftExpiry } from '@nepally/shared';
 import Avatar from '../components/Avatar';
 import { AboutYouSection, type AboutYouValues } from '../components/profile/AboutYouSection';
 import { getSettingsLinks } from '../components/layout/navItems';
@@ -61,29 +62,31 @@ export default function ProfilePage() {
   });
   const [aboutYouSaving, setAboutYouSaving] = useState(false);
   const userId = user?.id ?? null;
+  const now = useNow();
+
+  // AuthContext starts as null while loading, so the initial useState above
+  // captures empty values. Re-sync when the user profile actually loads (or
+  // the signed-in user changes) so the About You form reflects the DB state.
+  // Keyed on the user id so in-progress edits aren't clobbered by unrelated
+  // user-object re-renders. Adjusted during render rather than in an effect.
+  const [aboutYouUserId, setAboutYouUserId] = useState(userId);
+  if (userId !== aboutYouUserId) {
+    setAboutYouUserId(userId);
+    if (user) {
+      setAboutYou({
+        hometown_district: user.hometown_district ?? null,
+        college: user.college ?? null,
+        years_in_us: user.years_in_us ?? null,
+        languages: user.languages ?? [],
+      });
+    }
+  }
 
   useEffect(() => {
     if (!user && typeof window !== 'undefined') {
       router.replace('/login');
     }
   }, [user, router]);
-
-  // AuthContext starts as null while loading, so the initial useState above
-  // captures empty values. Re-sync when the user profile actually loads (or
-  // the signed-in user changes) so the About You form reflects the DB state.
-  // Keyed on user?.id so in-progress edits aren't clobbered by unrelated
-  // user-object re-renders.
-  useEffect(() => {
-    if (!user) return;
-    setAboutYou({
-      hometown_district: user.hometown_district ?? null,
-      college: user.college ?? null,
-      years_in_us: user.years_in_us ?? null,
-      languages: user.languages ?? [],
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
 
   useEffect(() => {
     if (!userId) return;
@@ -492,11 +495,7 @@ export default function ProfilePage() {
           const statusBg =
             listing.status === 'active' ? '#E8F5E9' :
             listing.status === 'inactive' ? '#FFF3E0' : '#FFEBEE';
-          const daysUntilExpiry = Math.max(
-            0,
-            LISTING_SOFT_EXPIRY_DAYS -
-              Math.floor((Date.now() - new Date(listing.refreshed_at).getTime()) / (1000 * 60 * 60 * 24))
-          );
+          const daysUntilExpiry = getDaysUntilSoftExpiry(listing.refreshed_at, now);
           const isExpiringSoon = daysUntilExpiry <= 14 && listing.status === 'active';
 
           return (

@@ -67,53 +67,60 @@ function saveToStorage(key: string, value: unknown) {
   }
 }
 
+// Snoozes are never rendered, so reading them while rendering cannot cause a
+// hydration mismatch; on the server localStorage is missing and this is [].
+function loadActiveSnoozes(): LocationSnooze[] {
+  const storedSnoozes = loadFromStorage<LocationSnooze[]>('@nusa:web_snoozes', []);
+  // Filter expired snoozes
+  return storedSnoozes.filter((s) => new Date(s.snoozed_until) > new Date());
+}
+
+/** The user's home metro as an active location, or null when it can't be loaded. */
+async function fetchHomeMetroLocation(metroAreaId: string): Promise<ActiveLocation | null> {
+  const { data } = await supabase
+    .from('metro_areas')
+    .select('id, name, state')
+    .eq('id', metroAreaId)
+    .single();
+
+  if (!data) return null;
+  return {
+    metro_area_id: data.id,
+    metro_name: data.name,
+    metro_state: data.state,
+    source: 'saved',
+    is_temporary: false,
+  };
+}
+
 export function LocationProvider({ children }: { children: ReactNode }) {
   const { user, refreshUser } = useAuth();
+  // The active location is not restored from localStorage: this provider always
+  // mounts signed out (AuthProvider starts with user = null), and the signed-out
+  // reset below would clear it before it is shown. Once signed in it starts
+  // from the user's home metro (effect below).
   const [activeLocation, setActiveLocation] = useState<ActiveLocation | null>(null);
   const [detectedLocation, setDetectedLocation] = useState<LocationDetectionResult | null>(null);
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
   const [showChangePrompt, setShowChangePrompt] = useState(false);
-  const [snoozes, setSnoozes] = useState<LocationSnooze[]>([]);
+  const [snoozes, setSnoozes] = useState<LocationSnooze[]>(loadActiveSnoozes);
   const manualOverrideRef = useRef(false);
 
-  // Load initial state from localStorage
-  useEffect(() => {
-    const stored = loadFromStorage<ActiveLocation | null>('@nusa:web_active_location', null);
-    const storedSnoozes = loadFromStorage<LocationSnooze[]>('@nusa:web_snoozes', []);
-
-    // Filter expired snoozes
-    const activeSnoozes = storedSnoozes.filter(
-      (s) => new Date(s.snoozed_until) > new Date()
-    );
-    setSnoozes(activeSnoozes);
-
-    // Clear temporary locations on page load
-    if (stored && !stored.is_temporary) {
-      setActiveLocation(stored);
-    }
-  }, []);
-
-  const initActiveLocationFromUser = useCallback(async () => {
-    if (!user?.metro_area_id) return;
-
-    const { data } = await supabase
-      .from('metro_areas')
-      .select('id, name, state')
-      .eq('id', user.metro_area_id)
-      .single();
-
-    if (data) {
-      const loc: ActiveLocation = {
-        metro_area_id: data.id,
-        metro_name: data.name,
-        metro_state: data.state,
-        source: 'saved',
-        is_temporary: false,
-      };
-      setActiveLocation(loc);
-      saveToStorage('@nusa:web_active_location', loc);
-    }
-  }, [user?.metro_area_id]);
+  // Signed out: drop the previous user's location state during render
+  // (react.dev "Adjusting some state when a prop changes"), before any of it
+  // is shown.
+  if (
+    !user &&
+    (activeLocation !== null ||
+      savedLocations.length > 0 ||
+      detectedLocation !== null ||
+      showChangePrompt)
+  ) {
+    setActiveLocation(null);
+    setSavedLocations([]);
+    setDetectedLocation(null);
+    setShowChangePrompt(false);
+  }
 
   const refreshSavedLocations = useCallback(async () => {
     if (!user) return;
@@ -142,20 +149,30 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }
   }, [activeLocation, snoozes]);
 
-  // When user changes, reload
+  // When the user or the active location changes, reload saved locations, and
+  // start from the user's home metro while there is no active location. The
+  // signed-out reset happens during render above.
   useEffect(() => {
-    if (user) {
-      refreshSavedLocations();
-      if (!activeLocation && user.metro_area_id) {
-        initActiveLocationFromUser();
-      }
-    } else {
-      setActiveLocation(null);
-      setSavedLocations([]);
-      setDetectedLocation(null);
-      setShowChangePrompt(false);
+    if (!user) return;
+    let cancelled = false;
+
+    void getSavedLocations(supabase, user.id).then((result) => {
+      if (!cancelled && result.data) setSavedLocations(result.data);
+    });
+
+    if (!activeLocation && user.metro_area_id) {
+      void fetchHomeMetroLocation(user.metro_area_id).then((loc) => {
+        // Dropped if a location was picked (or the user changed) meanwhile.
+        if (cancelled || !loc) return;
+        setActiveLocation(loc);
+        saveToStorage('@nusa:web_active_location', loc);
+      });
     }
-  }, [user, activeLocation, refreshSavedLocations, initActiveLocationFromUser]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, activeLocation]);
 
   // Visibility change listener (foreground detection for web)
   useEffect(() => {

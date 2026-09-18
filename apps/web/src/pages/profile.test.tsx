@@ -462,4 +462,66 @@ describe('ProfilePage', () => {
     const settings = await screen.findByRole('navigation', { name: 'Settings & more' });
     expect(Array.from(settings.querySelectorAll('a')).map((link) => link.getAttribute('href'))).toContain('/moderation');
   });
+
+  it('fills About You from the user once the profile loads after the first render', async () => {
+    profileMocks.useAuthMock.mockReturnValue({ user: null, signOut: mockSignOut, refreshUser: mockRefreshUser });
+    const { rerender } = render(<ProfilePage />);
+
+    profileMocks.useAuthMock.mockReturnValue({
+      user: { ...mockUser, hometown_district: 'Kathmandu', college: 'Pulchowk', languages: [] },
+      signOut: mockSignOut,
+      refreshUser: mockRefreshUser,
+    });
+    rerender(<ProfilePage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'About' }));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Hometown district') as HTMLSelectElement).value).toBe('Kathmandu');
+      expect((screen.getByLabelText('College / university') as HTMLInputElement).value).toBe('Pulchowk');
+    });
+  });
+
+  it('keeps in-progress About You edits when the same user re-renders', async () => {
+    const { rerender } = render(<ProfilePage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'About' }));
+    const collegeInput = (await screen.findByLabelText('College / university')) as HTMLInputElement;
+    fireEvent.change(collegeInput, { target: { value: 'Tribhuvan University' } });
+
+    // e.g. refreshUser() hands back a new object for the same signed-in user
+    profileMocks.useAuthMock.mockReturnValue({
+      user: { ...mockUser, bio: 'updated bio' },
+      signOut: mockSignOut,
+      refreshUser: mockRefreshUser,
+    });
+    rerender(<ProfilePage />);
+
+    expect((screen.getByLabelText('College / university') as HTMLInputElement).value).toBe(
+      'Tribhuvan University'
+    );
+  });
+
+  it('warns with the days left for a listing close to soft expiry', async () => {
+    profileMocks.getListingsByOwnerMock.mockResolvedValue({
+      data: [
+        {
+          id: 'listing-1',
+          title: 'Momo Catering',
+          status: 'active',
+          photos: [],
+          price: null,
+          category: { name: 'Food & Restaurants', emoji: '🍜' },
+          views_count: 1,
+          saves_count: 0,
+          contacts_count: 0,
+          refreshed_at: new Date(Date.now() - 80 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      ],
+    });
+    render(<ProfilePage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Listings' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Expires in 10 days')).toBeDefined();
+    });
+  });
 });

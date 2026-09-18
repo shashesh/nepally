@@ -94,6 +94,52 @@ describe('useSearchSuggestions', () => {
     expect(hook.current.data?.posts.items[0].title).toBe('Newest');
   });
 
+  it('keeps the previous results on screen while the next query loads', async () => {
+    const next = deferred<SearchSuggestionsResult>();
+    searchSuggestionsMock.mockResolvedValueOnce(result('Room')).mockReturnValueOnce(next.promise);
+    const { result: hook, rerender } = renderHook(({ input }) => useSearchSuggestions(input, scope), {
+      initialProps: { input: 'room' },
+    });
+    await act(async () => {});
+
+    rerender({ input: 'rooms' });
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(hook.current.query).toBe('rooms');
+    expect(hook.current.loading).toBe(true);
+    expect(hook.current.resultsQuery).toBe('room');
+    expect(hook.current.data?.posts.items[0].title).toBe('Room');
+
+    await act(async () => {
+      next.resolve(result('Rooms'));
+    });
+    expect(hook.current.loading).toBe(false);
+    expect(hook.current.resultsQuery).toBe('rooms');
+    expect(hook.current.data?.posts.items[0].title).toBe('Rooms');
+  });
+
+  it('clears results once the query becomes too short, even if a response is still in flight', async () => {
+    const pending = deferred<SearchSuggestionsResult>();
+    searchSuggestionsMock.mockReturnValueOnce(pending.promise);
+    const { result: hook, rerender } = renderHook(({ input }) => useSearchSuggestions(input, scope), {
+      initialProps: { input: 'room' },
+    });
+    expect(hook.current.loading).toBe(true);
+
+    rerender({ input: 'r' });
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+    await act(async () => {
+      pending.resolve(result('Room'));
+    });
+    expect(hook.current.query).toBeNull();
+    expect(hook.current.resultsQuery).toBeNull();
+    expect(hook.current.data).toBeNull();
+    expect(hook.current.loading).toBe(false);
+  });
+
   it('exposes errors', async () => {
     searchSuggestionsMock.mockResolvedValue({ error: new Error('offline') });
     const { result: hook } = renderHook(() => useSearchSuggestions('room', scope));

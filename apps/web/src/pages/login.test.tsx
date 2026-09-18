@@ -227,4 +227,40 @@ describe('LoginPage', () => {
     expect(screen.getByText(/account with this email already exists/i)).toBeDefined();
     expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('test@example.com');
   });
+
+  it('pre-fills the email from the query once the router becomes ready', () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: {},
+      isReady: false,
+    });
+    const { rerender } = render(<LoginPage />);
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('');
+    expect(screen.queryByText(/account with this email already exists/i)).toBeNull();
+
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { reason: 'existing-account', email: 'ready@example.com' },
+      isReady: true,
+    });
+    rerender(<LoginPage />);
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('ready@example.com');
+    expect(screen.getByText(/account with this email already exists/i)).toBeDefined();
+  });
+
+  it('keeps an edited email across re-renders with the same query', () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { email: 'test@example.com' },
+      isReady: true,
+    });
+    const { rerender } = render(<LoginPage />);
+    const emailInput = screen.getByLabelText('Email') as HTMLInputElement;
+    fireEvent.change(emailInput, { target: { value: 'typed@example.com' } });
+    rerender(<LoginPage />);
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('typed@example.com');
+  });
 });

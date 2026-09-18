@@ -42,26 +42,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loadUser = useCallback(async () => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await fetchUserProfile();
-      }
-    } catch (error) {
-      console.error('Failed to load user:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchUserProfile]);
-
   // Load initial session
   useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (cancelled || !session?.user) return;
+        setSupabaseUser(session.user);
+        await fetchUserProfile();
+      } catch (error) {
+        console.error('Failed to load user:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchUserProfile]);
 
   // Register browser push subscription once per authenticated user in this app session.
   useEffect(() => {

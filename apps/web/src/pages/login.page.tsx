@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -8,26 +8,30 @@ import { signInWithEmail, signInWithGoogle } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import styles from '../styles/Auth.module.css';
 
+const EXISTING_ACCOUNT_INFO =
+  'An account with this email already exists. If you signed up with Google, use the Google button below to sign in.';
+
 export default function LoginPage() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
-  const [email, setEmail] = useState('');
+  // Pages Router: `router.query` is empty until `router.isReady`.
+  const queryEmail =
+    router.isReady && typeof router.query.email === 'string' ? router.query.email : '';
+  const info =
+    router.isReady && router.query.reason === 'existing-account' ? EXISTING_ACCOUNT_INFO : '';
+  const [email, setEmail] = useState(queryEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Sync email and info from query params once router is ready
-  React.useEffect(() => {
-    if (!router.isReady) return;
-    if (router.query.email) {
-      setEmail(router.query.email as string);
-    }
-    if (router.query.reason === 'existing-account') {
-      setInfo('An account with this email already exists. If you signed up with Google, use the Google button below to sign in.');
-    }
-  }, [router.isReady, router.query.email, router.query.reason]);
+  // Pre-fill the email field from ?email= once the query is available (or when it
+  // changes) — adjusted during render rather than synced in an effect.
+  const [prefilledEmail, setPrefilledEmail] = useState(queryEmail);
+  if (queryEmail !== prefilledEmail) {
+    setPrefilledEmail(queryEmail);
+    if (queryEmail) setEmail(queryEmail);
+  }
 
   // Redirect if already logged in
   if (user) {

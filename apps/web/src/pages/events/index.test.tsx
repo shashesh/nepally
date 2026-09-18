@@ -173,6 +173,30 @@ describe('EventsPage', () => {
     });
   });
 
+  it('refetches when Retry is clicked after a failure', async () => {
+    vi.mocked(getEventsByMetro).mockResolvedValueOnce({ error: new Error('Network error') });
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: '19100' } });
+    render(React.createElement(EventsPage));
+    await waitFor(() => screen.getByText('Network error'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Dashain Celebration')).toBeDefined();
+    });
+    expect(screen.queryByText('Network error')).toBeNull();
+    expect(getEventsByMetro).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows the empty state without fetching when the user has no metro', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: '' } });
+    render(React.createElement(EventsPage));
+    await waitFor(() => {
+      expect(screen.getByText('No upcoming events')).toBeDefined();
+    });
+    expect(getEventsByMetro).not.toHaveBeenCalled();
+  });
+
   it('shows level0 banner for unverified user', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 0, metro_area_id: '19100' } });
     render(React.createElement(EventsPage));

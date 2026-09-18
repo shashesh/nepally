@@ -293,4 +293,56 @@ describe('MarketplaceCategoryPage', () => {
     });
     expect(screen.queryByText(/strip:Featured/)).toBeNull();
   });
+
+  it('shows skeletons until the listings have loaded', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    render(React.createElement(MarketplaceCategoryPage));
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
+    });
+    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+  });
+
+  it('waits for the router to be ready before fetching', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue({ ...buildRouter({}), isReady: false });
+    const { rerender } = render(React.createElement(MarketplaceCategoryPage));
+    expect(mocks.getListingsByMetro).not.toHaveBeenCalled();
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+
+    mocks.useRouter.mockReturnValue(buildRouter());
+    rerender(React.createElement(MarketplaceCategoryPage));
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
+    });
+  });
+
+  it('shows skeletons again while a changed sort loads, then the new results', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    const { rerender } = render(React.createElement(MarketplaceCategoryPage));
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
+    });
+
+    let resolveSorted: (value: { data: (typeof MOCK_LISTING)[] }) => void = () => {};
+    mocks.getListingsByMetro.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSorted = resolve;
+        })
+    );
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants', sort: 'price_asc' }));
+    rerender(React.createElement(MarketplaceCategoryPage));
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Himalayan Kitchen')).toBeNull();
+
+    await act(async () => {
+      resolveSorted({ data: [{ ...MOCK_LISTING, id: 'listing-2', title: 'Cheapest Momo' }] });
+    });
+    expect(screen.getByText('Cheapest Momo')).toBeDefined();
+    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+  });
 });

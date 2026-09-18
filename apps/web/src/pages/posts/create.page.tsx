@@ -56,7 +56,8 @@ export default function CreatePostPage() {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [tagsLoading, setTagsLoading] = useState(false);
+  // Tags are requested on mount, so the page starts out loading them.
+  const [tagsLoading, setTagsLoading] = useState(true);
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
@@ -137,10 +138,10 @@ export default function CreatePostPage() {
   }, [user, router]);
 
   useEffect(() => {
-    setTagsLoading(true);
-    setTagsError(null);
+    let cancelled = false;
     getTags(supabase)
       .then((result) => {
+        if (cancelled) return;
         if (result.error) {
           setTagsError('Unable to load tags. Refresh the page and try again.');
         } else {
@@ -148,19 +149,43 @@ export default function CreatePostPage() {
         }
       })
       .catch(() => {
+        if (cancelled) return;
         setTagsError('Unable to load tags. Refresh the page and try again.');
       })
       .finally(() => {
-        setTagsLoading(false);
+        if (!cancelled) {
+          setTagsLoading(false);
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // When an input of the existing-post request changes, flag during render
+  // whether a load is starting. The request itself runs in the effect below.
+  const [existingPostRequestInputs, setExistingPostRequestInputs] = useState({
+    editPostId,
+    user,
+    tagCount: availableTags.length,
+  });
+  if (
+    existingPostRequestInputs.editPostId !== editPostId ||
+    existingPostRequestInputs.user !== user ||
+    existingPostRequestInputs.tagCount !== availableTags.length
+  ) {
+    setExistingPostRequestInputs({ editPostId, user, tagCount: availableTags.length });
+    setLoadingExistingPost(Boolean(isEditing && editPostId && user && availableTags.length > 0));
+  }
 
   useEffect(() => {
     if (!isEditing || !editPostId || !user || availableTags.length === 0) return;
 
-    setLoadingExistingPost(true);
+    let cancelled = false;
     getPostById(supabase, editPostId)
       .then((result) => {
+        if (cancelled) return;
         if (!result.data) {
           setError(result.error?.message || 'Unable to load post for editing.');
           return;
@@ -187,8 +212,14 @@ export default function CreatePostPage() {
         });
       })
       .finally(() => {
-        setLoadingExistingPost(false);
+        if (!cancelled) {
+          setLoadingExistingPost(false);
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isEditing, editPostId, user, availableTags.length]);
 
   function toggleTag(tagId: string) {

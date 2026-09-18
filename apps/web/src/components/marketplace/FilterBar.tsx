@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Select } from '@mantine/core';
 import type { ListingSortBy, MarketplaceCategory } from '@nepally/shared';
 import styles from './FilterBar.module.css';
@@ -33,14 +33,20 @@ export function FilterBar({
   searchDebounceMs = 300,
 }: FilterBarProps) {
   const [searchText, setSearchText] = useState(value.query);
+  const [prevQuery, setPrevQuery] = useState(value.query);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestValueRef = useRef(value);
-  latestValueRef.current = value;
 
   // Keep local input in sync when parent value changes externally (e.g., URL nav)
-  useEffect(() => {
+  if (value.query !== prevQuery) {
+    setPrevQuery(value.query);
     setSearchText(value.query);
-  }, [value.query]);
+  }
+
+  // The debounced onChange reads the latest value, not the one from the keystroke's render.
+  useLayoutEffect(() => {
+    latestValueRef.current = value;
+  });
 
   useEffect(() => {
     return () => {
