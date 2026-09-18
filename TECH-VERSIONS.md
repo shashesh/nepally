@@ -138,8 +138,11 @@ This document serves as the single source of truth for all technology versions u
   navigation-touching test mocks `@react-navigation/native`, so none of them
   would notice the navigators failing to construct — which is precisely how a
   major upgrade breaks. That test uses the real library.
-- **`decode-uri-component` stays flagged:** v7 still depends on
-  `query-string@7`, which pulls it in. Upstream.
+- **`decode-uri-component` cleared (2026-09-17):** `@react-navigation/core`
+  7.22.1 (released 2026-09-15) dropped its `query-string` dependency, the only
+  path that pulled `decode-uri-component` in. Fixed by an in-range lockfile
+  bump (native 7.4.1, bottom-tabs / native-stack 7.19.2); package.json ranges
+  unchanged.
 
 ### Expo 54.0 (Not 53.x or earlier)
 - **Reason:** Latest stable version with React 19 support
