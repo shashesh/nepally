@@ -138,6 +138,8 @@ Record every deviation from this plan here, with the reason.
 2. **Task 2, Step 9's grep false-positives** on `@tabler/icons-react`, `@floating-ui/react-dom` and `@testing-library/react`, because the pattern is not anchored. An anchored scan of `package-lock.json` (every `packages` key ending in `node_modules/react` or `node_modules/react-dom`) found exactly one of each, at 19.2.3.
 3. **`@react-native-async-storage/async-storage` `2.2.0` and `@react-native-community/datetimepicker` `9.1.0` are exact pins on purpose.** SDK 57's `bundledNativeModules.json` lists both without a range, so any patch drift would show up as an `expo-doctor` version mismatch. Bump them only with the next SDK.
 4. **npm 12 blocks the `esbuild` and `unrs-resolver` postinstall scripts** (`install-scripts ... not covered by allowScripts`). This comes from npm 12's own install-script gating, not repo config, and those versions did not change. Their platform binaries (`@esbuild/win32-x64`, `@unrs/resolver-binding-win32-x64-msvc`) are installed and both packages load, so nothing breaks.
+5. **React Native 0.86 removed `StyleSheet.absoluteFillObject`, which the audit missed.** Type-check caught 9 sites in 6 mobile files. At runtime the value is `undefined`, and spreading `undefined` or putting it in a style array fails silently, so all unit tests still passed while media overlays, the lightbox and sheet backdrops, the upload and menu overlays, and the reaction-dismiss layer lost `position: 'absolute'`. Fixed in 5750bd8 with `StyleSheet.absoluteFill`. The two inline `{ zIndex: 10 }` styles moved into `StyleSheet.create`. Regression tests pin the ReportPostSheet backdrop and the PostCard and PostDetailScreen reaction-dismiss overlays (d36acfd); each was seen failing without the fix. No other `StyleSheet` member the app uses was removed.
+6. **The local web e2e first failed 101/101 for an environmental reason:** `@playwright/test` 1.63.0 (unchanged by this branch) needs chromium-headless-shell build 1243, and the machine only had 1223. `npx playwright install chromium` fixed it, and then all 101 passed on React 19.2.3.
 
 ## Live tracker
 
@@ -147,10 +149,10 @@ One task is `In Progress` at a time. Update this table when a task starts and wh
 |---|---|---|---|---|
 | 1 | Baseline on SDK 54 | Completed | 2026-09-17 | type-check pass; lint 0 errors, warnings mobile 135 / web 39 / shared 0; test:ci mobile 520, web 768, shared 514, guards 12 all pass; expo-doctor 15/18 (the 3 Findings failures) |
 | 2 | Move the monorepo to SDK 57 versions and React 19.2.3 | Completed (except Step 5) | 2026-09-17 | 15ea9b6; spec ✅, quality ✅; Step 5 (ESLint react.version) pending, see decision 1 |
-| 3 | Move the splash config to the `expo-splash-screen` plugin | In Progress | 2026-09-17 | |
-| 4 | Let Expo configure Metro for the monorepo | Not Started | 2026-09-17 | |
-| 5 | `expo-doctor` reports no issues | Not Started | 2026-09-17 | |
-| 6 | Automated gates: types, lint, unit, coverage, web build + e2e | Not Started | 2026-09-17 | |
+| 3 | Move the splash config to the `expo-splash-screen` plugin | Completed | 2026-09-17 | be62548; spec ✅, quality ✅; introspect generates Android `splashscreen_background` #1565C0 and the iOS SplashScreen storyboard |
+| 4 | Let Expo configure Metro for the monorepo | Completed | 2026-09-18 | 0f0c66c; spec ✅, quality ✅; Android + iOS `expo export` bundle cleanly (1511 / 1505 modules) with `packages/shared` code present; block list still prunes `apps/web` from the crawl |
+| 5 | `expo-doctor` reports no issues | Completed | 2026-09-18 | `21/21 checks passed. No issues detected!` (baseline was 15/18); no changes needed |
+| 6 | Automated gates: types, lint, unit, coverage, web build + e2e | Completed | 2026-09-18 | Fix 5750bd8 + test d36acfd (decision 5). Final: type-check pass; lint 0 errors, warnings 135/39/0 (= baseline); unit mobile 523, web 768, shared 514, guards 12; coverage thresholds met; web e2e 101/101 (decision 6) |
 | 7 | Device smoke test in Expo Go SDK 57 | Not Started | 2026-09-17 | |
 | 8 | Update the docs | Not Started | 2026-09-17 | |
 | 9 | Close out the plan and ready the PR | Not Started | 2026-09-17 | |
@@ -858,3 +860,4 @@ The branch must be `chore/expo-sdk-57`. Update the PR body so the Testing sectio
 8. `apps/mobile/index.js`: the deep `expo/src/launch/registerRootComponent` import → `import { registerRootComponent } from 'expo'`.
 9. Run `expo-doctor` in CI so SDK drift like the stale `expo-notifications` 0.29 cannot build up again.
 10. Mantine 9 (web), per the web UI overhaul plan.
+11. `userInterfaceStyle: "light"` does nothing on Android without `expo-system-ui`. `expo config --type introspect` warns `Install expo-system-ui in your project to enable this feature`. This was already true on SDK 54: the key and the missing package both predate this plan.
