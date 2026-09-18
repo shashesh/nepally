@@ -42,6 +42,53 @@ test('allows semantic tokens, Mantine variables and color-mix over tokens', () =
   assert.deepEqual(findViolations(css), []);
 });
 
+test('flags colour functions written in uppercase', () => {
+  const css = ['.a { color: RGB(0 0 0); }', '.b { background: OKLCH(50% 0.1 20); }'].join('\n');
+  assert.deepEqual(
+    findViolations(css).map((violation) => violation.kind),
+    ['colour literal', 'colour literal']
+  );
+});
+
+test('flags named colours in value position', () => {
+  const css = ['.a { color: white; }', '.b { background: Black; }', '.c { border: 1px solid red; }'].join('\n');
+  assert.deepEqual(
+    findViolations(css).map((violation) => [violation.line, violation.kind]),
+    [
+      [1, 'named colour'],
+      [2, 'named colour'],
+      [3, 'named colour'],
+    ]
+  );
+});
+
+test('does not mistake identifiers or filenames for named colours', () => {
+  const css = [
+    '.whiteBox { color: var(--text-1); }',
+    '.a { color: var(--ink-white); }',
+    '.b { background: url(black.png); }',
+    '.c { background: color-mix(in oklch, var(--action-bg) 12%, transparent); }',
+  ].join('\n');
+  assert.deepEqual(findViolations(css), []);
+});
+
+test('flags primitive tokens, which belong to tokens.css', () => {
+  const css = [
+    '.a { color: var(--ink-900); }',
+    '.b { background: var(--paper-50); }',
+    '.c { border-color: var(--crimson-700); }',
+  ].join('\n');
+  assert.deepEqual(
+    findViolations(css).map((violation) => violation.kind),
+    ['primitive token', 'primitive token', 'primitive token']
+  );
+});
+
+test('allows semantic tokens that merely start with a primitive family name', () => {
+  const css = '.a { color: var(--accent-ink); border-color: var(--ink-border); }';
+  assert.deepEqual(findViolations(css), []);
+});
+
 test('ignores colours inside comments but keeps line numbers', () => {
   const css = '/* was\n #fff */\n.a { color: #000; }';
   assert.deepEqual(findViolations(css).map((violation) => violation.line), [3]);

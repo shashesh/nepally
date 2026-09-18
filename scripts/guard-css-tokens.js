@@ -19,10 +19,30 @@ const TARGET_DIR = path.join(ROOT, 'apps/web/src');
 const ALLOWLIST_PATH = path.join(__dirname, 'guard-css-tokens.allowlist.json');
 const IGNORED_DIRS = new Set(['node_modules', '.next', 'coverage']);
 
+/** CSS named colours. `transparent` and `currentColor` are keywords, not literals, so they stay legal. */
+const NAMED_COLOURS = [
+  'aqua', 'aquamarine', 'beige', 'black', 'blue', 'brown', 'coral', 'crimson', 'cyan', 'fuchsia',
+  'gold', 'gray', 'green', 'grey', 'indigo', 'ivory', 'khaki', 'lavender', 'lime', 'magenta',
+  'maroon', 'navy', 'olive', 'orange', 'orchid', 'pink', 'plum', 'purple', 'red', 'salmon',
+  'silver', 'tan', 'teal', 'tomato', 'turquoise', 'violet', 'wheat', 'white', 'yellow',
+];
+
 const RULES = [
   {
+    // CSS function names are case-insensitive, so RGB(...) and OKLCH(...) must fail too.
     kind: 'colour literal',
-    pattern: /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab)\(\s*[\d.]/g,
+    pattern: /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab)\(\s*[\d.]/gi,
+  },
+  {
+    // Value position only, and never part of a longer identifier, so `--ink-white`,
+    // `.whiteBox` and url(black.png) do not trip it.
+    kind: 'named colour',
+    pattern: new RegExp(`(?<=:[^;{}]*)(?<![\\w-])(?:${NAMED_COLOURS.join('|')})(?![\\w.-])`, 'gi'),
+  },
+  {
+    // Primitives live in tokens.css; CSS Modules consume the semantic layer only.
+    kind: 'primitive token',
+    pattern: /var\(\s*--(?:ink|marigold|paper|moss|crimson|amber)-\d+\b/g,
   },
   {
     kind: 'legacy token',
