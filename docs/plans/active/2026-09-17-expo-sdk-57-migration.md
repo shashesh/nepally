@@ -140,6 +140,8 @@ Record every deviation from this plan here, with the reason.
 4. **npm 12 blocks the `esbuild` and `unrs-resolver` postinstall scripts** (`install-scripts ... not covered by allowScripts`). This comes from npm 12's own install-script gating, not repo config, and those versions did not change. Their platform binaries (`@esbuild/win32-x64`, `@unrs/resolver-binding-win32-x64-msvc`) are installed and both packages load, so nothing breaks.
 5. **React Native 0.86 removed `StyleSheet.absoluteFillObject`, which the audit missed.** Type-check caught 9 sites in 6 mobile files. At runtime the value is `undefined`, and spreading `undefined` or putting it in a style array fails silently, so all unit tests still passed while media overlays, the lightbox and sheet backdrops, the upload and menu overlays, and the reaction-dismiss layer lost `position: 'absolute'`. Fixed in 5750bd8 with `StyleSheet.absoluteFill`. The two inline `{ zIndex: 10 }` styles moved into `StyleSheet.create`. Regression tests pin the ReportPostSheet backdrop and the PostCard and PostDetailScreen reaction-dismiss overlays (d36acfd); each was seen failing without the fix. No other `StyleSheet` member the app uses was removed.
 6. **The local web e2e first failed 101/101 for an environmental reason:** `@playwright/test` 1.63.0 (unchanged by this branch) needs chromium-headless-shell build 1243, and the machine only had 1223. `npx playwright install chromium` fixed it, and then all 101 passed on React 19.2.3.
+7. **Task 8: two additions, and one stale line the plan missed.** TECH-VERSIONS' Expo SDK 57 section gained a `StyleSheet.absoluteFillObject` bullet (decision 5). The Web table's Mantine row still said "9.x waits for React 19.2"; it was fixed in 3a243cf. The web-UI-overhaul plan's lines 2839 and 2855 still say the same, but they are fenced records of text that completed PR 1 Task 1.6 wrote, so they stay as history. The setup guide has no `playwright install` step to annotate.
+8. **`master` moved during implementation.** PR #68 (react-navigation 7.4.1 / 7.19.2 / core 7.22.1, which clears `decode-uri-component`) conflicted in `package-lock.json`. Merged in 6fa1792 by taking master's lockfile and re-running `npx -y npm@12 install`, which kept both the SDK 57 versions and the security bump. Re-verified afterwards: libc 0; one React; all expo-* on 57.x; type-check, lint (135/39/0), test:ci (523/768/514/12) and expo-doctor 21/21 all pass.
 
 ## Live tracker
 
@@ -153,8 +155,8 @@ One task is `In Progress` at a time. Update this table when a task starts and wh
 | 4 | Let Expo configure Metro for the monorepo | Completed | 2026-09-18 | 0f0c66c; spec ✅, quality ✅; Android + iOS `expo export` bundle cleanly (1511 / 1505 modules) with `packages/shared` code present; block list still prunes `apps/web` from the crawl |
 | 5 | `expo-doctor` reports no issues | Completed | 2026-09-18 | `21/21 checks passed. No issues detected!` (baseline was 15/18); no changes needed |
 | 6 | Automated gates: types, lint, unit, coverage, web build + e2e | Completed | 2026-09-18 | Fix 5750bd8 + test d36acfd (decision 5). Final: type-check pass; lint 0 errors, warnings 135/39/0 (= baseline); unit mobile 523, web 768, shared 514, guards 12; coverage thresholds met; web e2e 101/101 (decision 6) |
-| 7 | Device smoke test in Expo Go SDK 57 | Not Started | 2026-09-17 | |
-| 8 | Update the docs | Not Started | 2026-09-17 | |
+| 7 | Device smoke test in Expo Go SDK 57 | In Progress | 2026-09-18 | Waiting on the user's device run |
+| 8 | Update the docs | Completed | 2026-09-18 | 066ffd2 + 3a243cf; spec ✅, quality ✅ (decision 7) |
 | 9 | Close out the plan and ready the PR | Not Started | 2026-09-17 | |
 
 ## Files
