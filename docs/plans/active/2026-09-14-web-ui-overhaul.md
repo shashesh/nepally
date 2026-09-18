@@ -1,6 +1,6 @@
 ---
 title: Web UI overhaul — implementation plan
-status: planned
+status: in-progress
 created: 2026-09-14
 spec: docs/specs/2026-09-14-web-ui-overhaul-design.md
 ---
@@ -165,11 +165,11 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 
 | PR | Branch | Tasks | Status | Last updated | Notes |
 |---|---|---|---|---|---|
-| 0 Safety net | `test/web-visual-safety-net` | 0.1–0.6 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines generated in CI (no local Docker) |
-| 1 Foundation | `feat/web-design-tokens` (stacked on PR 0) | 1.1–1.7 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines generated in CI (db52500) |
-| 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Completed (pushed, not merged) | 2026-09-15 | Linux baselines f19b133 (CI run 35016011832) |
-| 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Completed (pushed, not merged) | 2026-09-15 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
-| 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Completed (pushed, PR #66) | 2026-09-17 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
+| 0 Safety net | `test/web-visual-safety-net` | 0.1–0.6 | Merged (PR #62) | 2026-09-18 | Linux baselines generated in CI (no local Docker) |
+| 1 Foundation | `feat/web-design-tokens` (stacked on PR 0) | 1.1–1.7 | Merged (PR #63) | 2026-09-18 | Linux baselines generated in CI (db52500) |
+| 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Merged (PR #64) | 2026-09-18 | Linux baselines f19b133 (CI run 35016011832) |
+| 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Merged (PR #65) | 2026-09-18 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
+| 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
 | 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
