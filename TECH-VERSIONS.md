@@ -45,7 +45,7 @@ This document serves as the single source of truth for all technology versions u
 | **Supabase** | Latest | Backend, database, auth, storage |
 | **@supabase/supabase-js** | ^2.x (2.116+) | Client SDK |
 | **PostgreSQL** | 17.6.x | Via Supabase (remote on 17 GA; local `config.toml` `major_version` synced to 17 on 2026-06-07) |
-| **Node.js** | >=22.0.0 | Required minimum (raised 2026-09-11 for @supabase/supabase-js 2.116, which declares `engines.node >=22`). CI and `.nvmrc` run 24. |
+| **Node.js** | ^22.13.0 \|\| ^24.3.0 \|\| >=25.0.0 | The 22 floor dates from 2026-09-11 (@supabase/supabase-js 2.116 declares `engines.node >=22`). React Native 0.86.3 and Metro 0.84 (Expo SDK 57) accept only `^20.19.4 \|\| ^22.13.0 \|\| ^24.3.0 \|\| >=25`, so 22.0–22.12, 23.x and 24.0–24.2 are out. CI and `.nvmrc` run 24. |
 | **npm** | >=10.0.0 | Package manager |
 
 ## Development Tools

@@ -14,16 +14,16 @@ Before starting, ensure you have:
 
 ### Check your current version:
 ```bash
-node --version  # Should show v22.x or higher
+node --version  # Needs v22.13+, v24.3+ or v25+ (React Native 0.86 rejects 22.0-22.12, 23.x and 24.0-24.2)
 npm --version   # Should show 10.x.x or higher
 ```
 
 ### If you need to upgrade (Windows):
 ```bash
 # Download and install from https://nodejs.org/
-# Or use nvm-windows:
-nvm install 22
-nvm use 22
+# Or use nvm-windows (24 matches .nvmrc and CI):
+nvm install 24
+nvm use 24
 ```
 
 ## Step 2: Install Dependencies
