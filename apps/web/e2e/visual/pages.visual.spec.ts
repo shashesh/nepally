@@ -13,6 +13,7 @@ test.describe.configure({ mode: 'parallel' });
 
 for (const entry of VISUAL_PAGES) {
   test(`${entry.name} matches its baseline`, async ({ page }, testInfo) => {
+    test.skip(Boolean(entry.projects && !entry.projects.includes(testInfo.project.name as 'visual-desktop' | 'visual-phone')), 'Not captured for this project');
     test.skip(
       !isVisualHostSupported(),
       'Visual baselines are Linux-only. Run: npm run test:visual:docker --workspace=apps/web'

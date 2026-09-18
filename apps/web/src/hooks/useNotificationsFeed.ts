@@ -64,7 +64,9 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
   }, [userId, pollingEnabled, load]);
 
   useEffect(() => {
-    if (!userId) return;
+    // /notifications owns its own subscription, so staying out avoids a second
+    // channel for the same INSERTs and a badge that page does not control.
+    if (!userId || !pollingEnabled) return;
     const channel = supabase
       .channel(`notifications:${userId}`)
       .on(
@@ -72,6 +74,9 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
         (payload) => {
           const notification = payload.new as Notification;
+          // getNotifications and getUnreadNotificationCount both exclude chat
+          // notifications, so one accepted here would disappear on reload.
+          if (notification.type === 'message') return;
           setUnreadCount((count) => count + 1);
           setItems((previous) => [notification, ...previous].slice(0, BELL_LIMIT));
         }
@@ -81,18 +86,26 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, pollingEnabled]);
 
   const markRead = useCallback(async (notification: Notification) => {
     if (notification.read) return;
-    await markNotificationRead(supabase, notification.id);
+    const result = await markNotificationRead(supabase, notification.id);
+    if (result.error) {
+      console.error('Failed to mark notification read:', result.error);
+      return;
+    }
     setUnreadCount((count) => Math.max(0, count - 1));
     setItems((previous) => previous.map((item) => (item.id === notification.id ? { ...item, read: true } : item)));
   }, []);
 
   const markAllRead = useCallback(async () => {
     if (!userId) return;
-    await markAllNotificationsRead(supabase, userId);
+    const result = await markAllNotificationsRead(supabase, userId);
+    if (result.error) {
+      console.error('Failed to mark all notifications read:', result.error);
+      return;
+    }
     setUnreadCount(0);
     setItems((previous) => previous.map((item) => ({ ...item, read: true })));
   }, [userId]);

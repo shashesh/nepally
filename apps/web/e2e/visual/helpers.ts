@@ -3,10 +3,12 @@ import path from 'node:path';
 import { expect, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { injectAuthSession } from '../fixtures/auth';
+import { FIXTURE_NOW_MS } from '../fixtures/mock-data';
 import { mockSupabaseLoggedIn, mockUnhandledRest } from '../helpers/supabase-mock';
 
 /** Frozen "now" so relative times and dates render identically on every run. */
-export const VISUAL_NOW = new Date('2026-09-14T12:00:00Z');
+export const VISUAL_NOW_ISO = '2026-09-14T12:00:00Z';
+export const VISUAL_NOW = new Date(VISUAL_NOW_ISO);
 
 /** Screenshot baselines are generated on Linux (Docker/CI) only. */
 export function isVisualHostSupported(): boolean {
@@ -29,6 +31,14 @@ function writeBaseline(baseline: A11yBaseline): void {
 }
 
 export async function prepareVisualPage(page: Page, options: { signedIn: boolean }): Promise<void> {
+  // setFixedTime only freezes Date inside the browser. The fixture timestamps are
+  // built in this process, so without the pin the event and listing dates follow
+  // the wall clock and the committed screenshots drift after baseline day.
+  if (FIXTURE_NOW_MS !== VISUAL_NOW.getTime()) {
+    throw new Error(
+      `Visual runs need the fixture clock pinned: set E2E_FIXED_NOW=${VISUAL_NOW_ISO} for the visual projects.`
+    );
+  }
   await page.clock.setFixedTime(VISUAL_NOW);
   if (options.signedIn) {
     await injectAuthSession(page);

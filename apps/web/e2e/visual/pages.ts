@@ -7,6 +7,7 @@ import {
   MOCK_UPCOMING_EVENTS,
   MOCK_USER_PROFILE,
 } from '../fixtures/mock-data';
+import { mockSearchRoutes } from '../helpers/search-mock';
 
 export type VisualPage = {
   /** Screenshot file stem and a11y-baseline key suffix. */
@@ -17,6 +18,8 @@ export type VisualPage = {
   setup?: (page: Page) => Promise<void>;
   /** Resolves once the page shows its real content (not a skeleton). */
   ready: (page: Page) => Promise<void>;
+  /** Limit to these projects (default: both). */
+  projects?: Array<'visual-desktop' | 'visual-phone'>;
 };
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -99,4 +102,27 @@ export const VISUAL_PAGES: VisualPage[] = [
   },
   { name: 'messages', path: '/messages', signedIn: true, ready: (page) => heading(page, /messages/i) },
   { name: 'notifications', path: '/notifications', signedIn: true, ready: (page) => heading(page, /notifications/i) },
+  {
+    name: 'search-results',
+    path: '/search?q=thapa',
+    signedIn: true,
+    setup: mockSearchRoutes,
+    // The heading renders before the preview resolves, so waiting on it alone
+    // can screenshot the "Searching…" skeleton. Wait for a result instead.
+    ready: async (page) => {
+      await heading(page, /results for “thapa”/i);
+      await expect(page.getByRole('link', { name: new RegExp(MOCK_POSTS[0].title) }).first()).toBeVisible(READY_TIMEOUT);
+    },
+  },
+  {
+    name: 'search-dropdown',
+    path: '/feed',
+    signedIn: true,
+    projects: ['visual-desktop'],
+    setup: mockSearchRoutes,
+    ready: async (page) => {
+      await page.getByRole('textbox', { name: 'Search Nepally' }).fill('thapa');
+      await expect(page.getByRole('option', { name: /Bikash Thapa/ })).toBeVisible(READY_TIMEOUT);
+    },
+  },
 ];

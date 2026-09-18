@@ -51,6 +51,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 - [product/features/marketplace-future-features.md](product/features/marketplace-future-features.md) — marketplace Phase 2+ backlog
 - [product/features/dynamic-location-management.md](product/features/dynamic-location-management.md) — location switcher feature spec
 - [product/features/post-likes-and-comments.md](product/features/post-likes-and-comments.md) — post engagement feature spec
+- [product/features/search.md](product/features/search.md) — global search: suggestions, results page, metro scope
 
 ## Plans (in-flight only — finished plans move to `archive/plans/`)
 

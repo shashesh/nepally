@@ -116,6 +116,45 @@ describe('useNotificationsFeed', () => {
     errorSpy.mockRestore();
   });
 
+  it('ignores realtime chat notifications, which the queries exclude', async () => {
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    const insert = mocks.subscriptions.find((sub) => sub.filter.table === 'notifications');
+    act(() => insert?.callback({ new: { ...base, id: 'n-msg', type: 'message', title: 'Chat' } }));
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.unreadCount).toBe(1);
+  });
+
+  it('keeps the item unread when marking read fails', async () => {
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+
+    mocks.markNotificationRead.mockResolvedValueOnce({ error: new Error('RLS blocked') });
+    await act(() => result.current.markRead(base));
+    expect(result.current.unreadCount).toBe(1);
+    expect(result.current.items[0].read).toBe(false);
+
+    await act(() => result.current.markRead(base));
+    expect(result.current.unreadCount).toBe(0);
+    expect(result.current.items[0].read).toBe(true);
+  });
+
+  it('keeps the badge when marking everything read fails', async () => {
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+
+    mocks.markAllNotificationsRead.mockResolvedValueOnce({ error: new Error('RLS blocked') });
+    await act(() => result.current.markAllRead());
+    expect(result.current.unreadCount).toBe(1);
+    expect(result.current.items[0].read).toBe(false);
+  });
+
+  it('does not subscribe to realtime when the notifications page owns it', async () => {
+    renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: false }));
+    await waitFor(() => expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(1));
+    expect(mocks.subscriptions).toHaveLength(0);
+  });
+
   it('does not poll on tab focus when polling is disabled', async () => {
     renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: false }));
     await waitFor(() => expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(1));

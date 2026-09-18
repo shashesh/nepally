@@ -35,6 +35,7 @@ import ReportPostModal from '../components/ReportPostModal';
 import { MetroPulseStrip } from '../components/pulse/MetroPulseStrip';
 import LocationSwitcher from '../components/LocationSwitcher';
 import { TopicPills } from '../components/layout/TopicPills';
+import { PHONE_MEDIA_QUERY } from '../components/layout/breakpoints';
 import styles from '../styles/Feed.module.css';
 
 const LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
@@ -47,7 +48,7 @@ interface FeedPageProps {
 export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const isPhone = useMediaQuery('(max-width: 47.99em)');
+  const isPhone = useMediaQuery(PHONE_MEDIA_QUERY);
   const { activeLocation } = useLocation();
   const FEED_PAGE_SIZE = 20;
   const [posts, setPosts] = useState<Post[]>([]);

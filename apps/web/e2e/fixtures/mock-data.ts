@@ -1,5 +1,17 @@
 import type { User, Post, Tag, Event, MarketplaceCategory, MarketplaceListing } from '@nepally/shared';
 
+/**
+ * Instant that every relative fixture timestamp is measured from.
+ *
+ * Ordinary e2e runs use the wall clock, because the app's own logic decides
+ * what counts as "upcoming". Visual runs set `E2E_FIXED_NOW` so the dates baked
+ * into committed screenshots do not drift with the day the suite runs:
+ * `page.clock.setFixedTime` only freezes `Date` inside the browser, not the
+ * timestamps this module builds in the Node process. `prepareVisualPage`
+ * asserts the pin is in place.
+ */
+export const FIXTURE_NOW_MS = process.env.E2E_FIXED_NOW ? Date.parse(process.env.E2E_FIXED_NOW) : Date.now();
+
 export const MOCK_USER_ID = 'e2e-user-00000000-0000-0000-0000-000000000001';
 export const MOCK_USER_EMAIL = 'e2e-test@nusa.app';
 export const MOCK_METRO_ID = 'metro-nyc-001';
@@ -166,9 +178,9 @@ export const MOCK_POST_OTHER_AUTHOR: Post = {
   tags: [MOCK_TAGS[2]],
 };
 
-const FUTURE_1 = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
-const FUTURE_2 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-const PAST_EVENT = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+const FUTURE_1 = new Date(FIXTURE_NOW_MS + 2 * 24 * 60 * 60 * 1000).toISOString();
+const FUTURE_2 = new Date(FIXTURE_NOW_MS + 7 * 24 * 60 * 60 * 1000).toISOString();
+const PAST_EVENT = new Date(FIXTURE_NOW_MS - 3 * 24 * 60 * 60 * 1000).toISOString();
 
 export const MOCK_UPCOMING_EVENTS: Event[] = [
   {
@@ -185,8 +197,8 @@ export const MOCK_UPCOMING_EVENTS: Event[] = [
     interested_count: 3,
     rsvp_visibility: 'public',
     status: 'active',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: new Date(FIXTURE_NOW_MS).toISOString(),
+    updated_at: new Date(FIXTURE_NOW_MS).toISOString(),
   },
   {
     id: 'event-feed-002',
@@ -202,8 +214,8 @@ export const MOCK_UPCOMING_EVENTS: Event[] = [
     interested_count: 6,
     rsvp_visibility: 'public',
     status: 'active',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: new Date(FIXTURE_NOW_MS).toISOString(),
+    updated_at: new Date(FIXTURE_NOW_MS).toISOString(),
   },
 ];
 
@@ -222,8 +234,8 @@ export const MOCK_PAST_EVENT: Event = {
   interested_count: 0,
   rsvp_visibility: 'public',
   status: 'active',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
+  created_at: new Date(FIXTURE_NOW_MS).toISOString(),
+  updated_at: new Date(FIXTURE_NOW_MS).toISOString(),
 };
 
 export const MOCK_ZIP_METRO = [
@@ -296,7 +308,7 @@ export const MOCK_MARKETPLACE_LISTING_OWN_ACTIVE: MarketplaceListing = {
   is_featured: false,
   trending_score: 79,
   is_global: false,
-  refreshed_at: new Date().toISOString(),
+  refreshed_at: new Date(FIXTURE_NOW_MS).toISOString(),
   created_at: '2025-06-01T00:00:00Z',
   updated_at: '2025-06-01T00:00:00Z',
   category: MOCK_MARKETPLACE_CATEGORIES[0],
@@ -332,7 +344,7 @@ export const MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE: MarketplaceListing = {
   is_featured: false,
   trending_score: 28,
   is_global: false,
-  refreshed_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  refreshed_at: new Date(FIXTURE_NOW_MS - 2 * 24 * 60 * 60 * 1000).toISOString(),
   created_at: '2025-06-03T00:00:00Z',
   updated_at: '2025-06-03T00:00:00Z',
   category: MOCK_MARKETPLACE_CATEGORIES[1],

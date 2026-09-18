@@ -7,6 +7,13 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'placeholder-anon-key';
 // jsdom does not implement scrollIntoView
 window.HTMLElement.prototype.scrollIntoView = function () {};
 
+// jsdom does not implement ResizeObserver (required by Mantine's FloatingIndicator, used by Tabs)
+window.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 // jsdom does not implement matchMedia (required by Mantine)
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

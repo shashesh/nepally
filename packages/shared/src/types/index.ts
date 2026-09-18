@@ -14,3 +14,4 @@ export * from './marketplace';
 export * from './promotion';
 export * from './pulse';
 export * from './follow';
+export * from './search';

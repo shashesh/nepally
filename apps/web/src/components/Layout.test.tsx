@@ -28,6 +28,11 @@ vi.mock('./LocationSwitcher', () => ({
     return React.createElement('div', { 'data-testid': 'location-switcher' });
   },
 }));
+vi.mock('./layout/SearchEntry', () => ({
+  SearchEntry: function MockSearchEntry() {
+    return React.createElement('input', { 'aria-label': 'Search Nepally' });
+  },
+}));
 
 import Layout from './Layout';
 
@@ -78,6 +83,11 @@ describe('Layout', () => {
       for (const landmark of screen.getAllByRole('navigation')) {
         expect(landmark.getAttribute('aria-label')).toBeTruthy();
       }
+    });
+
+    it('puts search in the top bar', () => {
+      render(<Layout>Content</Layout>);
+      expect(screen.getByRole('textbox', { name: 'Search Nepally' })).toBeDefined();
     });
 
     it('offers a skip link to the main content', () => {

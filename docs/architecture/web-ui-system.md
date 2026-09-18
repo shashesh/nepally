@@ -77,10 +77,13 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 
 | Guard | Command | Allowlist |
 |---|---|---|
-| Colour literals and legacy variables in CSS Modules | `npm run lint:guards` | `scripts/guard-css-tokens.allowlist.json` (regenerate: `node scripts/guard-css-tokens.js --write-allowlist`) |
+| Colour literals, named colours, primitives and legacy variables in CSS Modules | `npm run lint:guards` | `scripts/guard-css-tokens.allowlist.json` (regenerate: `node scripts/guard-css-tokens.js --write-allowlist`) |
 | Raw `<button>/<input>/<select>/<textarea>` outside `components/ui/` | `npm run lint` | `apps/web/eslint/raw-element-allowlist.mjs` (regenerate: `node apps/web/eslint/write-raw-element-allowlist.mjs`) |
+| Stale entries in the raw-element allowlist | `npm run lint:guards` | — (`node apps/web/eslint/write-raw-element-allowlist.mjs --check`) |
 
-Allowlists only shrink. The CSS guard fails if an allowlisted file is already clean.
+The CSS guard rejects hex, `rgb()`/`hsl()`/`oklch()`/`oklab()` in any case, named colours such as `white` in value position, direct primitive references such as `var(--ink-900)`, and the legacy design-system variables.
+
+Allowlists only shrink, and both are enforced. The CSS guard fails if an allowlisted file is already clean. The raw-element allowlist is applied through ESLint `ignores`, which skips a file silently, so `--check` fails on entries that no longer render a raw element — otherwise a migrated file left in the list would go on hiding new raw elements.
 
 The raw-element allowlist stores plain file paths. `apps/web/eslint.config.mjs` passes each one through `escapeGlobLiteral` (`apps/web/eslint/escape-glob.mjs`, tested by `npm run guards:test`) before adding it to ESLint `ignores`, because Next.js dynamic routes such as `pages/users/[id].page.tsx` would otherwise be read as glob character classes and not ignored.
 
