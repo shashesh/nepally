@@ -6,7 +6,7 @@ This directory contains app icons, splash screens, and other assets.
 
 - `icon.png` - App icon (1024x1024px)
 - `adaptive-icon.png` - Android adaptive icon (1024x1024px)
-- `splash.png` - Splash screen (1284x2778px for iPhone 13 Pro Max)
+- `splash.png` - Splash logo, drawn centred by the `expo-splash-screen` plugin (see below)
 - `favicon.png` - Web favicon (48x48px)
 
 ## Temporary Placeholders
@@ -28,9 +28,9 @@ Replace these with actual Nepally branded assets before production.
 - Foreground: Nepally logo
 
 ### splash.png
-- Size: 1284x2778px (or use 2048x2048px for universal)
-- Background: Nepally Blue (#1565C0)
-- Logo centered
+- Not a full-screen image. The `expo-splash-screen` plugin in `app.json` draws it centred and 200 wide (`imageWidth`) on top of its `backgroundColor`, Nepally Blue (#1565C0)
+- Supply a square logo with a transparent background (1024x1024px is plenty)
+- Change the size or background in the plugin config in `app.json`, not in the image
 
 ## Creating Icons
 
