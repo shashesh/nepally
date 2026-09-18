@@ -8,7 +8,7 @@ Nepally uses a **monorepo** structure powered by **npm workspaces**. This means 
 
 ## Directory Structure
 
-```
+```text
 nepally/
 ├── .github/              # GitHub Actions workflows
 │   └── workflows/

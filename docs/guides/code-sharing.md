@@ -401,7 +401,7 @@ export function usePosts(metroId: string) {
 
 When writing code, ask:
 
-```
+```text
 Does this code contain UI/styling?
 ├─ YES → Keep it in apps/mobile or apps/web
 └─ NO → Ask: Is this logic reusable?

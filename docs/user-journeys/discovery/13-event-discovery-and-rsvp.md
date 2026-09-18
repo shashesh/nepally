@@ -239,7 +239,7 @@ Each **EventCard** shows:
 
 ## Decision Points
 
-```
+```text
 User opens Events tab
   │
   ├─> Metro area check
@@ -423,7 +423,7 @@ User opens Events tab
 
 ## Visual Flow Diagram
 
-```
+```text
 ┌─────────────────────────┐
 │     Events Tab          │
 │  (bottom nav / sidebar) │

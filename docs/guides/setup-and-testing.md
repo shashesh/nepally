@@ -160,7 +160,7 @@ npm start
 
 **You should see:**
 
-```
+```text
 › Metro waiting on exp://192.168.x.x:8081
 › Scan the QR code above with Expo Go (Android) or Camera app (iOS)
 
@@ -215,7 +215,7 @@ npm run dev
 
 **You should see:**
 
-```
+```text
    ▲ Next.js 16.2.7 (Turbopack)
    - Local:        http://localhost:3000
    - Ready in 2.3s

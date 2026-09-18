@@ -181,7 +181,7 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ### Flow 1: Initiate Chat from Avatar
 
-```
+```text
 1. User browses home feed or post detail
 2. User taps another user's avatar on a post card or post detail
 3. User selects "Chat" from avatar menu
@@ -199,7 +199,7 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ### Flow 2: View Conversations
 
-```
+```text
 1. User taps Messages tab in bottom nav
 2. ConversationListScreen loads
 3. Displays all conversations sorted by last_message_time DESC
@@ -209,7 +209,7 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ### Flow 3: Block User
 
-```
+```text
 1. User is in MessageThread
 2. User taps kebab menu (⋮) in header
 3. Selects "Block User"

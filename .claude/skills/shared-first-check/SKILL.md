@@ -43,7 +43,7 @@ Find test files across workspaces. New/changed logic files without corresponding
 
 ## Report Format
 
-```
+```text
 SHARED-FIRST ARCHITECTURE COMPLIANCE REPORT
 
 1. Type Duplication:        PASS | FAIL (N violations)

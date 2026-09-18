@@ -213,7 +213,7 @@ scope; **written** is what exists on disk today.
 
 This diagram shows which journeys must be completed before others:
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │           ENTRY POINT                            │
 │                                                  │
@@ -334,13 +334,13 @@ Use the `/user-journey` skill to create comprehensive journey documentation.
 
 **Command:**
 
-```
+```text
 /user-journey [journey-name]
 ```
 
 **Example:**
 
-```
+```text
 /user-journey signup-and-onboarding
 ```
 

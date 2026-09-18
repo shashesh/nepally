@@ -61,7 +61,7 @@ npx expo build:android
 
 ### Directory Structure
 
-```
+```text
 src/
 ├── components/        # Reusable UI components
 │   ├── buttons/       # Button components

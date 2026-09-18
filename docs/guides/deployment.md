@@ -42,7 +42,7 @@ Before deploying, ensure:
 
 In Vercel dashboard, go to **Settings** > **Environment Variables**:
 
-```
+```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
@@ -388,7 +388,7 @@ You'll need:
 
 ### App Description Template
 
-```
+```text
 Nepally - US-Nepal Help Network
 
 Your community platform for the Nepalese diaspora in the USA.
@@ -475,7 +475,7 @@ npx supabase functions deploy get-metro-by-zip
 
 Go to **Settings** > **Secrets and variables** > **Actions**:
 
-```
+```text
 VERCEL_TOKEN
 VERCEL_ORG_ID
 VERCEL_PROJECT_ID

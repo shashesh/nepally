@@ -314,7 +314,7 @@ After editing: Taps "Save" → calls `updateEvent(supabase, eventId, partialPayl
 
 ## Decision Points
 
-```
+```text
 User taps "Create Event"
   │
   ├─> Trust Level check (UI layer)
@@ -513,7 +513,7 @@ User taps "Create Event"
 
 ## Visual Flow Diagram
 
-```
+```text
 ┌─────────────────────────────┐
 │    Events Tab               │
 │    Tap "Create Event" btn   │

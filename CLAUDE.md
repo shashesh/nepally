@@ -55,7 +55,7 @@ Run `npm run docs:check` before opening a PR.
 
 **Golden Rule: Share business logic, keep UI separate.**
 
-```
+```text
 Is it a UI component, screen, or page? → apps/mobile/ or apps/web/
 Does it use platform-specific APIs?    → apps/mobile/ or apps/web/
 Everything else                        → packages/shared/

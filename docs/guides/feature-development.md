@@ -16,7 +16,7 @@ Context gathered upfront (spec, journey, wireframes) eliminates the two most exp
 
 ## The 7-Stage Workflow
 
-```
+```text
 Stage 0: Scope          /break-features      (for complex features only)
 Stage 1: Spec           /design-feature
 Stage 2: Journey        /user-journey        (one per key flow)
@@ -38,7 +38,7 @@ Stage 6: Validate       /shared-first-check + tests
 
 **Prompt:**
 
-```
+```text
 /break-features events
 ```
 
@@ -56,7 +56,7 @@ Stage 6: Validate       /shared-first-check + tests
 
 **Prompt:**
 
-```
+```text
 /design-feature events
 ```
 
@@ -81,7 +81,7 @@ Stage 6: Validate       /shared-first-check + tests
 
 **Prompt examples for Events:**
 
-```
+```text
 /user-journey event-browsing
 /user-journey event-creation
 /user-journey event-rsvp
@@ -108,7 +108,7 @@ Stage 6: Validate       /shared-first-check + tests
 
 **Prompt examples for Events:**
 
-```
+```text
 /wireframe-old event-list-screen
 /wireframe-old event-detail-screen
 /wireframe-old event-creation-screen
@@ -140,7 +140,7 @@ Stage 6: Validate       /shared-first-check + tests
 
 **Prompt:**
 
-```
+```text
 Using docs/plans/_template.md as the template, create an implementation plan
 for the events feature. Reference the spec at docs/product/features/events.md, the user journeys
 at docs/user-journeys/events/, and the wireframes at docs/wireframes/[relevant screens].
@@ -171,7 +171,7 @@ The plan must include:
 
 **Prompt:**
 
-```
+```text
 /implement-feature events
 ```
 
@@ -315,7 +315,7 @@ These features share properties that make the process especially important:
 
 ## Example: Full Prompt Sequence for Events
 
-```
+```text
 # 1. Scope
 /break-features events
 

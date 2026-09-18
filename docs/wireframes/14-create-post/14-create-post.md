@@ -568,7 +568,7 @@ You need to verify your phone number before you can create posts.
 
 **Submit Post:**
 
-```
+```http
 POST /posts
 Content-Type: application/json
 Authorization: Bearer {token}
@@ -609,7 +609,7 @@ Authorization: Bearer {token}
 
 **Fetch Tags:**
 
-```
+```http
 GET /tags
 ```
 

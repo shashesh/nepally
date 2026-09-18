@@ -22,7 +22,7 @@ ASK:
 
 Each wireframe gets its own folder:
 
-```
+```text
 docs/wireframes/[screen-name]/
 ├── [screen-name].md              # WireMD source (single source of truth)
 └── [screen-name]-wireframe.html  # Rendered wireframe (no styles)
@@ -44,7 +44,7 @@ docs/wireframes/[screen-name]/
 
 ### Required Document Sections
 
-```
+```markdown
 # Wireframe: [Screen Name]
 > Metadata: Screen number, Status, Date, Journey link, User story
 

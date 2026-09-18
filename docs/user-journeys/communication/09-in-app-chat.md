@@ -273,7 +273,7 @@
 
 ## Decision Points
 
-```
+```text
 User taps "Contact Author" or chat icon
   │
   ├─> Trust Level check
@@ -465,7 +465,7 @@ User taps "Contact Author" or chat icon
 
 ## Visual Flow Diagram
 
-```
+```text
 ┌─────────────────────────┐
 │       Entry Points      │
 │  • "Contact Author" btn │

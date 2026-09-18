@@ -758,14 +758,14 @@ Verified metro-wide emergency broadcasts
 
 **Supabase `notifications` table** (already exists in `001_schema.sql`):
 
-```
+```text
 id, user_id, type (message|post_response|emergency_alert|system),
 title, body, data (JSONB), read, read_at, sent_at
 ```
 
 **New table needed — `device_tokens`** (to be added to `001_schema.sql`):
 
-```
+```text
 id, user_id, token (TEXT), platform (expo|web_push),
 endpoint (TEXT, for web push), p256dh (TEXT), auth_key (TEXT),
 created_at, last_used_at

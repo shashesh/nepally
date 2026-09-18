@@ -62,7 +62,7 @@ update the feature doc, the reasoning does.
 
 ## Document lifecycle
 
-```
+```text
 idea → specs/YYYY-MM-DD-<topic>-design.md          (status: planned)
      → plans/active/YYYY-MM-DD-<topic>.md          (status: planned → in-progress)
      → implementation

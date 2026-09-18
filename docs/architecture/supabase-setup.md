@@ -75,7 +75,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 3. Get a phone number
 4. Add credentials in Supabase:
 
-   ```
+   ```text
    Twilio Account SID: ACxxxxxxxxxxxx
    Twilio Auth Token: your-auth-token
    Twilio Phone Number: +1234567890
@@ -96,7 +96,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    - Create OAuth 2.0 Client ID
    - Add authorized redirect URIs:
 
-     ```
+     ```text
      https://xxxxx.supabase.co/auth/v1/callback
      ```
 
@@ -112,7 +112,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    - Create app and get App ID and App Secret
    - Add redirect URI:
 
-     ```
+     ```text
      https://xxxxx.supabase.co/auth/v1/callback
      ```
 
@@ -124,7 +124,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 2. Set **Site URL**: Your production domain (e.g., `https://nepally.us`)
 3. Add **Redirect URLs**:
 
-   ```
+   ```text
    http://localhost:3000/**
    https://nepally.us/**
    https://your-preview-url.vercel.app/**
@@ -222,7 +222,7 @@ Storage is enabled by default. Configure buckets:
 
 **Profile Photos Bucket:**
 
-```
+```text
 Name: user-profiles
 Public: true
 File size limit: 5MB
@@ -231,7 +231,7 @@ Allowed MIME types: image/jpeg, image/png, image/webp
 
 **Post Photos Bucket:**
 
-```
+```text
 Name: post-photos
 Public: true
 File size limit: 10MB
@@ -240,7 +240,7 @@ Allowed MIME types: image/jpeg, image/png, image/webp
 
 **Chat Images Bucket:**
 
-```
+```text
 Name: chat-images
 Public: false (only participants can access)
 File size limit: 10MB

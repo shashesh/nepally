@@ -105,7 +105,7 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 
 **Shared utility (packages/shared):**
 
-```
+```text
 mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 ```
 
@@ -177,7 +177,7 @@ mapCoordinatesToMetro(supabase, lat, lng, reverseGeocodeFn) → MetroArea | null
 
 **Data model:**
 
-```
+```text
 user_saved_locations table:
   id: UUID (PK)
   user_id: UUID (FK → users.id)

@@ -593,7 +593,7 @@
 
 ## Decision Points
 
-```
+```text
 Start (App Discovery)
   │
   ├──> Found via Facebook recommendation (Primary path)
@@ -915,7 +915,7 @@ At Home Screen:
 
 ## Visual Flow Diagram
 
-```
+```text
 ┌─────────────────┐
 │   Discovery     │
 │ (Facebook post) │

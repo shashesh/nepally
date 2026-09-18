@@ -50,7 +50,7 @@ See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for full version details.
 
 ## Repository Structure
 
-```
+```text
 nepally/
 ├── apps/
 │   ├── mobile/          # React Native mobile app (Expo)

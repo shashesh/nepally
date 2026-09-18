@@ -88,7 +88,7 @@ Delivered as a sequence of reviewable PRs guarded by visual-regression and a11y 
 
 **File layout (replaces `design-system.css` and `design-system-next.css`):**
 
-```
+```text
 apps/web/src/styles/
   tokens.css           # primitives + semantic tokens (source of truth)
   legacy-aliases.css   # TEMPORARY: old --color-*/--font-*/--space-* → new tokens (deleted in PR 10)

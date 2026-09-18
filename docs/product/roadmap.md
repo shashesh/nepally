@@ -385,7 +385,7 @@ See [Marketplace Feature Spec](./features/marketplace.md) for full details.
 
 To prevent "The Boy Who Cried Wolf" syndrome and notification fatigue:
 
-```
+```text
 1. TRIGGER
    ↓ User submits an "Emergency Post"
 

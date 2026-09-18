@@ -30,7 +30,7 @@ npm start
 
 ## Project Structure
 
-```
+```text
 src/
 ├── pages/         # Next.js pages (routes)
 │   ├── index.tsx        # Home page
@@ -58,7 +58,7 @@ src/
 
 Each post has a dedicated URL for SEO:
 
-```
+```text
 https://nusa.app/posts/housing/abc123
 https://nusa.app/posts/jobs/def456
 ```

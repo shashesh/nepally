@@ -36,7 +36,7 @@ Create: `docs/user-journeys/[category]/[number]-[journey-name].md`
 
 Use this structure (fill in content based on the specific journey):
 
-```
+```markdown
 # User Journey #[N]: [Name]
 - Metadata: Number, Category, Persona, Status, Date
 - Journey Overview: Goal, Trigger, Success Criteria, Duration

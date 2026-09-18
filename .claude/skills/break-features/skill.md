@@ -9,7 +9,7 @@ Analyzes a roadmap phase and breaks it into small, implementable features with d
 
 ## Usage
 
-```
+```text
 /break-features <phase-name>
 /break-features "Phase 2"
 ```
