@@ -110,7 +110,7 @@ Actions minutes are limited, so CI only runs on code that is ready to merge ([wh
 
 - **PRs open as drafts, and drafts run nothing.** Marking a PR **Ready for review** starts CI, Docs and the Vercel preview.
 - **Docs-only changes skip CI.** A change that only touches `**/*.md` or `docs/**` runs just the Docs check.
-- **A new push cancels the PR's older runs.**
+- **A new push, or converting the PR back to draft, cancels its older runs.**
 
 | Job | Command |
 |-----|---------|

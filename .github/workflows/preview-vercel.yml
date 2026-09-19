@@ -5,7 +5,8 @@ on:
     branches:
       - master
     # Drafts are skipped; the preview deploys once the PR is marked ready for review.
-    types: [opened, synchronize, reopened, ready_for_review]
+    # converted_to_draft starts a skipped run that cancels a deploy still in flight.
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'apps/web/**'
       - 'packages/shared/**'

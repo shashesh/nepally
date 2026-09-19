@@ -3,13 +3,14 @@ name: CI
 # GitHub Actions minutes are scarce, so CI only spends them on code that is ready to merge:
 # - Docs-only changes never start this workflow. The Docs workflow checks them.
 # - Draft PRs start it, but every job is skipped until the PR is marked ready for review.
+#   Converting a PR back to draft starts a skipped run that cancels the one in flight.
 # Why: docs/decisions/2026-09-19-ci-actions-minute-budget.md
 
 on:
   pull_request:
     branches:
       - master
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     # Keep both lists equal to DOCS_ONLY_PATHS in scripts/ci/prod-deploy-guard.js; its test checks.
     paths-ignore:
       - '**/*.md'

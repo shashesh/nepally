@@ -4,13 +4,14 @@ name: Docs
 # place. The path filter lives here because it is the only part the reusable
 # workflow cannot express. It must keep covering every path ci.yml ignores, so
 # docs-only changes are still checked (scripts/ci/prod-deploy-guard.test.js checks).
-# Draft PRs are skipped until marked ready for review, like CI.
+# Draft PRs are skipped until marked ready for review, and converting back to draft
+# cancels the run in flight, like CI.
 
 on:
   pull_request:
     branches:
       - master
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - '**/*.md'
       - 'docs/**'
