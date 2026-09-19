@@ -36,7 +36,7 @@ Signed-in members can search community posts, marketplace listings and people fr
 
 **Matching:** full-text prefix matching, so "tha" finds "Thapa". Post and listing text also matches other forms of an English word, so "houses" finds "Housing". Post titles rank above body text. Names are matched without stemming.
 
-**Highlighting:** a word is marked when it starts with a query word, or when it is a plural or -ing/-ed form of one, so "rooms" marks "Room". Less regular forms, such as "sold" against "sell", can match without being marked.
+**Highlighting:** a word is marked when it starts with a query word, or when it is a plural or -ing/-ed form of one, so "rooms" marks "Room". Longer derivations that the database still matches are found but not marked: searching "management" returns a post that says "manage" without marking the word.
 
 ## Technical
 

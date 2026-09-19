@@ -108,6 +108,14 @@ describe('highlightSegments with English word endings', () => {
     expect(highlightSegments(word, query)).toEqual([{ text: word, match: false }]);
   });
 
+  // Postgres stems both to "manag", so the post is found. These rules do not
+  // strip -ment, so the word is not marked. Documented in search.md.
+  it('finds but does not mark longer derivations', () => {
+    expect(highlightSegments('Property manage services', 'management')).toEqual([
+      { text: 'Property manage services', match: false },
+    ]);
+  });
+
   it('marks inflected words inside a sentence', () => {
     expect(highlightSegments('Room for rent in Queens', 'rooms renting')).toEqual([
       { text: 'Room', match: true },
