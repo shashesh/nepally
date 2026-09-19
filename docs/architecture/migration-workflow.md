@@ -103,6 +103,7 @@ The pre-realignment tracker contents (31 rows), captured before the rewrite:
    ```
 
 4. Re-run advisors (`get_advisors`) after DDL to catch new RLS/security/perf issues.
+5. **New indexes on tables that already hold data** (production once it has users): use `CREATE INDEX CONCURRENTLY`, because a plain `CREATE INDEX` blocks writes to the table until the build finishes. `CONCURRENTLY` cannot run inside a transaction block, and a multi-statement script counts as one, so give each such index a migration of its own. Nobody has yet checked whether `apply_migration` wraps its SQL in a transaction; check that before the first one. A fresh database that replays `001`–`NNN` has empty tables, so a plain `CREATE INDEX` is fine there. That is why `037`/`038` need no change for the production project.
 
 ## Adopting the Supabase CLI later (optional, not done)
 

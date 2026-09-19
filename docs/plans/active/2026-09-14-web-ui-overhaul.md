@@ -148,7 +148,7 @@ The spec is updated in the same commit as this plan.
    - **People:** `idx_users_person_search_document` is now partial on `is_banned = false`. Search stays nationwide with local-first ordering, which is the documented behaviour — the review's suggestion of a metro bound would have changed the product, so it was not taken.
    - **Pagination:** every search wrapper now ends its sort with `id`. Without it, offset paging duplicated and dropped rows: `simple` applies no weights, so verified on staging, "Bikash Thapa", "Sita Thapa" and "Ram Thapa" all score exactly `0.0607927`.
    - **Applied to `nusa-staging` 2026-09-17.** Grants re-verified (anon denied, authenticated allowed on all three), no new advisor lints, and search returns no duplicate rows.
-   - **Still open from that review:** `count(*) OVER ()` still materializes the whole match set for the window total; `totalCount` still comes from `rows[0]`, so an empty page reports 0; `EMPTY_PAGE` is still a shared mutable singleton; `.slice()` can still split a surrogate pair; highlighting still does not mirror stemming; and the indexes were created without `CONCURRENTLY`, which matters when this reaches production.
+   - **Still open from that review:** five items are scoped as **PR 3c — Search follow-ups** below. The sixth, building the indexes without `CONCURRENTLY`, needs no change. Production gets 037/038 on empty tables (launch plan W1), where a plain build is instant, and the rule for later index migrations is in [migration-workflow.md](../../architecture/migration-workflow.md).
 
 22. **The search UI shared one error field between two requests (Copilot, PR #66).** `useSearchPage` ran a preview request and a list request but exposed a single `error`, which only the preview effect cleared. That one gap produced four wrong states: a failed tab kept its error after switching tabs, a failed preview left the All tab on a permanent skeleton, a failed type tab rendered "No … match" beside the error, and a failed `loadMore` was never cleared by a later success. Preview and list errors are now separate and the hook returns the active tab's.
 
@@ -170,6 +170,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Merged (PR #64) | 2026-09-18 | Linux baselines f19b133 (CI run 35016011832) |
 | 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Merged (PR #65) | 2026-09-18 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
+| 3c Search follow-ups | `fix/search-follow-ups` | breakdown at PR start | Not Started | 2026-09-19 | land before mobile search (launch plan W4, UX-02) |
 | 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -10189,6 +10190,27 @@ Confirm with the user that migration 037 is live on the target project. Then pus
 
 ---
 
+# PR 3c — Search follow-ups (scoped)
+
+The review of PR #65 left five small search defects open (decision 21). Web does not show the first one, because PR 3b avoids it. Mobile search (launch plan W4, UX-02) will use the same shared API, though, so **land this PR before UX-02**. That way mobile does not have to copy the web workarounds. The PR changes no web UI and does not depend on PRs 4–10.
+
+**Start:** branch `fix/search-follow-ups` from `master`, then write the task breakdown with `superpowers:writing-plans`, as for the area PRs.
+
+**Shared** (`packages/shared/src/api/search.ts`, `packages/shared/src/utils/searchQuery.ts`):
+
+- [ ] **A page past the end reports `totalCount: 0`.** `fetchRankedIds` and `searchPeople` read the total from `rows[0]`, and an empty page has no rows. `useSearchPage` reads totals only from the offset-0 preview and pages on `hasMore` (decisions 13 and 22), but every new caller would have to know to do the same. Fix the API so every page returns the real total.
+- [ ] **`EMPTY_PAGE` is one object shared by all three search functions.** A caller that mutated it would change what every other empty search returns. No caller mutates it today. Return a fresh object on each call.
+- [ ] **`normalizeSearchInput` can split an emoji.** It truncates with `.slice(0, SEARCH_MAX_QUERY_LENGTH)`, which counts UTF-16 units, so a 100-unit cut can leave half a surrogate pair. Truncate by code points, as `getInitials` does (decision 6).
+- [ ] **Highlighting ignores stemming.** `highlightSegments` marks words that start with a query word, but the database also matches English stems, so searching `houses` returns `Housing` posts with nothing highlighted. At PR start, decide whether to mirror stemming or keep prefix-only highlighting. If you keep it, say so in [search.md](../../product/features/search.md).
+
+**Database** (a new migration; the launch plan reserves `039`, so use the next free number):
+
+- [ ] **Every page counts the full match set.** All three search functions compute `count(*) OVER ()`, so each page materializes every match just to report a total. The search tab counts read that total from the suggestions preview (Task 3b.5), so the fix must keep some count, for example capped at a limit and shown as "100+". Measure on `nusa-staging` before and after, as 038 did.
+
+**Done when:** shared and web tests pass, `docs:check` passes, [search.md](../../product/features/search.md) describes any behaviour change, and the PR 3c tracker row says Merged.
+
+---
+
 # PRs 4–10 — Area migrations (scoped)
 
 These PRs depend on the primitives and shell shipped in PR 2, so their task-level steps are written **when each PR starts**, not now.
@@ -10236,7 +10258,8 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
 ## PR 4 — Feed + post detail (`feat/web-ui-feed`)
 
 - **Pages:** `pages/feed.page.tsx` (1290 lines), `pages/posts/[id].page.tsx` (984).
-- **CSS:** `styles/Feed.module.css`, `styles/PostDetail.module.css`.
+- **CSS:** `styles/Feed.module.css`, `styles/PostDetail.module.css`, `components/LocationSwitcher.module.css` (9 legacy tokens), `components/pulse/PulseCard.module.css` (6 colour literals).
+- **Feed components missed when this PR was scoped:** `components/LocationSwitcher`, which also renders in `TopBar`, and `components/pulse/PulseCard`, whose `.tsx` has two raw `<button>`s. Both are on the allowlists, and PR 10 cannot empty the allowlists until they are migrated.
 - **Build (first adopters):**
   - `components/ui/ImageLightbox`: Mantine `Modal` `fullScreen`, focus trap, Escape, ←/→ keys, labelled prev/next/close buttons. It replaces the two ~210-line copies (feed 373–488/821–916, posts/[id] 369–487/887–980).
   - `components/ui/PhotoCarousel`: CSS scroll-snap, labelled prev/next buttons, position announced as "Photo 2 of 3". It replaces the carousels in feed 1189–1250 and posts/[id] 620–679.

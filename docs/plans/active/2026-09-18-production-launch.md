@@ -51,7 +51,7 @@ It is monitored and supported by one person. Every kind of failure has a rehears
   - no Sign in with Apple, although iOS offers Google sign-in
 - **Mobile promotion purchase is incomplete.** `PromoteListingScreen` asks `create-promotion-checkout` for a PaymentIntent. But the app has no Stripe SDK, so it never collects payment. It then polls for an activation that can never happen.
 - **Mobile dead ends:** "Coming Soon" alerts in Home search (`HomeScreen.tsx`) and on chat avatars (`ConversationItem.tsx`, `MessageThreadScreen.tsx`).
-- **Web UI overhaul:** PRs 0–3b merged (#62–#66). PRs 4–10 not started ([plan](2026-09-14-web-ui-overhaul.md)).
+- **Web UI overhaul:** PRs 0–3b merged (#62–#66). PRs 3c (search follow-ups) and 4–10 not started ([plan](2026-09-14-web-ui-overhaul.md)).
 - **Supabase security advisors:**
   - Leaked-password protection is off.
   - About 30 `SECURITY DEFINER` functions are executable by `anon` through `/rest/v1/rpc`. Most are trigger functions and error when called directly. Two live exposures matter:
@@ -217,6 +217,7 @@ See [Monitoring](#monitoring) for the full spec.
 ### W4 — Mobile polish, builds, closed test (Oct 12–18)
 
 - [ ] **Code:** Replace the Home search "Coming Soon" with the shared search API (`037`/`038` already power web search) (UX-02).
+  - Land web UI overhaul PR 3c (search follow-ups) first. It fixes the shared API's page totals and query truncation, so mobile does not need the workarounds web uses.
 - [ ] **Code:** Chat avatars open the public profile instead of "Coming Soon" (UX-01).
 - [ ] **Code:** Mobile reliability (mobile plan Step 2):
   - realtime channel cleanup on remount
