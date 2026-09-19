@@ -25,7 +25,10 @@ import { POST_SELECT, flattenPostTags } from './posts';
 type RawPost = Parameters<typeof flattenPostTags>[0];
 type RankedIdRow = { id: string; total_count: number };
 
-const EMPTY_PAGE = { data: [], totalCount: 0, hasMore: false };
+/** A new object per call, so no caller can change what another empty search returns. */
+function emptyPage<T>(): SearchPage<T> {
+  return { data: [], totalCount: 0, hasMore: false };
+}
 
 function toError(error: unknown, fallback: string): Error {
   if (error instanceof Error) return error;
@@ -65,7 +68,7 @@ export async function searchPosts(
   options: SearchPageOptions
 ): Promise<SearchPage<Post>> {
   const normalized = normalizeSearchInput(query);
-  if (!normalized) return EMPTY_PAGE;
+  if (!normalized) return emptyPage<Post>();
 
   try {
     const { ids, totalCount } = await fetchRankedIds(supabase, 'search_posts', normalized, options, 'created_at');
@@ -87,7 +90,7 @@ export async function searchListings(
   options: SearchPageOptions
 ): Promise<SearchPage<MarketplaceListing>> {
   const normalized = normalizeSearchInput(query);
-  if (!normalized) return EMPTY_PAGE;
+  if (!normalized) return emptyPage<MarketplaceListing>();
 
   try {
     const { ids, totalCount } = await fetchRankedIds(supabase, 'search_listings', normalized, options, 'refreshed_at');
@@ -109,7 +112,7 @@ export async function searchPeople(
   options: PeopleSearchPageOptions
 ): Promise<SearchPage<PersonSearchResult>> {
   const normalized = normalizeSearchInput(query);
-  if (!normalized) return EMPTY_PAGE;
+  if (!normalized) return emptyPage<PersonSearchResult>();
 
   try {
     const { data, error } = await supabase

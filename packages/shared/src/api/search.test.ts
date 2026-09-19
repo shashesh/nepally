@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { searchListings, searchPeople, searchPosts, searchSuggestions } from './search';
+import type { SearchPage } from '../types/search';
 
 type Rows = Array<Record<string, unknown>>;
 
@@ -177,5 +178,25 @@ describe('searchSuggestions', () => {
     const result = await searchSuggestions(mock.supabase, 'thapa', { metroId: null, allMetros: true });
     expect(result.error?.message).toBe('people failed');
     expect(result.data).toBeUndefined();
+  });
+});
+
+describe('queries below the minimum length', () => {
+  const searches: Array<[name: string, search: (supabase: SupabaseClient) => Promise<SearchPage<unknown>>]> = [
+    ['searchPosts', (supabase) => searchPosts(supabase, 'a', pageOptions)],
+    ['searchListings', (supabase) => searchListings(supabase, 'a', pageOptions)],
+    ['searchPeople', (supabase) => searchPeople(supabase, 'a', { metroId: null, limit: 3, offset: 0 })],
+  ];
+
+  it.each(searches)('%s returns a new empty page every call', async (_name, search) => {
+    const mock = createSupabase({});
+
+    const first = await search(mock.supabase);
+    const second = await search(mock.supabase);
+
+    expect(first).toEqual({ data: [], totalCount: 0, hasMore: false });
+    expect(second).not.toBe(first);
+    expect(second.data).not.toBe(first.data);
+    expect(mock.rpc).not.toHaveBeenCalled();
   });
 });
