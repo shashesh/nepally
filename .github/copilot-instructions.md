@@ -72,7 +72,8 @@
 - Before every `git commit`, `git push` or `gh pr create`, verify the current branch is NOT master.
 - If on master, create or switch to a feature branch first.
 - All changes must go through feature branches and pull requests.
-- On a feature branch, commit, push, and open a pull request against master without asking first.
+- On a feature branch, commit, push, and open a **draft** pull request against master without asking first.
+- Never mark a pull request ready for review. The user does that, and it is what starts CI. Draft PRs and docs-only changes run no CI because Actions minutes are limited (`docs/decisions/2026-09-19-ci-actions-minute-budget.md`).
 - Never merge a pull request into master unless the user asks.
 
 ## Project-Specific Conventions

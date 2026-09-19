@@ -104,29 +104,33 @@ CI runs on GitHub Actions. All jobs run on `ubuntu-latest` with Node 24.
 [![Deploy Dev](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-dev.yml/badge.svg)](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-dev.yml)
 [![Deploy Prod](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-prod.yml/badge.svg)](https://github.com/shashesh/nepally/actions/workflows/deploy-vercel-prod.yml)
 
-### Automatic (on PR merge to `master`)
+### Automatic (PRs to `master`, and pushes to `master`)
 
-The pipeline triggers when a pull request is merged into `master`. All jobs run in parallel after a merge gate:
+Actions minutes are limited, so CI only runs on code that is ready to merge ([why](docs/decisions/2026-09-19-ci-actions-minute-budget.md)):
+
+- **PRs open as drafts, and drafts run nothing.** Marking a PR **Ready for review** starts CI, Docs and the Vercel preview.
+- **Docs-only changes skip CI.** A change that only touches `**/*.md` or `docs/**` runs just the Docs check.
+- **A new push, or converting the PR back to draft, cancels its older runs.**
 
 | Job | Command |
 |-----|---------|
-| Lint | `npm run lint` |
-| Lint guards | `npm run lint:guards` |
-| Type check | `npm run type-check` |
-| Unit tests | `npm run test` |
-| Coverage | `npm run test:coverage` |
-| Web E2E | `npm run test:e2e --workspace=apps/web` |
+| Static checks | `npm run lint`, `npm run lint:guards`, `npm run type-check` (all run, then the job fails if any did) |
+| Unit tests | `npm run test:coverage:ci` (guard tests, then every workspace with coverage) |
+| Web E2E tests | `npm run test:e2e --workspace=apps/web` |
+| Web visual regression | Playwright `visual-desktop` and `visual-phone` projects, in the Playwright container |
+| Docs check (Docs workflow) | `npm run docs:test`, `npm run docs:check` |
 
-Web E2E tests use Playwright and inject Supabase env vars from GitHub repository secrets/variables.
+Web E2E tests use Playwright and inject Supabase env vars from GitHub repository secrets/variables. Run `npm run ci:local` before marking a PR ready, so the first CI run is also the last.
 
 ### Manual (`workflow_dispatch`)
 
-The **CI Manual** workflow can be triggered from the GitHub Actions UI on any branch. Same jobs, same commands — useful for validating feature branches before merging.
+The **CI Manual** workflow can be triggered from the GitHub Actions UI on any branch. It runs the static checks, unit tests and web E2E jobs.
 
 ### Deploy Workflows
 
-- **Deploy Web Dev (Vercel)**: automatic on push to `master`
-- **Deploy Web Production (Vercel)**: manual `workflow_dispatch` with `production` environment approvals
+- **Preview Deploy (Vercel)**: automatic on non-draft PRs that touch web or shared code
+- **Deploy Web Dev (Vercel)**: automatic once CI passes on `master` (docs-only merges skip CI, so they don't deploy)
+- **Deploy Web Production (Vercel)**: manual `workflow_dispatch` with `production` environment approvals. It deploys `master` only if CI passed on it, or on an earlier commit followed only by docs changes.
 
 ## Testing
 

@@ -118,27 +118,30 @@ Since GitHub Actions controls all deployments, Vercel's built-in Git integration
 
 **PR preview (automatic):**
 
-1. Trigger: `pull_request` targeting `master` (path-filtered for web/shared files)
+1. Trigger: `pull_request` targeting `master` (path-filtered for web/shared files). Draft PRs are skipped; the preview deploys when the PR is marked ready for review.
 2. Workflow: `.github/workflows/preview-vercel.yml`
 3. No guard checks — preview only for testing before merge
 4. Posts/updates a comment on the PR with the preview URL
 5. Target: Vercel preview deployment (unique URL per deploy)
+6. Times out after 10 minutes (a healthy deploy takes about 2)
 
 **Dev deploy (automatic):**
 
 1. Trigger: `workflow_run` — fires automatically after CI completes on `master`
 2. Workflow: `.github/workflows/deploy-vercel-dev.yml`
-3. Only runs if CI succeeded (no separate guard needed)
+3. Only runs if CI succeeded on a push to `master` (no separate guard needed). Docs-only merges skip CI, so they don't deploy, and manual CI runs don't redeploy.
 4. Target: Vercel preview/dev project
+5. Times out after 10 minutes
 
 **Production deploy (manual):**
 
 1. Trigger: `workflow_dispatch`
 2. Workflow: `.github/workflows/deploy-vercel-prod.yml`
 3. Always checks out latest `master`
-4. Guard verifies all CI checks passed on the master commit
+4. Guard (`scripts/ci/prod-deploy-guard.js`) finds the latest successful CI run on `master`. It passes when that run is for the master head, or for an earlier commit followed only by docs-only commits, which CI skips.
 5. Requires GitHub environment approval before deployment
 6. Target: Vercel production project
+7. Times out after 15 minutes
 
 ### 10. Monitor Deployment
 
@@ -201,24 +204,18 @@ Rollback options:
 
   - Dev deploy uses `workflow_run` — it fires after CI completes on `master`.
   - Confirm CI ran successfully on the merge commit (check Actions → CI workflow).
-  - If CI passed but deploy didn't run, the merge may not have changed web-relevant files (`apps/web/`, `packages/shared/`, `package.json`, `package-lock.json`). The deploy workflow skips non-web changes.
+  - If the merge only changed `**/*.md` or `docs/**`, CI skipped it, so there was nothing new to deploy.
 
-6. **Production deploy blocked with missing checks**
+6. **Production deploy blocked: "CI has not passed on master"**
 
-  - CI runs automatically on push to `master`. Wait for CI to complete before triggering the production workflow.
-  - Check CI status at Actions → CI workflow for the target commit.
+  - Code changed on `master` after the last commit CI passed on, and CI hasn't passed on the newer code yet.
+  - Wait for the CI run on `master` to finish, or merge a fix if it failed, then retrigger the production workflow.
+  - Check CI status at Actions → CI, filtered to `master`.
 
-7. **Production deploy blocked with failed checks**
+7. **Production deploy blocked: "not an ancestor", "Too many files", or "No successful CI run"**
 
-  - Open Actions for the target commit and ensure all required jobs are green:
-    - `PR gate`
-    - `Lint`
-    - `Lint guards`
-    - `Type check`
-    - `Unit tests`
-    - `Coverage`
-    - `Web E2E tests`
-  - Re-run CI or merge a fix PR, then retrigger the production workflow.
+  - The guard can't prove from earlier CI runs that `master` is tested.
+  - Run Actions → CI → **Run workflow** on `master`. When it passes, retrigger the production workflow.
 
 8. **Wrong environment values in runtime**
 

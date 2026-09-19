@@ -1,67 +1,61 @@
 name: CI
 
+# GitHub Actions minutes are scarce, so CI only spends them on code that is ready to merge:
+# - Docs-only changes never start this workflow. The Docs workflow checks them.
+# - Draft PRs start it, but every job is skipped until the PR is marked ready for review.
+#   Converting a PR back to draft starts a skipped run that cancels the one in flight.
+# Why: docs/decisions/2026-09-19-ci-actions-minute-budget.md
+
 on:
   pull_request:
     branches:
       - master
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    # Keep both lists equal to DOCS_ONLY_PATHS in scripts/ci/prod-deploy-guard.js; its test checks.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   push:
     branches:
       - master
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  # Lets the production guard's advice work: run CI on master's head when it has no run.
+  workflow_dispatch:
+
+concurrency:
+  # One run per PR: a new push cancels the run it made obsolete. Master pushes group
+  # by commit, so every merge keeps its own run for the dev deploy and the prod guard.
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
-  gate:
-    name: PR gate
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Confirm CI trigger
-        run: echo "CI triggered by ${{ github.event_name }} on ${{ github.ref_name }}. Running CI jobs."
-
-  lint:
-    name: Lint
+  static_checks:
+    name: Static checks
+    if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
-      command: npm run lint
-
-  lint_guards:
-    name: Lint guards
-    uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
-    with:
-      command: npm run lint:guards
-
-  type_check:
-    name: Type check
-    uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
-    with:
-      command: npm run type-check
+      # Run every check even when one fails, so a single run reports every problem.
+      command: |
+        status=0
+        npm run lint || status=1
+        npm run lint:guards || status=1
+        npm run type-check || status=1
+        exit $status
 
   unit_tests:
     name: Unit tests
+    if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
-      command: npm run test:ci
-
-  coverage:
-    name: Coverage
-    uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
-    with:
+      # Same tests as test:ci plus coverage, so one job covers both.
       command: npm run test:coverage:ci
 
   web_e2e:
     name: Web E2E tests
+    if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/ci-job.yml
-    needs:
-      - gate
     with:
       command: npm run test:e2e --workspace=apps/web
       install_playwright: true
@@ -70,8 +64,7 @@ jobs:
 
   web_visual:
     name: Web visual regression
-    needs:
-      - gate
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Keep this tag equal to the installed @playwright/test version.

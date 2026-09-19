@@ -37,31 +37,19 @@
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
           {
-            "context": "PR gate",
+            "context": "Static checks / run",
             "integration_id": null
           },
           {
-            "context": "Lint",
+            "context": "Unit tests / run",
             "integration_id": null
           },
           {
-            "context": "Lint guards",
+            "context": "Web E2E tests / run",
             "integration_id": null
           },
           {
-            "context": "Type check",
-            "integration_id": null
-          },
-          {
-            "context": "Unit tests",
-            "integration_id": null
-          },
-          {
-            "context": "Coverage",
-            "integration_id": null
-          },
-          {
-            "context": "Web E2E tests",
+            "context": "Web visual regression",
             "integration_id": null
           }
         ]

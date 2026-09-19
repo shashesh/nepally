@@ -18,8 +18,11 @@ concurrency:
 jobs:
   deploy_dev:
     name: Deploy to Vercel Dev
-    if: github.event.workflow_run.conclusion == 'success'
+    # Merges only: a manual CI run on master (the prod guard's fallback) has nothing new to deploy.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
+    # A healthy deploy takes ~2 min; the cap stops a hung Vercel upload billing for hours.
+    timeout-minutes: 10
     environment: dev
 
     env:

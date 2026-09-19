@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       command:
-        description: NPM command to execute
+        description: Shell command(s) to run; may span several lines
         required: true
         type: string
       ref:

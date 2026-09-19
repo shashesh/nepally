@@ -12,8 +12,9 @@ Nepally uses a **monorepo** structure powered by **npm workspaces**. This means 
 nepally/
 ├── .github/              # GitHub Actions workflows
 │   └── workflows/
-│       ├── ci.yml        # Continuous integration
-│       └── deploy.yml    # Deployment workflows
+│       ├── ci.yml        # Continuous integration (ci-job.yml is its reusable job)
+│       ├── docs.yml      # Docs checks
+│       └── *-vercel*.yml # Preview, dev and production web deploys
 │
 ├── apps/                 # Application projects
 │   ├── mobile/           # React Native mobile app (Expo)
@@ -344,16 +345,14 @@ When building for production, follow this order:
 
 ## CI/CD Pipeline
 
-GitHub Actions automatically:
+On PRs that are ready for review, and on merges to `master`, GitHub Actions:
 
-1. Installs all dependencies
-2. Builds shared package
-3. Lints and type-checks all code
-4. Builds web app
-5. Deploys to Vercel (web)
-6. Builds mobile apps (Expo EAS)
+1. Runs static checks: lint, lint guards and type check
+2. Runs every workspace's unit tests with coverage
+3. Runs web E2E and visual regression tests
+4. Deploys a Vercel preview for PRs, and the dev environment after CI passes on `master`
 
-See `.github/workflows/ci.yml` for details.
+Draft PRs and docs-only changes skip CI to save Actions minutes. Mobile builds (Expo EAS) are not automated yet. The jobs are in the [README](../../README.md#cicd), and the reasoning is in the [CI minute budget ADR](../decisions/2026-09-19-ci-actions-minute-budget.md).
 
 ## Troubleshooting
 
