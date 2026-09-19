@@ -110,7 +110,7 @@ src/
 - **Navigation**: React Navigation v7
 - **State Management**: React Context + Hooks
 - **Backend**: Supabase (PostgreSQL)
-- **Storage**: AsyncStorage; the auth session is encrypted with a key held in `expo-secure-store` (`src/services/auth/secureSessionStorage.ts`)
+- **Storage**: AsyncStorage; on iOS/Android the auth session is encrypted with a key held in `expo-secure-store` (`src/services/auth/secureSessionStorage.ts`); the `npm run web` build keeps it in browser storage (`secureSessionStorage.web.ts`)
 - **Icons**: Expo Vector Icons
 - **TypeScript**: 7.0.x (Full type safety)
 
