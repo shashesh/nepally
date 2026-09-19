@@ -5,7 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Git Workflow Rules (Non-Negotiable)
 
 - **NEVER commit or push to `master`.** Always verify the current branch before `git commit` / `git push` / `gh pr create`. If HEAD is on `master`, stop and ask the user which branch to switch to (or create) before committing.
-- **On a feature branch, commit, push and raise the PR without asking.** Commit as work progresses, `git push -u origin <branch>`, then open a PR against `master` with `gh pr create`, filling in `.github/pull_request_template.md`. Use clear, conventional commit messages.
+- **On a feature branch, commit, push and raise a draft PR without asking.** Commit as work progresses, `git push -u origin <branch>`, then open a **draft** PR against `master` with `gh pr create --draft`, filling in `.github/pull_request_template.md`. Use clear, conventional commit messages.
+- **Request Copilot's review yourself.** Right after opening the draft, run `gh pr edit <number> --add-reviewer @copilot`. Request it again after pushing fixes for its comments. Copilot does not review drafts on its own in this repo.
+- **Never mark a PR ready for review.** The user does that once Copilot's review is done, and that is what starts CI.
+- **GitHub Actions minutes are scarce.** Drafts and docs-only changes run no CI ([ADR](./docs/decisions/2026-09-19-ci-actions-minute-budget.md)). Don't re-run workflows or push empty commits to trigger CI; run `npm run ci:local` instead.
 - **Merging into `master` is the user's call.** Never merge a PR unless the user asks.
 - Never force-push to `master` under any circumstance.
 
