@@ -170,8 +170,9 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Merged (PR #64) | 2026-09-18 | Linux baselines f19b133 (CI run 35016011832) |
 | 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Merged (PR #65) | 2026-09-18 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
-| 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | In Progress | 2026-09-19 | design agreed; no migration (count fix deferred); land before mobile search (launch plan W4, UX-02) |
-| 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |
+| 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | Merged (PR #79) | 2026-09-19 | no migration; the `count(*) OVER ()` fix stays deferred with its trigger |
+| 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.n | In Progress | 2026-09-19 | split from PR 4; builds the components PR 4b adopts |
+| 4b Post detail | `feat/web-ui-post-detail` | breakdown at PR start | Not Started | 2026-09-19 | split from PR 4; starts after 4a merges |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -10943,11 +10944,29 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
 - [ ] `docs/architecture/web-ui-system.md` lists any new shared component.
 - [ ] If the area PR changes behaviour, the feature doc under `docs/product/features/` is updated.
 
-## PR 4 — Feed + post detail (`feat/web-ui-feed`)
+## PR 4 — split into 4a and 4b (2026-09-19)
 
-- **Pages:** `pages/feed.page.tsx` (1290 lines), `pages/posts/[id].page.tsx` (984).
-- **CSS:** `styles/Feed.module.css`, `styles/PostDetail.module.css`, `components/LocationSwitcher.module.css` (9 legacy tokens), `components/pulse/PulseCard.module.css` (6 colour literals).
-- **Feed components missed when this PR was scoped:** `components/LocationSwitcher`, which also renders in `TopBar`, and `components/pulse/PulseCard`, whose `.tsx` has two raw `<button>`s. Both are on the allowlists, and PR 10 cannot empty the allowlists until they are migrated.
+One PR covering both pages came to about 4,000 lines of source, too much for one review. It is now two PRs. **4a** builds the shared post components and migrates the feed; **4b** adopts those components in post detail. Each re-baselines its own pages, which costs two screenshot runs instead of one.
+
+**Inventory** (run on `master` at 0119883, the "Starting an area PR" commands):
+
+| File | CSS violations | Raw form elements | Native dialogs |
+|---|---|---|---|
+| `pages/feed.page.tsx` (1323 lines) | — | 6 | 3 |
+| `styles/Feed.module.css` (1085) | 289 (252 legacy tokens, 33 literals, 4 named) | — | — |
+| `pages/posts/[id].page.tsx` (1008) | — | 17 | 5 |
+| `styles/PostDetail.module.css` (656) | 170 (160 legacy tokens, 9 literals, 1 named) | — | — |
+| `components/LocationSwitcher.module.css` | 9 (8 legacy tokens, 1 literal) | 0 in `.tsx` | — |
+| `components/pulse/PulseCard.module.css` | 6 literals | 2 in `.tsx` | — |
+| `components/pulse/MetroPulseStrip.module.css` | 0 | 0 | — |
+
+The dialogs are `alert` on copy-link and delete failure, and `confirm` before deleting a post (feed 569, 574, 579; post detail 320, 332, 338) or a comment (post detail 210, 224).
+
+## PR 4a — Post components + feed (`feat/web-ui-feed`)
+
+- **Pages:** `pages/feed.page.tsx`.
+- **CSS:** `styles/Feed.module.css`, `components/LocationSwitcher.module.css`, `components/pulse/PulseCard.module.css`.
+- **Also here, because both render on the feed:** `components/LocationSwitcher` (it also renders in `TopBar`) and `components/pulse/PulseCard` (two raw `<button>`s). Both sit on the allowlists, which PR 10 cannot empty until they are migrated.
 - **Build (first adopters):**
   - `components/ui/ImageLightbox`: Mantine `Modal` `fullScreen`, focus trap, Escape, ←/→ keys, labelled prev/next/close buttons. It replaces the two ~210-line copies (feed 373–488/821–916, posts/[id] 369–487/887–980).
   - `components/ui/PhotoCarousel`: CSS scroll-snap, labelled prev/next buttons, position announced as "Photo 2 of 3". It replaces the carousels in feed 1189–1250 and posts/[id] 620–679.
@@ -10955,16 +10974,26 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
   - `PostCard`, a stretched-link card replacing today's `<Link>` wrapping buttons (feed 1040–1288)
   - `PostActions`, with inline SVG icons (1255–1281) moved to Tabler
   - `PostMeta` (tag chips, `ScopeBadge`, metro)
-  - `CommentThread`, `CommentComposer`
-  - `components/users/UserMenuTrigger` (an `ActionMenu` with View Profile / Chat), replacing the hand-positioned `ref.style` menus (posts/[id] 139) and the manual `mousedown` listeners
+  - `PostComposer`, the feed's composer row
   - the feed's sponsored rail and upcoming-events widget
+- **Also:**
+  - Add `components/ui/notify.ts` (`notify.success(message)`, `notify.error(message)` over `@mantine/notifications`, with tests) and adopt it for the feed's toasts.
+  - Replace the feed's native dialogs (report, delete) with `useConfirm`.
+- **Hands to 4b:** `ImageLightbox`, `PhotoCarousel`, `PostCard`, `PostActions`, `PostMeta` and `notify`.
+
+## PR 4b — Post detail (`feat/web-ui-post-detail`)
+
+Starts after 4a merges, so it can adopt what 4a built.
+
+- **Pages:** `pages/posts/[id].page.tsx` (1008 lines, 17 raw form elements, 5 native dialogs).
+- **CSS:** `styles/PostDetail.module.css` (170 violations).
+- **Adopt from 4a:** `ImageLightbox` (replacing posts/[id] 369–487/887–980), `PhotoCarousel` (620–679), `PostMeta`, `PostActions` and `notify`.
+- **Extract into `components/posts/`:** `CommentThread`, `CommentComposer`.
+- **Build `components/users/UserMenuTrigger`**, an `ActionMenu` with View Profile / Chat, replacing the hand-positioned `ref.style` menus (posts/[id] 139) and the manual `mousedown` listeners. PR 9 reuses it for the messages pages.
 - **Tests to rewrite:**
   - `pages/posts/[id].test.tsx:441` (anchored dropdown class and inline style) → assert `menuitem`s.
   - `e2e/tests/09-avatar-menu.spec.ts:59,102` (`div[class*="avatarDropdownAnchored"]`) → `getByRole('menu')`.
-- **Also:**
-  - Extract the feed composer row into `components/posts/PostComposer`.
-  - Add `components/ui/notify.ts` (`notify.success(message)`, `notify.error(message)` over `@mantine/notifications`, with tests) and adopt it for the feed and post-detail toasts.
-  - Replace native dialogs in the feed (report, delete) and in post detail.
+- **Also:** replace the post and comment delete dialogs with `useConfirm`.
 
 ## PR 5 — Create flows (`feat/web-ui-create-flows`)
 
