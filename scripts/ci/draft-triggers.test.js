@@ -9,14 +9,19 @@ const PR_TYPES = ['opened', 'synchronize', 'reopened', 'ready_for_review', 'conv
 const DRAFT_GUARD = 'if: ${{ !github.event.pull_request.draft }}';
 
 function readWorkflow(file) {
-  return fs.readFileSync(path.join(__dirname, '../../.github/workflows', file), 'utf8').split(/\r?\n/);
+  return fs
+    .readFileSync(path.join(__dirname, '../../.github/workflows', file), 'utf8')
+    .split(/\r?\n/);
 }
 
 for (const file of DRAFT_AWARE_WORKFLOWS) {
   test(`${file} starts on ready_for_review and cancels in-flight runs on converted_to_draft`, () => {
     const typesLine = readWorkflow(file).find((line) => line.trim().startsWith('types:'));
     assert.ok(typesLine, `${file} has no pull_request types`);
-    const types = typesLine.trim().replace(/^types:\s*\[|\]$/g, '').split(/,\s*/);
+    const types = typesLine
+      .trim()
+      .replace(/^types:\s*\[|\]$/g, '')
+      .split(/,\s*/);
     assert.deepEqual(types, PR_TYPES);
   });
 
