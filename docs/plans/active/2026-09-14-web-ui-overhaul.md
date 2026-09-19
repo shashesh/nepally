@@ -159,6 +159,12 @@ The spec is updated in the same commit as this plan.
    - **Stale highlighting:** the suggestions hook kept previous results while the next request was in flight but reported the new query, so marks described words the visible results never matched. It now returns `resultsQuery` alongside `query`.
    - **Not taken:** the missing-baselines finding was stale — all three PNGs are committed. Keyboard navigation is not broken: Mantine's `Combobox.Target` wires arrows and Escape, and a passing test covers ArrowDown + Enter. The range-aware e2e fixture was reverted, because its synthetic ids never hydrate, so it would also need post hydration mocks and a baseline regeneration for the least valuable finding in the set.
 
+23. **`PostActions` differs from its task description (PR 4a).** Task 4a.4 specified a `detailHref` rendered as an `Anchor`, and no `liked` prop.
+
+   - **"View Details" stays a plain span.** The card's stretched link already opens the post, so a link here would be a second tab stop to the same URL and would have to fight the stretched link's overlay for clicks. It is `aria-hidden`, because the link already carries the post title.
+   - **`liked` was missing.** The heart is filled for posts the viewer liked (feed 1288), so the prop is `{ likeCount, commentCount, liked?, onShare }`.
+   - **Counts stay text.** They are `<span>`s today with no handler; nothing on the feed can like or comment. Each carries a visually hidden "3 likes" / "1 comment" so the number is not read bare.
+
 ## Live tracker
 
 One task is `In Progress` at a time. Update this table when a PR starts and when it merges.
