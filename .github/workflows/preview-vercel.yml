@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - master
+    # Drafts are skipped; the preview deploys once the PR is marked ready for review.
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'apps/web/**'
       - 'packages/shared/**'
@@ -21,7 +23,10 @@ concurrency:
 jobs:
   preview:
     name: Preview deploy
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
+    # A healthy deploy takes ~2 min; one hung Vercel upload once billed 34.
+    timeout-minutes: 10
     environment: dev
 
     env:

@@ -1,5 +1,7 @@
 name: CI Manual
 
+# Mirrors ci.yml's static checks, unit tests and web E2E jobs for any branch.
+
 on:
   workflow_dispatch:
     inputs:
@@ -9,36 +11,20 @@ on:
         default: master
 
 jobs:
-  lint:
-    name: Lint
+  static_checks:
+    name: Static checks
     uses: ./.github/workflows/ci-job.yml
     with:
       ref: ${{ github.event.inputs.target_branch }}
-      command: npm run lint
-
-  lint_guards:
-    name: Lint guards
-    uses: ./.github/workflows/ci-job.yml
-    with:
-      ref: ${{ github.event.inputs.target_branch }}
-      command: npm run lint:guards
-
-  type_check:
-    name: Type check
-    uses: ./.github/workflows/ci-job.yml
-    with:
-      ref: ${{ github.event.inputs.target_branch }}
-      command: npm run type-check
+      command: |
+        status=0
+        npm run lint || status=1
+        npm run lint:guards || status=1
+        npm run type-check || status=1
+        exit $status
 
   unit_tests:
     name: Unit tests
-    uses: ./.github/workflows/ci-job.yml
-    with:
-      ref: ${{ github.event.inputs.target_branch }}
-      command: npm run test:ci
-
-  coverage:
-    name: Coverage
     uses: ./.github/workflows/ci-job.yml
     with:
       ref: ${{ github.event.inputs.target_branch }}

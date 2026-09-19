@@ -2,12 +2,15 @@ name: Docs
 
 # Reuses ci-job.yml so Node version, npm caching, and timeout policy stay in one
 # place. The path filter lives here because it is the only part the reusable
-# workflow cannot express.
+# workflow cannot express. It must keep covering every path ci.yml ignores, so
+# docs-only changes are still checked (scripts/ci/prod-deploy-guard.test.js checks).
+# Draft PRs are skipped until marked ready for review, like CI.
 
 on:
   pull_request:
     branches:
       - master
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - '**/*.md'
       - 'docs/**'
@@ -21,15 +24,19 @@ on:
       - 'docs/**'
       - 'scripts/docs/**'
 
-jobs:
-  docs_test:
-    name: Docs checker tests
-    uses: ./.github/workflows/ci-job.yml
-    with:
-      command: npm run docs:test
+concurrency:
+  group: docs-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
+jobs:
   docs_check:
     name: Docs check
+    if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/ci-job.yml
     with:
-      command: npm run docs:check
+      # One job, not two: each job is billed as at least a full minute.
+      command: |
+        status=0
+        npm run docs:test || status=1
+        npm run docs:check || status=1
+        exit $status
