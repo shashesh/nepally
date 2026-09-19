@@ -19,6 +19,19 @@ describe('normalizeSearchInput', () => {
   it('keeps tsquery operator characters (the database sanitises them)', () => {
     expect(normalizeSearchInput("thapa's & (nclex)")).toBe("thapa's & (nclex)");
   });
+
+  it('never splits an emoji at the length limit', () => {
+    expect(normalizeSearchInput(`${'x'.repeat(99)}😀tail`)).toBe(`${'x'.repeat(99)}😀`);
+  });
+
+  it('counts the limits in code points, not UTF-16 units', () => {
+    expect(Array.from(normalizeSearchInput('😀'.repeat(150)) ?? '')).toHaveLength(100);
+    expect(normalizeSearchInput('😀')).toBeNull();
+  });
+
+  it('counts a Devanagari vowel sign as its own character', () => {
+    expect(normalizeSearchInput('रा')).toBe('रा');
+  });
 });
 
 describe('highlightSegments', () => {
@@ -51,5 +64,64 @@ describe('highlightSegments', () => {
 
   it('returns nothing for empty text', () => {
     expect(highlightSegments('', 'room')).toEqual([]);
+  });
+});
+
+describe('highlightSegments with English word endings', () => {
+  // Each pair shares one Postgres `english` stem, read with
+  // ts_lexize('english_stem', …) on nusa-staging (2026-09-19), so the database
+  // already matches these to each other.
+  const SAME_STEM: Array<[query: string, word: string]> = [
+    ['rooms', 'Room'],
+    ['jobs', 'Job'],
+    ['houses', 'Housing'],
+    ['housing', 'house'],
+    ['renting', 'rented'],
+    ['cities', 'City'],
+    ['sharing', 'shared'],
+    ['nurses', 'Nursing'],
+    ['studies', 'studying'],
+    ['classes', 'class'],
+    ['riding', 'rides'],
+    ['hiring', 'Hired'],
+    ['moving', 'move'],
+    ['parking', 'Park'],
+    ['cleaning', 'clean'],
+    ['running', 'run'],
+    ['speeds', 'speed'],
+  ];
+
+  it.each(SAME_STEM)('"%s" highlights "%s"', (query, word) => {
+    expect(highlightSegments(word, query)).toEqual([{ text: word, match: true }]);
+  });
+
+  // The database keeps these apart: irregular forms, a different suffix, and a
+  // word that would only match if a stem were allowed to shrink below 3 letters.
+  const DIFFERENT_STEM: Array<[query: string, word: string]> = [
+    ['sold', 'sell'],
+    ['cleaner', 'cleaning'],
+    ['ride', 'ridge'],
+    ['bed', 'be'],
+  ];
+
+  it.each(DIFFERENT_STEM)('"%s" does not highlight "%s"', (query, word) => {
+    expect(highlightSegments(word, query)).toEqual([{ text: word, match: false }]);
+  });
+
+  // Postgres stems both to "manag", so the post is found. These rules do not
+  // strip -ment, so the word is not marked. Documented in search.md.
+  it('finds but does not mark longer derivations', () => {
+    expect(highlightSegments('Property manage services', 'management')).toEqual([
+      { text: 'Property manage services', match: false },
+    ]);
+  });
+
+  it('marks inflected words inside a sentence', () => {
+    expect(highlightSegments('Room for rent in Queens', 'rooms renting')).toEqual([
+      { text: 'Room', match: true },
+      { text: ' for ', match: false },
+      { text: 'rent', match: true },
+      { text: ' in Queens', match: false },
+    ]);
   });
 });

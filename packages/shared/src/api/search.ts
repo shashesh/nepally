@@ -24,8 +24,15 @@ import { POST_SELECT, flattenPostTags } from './posts';
 
 type RawPost = Parameters<typeof flattenPostTags>[0];
 type RankedIdRow = { id: string; total_count: number };
+type PersonRow = PersonSearchResult & { rank: number; total_count: number };
 
-const EMPTY_PAGE = { data: [], totalCount: 0, hasMore: false };
+/** One ordered search RPC, fetching rows `from` to `to` inclusive. */
+type RankedQuery = (from: number, to: number) => PromiseLike<{ data: unknown; error: unknown }>;
+
+/** A new object per call, so no caller can change what another empty search returns. */
+function emptyPage<T>(): SearchPage<T> {
+  return { data: [], totalCount: 0, hasMore: false };
+}
 
 function toError(error: unknown, fallback: string): Error {
   if (error instanceof Error) return error;
@@ -38,25 +45,46 @@ function inRankOrder<T extends { id: string }>(rows: T[], ids: string[]): T[] {
   return ids.map((id) => byId.get(id)).filter((row): row is T => row !== undefined);
 }
 
-async function fetchRankedIds(
+/**
+ * Fetches one page of a ranked search. The window total rides on every row, so
+ * a page past the end carries no row to read it from; only then is the query
+ * run again for a single row. A page with rows costs one request.
+ */
+async function fetchRankedPage<Row extends { total_count: number }>(
+  run: RankedQuery,
+  offset: number,
+  limit: number
+): Promise<{ rows: Row[]; totalCount: number }> {
+  const { data, error } = await run(offset, offset + limit - 1);
+  if (error) throw error;
+
+  const rows = (data ?? []) as Row[];
+  if (rows.length > 0 || offset === 0) {
+    return { rows, totalCount: Number(rows[0]?.total_count ?? 0) };
+  }
+
+  const first = await run(0, 0);
+  if (first.error) throw first.error;
+  const [firstRow] = (first.data ?? []) as Row[];
+  return { rows, totalCount: Number(firstRow?.total_count ?? 0) };
+}
+
+function rankedIdsQuery(
   supabase: SupabaseClient,
   fn: 'search_posts' | 'search_listings',
   query: string,
   options: SearchPageOptions,
   tiebreaker: 'created_at' | 'refreshed_at'
-): Promise<{ ids: string[]; totalCount: number }> {
-  const { data, error } = await supabase
-    .rpc(fn, { p_query: query, p_metro_id: options.metroId, p_all_metros: options.allMetros })
-    .order('rank', { ascending: false })
-    .order(tiebreaker, { ascending: false })
-    // Each page is a separate query, so without a unique final key rows tied on
-    // rank and timestamp can repeat on one page and never appear on another.
-    .order('id', { ascending: true })
-    .range(options.offset, options.offset + options.limit - 1);
-
-  if (error) throw error;
-  const rows = (data ?? []) as RankedIdRow[];
-  return { ids: rows.map((row) => row.id), totalCount: Number(rows[0]?.total_count ?? 0) };
+): RankedQuery {
+  return (from, to) =>
+    supabase
+      .rpc(fn, { p_query: query, p_metro_id: options.metroId, p_all_metros: options.allMetros })
+      .order('rank', { ascending: false })
+      .order(tiebreaker, { ascending: false })
+      // Each page is a separate query, so without a unique final key rows tied on
+      // rank and timestamp can repeat on one page and never appear on another.
+      .order('id', { ascending: true })
+      .range(from, to);
 }
 
 export async function searchPosts(
@@ -65,10 +93,15 @@ export async function searchPosts(
   options: SearchPageOptions
 ): Promise<SearchPage<Post>> {
   const normalized = normalizeSearchInput(query);
-  if (!normalized) return EMPTY_PAGE;
+  if (!normalized) return emptyPage<Post>();
 
   try {
-    const { ids, totalCount } = await fetchRankedIds(supabase, 'search_posts', normalized, options, 'created_at');
+    const { rows, totalCount } = await fetchRankedPage<RankedIdRow>(
+      rankedIdsQuery(supabase, 'search_posts', normalized, options, 'created_at'),
+      options.offset,
+      options.limit
+    );
+    const ids = rows.map((row) => row.id);
     if (ids.length === 0) return { data: [], totalCount, hasMore: false };
 
     const { data, error } = await supabase.from('posts').select(POST_SELECT).in('id', ids);
@@ -87,10 +120,15 @@ export async function searchListings(
   options: SearchPageOptions
 ): Promise<SearchPage<MarketplaceListing>> {
   const normalized = normalizeSearchInput(query);
-  if (!normalized) return EMPTY_PAGE;
+  if (!normalized) return emptyPage<MarketplaceListing>();
 
   try {
-    const { ids, totalCount } = await fetchRankedIds(supabase, 'search_listings', normalized, options, 'refreshed_at');
+    const { rows, totalCount } = await fetchRankedPage<RankedIdRow>(
+      rankedIdsQuery(supabase, 'search_listings', normalized, options, 'refreshed_at'),
+      options.offset,
+      options.limit
+    );
+    const ids = rows.map((row) => row.id);
     if (ids.length === 0) return { data: [], totalCount, hasMore: false };
 
     const { data, error } = await supabase.from('marketplace_listings_view').select(LISTING_SELECT).in('id', ids);
@@ -109,23 +147,24 @@ export async function searchPeople(
   options: PeopleSearchPageOptions
 ): Promise<SearchPage<PersonSearchResult>> {
   const normalized = normalizeSearchInput(query);
-  if (!normalized) return EMPTY_PAGE;
+  if (!normalized) return emptyPage<PersonSearchResult>();
 
   try {
-    const { data, error } = await supabase
-      .rpc('search_people', { p_query: normalized, p_metro_id: options.metroId })
-      .order('is_local', { ascending: false })
-      .order('rank', { ascending: false })
-      .order('follower_count', { ascending: false })
-      // `simple` applies no weights, so every two-token name matching one query
-      // token scores identically; without a unique final key, offset paging
-      // duplicates and drops members.
-      .order('id', { ascending: true })
-      .range(options.offset, options.offset + options.limit - 1);
-    if (error) throw error;
-
-    const rows = (data ?? []) as Array<PersonSearchResult & { rank: number; total_count: number }>;
-    const totalCount = Number(rows[0]?.total_count ?? 0);
+    const { rows, totalCount } = await fetchRankedPage<PersonRow>(
+      (from, to) =>
+        supabase
+          .rpc('search_people', { p_query: normalized, p_metro_id: options.metroId })
+          .order('is_local', { ascending: false })
+          .order('rank', { ascending: false })
+          .order('follower_count', { ascending: false })
+          // `simple` applies no weights, so every two-token name matching one query
+          // token scores identically; without a unique final key, offset paging
+          // duplicates and drops members.
+          .order('id', { ascending: true })
+          .range(from, to),
+      options.offset,
+      options.limit
+    );
     const people = rows.map((row) => ({
       id: row.id,
       full_name: row.full_name,

@@ -2,7 +2,7 @@
 
 **Status:** Approved
 **Phase:** 1
-**Last Updated:** 2026-09-15
+**Last Updated:** 2026-09-19
 **Priority:** Medium
 
 ---
@@ -34,11 +34,13 @@ Signed-in members can search community posts, marketplace listings and people fr
 - Only active posts and listings appear. Banned members never appear.
 - Search is for signed-in members only.
 
-**Matching:** full-text prefix matching, so "tha" finds "Thapa". Post titles rank above body text. Names are matched without stemming.
+**Matching:** full-text prefix matching, so "tha" finds "Thapa". Post and listing text also matches other forms of an English word, so "houses" finds "Housing". Post titles rank above body text. Names are matched without stemming.
+
+**Highlighting:** a word is marked when it starts with a query word, or when it is a plural or -ing/-ed form of one, so "rooms" marks "Room". Longer derivations that the database still matches are found but not marked: searching "management" returns a post that says "manage" without marking the word.
 
 ## Technical
 
-- **Database:** `supabase/migrations/037_search.sql`. See [architecture/database-schema.md](../../architecture/database-schema.md) → "Global search".
+- **Database:** `supabase/migrations/037_search.sql`, with the prefix and performance fixes in `038_search_prefix_fix.sql`. See [architecture/database-schema.md](../../architecture/database-schema.md) → "Global search".
 - **Shared API:** `packages/shared/src/api/search.ts` (`searchPosts`, `searchListings`, `searchPeople`, `searchSuggestions`); helpers in `utils/searchQuery.ts`.
 - **Web:**
   - `components/search/*` and `components/layout/SearchEntry.tsx`
