@@ -19,6 +19,19 @@ describe('normalizeSearchInput', () => {
   it('keeps tsquery operator characters (the database sanitises them)', () => {
     expect(normalizeSearchInput("thapa's & (nclex)")).toBe("thapa's & (nclex)");
   });
+
+  it('never splits an emoji at the length limit', () => {
+    expect(normalizeSearchInput(`${'x'.repeat(99)}😀tail`)).toBe(`${'x'.repeat(99)}😀`);
+  });
+
+  it('counts the limits in code points, not UTF-16 units', () => {
+    expect(Array.from(normalizeSearchInput('😀'.repeat(150)) ?? '')).toHaveLength(100);
+    expect(normalizeSearchInput('😀')).toBeNull();
+  });
+
+  it('counts a Devanagari vowel sign as its own character', () => {
+    expect(normalizeSearchInput('रा')).toBe('रा');
+  });
 });
 
 describe('highlightSegments', () => {

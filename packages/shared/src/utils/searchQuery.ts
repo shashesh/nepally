@@ -3,11 +3,15 @@
  */
 import { SEARCH_MAX_QUERY_LENGTH, SEARCH_MIN_QUERY_LENGTH } from '../constants/search';
 
-/** Trims, collapses whitespace and truncates; null when too short to search. */
+/**
+ * Trims, collapses whitespace and truncates; null when too short to search.
+ * Lengths count code points, so a cut never leaves half an emoji.
+ */
 export function normalizeSearchInput(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const normalized = raw.replace(/\s+/g, ' ').trim().slice(0, SEARCH_MAX_QUERY_LENGTH).trim();
-  return normalized.length >= SEARCH_MIN_QUERY_LENGTH ? normalized : null;
+  const collapsed = raw.replace(/\s+/g, ' ').trim();
+  const normalized = Array.from(collapsed).slice(0, SEARCH_MAX_QUERY_LENGTH).join('').trim();
+  return Array.from(normalized).length >= SEARCH_MIN_QUERY_LENGTH ? normalized : null;
 }
 
 export interface HighlightSegment {
