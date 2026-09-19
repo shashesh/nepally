@@ -170,7 +170,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Merged (PR #64) | 2026-09-18 | Linux baselines f19b133 (CI run 35016011832) |
 | 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Merged (PR #65) | 2026-09-18 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
-| 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.n | In Progress | 2026-09-19 | design agreed; no migration (count fix deferred); land before mobile search (launch plan W4, UX-02) |
+| 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | In Progress | 2026-09-19 | design agreed; no migration (count fix deferred); land before mobile search (launch plan W4, UX-02) |
 | 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -10219,6 +10219,683 @@ The review of PR #65 left five small search defects open (decision 21). Web does
    - **When:** once monitoring shows search latency climbing, for example a p95 above 300 ms. At launch scale a search takes a few milliseconds.
 
 **Done when:** shared and web tests pass, `npm run ci:local` passes, `docs:check` passes, the "Matching" line in [search.md](../../product/features/search.md) says highlighting follows plurals and `-ing`/`-ed` forms, and the PR 3c tracker row says Merged.
+
+## PR 3c — Task breakdown
+
+Work on `fix/search-follow-ups`, branched from `docs/web-ui-overhaul-gaps`. Tasks are independent, so they can be done in any order, but the commits read best in this one.
+
+Two notes before starting:
+
+- `packages/shared/src/api/search.ts`, `searchQuery.ts` and their tests do not satisfy Prettier today (`printWidth` is 100, several lines are longer), and no lint rule enforces it. Match the style around your change; do not reformat existing lines, which would bury the change in noise.
+- The visual baselines do not move. The visual tests search `thapa`, which has no ending to strip, so no screenshot changes and no baseline run is needed.
+
+### Task 3c.1: Count query length in code points
+
+**Files:**
+
+- Modify: `packages/shared/src/utils/searchQuery.ts:6-11`
+- Test: `packages/shared/src/utils/searchQuery.test.ts`
+
+**Interfaces:** `normalizeSearchInput(raw: string | null | undefined): string | null` keeps its signature. Both the 100-character cut and the 2-character minimum count code points.
+
+- [ ] **Step 1: Add the failing tests** to the end of the `describe('normalizeSearchInput', …)` block
+
+```ts
+  it('never splits an emoji at the length limit', () => {
+    expect(normalizeSearchInput(`${'x'.repeat(99)}😀tail`)).toBe(`${'x'.repeat(99)}😀`);
+  });
+
+  it('counts the limits in code points, not UTF-16 units', () => {
+    expect(Array.from(normalizeSearchInput('😀'.repeat(150)) ?? '')).toHaveLength(100);
+    expect(normalizeSearchInput('😀')).toBeNull();
+  });
+
+  it('counts a Devanagari vowel sign as its own character', () => {
+    expect(normalizeSearchInput('रा')).toBe('रा');
+  });
+```
+
+- [ ] **Step 2: Run the tests and watch them fail**
+
+Run: `npm run test --workspace=packages/shared -- src/utils/searchQuery.test.ts`
+
+Expected: FAIL. The first test cuts at 100 UTF-16 units and ends in a lone `\uD83D`; the second keeps only 50 emoji and treats one emoji as long enough to search. The Devanagari test passes already and guards the new code.
+
+- [ ] **Step 3: Replace `normalizeSearchInput`**
+
+```ts
+/**
+ * Trims, collapses whitespace and truncates; null when too short to search.
+ * Lengths count code points, so a cut never leaves half an emoji.
+ */
+export function normalizeSearchInput(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const collapsed = raw.replace(/\s+/g, ' ').trim();
+  const normalized = Array.from(collapsed).slice(0, SEARCH_MAX_QUERY_LENGTH).join('').trim();
+  return Array.from(normalized).length >= SEARCH_MIN_QUERY_LENGTH ? normalized : null;
+}
+```
+
+- [ ] **Step 4: Run the tests and watch them pass**
+
+Run: `npm run test --workspace=packages/shared -- src/utils/searchQuery.test.ts`
+
+Expected: PASS, including the older truncation and minimum-length tests.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/shared/src/utils/searchQuery.ts packages/shared/src/utils/searchQuery.test.ts
+git commit -m "fix(search): count query length in code points" -m "slice() counted UTF-16 units, so truncating a pasted query could leave half an emoji, and a single emoji counted as two characters." -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+### Task 3c.2: Highlight plurals and -ing/-ed forms
+
+**Files:**
+
+- Modify: `packages/shared/src/utils/searchQuery.ts:18-46`
+- Test: `packages/shared/src/utils/searchQuery.test.ts`
+
+**Interfaces:** `highlightSegments(text, query)` keeps its signature. A new module-private `highlightStem(word: string): string` is not exported, so it is tested through `highlightSegments`.
+
+- [ ] **Step 1: Add the failing tests** at the end of the test file
+
+```ts
+describe('highlightSegments with English word endings', () => {
+  // Each pair shares one Postgres `english` stem, read with
+  // ts_lexize('english_stem', …) on nusa-staging (2026-09-19), so the database
+  // already matches these to each other.
+  const SAME_STEM: Array<[query: string, word: string]> = [
+    ['rooms', 'Room'],
+    ['jobs', 'Job'],
+    ['houses', 'Housing'],
+    ['housing', 'house'],
+    ['renting', 'rented'],
+    ['cities', 'City'],
+    ['sharing', 'shared'],
+    ['nurses', 'Nursing'],
+    ['studies', 'studying'],
+    ['classes', 'class'],
+    ['riding', 'rides'],
+    ['hiring', 'Hired'],
+    ['moving', 'move'],
+    ['parking', 'Park'],
+    ['cleaning', 'clean'],
+    ['running', 'run'],
+    ['speeds', 'speed'],
+  ];
+
+  it.each(SAME_STEM)('"%s" highlights "%s"', (query, word) => {
+    expect(highlightSegments(word, query)).toEqual([{ text: word, match: true }]);
+  });
+
+  // The database keeps these apart: irregular forms, a different suffix, and a
+  // word that would only match if a stem were allowed to shrink below 3 letters.
+  const DIFFERENT_STEM: Array<[query: string, word: string]> = [
+    ['sold', 'sell'],
+    ['cleaner', 'cleaning'],
+    ['ride', 'ridge'],
+    ['bed', 'be'],
+  ];
+
+  it.each(DIFFERENT_STEM)('"%s" does not highlight "%s"', (query, word) => {
+    expect(highlightSegments(word, query)).toEqual([{ text: word, match: false }]);
+  });
+
+  it('marks inflected words inside a sentence', () => {
+    expect(highlightSegments('Room for rent in Queens', 'rooms renting')).toEqual([
+      { text: 'Room', match: true },
+      { text: ' for ', match: false },
+      { text: 'rent', match: true },
+      { text: ' in Queens', match: false },
+    ]);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests and watch them fail**
+
+Run: `npm run test --workspace=packages/shared -- src/utils/searchQuery.test.ts`
+
+Expected: FAIL — the 17 `SAME_STEM` cases and the sentence test. None of those words starts with its query word, which is all today's rule checks. The four `DIFFERENT_STEM` cases pass already and guard against over-matching.
+
+- [ ] **Step 3: Replace everything from `const WORD` to the end of the file**
+
+```ts
+const WORD = /[\p{L}\p{M}\p{N}]+/u;
+const TOKENS = /[\p{L}\p{M}\p{N}]+|[^\p{L}\p{M}\p{N}]+/gu;
+
+/** Below this, a stem is left whole, so "is" or "bed" cannot match everything. */
+const MIN_STEM_LENGTH = 3;
+const LATIN_WORD = /^[a-z]+$/;
+const DOUBLED_FINAL = /([bdfgmnprt])\1$/;
+
+interface EndingRule {
+  ending: string;
+  replacement: string;
+  /** -ing and -ed can leave a doubled consonant: running → runn → run. */
+  undouble: boolean;
+  /** A longer ending that blocks the rule: "class" is no plural, "speed" no past tense. */
+  unless?: string;
+}
+
+/** Checked in order; the first rule that applies is the only one applied. */
+const ENDING_RULES: readonly EndingRule[] = [
+  { ending: 'ies', replacement: 'i', undouble: false },
+  { ending: 'es', replacement: '', undouble: false },
+  { ending: 's', replacement: '', undouble: false, unless: 'ss' },
+  { ending: 'ing', replacement: '', undouble: true },
+  { ending: 'ed', replacement: '', undouble: true, unless: 'eed' },
+];
+
+function stripEnding(word: string): { stem: string; undouble: boolean } {
+  const rule = ENDING_RULES.find(
+    (candidate) => word.endsWith(candidate.ending) && !(candidate.unless && word.endsWith(candidate.unless))
+  );
+  if (!rule) return { stem: word, undouble: false };
+
+  const stem = word.slice(0, -rule.ending.length) + rule.replacement;
+  return stem.length >= MIN_STEM_LENGTH ? { stem, undouble: rule.undouble } : { stem: word, undouble: false };
+}
+
+function undoubleFinal(stem: string): string {
+  return stem.length > MIN_STEM_LENGTH && DOUBLED_FINAL.test(stem) ? stem.slice(0, -1) : stem;
+}
+
+function normalizeFinal(stem: string): string {
+  if (stem.length <= MIN_STEM_LENGTH) return stem;
+  if (stem.endsWith('y')) return `${stem.slice(0, -1)}i`;
+  if (stem.endsWith('e')) return stem.slice(0, -1);
+  return stem;
+}
+
+/**
+ * Approximates the `english` stems the database matches on, so "rooms" marks
+ * "Room" and "houses" marks "Housing". It covers plurals and -ing/-ed forms of
+ * lowercase a–z words; every other word is returned unchanged.
+ */
+function highlightStem(word: string): string {
+  if (!LATIN_WORD.test(word)) return word;
+  const { stem, undouble } = stripEnding(word);
+  return normalizeFinal(undouble ? undoubleFinal(stem) : stem);
+}
+
+/**
+ * Splits text into matched / unmatched runs for rendering <mark>. A word
+ * matches when it starts with any query word, mirroring the database's prefix
+ * matching ("tha" highlights "Thapa"), or when it shares a query word's stem
+ * ("rooms" highlights "Room"). Adjacent runs with the same state merge.
+ */
+export function highlightSegments(text: string, query: string | null): HighlightSegment[] {
+  if (!text) return [];
+  const queryWords = (query ?? '')
+    .toLocaleLowerCase()
+    .split(/[^\p{L}\p{M}\p{N}]+/u)
+    .filter(Boolean);
+  if (queryWords.length === 0) return [{ text, match: false }];
+  const queryStems = new Set(queryWords.map(highlightStem));
+
+  const segments: HighlightSegment[] = [];
+  for (const [token] of text.matchAll(TOKENS)) {
+    const lower = token.toLocaleLowerCase();
+    const match =
+      WORD.test(token) &&
+      (queryWords.some((word) => lower.startsWith(word)) || queryStems.has(highlightStem(lower)));
+    const previous = segments[segments.length - 1];
+    if (previous && previous.match === match) {
+      previous.text += token;
+    } else {
+      segments.push({ text: token, match });
+    }
+  }
+  return segments;
+}
+```
+
+- [ ] **Step 4: Run the shared tests and watch them pass**
+
+Run: `npm run test --workspace=packages/shared -- src/utils/searchQuery.test.ts`
+
+Expected: PASS, all cases including the earlier Devanagari and multi-word tests.
+
+- [ ] **Step 5: Run the web search tests, which render the highlights**
+
+Run: `npm run test --workspace=apps/web -- src/components/search`
+
+Expected: PASS, unchanged. Those tests query for "tha", which behaves exactly as before.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add packages/shared/src/utils/searchQuery.ts packages/shared/src/utils/searchQuery.test.ts
+git commit -m "feat(search): highlight plural and -ing/-ed forms of query words" -m "The database matches English stems, so \"rooms\" returned \"Room for rent\" with nothing marked. Highlighting now also compares a light stem of each word, covering plurals and -ing/-ed forms." -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+### Task 3c.3: Return a new empty page for each empty query
+
+**Files:**
+
+- Modify: `packages/shared/src/api/search.ts:28` and the three `return EMPTY_PAGE;` lines (68, 90, 112)
+- Test: `packages/shared/src/api/search.test.ts`
+
+**Interfaces:** module-private `emptyPage<T>(): SearchPage<T>` replaces the `EMPTY_PAGE` constant. No exported signature changes.
+
+- [ ] **Step 1: Add the failing test** at the end of `search.test.ts`, and add `import type { SearchPage } from '../types/search';` below the existing type import
+
+```ts
+describe('queries below the minimum length', () => {
+  const searches: Array<[name: string, search: (supabase: SupabaseClient) => Promise<SearchPage<unknown>>]> = [
+    ['searchPosts', (supabase) => searchPosts(supabase, 'a', pageOptions)],
+    ['searchListings', (supabase) => searchListings(supabase, 'a', pageOptions)],
+    ['searchPeople', (supabase) => searchPeople(supabase, 'a', { metroId: null, limit: 3, offset: 0 })],
+  ];
+
+  it.each(searches)('%s returns a new empty page every call', async (_name, search) => {
+    const mock = createSupabase({});
+
+    const first = await search(mock.supabase);
+    const second = await search(mock.supabase);
+
+    expect(first).toEqual({ data: [], totalCount: 0, hasMore: false });
+    expect(second).not.toBe(first);
+    expect(second.data).not.toBe(first.data);
+    expect(mock.rpc).not.toHaveBeenCalled();
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests and watch them fail**
+
+Run: `npm run test --workspace=packages/shared -- src/api/search.test.ts`
+
+Expected: FAIL on all three cases at `expect(second).not.toBe(first)`, because every empty result is the same `EMPTY_PAGE` object.
+
+- [ ] **Step 3: Replace the constant with a function**
+
+Replace `const EMPTY_PAGE = { data: [], totalCount: 0, hasMore: false };` with:
+
+```ts
+/** A new object per call, so no caller can change what another empty search returns. */
+function emptyPage<T>(): SearchPage<T> {
+  return { data: [], totalCount: 0, hasMore: false };
+}
+```
+
+Then change the three early returns, giving each its own type argument:
+
+- in `searchPosts`: `if (!normalized) return emptyPage<Post>();`
+- in `searchListings`: `if (!normalized) return emptyPage<MarketplaceListing>();`
+- in `searchPeople`: `if (!normalized) return emptyPage<PersonSearchResult>();`
+
+- [ ] **Step 4: Run the tests and watch them pass**
+
+Run: `npm run test --workspace=packages/shared -- src/api/search.test.ts`
+
+Expected: PASS, including the older "skips the database for queries shorter than 2 characters" tests.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/shared/src/api/search.ts packages/shared/src/api/search.test.ts
+git commit -m "fix(search): return a new empty page for each empty query" -m "All three search functions returned one shared EMPTY_PAGE object, so a caller that changed it would change what every other empty search returns." -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+### Task 3c.4: Report the real total on a page past the end
+
+**Files:**
+
+- Modify: `packages/shared/src/api/search.ts:41-140` (`fetchRankedIds` and all three search functions)
+- Test: `packages/shared/src/api/search.test.ts` (the `createSupabase` helper and three new tests)
+
+**Interfaces (both module-private):**
+
+- `type RankedQuery = (from: number, to: number) => PromiseLike<{ data: unknown; error: unknown }>`
+- `fetchRankedPage<Row extends { total_count: number }>(run: RankedQuery, offset: number, limit: number): Promise<{ rows: Row[]; totalCount: number }>` replaces `fetchRankedIds`
+- `rankedIdsQuery(supabase, fn, query, options, tiebreaker): RankedQuery` builds the ordered posts/listings query
+
+- [ ] **Step 1: Let the mock give successive calls different results**
+
+Replace the `MockConfig` interface and `createSupabase` function at the top of `search.test.ts` with:
+
+```ts
+type Result = { data: Rows | null; error?: { message: string } | null };
+
+interface MockConfig {
+  /** An array gives each successive call to that function its own result. */
+  rpc?: Record<string, Result | Result[]>;
+  tables?: Record<string, Result>;
+}
+
+function createSupabase(config: MockConfig) {
+  const rpcBuilders: Record<string, { order: ReturnType<typeof vi.fn>; range: ReturnType<typeof vi.fn> }> = {};
+  const tableBuilders: Record<string, { select: ReturnType<typeof vi.fn>; in: ReturnType<typeof vi.fn> }> = {};
+  const rpcCallCounts: Record<string, number> = {};
+
+  const rpc = vi.fn((fn: string) => {
+    const configured = config.rpc?.[fn];
+    const call = rpcCallCounts[fn] ?? 0;
+    rpcCallCounts[fn] = call + 1;
+    const result = (Array.isArray(configured) ? configured[call] : configured) ?? { data: [] };
+    const builder = { order: vi.fn(), range: vi.fn() };
+    builder.order.mockReturnValue(builder);
+    builder.range.mockResolvedValue({ data: result.data, error: result.error ?? null });
+    rpcBuilders[fn] = builder;
+    return builder;
+  });
+
+  const from = vi.fn((table: string) => {
+    const result = config.tables?.[table] ?? { data: [] };
+    const builder = { select: vi.fn(), in: vi.fn() };
+    builder.select.mockReturnValue(builder);
+    builder.in.mockResolvedValue({ data: result.data, error: result.error ?? null });
+    tableBuilders[table] = builder;
+    return builder;
+  });
+
+  return { supabase: { rpc, from } as unknown as SupabaseClient, rpc, from, rpcBuilders, tableBuilders };
+}
+```
+
+`rpcBuilders[fn]` now holds the builder from the most recent call, which is what the new tests assert on.
+
+- [ ] **Step 2: Add the failing tests**
+
+In `describe('searchPosts', …)`, add this line to the end of the existing "ranks via search_posts, then hydrates rows in rank order" test, to pin that a normal page makes one request:
+
+```ts
+    expect(mock.rpc).toHaveBeenCalledTimes(1);
+```
+
+Then add three tests to the same block:
+
+```ts
+  it('re-reads the total when a page past the first comes back empty', async () => {
+    const mock = createSupabase({
+      rpc: {
+        search_posts: [
+          { data: [] },
+          { data: [{ id: 'p1', rank: 1, created_at: '2026-09-14T00:00:00Z', total_count: 21 }] },
+        ],
+      },
+    });
+
+    const result = await searchPosts(mock.supabase, 'room', { ...pageOptions, limit: 20, offset: 20 });
+
+    expect(mock.rpc).toHaveBeenCalledTimes(2);
+    expect(mock.rpcBuilders.search_posts.range).toHaveBeenCalledWith(0, 0);
+    expect(mock.from).not.toHaveBeenCalled();
+    expect(result).toEqual({ data: [], totalCount: 21, hasMore: false });
+  });
+
+  it('trusts an empty first page without a second request', async () => {
+    const mock = createSupabase({ rpc: { search_posts: { data: [] } } });
+
+    const result = await searchPosts(mock.supabase, 'room', pageOptions);
+
+    expect(mock.rpc).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ data: [], totalCount: 0, hasMore: false });
+  });
+
+  it('returns an Error when re-reading the total fails', async () => {
+    const mock = createSupabase({
+      rpc: { search_posts: [{ data: [] }, { data: null, error: { message: 'total failed' } }] },
+    });
+
+    const result = await searchPosts(mock.supabase, 'room', { ...pageOptions, offset: 20 });
+
+    expect(result.error?.message).toBe('total failed');
+  });
+```
+
+In `describe('searchListings', …)`:
+
+```ts
+  it('re-reads the total when a page past the first comes back empty', async () => {
+    const mock = createSupabase({
+      rpc: {
+        search_listings: [
+          { data: [] },
+          { data: [{ id: 'l1', rank: 1, refreshed_at: '2026-09-14T00:00:00Z', total_count: 4 }] },
+        ],
+      },
+    });
+
+    const result = await searchListings(mock.supabase, 'desk', { ...pageOptions, offset: 3 });
+
+    expect(mock.rpcBuilders.search_listings.range).toHaveBeenCalledWith(0, 0);
+    expect(result).toEqual({ data: [], totalCount: 4, hasMore: false });
+  });
+```
+
+In `describe('searchPeople', …)`:
+
+```ts
+  it('re-reads the total when a page past the first comes back empty', async () => {
+    const mock = createSupabase({
+      rpc: {
+        search_people: [
+          { data: [] },
+          {
+            data: [
+              {
+                id: 'u1',
+                full_name: 'Bikash Thapa',
+                profile_photo: null,
+                trust_level: 2,
+                metro_area_id: 'metro-nyc',
+                follower_count: 128,
+                is_local: true,
+                rank: 0.6,
+                total_count: 3,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const result = await searchPeople(mock.supabase, 'thapa', { metroId: 'metro-nyc', limit: 20, offset: 20 });
+
+    expect(mock.rpc).toHaveBeenCalledTimes(2);
+    expect(mock.rpcBuilders.search_people.range).toHaveBeenCalledWith(0, 0);
+    expect(result).toEqual({ data: [], totalCount: 3, hasMore: false });
+  });
+```
+
+- [ ] **Step 3: Run the tests and watch them fail**
+
+Run: `npm run test --workspace=packages/shared -- src/api/search.test.ts`
+
+Expected: FAIL on the four new "re-reads the total" / "returns an Error when re-reading" tests. Each empty page reports `totalCount: 0` after a single request, so the counts mismatch and `range(0, 0)` was never called. The other tests pass.
+
+- [ ] **Step 4: Replace `fetchRankedIds` with the paging helper**
+
+Delete `fetchRankedIds` and add, after `inRankOrder`:
+
+```ts
+/** One ordered search RPC, fetching rows `from` to `to` inclusive. */
+type RankedQuery = (from: number, to: number) => PromiseLike<{ data: unknown; error: unknown }>;
+
+/**
+ * Fetches one page of a ranked search. The window total rides on every row, so
+ * a page past the end carries no row to read it from; only then is the query
+ * run again for a single row. A page with rows costs one request.
+ */
+async function fetchRankedPage<Row extends { total_count: number }>(
+  run: RankedQuery,
+  offset: number,
+  limit: number
+): Promise<{ rows: Row[]; totalCount: number }> {
+  const { data, error } = await run(offset, offset + limit - 1);
+  if (error) throw error;
+
+  const rows = (data ?? []) as Row[];
+  if (rows.length > 0 || offset === 0) {
+    return { rows, totalCount: Number(rows[0]?.total_count ?? 0) };
+  }
+
+  const first = await run(0, 0);
+  if (first.error) throw first.error;
+  const [firstRow] = (first.data ?? []) as Row[];
+  return { rows, totalCount: Number(firstRow?.total_count ?? 0) };
+}
+
+function rankedIdsQuery(
+  supabase: SupabaseClient,
+  fn: 'search_posts' | 'search_listings',
+  query: string,
+  options: SearchPageOptions,
+  tiebreaker: 'created_at' | 'refreshed_at'
+): RankedQuery {
+  return (from, to) =>
+    supabase
+      .rpc(fn, { p_query: query, p_metro_id: options.metroId, p_all_metros: options.allMetros })
+      .order('rank', { ascending: false })
+      .order(tiebreaker, { ascending: false })
+      // Each page is a separate query, so without a unique final key rows tied on
+      // rank and timestamp can repeat on one page and never appear on another.
+      .order('id', { ascending: true })
+      .range(from, to);
+}
+```
+
+Add `type PersonRow = PersonSearchResult & { rank: number; total_count: number };` next to the existing `RankedIdRow` type.
+
+- [ ] **Step 5: Point the three search functions at the helper**
+
+In `searchPosts`, replace the `fetchRankedIds` call and the `ids.length` check with:
+
+```ts
+    const { rows, totalCount } = await fetchRankedPage<RankedIdRow>(
+      rankedIdsQuery(supabase, 'search_posts', normalized, options, 'created_at'),
+      options.offset,
+      options.limit
+    );
+    const ids = rows.map((row) => row.id);
+    if (ids.length === 0) return { data: [], totalCount, hasMore: false };
+```
+
+In `searchListings`, the same with the listings function and tiebreaker:
+
+```ts
+    const { rows, totalCount } = await fetchRankedPage<RankedIdRow>(
+      rankedIdsQuery(supabase, 'search_listings', normalized, options, 'refreshed_at'),
+      options.offset,
+      options.limit
+    );
+    const ids = rows.map((row) => row.id);
+    if (ids.length === 0) return { data: [], totalCount, hasMore: false };
+```
+
+In `searchPeople`, replace the whole `supabase.rpc(…)` call and the two lines that read `rows` and `totalCount` with:
+
+```ts
+    const { rows, totalCount } = await fetchRankedPage<PersonRow>(
+      (from, to) =>
+        supabase
+          .rpc('search_people', { p_query: normalized, p_metro_id: options.metroId })
+          .order('is_local', { ascending: false })
+          .order('rank', { ascending: false })
+          .order('follower_count', { ascending: false })
+          // `simple` applies no weights, so every two-token name matching one query
+          // token scores identically; without a unique final key, offset paging
+          // duplicates and drops members.
+          .order('id', { ascending: true })
+          .range(from, to),
+      options.offset,
+      options.limit
+    );
+```
+
+The rest of each function is unchanged: hydrate, restore rank order, and return `hasMore: options.offset + ids.length < totalCount` (`rows.length` for people).
+
+- [ ] **Step 6: Run the tests, the type check and the lint**
+
+Run: `npm run test --workspace=packages/shared -- src/api/search.test.ts`
+
+Expected: PASS, every test in the file.
+
+Run: `npm run type-check --workspace=packages/shared && npm run lint --workspace=packages/shared`
+
+Expected: both exit 0. If the builder does not satisfy `RankedQuery`, widen the type to `PromiseLike<{ data: unknown; error: unknown }>` at the call site rather than casting the builder.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add packages/shared/src/api/search.ts packages/shared/src/api/search.test.ts
+git commit -m "fix(search): report the real total on a page past the end" -m "The total rides on every row, so an empty page reported 0 matches. One helper now pages all three searches and re-reads the total from a single row only when a page after the first comes back empty." -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+### Task 3c.5: Document, verify and open the draft PR
+
+**Files:**
+
+- Modify: `docs/product/features/search.md`
+- Modify: `docs/plans/active/2026-09-14-web-ui-overhaul.md` (the PR 3c tracker row)
+
+- [ ] **Step 1: Update `search.md`**
+
+Set `**Last Updated:** 2026-09-19`. Replace the `**Matching:**` paragraph under "Behaviour" with:
+
+```markdown
+**Matching:** full-text prefix matching, so "tha" finds "Thapa". Post and listing text also matches other forms of an English word, so "houses" finds "Housing". Post titles rank above body text. Names are matched without stemming.
+
+**Highlighting:** a word is marked when it starts with a query word, or when it is a plural or -ing/-ed form of one, so "rooms" marks "Room". Less regular forms, such as "sold" against "sell", can match without being marked.
+```
+
+In "Technical", change the Database bullet to name both migrations:
+
+```markdown
+- **Database:** `supabase/migrations/037_search.sql`, with the prefix and performance fixes in `038_search_prefix_fix.sql`. See [architecture/database-schema.md](../../architecture/database-schema.md) → "Global search".
+```
+
+- [ ] **Step 2: Check the docs**
+
+Run: `npm run docs:check`
+
+Expected: `docs:check - clean, 0 violations.`
+
+- [ ] **Step 3: Run the full local pipeline**
+
+Run: `npm run ci:local`
+
+Expected: every step passes — lint, lint guards, type check, unit tests with coverage, and the web E2E suite. The E2E run includes the search specs, which use the query "thapa".
+
+- [ ] **Step 4: Confirm the diff is only what this PR intends**
+
+Run: `git status --short && git ls-files --eol packages/shared/src/api/search.ts packages/shared/src/utils/searchQuery.ts`
+
+Expected: no unexpected modified files, and both files still report `i/lf`. A scripted edit that leaves `i/crlf` or `i/mixed` shows up as a whole-file diff.
+
+- [ ] **Step 5: Commit the docs**
+
+```bash
+git add docs/product/features/search.md
+git commit -m "docs(search): describe stemmed matching and highlighting" -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+- [ ] **Step 6: Push and open the draft PR**
+
+```bash
+git push -u origin fix/search-follow-ups
+gh pr create --draft --base docs/web-ui-overhaul-gaps --head fix/search-follow-ups \
+  --title "fix(search): follow-ups from the PR #65 review" --body-file <path to a written body>
+```
+
+The base is `docs/web-ui-overhaul-gaps` because this branch is stacked on PR #78; retarget to `master` once #78 merges. Fill `.github/pull_request_template.md`: Summary lists the four fixes and says the `count(*) OVER ()` item is deferred with the reason; Scope ticks `packages/shared`; Testing ticks the shared and web workspace runs plus the monorepo validation; Notes for Reviewers records the two accepted over-highlights ("news" marks "new", "buses" marks "bus") and that no visual baselines change.
+
+- [ ] **Step 7: Request Copilot's review and confirm it registered**
+
+```bash
+gh pr edit <number> --add-reviewer @copilot
+gh api repos/shashesh/nepally/issues/<number>/timeline --jq '[.[] | select(.event=="review_requested") | .requested_reviewer.login]'
+```
+
+Expected: the timeline lists `Copilot`. `gh pr view --json reviewRequests` shows an empty list even when the request worked, so check the timeline instead.
+
+- [ ] **Step 8: Leave the PR in draft**
+
+The user marks it ready once Copilot's review is done, and that is what starts CI.
 
 ---
 
