@@ -122,8 +122,8 @@ Build the core infrastructure that everything else depends on.
 - **What:** Maintain user authentication state across app restarts
 - **Acceptance Criteria:**
   - Remember logged-in user on app restart
-  - Auto-logout after 30 days of inactivity
-  - Token refresh mechanism
+  - Stay signed in until the user signs out: no inactivity timeout and no maximum session age ([ADR](../../decisions/2026-09-18-long-lived-sessions.md))
+  - Token refresh mechanism (short-lived access tokens refresh silently; on mobile only while the app is in the foreground)
   - Handle expired sessions gracefully
 - **Dependencies:** 1.2
 - **Estimated Effort:** 2 days

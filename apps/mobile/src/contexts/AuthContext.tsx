@@ -1,18 +1,14 @@
 import React, { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 import { supabase } from '../config/supabase';
 import { getMyProfile } from '@nepally/shared';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { saveUserData, clearAllData } from '../utils/storage';
 import { registerForPushNotificationsAsync, isExpoGo } from '../services/notifications';
 
-const SESSION_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const SENSITIVE_ACTION_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-
-const STORAGE_KEY_SIGN_IN_AT = '@nusa:session_sign_in_at';
-const STORAGE_KEY_LAST_ACTIVITY = '@nusa:session_last_activity';
-const STORAGE_KEY_USER_ID = '@nusa:session_user_id';
+// Sessions are long-lived, like Facebook and Reddit: a user stays signed in
+// on a device until they sign out. There is no inactivity timeout and no
+// maximum session age (docs/decisions/2026-09-18-long-lived-sessions.md).
 
 interface User {
   id: string;
@@ -41,8 +37,6 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   pauseAuthListener: () => void;
   resumeAuthListener: () => void;
-  recordActivity: () => Promise<void>;
-  isWithinSensitiveActionWindow: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -53,8 +47,6 @@ export const AuthContext = createContext<AuthContextType>({
   refreshUser: async () => {},
   pauseAuthListener: () => {},
   resumeAuthListener: () => {},
-  recordActivity: async () => {},
-  isWithinSensitiveActionWindow: async () => false,
 });
 
 interface AuthProviderProps {
@@ -86,46 +78,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Mobile push token registration failed:', error);
       // Allow retry on a subsequent auth transition when an unexpected error occurs.
       pushRegistrationAttemptedUserIdRef.current = null;
-    }
-  }, []);
-
-  const recordActivity = useCallback(async () => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY_LAST_ACTIVITY, Date.now().toString());
-    } catch (error) {
-      console.error('Failed to record activity:', error);
-    }
-  }, []);
-
-  const isSessionExpired = useCallback(async (): Promise<boolean> => {
-    try {
-      const [lastActivityStr, signInAtStr] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY_LAST_ACTIVITY),
-        AsyncStorage.getItem(STORAGE_KEY_SIGN_IN_AT),
-      ]);
-      const now = Date.now();
-      if (lastActivityStr) {
-        const lastActivity = parseInt(lastActivityStr, 10);
-        if (isNaN(lastActivity) || now - lastActivity > SESSION_INACTIVITY_TIMEOUT_MS) return true;
-      }
-      if (signInAtStr) {
-        const signInAt = parseInt(signInAtStr, 10);
-        if (isNaN(signInAt) || now - signInAt > SESSION_MAX_AGE_MS) return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }, []);
-
-  const isWithinSensitiveActionWindow = useCallback(async (): Promise<boolean> => {
-    try {
-      const lastActivityStr = await AsyncStorage.getItem(STORAGE_KEY_LAST_ACTIVITY);
-      if (!lastActivityStr) return false;
-      const lastActivity = parseInt(lastActivityStr, 10);
-      return Date.now() - lastActivity <= SENSITIVE_ACTION_WINDOW_MS;
-    } catch {
-      return false;
     }
   }, []);
 
@@ -176,40 +128,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Resolves the persisted session on startup without touching React state:
-  // signs out an expired session and repairs missing/mismatched timestamps so
-  // expiry is enforced from first load (e.g. after upgrade, storage clear, or
-  // user switch). Returns the auth user of a still-valid session, else null.
-  const restoreSession = useCallback(async (): Promise<SupabaseUser | null> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return null;
-
-    if (await isSessionExpired()) {
-      await supabase.auth.signOut();
-      return null;
-    }
-
-    const [existingSignInAt, existingUserId] = await Promise.all([
-      AsyncStorage.getItem(STORAGE_KEY_SIGN_IN_AT),
-      AsyncStorage.getItem(STORAGE_KEY_USER_ID),
-    ]);
-    if (!existingSignInAt || existingUserId !== session.user.id) {
-      const now = Date.now().toString();
-      await AsyncStorage.multiSet([
-        [STORAGE_KEY_SIGN_IN_AT, now],
-        [STORAGE_KEY_LAST_ACTIVITY, now],
-        [STORAGE_KEY_USER_ID, session.user.id],
-      ]);
-    }
-    return session.user;
-  }, [isSessionExpired]);
-
   // Load user data from storage on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const sessionUser = await restoreSession();
+        const { data: { session } } = await supabase.auth.getSession();
+        const sessionUser = session?.user ?? null;
         if (!sessionUser) {
           // No valid Supabase session: keep auth state signed out.
           pushRegistrationAttemptedUserIdRef.current = null;
@@ -231,7 +156,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       cancelled = true;
     };
-  }, [restoreSession, refreshUser, registerPushTokenForUser]);
+  }, [refreshUser, registerPushTokenForUser]);
+
+  // supabase-js starts its token-refresh timer when the client initialises
+  // (autoRefreshToken). React Native freezes timers in the background, so pause
+  // it there and resume it on return to the foreground. A session then stays
+  // valid however long the app sat unused (Supabase's React Native pattern).
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+      } else {
+        supabase.auth.stopAutoRefresh();
+      }
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -244,22 +186,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setSupabaseUser(null);
           setUser(null);
           pushRegistrationAttemptedUserIdRef.current = null;
-          await AsyncStorage.multiRemove([STORAGE_KEY_SIGN_IN_AT, STORAGE_KEY_LAST_ACTIVITY, STORAGE_KEY_USER_ID]);
         } else if (session?.user) {
           setSupabaseUser(session.user);
-          // Record sign-in time if not already set or if the user changed
-          const [existingSignInAt, existingUserId] = await Promise.all([
-            AsyncStorage.getItem(STORAGE_KEY_SIGN_IN_AT),
-            AsyncStorage.getItem(STORAGE_KEY_USER_ID),
-          ]);
-          if (!existingSignInAt || existingUserId !== session.user.id) {
-            const now = Date.now().toString();
-            await AsyncStorage.multiSet([
-              [STORAGE_KEY_SIGN_IN_AT, now],
-              [STORAGE_KEY_LAST_ACTIVITY, now],
-              [STORAGE_KEY_USER_ID, session.user.id],
-            ]);
-          }
           void registerPushTokenForUser(session.user.id);
           await refreshUser();
         }
@@ -301,8 +229,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshUser,
         pauseAuthListener,
         resumeAuthListener,
-        recordActivity,
-        isWithinSensitiveActionWindow,
       }}
     >
       {children}

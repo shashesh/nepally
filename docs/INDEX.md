@@ -111,6 +111,7 @@ in `wireframes/_prototypes/`. The underscore prefix keeps them out of this index
 - [decisions/2026-02-06-facebook-bridge-removal.md](decisions/2026-02-06-facebook-bridge-removal.md) — why we dropped the Facebook group bridge
 - [decisions/2026-02-16-shared-types-snake-case.md](decisions/2026-02-16-shared-types-snake-case.md) — shared types use snake_case to match Supabase columns
 - [decisions/2026-02-17-post-tags-redesign-and-premium.md](decisions/2026-02-17-post-tags-redesign-and-premium.md) — post tags redesign and premium toggle
+- [decisions/2026-09-18-long-lived-sessions.md](decisions/2026-09-18-long-lived-sessions.md) — sessions stay signed in until sign-out (Facebook/Reddit style); re-authenticate for sensitive actions; replaces the 30-minute mobile timeout
 
 ## Archive
 
