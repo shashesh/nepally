@@ -170,7 +170,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Merged (PR #64) | 2026-09-18 | Linux baselines f19b133 (CI run 35016011832) |
 | 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Merged (PR #65) | 2026-09-18 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
-| 3c Search follow-ups | `fix/search-follow-ups` | breakdown at PR start | Not Started | 2026-09-19 | land before mobile search (launch plan W4, UX-02) |
+| 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.n | In Progress | 2026-09-19 | design agreed; no migration (count fix deferred); land before mobile search (launch plan W4, UX-02) |
 | 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -10190,24 +10190,35 @@ Confirm with the user that migration 037 is live on the target project. Then pus
 
 ---
 
-# PR 3c — Search follow-ups (scoped)
+# PR 3c — Search follow-ups
 
-The review of PR #65 left five small search defects open (decision 21). Web does not show the first one, because PR 3b avoids it. Mobile search (launch plan W4, UX-02) will use the same shared API, though, so **land this PR before UX-02**. That way mobile does not have to copy the web workarounds. The PR changes no web UI and does not depend on PRs 4–10.
+The review of PR #65 left five small search defects open (decision 21). Web does not show the first one, because PR 3b avoids it. Mobile search (launch plan W4, UX-02) will use the same shared API, though, so **land this PR before UX-02**. That way mobile does not have to copy the web workarounds. The PR does not depend on PRs 4–10.
 
-**Start:** branch `fix/search-follow-ups` from `master`, then write the task breakdown with `superpowers:writing-plans`, as for the area PRs.
+**Branch:** `fix/search-follow-ups`, stacked on `docs/web-ui-overhaul-gaps` (PR #78), which adds this section. The draft PR targets that branch, as #66 targeted #65's, and moves to `master` when #78 merges.
 
-**Shared** (`packages/shared/src/api/search.ts`, `packages/shared/src/utils/searchQuery.ts`):
+**Scope:** shared code, its tests, and docs. No migration and no web component changes. The visual baselines stay valid, because the visual tests search `thapa`, which has no ending to strip.
 
-- [ ] **A page past the end reports `totalCount: 0`.** `fetchRankedIds` and `searchPeople` read the total from `rows[0]`, and an empty page has no rows. `useSearchPage` reads totals only from the offset-0 preview and pages on `hasMore` (decisions 13 and 22), but every new caller would have to know to do the same. Fix the API so every page returns the real total.
-- [ ] **`EMPTY_PAGE` is one object shared by all three search functions.** A caller that mutated it would change what every other empty search returns. No caller mutates it today. Return a fresh object on each call.
-- [ ] **`normalizeSearchInput` can split an emoji.** It truncates with `.slice(0, SEARCH_MAX_QUERY_LENGTH)`, which counts UTF-16 units, so a 100-unit cut can leave half a surrogate pair. Truncate by code points, as `getInitials` does (decision 6).
-- [ ] **Highlighting ignores stemming.** `highlightSegments` marks words that start with a query word, but the database also matches English stems, so searching `houses` returns `Housing` posts with nothing highlighted. At PR start, decide whether to mirror stemming or keep prefix-only highlighting. If you keep it, say so in [search.md](../../product/features/search.md).
+## PR 3c — Design (agreed 2026-09-19)
 
-**Database** (a new migration; the launch plan reserves `039`, so use the next free number):
+1. **Totals on empty pages.** `fetchRankedIds` and `searchPeople` read the total from `rows[0]`, so a page past the end reports `totalCount: 0`. Web never reads totals from later pages (decisions 13 and 22), but `SearchPage.totalCount` promises the total "across all pages", and mobile will call the same API.
+   - **Fix:** one helper, `fetchRankedPage(run, offset, limit)`, where `run(from, to)` builds the ordered RPC query. When a page after the first comes back empty, it runs the query again for one row (`run(0, 0)`) and reads the total from that. A normal page makes no extra request. Posts, listings and people all use the helper, which replaces the three `rows[0]?.total_count` reads.
+   - **Rejected:** returning `totalCount: undefined` for those pages. It is cheaper, but it pushes an "unknown" case onto every caller.
+2. **`EMPTY_PAGE`** becomes `emptyPage()`, which returns a new object on every call. No caller mutates the shared object today; this makes that impossible rather than a convention.
+3. **Truncation counts code points.** `normalizeSearchInput` uses `Array.from` instead of UTF-16 units, both for the 100-character cut and for the 2-character minimum. The web input has no `maxLength`, so today a pasted long query can end in half an emoji. Side effect: a single emoji is no longer long enough to search.
+4. **Highlighting follows common English endings.** A private `highlightStem(word)` changes only words made of a–z, so Devanagari and mixed words are untouched. It:
+   - strips one ending: `-ies` becomes `-i`, else `-es`, else `-s` (not after another `s`), else `-ing`, else `-ed` (not `-eed`), and never leaves fewer than 3 letters;
+   - after `-ing` or `-ed`, undoubles a final `bb`/`dd`/`ff`/`gg`/`mm`/`nn`/`pp`/`rr`/`tt` (`running` → `run`), again never below 3 letters;
+   - then turns a final `y` into `i` or drops a final `e`, but only on words longer than 3 letters.
 
-- [ ] **Every page counts the full match set.** All three search functions compute `count(*) OVER ()`, so each page materializes every match just to report a total. The search tab counts read that total from the suggestions preview (Task 3b.5), so the fix must keep some count, for example capped at a limit and shown as "100+". Measure on `nusa-staging` before and after, as 038 did.
+   A word is highlighted when it starts with a query word (today's rule, needed while typing) **or** its stem equals that query word's stem. Stems are compared for equality, not as prefixes, so `ride` does not mark `ridge`.
 
-**Done when:** shared and web tests pass, `docs:check` passes, [search.md](../../product/features/search.md) describes any behaviour change, and the PR 3c tracker row says Merged.
+   - **Evidence:** stems read from `nusa-staging` with `ts_lexize('english_stem', …)` group room/rooms, job/jobs, house/houses/housing, rent/rents/renting/rented, city/cities, share/shared/sharing, nurse/nurses/nursing, study/studies/studying, class/classes, ride/rides/riding, hire/hiring/hired, move/moving/moved, park/parking and clean/cleaning. A simulation of the rules above puts every group on one stem, and keeps sold/sell and cleaner/cleaning apart, as Postgres does. These pairs are the test table.
+   - **Accepted over-highlights:** `news` marks `new`, and `buses` marks `bus` (Postgres stems them `news`/`new` and `buse`/`bus`). Each needs a result that already matched on another word.
+5. **Count cost: deferred, no change in this PR.** An `EXPLAIN` on `nusa-staging` (2026-09-19) shows `Function Scan on search_posts` under the sort and limit. `SET search_path` stops Postgres from inlining the functions, so every call returns all matches whatever the count does, and dropping `count(*) OVER ()` would only save one pass over rows already in memory.
+   - **The real fix:** move ordering, paging and a capped count into the functions. That means new signatures, a migration (`039` is reserved by the launch plan) and "100+" labels in the combobox and tabs.
+   - **When:** once monitoring shows search latency climbing, for example a p95 above 300 ms. At launch scale a search takes a few milliseconds.
+
+**Done when:** shared and web tests pass, `npm run ci:local` passes, `docs:check` passes, the "Matching" line in [search.md](../../product/features/search.md) says highlighting follows plurals and `-ing`/`-ed` forms, and the PR 3c tracker row says Merged.
 
 ---
 
