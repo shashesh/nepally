@@ -10,7 +10,7 @@ function wantsSingleObject(acceptHeader: string | undefined): boolean {
 }
 
 test.describe('Avatar menu behavior', () => {
-  test('post detail: comment avatar opens anchored menu with View Profile and Chat', async ({ page }) => {
+  test('post detail: comment avatar opens a menu with View profile and Chat', async ({ page }) => {
     await injectAuthSession(page);
     await mockSupabaseLoggedIn(page);
 
@@ -50,28 +50,19 @@ test.describe('Avatar menu behavior', () => {
     await page.goto(`/posts/${MOCK_POST_OTHER_AUTHOR.id}`);
     await expect(page.getByText('Comment User')).toBeVisible({ timeout: 10_000 });
 
-    const commentAvatarButton = page.getByLabel('User options').nth(1);
+    const commentAvatarButton = page.getByRole('button', { name: 'Options for Comment User' });
     await expect(commentAvatarButton).toBeVisible();
 
-    const avatarBox = await commentAvatarButton.boundingBox();
     await commentAvatarButton.click();
 
-    const dropdown = page.locator('div[class*="avatarDropdownAnchored"]').first();
-    await expect(dropdown).toBeVisible();
-    await expect(dropdown.getByText('View Profile')).toBeVisible();
-    await expect(dropdown.getByText('Chat')).toBeVisible();
-
-    const dropdownBox = await dropdown.boundingBox();
-    expect(avatarBox).not.toBeNull();
-    expect(dropdownBox).not.toBeNull();
-
-    if (avatarBox && dropdownBox) {
-      expect(Math.abs(dropdownBox.x - avatarBox.x)).toBeLessThan(260);
-      expect(Math.abs(dropdownBox.y - avatarBox.y)).toBeLessThan(260);
-    }
+    // Mantine positions and portals the menu, so assert the menu itself rather
+    // than a CSS-module class or how near the trigger it landed.
+    const menu = page.getByRole('menu');
+    await expect(menu.getByRole('menuitem', { name: 'View profile' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: 'Chat' })).toBeVisible();
   });
 
-  test('post detail: author avatar also opens anchored menu', async ({ page }) => {
+  test('post detail: author avatar opens a menu that links to the profile', async ({ page }) => {
     await injectAuthSession(page);
     await mockSupabaseLoggedIn(page);
 
@@ -93,23 +84,16 @@ test.describe('Avatar menu behavior', () => {
 
     await page.goto(`/posts/${MOCK_POST_OTHER_AUTHOR.id}`);
 
-    const authorAvatarButton = page.getByLabel('User options').first();
+    const authorAvatarButton = page.getByRole('button', { name: 'Options for Other Community Member' });
     await expect(authorAvatarButton).toBeVisible({ timeout: 10_000 });
 
-    const authorBox = await authorAvatarButton.boundingBox();
     await authorAvatarButton.click();
 
-    const dropdown = page.locator('div[class*="avatarDropdownAnchored"]').first();
-    await expect(dropdown.getByText('View Profile')).toBeVisible();
-    await expect(dropdown.getByText('Chat')).toBeVisible();
-
-    const dropdownBox = await dropdown.boundingBox();
-    expect(authorBox).not.toBeNull();
-    expect(dropdownBox).not.toBeNull();
-
-    if (authorBox && dropdownBox) {
-      expect(Math.abs(dropdownBox.x - authorBox.x)).toBeLessThan(260);
-      expect(Math.abs(dropdownBox.y - authorBox.y)).toBeLessThan(260);
-    }
+    const menu = page.getByRole('menu');
+    await expect(menu.getByRole('menuitem', { name: 'View profile' })).toHaveAttribute(
+      'href',
+      `/users/${MOCK_POST_OTHER_AUTHOR.author_id}`
+    );
+    await expect(menu.getByRole('menuitem', { name: 'Chat' })).toBeVisible();
   });
 });

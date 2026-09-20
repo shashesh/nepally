@@ -83,7 +83,9 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 |---|---|---|
 | `PostCard` | `components/posts/` | A stretched-link card: the title is the only link and covers the card, so menus, chips and the carousel sit beside it rather than inside it |
 | `PostMeta` | `components/posts/` | Author, relative time, `TagChip` per tag and `ScopeBadge`. Tags become buttons only when the surface can filter |
-| `PostActions` | `components/posts/` | Like and comment counts as text with visually hidden labels, plus share. The counts are not buttons, because nothing on the feed can like or comment yet |
+| `PostActions` | `components/posts/` | Like, comment and save. A count is a button only where a handler is given — the feed has none, so there it stays text, and post detail passes them |
+| `CommentThread` | `components/posts/` | One parent comment with its replies behind a "Show replies (n)" toggle; deleting asks through `useConfirm` |
+| `CommentComposer` | `components/posts/` | The comment field, with a real label and a reply banner naming the person |
 | `PostComposer` | `components/feed/` | The prompt row; it links to the composer, or to verification below trust level 1 |
 | `SponsoredRail` | `components/feed/` | The `<aside>` holding paid listings and the upcoming-events widget |
 | `UserMenuTrigger` | `components/users/` | An avatar that opens View profile / Chat through `ActionMenu` |
