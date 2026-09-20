@@ -165,6 +165,13 @@ The spec is updated in the same commit as this plan.
    - **`liked` was missing.** The heart is filled for posts the viewer liked (feed 1288), so the prop is `{ likeCount, commentCount, liked?, onShare }`.
    - **Counts stay text.** They are `<span>`s today with no handler; nothing on the feed can like or comment. Each carries a visually hidden "3 likes" / "1 comment" so the number is not read bare.
 
+24. **`PhotoCarousel` keeps wrap-around paging (PR 4a).** Task 4a.5 called for previous and next disabled at the ends and a scroll-snap track. The carousel wraps today (`(index ± 1 + length) % length`), so disabling would change behaviour that no task asked to change, and a scroll-snap track would swap the whole interaction model on a migration PR. It stays one photo at a time with wrap-around, and the fix is structural: previous and next are real buttons **beside** the photo, where they used to be `role="button"` divs nested inside another `role="button"` div. The 40px swipe threshold is unchanged.
+
+25. **`PostCard` drops `onAvatarViewProfile`, and is wired up in 4a.9 (PR 4a).**
+
+   - **The prop is gone.** `UserMenuTrigger`'s "View profile" is a real link to `/users/:id`, so the callback that pushed that route has nothing left to do. `PostCardProps` is the other twelve props plus `metroLabel`.
+   - **The page keeps using its inline card until 4a.9.** Task 4a.7 said to wire the new component into `feed.page.tsx`, but swapping it in changes what 40 feed tests query — tag case, menus rendered in a portal, the scope badge's text. Doing that here would leave the suite red across two commits, so the extraction and its own tests land first and the page adopts them in 4a.9, where the feed tests are rewritten anyway.
+
 ## Live tracker
 
 One task is `In Progress` at a time. Update this table when a PR starts and when it merges.
