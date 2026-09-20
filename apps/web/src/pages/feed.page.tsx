@@ -584,7 +584,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                     liked={likedIds.has(post.id)}
                     saved={savedIds.has(post.id)}
                     onTagClick={handleTagChipToggle}
-                    metroLabel={activeLocation?.metro_name}
                     currentUserId={user?.id}
                     onAvatarChat={handleAvatarChat}
                     onOpenLightbox={openLightbox}

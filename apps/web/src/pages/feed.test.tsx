@@ -375,7 +375,8 @@ describe('FeedPage', () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
     await waitFor(() => {
-      expect(screen.getByText('Local · Dallas-Fort Worth')).toBeDefined();
+      // The feed is already scoped to one metro, so the card says only Local.
+      expect(screen.getByText('Local')).toBeDefined();
     });
   });
 
