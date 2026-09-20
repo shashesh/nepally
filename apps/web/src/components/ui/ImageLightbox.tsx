@@ -123,7 +123,6 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
 
     stage.addEventListener('wheel', handleWheel, { passive: false });
     return () => stage.removeEventListener('wheel', handleWheel);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- showChromeBriefly is stable enough for the open lightbox
   }, [opened]);
 
   const chromeClass = `${styles.chrome} ${chromeVisible ? styles.chromeVisible : styles.chromeHidden}`;

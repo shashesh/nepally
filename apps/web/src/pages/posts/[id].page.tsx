@@ -50,6 +50,19 @@ export default function PostDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const routePostId = typeof id === 'string' ? id : null;
+
+  // One instance per post. Next reuses this page across an A -> B navigation,
+  // so without the key every piece of state below outlives the post it belongs
+  // to: the reply target, the submit flag, liked/saved, the comment list and
+  // any write still in flight. Keying discards them, and a response that lands
+  // after the reader has moved on updates a dead instance instead of the new
+  // post. Guards inside this component are therefore only about races within
+  // one post, not across posts.
+  return <PostDetailView key={routePostId ?? 'no-post'} routePostId={routePostId} />;
+}
+
+function PostDetailView({ routePostId }: { routePostId: string | null }) {
+  const router = useRouter();
   const { user } = useAuth();
   const confirm = useConfirm();
 
@@ -62,33 +75,35 @@ export default function PostDetailPage() {
   // Route id whose post request has finished; any other id is still loading.
   const [loadedPostId, setLoadedPostId] = useState<string | null>(null);
   const loading = !routePostId || loadedPostId !== routePostId;
-  // On a different post, drop the previous post's comments right away rather
-  // than showing them under the new post until its own comments arrive.
+  const [postStatus, setPostStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [postReloadToken, setPostReloadToken] = useState(0);
   const [commentsStatus, setCommentsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [commentsReloadToken, setCommentsReloadToken] = useState(0);
-  const [commentsPostId, setCommentsPostId] = useState(routePostId);
-  if (commentsPostId !== routePostId) {
-    setCommentsPostId(routePostId);
-    setComments([]);
-    setCommentsStatus('loading');
-  }
   const [submitting, setSubmitting] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   /** Bumped by anything that edits comments locally, retiring in-flight loads. */
   const commentsGenerationRef = useRef(0);
-  /** The post each write is for. This component stays mounted across route
-   *  changes, so a write must not block, or roll back onto, a different post. */
-  const likePendingVisitRef = useRef<number | null>(null);
-  const savePendingVisitRef = useRef<number | null>(null);
-  /** Incremented on every route change, so A -> B -> A gets three tokens. */
-  const visitRef = useRef(0);
+  /** One like and one save in flight at a time, so overlapping clicks cannot
+   *  apply stale rollback deltas. Route changes are handled by the key above. */
+  const likePendingRef = useRef(false);
+  const savePendingRef = useRef(false);
+  /**
+   * False once this post's view is gone. The key above throws away state, but
+   * a toast or a redirect is not state: every async handler checks this before
+   * reporting or navigating, so a request the reader walked away from stays
+   * quiet instead of interrupting the post now on screen.
+   */
+  const viewActiveRef = useRef(true);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
-    visitRef.current += 1;
-  }, [routePostId]);
+    viewActiveRef.current = true;
+    return () => {
+      viewActiveRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!routePostId) return;
@@ -96,12 +111,27 @@ export default function PostDetailPage() {
     let cancelled = false;
     getPostById(supabase, routePostId).then((result) => {
       if (cancelled) return;
-      // A missing post clears the previous one, so the page shows "Post not found"
-      // instead of the last post under the new URL.
+      if (result.error) {
+        // A request that failed is not a post that does not exist; saying
+        // "Post not found" here would send the reader away for good.
+        setPostStatus('error');
+        return;
+      }
       setPost(result.data ?? null);
       setLikesCount(result.data?.likes_count || 0);
       setLoadedPostId(routePostId);
+      setPostStatus('ready');
     });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routePostId, postReloadToken]);
+
+  useEffect(() => {
+    if (!routePostId) return;
+
+    let cancelled = false;
     // A comment posted while this is in flight must survive it: the response
     // would otherwise replace the list, and an error would hide what was just
     // added. Editing comments locally bumps the generation, retiring this load.
@@ -121,43 +151,50 @@ export default function PostDetailPage() {
     };
   }, [routePostId, commentsReloadToken]);
 
+  // Both hydrations cancel on cleanup: the key already stops them crossing
+  // posts, and this stops a superseded response within one post.
   useEffect(() => {
-    if (user && post) {
-      getUserLikedPostIds(supabase, user.id).then((result) => {
-        if (result.data) {
-          setLiked(result.data.includes(post.id));
-        }
-      });
-    }
+    if (!user || !post) return;
+
+    let cancelled = false;
+    getUserLikedPostIds(supabase, user.id).then((result) => {
+      if (cancelled || !result.data) return;
+      setLiked(result.data.includes(post.id));
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, post]);
 
   useEffect(() => {
-    if (user && post) {
-      getUserSavedPostIds(supabase, user.id).then((result) => {
-        if (result.data) {
-          setSaved(result.data.includes(post.id));
-        }
-      });
-    }
+    if (!user || !post) return;
+
+    let cancelled = false;
+    getUserSavedPostIds(supabase, user.id).then((result) => {
+      if (cancelled || !result.data) return;
+      setSaved(result.data.includes(post.id));
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, post]);
 
   async function handleLike() {
     if (!user || !post) return;
 
     const postId = post.id;
-    const visit = visitRef.current;
-    if (likePendingVisitRef.current === visit) return;
+    if (likePendingRef.current) return;
 
-    likePendingVisitRef.current = visit;
+    likePendingRef.current = true;
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikesCount((count) => count + (wasLiked ? -1 : 1));
 
     try {
       const { error } = wasLiked ? await unlikePost(supabase, postId) : await likePost(supabase, postId);
-      // A late answer belongs to the visit that asked for it, not to whatever
-      // is on screen now — including a second visit to the same post.
-      if (visitRef.current !== visit) return;
+      if (!viewActiveRef.current) return;
       if (error) {
         // Put the heart back rather than showing a like the server rejected.
         setLiked(wasLiked);
@@ -165,7 +202,7 @@ export default function PostDetailPage() {
         notify.error(wasLiked ? 'Could not remove your like.' : 'Could not like this post.');
       }
     } finally {
-      if (likePendingVisitRef.current === visit) likePendingVisitRef.current = null;
+      likePendingRef.current = false;
     }
   }
 
@@ -173,16 +210,15 @@ export default function PostDetailPage() {
     if (!user || !post) return;
 
     const postId = post.id;
-    const visit = visitRef.current;
-    if (savePendingVisitRef.current === visit) return;
+    if (savePendingRef.current) return;
 
-    savePendingVisitRef.current = visit;
+    savePendingRef.current = true;
     const wasSaved = saved;
     setSaved(!wasSaved);
 
     try {
       const { error } = wasSaved ? await unsavePost(supabase, postId) : await savePost(supabase, postId);
-      if (visitRef.current !== visit) return;
+      if (!viewActiveRef.current) return;
       if (error) {
         // Same reasoning as the like: do not leave the button claiming a state
         // the server never took.
@@ -193,20 +229,16 @@ export default function PostDetailPage() {
 
       notify.success(wasSaved ? 'Post unsaved.' : 'Post saved.');
     } finally {
-      if (savePendingVisitRef.current === visit) savePendingVisitRef.current = null;
+      savePendingRef.current = false;
     }
   }
 
   async function handleComment(text: string) {
     if (!user || !post) return;
 
-    const visit = visitRef.current;
     setSubmitting(true);
     const result = await createComment(supabase, post.id, text, replyTarget?.id ?? undefined);
-
-    // Landing a comment for a post the reader has left would append it to the
-    // post now on screen, and mark that post's comments loaded.
-    if (visitRef.current !== visit) return;
+    if (!viewActiveRef.current) return;
     setSubmitting(false);
 
     if (result.error || !result.data) {
@@ -224,10 +256,9 @@ export default function PostDetailPage() {
   }
 
   async function handleDeleteComment(commentId: string) {
-    const visit = visitRef.current;
     // CommentThread already asked; this only reports what went wrong.
     const result = await deleteComment(supabase, commentId);
-    if (visitRef.current !== visit) return;
+    if (!viewActiveRef.current) return;
 
     if (result.error) {
       logClientEvent({
@@ -251,6 +282,7 @@ export default function PostDetailPage() {
     if (!user || targetId === user.id) return;
 
     const result = await getOrCreateConversation(supabase, user.id, user.full_name, targetId, targetName);
+    if (!viewActiveRef.current) return;
 
     if (result.data) {
       router.push(`/messages/${result.data.conversationId}`);
@@ -271,6 +303,11 @@ export default function PostDetailPage() {
         reason: values.reason,
         description: values.description,
       });
+
+      // Checked before branching, like every other handler here: if this one
+      // ever reports directly instead of returning to the modal, the guard is
+      // already in the right place.
+      if (!viewActiveRef.current) return {};
 
       if (result.error) {
         return { error: result.error.message || 'Failed to submit report. Please try again.' };
@@ -300,6 +337,7 @@ export default function PostDetailPage() {
 
     if (typeof navigator !== 'undefined' && navigator.clipboard && shareUrl) {
       await navigator.clipboard.writeText(shareUrl);
+      if (!viewActiveRef.current) return;
       notify.success('Link copied to clipboard');
     }
   }
@@ -320,6 +358,8 @@ export default function PostDetailPage() {
     if (!shouldDelete) return;
 
     const result = await deletePost(supabase, post.id);
+    if (!viewActiveRef.current) return;
+
     if (result.error) {
       notify.error('Failed to delete post. Please try again.');
       return;
@@ -353,6 +393,20 @@ export default function PostDetailPage() {
   function closeLightbox() {
     setLightboxPhotos([]);
     setLightboxIndex(0);
+  }
+
+  if (postStatus === 'error') {
+    return (
+      <ErrorState
+        title="Couldn't load this post"
+        message="Something went wrong fetching it."
+        onRetry={() => {
+          setPostStatus('loading');
+          setPostReloadToken((token) => token + 1);
+        }}
+        retryLabel="Retry"
+      />
+    );
   }
 
   if (loading) {

@@ -186,6 +186,64 @@ describe('PostDetailPage', () => {
       await waitFor(() => expect(postDetailMocks.likePostMock).toHaveBeenLastCalledWith(expect.anything(), 'post-2'));
     });
 
+    it('drops the reply target when the route changes', async () => {
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: secondPost });
+      postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+        {
+          parent: {
+            id: 'comment-1',
+            content: 'Interested!',
+            author_id: 'comment-user-1',
+            created_at: '2026-02-24T11:00:00Z',
+            author: { full_name: 'Comment User', profile_photo: null, trust_level: 1 },
+          },
+          replies: [],
+        },
+      ]);
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Interested!')).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
+      expect(await screen.findByText('Replying to Comment User')).toBeDefined();
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+
+      // Otherwise the next comment is filed as a reply to the previous post's thread.
+      expect(screen.queryByText('Replying to Comment User')).toBeNull();
+      expect(screen.getByLabelText('Write a comment')).toBeDefined();
+    });
+
+    it('does not apply the previous post liked state to the new post', async () => {
+      let settleLiked: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: secondPost });
+      postDetailMocks.getUserLikedPostIdsMock
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            settleLiked = resolve;
+          })
+        )
+        .mockResolvedValue({ data: [] });
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+
+      // post-1's hydration lands late and says post-1 was liked.
+      await act(async () => {
+        settleLiked({ data: ['post-1'] });
+      });
+
+      expect(screen.getByRole('button', { name: '5 likes' }).getAttribute('aria-pressed')).toBe('false');
+    });
+
     it('shows the loading state and then the new post', async () => {
       let resolveSecond: (value: unknown) => void = () => {};
       postDetailMocks.getPostByIdMock
@@ -564,6 +622,32 @@ describe('PostDetailPage', () => {
       settleSave({ error: new Error('rejected') });
     });
     expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
+  });
+
+  describe('when the post itself cannot be loaded', () => {
+    it('offers a retry instead of claiming the post does not exist', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValueOnce({ error: new Error('offline') });
+
+      render(<PostDetailPage />);
+
+      await waitFor(() => expect(screen.getByText("Couldn't load this post")).toBeDefined());
+      // A failed request is not a deleted post; that wording sends readers away.
+      expect(screen.queryByText('Post not found')).toBeNull();
+
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+    });
+
+    it('still says not found when the post genuinely is not there', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: null });
+
+      render(<PostDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Post not found')).toBeDefined());
+      expect(screen.queryByText("Couldn't load this post")).toBeNull();
+    });
   });
 
   describe('when comments cannot be loaded', () => {
