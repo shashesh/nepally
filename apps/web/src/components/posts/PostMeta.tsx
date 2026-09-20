@@ -1,4 +1,5 @@
 import React from 'react';
+import { UnstyledButton } from '@mantine/core';
 import { formatRelativeTime, type Post } from '@nepally/shared';
 import { ScopeBadge, TagChip } from '../ui';
 import styles from './PostMeta.module.css';
@@ -29,14 +30,14 @@ export function PostMeta({ post, metroLabel, onTagClick }: PostMetaProps) {
           {tags.map((tag) => (
             <li key={tag.id}>
               {onTagClick ? (
-                <button
+                <UnstyledButton
                   type="button"
                   className={styles.tagButton}
                   aria-label={`Filter by ${tag.name}`}
                   onClick={() => onTagClick(tag.slug)}
                 >
                   <TagChip slug={tag.slug} label={tag.name} />
-                </button>
+                </UnstyledButton>
               ) : (
                 <TagChip slug={tag.slug} label={tag.name} />
               )}

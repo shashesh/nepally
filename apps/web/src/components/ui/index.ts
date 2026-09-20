@@ -8,3 +8,4 @@ export { TrustBadge, type TrustBadgeProps } from './TrustBadge';
 export { ActionMenu, type ActionMenuItem, type ActionMenuProps } from './ActionMenu';
 export { useConfirm, usePrompt, type ConfirmOptions, type PromptOptions } from './dialogs';
 export { notify } from './notify';
+export { PhotoCarousel, type PhotoCarouselProps } from './PhotoCarousel';
