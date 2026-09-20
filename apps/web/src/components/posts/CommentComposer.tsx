@@ -6,11 +6,12 @@ export interface CommentComposerProps {
   /** Set to show the reply banner and switch the field's label. */
   replyingToName?: string;
   onCancelReply?: () => void;
+  /** Throw to report failure: the text is kept so it can be retried. */
   onSubmit: (text: string) => Promise<void> | void;
   submitting?: boolean;
 }
 
-/** The comment field under a post. It clears only once the submit resolves. */
+/** The comment field under a post. It clears only once the submit succeeds. */
 export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submitting = false }: CommentComposerProps) {
   const [text, setText] = useState('');
   const isReply = Boolean(replyingToName);
@@ -21,7 +22,12 @@ export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submi
     const trimmed = text.trim();
     if (!trimmed || submitting) return;
 
-    await onSubmit(trimmed);
+    try {
+      await onSubmit(trimmed);
+    } catch {
+      // The caller reports the failure; keeping the text lets them try again.
+      return;
+    }
     setText('');
   }
 

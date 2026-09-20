@@ -22,6 +22,18 @@ describe('CommentComposer', () => {
     await waitFor(() => expect((field as HTMLInputElement).value).toBe(''));
   });
 
+  it('keeps the text when the submit fails, so it can be retried', async () => {
+    const onSubmit = vi.fn().mockRejectedValue(new Error('createComment failed'));
+    render(<CommentComposer onSubmit={onSubmit} />);
+
+    const field = screen.getByLabelText('Write a comment') as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Great post' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith('Great post'));
+    expect(field.value).toBe('Great post');
+  });
+
   it('will not submit blank text', () => {
     const onSubmit = vi.fn();
     render(<CommentComposer onSubmit={onSubmit} />);

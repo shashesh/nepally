@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useRef, useCallback, FormEvent } from 'react';
-import { ActionIcon, Badge, Button, Center, Text, UnstyledButton } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import React, { useEffect, useState } from 'react';
+import { Button } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -24,7 +22,6 @@ import {
   buildSingleLevelCommentThreads,
   formatRelativeTime,
   logClientEvent,
-  TAG_EMOJI,
 } from '@nepally/shared';
 import type { Post, PostComment } from '@nepally/shared';
 import Avatar from '../../components/Avatar';
@@ -60,7 +57,6 @@ export default function PostDetailPage() {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [saved, setSaved] = useState(false);
-  const [commentText, setCommentText] = useState('');
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   // Route id whose post request has finished; any other id is still loading.
   const [loadedPostId, setLoadedPostId] = useState<string | null>(null);
@@ -92,6 +88,10 @@ export default function PostDetailPage() {
     });
     getPostComments(supabase, routePostId).then((result) => {
       if (cancelled) return;
+      if (result.error) {
+        notify.error('Could not load comments. Please refresh to try again.');
+        return;
+      }
       setComments(result.data ?? []);
     });
 
@@ -160,7 +160,8 @@ export default function PostDetailPage() {
 
     if (result.error || !result.data) {
       notify.error('Could not post your comment. Please try again.');
-      return;
+      // Throwing tells CommentComposer to keep the text for another attempt.
+      throw new Error('createComment failed');
     }
 
     setComments((previous) => [...previous, result.data!]);
