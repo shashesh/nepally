@@ -30,7 +30,8 @@
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-full);
   background: var(--surface-sunken);
-  color: var(--text-3);
+  /* text-3 on this surface is 4.25:1, under AA. */
+  color: var(--text-2);
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -39,5 +40,5 @@
 
 .prompt:hover {
   background: var(--surface-2);
-  color: var(--text-2);
+  color: var(--text-1);
 }
