@@ -357,6 +357,25 @@ describe('PostDetailPage', () => {
     expect(screen.getByLabelText('Write a reply')).toBeDefined();
   });
 
+  it('keeps the typed comment and reports when the create fails', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.createCommentMock.mockResolvedValue({ error: new Error('rejected') });
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Write a comment')).toBeDefined());
+
+    const field = screen.getByLabelText('Write a comment') as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Great post!' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+    await waitFor(() =>
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Could not post your comment. Please try again.' })
+      )
+    );
+    expect(field.value).toBe('Great post!');
+  });
+
   describe('when comments cannot be loaded', () => {
     it('shows an error instead of the empty state, and can retry', async () => {
       postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
@@ -371,6 +390,32 @@ describe('PostDetailPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
       await waitFor(() => expect(screen.getByText('No comments yet')).toBeDefined());
+    });
+
+    it('shows a comment posted after the failure, without needing Retry', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getPostCommentsMock.mockResolvedValue({ error: new Error('offline') });
+      const created = {
+        id: 'comment-9',
+        content: 'Posted anyway',
+        author_id: 'user-1',
+        post_id: 'post-1',
+        parent_comment_id: null,
+        created_at: '2026-02-24T12:00:00Z',
+      };
+      postDetailMocks.createCommentMock.mockResolvedValue({ data: created });
+      postDetailMocks.buildSingleLevelCommentThreadsMock.mockImplementation((comments: unknown[]) =>
+        comments.map((comment) => ({ parent: comment, replies: [] }))
+      );
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText("Couldn't load comments")).toBeDefined());
+
+      fireEvent.change(screen.getByLabelText('Write a comment'), { target: { value: 'Posted anyway' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+      await waitFor(() => expect(screen.getByText('Posted anyway')).toBeDefined());
+      expect(screen.queryByText("Couldn't load comments")).toBeNull();
     });
   });
 

@@ -171,6 +171,9 @@ export default function PostDetailPage() {
 
     setComments((previous) => [...previous, result.data!]);
     setReplyTarget(null);
+    // A comment posted after a failed load must be visible, not hidden behind
+    // the error state that the failed load left behind.
+    setCommentsStatus('ready');
   }
 
   async function handleDeleteComment(commentId: string) {
