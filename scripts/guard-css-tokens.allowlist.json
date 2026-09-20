@@ -1,11 +1,9 @@
 [
-  "apps/web/src/components/LocationSwitcher.module.css",
   "apps/web/src/components/events/EventCard.module.css",
   "apps/web/src/components/events/EventFilterBar.module.css",
   "apps/web/src/components/marketplace/FilterBar.module.css",
   "apps/web/src/components/marketplace/ListingStrip.module.css",
   "apps/web/src/components/profile/AboutYouSection.module.css",
-  "apps/web/src/components/pulse/PulseCard.module.css",
   "apps/web/src/components/users/FollowButton.module.css",
   "apps/web/src/pages/events/createEvent.module.css",
   "apps/web/src/pages/events/eventDetail.module.css",

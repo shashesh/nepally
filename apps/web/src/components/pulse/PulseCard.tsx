@@ -1,4 +1,6 @@
 import React from 'react';
+import { ActionIcon, UnstyledButton } from '@mantine/core';
+import { IconX } from '@tabler/icons-react';
 import type { PulseCard as PulseCardType } from '@nepally/shared';
 import styles from './PulseCard.module.css';
 
@@ -41,16 +43,18 @@ export function PulseCard({ card, onPress, onDismiss }: Props) {
   const { headline, detail } = renderBody(card);
   return (
     <div className={styles.cardWrap}>
-      <button
-        type="button"
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        size="sm"
         data-testid={`pulse-card-dismiss-${card.id}`}
         className={styles.dismiss}
-        aria-label="Dismiss card"
+        aria-label={`Dismiss ${headline}`}
         onClick={() => onDismiss(card)}
       >
-        ×
-      </button>
-      <button
+        <IconX size={14} aria-hidden="true" />
+      </ActionIcon>
+      <UnstyledButton
         type="button"
         data-testid={`pulse-card-${card.id}`}
         className={styles.card}
@@ -58,7 +62,7 @@ export function PulseCard({ card, onPress, onDismiss }: Props) {
       >
         <p className={styles.headline}>{headline}</p>
         <p className={styles.detail}>{detail}</p>
-      </button>
+      </UnstyledButton>
     </div>
   );
 }
