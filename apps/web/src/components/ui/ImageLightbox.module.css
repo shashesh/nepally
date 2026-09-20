@@ -29,12 +29,15 @@
   opacity: 1;
 }
 
+/* Invisible controls must not take clicks meant for the photo. */
 .chromeHidden {
   opacity: 0;
+  pointer-events: none;
 }
 
 .chromeHidden:focus-within {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .close {

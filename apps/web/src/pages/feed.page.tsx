@@ -469,35 +469,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
   if (!user) return null;
 
-  const firstName = user.full_name?.trim().split(' ')[0] || 'there';
-  const sponsoredItems = stickyListings.length > 0
-    ? stickyListings.map((s) => ({
-        id: s.id,
-        title: s.listing.title,
-        description: s.listing.description?.slice(0, 100) || '',
-        cta: 'View Listing',
-        label: 'Sponsored',
-        href: `/marketplace/listing/${s.listing.id}`,
-      }))
-    : [
-        {
-          id: 'biz-1',
-          title: 'Himalayan Kitchen',
-          description: 'Authentic Nepali cuisine in the heart of your city. Order online or dine in!',
-          cta: 'Visit Website',
-          label: 'AD',
-          href: '#',
-        },
-        {
-          id: 'biz-2',
-          title: 'Nepal Travel Co.',
-          description: 'Book affordable flights to Kathmandu. Special diaspora fares available now.',
-          cta: 'Learn More',
-          label: 'AD',
-          href: '#',
-        },
-      ];
-
   return (
     <>
       <Head>
