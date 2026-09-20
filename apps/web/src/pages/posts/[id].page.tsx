@@ -28,6 +28,7 @@ import Avatar from '../../components/Avatar';
 import {
   ActionMenu,
   EmptyState,
+  ErrorState,
   ImageLightbox,
   LoadingState,
   PhotoCarousel,
@@ -57,16 +58,19 @@ export default function PostDetailPage() {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [saved, setSaved] = useState(false);
-  const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
+  const [replyTarget, setReplyTarget] = useState<{ id: string; authorName: string } | null>(null);
   // Route id whose post request has finished; any other id is still loading.
   const [loadedPostId, setLoadedPostId] = useState<string | null>(null);
   const loading = !routePostId || loadedPostId !== routePostId;
   // On a different post, drop the previous post's comments right away rather
   // than showing them under the new post until its own comments arrive.
+  const [commentsStatus, setCommentsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [commentsReloadToken, setCommentsReloadToken] = useState(0);
   const [commentsPostId, setCommentsPostId] = useState(routePostId);
   if (commentsPostId !== routePostId) {
     setCommentsPostId(routePostId);
     setComments([]);
+    setCommentsStatus('loading');
   }
   const [submitting, setSubmitting] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -89,16 +93,17 @@ export default function PostDetailPage() {
     getPostComments(supabase, routePostId).then((result) => {
       if (cancelled) return;
       if (result.error) {
-        notify.error('Could not load comments. Please refresh to try again.');
+        setCommentsStatus('error');
         return;
       }
       setComments(result.data ?? []);
+      setCommentsStatus('ready');
     });
 
     return () => {
       cancelled = true;
     };
-  }, [routePostId]);
+  }, [routePostId, commentsReloadToken]);
 
   useEffect(() => {
     if (user && post) {
@@ -155,7 +160,7 @@ export default function PostDetailPage() {
     if (!user || !post) return;
 
     setSubmitting(true);
-    const result = await createComment(supabase, post.id, text, replyTargetId ?? undefined);
+    const result = await createComment(supabase, post.id, text, replyTarget?.id ?? undefined);
     setSubmitting(false);
 
     if (result.error || !result.data) {
@@ -165,7 +170,7 @@ export default function PostDetailPage() {
     }
 
     setComments((previous) => [...previous, result.data!]);
-    setReplyTargetId(null);
+    setReplyTarget(null);
   }
 
   async function handleDeleteComment(commentId: string) {
@@ -270,7 +275,6 @@ export default function PostDetailPage() {
   }
 
   const commentThreads = buildSingleLevelCommentThreads(comments);
-  const replyTarget = replyTargetId ? comments.find((comment) => comment.id === replyTargetId) : undefined;
   const isOwnPost = post?.author_id === user?.id;
   const postMenuItems: ActionMenuItem[] = isOwnPost
     ? [
@@ -399,14 +403,23 @@ export default function PostDetailPage() {
 
           {user && (
             <CommentComposer
-              replyingToName={replyTarget?.author?.full_name || undefined}
-              onCancelReply={() => setReplyTargetId(null)}
+              replyingToName={replyTarget?.authorName}
+              onCancelReply={() => setReplyTarget(null)}
               onSubmit={handleComment}
               submitting={submitting}
             />
           )}
 
-          {commentThreads.length === 0 ? (
+          {commentsStatus === 'loading' ? (
+            <LoadingState label="Loading comments…" />
+          ) : commentsStatus === 'error' ? (
+            <ErrorState
+              title="Couldn't load comments"
+              message="Something went wrong fetching this post's comments."
+              onRetry={() => setCommentsReloadToken((token) => token + 1)}
+              retryLabel="Retry"
+            />
+          ) : commentThreads.length === 0 ? (
             <EmptyState title="No comments yet" description="Be the first to comment!" />
           ) : (
             commentThreads.map((thread) => (
@@ -414,7 +427,7 @@ export default function PostDetailPage() {
                 key={thread.parent.id}
                 thread={thread}
                 currentUserId={user?.id}
-                onReply={(parentId) => setReplyTargetId(parentId)}
+                onReply={(parentId, authorName) => setReplyTarget({ id: parentId, authorName })}
                 onDelete={handleDeleteComment}
                 onChat={handleAvatarChat}
               />

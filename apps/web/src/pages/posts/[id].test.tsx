@@ -286,6 +286,94 @@ describe('PostDetailPage', () => {
     });
   });
 
+  describe('deleting your own post', () => {
+    async function openDeleteDialog() {
+      postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'user-2', full_name: 'Bikal' } });
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, author_id: 'user-2' } });
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+
+      fireEvent.click(screen.getByLabelText('Post options'));
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete Post' }));
+      await screen.findByText('Delete post');
+    }
+
+    it('asks first, and does nothing when dismissed', async () => {
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() => expect(postDetailMocks.deletePostMock).not.toHaveBeenCalled());
+      expect(mockPush).not.toHaveBeenCalledWith('/feed');
+    });
+
+    it('deletes and returns to the feed once confirmed', async () => {
+      postDetailMocks.deletePostMock.mockResolvedValue({});
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() => expect(postDetailMocks.deletePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1'));
+      await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed'));
+    });
+
+    it('stays on the post and says so when the delete fails', async () => {
+      postDetailMocks.deletePostMock.mockResolvedValue({ error: new Error('nope') });
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() =>
+        expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Failed to delete post. Please try again.' })
+        )
+      );
+      expect(mockPush).not.toHaveBeenCalledWith('/feed');
+    });
+  });
+
+  it('keeps reply mode when the comment author is missing', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+      {
+        parent: {
+          id: 'comment-1',
+          content: 'Interested!',
+          author_id: 'deleted-user',
+          created_at: '2026-02-24T11:00:00Z',
+          author: null,
+        },
+        replies: [],
+      },
+    ]);
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText('Interested!')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
+
+    // Without a fallback name the banner disappears while the reply id is still set.
+    expect(await screen.findByText('Replying to Anonymous')).toBeDefined();
+    expect(screen.getByLabelText('Write a reply')).toBeDefined();
+  });
+
+  describe('when comments cannot be loaded', () => {
+    it('shows an error instead of the empty state, and can retry', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getPostCommentsMock.mockResolvedValueOnce({ error: new Error('offline') });
+
+      render(<PostDetailPage />);
+
+      await waitFor(() => expect(screen.getByText("Couldn't load comments")).toBeDefined());
+      expect(screen.queryByText('No comments yet')).toBeNull();
+
+      postDetailMocks.getPostCommentsMock.mockResolvedValue({ data: [] });
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await waitFor(() => expect(screen.getByText('No comments yet')).toBeDefined());
+    });
+  });
+
   it('shows Edit and Delete options in post menu for post owner', async () => {
     postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'user-2', full_name: 'Bikal' } });
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, author_id: 'user-2' } });
