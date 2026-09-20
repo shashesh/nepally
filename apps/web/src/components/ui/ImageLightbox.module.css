@@ -1,0 +1,115 @@
+.content,
+.body {
+  background: var(--action-bg);
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.image {
+  max-width: 100%;
+  max-height: 100vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transition: transform var(--duration-fast) ease-out;
+}
+
+.chrome {
+  transition: opacity var(--duration-fast) ease-out;
+}
+
+.chromeVisible {
+  opacity: 1;
+}
+
+.chromeHidden {
+  opacity: 0;
+}
+
+.chromeHidden:focus-within {
+  opacity: 1;
+}
+
+.close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+}
+
+.zoomControls {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.zoomLabel {
+  min-width: 56px;
+  text-align: center;
+  color: var(--action-fg);
+  font-size: var(--font-size-sm);
+}
+
+.nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.previous {
+  left: var(--space-4);
+}
+
+.next {
+  right: var(--space-4);
+}
+
+.counter {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--action-fg);
+  font-size: var(--font-size-sm);
+}
+
+/* One class per LIGHTBOX_ZOOM_LEVELS entry, so no inline style is needed. */
+.zoom0 {
+  transform: scale(1);
+}
+
+.zoom1 {
+  transform: scale(1.25);
+}
+
+.zoom2 {
+  transform: scale(1.5);
+}
+
+.zoom3 {
+  transform: scale(2);
+}
+
+.zoom4 {
+  transform: scale(2.5);
+}
+
+.zoom5 {
+  transform: scale(3);
+}
+
+.zoom6 {
+  transform: scale(4);
+}

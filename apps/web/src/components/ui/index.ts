@@ -9,3 +9,4 @@ export { ActionMenu, type ActionMenuItem, type ActionMenuProps } from './ActionM
 export { useConfirm, usePrompt, type ConfirmOptions, type PromptOptions } from './dialogs';
 export { notify } from './notify';
 export { PhotoCarousel, type PhotoCarouselProps } from './PhotoCarousel';
+export { ImageLightbox, type ImageLightboxProps } from './ImageLightbox';
