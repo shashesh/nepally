@@ -59,10 +59,14 @@ describe('CommentThread', () => {
 
     expect(screen.queryByText('Yes, message me')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show replies (2)' }));
+    const toggle = screen.getByRole('button', { name: 'Show replies (2)' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(toggle);
 
     expect(screen.getByText('Yes, message me')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Hide replies' })).toBeDefined();
+    const expanded = screen.getByRole('button', { name: 'Hide replies' });
+    expect(expanded.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('replies to the parent, naming its author', () => {

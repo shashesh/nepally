@@ -131,6 +131,59 @@ describe('PostDetailPage', () => {
       rerender(<PostDetailPage />);
     }
 
+    it('does not let a failed like for the previous post touch the new one', async () => {
+      let settleLike: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: { ...secondPost, likes_count: 11 } });
+      postDetailMocks.likePostMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLike = resolve;
+        })
+      );
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined());
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+      expect(screen.getByRole('button', { name: '11 likes' })).toBeDefined();
+
+      // The first post's like now fails; its rollback belongs to a post the
+      // reader has left.
+      await act(async () => {
+        settleLike({ error: new Error('rejected') });
+      });
+
+      expect(screen.getByRole('button', { name: '11 likes' })).toBeDefined();
+      expect(postDetailMocks.notificationsShowMock).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Could not like this post.' })
+      );
+    });
+
+    it('lets the new post be liked while the previous request is still open', async () => {
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: { ...secondPost, likes_count: 11 } });
+      postDetailMocks.likePostMock.mockReturnValueOnce(new Promise(() => {}));
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+
+      postDetailMocks.likePostMock.mockResolvedValueOnce({});
+      fireEvent.click(screen.getByRole('button', { name: '11 likes' }));
+
+      // A pending write on post-1 must not gate post-2.
+      await waitFor(() => expect(postDetailMocks.likePostMock).toHaveBeenLastCalledWith(expect.anything(), 'post-2'));
+    });
+
     it('shows the loading state and then the new post', async () => {
       let resolveSecond: (value: unknown) => void = () => {};
       postDetailMocks.getPostByIdMock

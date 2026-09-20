@@ -75,7 +75,11 @@ export function CommentThread({ thread, currentUserId, onReply, onDelete, onChat
             )}
 
             {!isReply && thread.replies.length > 0 && (
-              <UnstyledButton className={styles.action} onClick={() => setRepliesShown((shown) => !shown)}>
+              <UnstyledButton
+                className={styles.action}
+                onClick={() => setRepliesShown((shown) => !shown)}
+                aria-expanded={repliesShown}
+              >
                 {repliesShown ? 'Hide replies' : `Show replies (${thread.replies.length})`}
               </UnstyledButton>
             )}

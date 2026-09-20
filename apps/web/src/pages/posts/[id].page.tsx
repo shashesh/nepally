@@ -77,12 +77,17 @@ export default function PostDetailPage() {
   const [reportSubmitting, setReportSubmitting] = useState(false);
   /** Bumped by anything that edits comments locally, retiring in-flight loads. */
   const commentsGenerationRef = useRef(0);
-  /** One like and one save in flight at a time: overlapping rollbacks would
-   *  apply stale deltas and leave the count wrong. */
-  const likePendingRef = useRef(false);
-  const savePendingRef = useRef(false);
+  /** The post each write is for. This component stays mounted across route
+   *  changes, so a write must not block, or roll back onto, a different post. */
+  const likePendingPostRef = useRef<string | null>(null);
+  const savePendingPostRef = useRef<string | null>(null);
+  const activePostIdRef = useRef<string | null>(routePostId);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  useEffect(() => {
+    activePostIdRef.current = routePostId ?? null;
+  }, [routePostId]);
 
   useEffect(() => {
     if (!routePostId) return;
@@ -136,15 +141,21 @@ export default function PostDetailPage() {
   }, [user, post]);
 
   async function handleLike() {
-    if (!user || !post || likePendingRef.current) return;
+    if (!user || !post) return;
 
-    likePendingRef.current = true;
+    const postId = post.id;
+    if (likePendingPostRef.current === postId) return;
+
+    likePendingPostRef.current = postId;
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikesCount((count) => count + (wasLiked ? -1 : 1));
 
     try {
-      const { error } = wasLiked ? await unlikePost(supabase, post.id) : await likePost(supabase, post.id);
+      const { error } = wasLiked ? await unlikePost(supabase, postId) : await likePost(supabase, postId);
+      // A late answer for a post the reader has left must not touch what is
+      // on screen now.
+      if (activePostIdRef.current !== postId) return;
       if (error) {
         // Put the heart back rather than showing a like the server rejected.
         setLiked(wasLiked);
@@ -152,19 +163,23 @@ export default function PostDetailPage() {
         notify.error(wasLiked ? 'Could not remove your like.' : 'Could not like this post.');
       }
     } finally {
-      likePendingRef.current = false;
+      if (likePendingPostRef.current === postId) likePendingPostRef.current = null;
     }
   }
 
   async function handleSave() {
-    if (!user || !post || savePendingRef.current) return;
+    if (!user || !post) return;
 
-    savePendingRef.current = true;
+    const postId = post.id;
+    if (savePendingPostRef.current === postId) return;
+
+    savePendingPostRef.current = postId;
     const wasSaved = saved;
     setSaved(!wasSaved);
 
     try {
-      const { error } = wasSaved ? await unsavePost(supabase, post.id) : await savePost(supabase, post.id);
+      const { error } = wasSaved ? await unsavePost(supabase, postId) : await savePost(supabase, postId);
+      if (activePostIdRef.current !== postId) return;
       if (error) {
         // Same reasoning as the like: do not leave the button claiming a state
         // the server never took.
@@ -175,7 +190,7 @@ export default function PostDetailPage() {
 
       notify.success(wasSaved ? 'Post unsaved.' : 'Post saved.');
     } finally {
-      savePendingRef.current = false;
+      if (savePendingPostRef.current === postId) savePendingPostRef.current = null;
     }
   }
 

@@ -11398,7 +11398,7 @@ Stacked on `feat/web-ui-feed` (PR #80), the way PR 3b stacked on 3a, so it can a
 
 - **Pages:** `pages/posts/[id].page.tsx` (1008 lines, 17 raw form elements, 5 native dialogs).
 - **CSS:** `styles/PostDetail.module.css` (170 violations).
-- **Adopt from 4a:** `ImageLightbox` (replacing posts/[id] 369–487/887–980), `PhotoCarousel` (620–679), `PostMeta`, `PostActions` and `notify`.
+- **Adopt from 4a:** `ImageLightbox` (replacing posts/[id] 369–487/887–980), `PhotoCarousel` (620–679), `PostActions`, `ScopeBadge`, `TagChip` and `notify`. Not `PostMeta`: see the task breakdown.
 - **Extract into `components/posts/`:** `CommentThread`, `CommentComposer`.
 - **Adopt `UserMenuTrigger`** (built in 4a) for the hand-positioned `ref.style` menus (posts/[id] 139) and their manual `mousedown` listeners. PR 9 reuses it for the messages pages.
 - **Tests to rewrite:**
@@ -11519,7 +11519,7 @@ Replace the post options menu (597–637) with `ActionMenu`, and all three avata
 **Files:** `pages/posts/[id].page.tsx`, `pages/posts/[id].test.tsx`.
 
 - Loading (542–544) → `LoadingState variant="detail"`; not-found (546–555) → `EmptyState` with the feed link as its `action`; no comments (775–778) → `EmptyState`.
-- Scope badge (593–595) and tags (728–741) → `PostMeta`, keeping the location span on the page. Both lose their emoji, so `[id].test.tsx:248, 256, 264` change.
+- Scope badge (593–595) and tags (728–741) → **`ScopeBadge` and `TagChip` directly, not `PostMeta`**. `PostMeta` also renders author and time, which this page lays out in its own header, and it has no slot for the location line that sits beside the tags. Both badges lose their emoji, so `[id].test.tsx:248, 256, 264` change.
 - Action bar (705–726) → the extended `PostActions`.
 - Comments (750–866) → `CommentComposer` and `CommentThread`.
 - `handleDeletePost` (330–343): `confirm()` → `useConfirm`, `alert()` → `notify.error`. `handleShare` (320) → `notify.success`. The silent `createComment` failure (202–206) and the swallowed comments-fetch error (98–101) → `notify.error`.
