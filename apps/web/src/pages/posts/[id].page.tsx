@@ -32,13 +32,18 @@ import {
   ActionMenu,
   EmptyState,
   ImageLightbox,
+  LoadingState,
   PhotoCarousel,
+  ScopeBadge,
+  TagChip,
   notify,
+  useConfirm,
   type ActionMenuItem,
 } from '../../components/ui';
 import { UserMenuTrigger } from '../../components/users/UserMenuTrigger';
 import { CommentComposer } from '../../components/posts/CommentComposer';
 import { CommentThread } from '../../components/posts/CommentThread';
+import { PostActions } from '../../components/posts/PostActions';
 import ReportPostModal from '../../components/ReportPostModal';
 import styles from '../../styles/PostDetail.module.css';
 
@@ -48,6 +53,7 @@ export default function PostDetailPage() {
   const { id } = router.query;
   const routePostId = typeof id === 'string' ? id : null;
   const { user } = useAuth();
+  const confirm = useConfirm();
 
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<PostComment[]>([]);
@@ -135,11 +141,13 @@ export default function PostDetailPage() {
     if (wasSaved) {
       setSaved(false);
       const { error } = await unsavePost(supabase, post.id);
-      notifications.show({ message: error ? 'Failed to unsave post.' : 'Post unsaved.', autoClose: 2500 });
+      if (error) notify.error('Failed to unsave post.');
+      else notify.success('Post unsaved.');
     } else {
       setSaved(true);
       const { error } = await savePost(supabase, post.id);
-      notifications.show({ message: error ? 'Failed to save post.' : 'Post saved.', autoClose: 2500 });
+      if (error) notify.error('Failed to save post.');
+      else notify.success('Post saved.');
     }
   }
 
@@ -160,9 +168,7 @@ export default function PostDetailPage() {
   }
 
   async function handleDeleteComment(commentId: string) {
-    const shouldDelete = confirm('Delete this comment?');
-    if (!shouldDelete) return;
-
+    // CommentThread already asked; this only reports what went wrong.
     const result = await deleteComment(supabase, commentId);
     if (result.error) {
       logClientEvent({
@@ -174,7 +180,7 @@ export default function PostDetailPage() {
         },
         error: result.error,
       });
-      alert(result.error.message || 'Failed to delete comment. Please try again.');
+      notify.error(result.error.message || 'Failed to delete comment. Please try again.');
       return;
     }
 
@@ -210,10 +216,7 @@ export default function PostDetailPage() {
         return { error: result.error.message || 'Failed to submit report. Please try again.' };
       }
 
-      notifications.show({
-        message: 'Thanks. Your report has been submitted for review.',
-        autoClose: 2500,
-      });
+      notify.success('Thanks. Your report has been submitted for review.');
       setReportModalOpen(false);
       return {};
     } finally {
@@ -237,7 +240,7 @@ export default function PostDetailPage() {
 
     if (typeof navigator !== 'undefined' && navigator.clipboard && shareUrl) {
       await navigator.clipboard.writeText(shareUrl);
-      alert('Link copied to clipboard');
+      notify.success('Link copied to clipboard');
     }
   }
 
@@ -248,12 +251,17 @@ export default function PostDetailPage() {
 
   async function handleDeletePost() {
     if (!post) return;
-    const shouldDelete = confirm('Are you sure you want to delete this post? This cannot be undone.');
+    const shouldDelete = await confirm({
+      title: 'Delete post',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
     if (!shouldDelete) return;
 
     const result = await deletePost(supabase, post.id);
     if (result.error) {
-      alert('Failed to delete post. Please try again.');
+      notify.error('Failed to delete post. Please try again.');
       return;
     }
 
@@ -289,17 +297,20 @@ export default function PostDetailPage() {
   }
 
   if (loading) {
-    return <Center p="xl"><Text c="dimmed">Loading...</Text></Center>;
+    return <LoadingState variant="detail" label="Loading post…" />;
   }
 
   if (!post) {
     return (
-      <Center p="xl">
-        <div>
-          <h2>Post not found</h2>
-          <Link href="/feed">Back to Feed</Link>
-        </div>
-      </Center>
+      <EmptyState
+        title="Post not found"
+        description="This post may have been deleted."
+        action={
+          <Button component={Link} href="/feed">
+            Back to Feed
+          </Button>
+        }
+      />
     );
   }
 
@@ -339,9 +350,7 @@ export default function PostDetailPage() {
             </div>
 
             <div className={styles.postHeaderActions}>
-              <Badge variant="light" color={post.is_global ? 'orange' : 'blue'}>
-                {post.is_global ? '🌐 Global' : '📍 Local'}
-              </Badge>
+              <ScopeBadge isGlobal={post.is_global} />
 
               <ActionMenu label="Post options" items={postMenuItems} />
             </div>
@@ -358,41 +367,25 @@ export default function PostDetailPage() {
             />
           )}
 
-          <div className={styles.postActions}>
-            <button
-              onClick={handleLike}
-              className={`${styles.actionBtn} ${liked ? styles.actionBtnActive : ''}`}
-            >
-              {liked ? '❤️' : '🤍'} {likesCount}
-            </button>
-            <button className={styles.actionBtn} onClick={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}>
-              💬 {comments.length}
-            </button>
-            {post.author_id !== user?.id && (
-              <button
-                className={`${styles.actionBtn} ${saved ? styles.actionBtnActive : ''}`}
-                onClick={handleSave}
-              >
-                {saved ? '🔖' : '🏷️'} Save
-              </button>
-            )}
-            <button className={styles.actionBtn} onClick={handleShare}>
-              ↗ Share
-            </button>
-          </div>
+          <PostActions
+            likeCount={likesCount}
+            commentCount={comments.length}
+            liked={liked}
+            saved={saved}
+            onLike={() => void handleLike()}
+            onComment={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}
+            onSave={isOwnPost ? undefined : () => void handleSave()}
+            onShare={() => void handleShare()}
+          />
 
           <div className={styles.metaRow}>
-            {post.tags?.map((tag) => {
-              const emoji = TAG_EMOJI[tag.slug] || '';
-              return (
-                <span key={tag.id} className={styles.metaTag}>
-                  {emoji ? `${emoji} ${tag.name}` : tag.name}
-                </span>
-              );
-            })}
-
+            {post.tags?.map((tag) => (
+              <TagChip key={tag.id} slug={tag.slug} label={tag.name} />
+            ))}
             {post.location_city && (
-              <span className={styles.metaLocation}>{post.location_city}, {post.location_state}</span>
+              <span className={styles.metaLocation}>
+                {post.location_city}, {post.location_state}
+              </span>
             )}
           </div>
 

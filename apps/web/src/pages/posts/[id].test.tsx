@@ -117,7 +117,7 @@ describe('PostDetailPage', () => {
   it('shows loading state while fetching post', () => {
     postDetailMocks.getPostByIdMock.mockReturnValue(new Promise(() => {}));
     render(<PostDetailPage />);
-    expect(screen.getByText('Loading...')).toBeDefined();
+    expect(screen.getByText('Loading post…')).toBeDefined();
   });
 
   describe('when the route id changes', () => {
@@ -140,7 +140,7 @@ describe('PostDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
 
       navigateToSecondPost(rerender);
-      expect(screen.getByText('Loading...')).toBeDefined();
+      expect(screen.getByText('Loading post…')).toBeDefined();
 
       resolveSecond({ data: secondPost });
       await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
@@ -248,7 +248,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('📍 Local')).toBeDefined();
+      expect(screen.getByText('Local')).toBeDefined();
     });
   });
 
@@ -256,7 +256,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, is_global: true } });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('🌐 Global')).toBeDefined();
+      expect(screen.getByText('Global')).toBeDefined();
     });
   });
 
@@ -264,7 +264,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('🏠 Housing')).toBeDefined();
+      expect(screen.getByText('Housing')).toBeDefined();
     });
   });
 
@@ -366,7 +366,7 @@ describe('PostDetailPage', () => {
     render(<PostDetailPage />);
     await waitFor(() => {
       // mockPost.author_id = 'user-2', current user = 'user-1'
-      expect(screen.getByText(/🏷️ Save/)).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
     });
   });
 
@@ -375,7 +375,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, author_id: 'user-2' } });
     render(<PostDetailPage />);
     await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
-    expect(screen.queryByText(/🏷️ Save|🔖 Save/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /save post/i })).toBeNull();
   });
 
   it('shows "Save Post" option in post menu for non-owner', async () => {
@@ -402,9 +402,9 @@ describe('PostDetailPage', () => {
   it('calls savePost when Save button is clicked', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
-    fireEvent.click(screen.getByText(/🏷️ Save/));
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
 
     await waitFor(() => {
       expect(postDetailMocks.savePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
@@ -414,9 +414,9 @@ describe('PostDetailPage', () => {
   it('shows "Post saved." toast after clicking Save', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
-    fireEvent.click(screen.getByText(/🏷️ Save/));
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
 
     await waitFor(() => {
       expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
@@ -429,9 +429,9 @@ describe('PostDetailPage', () => {
     postDetailMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByText(/🔖 Save/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
 
-    fireEvent.click(screen.getByText(/🔖 Save/));
+    fireEvent.click(screen.getByRole('button', { name: 'Unsave post' }));
 
     await waitFor(() => {
       expect(postDetailMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
@@ -445,9 +445,9 @@ describe('PostDetailPage', () => {
     postDetailMocks.savePostMock.mockResolvedValue({ error: new Error('network') });
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
-    fireEvent.click(screen.getByText(/🏷️ Save/));
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
 
     await waitFor(() => {
       expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
@@ -543,11 +543,11 @@ describe('PostDetailPage', () => {
     postDetailMocks.likePostMock.mockResolvedValue({});
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/🤍 5/)).toBeDefined();
+      expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined();
     });
-    fireEvent.click(screen.getByText(/🤍 5/));
+    fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
     await waitFor(() => {
-      expect(screen.getByText(/❤️ 6/)).toBeDefined();
+      expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined();
     });
   });
 
