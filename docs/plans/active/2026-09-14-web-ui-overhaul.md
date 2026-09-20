@@ -11326,9 +11326,9 @@ Every interactive child then sits beside the link rather than inside it, so no `
 - Create: `apps/web/src/components/feed/SponsoredRail.tsx` + `.module.css` + test (from feed 794–854, including the upcoming-events widget at 813–853)
 - Modify: `apps/web/src/pages/feed.page.tsx`
 
-`PostComposer` props: `{ userName: string; photoUrl?: string | null; trustLevel: number; canPost: boolean }`. It renders the avatar, the link-styled prompt and either "Create Post" or "Verify to Post", which is what `feed.test.tsx:155,166` asserts.
+`PostComposer` props, **as built**: `{ fullName: string | null; photoUrl?: string | null; trustLevel: number }`. The first name and whether posting is allowed are derived from those, rather than passed as a separate `canPost` flag that could disagree with `trustLevel`. It renders the avatar, the link-styled prompt and either "Create Post" or "Verify to Post", which is what `feed.test.tsx:155,166` asserts.
 
-`SponsoredRail` props: `{ listings: SponsoredListing[]; events: Event[]; metroAreaId: string }`. Keep the rail's `<aside>` element and the "Sponsored" and "Upcoming Events" headings, because `04-feed.spec.ts` locates them by `aside` and by heading text; the e2e file is updated in 4a.12, so keep the structure stable here.
+`SponsoredRail` props, **as built**: `{ stickyListings: SponsoredListing[]; events: Event[] }`. The component maps sticky listings to cards and falls back to the placeholder ads itself, which is why it takes the raw listings; `metroAreaId` turned out unused in the markup. Keep the rail's `<aside>` element and the "Sponsored" and "Upcoming Events" headings, because `04-feed.spec.ts` locates them by `aside` and by heading text; the e2e file is updated in 4a.12, so keep the structure stable here.
 
 - [ ] **Step 1: Write failing tests** for both components: the composer shows "Verify to Post" at trust level 0 and "Create Post" above it; the rail renders each sponsored listing, the three events with their formatted dates, the "View All" link, and no past events.
 - [ ] **Step 2: Run them and watch them fail.**

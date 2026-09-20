@@ -61,6 +61,17 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
     setIndex((previous) => (previous + delta + photos.length) % photos.length);
   }
 
+  /** Paging from a control: keep the controls on screen while they are in use. */
+  function pageBy(delta: number) {
+    showChromeBriefly();
+    step(delta);
+  }
+
+  function zoomBy(delta: number) {
+    showChromeBriefly();
+    setZoomLevel((previous) => Math.min(Math.max(previous + delta, 0), LIGHTBOX_ZOOM_LEVELS.length - 1));
+  }
+
   function showChromeBriefly() {
     setChromeVisible(true);
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
@@ -148,7 +159,7 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
             variant="filled"
             color="dark"
             radius="xl"
-            onClick={() => setZoomLevel((previous) => Math.max(previous - 1, 0))}
+            onClick={() => zoomBy(-1)}
             disabled={zoomLevel === 0}
             aria-label="Zoom out"
           >
@@ -159,7 +170,7 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
             variant="filled"
             color="dark"
             radius="xl"
-            onClick={() => setZoomLevel((previous) => Math.min(previous + 1, LIGHTBOX_ZOOM_LEVELS.length - 1))}
+            onClick={() => zoomBy(1)}
             disabled={zoomLevel === LIGHTBOX_ZOOM_LEVELS.length - 1}
             aria-label="Zoom in"
           >
@@ -174,7 +185,7 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
               color="dark"
               radius="xl"
               className={`${styles.nav} ${styles.previous} ${chromeClass}`}
-              onClick={() => step(-1)}
+              onClick={() => pageBy(-1)}
               aria-label="Previous photo"
             >
               &lsaquo;
@@ -184,7 +195,7 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
               color="dark"
               radius="xl"
               className={`${styles.nav} ${styles.next} ${chromeClass}`}
-              onClick={() => step(1)}
+              onClick={() => pageBy(1)}
               aria-label="Next photo"
             >
               &rsaquo;

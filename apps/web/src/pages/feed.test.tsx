@@ -96,6 +96,35 @@ const mockPosts = [
 
 import { FeedPage } from './feed.page';
 
+type IntersectionCallback = (entries: Array<{ isIntersecting: boolean; target: Element }>) => void;
+
+/**
+ * jsdom has no IntersectionObserver, and Mantine's useIntersection (under
+ * useInfiniteScroll) needs one. This records the callbacks so a test can put
+ * the sentinel on screen.
+ */
+function installIntersectionObserver() {
+  const callbacks: IntersectionCallback[] = [];
+  class FakeIntersectionObserver {
+    constructor(callback: IntersectionCallback) {
+      callbacks.push(callback);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver = FakeIntersectionObserver;
+  return {
+    scrollSentinelIntoView() {
+      const target = document.createElement('div');
+      for (const callback of callbacks) callback([{ isIntersecting: true, target }]);
+    },
+  };
+}
+
 describe('FeedPage', () => {
   const mockPush = vi.fn();
   const mockReplace = vi.fn();
@@ -383,6 +412,42 @@ describe('FeedPage', () => {
     await waitFor(() => {
       // Own post menu shows Edit/Delete, not Save
       expect(screen.queryByText('Save Post')).toBeNull();
+    });
+  });
+
+  describe('loading more posts', () => {
+    const twentyPosts = Array.from({ length: 20 }, (_, index) => ({
+      ...mockPosts[0],
+      id: `post-${index + 1}`,
+      title: `Post number ${index + 1}`,
+    }));
+
+    it('stops paging and says so when a page fails, instead of retrying in a loop', async () => {
+      const observer = installIntersectionObserver();
+      feedMocks.getPostsByMetroAreaMock
+        .mockResolvedValueOnce({ data: twentyPosts, hasMore: true })
+        .mockRejectedValue(new Error('network down'));
+
+      render(<FeedPage />);
+      await waitFor(() => expect(screen.getByText('Post number 1')).toBeDefined());
+
+      await act(async () => {
+        observer.scrollSentinelIntoView();
+      });
+
+      await waitFor(() =>
+        expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Could not load more posts.' })
+        )
+      );
+
+      // One first page plus one failed second page, and no retry storm after it.
+      const callsAfterFailure = feedMocks.getPostsByMetroAreaMock.mock.calls.length;
+      await act(async () => {
+        observer.scrollSentinelIntoView();
+      });
+      expect(feedMocks.getPostsByMetroAreaMock.mock.calls.length).toBe(callsAfterFailure);
+      expect(callsAfterFailure).toBe(2);
     });
   });
 

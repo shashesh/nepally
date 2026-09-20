@@ -279,8 +279,12 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       } else {
         setHasMorePosts(false);
       }
-    } catch (error) {
-      console.error('Failed to load more posts:', error);
+    } catch {
+      // The sentinel is still on screen, so leaving hasMorePosts set would call
+      // this again the moment loadingMorePosts clears, in a tight loop of
+      // failing requests. useSearchPage stops the same way.
+      setHasMorePosts(false);
+      notify.error('Could not load more posts.');
     } finally {
       loadingMoreRef.current = false;
       setLoadingMorePosts(false);
