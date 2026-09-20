@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '../test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode };
 
@@ -422,11 +422,15 @@ describe('FeedPage', () => {
       title: `Post number ${index + 1}`,
     }));
 
-    it('stops paging and says so when a page fails, instead of retrying in a loop', async () => {
+    // getPostsByMetroArea catches internally and resolves { error }; only an
+    // unexpected throw reaches the catch. Both must stop paging and report.
+    it.each([
+      ['the request resolves with an error', (mock: Mock) => mock.mockResolvedValue({ error: new Error('db down') })],
+      ['the request throws', (mock: Mock) => mock.mockRejectedValue(new Error('network down'))],
+    ])('stops paging and says so when %s, instead of retrying in a loop', async (_name, failSecondPage) => {
       const observer = installIntersectionObserver();
-      feedMocks.getPostsByMetroAreaMock
-        .mockResolvedValueOnce({ data: twentyPosts, hasMore: true })
-        .mockRejectedValue(new Error('network down'));
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValueOnce({ data: twentyPosts, hasMore: true });
+      failSecondPage(feedMocks.getPostsByMetroAreaMock);
 
       render(<FeedPage />);
       await waitFor(() => expect(screen.getByText('Post number 1')).toBeDefined());

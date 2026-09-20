@@ -251,6 +251,16 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     };
   }, [authLoading, user, userNeedsMetroOnboarding, metroAreaId, selectedTagSlugs, feedReloadToken]);
 
+  /**
+   * The sentinel is still on screen, so leaving hasMorePosts set would call
+   * loadMorePosts again the moment loadingMorePosts clears, in a tight loop of
+   * failing requests. useSearchPage stops the same way.
+   */
+  const stopPagingAfterFailure = useCallback(() => {
+    setHasMorePosts(false);
+    notify.error('Could not load more posts.');
+  }, []);
+
   const loadMorePosts = useCallback(async () => {
     if (loadingMoreRef.current) return;
     if (!metroAreaId || !hasMorePosts || loading) return;
@@ -266,7 +276,11 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
         FEED_PAGE_SIZE,
         posts.length
       );
-      if (result.data) {
+      if (result.error) {
+        // getPostsByMetroArea resolves with { error } rather than throwing, so
+        // this, not the catch below, is the path a failed page actually takes.
+        stopPagingAfterFailure();
+      } else if (result.data) {
         setPosts((prev) => {
           const seen = new Set(prev.map((p) => p.id));
           const next = [...prev];
@@ -280,16 +294,12 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
         setHasMorePosts(false);
       }
     } catch {
-      // The sentinel is still on screen, so leaving hasMorePosts set would call
-      // this again the moment loadingMorePosts clears, in a tight loop of
-      // failing requests. useSearchPage stops the same way.
-      setHasMorePosts(false);
-      notify.error('Could not load more posts.');
+      stopPagingAfterFailure();
     } finally {
       loadingMoreRef.current = false;
       setLoadingMorePosts(false);
     }
-  }, [metroAreaId, hasMorePosts, loading, selectedTagSlugs, posts.length]);
+  }, [metroAreaId, hasMorePosts, loading, selectedTagSlugs, posts.length, stopPagingAfterFailure]);
 
   const { sentinelRef } = useInfiniteScroll({
     hasMore: hasMorePosts,
