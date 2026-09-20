@@ -130,7 +130,9 @@ describe('FeedPage', () => {
   const mockReplace = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    // resetAllMocks, not clearAllMocks: clear keeps implementations and any
+    // unconsumed mockResolvedValueOnce, which then leaks into the next test.
+    vi.resetAllMocks();
     feedMocks.useRouterMock.mockReturnValue({
       replace: mockReplace,
       push: mockPush,

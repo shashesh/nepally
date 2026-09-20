@@ -79,14 +79,15 @@ export default function PostDetailPage() {
   const commentsGenerationRef = useRef(0);
   /** The post each write is for. This component stays mounted across route
    *  changes, so a write must not block, or roll back onto, a different post. */
-  const likePendingPostRef = useRef<string | null>(null);
-  const savePendingPostRef = useRef<string | null>(null);
-  const activePostIdRef = useRef<string | null>(routePostId);
+  const likePendingVisitRef = useRef<number | null>(null);
+  const savePendingVisitRef = useRef<number | null>(null);
+  /** Incremented on every route change, so A -> B -> A gets three tokens. */
+  const visitRef = useRef(0);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
-    activePostIdRef.current = routePostId ?? null;
+    visitRef.current += 1;
   }, [routePostId]);
 
   useEffect(() => {
@@ -144,18 +145,19 @@ export default function PostDetailPage() {
     if (!user || !post) return;
 
     const postId = post.id;
-    if (likePendingPostRef.current === postId) return;
+    const visit = visitRef.current;
+    if (likePendingVisitRef.current === visit) return;
 
-    likePendingPostRef.current = postId;
+    likePendingVisitRef.current = visit;
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikesCount((count) => count + (wasLiked ? -1 : 1));
 
     try {
       const { error } = wasLiked ? await unlikePost(supabase, postId) : await likePost(supabase, postId);
-      // A late answer for a post the reader has left must not touch what is
-      // on screen now.
-      if (activePostIdRef.current !== postId) return;
+      // A late answer belongs to the visit that asked for it, not to whatever
+      // is on screen now — including a second visit to the same post.
+      if (visitRef.current !== visit) return;
       if (error) {
         // Put the heart back rather than showing a like the server rejected.
         setLiked(wasLiked);
@@ -163,7 +165,7 @@ export default function PostDetailPage() {
         notify.error(wasLiked ? 'Could not remove your like.' : 'Could not like this post.');
       }
     } finally {
-      if (likePendingPostRef.current === postId) likePendingPostRef.current = null;
+      if (likePendingVisitRef.current === visit) likePendingVisitRef.current = null;
     }
   }
 
@@ -171,15 +173,16 @@ export default function PostDetailPage() {
     if (!user || !post) return;
 
     const postId = post.id;
-    if (savePendingPostRef.current === postId) return;
+    const visit = visitRef.current;
+    if (savePendingVisitRef.current === visit) return;
 
-    savePendingPostRef.current = postId;
+    savePendingVisitRef.current = visit;
     const wasSaved = saved;
     setSaved(!wasSaved);
 
     try {
       const { error } = wasSaved ? await unsavePost(supabase, postId) : await savePost(supabase, postId);
-      if (activePostIdRef.current !== postId) return;
+      if (visitRef.current !== visit) return;
       if (error) {
         // Same reasoning as the like: do not leave the button claiming a state
         // the server never took.
@@ -190,15 +193,20 @@ export default function PostDetailPage() {
 
       notify.success(wasSaved ? 'Post unsaved.' : 'Post saved.');
     } finally {
-      if (savePendingPostRef.current === postId) savePendingPostRef.current = null;
+      if (savePendingVisitRef.current === visit) savePendingVisitRef.current = null;
     }
   }
 
   async function handleComment(text: string) {
     if (!user || !post) return;
 
+    const visit = visitRef.current;
     setSubmitting(true);
     const result = await createComment(supabase, post.id, text, replyTarget?.id ?? undefined);
+
+    // Landing a comment for a post the reader has left would append it to the
+    // post now on screen, and mark that post's comments loaded.
+    if (visitRef.current !== visit) return;
     setSubmitting(false);
 
     if (result.error || !result.data) {
@@ -216,8 +224,11 @@ export default function PostDetailPage() {
   }
 
   async function handleDeleteComment(commentId: string) {
+    const visit = visitRef.current;
     // CommentThread already asked; this only reports what went wrong.
     const result = await deleteComment(supabase, commentId);
+    if (visitRef.current !== visit) return;
+
     if (result.error) {
       logClientEvent({
         event: 'comment_delete_failed',

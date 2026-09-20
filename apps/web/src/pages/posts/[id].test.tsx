@@ -98,7 +98,9 @@ describe('PostDetailPage', () => {
   const mockUser = { id: 'user-1', full_name: 'Test User' };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    // resetAllMocks, not clearAllMocks: clear keeps implementations and any
+    // unconsumed mockResolvedValueOnce, which then leaks into the next test.
+    vi.resetAllMocks();
     postDetailMocks.useRouterMock.mockReturnValue({
       query: { id: 'post-1' },
       push: mockPush,
