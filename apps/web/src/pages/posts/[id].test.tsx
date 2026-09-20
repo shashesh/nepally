@@ -207,7 +207,7 @@ describe('PostDetailPage', () => {
       const { rerender } = render(<PostDetailPage />);
       await waitFor(() => expect(screen.getByAltText('Post image 1')).toBeDefined());
 
-      fireEvent.click(screen.getByRole('button', { name: 'Next image' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
       expect(screen.getByAltText('Post image 2').getAttribute('src')).toBe('https://example.com/b.jpg');
 
       navigateToSecondPost(rerender);

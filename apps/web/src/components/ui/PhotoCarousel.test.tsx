@@ -47,6 +47,18 @@ describe('PhotoCarousel', () => {
     expect(onPhotoClick).toHaveBeenCalledWith(1);
   });
 
+  it('starts over when it is given a different set of photos', () => {
+    const { rerender } = render(<PhotoCarousel photos={photos} alt="Post image" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+    expect(screen.getByRole('img', { name: 'Post image 2' })).toBeDefined();
+
+    rerender(<PhotoCarousel photos={['/x1.jpg', '/x2.jpg']} alt="Post image" />);
+
+    expect(screen.getByText('Photo 1 of 2')).toBeDefined();
+    expect(screen.getByRole('img', { name: 'Post image 1' }).getAttribute('src')).toContain('x1.jpg');
+  });
+
   it('leaves the photo inert when it cannot be opened', () => {
     render(<PhotoCarousel photos={['/only.jpg']} alt="Post image" />);
 

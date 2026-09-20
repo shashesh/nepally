@@ -23,6 +23,16 @@ export function PhotoCarousel({ photos, alt, onPhotoClick }: PhotoCarouselProps)
   const touchStartXRef = useRef<number | null>(null);
   const hasMany = photos.length > 1;
 
+  // A new set of photos starts at the first one. Adjusting state during render
+  // beats an effect, which would first paint an index from the previous post —
+  // or, with fewer photos this time, no photo at all.
+  const photoKey = photos.join('|');
+  const [lastPhotoKey, setLastPhotoKey] = useState(photoKey);
+  if (lastPhotoKey !== photoKey) {
+    setLastPhotoKey(photoKey);
+    setIndex(0);
+  }
+
   function step(delta: number) {
     if (!hasMany) return;
     setIndex((previous) => (previous + delta + photos.length) % photos.length);
