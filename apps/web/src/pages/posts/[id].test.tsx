@@ -460,6 +460,57 @@ describe('PostDetailPage', () => {
     expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
   });
 
+  it('ignores a second like while the first is still in flight', async () => {
+    let settleLike: (result: unknown) => void = () => {};
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.likePostMock.mockReturnValue(
+      new Promise((resolve) => {
+        settleLike = resolve;
+      })
+    );
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: '6 likes' }));
+
+    expect(postDetailMocks.likePostMock).toHaveBeenCalledTimes(1);
+    expect(postDetailMocks.unlikePostMock).not.toHaveBeenCalled();
+
+    // The one rollback that can happen lands on the count it started from.
+    await act(async () => {
+      settleLike({ error: new Error('rejected') });
+    });
+    expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined();
+  });
+
+  it('ignores a second save while the first is still in flight', async () => {
+    let settleSave: (result: unknown) => void = () => {};
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.savePostMock.mockReturnValue(
+      new Promise((resolve) => {
+        settleSave = resolve;
+      })
+    );
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Unsave post' }));
+
+    expect(postDetailMocks.savePostMock).toHaveBeenCalledTimes(1);
+    expect(postDetailMocks.unsavePostMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      settleSave({ error: new Error('rejected') });
+    });
+    expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
+  });
+
   describe('when comments cannot be loaded', () => {
     it('shows an error instead of the empty state, and can retry', async () => {
       postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });

@@ -43,6 +43,7 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
   const [zoomLevel, setZoomLevel] = useState(0);
   const [chromeVisible, setChromeVisible] = useState(true);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
 
   // Each opening starts fresh. Adjusting state during render beats an effect,
   // which would paint the previous photo first.
@@ -59,6 +60,7 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
   function step(delta: number) {
     if (!hasMany) return;
     setIndex((previous) => (previous + delta + photos.length) % photos.length);
+    setZoomLevel(0);
   }
 
   /** Paging from a control: keep the controls on screen while they are in use. */
@@ -104,13 +106,25 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
     // eslint-disable-next-line react-hooks/exhaustive-deps -- step and showChromeBriefly are stable for a given photo count
   }, [opened, photos.length]);
 
-  function handleWheel(event: React.WheelEvent) {
-    showChromeBriefly();
-    setZoomLevel((previous) => {
-      const next = event.deltaY < 0 ? previous + 1 : previous - 1;
-      return Math.min(Math.max(next, 0), LIGHTBOX_ZOOM_LEVELS.length - 1);
-    });
-  }
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!opened || !stage) return;
+
+    function handleWheel(event: WheelEvent) {
+      // Registered non-passively on purpose: React's own wheel listener is
+      // passive, so onWheel could not stop the page behind from scrolling.
+      event.preventDefault();
+      showChromeBriefly();
+      setZoomLevel((previous) => {
+        const next = event.deltaY < 0 ? previous + 1 : previous - 1;
+        return Math.min(Math.max(next, 0), LIGHTBOX_ZOOM_LEVELS.length - 1);
+      });
+    }
+
+    stage.addEventListener('wheel', handleWheel, { passive: false });
+    return () => stage.removeEventListener('wheel', handleWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- showChromeBriefly is stable enough for the open lightbox
+  }, [opened]);
 
   const chromeClass = `${styles.chrome} ${chromeVisible ? styles.chromeVisible : styles.chromeHidden}`;
 
@@ -125,6 +139,7 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
       classNames={{ body: styles.body, content: styles.content }}
     >
       <div
+        ref={stageRef}
         className={styles.stage}
         onMouseMove={showChromeBriefly}
         onTouchStart={showChromeBriefly}
@@ -147,7 +162,6 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
           width={1600}
           height={1200}
           className={`${styles.image} ${ZOOM_CLASSES[zoomLevel]}`}
-          onWheel={handleWheel}
           onDoubleClick={() => {
             showChromeBriefly();
             setZoomLevel((previous) => (previous === 0 ? DOUBLE_CLICK_ZOOM_LEVEL : 0));

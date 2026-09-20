@@ -77,6 +77,10 @@ export default function PostDetailPage() {
   const [reportSubmitting, setReportSubmitting] = useState(false);
   /** Bumped by anything that edits comments locally, retiring in-flight loads. */
   const commentsGenerationRef = useRef(0);
+  /** One like and one save in flight at a time: overlapping rollbacks would
+   *  apply stale deltas and leave the count wrong. */
+  const likePendingRef = useRef(false);
+  const savePendingRef = useRef(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -132,37 +136,47 @@ export default function PostDetailPage() {
   }, [user, post]);
 
   async function handleLike() {
-    if (!user || !post) return;
+    if (!user || !post || likePendingRef.current) return;
 
+    likePendingRef.current = true;
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikesCount((count) => count + (wasLiked ? -1 : 1));
 
-    const { error } = wasLiked ? await unlikePost(supabase, post.id) : await likePost(supabase, post.id);
-    if (error) {
-      // Put the heart back rather than showing a like the server rejected.
-      setLiked(wasLiked);
-      setLikesCount((count) => count + (wasLiked ? 1 : -1));
-      notify.error(wasLiked ? 'Could not remove your like.' : 'Could not like this post.');
+    try {
+      const { error } = wasLiked ? await unlikePost(supabase, post.id) : await likePost(supabase, post.id);
+      if (error) {
+        // Put the heart back rather than showing a like the server rejected.
+        setLiked(wasLiked);
+        setLikesCount((count) => count + (wasLiked ? 1 : -1));
+        notify.error(wasLiked ? 'Could not remove your like.' : 'Could not like this post.');
+      }
+    } finally {
+      likePendingRef.current = false;
     }
   }
 
   async function handleSave() {
-    if (!user || !post) return;
+    if (!user || !post || savePendingRef.current) return;
+
+    savePendingRef.current = true;
     const wasSaved = saved;
-
     setSaved(!wasSaved);
-    const { error } = wasSaved ? await unsavePost(supabase, post.id) : await savePost(supabase, post.id);
 
-    if (error) {
-      // Same reasoning as the like: do not leave the button claiming a state
-      // the server never took.
-      setSaved(wasSaved);
-      notify.error(wasSaved ? 'Failed to unsave post.' : 'Failed to save post.');
-      return;
+    try {
+      const { error } = wasSaved ? await unsavePost(supabase, post.id) : await savePost(supabase, post.id);
+      if (error) {
+        // Same reasoning as the like: do not leave the button claiming a state
+        // the server never took.
+        setSaved(wasSaved);
+        notify.error(wasSaved ? 'Failed to unsave post.' : 'Failed to save post.');
+        return;
+      }
+
+      notify.success(wasSaved ? 'Post unsaved.' : 'Post saved.');
+    } finally {
+      savePendingRef.current = false;
     }
-
-    notify.success(wasSaved ? 'Post unsaved.' : 'Post saved.');
   }
 
   async function handleComment(text: string) {

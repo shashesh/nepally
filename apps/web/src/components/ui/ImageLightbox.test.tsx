@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '../../test-utils';
+import { render, screen, fireEvent, createEvent } from '../../test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { ImageLightbox } from './ImageLightbox';
 
@@ -53,6 +53,28 @@ describe('ImageLightbox', () => {
 
     fireEvent.click(zoomOut);
     expect(screen.getByText('100%')).toBeDefined();
+  });
+
+  it('returns to 100% when paging to another photo', () => {
+    render(<ImageLightbox photos={photos} opened onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    expect(screen.getByText('125%')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+
+    // Carrying a zoom across photos strands the viewer on a corner of the next.
+    expect(screen.getByText('100%')).toBeDefined();
+  });
+
+  it('zooms on wheel and stops the page behind from scrolling', () => {
+    render(<ImageLightbox photos={photos} opened onClose={vi.fn()} />);
+
+    const wheelUp = createEvent.wheel(screen.getByRole('img', { name: 'Post photo 1' }), { deltaY: -1 });
+    fireEvent(screen.getByRole('img', { name: 'Post photo 1' }), wheelUp);
+
+    expect(wheelUp.defaultPrevented).toBe(true);
+    expect(screen.getByText('125%')).toBeDefined();
   });
 
   it('hides the paging controls for a single photo', () => {

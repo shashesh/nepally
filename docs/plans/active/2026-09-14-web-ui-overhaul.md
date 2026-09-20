@@ -185,7 +185,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
 | 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | Merged (PR #79) | 2026-09-19 | no migration; the `count(*) OVER ()` fix stays deferred with its trigger |
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | In Review (PR #80) | 2026-09-19 | draft open; visual baselines still to run before it is marked ready |
-| 4b Post detail | `feat/web-ui-post-detail` (stacked on PR #80) | 4b.1–4b.8 | In Review (PR #81) | 2026-09-20 | draft open; retarget to `master` when #80 merges; visual baselines still to run |
+| 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | In Review (PR #81) | 2026-09-20 | #80 merged, so this now targets `master`; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -11378,7 +11378,7 @@ Every interactive child then sits beside the link rather than inside it, so no `
 
 - [ ] **Step 1: Update the e2e feed spec** `apps/web/e2e/tests/04-feed.spec.ts` for the new DOM. Replace `page.locator('a').filter({ hasText: title })` (65, 77, 87) and `page.locator('section')` (47) with role-based locators, and `page.locator('aside')` (112, 121, 132, 141, 154) with `getByRole('complementary')`. Keep `a[href="/feed?tags=housing"]` if the filter bar still renders that link; check rather than assume.
 - [ ] **Step 2: Run the e2e suite.** Run: `npm run test:e2e --workspace=apps/web -- e2e/tests/04-feed.spec.ts`. Expected: PASS.
-- [ ] **Step 3: Keyboard walk-through** of the feed: Tab order through composer, tag chips, post menus and the rail; Enter and Space on each menu; Escape closes menus and the lightbox; ←/→ move the carousel and the lightbox. Fix what does not work.
+- [x] **Step 3: Keyboard walk-through** of the feed: Tab order through composer, tag chips, post menus and the rail; Enter and Space on each menu; Escape closes menus and the lightbox; ←/→ move the carousel and the lightbox. Fix what does not work.
 - [ ] **Step 4: Run the whole local pipeline.** Run: `npm run ci:local`. Expected: exit 0.
 - [ ] **Step 5: Regenerate the visual baselines.** There is no local Docker (Decision 1), so push with `[visual-baselines]` in the commit message, download the `visual-baselines` artifact from the workflow run, review every changed PNG, and commit the screenshots plus the `a11y-baseline.json` diff. The feed, post-card and phone-feed screenshots all change, because the tag chips lose their uppercase and the card markup is new.
 - [ ] **Step 6: Clear the feed's accessibility entries.** Run the visual suite with `--write-a11y-baseline` and check the `a11y-baseline.json` diff only deletes lines. The feed pages are not in the baseline today, so this should be a no-op; if it adds an entry, fix the violation instead of recording it.
@@ -11543,13 +11543,15 @@ Replace the post options menu (597–637) with `ActionMenu`, and all three avata
 
 ### Task 4b.8: E2E, accessibility, docs and the PR
 
-- [ ] **Step 1: Rewrite `e2e/tests/09-avatar-menu.spec.ts`.** Both tests key off `div[class*="avatarDropdownAnchored"]` and a bounding-box proximity check. Mantine positions the menu itself, so assert the menu opens from the right trigger and contains View profile and Chat, by role. Drop the geometry.
-- [ ] **Step 2: Run the e2e suite.** `npm run test:e2e --workspace=apps/web -- e2e/tests/09-avatar-menu.spec.ts`
+- [x] **Step 1: Rewrite `e2e/tests/09-avatar-menu.spec.ts`.** Both tests key off `div[class*="avatarDropdownAnchored"]` and a bounding-box proximity check. Mantine positions the menu itself, so assert the menu opens from the right trigger and contains View profile and Chat, by role. Drop the geometry.
+- [x] **Step 2: Run the e2e suite.** `npm run test:e2e --workspace=apps/web -- e2e/tests/09-avatar-menu.spec.ts` — both pass by role.
 - [ ] **Step 3: Keyboard walk-through** of post detail: Tab through the carousel, action bar, menus, composer and comment actions; Enter and Space on each; Escape closes menus, the lightbox and the confirm dialog; ←/→ page the carousel and lightbox.
-- [ ] **Step 4: Run `npm run ci:local`.** Expected: exit 0.
-- [ ] **Step 5: Clear the page's accessibility entries.** `a11y-baseline.json` holds `color-contrast` for `visual-desktop:post-detail` and `visual-phone:post-detail`; re-run with `--write-a11y-baseline` and confirm the diff only deletes lines.
-- [ ] **Step 6: Docs.** Add `CommentThread` and `CommentComposer` to `docs/architecture/web-ui-system.md`, note the extended `PostActions`, and run `npm run docs:check`.
-- [ ] **Step 7: Push, open the draft PR** against `feat/web-ui-feed`, request Copilot, leave it in draft, and say in the description that the visual baselines still need a run.
+- [x] **Step 4: Run `npm run ci:local`.** Exits 0.
+- [x] **Step 5: Check the accessibility baseline.** The premise here was wrong: `a11y-baseline.json` has never held entries for post detail, so there is nothing to delete. What matters is that the regenerated baseline gains none, and it does — the file is unchanged. Every colour pair the new CSS uses was checked against AA first, after the feed composer shipped a 4.25:1 pair in PR 4a.
+- [x] **Step 6: Docs.** `web-ui-system.md` lists `CommentThread`, `CommentComposer` and the extended `PostActions`; `docs:check` is clean.
+- [x] **Step 7: Push and open the draft PR**, request Copilot, leave it in draft. It was opened against `feat/web-ui-feed` while 4a was in review and retargeted to `master` when #80 merged.
+- [x] **Step 8: Regenerate and review the visual baselines.** Done from this branch's head (run 35527351030 checked out `eb849d7`): only the two post-detail screenshots move, and `a11y-baseline.json` is unchanged.
+  - Dispatch against a short-lived copy of the branch, not the PR branch, so the PR spends one CI run rather than two. Record the commit the run checked out, because `workflow_dispatch` reports the workflow file's ref (`master`) as the run's head, not the branch it built.
 
 ## PR 5 — Create flows (`feat/web-ui-create-flows`)
 

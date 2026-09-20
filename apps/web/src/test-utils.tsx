@@ -17,4 +17,4 @@ function renderWithMantine(ui: ReactElement, options?: Omit<RenderOptions, 'wrap
 }
 
 export { renderWithMantine as render };
-export { screen, fireEvent, waitFor, act } from '@testing-library/react';
+export { screen, fireEvent, createEvent, waitFor, act } from '@testing-library/react';
