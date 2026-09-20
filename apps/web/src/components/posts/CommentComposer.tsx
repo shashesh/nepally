@@ -1,0 +1,54 @@
+import React, { useState } from 'react';
+import { Button, TextInput } from '@mantine/core';
+import styles from './CommentComposer.module.css';
+
+export interface CommentComposerProps {
+  /** Set to show the reply banner and switch the field's label. */
+  replyingToName?: string;
+  onCancelReply?: () => void;
+  onSubmit: (text: string) => Promise<void> | void;
+  submitting?: boolean;
+}
+
+/** The comment field under a post. It clears only once the submit resolves. */
+export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submitting = false }: CommentComposerProps) {
+  const [text, setText] = useState('');
+  const isReply = Boolean(replyingToName);
+  const label = isReply ? 'Write a reply' : 'Write a comment';
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const trimmed = text.trim();
+    if (!trimmed || submitting) return;
+
+    await onSubmit(trimmed);
+    setText('');
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className={styles.root}>
+      {isReply && (
+        <div className={styles.replyBanner}>
+          <span>Replying to {replyingToName}</span>
+          <Button variant="subtle" size="compact-sm" onClick={onCancelReply} aria-label="Cancel reply">
+            Cancel
+          </Button>
+        </div>
+      )}
+
+      <div className={styles.row}>
+        <TextInput
+          className={styles.field}
+          label={label}
+          labelProps={{ className: styles.visuallyHiddenLabel }}
+          placeholder={`${label}…`}
+          value={text}
+          onChange={(event) => setText(event.currentTarget.value)}
+        />
+        <Button type="submit" disabled={!text.trim()} loading={submitting}>
+          Post
+        </Button>
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,55 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '../../test-utils';
+import { describe, expect, it, vi } from 'vitest';
+import { CommentComposer } from './CommentComposer';
+
+describe('CommentComposer', () => {
+  it('gives the field an accessible name', () => {
+    render(<CommentComposer onSubmit={vi.fn()} />);
+
+    expect(screen.getByLabelText('Write a comment')).toBeDefined();
+  });
+
+  it('submits the text and clears the field', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<CommentComposer onSubmit={onSubmit} />);
+
+    const field = screen.getByLabelText('Write a comment');
+    fireEvent.change(field, { target: { value: 'Great post' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith('Great post'));
+    await waitFor(() => expect((field as HTMLInputElement).value).toBe(''));
+  });
+
+  it('will not submit blank text', () => {
+    const onSubmit = vi.fn();
+    render(<CommentComposer onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText('Write a comment'), { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('names the person being replied to and can cancel', () => {
+    const onCancelReply = vi.fn();
+    render(<CommentComposer replyingToName="Bikal Shrestha" onCancelReply={onCancelReply} onSubmit={vi.fn()} />);
+
+    expect(screen.getByText('Replying to Bikal Shrestha')).toBeDefined();
+    expect(screen.getByLabelText('Write a reply')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel reply' }));
+    expect(onCancelReply).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the text while a submission is in flight', () => {
+    render(<CommentComposer onSubmit={vi.fn()} submitting />);
+
+    const field = screen.getByLabelText('Write a comment') as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Great post' } });
+
+    expect(screen.getByRole('button', { name: 'Post' }).hasAttribute('data-loading')).toBe(true);
+    expect(field.value).toBe('Great post');
+  });
+});
