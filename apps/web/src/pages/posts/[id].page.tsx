@@ -28,15 +28,20 @@ import {
 } from '@nepally/shared';
 import type { Post, PostComment } from '@nepally/shared';
 import Avatar from '../../components/Avatar';
-import { ImageLightbox, PhotoCarousel } from '../../components/ui';
+import {
+  ActionMenu,
+  EmptyState,
+  ImageLightbox,
+  PhotoCarousel,
+  notify,
+  type ActionMenuItem,
+} from '../../components/ui';
+import { UserMenuTrigger } from '../../components/users/UserMenuTrigger';
+import { CommentComposer } from '../../components/posts/CommentComposer';
+import { CommentThread } from '../../components/posts/CommentThread';
 import ReportPostModal from '../../components/ReportPostModal';
 import styles from '../../styles/PostDetail.module.css';
 
-
-type AvatarMenuUser = {
-  id: string;
-  full_name: string;
-};
 
 export default function PostDetailPage() {
   const router = useRouter();
@@ -51,7 +56,6 @@ export default function PostDetailPage() {
   const [saved, setSaved] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
-  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
   // Route id whose post request has finished; any other id is still loading.
   const [loadedPostId, setLoadedPostId] = useState<string | null>(null);
   const loading = !routePostId || loadedPostId !== routePostId;
@@ -63,16 +67,10 @@ export default function PostDetailPage() {
     setComments([]);
   }
   const [submitting, setSubmitting] = useState(false);
-  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
-  const [avatarMenuUser, setAvatarMenuUser] = useState<AvatarMenuUser | null>(null);
-  const [avatarMenuPosition, setAvatarMenuPosition] = useState({ top: 0, left: 0 });
-  const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const avatarDropdownRef = useRef<HTMLDivElement>(null);
-  const postMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!routePostId) return;
@@ -116,32 +114,6 @@ export default function PostDetailPage() {
     }
   }, [user, post]);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as HTMLElement | null;
-      if (!target?.closest('[data-avatar-menu-root="true"]')) {
-        setAvatarMenuOpen(false);
-      }
-      if (postMenuRef.current && !postMenuRef.current.contains(event.target as Node)) {
-        setPostMenuOpen(false);
-      }
-    }
-
-    if (avatarMenuOpen || postMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [avatarMenuOpen, postMenuOpen]);
-
-  useEffect(() => {
-    if (!avatarMenuOpen || !avatarDropdownRef.current) return;
-    avatarDropdownRef.current.style.top = `${avatarMenuPosition.top}px`;
-    avatarDropdownRef.current.style.left = `${avatarMenuPosition.left}px`;
-  }, [avatarMenuOpen, avatarMenuPosition]);
-
   async function handleLike() {
     if (!user || !post) return;
 
@@ -171,19 +143,20 @@ export default function PostDetailPage() {
     }
   }
 
-  async function handleComment(e: FormEvent) {
-    e.preventDefault();
-    if (!user || !post || !commentText.trim()) return;
+  async function handleComment(text: string) {
+    if (!user || !post) return;
 
     setSubmitting(true);
-    const result = await createComment(supabase, post.id, commentText, replyTargetId ?? undefined);
+    const result = await createComment(supabase, post.id, text, replyTargetId ?? undefined);
     setSubmitting(false);
 
-    if (result.data) {
-      setComments((prev) => [...prev, result.data!]);
-      setCommentText('');
-      setReplyTargetId(null);
+    if (result.error || !result.data) {
+      notify.error('Could not post your comment. Please try again.');
+      return;
     }
+
+    setComments((previous) => [...previous, result.data!]);
+    setReplyTargetId(null);
   }
 
   async function handleDeleteComment(commentId: string) {
@@ -208,43 +181,10 @@ export default function PostDetailPage() {
     setComments((prev) => prev.filter((comment) => comment.id !== commentId && comment.parent_comment_id !== commentId));
   }
 
-  function openAvatarMenu(event: React.MouseEvent<HTMLElement>, menuUser: AvatarMenuUser | null) {
-    if (!menuUser) return;
-    if (menuUser.id === user?.id) return;
+  async function handleAvatarChat(targetId: string, targetName: string) {
+    if (!user || targetId === user.id) return;
 
-    if (typeof window !== 'undefined') {
-      const MENU_WIDTH = 144;
-      const MENU_HEIGHT = 90;
-      const EDGE_GAP = 8;
-      const VERTICAL_OFFSET = 8;
-
-      const maxLeft = Math.max(EDGE_GAP, window.innerWidth - MENU_WIDTH - EDGE_GAP);
-      const left = Math.min(Math.max(EDGE_GAP, event.clientX), maxLeft);
-
-      const belowTop = event.clientY + VERTICAL_OFFSET;
-      const canOpenBelow = belowTop + MENU_HEIGHT <= window.innerHeight - EDGE_GAP;
-      const top = canOpenBelow
-        ? belowTop
-        : Math.max(EDGE_GAP, event.clientY - MENU_HEIGHT - VERTICAL_OFFSET);
-
-      setAvatarMenuPosition({ top, left });
-    }
-
-    setAvatarMenuUser(menuUser);
-    setAvatarMenuOpen(true);
-  }
-
-  async function handleAvatarChat() {
-    if (!user || !avatarMenuUser) return;
-    if (avatarMenuUser.id === user.id) return;
-
-    const result = await getOrCreateConversation(
-      supabase,
-      user.id,
-      user.full_name,
-      avatarMenuUser.id,
-      avatarMenuUser.full_name
-    );
+    const result = await getOrCreateConversation(supabase, user.id, user.full_name, targetId, targetName);
 
     if (result.data) {
       router.push(`/messages/${result.data.conversationId}`);
@@ -303,7 +243,6 @@ export default function PostDetailPage() {
 
   function handleEditPost() {
     if (!post) return;
-    setPostMenuOpen(false);
     router.push(`/posts/create?edit=${post.id}`);
   }
 
@@ -312,7 +251,6 @@ export default function PostDetailPage() {
     const shouldDelete = confirm('Are you sure you want to delete this post? This cannot be undone.');
     if (!shouldDelete) return;
 
-    setPostMenuOpen(false);
     const result = await deletePost(supabase, post.id);
     if (result.error) {
       alert('Failed to delete post. Please try again.');
@@ -323,6 +261,19 @@ export default function PostDetailPage() {
   }
 
   const commentThreads = buildSingleLevelCommentThreads(comments);
+  const replyTarget = replyTargetId ? comments.find((comment) => comment.id === replyTargetId) : undefined;
+  const isOwnPost = post?.author_id === user?.id;
+  const postMenuItems: ActionMenuItem[] = isOwnPost
+    ? [
+        { key: 'edit', label: 'Edit Post', onClick: handleEditPost },
+        { key: 'share', label: 'Share Post', onClick: () => void handleShare() },
+        { key: 'delete', label: 'Delete Post', onClick: () => void handleDeletePost(), danger: true },
+      ]
+    : [
+        { key: 'save', label: saved ? 'Unsave Post' : 'Save Post', onClick: () => void handleSave() },
+        { key: 'share', label: 'Share Post', onClick: () => void handleShare() },
+        { key: 'report', label: 'Report Post', onClick: () => setReportModalOpen(true), danger: true },
+      ];
   const postPhotos = (post?.photos || []).filter(Boolean).slice(0, 3);
 
   function openLightbox(photos: string[], startIndex: number) {
@@ -364,22 +315,22 @@ export default function PostDetailPage() {
 
         <div className={styles.postDetail}>
           <div className={styles.postHeader}>
-            <div className={styles.avatarWrapper} data-avatar-menu-root="true">
-              <UnstyledButton
-                className={post.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
-                onClick={(event) => {
-                  openAvatarMenu(event, post.author ? { id: post.author_id, full_name: post.author.full_name } : null);
-                }}
-                aria-label="User options"
-              >
-                <Avatar
-                  name={post.author?.full_name || '?'}
-                  photoUrl={post.author?.profile_photo}
-                  trustLevel={post.author?.trust_level}
-                  size="medium"
-                />
-              </UnstyledButton>
-            </div>
+            {post.author_id === user?.id ? (
+              <Avatar
+                name={post.author?.full_name || '?'}
+                photoUrl={post.author?.profile_photo}
+                trustLevel={post.author?.trust_level}
+                size="medium"
+              />
+            ) : (
+              <UserMenuTrigger
+                userId={post.author_id}
+                name={post.author?.full_name || 'Anonymous'}
+                photoUrl={post.author?.profile_photo}
+                trustLevel={post.author?.trust_level}
+                onChat={handleAvatarChat}
+              />
+            )}
             <div className={styles.authorInfo}>
               <div className={styles.authorName}>
                 {post.author?.full_name || 'Anonymous'}
@@ -392,47 +343,7 @@ export default function PostDetailPage() {
                 {post.is_global ? '🌐 Global' : '📍 Local'}
               </Badge>
 
-              <div className={styles.postMenuWrapper} ref={postMenuRef}>
-                <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => setPostMenuOpen((prev) => !prev)} aria-label="Post options">
-                  ⋯
-                </ActionIcon>
-
-                {postMenuOpen && (
-                  <div className={styles.postMenuDropdown}>
-                    {post.author_id === user?.id ? (
-                      <>
-                        <UnstyledButton className={styles.postMenuItem} onClick={handleEditPost}>Edit Post</UnstyledButton>
-                        <UnstyledButton className={styles.postMenuItem} onClick={handleShare}>Share Post</UnstyledButton>
-                        <UnstyledButton
-                          className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
-                          onClick={handleDeletePost}
-                        >
-                          Delete Post
-                        </UnstyledButton>
-                      </>
-                    ) : (
-                      <>
-                        <UnstyledButton
-                          className={styles.postMenuItem}
-                          onClick={() => { setPostMenuOpen(false); handleSave(); }}
-                        >
-                          {saved ? 'Unsave Post' : 'Save Post'}
-                        </UnstyledButton>
-                        <UnstyledButton className={styles.postMenuItem} onClick={handleShare}>Share Post</UnstyledButton>
-                        <UnstyledButton
-                          className={`${styles.postMenuItem} ${styles.postMenuItemDanger}`}
-                          onClick={() => {
-                            setPostMenuOpen(false);
-                            setReportModalOpen(true);
-                          }}
-                        >
-                          Report Post
-                        </UnstyledButton>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <ActionMenu label="Post options" items={postMenuItems} />
             </div>
           </div>
 
@@ -493,154 +404,29 @@ export default function PostDetailPage() {
           </h2>
 
           {user && (
-            <form onSubmit={handleComment} className={styles.commentForm}>
-              {replyTargetId && (
-                <div className={styles.replyBanner}>
-                  Replying to comment
-                  <Button variant="subtle" size="compact-sm" onClick={() => setReplyTargetId(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              )}
-              <div className={styles.commentFormRow}>
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  className={styles.commentInput}
-                  placeholder={replyTargetId ? 'Write a reply...' : 'Write a comment...'}
-                />
-                <Button type="submit" disabled={!commentText.trim()} loading={submitting}>
-                  Post
-                </Button>
-              </div>
-            </form>
+            <CommentComposer
+              replyingToName={replyTarget?.author?.full_name || undefined}
+              onCancelReply={() => setReplyTargetId(null)}
+              onSubmit={handleComment}
+              submitting={submitting}
+            />
           )}
 
           {commentThreads.length === 0 ? (
-            <div className={styles.noComments}>
-              No comments yet. Be the first to comment!
-            </div>
+            <EmptyState title="No comments yet" description="Be the first to comment!" />
           ) : (
             commentThreads.map((thread) => (
-              <div key={thread.parent.id} className={styles.commentThread}>
-                <div className={styles.comment}>
-                  <div className={styles.avatarWrapper} data-avatar-menu-root="true">
-                    <UnstyledButton
-                      className={thread.parent.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
-                      onClick={(event) => {
-                        openAvatarMenu(event,
-                          thread.parent.author
-                            ? { id: thread.parent.author_id, full_name: thread.parent.author.full_name }
-                            : null
-                        );
-                      }}
-                      aria-label="User options"
-                    >
-                      <Avatar
-                        name={thread.parent.author?.full_name || '?'}
-                        photoUrl={thread.parent.author?.profile_photo}
-                        trustLevel={thread.parent.author?.trust_level}
-                        size="small"
-                      />
-                    </UnstyledButton>
-                  </div>
-                  <div className={styles.commentContent}>
-                    <span className={styles.commentAuthor}>{thread.parent.author?.full_name || 'Anonymous'}</span>
-                    <span className={styles.commentTime}>{formatRelativeTime(new Date(thread.parent.created_at))}</span>
-                    <div className={styles.commentText}>{thread.parent.content}</div>
-                    <div className={styles.commentActionsRow}>
-                      <button type="button" className={styles.inlineLink} onClick={() => setReplyTargetId(thread.parent.id)}>
-                        Reply
-                      </button>
-                      {thread.replies.length > 0 && (
-                        <button
-                          type="button"
-                          className={styles.inlineLink}
-                          onClick={() => setExpandedReplies((prev) => ({ ...prev, [thread.parent.id]: !prev[thread.parent.id] }))}
-                        >
-                          {expandedReplies[thread.parent.id] ? 'Hide replies' : `Show replies (${thread.replies.length})`}
-                        </button>
-                      )}
-                      {thread.parent.author_id === user?.id && (
-                        <button type="button" className={styles.inlineLinkDanger} onClick={() => handleDeleteComment(thread.parent.id)}>
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {expandedReplies[thread.parent.id] && thread.replies.map((reply) => (
-                  <div key={reply.id} className={styles.replyRow}>
-                    <div className={styles.avatarWrapper} data-avatar-menu-root="true">
-                      <UnstyledButton
-                        className={reply.author_id !== user?.id ? styles.avatarTrigger : styles.avatarTriggerDisabled}
-                        onClick={(event) => {
-                          openAvatarMenu(event,
-                            reply.author
-                              ? { id: reply.author_id, full_name: reply.author.full_name }
-                              : null
-                          );
-                        }}
-                        aria-label="User options"
-                      >
-                        <Avatar
-                          name={reply.author?.full_name || '?'}
-                          photoUrl={reply.author?.profile_photo}
-                          trustLevel={reply.author?.trust_level}
-                          size="small"
-                        />
-                      </UnstyledButton>
-                    </div>
-                    <div className={styles.commentContent}>
-                      <span className={styles.commentAuthor}>{reply.author?.full_name || 'Anonymous'}</span>
-                      <span className={styles.commentTime}>{formatRelativeTime(new Date(reply.created_at))}</span>
-                      <div className={styles.commentText}>{reply.content}</div>
-                      {reply.author_id === user?.id && (
-                        <div className={styles.commentActionsRow}>
-                          <button type="button" className={styles.inlineLinkDanger} onClick={() => handleDeleteComment(reply.id)}>
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <CommentThread
+                key={thread.parent.id}
+                thread={thread}
+                currentUserId={user?.id}
+                onReply={(parentId) => setReplyTargetId(parentId)}
+                onDelete={handleDeleteComment}
+                onChat={handleAvatarChat}
+              />
             ))
           )}
         </div>
-
-        {avatarMenuOpen && (
-          <div
-            ref={avatarDropdownRef}
-            className={`${styles.avatarDropdown} ${styles.avatarDropdownAnchored}`}
-            data-avatar-menu-root="true"
-          >
-            <UnstyledButton
-              className={styles.avatarDropdownItem}
-              onClick={() => {
-                const targetId = avatarMenuUser?.id;
-                setAvatarMenuOpen(false);
-                if (targetId) {
-                  router.push(`/users/${targetId}`);
-                }
-              }}
-            >
-              View Profile
-            </UnstyledButton>
-            <UnstyledButton
-              className={styles.avatarDropdownItem}
-              onClick={() => {
-                setAvatarMenuOpen(false);
-                handleAvatarChat();
-              }}
-            >
-              Chat
-            </UnstyledButton>
-          </div>
-        )}
 
         <ReportPostModal
           opened={reportModalOpen}

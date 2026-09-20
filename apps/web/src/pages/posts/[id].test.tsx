@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
+type MockLinkProps = { href: string; children?: React.ReactNode };
 type MockImageProps = { src: string; alt: string; className?: string };
 
 const postDetailMocks = vi.hoisted(() => ({
@@ -65,8 +65,11 @@ vi.mock('next/head', () => ({
     React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: MockLinkProps) =>
-    React.createElement('a', { href, className }, children),
+  // Forwards the ref and every other prop, so Mantine can render a Menu.Item
+  // as a link and still set role, handlers and classes on it.
+  default: React.forwardRef<HTMLAnchorElement, MockLinkProps>(function MockLink({ href, children, ...rest }, ref) {
+    return React.createElement('a', { href, ref, ...rest }, children);
+  }),
 }));
 vi.mock('next/image', () => ({
   default: ({ src, alt, className }: MockImageProps) =>
@@ -278,7 +281,8 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('No comments yet. Be the first to comment!')).toBeDefined();
+      expect(screen.getByText('No comments yet')).toBeDefined();
+      expect(screen.getByText('Be the first to comment!')).toBeDefined();
     });
   });
 
@@ -465,11 +469,9 @@ describe('PostDetailPage', () => {
       },
     });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByPlaceholderText('Write a comment...')).toBeDefined());
-    fireEvent.change(screen.getByPlaceholderText('Write a comment...'), {
-      target: { value: 'Great post!' },
-    });
-    fireEvent.submit(screen.getByPlaceholderText('Write a comment...').closest('form')!);
+    await waitFor(() => expect(screen.getByLabelText('Write a comment')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Write a comment'), { target: { value: 'Great post!' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
     await waitFor(() => {
       expect(postDetailMocks.createCommentMock).toHaveBeenCalledWith(
         expect.anything(),
@@ -504,15 +506,11 @@ describe('PostDetailPage', () => {
       expect(screen.getAllByText('Comment User').length).toBeGreaterThan(0);
     });
 
-    const avatarOptionsButtons = screen.getAllByLabelText('User options');
-    fireEvent.click(avatarOptionsButtons[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Comment User' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('View Profile')).toBeDefined();
-      expect(screen.getByText('Chat')).toBeDefined();
-    });
+    expect(await screen.findByRole('menuitem', { name: 'View profile' })).toBeDefined();
 
-    fireEvent.click(screen.getByText('Chat'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Chat' }));
 
     await waitFor(() => {
       expect(postDetailMocks.getOrCreateConversationMock).toHaveBeenCalledWith(
@@ -525,7 +523,7 @@ describe('PostDetailPage', () => {
     });
   });
 
-  it('renders anchored avatar dropdown near click position in post detail', async () => {
+  it('opens the author menu from the avatar', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
 
     render(<PostDetailPage />);
@@ -534,18 +532,10 @@ describe('PostDetailPage', () => {
       expect(screen.getByText('Looking for a roommate')).toBeDefined();
     });
 
-    const avatarOptionsButtons = screen.getAllByLabelText('User options');
-    fireEvent.click(avatarOptionsButtons[0], { clientX: 120, clientY: 180 });
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal Shrestha' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('View Profile')).toBeDefined();
-      expect(screen.getByText('Chat')).toBeDefined();
-    });
-
-    const anchoredDropdown = document.querySelector('div[class*="avatarDropdownAnchored"]') as HTMLDivElement | null;
-    expect(anchoredDropdown).not.toBeNull();
-    expect(anchoredDropdown?.style.top).toBe('188px');
-    expect(anchoredDropdown?.style.left).toBe('120px');
+    expect(await screen.findByRole('menuitem', { name: 'View profile' })).toBeDefined();
+    expect(screen.getByRole('menuitem', { name: 'Chat' })).toBeDefined();
   });
 
   it('optimistically toggles like', async () => {
@@ -563,21 +553,15 @@ describe('PostDetailPage', () => {
 
   // ─── Avatar dropdown: View Profile navigation ──────────────────────────────
 
-  it('clicking View Profile in avatar dropdown navigates to public profile page', async () => {
+  it('View profile links to the public profile', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
     await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
 
-    // Open avatar dropdown for post author (author_id = 'user-2', current user = 'user-1')
-    const avatarOptionsButtons = screen.getAllByLabelText('User options');
-    fireEvent.click(avatarOptionsButtons[0], { clientX: 120, clientY: 180 });
+    // The post author is user-2; the signed-in member is user-1.
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal Shrestha' }));
 
-    await waitFor(() => expect(screen.getByText('View Profile')).toBeDefined());
-
-    fireEvent.click(screen.getByText('View Profile'));
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/users/user-2');
-    });
+    const link = await screen.findByRole('menuitem', { name: 'View profile' });
+    expect(link.getAttribute('href')).toBe('/users/user-2');
   });
 });
