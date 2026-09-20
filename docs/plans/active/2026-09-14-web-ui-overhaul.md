@@ -185,7 +185,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
 | 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | Merged (PR #79) | 2026-09-19 | no migration; the `count(*) OVER ()` fix stays deferred with its trigger |
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | In Review (PR #80) | 2026-09-19 | draft open; visual baselines still to run before it is marked ready |
-| 4b Post detail | `feat/web-ui-post-detail` | breakdown at PR start | Not Started | 2026-09-19 | split from PR 4; starts after 4a merges |
+| 4b Post detail | `feat/web-ui-post-detail` (stacked on PR #80) | 4b.1–4b.n | In Progress | 2026-09-19 | adopts what 4a built; retarget to `master` when #80 merges |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -11387,7 +11387,14 @@ Every interactive child then sits beside the link rather than inside it, so no `
 
 ## PR 4b — Post detail (`feat/web-ui-post-detail`)
 
-Starts after 4a merges, so it can adopt what 4a built.
+Stacked on `feat/web-ui-feed` (PR #80), the way PR 3b stacked on 3a, so it can adopt what 4a built without waiting for the merge. Retarget the PR to `master` once #80 lands.
+
+**Inventory** (run on the branch point, 2026-09-19):
+
+| File | Lines | CSS violations | Raw form elements | Native dialogs |
+|---|---|---|---|---|
+| `pages/posts/[id].page.tsx` | 1008 | — | 17 | 5 |
+| `styles/PostDetail.module.css` | 656 | 170 (160 legacy tokens, 9 literals, 1 named) | — | — |
 
 - **Pages:** `pages/posts/[id].page.tsx` (1008 lines, 17 raw form elements, 5 native dialogs).
 - **CSS:** `styles/PostDetail.module.css` (170 violations).
