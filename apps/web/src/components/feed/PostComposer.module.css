@@ -1,0 +1,44 @@
+/* Stacked on phones, where a single row truncates the prompt to a few words. */
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+
+.root > :last-child {
+  flex: 1 0 100%;
+}
+
+@media (min-width: $mantine-breakpoint-sm) {
+  .root {
+    flex-wrap: nowrap;
+  }
+
+  .root > :last-child {
+    flex: 0 0 auto;
+  }
+}
+
+.prompt {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  /* text-3 on this surface is 4.25:1, under AA. */
+  color: var(--text-2);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prompt:hover {
+  background: var(--surface-2);
+  color: var(--text-1);
+}

@@ -159,6 +159,19 @@ The spec is updated in the same commit as this plan.
    - **Stale highlighting:** the suggestions hook kept previous results while the next request was in flight but reported the new query, so marks described words the visible results never matched. It now returns `resultsQuery` alongside `query`.
    - **Not taken:** the missing-baselines finding was stale — all three PNGs are committed. Keyboard navigation is not broken: Mantine's `Combobox.Target` wires arrows and Escape, and a passing test covers ArrowDown + Enter. The range-aware e2e fixture was reverted, because its synthetic ids never hydrate, so it would also need post hydration mocks and a baseline regeneration for the least valuable finding in the set.
 
+23. **`PostActions` differs from its task description (PR 4a).** Task 4a.4 specified a `detailHref` rendered as an `Anchor`, and no `liked` prop.
+
+   - **"View Details" stays a plain span.** The card's stretched link already opens the post, so a link here would be a second tab stop to the same URL and would have to fight the stretched link's overlay for clicks. It is `aria-hidden`, because the link already carries the post title.
+   - **`liked` was missing.** The heart is filled for posts the viewer liked (feed 1288), so the prop is `{ likeCount, commentCount, liked?, onShare }`.
+   - **Counts stay text.** They are `<span>`s today with no handler; nothing on the feed can like or comment. Each carries a visually hidden "3 likes" / "1 comment" so the number is not read bare.
+
+24. **`PhotoCarousel` keeps wrap-around paging (PR 4a).** Task 4a.5 called for previous and next disabled at the ends and a scroll-snap track. The carousel wraps today (`(index ± 1 + length) % length`), so disabling would change behaviour that no task asked to change, and a scroll-snap track would swap the whole interaction model on a migration PR. It stays one photo at a time with wrap-around, and the fix is structural: previous and next are real buttons **beside** the photo, where they used to be `role="button"` divs nested inside another `role="button"` div. The 40px swipe threshold is unchanged.
+
+25. **`PostCard` drops `onAvatarViewProfile`, and is wired up in 4a.9 (PR 4a).**
+
+   - **The prop is gone.** `UserMenuTrigger`'s "View profile" is a real link to `/users/:id`, so the callback that pushed that route has nothing left to do. `PostCardProps` is the other twelve props plus `metroLabel`.
+   - **The page keeps using its inline card until 4a.9.** Task 4a.7 said to wire the new component into `feed.page.tsx`, but swapping it in changes what 40 feed tests query — tag case, menus rendered in a portal, the scope badge's text. Doing that here would leave the suite red across two commits, so the extraction and its own tests land first and the page adopts them in 4a.9, where the feed tests are rewritten anyway.
+
 ## Live tracker
 
 One task is `In Progress` at a time. Update this table when a PR starts and when it merges.
@@ -170,8 +183,9 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 2 Shell + primitives | `feat/web-app-shell` (stacked on PR 1) | 2.1–2.12 | Merged (PR #64) | 2026-09-18 | Linux baselines f19b133 (CI run 35016011832) |
 | 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Merged (PR #65) | 2026-09-18 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
-| 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | In Progress | 2026-09-19 | design agreed; no migration (count fix deferred); land before mobile search (launch plan W4, UX-02) |
-| 4 Feed + post detail | `feat/web-ui-feed` | breakdown at PR start | Not Started | 2026-09-14 | |
+| 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | Merged (PR #79) | 2026-09-19 | no migration; the `count(*) OVER ()` fix stays deferred with its trigger |
+| 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | In Review (PR #80) | 2026-09-19 | draft open; visual baselines still to run before it is marked ready |
+| 4b Post detail | `feat/web-ui-post-detail` | breakdown at PR start | Not Started | 2026-09-19 | split from PR 4; starts after 4a merges |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -10943,11 +10957,29 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
 - [ ] `docs/architecture/web-ui-system.md` lists any new shared component.
 - [ ] If the area PR changes behaviour, the feature doc under `docs/product/features/` is updated.
 
-## PR 4 — Feed + post detail (`feat/web-ui-feed`)
+## PR 4 — split into 4a and 4b (2026-09-19)
 
-- **Pages:** `pages/feed.page.tsx` (1290 lines), `pages/posts/[id].page.tsx` (984).
-- **CSS:** `styles/Feed.module.css`, `styles/PostDetail.module.css`, `components/LocationSwitcher.module.css` (9 legacy tokens), `components/pulse/PulseCard.module.css` (6 colour literals).
-- **Feed components missed when this PR was scoped:** `components/LocationSwitcher`, which also renders in `TopBar`, and `components/pulse/PulseCard`, whose `.tsx` has two raw `<button>`s. Both are on the allowlists, and PR 10 cannot empty the allowlists until they are migrated.
+One PR covering both pages came to about 4,000 lines of source, too much for one review. It is now two PRs. **4a** builds the shared post components and migrates the feed; **4b** adopts those components in post detail. Each re-baselines its own pages, which costs two screenshot runs instead of one.
+
+**Inventory** (run on `master` at 0119883, the "Starting an area PR" commands):
+
+| File | CSS violations | Raw form elements | Native dialogs |
+|---|---|---|---|
+| `pages/feed.page.tsx` (1323 lines) | — | 6 | 3 |
+| `styles/Feed.module.css` (1085) | 289 (252 legacy tokens, 33 literals, 4 named) | — | — |
+| `pages/posts/[id].page.tsx` (1008) | — | 17 | 5 |
+| `styles/PostDetail.module.css` (656) | 170 (160 legacy tokens, 9 literals, 1 named) | — | — |
+| `components/LocationSwitcher.module.css` | 9 (8 legacy tokens, 1 literal) | 0 in `.tsx` | — |
+| `components/pulse/PulseCard.module.css` | 6 literals | 2 in `.tsx` | — |
+| `components/pulse/MetroPulseStrip.module.css` | 0 | 0 | — |
+
+The dialogs are `alert` on copy-link and delete failure, and `confirm` before deleting a post (feed 569, 574, 579; post detail 320, 332, 338) or a comment (post detail 210, 224).
+
+## PR 4a — Post components + feed (`feat/web-ui-feed`)
+
+- **Pages:** `pages/feed.page.tsx`.
+- **CSS:** `styles/Feed.module.css`, `components/LocationSwitcher.module.css`, `components/pulse/PulseCard.module.css`.
+- **Also here, because both render on the feed:** `components/LocationSwitcher` (it also renders in `TopBar`) and `components/pulse/PulseCard` (two raw `<button>`s). Both sit on the allowlists, which PR 10 cannot empty until they are migrated.
 - **Build (first adopters):**
   - `components/ui/ImageLightbox`: Mantine `Modal` `fullScreen`, focus trap, Escape, ←/→ keys, labelled prev/next/close buttons. It replaces the two ~210-line copies (feed 373–488/821–916, posts/[id] 369–487/887–980).
   - `components/ui/PhotoCarousel`: CSS scroll-snap, labelled prev/next buttons, position announced as "Photo 2 of 3". It replaces the carousels in feed 1189–1250 and posts/[id] 620–679.
@@ -10955,16 +10987,417 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
   - `PostCard`, a stretched-link card replacing today's `<Link>` wrapping buttons (feed 1040–1288)
   - `PostActions`, with inline SVG icons (1255–1281) moved to Tabler
   - `PostMeta` (tag chips, `ScopeBadge`, metro)
-  - `CommentThread`, `CommentComposer`
-  - `components/users/UserMenuTrigger` (an `ActionMenu` with View Profile / Chat), replacing the hand-positioned `ref.style` menus (posts/[id] 139) and the manual `mousedown` listeners
+  - `PostComposer`, the feed's composer row
   - the feed's sponsored rail and upcoming-events widget
+- **Also:**
+  - Add `components/ui/notify.ts` (`notify.success(message)`, `notify.error(message)` over `@mantine/notifications`, with tests) and adopt it for the feed's toasts.
+  - Replace the feed's native dialogs (report, delete) with `useConfirm`.
+- **Build `components/users/UserMenuTrigger`** here, not in 4b: the feed's post card has the same hand-rolled avatar dropdown (feed 1075–1119, `useClickOutside`) that post detail has.
+- **Hands to 4b:** `ImageLightbox`, `PhotoCarousel`, `PostCard`, `PostActions`, `PostMeta`, `UserMenuTrigger` and `notify`.
+
+## PR 4a — Task breakdown
+
+Work on `feat/web-ui-feed`, branched from `master` at 0119883. Tasks 4a.1–4a.8 build components and can each merge mentally on their own; 4a.9 is the page rewrite that adopts them; 4a.10–4a.12 finish the CSS, tests and baselines.
+
+**Conventions to follow** (from `components/ui/`, confirmed on 2026-09-19):
+
+- Named function export plus an exported `…Props` interface, both re-exported from `components/ui/index.ts`. Components under `components/posts/` and `components/users/` have no barrel; import them by path.
+- Icons come from `@tabler/icons-react` with an explicit `size` and `aria-hidden="true"`.
+- CSS Modules colocated per component, semantic tokens only, no colour literals.
+- A colocated `X.test.tsx` per component using `render` from `../../test-utils` (it wraps `MantineProvider env="test"` and `ModalsProvider`). Query by role, label or text — never by class name or `data-*`.
+- Mantine is 8.3.18. Respect the Mantine 9 readiness list in Global Constraints.
+- When a step says "move" markup, keep its current structure unless the step says what changes. Do not reformat untouched lines.
+
+**Primitives that exist and are still unused in production:** `ActionMenu`, `useConfirm`, `usePrompt`. PR 4a is their first adopter, so read `ActionMenu.test.tsx` and `dialogs.test.tsx` for the exact call shapes before writing against them.
+
+### Task 4a.1: `notify` helper
+
+**Files:**
+
+- Create: `apps/web/src/components/ui/notify.ts`, `apps/web/src/components/ui/notify.test.ts`
+- Modify: `apps/web/src/components/ui/index.ts`
+
+**Interfaces:**
+
+```ts
+export const notify: {
+  success(message: string): void;
+  error(message: string): void;
+};
+```
+
+Both call `notifications.show` from `@mantine/notifications`. `success` passes `{ message, color: 'green', autoClose: 2500 }`, `error` passes `{ message, color: 'red', autoClose: 5000 }`. No title, because every current caller passes a bare sentence.
+
+- [ ] **Step 1: Write the failing test** in `notify.test.ts`
+
+```ts
+import { describe, expect, it, vi } from 'vitest';
+
+const show = vi.fn();
+vi.mock('@mantine/notifications', () => ({ notifications: { show: (...args: unknown[]) => show(...args) } }));
+
+const { notify } = await import('./notify');
+
+describe('notify', () => {
+  it('shows a green success toast', () => {
+    notify.success('Link copied to clipboard');
+    expect(show).toHaveBeenCalledWith({ message: 'Link copied to clipboard', color: 'green', autoClose: 2500 });
+  });
+
+  it('shows a red error toast that stays longer', () => {
+    notify.error('Failed to delete post. Please try again.');
+    expect(show).toHaveBeenCalledWith({
+      message: 'Failed to delete post. Please try again.',
+      color: 'red',
+      autoClose: 5000,
+    });
+  });
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail**
+
+Run: `npm run test --workspace=apps/web -- src/components/ui/notify.test.ts`
+
+Expected: FAIL, `Cannot find module './notify'`.
+
+- [ ] **Step 3: Write `notify.ts`**
+
+```ts
+/**
+ * Toasts for the whole web app. Callers pass a sentence; colour and duration
+ * are decided here so success and failure always look the same.
+ */
+import { notifications } from '@mantine/notifications';
+
+export const notify = {
+  success(message: string): void {
+    notifications.show({ message, color: 'green', autoClose: 2500 });
+  },
+  error(message: string): void {
+    notifications.show({ message, color: 'red', autoClose: 5000 });
+  },
+};
+```
+
+- [ ] **Step 4: Export it** by adding `export { notify } from './notify';` to `components/ui/index.ts`, keeping the file's alphabetical order.
+
+- [ ] **Step 5: Run the test again**
+
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add apps/web/src/components/ui/notify.ts apps/web/src/components/ui/notify.test.ts apps/web/src/components/ui/index.ts
+git commit -m "feat(web): add the notify toast helper" -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+### Task 4a.2: `UserMenuTrigger`
+
+Replaces the hand-rolled avatar dropdown at feed 1075–1119 (`useClickOutside`, absolute positioning, two `<button>`s).
+
+**Files:**
+
+- Create: `apps/web/src/components/users/UserMenuTrigger.tsx`, `apps/web/src/components/users/UserMenuTrigger.test.tsx`
+
+**Interfaces:**
+
+```ts
+export interface UserMenuTriggerProps {
+  userId: string;
+  name: string;
+  photoUrl?: string | null;
+  trustLevel?: number;
+  size?: AvatarSize;            // re-exported type from '../Avatar'
+  onChat?: (userId: string, name: string) => void;
+}
+```
+
+Renders `ActionMenu` with `target` set to a Mantine `UnstyledButton` wrapping `<Avatar>`. The trigger's accessible name is "Options for " plus the name. `ActionMenu` already handles outside clicks, Escape and roving focus, so no `useClickOutside` here. The items:
+
+```ts
+const items: ActionMenuItem[] = [
+  { key: 'profile', label: 'View profile', href: `/users/${userId}` },
+  ...(onChat ? [{ key: 'chat', label: 'Chat', onClick: () => onChat(userId, name) }] : []),
+];
+```
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen } from '../../test-utils';
+import userEvent from '@testing-library/user-event';
+import { UserMenuTrigger } from './UserMenuTrigger';
+
+describe('UserMenuTrigger', () => {
+  it('opens a menu with a profile link and a chat action', async () => {
+    const onChat = vi.fn();
+    render(<UserMenuTrigger userId="u1" name="Bikash Thapa" onChat={onChat} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Options for Bikash Thapa' }));
+
+    expect(screen.getByRole('menuitem', { name: 'View profile' })).toHaveAttribute('href', '/users/u1');
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Chat' }));
+    expect(onChat).toHaveBeenCalledWith('u1', 'Bikash Thapa');
+  });
+
+  it('omits Chat when no handler is given', async () => {
+    render(<UserMenuTrigger userId="u1" name="Bikash Thapa" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Options for Bikash Thapa' }));
+    expect(screen.queryByRole('menuitem', { name: 'Chat' })).toBeNull();
+  });
+});
+```
+
+Check whether `@testing-library/user-event` is already a dependency of `apps/web`; if it is not, use `fireEvent.click` from `../../test-utils` instead of adding a dependency.
+
+- [ ] **Step 2: Run it and watch it fail.** Run: `npm run test --workspace=apps/web -- src/components/users/UserMenuTrigger.test.tsx`
+
+- [ ] **Step 3: Write the component**, importing `ActionMenu` from `../ui`, `Avatar` (default export) from `../Avatar`, and `UnstyledButton` from `@mantine/core`.
+
+- [ ] **Step 4: Run the test again.** Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/web/src/components/users/UserMenuTrigger.tsx apps/web/src/components/users/UserMenuTrigger.test.tsx
+git commit -m "feat(web): add UserMenuTrigger over ActionMenu" -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+### Task 4a.3: `PostMeta`
+
+Replaces feed 1120–1156: author line, relative time, tag buttons (`tag.name.toUpperCase()` in a raw `<button>`) and the Global/Local Mantine `Badge`.
+
+**Files:**
+
+- Create: `apps/web/src/components/posts/PostMeta.tsx`, `PostMeta.module.css`, `PostMeta.test.tsx`
+
+**Interfaces:**
+
+```ts
+export interface PostMetaProps {
+  post: Post;                                  // from '@nepally/shared'
+  metroLabel?: string;
+  onTagClick?: (slug: string) => void;
+}
+```
+
+Renders the author name, `formatRelativeTime(post.created_at)` inside a `<time dateTime={post.created_at}>`, one `TagChip` per `post.tags`, and `<ScopeBadge isGlobal={post.is_global} metroLabel={metroLabel} />`.
+
+**Two deliberate changes, both visible:**
+
+- Tag labels lose the uppercasing. `TagChip` renders the label it is given, so "HOUSING" becomes "Housing". `feed.test.tsx:267` expects `{ name: 'HOUSING' }` and must change with it.
+- When `onTagClick` is given, each chip sits inside `<button type="button" aria-label={`Filter by ${tag.name}`}>`; a `Badge` is not interactive on its own. Without the handler the chips render bare, which is what 4b needs on post detail.
+
+- [ ] **Step 1: Write the failing test** covering: the author name and relative time render; three tags render as chips with their original case; clicking a chip calls `onTagClick` with the slug; `ScopeBadge` shows "Global" for `is_global` and `Local · Dallas` otherwise; and with no `onTagClick` the chips are not buttons (`queryByRole('button')` is null).
+- [ ] **Step 2: Run it and watch it fail.** Run: `npm run test --workspace=apps/web -- src/components/posts/PostMeta.test.tsx`
+- [ ] **Step 3: Write the component and its CSS Module** (semantic tokens only).
+- [ ] **Step 4: Run the test again.** Expected: PASS.
+- [ ] **Step 5: Commit** as `feat(web): extract PostMeta with TagChip and ScopeBadge`.
+
+### Task 4a.4: `PostActions`
+
+Replaces the footer at feed 1285–1320, whose four icons are hand-written SVG. Today the like and comment icons are display-only `<span>`s with counts; **keep them display-only**. Turning them into buttons is a behaviour change and belongs to a feature PR, not this migration.
+
+**Files:**
+
+- Create: `apps/web/src/components/posts/PostActions.tsx`, `PostActions.module.css`, `PostActions.test.tsx`
+
+**Interfaces:**
+
+```ts
+export interface PostActionsProps {
+  likeCount: number;
+  commentCount: number;
+  onShare: () => void;
+  detailHref: string;
+}
+```
+
+Counts use `IconHeart` and `IconMessageCircle` inside a `<span>` with an accessible text label (`` `${likeCount} likes` ``) so screen readers do not read a bare number. Share is a Mantine `ActionIcon` with `aria-label="Share post"` and `IconShare`. "View details" is an `Anchor component={Link}` to `detailHref`.
+
+- [ ] **Step 1: Write the failing test**: counts render with their labels, the share button calls `onShare`, the details link points at `detailHref`, and neither count is a button.
+- [ ] **Step 2: Run it and watch it fail.**
+- [ ] **Step 3: Write the component and CSS Module.**
+- [ ] **Step 4: Run the test again.** Expected: PASS.
+- [ ] **Step 5: Commit** as `feat(web): extract PostActions with Tabler icons`.
+
+### Task 4a.5: `PhotoCarousel`
+
+Replaces feed 1222–1283 (and post detail 620–679 in 4b): `next/image` slides, a counter, prev/next `div`s with `role="button"`, and a 40px touch-swipe threshold.
+
+**Files:**
+
+- Create: `apps/web/src/components/ui/PhotoCarousel.tsx`, `PhotoCarousel.module.css`, `PhotoCarousel.test.tsx`
+- Modify: `apps/web/src/components/ui/index.ts`
+
+**Interfaces:**
+
+```ts
+export interface PhotoCarouselProps {
+  photos: string[];
+  alt: string;                       // e.g. `Photo from ${authorName}'s post`
+  onPhotoClick?: (index: number) => void;
+}
+```
+
+Requirements: real `<button>`s for previous and next, labelled "Previous photo" and "Next photo", disabled at each end; position announced in a `<p aria-live="polite">` as "Photo 2 of 3"; CSS scroll-snap for the track; keyboard ←/→ move when the track has focus; the existing 40px swipe threshold is kept; a single photo renders without controls.
+
+- [ ] **Step 1: Write the failing test**: a three-photo carousel starts at "Photo 1 of 3" with Previous disabled; Next advances the announcement; the end disables Next; clicking a photo calls `onPhotoClick` with its index; one photo renders no buttons.
+- [ ] **Step 2: Run it and watch it fail.**
+- [ ] **Step 3: Write the component and CSS Module.** Keep `next/image` with the existing `fill` usage and sizes.
+- [ ] **Step 4: Run the test again.** Expected: PASS.
+- [ ] **Step 5: Commit** as `feat(web): add the PhotoCarousel primitive`.
+
+### Task 4a.6: `ImageLightbox`
+
+Replaces feed 856–951 plus its state and handlers (`:70–74`, `:393–441`, `:443–516`): overlay, close button, zoom levels `[1, 1.25, 1.5, 2, 2.5, 3, 4]`, chrome that auto-hides after 1500ms, Escape and ←/→ keys, wheel zoom.
+
+**Files:**
+
+- Create: `apps/web/src/components/ui/ImageLightbox.tsx`, `ImageLightbox.module.css`, `ImageLightbox.test.tsx`
+- Modify: `apps/web/src/components/ui/index.ts`
+
+**Interfaces:**
+
+```ts
+export interface ImageLightboxProps {
+  photos: string[];
+  startIndex?: number;               // default 0
+  opened: boolean;
+  onClose: () => void;
+  alt?: string;                      // default 'Post photo'
+}
+```
+
+Built on Mantine `Modal` with `fullScreen`, `withCloseButton={false}` and its own labelled close `ActionIcon`, so Mantine owns the focus trap, Escape and scroll lock instead of the page. Keep the zoom levels and the 1500ms chrome timer as exported module constants. Prev/next are real buttons, and the counter reads "Photo 2 of 3".
+
+- [ ] **Step 1: Write the failing test**: opening renders the photo at `startIndex`; ←/→ move and the counter follows; the close button calls `onClose`; zoom in and out step through the levels and clamp at each end; `opened={false}` renders nothing.
+- [ ] **Step 2: Run it and watch it fail.**
+- [ ] **Step 3: Write the component and CSS Module.**
+- [ ] **Step 4: Run the test again.** Expected: PASS.
+- [ ] **Step 5: Commit** as `feat(web): add the ImageLightbox primitive`.
+
+### Task 4a.7: `PostCard`
+
+Moves feed 972–1323 into its own file, composing the four components above. This is the task that removes the nested-interactive violation.
+
+**Files:**
+
+- Create: `apps/web/src/components/posts/PostCard.tsx`, `PostCard.module.css`, `PostCard.test.tsx`
+- Modify: `apps/web/src/pages/feed.page.tsx` (delete the inline component; import the new one)
+
+**Interfaces:** the same 13 props the inline component takes today (feed 986–1000), as a named exported `PostCardProps` interface, with one addition, `metroLabel?: string`, passed through to `PostMeta`.
+
+**The card stops being a link wrapper.** Today `<Link>` wraps the whole card and every interactive child calls `preventDefault()` and `stopPropagation()`. Replace it with a stretched link:
+
+```tsx
+<article className={styles.postCard}>
+  <Link href={`/posts/${post.id}`} className={styles.stretchedLink}>
+    <span className={styles.visuallyHidden}>{post.title}</span>
+  </Link>
+  {/* header, body, carousel, actions — each with position: relative and z-index 1 */}
+</article>
+```
+
+```css
+.stretchedLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+```
+
+Every interactive child then sits beside the link rather than inside it, so no `preventDefault()`/`stopPropagation()` calls remain, and no interactive element nests in another. The post "⋯" menu becomes an `ActionMenu`: for the author `Edit`, `Share`, `Delete` (`danger: true`); otherwise `Save`/`Unsave`, `Share`, `Report`.
+
+- [ ] **Step 1: Write the failing test** in `PostCard.test.tsx`: the title links to `/posts/:id`; the author menu lists Edit, Share and Delete; a non-author sees Save, Share and Report; choosing Delete calls `onDeletePost`; the tag chip calls `onTagClick`; and no `<a>` contains a `<button>` (assert `container.querySelectorAll('a button').length === 0` — the one place a structural query is right, because the rule is structural).
+- [ ] **Step 2: Run it and watch it fail.** Run: `npm run test --workspace=apps/web -- src/components/posts/PostCard.test.tsx`
+- [ ] **Step 3: Move the markup** from feed 972–1323, swapping in `PostMeta`, `PhotoCarousel`, `PostActions` and `UserMenuTrigger`, and deleting `useClickOutside`, both menu states and the touch handlers that `PhotoCarousel` now owns.
+- [ ] **Step 4: Run the test again.** Expected: PASS.
+- [ ] **Step 5: Commit** as `refactor(web): extract PostCard as a stretched-link card`.
+
+### Task 4a.8: Feed widgets
+
+**Files:**
+
+- Create: `apps/web/src/components/feed/PostComposer.tsx` + `.module.css` + test (from feed 662–685)
+- Create: `apps/web/src/components/feed/SponsoredRail.tsx` + `.module.css` + test (from feed 794–854, including the upcoming-events widget at 813–853)
+- Modify: `apps/web/src/pages/feed.page.tsx`
+
+`PostComposer` props, **as built**: `{ fullName: string | null; photoUrl?: string | null; trustLevel: number }`. The first name and whether posting is allowed are derived from those, rather than passed as a separate `canPost` flag that could disagree with `trustLevel`. It renders the avatar, the link-styled prompt and either "Create Post" or "Verify to Post", which is what `feed.test.tsx:155,166` asserts.
+
+`SponsoredRail` props, **as built**: `{ stickyListings: SponsoredListing[]; events: Event[] }`. The component maps sticky listings to cards and falls back to the placeholder ads itself, which is why it takes the raw listings; `metroAreaId` turned out unused in the markup. Keep the rail's `<aside>` element and the "Sponsored" and "Upcoming Events" headings, because `04-feed.spec.ts` locates them by `aside` and by heading text; the e2e file is updated in 4a.12, so keep the structure stable here.
+
+- [ ] **Step 1: Write failing tests** for both components: the composer shows "Verify to Post" at trust level 0 and "Create Post" above it; the rail renders each sponsored listing, the three events with their formatted dates, the "View All" link, and no past events.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Move the markup** and wire both into `feed.page.tsx`.
+- [ ] **Step 4: Run the tests again**, plus `npm run test --workspace=apps/web -- src/pages/feed.test.tsx`. The feed suite must stay green: this task only moves markup.
+- [ ] **Step 5: Commit** as `refactor(web): extract the feed composer and sponsored rail`.
+
+### Task 4a.9: Rewrite the feed page over the primitives
+
+**Files:** `apps/web/src/pages/feed.page.tsx`, `apps/web/src/pages/feed.test.tsx`
+
+- [ ] **Step 1: Update the feed tests first** for the four behaviour changes: loading uses `LoadingState` (`role="status"`, so `getByTestId('feed-loading')` becomes `getByRole('status')`), the error state uses `ErrorState`, the empty state uses `EmptyState`, and the delete flow uses `useConfirm` plus `notify` rather than `confirm()` and `alert()`. The delete test must now click the confirm button in the modal.
+- [ ] **Step 2: Run the feed suite and watch the updated tests fail.** Run: `npm run test --workspace=apps/web -- src/pages/feed.test.tsx`
+- [ ] **Step 3: Make the changes:**
+  - Replace the inline skeletons (695–704) with `<LoadingState variant="card" count={3} label="Loading posts…" />`.
+  - Replace the inline error (705–713) with `<ErrorState message={loadError} onRetry={handleRetryLoad} />`.
+  - Replace the inline empty state (714–732) with `<EmptyState>`, keeping the existing CTA as its `action`.
+  - Delete the hand-rolled `IntersectionObserver` (298–313) and use `useInfiniteScroll({ hasMore: hasMorePosts, loading: loadingMorePosts, onLoadMore: loadMorePosts })`, attaching its `sentinelRef`.
+  - Replace `confirm()` (574) with `useConfirm()` — title "Delete post", message "This cannot be undone.", `danger: true` — and both `alert()` calls (569, 579) plus `showSaveToast` (361) and the report toast (178) with `notify`.
+  - Delete the lightbox state and handlers (70–74, 393–441, 443–516) in favour of `<ImageLightbox opened={lightboxPhotos.length > 0} …>`.
+- [ ] **Step 4: Run the feed suite again.** Expected: PASS.
+- [ ] **Step 5: Check the page shrank.** Run: `node -e "console.log(require('fs').readFileSync('apps/web/src/pages/feed.page.tsx','utf8').split('\n').length)"`. Expected: about 350 lines or fewer, which is the area-PR definition of done.
+- [ ] **Step 6: Commit** as `refactor(web): rebuild the feed page on the shared primitives`.
+
+### Task 4a.10: `LocationSwitcher` and `PulseCard`
+
+**Files:** `components/LocationSwitcher.tsx` + `.module.css`, `components/pulse/PulseCard.tsx` + `.module.css`, and both test files.
+
+- [ ] **Step 1: Move `PulseCard`'s two raw `<button>`s** to a Mantine `UnstyledButton` (the card) and an `ActionIcon` (dismiss, `aria-label={`Dismiss ${headline}`}`). Update `PulseCard.test.tsx` to query by role instead of `pulse-card-dismiss-fx_rate`, keeping the existing behaviour assertions.
+- [ ] **Step 2: Replace the 6 colour literals** in `PulseCard.module.css` and the 8 legacy tokens plus 1 literal in `LocationSwitcher.module.css` with semantic tokens from `tokens.css`.
+- [ ] **Step 3: Run the guards.** Run: `node -e "const {findViolations}=require('./scripts/guard-css-tokens.js');const fs=require('fs');for(const f of ['apps/web/src/components/pulse/PulseCard.module.css','apps/web/src/components/LocationSwitcher.module.css'])console.log(f, findViolations(fs.readFileSync(f,'utf8')).length)"`. Expected: `0` for both.
+- [ ] **Step 4: Remove all three files** from `scripts/guard-css-tokens.allowlist.json` and remove `src/components/pulse/PulseCard.tsx` from `apps/web/eslint/raw-element-allowlist.mjs`, then run `npm run lint:guards`. Expected: pass. The guards fail on an allowlisted file that is already clean, so the entries must go in this commit.
+- [ ] **Step 5: Run the tests.** Run: `npm run test --workspace=apps/web -- src/components/pulse src/components/LocationSwitcher.test.tsx`
+- [ ] **Step 6: Commit** as `refactor(web): move LocationSwitcher and PulseCard onto tokens`.
+
+### Task 4a.11: `Feed.module.css` onto semantic tokens
+
+289 violations across 1085 lines: 252 legacy tokens, 33 colour literals, 4 named colours.
+
+- [ ] **Step 1: List them** with `node -e "const {findViolations}=require('./scripts/guard-css-tokens.js');const fs=require('fs');console.table(findViolations(fs.readFileSync('apps/web/src/styles/Feed.module.css','utf8')))"`.
+- [ ] **Step 2: Replace them** using the semantic token table in spec §4.1. Legacy `var(--color-*)` names map through `legacy-aliases.css`; find each one's new name there rather than guessing. Rules that moved into a component's CSS Module in tasks 4a.3–4a.8 are deleted here, not converted.
+- [ ] **Step 3: Check.** Run the same `findViolations` command. Expected: `0`.
+- [ ] **Step 4: Remove `apps/web/src/styles/Feed.module.css`** from the allowlist and run `npm run lint:guards`. Expected: pass.
+- [ ] **Step 5: Commit** as `style(web): move the feed stylesheet onto semantic tokens`.
+
+### Task 4a.12: Tests, accessibility, baselines and the PR
+
+- [ ] **Step 1: Update the e2e feed spec** `apps/web/e2e/tests/04-feed.spec.ts` for the new DOM. Replace `page.locator('a').filter({ hasText: title })` (65, 77, 87) and `page.locator('section')` (47) with role-based locators, and `page.locator('aside')` (112, 121, 132, 141, 154) with `getByRole('complementary')`. Keep `a[href="/feed?tags=housing"]` if the filter bar still renders that link; check rather than assume.
+- [ ] **Step 2: Run the e2e suite.** Run: `npm run test:e2e --workspace=apps/web -- e2e/tests/04-feed.spec.ts`. Expected: PASS.
+- [ ] **Step 3: Keyboard walk-through** of the feed: Tab order through composer, tag chips, post menus and the rail; Enter and Space on each menu; Escape closes menus and the lightbox; ←/→ move the carousel and the lightbox. Fix what does not work.
+- [ ] **Step 4: Run the whole local pipeline.** Run: `npm run ci:local`. Expected: exit 0.
+- [ ] **Step 5: Regenerate the visual baselines.** There is no local Docker (Decision 1), so push with `[visual-baselines]` in the commit message, download the `visual-baselines` artifact from the workflow run, review every changed PNG, and commit the screenshots plus the `a11y-baseline.json` diff. The feed, post-card and phone-feed screenshots all change, because the tag chips lose their uppercase and the card markup is new.
+- [ ] **Step 6: Clear the feed's accessibility entries.** Run the visual suite with `--write-a11y-baseline` and check the `a11y-baseline.json` diff only deletes lines. The feed pages are not in the baseline today, so this should be a no-op; if it adds an entry, fix the violation instead of recording it.
+- [ ] **Step 7: Update the docs.** Add `ImageLightbox`, `PhotoCarousel`, `notify`, `PostCard`, `PostMeta`, `PostActions`, `PostComposer`, `SponsoredRail` and `UserMenuTrigger` to `docs/architecture/web-ui-system.md`. Set the PR 4a tracker row to Merged when it lands. Run `npm run docs:check`.
+- [ ] **Step 8: Push and open the draft PR** against `master`, fill `.github/pull_request_template.md`, then `gh pr edit <number> --add-reviewer @copilot` and confirm the request in the timeline. Leave it in draft.
+
+## PR 4b — Post detail (`feat/web-ui-post-detail`)
+
+Starts after 4a merges, so it can adopt what 4a built.
+
+- **Pages:** `pages/posts/[id].page.tsx` (1008 lines, 17 raw form elements, 5 native dialogs).
+- **CSS:** `styles/PostDetail.module.css` (170 violations).
+- **Adopt from 4a:** `ImageLightbox` (replacing posts/[id] 369–487/887–980), `PhotoCarousel` (620–679), `PostMeta`, `PostActions` and `notify`.
+- **Extract into `components/posts/`:** `CommentThread`, `CommentComposer`.
+- **Adopt `UserMenuTrigger`** (built in 4a) for the hand-positioned `ref.style` menus (posts/[id] 139) and their manual `mousedown` listeners. PR 9 reuses it for the messages pages.
 - **Tests to rewrite:**
   - `pages/posts/[id].test.tsx:441` (anchored dropdown class and inline style) → assert `menuitem`s.
   - `e2e/tests/09-avatar-menu.spec.ts:59,102` (`div[class*="avatarDropdownAnchored"]`) → `getByRole('menu')`.
-- **Also:**
-  - Extract the feed composer row into `components/posts/PostComposer`.
-  - Add `components/ui/notify.ts` (`notify.success(message)`, `notify.error(message)` over `@mantine/notifications`, with tests) and adopt it for the feed and post-detail toasts.
-  - Replace native dialogs in the feed (report, delete) and in post detail.
+- **Also:** replace the post and comment delete dialogs with `useConfirm`.
 
 ## PR 5 — Create flows (`feat/web-ui-create-flows`)
 

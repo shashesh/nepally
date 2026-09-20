@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { ActionIcon, Badge, Button, CloseButton, Skeleton, Stack, Text, UnstyledButton } from '@mantine/core';
-import { useClickOutside, useMediaQuery } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
+import { Button, CloseButton, Skeleton } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from '../hooks/useLocation';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { supabase } from '../lib/supabase';
 import {
   getPostsByMetroArea,
@@ -18,7 +17,6 @@ import {
   unsavePost,
   getOrCreateConversation,
   createReport,
-  formatRelativeTime,
   getUpcomingEventsByMetro,
   getSponsoredFeedListings,
   getStickyBusinessListings,
@@ -30,16 +28,17 @@ import type { Post, Event, SponsoredListing } from '@nepally/shared';
 type FeedEntry =
   | { kind: 'post'; post: Post }
   | { kind: 'sponsored'; sponsored: SponsoredListing };
-import Avatar from '../components/Avatar';
 import ReportPostModal from '../components/ReportPostModal';
+import { PostCard } from '../components/posts/PostCard';
+import { PostComposer } from '../components/feed/PostComposer';
+import { SponsoredRail } from '../components/feed/SponsoredRail';
+import { EmptyState, ErrorState, ImageLightbox, LoadingState, notify, useConfirm } from '../components/ui';
 import { MetroPulseStrip } from '../components/pulse/MetroPulseStrip';
 import LocationSwitcher from '../components/LocationSwitcher';
 import { TopicPills } from '../components/layout/TopicPills';
 import { PHONE_MEDIA_QUERY } from '../components/layout/breakpoints';
 import styles from '../styles/Feed.module.css';
 
-const LIGHTBOX_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
-const LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
 
 function parseTagSlugsParam(param: string | undefined): string[] {
   return param ? param.split(',').filter(Boolean) : [];
@@ -58,6 +57,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const { user, loading: authLoading } = useAuth();
   const isPhone = useMediaQuery(PHONE_MEDIA_QUERY);
   const { activeLocation } = useLocation();
+  const confirm = useConfirm();
   const FEED_PAGE_SIZE = 20;
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
@@ -67,19 +67,15 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [loadingMorePosts, setLoadingMorePosts] = useState(false);
   const loadingMoreRef = useRef(false);
-  const loadSentinelRef = useRef<HTMLDivElement | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [lightboxZoomLevel, setLightboxZoomLevel] = useState(0);
-  const [lightboxChromeVisible, setLightboxChromeVisible] = useState(true);
   const [reportModalPostId, setReportModalPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [stickyListings, setStickyListings] = useState<SponsoredListing[]>([]);
   const [sponsoredFeedListings, setSponsoredFeedListings] = useState<SponsoredListing[]>([]);
   const [feedReloadToken, setFeedReloadToken] = useState(0);
-  const lightboxChromeHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Tag-based filtering (multi-select) — set via sidebar nav links
   const pageTitle = routeBasePath === '/' ? 'Home - Nepally' : 'Feed - Nepally';
@@ -175,10 +171,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
         return { error: result.error.message || 'Failed to submit report. Please try again.' };
       }
 
-      notifications.show({
-        message: 'Thanks. Your report has been submitted for review.',
-        autoClose: 2500,
-      });
+      notify.success('Thanks. Your report has been submitted for review.');
       setReportModalPostId(null);
       return {};
     } finally {
@@ -258,6 +251,16 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     };
   }, [authLoading, user, userNeedsMetroOnboarding, metroAreaId, selectedTagSlugs, feedReloadToken]);
 
+  /**
+   * The sentinel is still on screen, so leaving hasMorePosts set would call
+   * loadMorePosts again the moment loadingMorePosts clears, in a tight loop of
+   * failing requests. useSearchPage stops the same way.
+   */
+  const stopPagingAfterFailure = useCallback(() => {
+    setHasMorePosts(false);
+    notify.error('Could not load more posts.');
+  }, []);
+
   const loadMorePosts = useCallback(async () => {
     if (loadingMoreRef.current) return;
     if (!metroAreaId || !hasMorePosts || loading) return;
@@ -273,7 +276,11 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
         FEED_PAGE_SIZE,
         posts.length
       );
-      if (result.data) {
+      if (result.error) {
+        // getPostsByMetroArea resolves with { error } rather than throwing, so
+        // this, not the catch below, is the path a failed page actually takes.
+        stopPagingAfterFailure();
+      } else if (result.data) {
         setPosts((prev) => {
           const seen = new Set(prev.map((p) => p.id));
           const next = [...prev];
@@ -286,31 +293,19 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       } else {
         setHasMorePosts(false);
       }
-    } catch (error) {
-      console.error('Failed to load more posts:', error);
+    } catch {
+      stopPagingAfterFailure();
     } finally {
       loadingMoreRef.current = false;
       setLoadingMorePosts(false);
     }
-  }, [metroAreaId, hasMorePosts, loading, selectedTagSlugs, posts.length]);
+  }, [metroAreaId, hasMorePosts, loading, selectedTagSlugs, posts.length, stopPagingAfterFailure]);
 
-  // IntersectionObserver sentinel for infinite scroll
-  useEffect(() => {
-    const node = loadSentinelRef.current;
-    if (!node) return;
-    if (!hasMorePosts || loading) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          loadMorePosts();
-        }
-      },
-      { rootMargin: '400px 0px' }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [hasMorePosts, loading, loadMorePosts]);
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore: hasMorePosts,
+    loading: loading || loadingMorePosts,
+    onLoadMore: loadMorePosts,
+  });
 
   // Load liked post IDs
   useEffect(() => {
@@ -359,7 +354,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   }, [metroAreaId]);
 
   function showSaveToast(message: string) {
-    notifications.show({ message, autoClose: 2500 });
+    notify.success(message);
   }
 
   async function handleSaveToggle(post: Post) {
@@ -390,129 +385,16 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     }
   }
 
-  useEffect(() => {
-    return () => {
-      if (lightboxChromeHideTimeoutRef.current) {
-        clearTimeout(lightboxChromeHideTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (lightboxPhotos.length === 0) return;
-
-    function resetChromeTimer() {
-      setLightboxChromeVisible(true);
-      if (lightboxChromeHideTimeoutRef.current) {
-        clearTimeout(lightboxChromeHideTimeoutRef.current);
-      }
-      lightboxChromeHideTimeoutRef.current = setTimeout(() => {
-        setLightboxChromeVisible(false);
-      }, LIGHTBOX_CHROME_HIDE_DELAY_MS);
-    }
-
-    function closeLightboxFromKey() {
-      if (lightboxChromeHideTimeoutRef.current) {
-        clearTimeout(lightboxChromeHideTimeoutRef.current);
-        lightboxChromeHideTimeoutRef.current = null;
-      }
-      setLightboxPhotos([]);
-      setLightboxIndex(0);
-      setLightboxZoomLevel(0);
-      setLightboxChromeVisible(true);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        closeLightboxFromKey();
-      }
-      if (event.key === 'ArrowRight') {
-        resetChromeTimer();
-        setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
-      }
-      if (event.key === 'ArrowLeft') {
-        resetChromeTimer();
-        setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxPhotos]);
-
-  function clearLightboxChromeTimer() {
-    if (lightboxChromeHideTimeoutRef.current) {
-      clearTimeout(lightboxChromeHideTimeoutRef.current);
-      lightboxChromeHideTimeoutRef.current = null;
-    }
-  }
-
-  function resetLightboxChromeTimer() {
-    setLightboxChromeVisible(true);
-    clearLightboxChromeTimer();
-    lightboxChromeHideTimeoutRef.current = setTimeout(() => {
-      setLightboxChromeVisible(false);
-    }, LIGHTBOX_CHROME_HIDE_DELAY_MS);
-  }
-
   function openLightbox(photos: string[], startIndex: number) {
     const safePhotos = photos.filter(Boolean);
     if (safePhotos.length === 0) return;
-    const normalizedIndex = Math.min(Math.max(startIndex, 0), safePhotos.length - 1);
     setLightboxPhotos(safePhotos);
-    setLightboxIndex(normalizedIndex);
-    setLightboxZoomLevel(0);
-    resetLightboxChromeTimer();
+    setLightboxIndex(Math.min(Math.max(startIndex, 0), safePhotos.length - 1));
   }
 
   function closeLightbox() {
-    clearLightboxChromeTimer();
     setLightboxPhotos([]);
     setLightboxIndex(0);
-    setLightboxZoomLevel(0);
-    setLightboxChromeVisible(true);
-  }
-
-  function showNextLightboxPhoto() {
-    resetLightboxChromeTimer();
-    setLightboxIndex((prev) => (prev + 1) % lightboxPhotos.length);
-    setLightboxZoomLevel(0);
-  }
-
-  function showPreviousLightboxPhoto() {
-    resetLightboxChromeTimer();
-    setLightboxIndex((prev) => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
-    setLightboxZoomLevel(0);
-  }
-
-  function zoomInLightbox() {
-    resetLightboxChromeTimer();
-    setLightboxZoomLevel((prev) => Math.min(prev + 1, LIGHTBOX_ZOOM_LEVELS.length - 1));
-  }
-
-  function zoomOutLightbox() {
-    resetLightboxChromeTimer();
-    setLightboxZoomLevel((prev) => Math.max(prev - 1, 0));
-  }
-
-  function handleLightboxWheel(event: React.WheelEvent<HTMLImageElement>) {
-    resetLightboxChromeTimer();
-    event.preventDefault();
-    if (event.deltaY < 0) {
-      zoomInLightbox();
-    } else {
-      zoomOutLightbox();
-    }
-  }
-
-  function getLightboxImageZoomClass(level: number): string {
-    if (level === 0) return styles.lightboxImageZoom0;
-    if (level === 1) return styles.lightboxImageZoom1;
-    if (level === 2) return styles.lightboxImageZoom2;
-    if (level === 3) return styles.lightboxImageZoom3;
-    if (level === 4) return styles.lightboxImageZoom4;
-    if (level === 5) return styles.lightboxImageZoom5;
-    return styles.lightboxImageZoom6;
   }
 
   function handleTagChipToggle(slug: string) {
@@ -529,10 +411,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
   function handleRetryLoad() {
     setFeedReloadToken((token) => token + 1);
-  }
-
-  function handleAvatarViewProfile(authorId: string) {
-    router.push(`/users/${authorId}`);
   }
 
   async function handleAvatarChat(authorId: string, authorName: string) {
@@ -566,17 +444,22 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
 
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(shareUrl);
-      alert('Link copied to clipboard');
+      notify.success('Link copied to clipboard');
     }
   }
 
   async function handleDeletePost(post: Post) {
-    const shouldDelete = confirm('Are you sure you want to delete this post? This cannot be undone.');
+    const shouldDelete = await confirm({
+      title: 'Delete post',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
     if (!shouldDelete) return;
 
     const result = await deletePost(supabase, post.id);
     if (result.error) {
-      alert('Failed to delete post. Please try again.');
+      notify.error('Failed to delete post. Please try again.');
       return;
     }
 
@@ -599,35 +482,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   }, [posts, sponsoredFeedListings]);
 
   if (!user) return null;
-
-  const firstName = user.full_name?.trim().split(' ')[0] || 'there';
-  const sponsoredItems = stickyListings.length > 0
-    ? stickyListings.map((s) => ({
-        id: s.id,
-        title: s.listing.title,
-        description: s.listing.description?.slice(0, 100) || '',
-        cta: 'View Listing',
-        label: 'Sponsored',
-        href: `/marketplace/listing/${s.listing.id}`,
-      }))
-    : [
-        {
-          id: 'biz-1',
-          title: 'Himalayan Kitchen',
-          description: 'Authentic Nepali cuisine in the heart of your city. Order online or dine in!',
-          cta: 'Visit Website',
-          label: 'AD',
-          href: '#',
-        },
-        {
-          id: 'biz-2',
-          title: 'Nepal Travel Co.',
-          description: 'Book affordable flights to Kathmandu. Special diaspora fares available now.',
-          cta: 'Learn More',
-          label: 'AD',
-          href: '#',
-        },
-      ];
 
   return (
     <>
@@ -659,30 +513,11 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
               </div>
             ) : null}
 
-            <div className={styles.composerCard}>
-              <Avatar
-                name={user.full_name || '?'}
-                photoUrl={user.profile_photo}
-                trustLevel={user.trust_level}
-                size="medium"
-              />
-              <Link
-                href={user.trust_level >= 1 ? '/posts/create' : '/profile'}
-                className={styles.composerInputLink}
-                aria-label="Start a new post"
-              >
-                What&apos;s on your mind, {firstName}?
-              </Link>
-              {user.trust_level >= 1 ? (
-                <Link href="/posts/create" className={styles.createPostBtn}>
-                  Create Post
-                </Link>
-              ) : (
-                <Link href="/profile" className={styles.createPostBtnMuted}>
-                  Verify to Post
-                </Link>
-              )}
-            </div>
+            <PostComposer
+              fullName={user.full_name}
+              photoUrl={user.profile_photo}
+              trustLevel={user.trust_level}
+            />
 
             {metroAreaId && user?.id ? (
               <MetroPulseStrip
@@ -693,43 +528,30 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
             ) : null}
 
             {loading ? (
-              <Stack data-testid="feed-loading" gap="md">
-                {[0, 1].map((i) => (
-                  <div key={i} className={styles.skeletonCard}>
-                    <Skeleton height={16} width="70%" mb="sm" />
-                    <Skeleton height={12} width="50%" mb="xs" />
-                    <Skeleton height={12} width="30%" />
-                  </div>
-                ))}
-              </Stack>
+              <LoadingState variant="card" count={2} label="Loading posts…" />
             ) : loadError ? (
-              <div className={styles.errorState}>
-                <Text size="xl" ta="center" mb="xs">⚠️</Text>
-                <Text fw={600} ta="center">Couldn&apos;t load posts</Text>
-                <Text size="sm" c="dimmed" ta="center" mb="sm">{loadError}</Text>
-                <Button variant="outline" onClick={handleRetryLoad}>
-                  Retry
-                </Button>
-              </div>
+              <ErrorState title="Couldn't load posts" message={loadError} onRetry={handleRetryLoad} retryLabel="Retry" />
             ) : posts.length === 0 ? (
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>🏔️</div>
-                <h3>No posts yet</h3>
-                <p>
-                  {selectedTagSlugs.length > 0
+              <EmptyState
+                icon={<span aria-hidden="true">🏔️</span>}
+                title="No posts yet"
+                description={
+                  selectedTagSlugs.length > 0
                     ? 'No posts matching your filters in this area. Try different tags!'
-                    : 'Be the first to share something with your community!'}
-                </p>
-                {user.trust_level >= 1 ? (
-                  <Link href="/posts/create" className={styles.emptyActionBtn}>
-                    Create First Post
-                  </Link>
-                ) : (
-                  <Link href="/profile" className={styles.emptyActionBtnSecondary}>
-                    Verify Account to Post
-                  </Link>
-                )}
-              </div>
+                    : 'Be the first to share something with your community!'
+                }
+                action={
+                  user.trust_level >= 1 ? (
+                    <Button component={Link} href="/posts/create">
+                      Create First Post
+                    </Button>
+                  ) : (
+                    <Button component={Link} href="/profile" variant="default">
+                      Verify Account to Post
+                    </Button>
+                  )
+                }
+              />
             ) : (
               feedEntries.map((entry) => {
                 if (entry.kind === 'sponsored') {
@@ -763,7 +585,6 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
                     saved={savedIds.has(post.id)}
                     onTagClick={handleTagChipToggle}
                     currentUserId={user?.id}
-                    onAvatarViewProfile={handleAvatarViewProfile}
                     onAvatarChat={handleAvatarChat}
                     onOpenLightbox={openLightbox}
                     onSharePost={handleSharePost}
@@ -778,7 +599,7 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
             {!loading && !loadError && posts.length > 0 && (
               <>
                 {hasMorePosts && (
-                  <div ref={loadSentinelRef} className={styles.feedLoadSentinel} aria-hidden="true" />
+                  <div ref={sentinelRef} className={styles.feedLoadSentinel} aria-hidden="true" />
                 )}
                 {loadingMorePosts && (
                   <div className={styles.feedFooterLoader} data-testid="feed-loading-more">
@@ -791,164 +612,14 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
           </div>
         </section>
 
-        <aside className={styles.sponsoredRail}>
-          <h2 className={styles.sponsoredTitle}>Sponsored</h2>
-          <div className={styles.sponsoredList}>
-            {sponsoredItems.map((item) => (
-              <article key={item.id} className={styles.sponsoredCard}>
-                <div className={styles.sponsoredCardImagePlaceholder}>
-                  <span className={styles.sponsoredAdLabel}>{item.label}</span>
-                </div>
-                <div className={styles.sponsoredCardBody}>
-                  <h3 className={styles.sponsoredCardTitle}>{item.title}</h3>
-                  <p className={styles.sponsoredCardText}>{item.description}</p>
-                  <Link href={item.href}>
-                    <Button variant="subtle" size="compact-sm">{item.cta}</Button>
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
+        <SponsoredRail stickyListings={stickyListings} events={upcomingEvents} />
 
-          {upcomingEvents.length > 0 && (
-            <div className={styles.eventsWidget}>
-              <div className={styles.eventsWidgetHeader}>
-                <h2 className={styles.eventsWidgetTitle}>Upcoming Events</h2>
-                <Link href="/events" className={styles.eventsWidgetViewAll}>
-                  View All
-                </Link>
-              </div>
-              <div className={styles.eventsWidgetList}>
-                {upcomingEvents.map((event, eventIndex) => {
-                  const eventDate = new Date(event.start_date);
-                  const month = eventDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-                  const day = eventDate.getDate().toString().padStart(2, '0');
-                  const dateColorClasses = [
-                    { date: styles.eventsWidgetDateBlue, month: styles.eventsWidgetMonthBlue },
-                    { date: styles.eventsWidgetDateAmber, month: styles.eventsWidgetMonthAmber },
-                    { date: styles.eventsWidgetDateTeal, month: styles.eventsWidgetMonthTeal },
-                    { date: styles.eventsWidgetDatePurple, month: styles.eventsWidgetMonthPurple },
-                    { date: styles.eventsWidgetDateRose, month: styles.eventsWidgetMonthRose },
-                  ];
-                  const colorVariant = dateColorClasses[eventIndex % dateColorClasses.length];
-                  return (
-                    <Link
-                      key={event.id}
-                      href={`/events/${event.id}`}
-                      className={styles.eventsWidgetCard}
-                    >
-                      <div className={`${styles.eventsWidgetDate} ${colorVariant.date}`}>
-                        <span className={`${styles.eventsWidgetMonth} ${colorVariant.month}`}>{month}</span>
-                        <span className={styles.eventsWidgetDay}>{day}</span>
-                      </div>
-                      <div className={styles.eventsWidgetInfo}>
-                        <span className={styles.eventsWidgetName}>{event.title}</span>
-                        <span className={styles.eventsWidgetLocation}>{event.location_name}</span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </aside>
-
-        {lightboxPhotos.length > 0 && (
-          <div className={styles.lightboxOverlay} onClick={closeLightbox} role="presentation">
-            <div
-              className={styles.lightboxContent}
-              onClick={(e) => e.stopPropagation()}
-              onMouseMove={resetLightboxChromeTimer}
-              onTouchStart={resetLightboxChromeTimer}
-            >
-              <ActionIcon
-                variant="filled"
-                color="dark"
-                radius="xl"
-                className={`${styles.lightboxClose} ${styles.lightboxChrome} ${
-                  lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
-                }`}
-                onClick={closeLightbox}
-                aria-label="Close image viewer"
-              >
-                ✕
-              </ActionIcon>
-
-              <Image
-                src={lightboxPhotos[lightboxIndex]}
-                alt={`Post photo ${lightboxIndex + 1}`}
-                width={1600}
-                height={1200}
-                className={`${styles.lightboxImage} ${getLightboxImageZoomClass(lightboxZoomLevel)}`}
-                onWheel={handleLightboxWheel}
-                onDoubleClick={() => {
-                  resetLightboxChromeTimer();
-                  setLightboxZoomLevel((prev) => (prev === 0 ? 3 : 0));
-                }}
-              />
-
-              <div
-                className={`${styles.lightboxZoomControls} ${styles.lightboxChrome} ${
-                  lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
-                }`}
-              >
-                <button
-                  type="button"
-                  className={styles.lightboxZoomBtn}
-                  onClick={zoomOutLightbox}
-                  disabled={lightboxZoomLevel === 0}
-                  aria-label="Zoom out"
-                >
-                  −
-                </button>
-                <span className={styles.lightboxZoomLabel}>
-                  {Math.round(LIGHTBOX_ZOOM_LEVELS[lightboxZoomLevel] * 100)}%
-                </span>
-                <button
-                  type="button"
-                  className={styles.lightboxZoomBtn}
-                  onClick={zoomInLightbox}
-                  disabled={lightboxZoomLevel === LIGHTBOX_ZOOM_LEVELS.length - 1}
-                  aria-label="Zoom in"
-                >
-                  +
-                </button>
-              </div>
-
-              {lightboxPhotos.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className={`${styles.lightboxNavBtn} ${styles.lightboxNavPrev} ${styles.lightboxChrome} ${
-                      lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
-                    }`}
-                    onClick={showPreviousLightboxPhoto}
-                    aria-label="Previous image"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.lightboxNavBtn} ${styles.lightboxNavNext} ${styles.lightboxChrome} ${
-                      lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
-                    }`}
-                    onClick={showNextLightboxPhoto}
-                    aria-label="Next image"
-                  >
-                    ›
-                  </button>
-                  <div
-                    className={`${styles.lightboxCounter} ${styles.lightboxChrome} ${
-                      lightboxChromeVisible ? styles.lightboxChromeVisible : styles.lightboxChromeHidden
-                    }`}
-                  >
-                    {lightboxIndex + 1} / {lightboxPhotos.length}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+        <ImageLightbox
+          photos={lightboxPhotos}
+          startIndex={lightboxIndex}
+          opened={lightboxPhotos.length > 0}
+          onClose={closeLightbox}
+        />
 
         <ReportPostModal
           opened={Boolean(reportModalPostId)}
@@ -969,355 +640,3 @@ export default function FeedRoutePage() {
   return <FeedPage routeBasePath="/feed" />;
 }
 
-function PostCard({
-  post,
-  liked,
-  saved,
-  onTagClick,
-  currentUserId,
-  onAvatarViewProfile,
-  onAvatarChat,
-  onOpenLightbox,
-  onSharePost,
-  onDeletePost,
-  onEditPost,
-  onReportPost,
-  onSaveToggle,
-}: {
-  post: Post;
-  liked: boolean;
-  saved?: boolean;
-  onTagClick: (slug: string) => void;
-  currentUserId?: string;
-  onAvatarViewProfile?: (authorId: string) => void;
-  onAvatarChat?: (authorId: string, authorName: string) => void;
-  onOpenLightbox: (photos: string[], startIndex: number) => void;
-  onSharePost: (post: Post) => Promise<void>;
-  onDeletePost: (post: Post) => Promise<void>;
-  onEditPost: (post: Post) => void;
-  onReportPost: (postId: string) => void;
-  onSaveToggle?: () => void;
-}) {
-  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
-  const [postMenuOpen, setPostMenuOpen] = useState(false);
-  // FeedPage keys each PostCard by post id, so a different post always gets a
-  // fresh card and mediaIndex starts over at 0.
-  const [mediaIndex, setMediaIndex] = useState(0);
-  const avatarMenuRef = useClickOutside(() => setAvatarMenuOpen(false));
-  const postMenuRef = useClickOutside(() => setPostMenuOpen(false));
-  const mediaTouchStartXRef = useRef<number | null>(null);
-  const isOwnPost = currentUserId === post.author_id;
-  const photoUrls = (post.photos || []).filter(Boolean).slice(0, 3);
-
-  function handleEditPost(event: React.MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    setPostMenuOpen(false);
-    onEditPost(post);
-  }
-
-  async function handleShareMenuClick(event: React.MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    setPostMenuOpen(false);
-    await onSharePost(post);
-  }
-
-  async function handleDeleteMenuClick(event: React.MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    setPostMenuOpen(false);
-    await onDeletePost(post);
-  }
-
-  function handleMediaKeyDown(event: React.KeyboardEvent<HTMLDivElement>, startIndex: number) {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    event.stopPropagation();
-    onOpenLightbox(photoUrls, startIndex);
-  }
-
-  function showPreviousMedia(event?: React.SyntheticEvent) {
-    event?.preventDefault();
-    event?.stopPropagation();
-    if (photoUrls.length <= 1) return;
-    setMediaIndex((prev) => (prev - 1 + photoUrls.length) % photoUrls.length);
-  }
-
-  function showNextMedia(event?: React.SyntheticEvent) {
-    event?.preventDefault();
-    event?.stopPropagation();
-    if (photoUrls.length <= 1) return;
-    setMediaIndex((prev) => (prev + 1) % photoUrls.length);
-  }
-
-  function handleMediaTouchStart(event: React.TouchEvent<HTMLDivElement>) {
-    mediaTouchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
-  }
-
-  function handleMediaTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
-    if (mediaTouchStartXRef.current === null || photoUrls.length <= 1) return;
-    const endX = event.changedTouches[0]?.clientX ?? mediaTouchStartXRef.current;
-    const delta = endX - mediaTouchStartXRef.current;
-    mediaTouchStartXRef.current = null;
-
-    if (Math.abs(delta) < 40) return;
-    if (delta > 0) {
-      showPreviousMedia();
-    } else {
-      showNextMedia();
-    }
-  }
-
-  return (
-    <Link href={`/posts/${post.id}`} className={styles.postCard}>
-      <div className={styles.postCardHeader}>
-        <div className={styles.avatarWrapper} ref={avatarMenuRef}>
-          <div
-            className={!isOwnPost ? styles.avatarTrigger : styles.avatarTriggerDisabled}
-            onClick={(e) => {
-              if (!isOwnPost) {
-                e.preventDefault();
-                e.stopPropagation();
-                setAvatarMenuOpen(!avatarMenuOpen);
-              }
-            }}
-          >
-            <Avatar
-              name={post.author?.full_name || '?'}
-              photoUrl={post.author?.profile_photo}
-              trustLevel={post.author?.trust_level}
-              size="medium"
-            />
-          </div>
-          {avatarMenuOpen && (
-            <div className={styles.avatarDropdown}>
-              <UnstyledButton
-                className={styles.avatarDropdownItem}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setAvatarMenuOpen(false);
-                  onAvatarViewProfile?.(post.author_id);
-                }}
-              >
-                View Profile
-              </UnstyledButton>
-              <UnstyledButton
-                className={styles.avatarDropdownItem}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setAvatarMenuOpen(false);
-                  onAvatarChat?.(post.author_id, post.author?.full_name || 'User');
-                }}
-              >
-                Chat
-              </UnstyledButton>
-            </div>
-          )}
-        </div>
-        <div className={styles.postAuthorInfo}>
-          <div className={styles.postAuthorName}>
-            {post.author?.full_name || 'Anonymous'}
-          </div>
-          <div className={styles.postTimestampRow}>
-            <span className={styles.postTimestamp}>
-              {formatRelativeTime(new Date(post.created_at))}
-            </span>
-            {post.tags && post.tags.length > 0 && (
-              <>
-                <span className={styles.postTimestampDot}>·</span>
-                {post.tags.map((tag) => (
-                  <button
-                    type="button"
-                    key={tag.id}
-                    className={styles.postTagBadge}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onTagClick(tag.slug);
-                    }}
-                  >
-                    {tag.name.toUpperCase()}
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-        <div className={styles.postHeaderRight}>
-          <Badge
-            variant="light"
-            color={post.is_global ? 'orange' : 'blue'}
-            size="sm"
-          >
-            {post.is_global ? '🌐 Global' : '📍 Local'}
-          </Badge>
-
-          <div className={styles.postMoreWrapper} ref={postMenuRef}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              size="sm"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setPostMenuOpen((prev) => !prev);
-              }}
-              aria-label="Post options"
-            >
-              ⋯
-            </ActionIcon>
-
-            {postMenuOpen && (
-              <div className={styles.postMoreMenu}>
-                {isOwnPost ? (
-                  <>
-                    <UnstyledButton className={styles.postMoreItem} onClick={handleEditPost}>Edit Post</UnstyledButton>
-                    <UnstyledButton className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</UnstyledButton>
-                    <UnstyledButton className={`${styles.postMoreItem} ${styles.postMoreItemDanger}`} onClick={handleDeleteMenuClick}>
-                      Delete Post
-                    </UnstyledButton>
-                  </>
-                ) : (
-                  <>
-                    {onSaveToggle && (
-                      <UnstyledButton
-                        className={styles.postMoreItem}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          setPostMenuOpen(false);
-                          onSaveToggle();
-                        }}
-                      >
-                        {saved ? 'Unsave Post' : 'Save Post'}
-                      </UnstyledButton>
-                    )}
-                    <UnstyledButton className={styles.postMoreItem} onClick={handleShareMenuClick}>Share Post</UnstyledButton>
-                    <UnstyledButton
-                      className={`${styles.postMoreItem} ${styles.postMoreItemDanger}`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setPostMenuOpen(false);
-                        onReportPost(post.id);
-                      }}
-                    >
-                      Report Post
-                    </UnstyledButton>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.postTitle}>{post.title}</div>
-      <div className={styles.postDescription}>{post.description}</div>
-
-      {/* Photos */}
-      {photoUrls.length > 0 && (
-        <div className={styles.postMediaWrap}>
-          <div
-            className={`${styles.postMediaBtn} ${styles.postMediaCarousel}`}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onOpenLightbox(photoUrls, mediaIndex);
-            }}
-            onKeyDown={(e) => handleMediaKeyDown(e, mediaIndex)}
-            onTouchStart={handleMediaTouchStart}
-            onTouchEnd={handleMediaTouchEnd}
-            role="button"
-            tabIndex={0}
-            aria-label="Open post image"
-          >
-            <Image
-              src={photoUrls[mediaIndex]}
-              alt={`Post image ${mediaIndex + 1}`}
-              fill
-              sizes="(max-width: 900px) 100vw, 720px"
-              className={styles.postMediaImg}
-            />
-
-            {photoUrls.length > 1 && (
-              <>
-                <div className={styles.postMediaCounter}>
-                  {mediaIndex + 1} / {photoUrls.length}
-                </div>
-                <div
-                  className={`${styles.postMediaNavBtn} ${styles.postMediaNavPrev}`}
-                  onClick={showPreviousMedia}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      showPreviousMedia(e);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Previous image"
-                >
-                  ‹
-                </div>
-                <div
-                  className={`${styles.postMediaNavBtn} ${styles.postMediaNavNext}`}
-                  onClick={showNextMedia}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      showNextMedia(e);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Next image"
-                >
-                  ›
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className={styles.postFooter}>
-        <div className={styles.postFooterLeft}>
-          <span className={styles.postStat}>
-            <svg className={styles.postStatIcon} width="20" height="20" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-            <span className={styles.postStatCount}>{post.likes_count || 0}</span>
-          </span>
-          <span className={styles.postStat}>
-            <svg className={styles.postStatIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            <span className={styles.postStatCount}>{post.comments_count || 0}</span>
-          </span>
-          <button
-            className={styles.postShareBtn}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onSharePost(post);
-            }}
-            aria-label="Share post"
-          >
-            <svg className={styles.postStatIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="18" cy="5" r="3" />
-              <circle cx="6" cy="12" r="3" />
-              <circle cx="18" cy="19" r="3" />
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-            </svg>
-          </button>
-        </div>
-        <span className={styles.postViewDetails}>
-          View Details &rarr;
-        </span>
-      </div>
-    </Link>
-  );
-}

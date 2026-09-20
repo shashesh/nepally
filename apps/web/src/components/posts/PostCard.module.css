@@ -1,0 +1,67 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--card-padding);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  transition: box-shadow var(--duration-fast) ease-out;
+}
+
+.root:hover,
+.root:focus-within {
+  box-shadow: var(--shadow-float);
+}
+
+/* Controls sit above the stretched link's overlay so they stay clickable. */
+.header,
+.media,
+.actions {
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.headerEnd {
+  margin-left: auto;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+}
+
+/* The card's only link, covering the card so the whole surface opens the post. */
+.stretchedLink {
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.stretchedLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.stretchedLink:hover {
+  text-decoration: underline;
+}
+
+.description {
+  margin: 0;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '../test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
+type MockLinkProps = { href: string; children?: React.ReactNode };
 
 const feedMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
@@ -56,8 +56,11 @@ vi.mock('next/head', () => ({
     React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: MockLinkProps) =>
-    React.createElement('a', { href, className }, children),
+  // Forwards the ref and every other prop, so Mantine can render a Menu.Item
+  // or Button as a link and still set role, handlers and classes on it.
+  default: React.forwardRef<HTMLAnchorElement, MockLinkProps>(function MockLink({ href, children, ...rest }, ref) {
+    return React.createElement('a', { href, ref, ...rest }, children);
+  }),
 }));
 
 const mockUser = {
@@ -92,6 +95,35 @@ const mockPosts = [
 ];
 
 import { FeedPage } from './feed.page';
+
+type IntersectionCallback = (entries: Array<{ isIntersecting: boolean; target: Element }>) => void;
+
+/**
+ * jsdom has no IntersectionObserver, and Mantine's useIntersection (under
+ * useInfiniteScroll) needs one. This records the callbacks so a test can put
+ * the sentinel on screen.
+ */
+function installIntersectionObserver() {
+  const callbacks: IntersectionCallback[] = [];
+  class FakeIntersectionObserver {
+    constructor(callback: IntersectionCallback) {
+      callbacks.push(callback);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver = FakeIntersectionObserver;
+  return {
+    scrollSentinelIntoView() {
+      const target = document.createElement('div');
+      for (const callback of callbacks) callback([{ isIntersecting: true, target }]);
+    },
+  };
+}
 
 describe('FeedPage', () => {
   const mockPush = vi.fn();
@@ -141,7 +173,7 @@ describe('FeedPage', () => {
   it('shows loading state while fetching posts', () => {
     feedMocks.getPostsByMetroAreaMock.mockReturnValue(new Promise(() => {}));
     render(<FeedPage />);
-    expect(screen.getByTestId('feed-loading')).toBeDefined();
+    expect(screen.getByText('Loading posts…')).toBeDefined();
   });
 
   it('shows empty state when no posts are available', async () => {
@@ -264,7 +296,7 @@ describe('FeedPage', () => {
     render(<FeedPage />);
     await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'HOUSING' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by Housing' }));
 
     await waitFor(() => {
       expect(feedMocks.getPostsByMetroAreaMock).toHaveBeenLastCalledWith(
@@ -289,7 +321,7 @@ describe('FeedPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
-    expect(screen.getByTestId('feed-loading')).toBeDefined();
+    expect(screen.getByText('Loading posts…')).toBeDefined();
     expect(screen.queryByText(/Could not load posts/)).toBeNull();
 
     resolveRetry({ data: mockPosts });
@@ -327,7 +359,7 @@ describe('FeedPage', () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
     await waitFor(() => {
-      expect(screen.getByText(/3/)).toBeDefined();
+      expect(screen.getByText('3 likes')).toBeDefined();
     });
   });
 
@@ -343,7 +375,8 @@ describe('FeedPage', () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
     await waitFor(() => {
-      expect(screen.getByText('📍 Local')).toBeDefined();
+      // The feed is already scoped to one metro, so the card says only Local.
+      expect(screen.getByText('Local')).toBeDefined();
     });
   });
 
@@ -353,7 +386,7 @@ describe('FeedPage', () => {
     });
     render(<FeedPage />);
     await waitFor(() => {
-      expect(screen.getByText('🌐 Global')).toBeDefined();
+      expect(screen.getByText('Global')).toBeDefined();
     });
   });
 
@@ -380,6 +413,92 @@ describe('FeedPage', () => {
     await waitFor(() => {
       // Own post menu shows Edit/Delete, not Save
       expect(screen.queryByText('Save Post')).toBeNull();
+    });
+  });
+
+  describe('loading more posts', () => {
+    const twentyPosts = Array.from({ length: 20 }, (_, index) => ({
+      ...mockPosts[0],
+      id: `post-${index + 1}`,
+      title: `Post number ${index + 1}`,
+    }));
+
+    // getPostsByMetroArea catches internally and resolves { error }; only an
+    // unexpected throw reaches the catch. Both must stop paging and report.
+    it.each([
+      ['the request resolves with an error', (mock: Mock) => mock.mockResolvedValue({ error: new Error('db down') })],
+      ['the request throws', (mock: Mock) => mock.mockRejectedValue(new Error('network down'))],
+    ])('stops paging and says so when %s, instead of retrying in a loop', async (_name, failSecondPage) => {
+      const observer = installIntersectionObserver();
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValueOnce({ data: twentyPosts, hasMore: true });
+      failSecondPage(feedMocks.getPostsByMetroAreaMock);
+
+      render(<FeedPage />);
+      await waitFor(() => expect(screen.getByText('Post number 1')).toBeDefined());
+
+      await act(async () => {
+        observer.scrollSentinelIntoView();
+      });
+
+      await waitFor(() =>
+        expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Could not load more posts.' })
+        )
+      );
+
+      // One first page plus one failed second page, and no retry storm after it.
+      const callsAfterFailure = feedMocks.getPostsByMetroAreaMock.mock.calls.length;
+      await act(async () => {
+        observer.scrollSentinelIntoView();
+      });
+      expect(feedMocks.getPostsByMetroAreaMock.mock.calls.length).toBe(callsAfterFailure);
+      expect(callsAfterFailure).toBe(2);
+    });
+  });
+
+  describe('deleting your own post', () => {
+    async function openDeleteDialog() {
+      const ownPost = { ...mockPosts[0], author_id: 'user-1' };
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [ownPost] });
+      render(<FeedPage />);
+      await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+      fireEvent.click(screen.getByLabelText('Post options'));
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete Post' }));
+      await screen.findByText('Delete post');
+    }
+
+    it('asks before deleting, and does nothing when dismissed', async () => {
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() => expect(feedMocks.deletePostMock).not.toHaveBeenCalled());
+      expect(screen.getByText('Roommate needed in Dallas')).toBeDefined();
+    });
+
+    it('removes the post from the feed once confirmed', async () => {
+      feedMocks.deletePostMock.mockResolvedValue({});
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() => expect(feedMocks.deletePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1'));
+      await waitFor(() => expect(screen.queryByText('Roommate needed in Dallas')).toBeNull());
+    });
+
+    it('keeps the post and says so when the delete fails', async () => {
+      feedMocks.deletePostMock.mockResolvedValue({ error: new Error('nope') });
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() =>
+        expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Failed to delete post. Please try again.' })
+        )
+      );
+      expect(screen.getByText('Roommate needed in Dallas')).toBeDefined();
     });
   });
 
@@ -533,38 +652,27 @@ describe('FeedPage', () => {
 
   // ─── Avatar dropdown: View Profile navigation ──────────────────────────────
 
-  it('clicking avatar for non-own post opens dropdown with View Profile and Chat options', async () => {
+  it('the author avatar opens a menu with View profile and Chat', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
     await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    // mockPosts[0].author_id = 'user-2', current user = 'user-1' → non-own post
-    // First avatar is the composer, second is the post card author
-    const avatars = screen.getAllByTestId('avatar');
-    const postAvatar = avatars.find(el => el.textContent === 'Bikal Shrestha');
-    fireEvent.click(postAvatar!);
+    // mockPosts[0].author_id = 'user-2', current user = 'user-1' → someone else's post
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal Shrestha' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('View Profile')).toBeDefined();
-      expect(screen.getByText('Chat')).toBeDefined();
-    });
+    expect(await screen.findByRole('menuitem', { name: 'View profile' })).toBeDefined();
+    expect(screen.getByRole('menuitem', { name: 'Chat' })).toBeDefined();
   });
 
-  it('clicking View Profile in avatar dropdown navigates to public profile page', async () => {
+  it('View profile links to the public profile', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);
     await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
 
-    const avatars = screen.getAllByTestId('avatar');
-    const postAvatar = avatars.find(el => el.textContent === 'Bikal Shrestha');
-    fireEvent.click(postAvatar!);
-    await waitFor(() => expect(screen.getByText('View Profile')).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal Shrestha' }));
 
-    fireEvent.click(screen.getByText('View Profile'));
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/users/user-2');
-    });
+    const link = await screen.findByRole('menuitem', { name: 'View profile' });
+    expect(link.getAttribute('href')).toBe('/users/user-2');
   });
 
   describe('Upcoming Events widget', () => {

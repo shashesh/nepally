@@ -73,6 +73,21 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 
 `EmptyState`, `LoadingState`, `ErrorState`, `PageHeader`, `TagChip`, `ScopeBadge`, `TrustBadge`, `ActionMenu`, and `useConfirm` / `usePrompt` (never `window.confirm`/`alert`/`prompt`). `hooks/useInfiniteScroll` handles paginated lists. `Avatar` uses shared `getInitials` and token tones.
 
+`notify.success(message)` and `notify.error(message)` are the only way to raise a toast; they wrap `@mantine/notifications` so colour and duration stay consistent.
+
+`PhotoCarousel` shows one photo at a time with wrap-around previous and next, announces "Photo 2 of 3", and keeps a 40px swipe threshold. `ImageLightbox` is the full-screen viewer over Mantine `Modal`, which owns the focus trap, Escape and scroll lock; it adds paging, seven zoom levels and controls that fade after 1.5s.
+
+## Post and feed components
+
+| Component | Location | Notes |
+|---|---|---|
+| `PostCard` | `components/posts/` | A stretched-link card: the title is the only link and covers the card, so menus, chips and the carousel sit beside it rather than inside it |
+| `PostMeta` | `components/posts/` | Author, relative time, `TagChip` per tag and `ScopeBadge`. Tags become buttons only when the surface can filter |
+| `PostActions` | `components/posts/` | Like and comment counts as text with visually hidden labels, plus share. The counts are not buttons, because nothing on the feed can like or comment yet |
+| `PostComposer` | `components/feed/` | The prompt row; it links to the composer, or to verification below trust level 1 |
+| `SponsoredRail` | `components/feed/` | The `<aside>` holding paid listings and the upcoming-events widget |
+| `UserMenuTrigger` | `components/users/` | An avatar that opens View profile / Chat through `ActionMenu` |
+
 ## Guards
 
 | Guard | Command | Allowlist |

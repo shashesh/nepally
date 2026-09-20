@@ -16,6 +16,10 @@ const TEXT_PAIRS: Array<[foreground: string, background: string]> = [
   ['--text-2', '--surface-2'],
   ['--text-3', '--surface-0'],
   ['--text-3', '--surface-1'],
+  // surface-sunken was untested until the feed composer used it. Note the gap:
+  // --text-3 on --surface-sunken is 4.25:1, under AA, so it is not a usable pair.
+  ['--text-1', '--surface-sunken'],
+  ['--text-2', '--surface-sunken'],
   ['--action-fg', '--action-bg'],
   ['--action-fg', '--action-bg-hover'],
   ['--accent-ink', '--accent-tint'],

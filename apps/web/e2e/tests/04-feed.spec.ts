@@ -44,7 +44,7 @@ test.describe('Feed page', () => {
     await page.goto('/feed');
 
     // trust_level:1 user should see the explicit Create Post composer CTA in feed content
-    const composerCreatePost = page.locator('section').getByRole('link', { name: /^create post$/i }).first();
+    const composerCreatePost = page.getByRole('main').getByRole('link', { name: /^create post$/i }).first();
     await expect(composerCreatePost).toBeVisible({
       timeout: 10_000,
     });
@@ -62,9 +62,9 @@ test.describe('Feed page', () => {
     await expect(page.getByText(MOCK_POST_OTHER_AUTHOR.title)).toBeVisible({ timeout: 10_000 });
 
     // Save action lives in the post options menu for non-own posts
-    const nonOwnPostCard = page.locator('a').filter({ hasText: MOCK_POST_OTHER_AUTHOR.title }).first();
+    const nonOwnPostCard = page.getByRole('article').filter({ hasText: MOCK_POST_OTHER_AUTHOR.title }).first();
     await nonOwnPostCard.getByLabel('Post options').click();
-    await expect(page.getByText('Save Post')).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Save Post' })).toBeVisible();
   });
 
   test('save button is not visible for own post', async ({ page }) => {
@@ -74,9 +74,9 @@ test.describe('Feed page', () => {
     await expect(page.getByText(MOCK_POSTS[0].title)).toBeVisible({ timeout: 10_000 });
 
     // For own posts, Save Post should not appear in its overflow menu
-    const ownPostCard = page.locator('a').filter({ hasText: MOCK_POSTS[0].title }).first();
+    const ownPostCard = page.getByRole('article').filter({ hasText: MOCK_POSTS[0].title }).first();
     await ownPostCard.getByLabel('Post options').click();
-    await expect(page.getByText('Save Post')).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: 'Save Post' })).toHaveCount(0);
   });
 
   test('clicking save shows toast confirmation', async ({ page }) => {
@@ -84,9 +84,9 @@ test.describe('Feed page', () => {
     await expect(page.getByText(MOCK_POST_OTHER_AUTHOR.title)).toBeVisible({ timeout: 10_000 });
 
     // Open non-own post menu and click Save Post
-    const nonOwnPostCard = page.locator('a').filter({ hasText: MOCK_POST_OTHER_AUTHOR.title }).first();
+    const nonOwnPostCard = page.getByRole('article').filter({ hasText: MOCK_POST_OTHER_AUTHOR.title }).first();
     await nonOwnPostCard.getByLabel('Post options').click();
-    await page.getByText('Save Post').click();
+    await page.getByRole('menuitem', { name: 'Save Post' }).click();
 
     // A toast should appear confirming the action
     await expect(page.getByText(/Post saved\.|Post unsaved\./)).toBeVisible({ timeout: 5_000 });
@@ -109,7 +109,7 @@ test.describe('Feed sidebar — Upcoming Events widget', () => {
 
   test('displays upcoming event titles and locations', async ({ page }) => {
     await page.goto('/feed');
-    const widget = page.locator('aside');
+    const widget = page.getByRole('complementary');
     await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
     await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].location_name)).toBeVisible();
     await expect(widget.getByText(MOCK_UPCOMING_EVENTS[1].title)).toBeVisible();
@@ -118,7 +118,7 @@ test.describe('Feed sidebar — Upcoming Events widget', () => {
 
   test('event cards show formatted date with month and day', async ({ page }) => {
     await page.goto('/feed');
-    const widget = page.locator('aside');
+    const widget = page.getByRole('complementary');
     await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
 
     // The date block should contain the day number from the first event
@@ -129,7 +129,7 @@ test.describe('Feed sidebar — Upcoming Events widget', () => {
 
   test('event cards link to the event detail page', async ({ page }) => {
     await page.goto('/feed');
-    const widget = page.locator('aside');
+    const widget = page.getByRole('complementary');
     await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
 
     const eventLink = widget.locator(`a[href="/events/${MOCK_UPCOMING_EVENTS[0].id}"]`);
@@ -138,7 +138,7 @@ test.describe('Feed sidebar — Upcoming Events widget', () => {
 
   test('does not show past events in the widget', async ({ page }) => {
     await page.goto('/feed');
-    const widget = page.locator('aside');
+    const widget = page.getByRole('complementary');
     await expect(widget.getByText(MOCK_UPCOMING_EVENTS[0].title)).toBeVisible({ timeout: 10_000 });
 
     // The past event title should not appear — the API filters it out
@@ -151,7 +151,7 @@ test.describe('Feed sidebar — Upcoming Events widget', () => {
     await expect(page.getByRole('heading', { name: /upcoming events/i })).toBeVisible();
 
     // Verify ordering: Sponsored section should come before events widget in DOM
-    const aside = page.locator('aside');
+    const aside = page.getByRole('complementary');
     const sponsoredBox = aside.getByRole('heading', { name: /sponsored/i });
     const eventsHeading = aside.getByRole('heading', { name: /upcoming events/i });
     const sponsoredTop = await sponsoredBox.boundingBox();
