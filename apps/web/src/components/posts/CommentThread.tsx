@@ -33,17 +33,13 @@ export function CommentThread({ thread, currentUserId, onReply, onDelete, onChat
   function renderComment(comment: PostComment, isReply: boolean) {
     const authorName = comment.author?.full_name || 'Anonymous';
     const isOwn = comment.author_id === currentUserId;
+    // Without a joined author there is no member to open: the profile link and
+    // Chat would point at a row that is not there.
+    const hasMenu = Boolean(comment.author) && !isOwn;
 
     return (
       <div className={isReply ? styles.reply : styles.comment} key={comment.id}>
-        {isOwn ? (
-          <Avatar
-            name={authorName}
-            photoUrl={comment.author?.profile_photo}
-            trustLevel={comment.author?.trust_level}
-            size="small"
-          />
-        ) : (
+        {hasMenu ? (
           <UserMenuTrigger
             userId={comment.author_id}
             name={authorName}
@@ -51,6 +47,13 @@ export function CommentThread({ thread, currentUserId, onReply, onDelete, onChat
             trustLevel={comment.author?.trust_level}
             size="small"
             onChat={onChat}
+          />
+        ) : (
+          <Avatar
+            name={authorName}
+            photoUrl={comment.author?.profile_photo}
+            trustLevel={comment.author?.trust_level}
+            size="small"
           />
         )}
 

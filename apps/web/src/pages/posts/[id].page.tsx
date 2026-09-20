@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -75,6 +75,8 @@ export default function PostDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  /** Bumped by anything that edits comments locally, retiring in-flight loads. */
+  const commentsGenerationRef = useRef(0);
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -90,8 +92,12 @@ export default function PostDetailPage() {
       setLikesCount(result.data?.likes_count || 0);
       setLoadedPostId(routePostId);
     });
+    // A comment posted while this is in flight must survive it: the response
+    // would otherwise replace the list, and an error would hide what was just
+    // added. Editing comments locally bumps the generation, retiring this load.
+    const generation = commentsGenerationRef.current;
     getPostComments(supabase, routePostId).then((result) => {
-      if (cancelled) return;
+      if (cancelled || generation !== commentsGenerationRef.current) return;
       if (result.error) {
         setCommentsStatus('error');
         return;
@@ -128,14 +134,16 @@ export default function PostDetailPage() {
   async function handleLike() {
     if (!user || !post) return;
 
-    if (liked) {
-      setLiked(false);
-      setLikesCount((c) => c - 1);
-      await unlikePost(supabase, post.id);
-    } else {
-      setLiked(true);
-      setLikesCount((c) => c + 1);
-      await likePost(supabase, post.id);
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikesCount((count) => count + (wasLiked ? -1 : 1));
+
+    const { error } = wasLiked ? await unlikePost(supabase, post.id) : await likePost(supabase, post.id);
+    if (error) {
+      // Put the heart back rather than showing a like the server rejected.
+      setLiked(wasLiked);
+      setLikesCount((count) => count + (wasLiked ? 1 : -1));
+      notify.error(wasLiked ? 'Could not remove your like.' : 'Could not like this post.');
     }
   }
 
@@ -143,17 +151,18 @@ export default function PostDetailPage() {
     if (!user || !post) return;
     const wasSaved = saved;
 
-    if (wasSaved) {
-      setSaved(false);
-      const { error } = await unsavePost(supabase, post.id);
-      if (error) notify.error('Failed to unsave post.');
-      else notify.success('Post unsaved.');
-    } else {
-      setSaved(true);
-      const { error } = await savePost(supabase, post.id);
-      if (error) notify.error('Failed to save post.');
-      else notify.success('Post saved.');
+    setSaved(!wasSaved);
+    const { error } = wasSaved ? await unsavePost(supabase, post.id) : await savePost(supabase, post.id);
+
+    if (error) {
+      // Same reasoning as the like: do not leave the button claiming a state
+      // the server never took.
+      setSaved(wasSaved);
+      notify.error(wasSaved ? 'Failed to unsave post.' : 'Failed to save post.');
+      return;
     }
+
+    notify.success(wasSaved ? 'Post unsaved.' : 'Post saved.');
   }
 
   async function handleComment(text: string) {
@@ -169,6 +178,7 @@ export default function PostDetailPage() {
       throw new Error('createComment failed');
     }
 
+    commentsGenerationRef.current += 1;
     setComments((previous) => [...previous, result.data!]);
     setReplyTarget(null);
     // A comment posted after a failed load must be visible, not hidden behind
@@ -193,6 +203,7 @@ export default function PostDetailPage() {
       return;
     }
 
+    commentsGenerationRef.current += 1;
     setComments((prev) => prev.filter((comment) => comment.id !== commentId && comment.parent_comment_id !== commentId));
   }
 
@@ -334,20 +345,21 @@ export default function PostDetailPage() {
 
         <div className={styles.postDetail}>
           <div className={styles.postHeader}>
-            {post.author_id === user?.id ? (
-              <Avatar
-                name={post.author?.full_name || '?'}
-                photoUrl={post.author?.profile_photo}
-                trustLevel={post.author?.trust_level}
-                size="medium"
-              />
-            ) : (
+            {post.author && !isOwnPost ? (
               <UserMenuTrigger
                 userId={post.author_id}
+                name={post.author.full_name}
+                photoUrl={post.author.profile_photo}
+                trustLevel={post.author.trust_level}
+                onChat={handleAvatarChat}
+              />
+            ) : (
+              // Your own post, or one whose author row is gone: nothing to open.
+              <Avatar
                 name={post.author?.full_name || 'Anonymous'}
                 photoUrl={post.author?.profile_photo}
                 trustLevel={post.author?.trust_level}
-                onChat={handleAvatarChat}
+                size="medium"
               />
             )}
             <div className={styles.authorInfo}>
@@ -419,7 +431,11 @@ export default function PostDetailPage() {
             <ErrorState
               title="Couldn't load comments"
               message="Something went wrong fetching this post's comments."
-              onRetry={() => setCommentsReloadToken((token) => token + 1)}
+              onRetry={() => {
+                // A fresh load is wanted now, even after a local edit.
+                commentsGenerationRef.current += 1;
+                setCommentsReloadToken((token) => token + 1);
+              }}
               retryLabel="Retry"
             />
           ) : commentThreads.length === 0 ? (

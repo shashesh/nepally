@@ -96,6 +96,21 @@ describe('CommentThread', () => {
     await waitFor(() => expect(props.onDelete).not.toHaveBeenCalled());
   });
 
+  it('shows a plain avatar when the comment has no author row', () => {
+    const orphaned = {
+      parent: { ...comment('c9', 'gone-user', 'ignored', 'Author was deleted'), author: null },
+      replies: [],
+      latest_activity_at: '2026-02-24T10:00:00Z',
+    } as unknown as PostCommentThread;
+
+    renderThread({ thread: orphaned, onChat: vi.fn() });
+
+    expect(screen.getByText('Author was deleted')).toBeDefined();
+    expect(screen.getByText('Anonymous')).toBeDefined();
+    // No member to open: the profile link would point at a row that is gone.
+    expect(screen.queryByRole('button', { name: /^Options for/ })).toBeNull();
+  });
+
   it('opens a menu on other members, but not on yourself', () => {
     renderThread({ onChat: vi.fn() });
 

@@ -376,6 +376,90 @@ describe('PostDetailPage', () => {
     expect(field.value).toBe('Great post!');
   });
 
+  it('does not offer a member menu when the post author row is missing', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, author: null } });
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+
+    // There is no member to open: the profile link would point at nothing.
+    expect(screen.queryByRole('button', { name: /^Options for/ })).toBeNull();
+    expect(screen.getAllByText('Anonymous').length).toBeGreaterThan(0);
+  });
+
+  it('keeps a comment posted while the comments were still loading', async () => {
+    let settleComments: (result: unknown) => void = () => {};
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.getPostCommentsMock.mockReturnValue(
+      new Promise((resolve) => {
+        settleComments = resolve;
+      })
+    );
+    postDetailMocks.createCommentMock.mockResolvedValue({
+      data: {
+        id: 'comment-live',
+        content: 'Posted mid-flight',
+        author_id: 'user-1',
+        post_id: 'post-1',
+        parent_comment_id: null,
+        created_at: '2026-02-24T12:00:00Z',
+      },
+    });
+    postDetailMocks.buildSingleLevelCommentThreadsMock.mockImplementation((comments: unknown[]) =>
+      comments.map((comment) => ({ parent: comment, replies: [] }))
+    );
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Write a comment')).toBeDefined());
+
+    fireEvent.change(screen.getByLabelText('Write a comment'), { target: { value: 'Posted mid-flight' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(screen.getByText('Posted mid-flight')).toBeDefined());
+
+    // The load that was already running now fails; it must not hide the comment.
+    await act(async () => {
+      settleComments({ error: new Error('late failure') });
+    });
+
+    expect(screen.getByText('Posted mid-flight')).toBeDefined();
+    expect(screen.queryByText("Couldn't load comments")).toBeNull();
+  });
+
+  it('puts the like back when the request fails', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.likePostMock.mockResolvedValue({ error: new Error('rejected') });
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+
+    await waitFor(() =>
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Could not like this post.' })
+      )
+    );
+    expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined();
+  });
+
+  it('puts the save back when the request fails', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.savePostMock.mockResolvedValue({ error: new Error('rejected') });
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+
+    await waitFor(() =>
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Failed to save post.' })
+      )
+    );
+    // Still offering Save, not Unsave, because the write did not land.
+    expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
+  });
+
   describe('when comments cannot be loaded', () => {
     it('shows an error instead of the empty state, and can retry', async () => {
       postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
