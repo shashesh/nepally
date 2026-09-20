@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { notify } from './notify';
 
-const show = vi.fn();
-vi.mock('@mantine/notifications', () => ({ notifications: { show: (...args: unknown[]) => show(...args) } }));
+// vi.hoisted, as the other web suites do, so the spy is created before the
+// hoisted vi.mock factory rather than relying on it only being read at call time.
+const { show } = vi.hoisted(() => ({ show: vi.fn() }));
+vi.mock('@mantine/notifications', () => ({ notifications: { show } }));
 
 describe('notify', () => {
   it('shows a green success toast', () => {

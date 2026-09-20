@@ -386,6 +386,52 @@ describe('FeedPage', () => {
     });
   });
 
+  describe('deleting your own post', () => {
+    async function openDeleteDialog() {
+      const ownPost = { ...mockPosts[0], author_id: 'user-1' };
+      feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: [ownPost] });
+      render(<FeedPage />);
+      await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+      fireEvent.click(screen.getByLabelText('Post options'));
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete Post' }));
+      await screen.findByText('Delete post');
+    }
+
+    it('asks before deleting, and does nothing when dismissed', async () => {
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() => expect(feedMocks.deletePostMock).not.toHaveBeenCalled());
+      expect(screen.getByText('Roommate needed in Dallas')).toBeDefined();
+    });
+
+    it('removes the post from the feed once confirmed', async () => {
+      feedMocks.deletePostMock.mockResolvedValue({});
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() => expect(feedMocks.deletePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1'));
+      await waitFor(() => expect(screen.queryByText('Roommate needed in Dallas')).toBeNull());
+    });
+
+    it('keeps the post and says so when the delete fails', async () => {
+      feedMocks.deletePostMock.mockResolvedValue({ error: new Error('nope') });
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() =>
+        expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Failed to delete post. Please try again.' })
+        )
+      );
+      expect(screen.getByText('Roommate needed in Dallas')).toBeDefined();
+    });
+  });
+
   it('calls savePost when Save Post menu item is clicked', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);

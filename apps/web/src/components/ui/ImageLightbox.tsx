@@ -70,6 +70,11 @@ export function ImageLightbox({ photos, startIndex = 0, opened, onClose, alt = '
   useEffect(() => {
     if (!opened) return;
 
+    // Opening counts as activity: the controls show, then fade like they do
+    // after any other interaction. Setting state from the timer, not from the
+    // effect body, keeps this clear of react-hooks/set-state-in-effect.
+    hideTimeoutRef.current = setTimeout(() => setChromeVisible(false), LIGHTBOX_CHROME_HIDE_DELAY_MS);
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'ArrowRight') {
         showChromeBriefly();
