@@ -12751,6 +12751,8 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Move `PostCard`'s hover (`PostCard.module.css`) and the feed's `.inlineSponsoredCard:hover` (`Feed.module.css`) off `--shadow-float` onto the border treatment the summary rows use (PR 6 decision 11).
   - [ ] `PostActions`' save toggle (`PostActions.tsx:81-88`) pairs `aria-label="Unsave post"` with `aria-pressed={true}`, the contradiction APG warns about: keep one stable name ("Save post") and let `aria-pressed` carry the state (found in PR 6's Task 6.6 review).
   - [ ] Map Mantine's disabled palette (`--mantine-color-disabled`, `-disabled-color`, `-disabled-border`) onto tokens in `mantine-theme.ts`'s `cssVariablesResolver`; today every disabled Mantine control is a cool grey outside the palette (found in PR 6's Task 6.6 review).
+  - [ ] Avatar alt text leaks full surnames: every `Avatar` caller except `PublicProfileHeader` passes `full_name`, so alt reads "Bikal Shrestha's avatar" on pages that otherwise show "Bikal S." Pass the public name (keeping `toneKey={full_name}` for the colour) or `decorative` where a name is already visible (found in PR 6's Task 6.7 review).
+  - [ ] The public profile's follower count doesn't move when you follow or unfollow: wire `FollowButton`'s `onChange` into `PublicProfileHeader` so the count adjusts (found in PR 6's Task 6.7 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
 
 ## After the overhaul — Mantine 9
