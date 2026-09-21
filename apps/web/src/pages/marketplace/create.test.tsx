@@ -130,9 +130,55 @@ describe('CreateListingPage', () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(CreateListingPage));
     await waitFor(() => {
-      expect(screen.getByText('Food & Restaurants')).toBeDefined();
-      expect(screen.getByText('Professional Services')).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Food & Restaurants' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Professional Services' })).toBeDefined();
     });
+  });
+
+  it('reports which category is chosen', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+    const chip = await screen.findByRole('button', { name: 'Food & Restaurants' });
+
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.click(chip);
+
+    expect(screen.getByRole('button', { name: 'Food & Restaurants' }).getAttribute('aria-pressed')).toBe('true');
+    expect(
+      screen.getByRole('button', { name: 'Professional Services' }).getAttribute('aria-pressed')
+    ).toBe('false');
+  });
+
+  it('shows a missing category as an error on its group', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mockSafeParse.mockReturnValue({
+      success: false,
+      error: { issues: [{ path: ['category_id'], message: 'Pick a category' }] },
+    });
+    render(React.createElement(CreateListingPage));
+    await waitFor(() => expect(screen.getAllByText('Create Listing').length).toBe(2));
+
+    fireEvent.click(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => expect(screen.getByText('Pick a category')).toBeDefined());
+    const group = screen.getByRole('group', { name: 'Category *' });
+    expect(group.getAttribute('aria-describedby')?.split(' ')).toContain(
+      screen.getByText('Pick a category').id
+    );
+  });
+
+  it('offers the condition control only for an individual listing', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+    await waitFor(() => expect(screen.getByPlaceholderText('Your business name')).toBeDefined());
+
+    expect(screen.queryByRole('radiogroup', { name: 'Condition' })).toBeNull();
+
+    fireEvent.click(screen.getByText('Individual'));
+
+    await waitFor(() => expect(screen.getByRole('radiogroup', { name: 'Condition' })).toBeDefined());
+    expect(screen.queryByPlaceholderText('Your business name')).toBeNull();
   });
 
   it('renders form fields', async () => {

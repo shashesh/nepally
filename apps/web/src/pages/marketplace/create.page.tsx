@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, TextInput, Textarea } from '@mantine/core';
+import { Button, SegmentedControl, TextInput, Textarea } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { uploadPhotosInOrder } from '../../lib/photoUploads';
 import { resizeImage } from '../../lib/resizeImage';
-import { ImageUploader, notify, type UploaderPhoto } from '../../components/ui';
+import { ImageUploader, ToggleChipGroup, notify, type UploaderPhoto } from '../../components/ui';
 import {
   getCategories,
   getListingById,
@@ -179,19 +179,16 @@ export default function CreateListingPage() {
         <form onSubmit={handleSubmit}>
           {/* Listing Type */}
           <div className={styles.formSection}>
-            <label className={styles.formLabel}>Listing Type</label>
-            <div className={styles.toggleGroup}>
-              {(['business', 'individual'] as ListingType[]).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`${styles.toggleButton} ${listingType === type ? styles.toggleButtonActive : ''}`}
-                  onClick={() => setListingType(type)}
-                >
-                  {LISTING_TYPE_LABELS[type]}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              fullWidth
+              aria-label="Listing Type"
+              value={listingType}
+              onChange={(value) => setListingType(value as ListingType)}
+              data={(['business', 'individual'] as ListingType[]).map((type) => ({
+                value: type,
+                label: LISTING_TYPE_LABELS[type],
+              }))}
+            />
           </div>
 
           {/* Photos */}
@@ -210,21 +207,18 @@ export default function CreateListingPage() {
 
           {/* Category */}
           <div className={styles.formSection}>
-            <label className={styles.formLabel}>Category *</label>
-            <div className={styles.categoryChips}>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  className={`${styles.categoryChip} ${categoryId === cat.id ? styles.categoryChipActive : ''}`}
-                  onClick={() => setCategoryId(cat.id)}
-                >
-                  <span>{cat.emoji}</span>
-                  <span>{cat.name}</span>
-                </button>
-              ))}
-            </div>
-            {errors.category_id && <p className={styles.errorText}>{errors.category_id}</p>}
+            <ToggleChipGroup
+              label="Category *"
+              mode="single"
+              options={categories.map((cat) => ({
+                value: cat.id,
+                label: `${cat.emoji} ${cat.name}`,
+                name: cat.name,
+              }))}
+              value={categoryId ? [categoryId] : []}
+              onChange={([next]) => setCategoryId(next ?? '')}
+              error={errors.category_id}
+            />
           </div>
 
           {/* Title */}
@@ -296,19 +290,16 @@ export default function CreateListingPage() {
           {/* Individual fields */}
           {listingType === 'individual' && (
             <div className={styles.formSection}>
-              <label className={styles.formLabel}>Condition</label>
-              <div className={styles.toggleGroup}>
-                {(['new', 'used'] as ItemCondition[]).map((condition) => (
-                  <button
-                    key={condition}
-                    type="button"
-                    className={`${styles.toggleButton} ${itemCondition === condition ? styles.toggleButtonActive : ''}`}
-                    onClick={() => setItemCondition(condition)}
-                  >
-                    {ITEM_CONDITION_LABELS[condition]}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                fullWidth
+                aria-label="Condition"
+                value={itemCondition ?? ''}
+                onChange={(value) => setItemCondition(value as ItemCondition)}
+                data={(['new', 'used'] as ItemCondition[]).map((condition) => ({
+                  value: condition,
+                  label: ITEM_CONDITION_LABELS[condition],
+                }))}
+              />
             </div>
           )}
 
