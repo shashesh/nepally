@@ -258,6 +258,8 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
                       </Badge>
                     ) : null
                   }
+                  // Chromium's focus scroll skips a tab that is only partly clipped by the scroller.
+                  onFocus={(event) => event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })}
                 >
                   {label}
                 </Tabs.Tab>

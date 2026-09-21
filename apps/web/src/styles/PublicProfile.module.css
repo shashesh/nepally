@@ -72,9 +72,10 @@
 /* The global :focus-visible ring (globals.css) is a 2px outline at a 2px
    offset plus a 6px halo; overflow-x: auto here forces overflow-y: auto too
    (a scroll container can't leave one axis visible), which clips both at
-   every width. Draw the ring inside the tab instead. */
+   every width. Draw the ring inside the tab, pulled in past the active
+   tab's 2px marigold underline so the ring doesn't cover it. */
 .tab:focus-visible {
-  outline-offset: -2px;
+  outline-offset: -4px;
   box-shadow: none;
 }
 

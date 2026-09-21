@@ -719,6 +719,17 @@ describe('PublicProfilePage', () => {
     expect(screen.getByText('Nepali Networking Night')).toBeDefined();
   });
 
+  it('scrolls a focused tab fully into view (Chromium leaves a partly clipped tab clipped)', async () => {
+    const scrollIntoViewSpy = vi.spyOn(HTMLElement.prototype, 'scrollIntoView');
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    screen.getByRole('tab', { name: 'About' }).focus();
+
+    expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
+    scrollIntoViewSpy.mockRestore();
+  });
+
   it("renders only the active panel's content", async () => {
     render(<PublicProfilePage />);
     await act(async () => {});
