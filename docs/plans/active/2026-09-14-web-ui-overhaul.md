@@ -12071,7 +12071,7 @@ Run on `master` at `e685317` (the "Starting an area PR" commands), 2026-09-21.
 
 ## PR 6 — Task breakdown
 
-Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same conventions as PRs 4a–5: test first, one commit per task, query by role, label or text, semantic tokens only, no inline styles (Mantine style props such as `miw` included, since they render a `style` attribute), and Mantine components rather than raw elements outside `components/ui/`. No new dependencies: `Tabs`, `FileButton`, `NativeSelect` and `NumberInput` all ship in `@mantine/core`.
+Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same conventions as PRs 4a–5: test first, one commit per task, query by role, label or text, semantic tokens only, no inline `style={{}}` and no colour literals passed through Mantine's `styles` prop (spacing props such as `mt` and `c="dimmed"` are fine, as elsewhere in the app), and Mantine components rather than raw elements outside `components/ui/`. No new dependencies: `Tabs`, `FileButton`, `NativeSelect` and `NumberInput` all ship in `@mantine/core`.
 
 **Decisions this breakdown locks in:**
 
