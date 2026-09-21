@@ -157,4 +157,101 @@ describe('ImageUploader', () => {
     expect(screen.getByText('Optional. JPG, PNG or WEBP.')).toBeDefined();
     expect(screen.getByText('Pick at least one photo')).toBeDefined();
   });
+
+  describe('reordering', () => {
+    const two: UploaderPhoto[] = [
+      { kind: 'stored', url: 'https://cdn.example.com/a.jpg' },
+      { kind: 'stored', url: 'https://cdn.example.com/b.jpg' },
+    ];
+
+    it('offers no move buttons unless it is reorderable', () => {
+      render(<Harness initial={two} />);
+
+      expect(screen.queryByRole('button', { name: /^Move photo/ })).toBeNull();
+    });
+
+    it('offers no move buttons for a single photo', () => {
+      render(<Harness reorderable initial={[two[0]]} />);
+
+      expect(screen.queryByRole('button', { name: /^Move photo/ })).toBeNull();
+    });
+
+    it('swaps a photo with the one before it', () => {
+      const onChangeSpy = vi.fn();
+      render(<Harness reorderable initial={two} onChangeSpy={onChangeSpy} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Move photo 2 left' }));
+
+      expect(onChangeSpy).toHaveBeenCalledWith([two[1], two[0]]);
+    });
+
+    it('swaps a photo with the one after it', () => {
+      const onChangeSpy = vi.fn();
+      render(<Harness reorderable initial={two} onChangeSpy={onChangeSpy} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Move photo 1 right' }));
+
+      expect(onChangeSpy).toHaveBeenCalledWith([two[1], two[0]]);
+    });
+
+    it('disables the moves that would fall off either end', () => {
+      render(<Harness reorderable initial={two} />);
+
+      expect(screen.getByRole('button', { name: 'Move photo 1 left' }).hasAttribute('disabled')).toBe(true);
+      expect(screen.getByRole('button', { name: 'Move photo 2 right' }).hasAttribute('disabled')).toBe(true);
+      expect(screen.getByRole('button', { name: 'Move photo 2 left' }).hasAttribute('disabled')).toBe(false);
+    });
+
+    it('announces where a moved photo landed', () => {
+      render(<Harness reorderable initial={two} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Move photo 2 left' }));
+
+      expect(screen.getByText('Photo 2 moved to position 1')).toBeDefined();
+    });
+  });
+
+  describe('transformFile', () => {
+    it('stores what the transform returns, not the file that was picked', async () => {
+      const onChangeSpy = vi.fn();
+      const resized = makeFile('one-resized.jpg', 'image/jpeg');
+      const transformFile = vi.fn().mockResolvedValue(resized);
+      render(<Harness onChangeSpy={onChangeSpy} transformFile={transformFile} />);
+
+      const original = makeFile('one.png');
+      await pickFiles([original]);
+
+      expect(transformFile).toHaveBeenCalledWith(original);
+      const next = onChangeSpy.mock.calls[0][0] as UploaderPhoto[];
+      expect(next[0].kind === 'picked' && next[0].file).toBe(resized);
+    });
+
+    it('keeps the files that transformed and reports the ones that did not', async () => {
+      const onChangeSpy = vi.fn();
+      const good = makeFile('good.png');
+      const transformFile = vi.fn(async (file: File) => {
+        if (file.name === 'bad.png') throw new Error('unreadable');
+        return file;
+      });
+      render(<Harness onChangeSpy={onChangeSpy} transformFile={transformFile} />);
+
+      await pickFiles([good, makeFile('bad.png')]);
+
+      const next = onChangeSpy.mock.calls[0][0] as UploaderPhoto[];
+      expect(next).toHaveLength(1);
+      expect(next[0].kind === 'picked' && next[0].file).toBe(good);
+      expect(screen.getByText(/1 photo could not be processed/i)).toBeDefined();
+    });
+
+    it('reports a failure even when nothing survives', async () => {
+      const onChangeSpy = vi.fn();
+      const transformFile = vi.fn().mockRejectedValue(new Error('unreadable'));
+      render(<Harness onChangeSpy={onChangeSpy} transformFile={transformFile} />);
+
+      await pickFiles([makeFile('bad.png')]);
+
+      expect(onChangeSpy).not.toHaveBeenCalled();
+      expect(screen.getByText(/1 photo could not be processed/i)).toBeDefined();
+    });
+  });
 });

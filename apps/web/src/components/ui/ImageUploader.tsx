@@ -1,8 +1,8 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ActionIcon, Text } from '@mantine/core';
+import { ActionIcon, Text, VisuallyHidden } from '@mantine/core';
 import { Dropzone, type FileRejection } from '@mantine/dropzone';
-import { IconPhotoPlus, IconX } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconPhotoPlus, IconX } from '@tabler/icons-react';
 import styles from './ImageUploader.module.css';
 
 /** What every caller accepts unless it narrows the list further. */
@@ -26,6 +26,10 @@ export interface ImageUploaderProps {
   disabled?: boolean;
   /** MIME types; defaults to JPEG, PNG and WEBP. */
   accept?: string[];
+  /** Shows "Move photo N left" / "Move photo N right" on every thumbnail. */
+  reorderable?: boolean;
+  /** Runs on each accepted file before it enters state, e.g. downscaling. */
+  transformFile?: (file: File) => Promise<File>;
 }
 
 export function photoSrc(photo: UploaderPhoto): string {
@@ -85,6 +89,8 @@ export function ImageUploader({
   error,
   disabled,
   accept = DEFAULT_IMAGE_MIME_TYPES,
+  reorderable,
+  transformFile,
 }: ImageUploaderProps) {
   const baseId = useId();
   const labelId = `${baseId}-label`;
@@ -93,6 +99,7 @@ export function ImageUploader({
   const errorId = `${baseId}-error`;
 
   const [message, setMessage] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState<string | null>(null);
 
   // Every preview URL this component minted, so unmount can revoke the ones
   // still in play. Removal revokes eagerly and drops the entry.
@@ -108,23 +115,62 @@ export function ImageUploader({
   const isFull = photos.length >= max;
   const remaining = Math.max(0, max - photos.length);
 
-  function handleDrop(files: File[]) {
+  function capMessage(): string {
+    return `You can add up to ${max} ${max === 1 ? 'photo' : 'photos'}.`;
+  }
+
+  async function handleDrop(files: File[]) {
     const accepted = files.slice(0, remaining);
     const overflow = files.length - accepted.length;
 
     if (accepted.length === 0) {
-      setMessage(`You can add up to ${max} ${max === 1 ? 'photo' : 'photos'}.`);
+      setMessage(capMessage());
       return;
     }
 
-    const picked: UploaderPhoto[] = accepted.map((file) => {
+    // A transform can fail on a file the browser accepted — an image it cannot
+    // decode, say. Keep the rest and say how many were lost, rather than
+    // dropping them silently the way marketplace/create used to.
+    const prepared = await Promise.all(
+      accepted.map(async (file) => {
+        if (!transformFile) return file;
+        try {
+          return await transformFile(file);
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const usable = prepared.filter((file): file is File => file !== null);
+    const failed = prepared.length - usable.length;
+
+    const notices: string[] = [];
+    if (overflow > 0) notices.push(capMessage());
+    if (failed > 0) {
+      notices.push(`${failed} ${failed === 1 ? 'photo' : 'photos'} could not be processed.`);
+    }
+    setMessage(notices.length > 0 ? notices.join(' ') : null);
+
+    if (usable.length === 0) return;
+
+    const picked: UploaderPhoto[] = usable.map((file) => {
       const previewUrl = URL.createObjectURL(file);
       createdUrlsRef.current.add(previewUrl);
       return { kind: 'picked', id: newPickedId(), previewUrl, file };
     });
 
-    setMessage(overflow > 0 ? `You can add up to ${max} ${max === 1 ? 'photo' : 'photos'}.` : null);
     onChange([...photos, ...picked]);
+  }
+
+  function handleMove(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= photos.length) return;
+
+    const reordered = [...photos];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    setAnnouncement(`Photo ${index + 1} moved to position ${target + 1}`);
+    onChange(reordered);
   }
 
   function handleReject(rejections: FileRejection[]) {
@@ -216,10 +262,37 @@ export function ImageUploader({
               >
                 <IconX size={14} aria-hidden="true" />
               </ActionIcon>
+
+              {reorderable && photos.length > 1 && (
+                <div className={styles.moves}>
+                  <ActionIcon
+                    size="sm"
+                    variant="filled"
+                    color="dark"
+                    aria-label={`Move photo ${index + 1} left`}
+                    disabled={index === 0}
+                    onClick={() => handleMove(index, -1)}
+                  >
+                    <IconArrowLeft size={14} aria-hidden="true" />
+                  </ActionIcon>
+                  <ActionIcon
+                    size="sm"
+                    variant="filled"
+                    color="dark"
+                    aria-label={`Move photo ${index + 1} right`}
+                    disabled={index === photos.length - 1}
+                    onClick={() => handleMove(index, 1)}
+                  >
+                    <IconArrowRight size={14} aria-hidden="true" />
+                  </ActionIcon>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
+
+      {announcement && <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>}
     </div>
   );
 }

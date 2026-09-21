@@ -58,3 +58,12 @@
   top: var(--space-1);
   right: var(--space-1);
 }
+
+.moves {
+  position: absolute;
+  right: var(--space-1);
+  bottom: var(--space-1);
+  left: var(--space-1);
+  display: flex;
+  justify-content: space-between;
+}
