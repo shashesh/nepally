@@ -45,7 +45,13 @@ export function FollowButton({ supabase, viewerId, targetUserId, onChange }: Pro
   // Without a known follow status the button can't truthfully offer "Follow" or "Following".
   if (loadedCurrentPair && loadedFor?.failed) return null;
 
-  const loading = toggling || !loadedCurrentPair;
+  // Only the initial status fetch has no truthful label to show, so only it earns the
+  // native `disabled` attribute. Mid-toggle the button already has an optimistic label
+  // ("Follow"/"Following") and must stay focusable: native `disabled` on the focused
+  // element would push focus to <body>, so toggling is conveyed with aria-disabled +
+  // Mantine's data-disabled (look-disabled) instead, while `toggle` ignores repeat clicks.
+  const initialLoading = !loadedCurrentPair;
+  const loading = toggling || initialLoading;
 
   const toggle = async () => {
     if (loading) return;
@@ -64,15 +70,18 @@ export function FollowButton({ supabase, viewerId, targetUserId, onChange }: Pro
     <Button
       type="button"
       data-testid="follow-button"
-      aria-pressed={following}
+      aria-pressed={loadedCurrentPair ? following : undefined}
+      aria-label={initialLoading ? 'Loading follow status' : undefined}
+      aria-disabled={toggling ? true : undefined}
+      data-disabled={toggling}
       className={styles.root}
       variant={following ? 'default' : 'filled'}
-      radius="xl"
+      radius="var(--radius-full)"
       size="sm"
-      disabled={loading}
+      disabled={initialLoading}
       onClick={toggle}
     >
-      {loading ? '…' : following ? 'Following' : 'Follow'}
+      {initialLoading ? '…' : following ? 'Following' : 'Follow'}
     </Button>
   );
 }

@@ -57,6 +57,22 @@ describe('FollowButton (web)', () => {
     expect(mocks.isFollowing).toHaveBeenCalledWith(supabase, 'viewer', 'target');
   });
 
+  it('names the loading state and leaves aria-pressed unset until it is known', async () => {
+    const status = deferred<{ data: boolean }>();
+    mocks.isFollowing.mockReturnValue(status.promise);
+    render(<FollowButton supabase={supabase} viewerId="viewer" targetUserId="target" />);
+
+    const button = getButton();
+    expect(button.textContent).toBe('…');
+    expect(button.getAttribute('aria-label')).toBe('Loading follow status');
+    expect(button.getAttribute('aria-pressed')).toBeNull();
+
+    status.resolve({ data: false });
+    await waitFor(() => expect(button.textContent).toBe('Follow'));
+    expect(button.getAttribute('aria-label')).toBeNull();
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('hides the button when the follow status cannot be loaded', async () => {
     mocks.isFollowing.mockResolvedValue({ error: new Error('network') });
     render(<FollowButton supabase={supabase} viewerId="viewer" targetUserId="target" />);
@@ -75,9 +91,36 @@ describe('FollowButton (web)', () => {
 
     fireEvent.click(getButton());
 
+    // The label now flips optimistically before followUser() resolves, so it can settle
+    // ahead of the request; wait for the request/onChange pair together instead.
     await waitFor(() => expect(getButton().textContent).toBe('Following'));
-    expect(mocks.followUser).toHaveBeenCalledWith(supabase, 'viewer', 'target');
-    expect(onChange).toHaveBeenCalledWith(true);
+    await waitFor(() => {
+      expect(mocks.followUser).toHaveBeenCalledWith(supabase, 'viewer', 'target');
+      expect(onChange).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it('keeps focus and shows the optimistic label while a toggle is in flight', async () => {
+    const toggleResult = deferred<{ error?: unknown }>();
+    mocks.followUser.mockReturnValue(toggleResult.promise);
+    render(<FollowButton supabase={supabase} viewerId="viewer" targetUserId="target" />);
+    await waitFor(() => expect(getButton().textContent).toBe('Follow'));
+
+    const button = getButton();
+    button.focus();
+    fireEvent.click(button);
+
+    // Mid-toggle: optimistic label, not natively disabled (so focus is never forced to
+    // <body>), but marked disabled for assistive tech via aria-disabled.
+    expect(document.activeElement).toBe(button);
+    expect(button.textContent).toBe('Following');
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+
+    toggleResult.resolve({});
+    await waitFor(() => expect(button.getAttribute('aria-disabled')).toBeNull());
+    expect(button.textContent).toBe('Following');
+    expect(button.disabled).toBe(false);
   });
 
   it('reverts the optimistic update when the request fails', async () => {
