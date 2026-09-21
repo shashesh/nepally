@@ -12,7 +12,6 @@
   "apps/web/src/pages/marketplace/marketplace.module.css",
   "apps/web/src/styles/Auth.module.css",
   "apps/web/src/styles/ComingSoon.module.css",
-  "apps/web/src/styles/CreatePost.module.css",
   "apps/web/src/styles/Home.module.css",
   "apps/web/src/styles/Legal.module.css",
   "apps/web/src/styles/ManageLocations.module.css",
