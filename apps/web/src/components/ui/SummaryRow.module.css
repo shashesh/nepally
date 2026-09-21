@@ -1,8 +1,8 @@
 .root {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  align-items: flex-start;
+  gap: var(--space-3);
   padding: var(--space-4);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
@@ -17,6 +17,14 @@
   border-color: var(--border-solid);
 }
 
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .top {
   display: flex;
   align-items: baseline;
@@ -24,7 +32,10 @@
   gap: var(--space-2);
 }
 
-/* The row's only link, covering the row so the whole surface opens the event. */
+/* The row's only link, covering the row so the whole surface is clickable.
+   `.root`, not this link, is `::after`'s containing block (it is the
+   nearest positioned ancestor), so the overlay still reaches the full row
+   even though the link itself is clipped to one line. */
 .stretchedLink {
   min-width: 0;
   overflow: hidden;
@@ -51,6 +62,13 @@
   flex-shrink: 0;
 }
 
+/* Sits above the stretched link's overlay so it stays clickable. */
+.menu {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
 .detail {
   display: flex;
   flex-wrap: wrap;
@@ -66,13 +84,13 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
+  overflow-wrap: anywhere;
   color: var(--text-3);
   font-size: var(--font-size-xs);
 }
 
 /* The alt text ('') keeps the dot itself out of the accessibility tree, so
-   screen readers hear "Mar 5, 2026 Dallas Convention Center", not
-   "Mar 5, 2026 dot Dallas Convention Center". */
+   screen readers hear "2h ago 3 likes", not "2h ago dot 3 likes". */
 .detail > * + *::before,
 .meta > * + *::before {
   content: '·';

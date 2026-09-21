@@ -1,7 +1,6 @@
 import React, { type ReactNode } from 'react';
-import Link from 'next/link';
 import { formatRelativeTime, pluralize, type Post } from '@nepally/shared';
-import { ScopeBadge } from '../ui';
+import { ScopeBadge, SummaryRow, SummaryRowMeta } from '../ui';
 import styles from './PostSummaryRow.module.css';
 
 export interface PostSummaryRowProps {
@@ -12,8 +11,9 @@ export interface PostSummaryRowProps {
 
 /**
  * One post in a list of summaries — profile posts, saved posts, a public
- * profile. The title is the only link, and its `::after` stretches over the
- * row, so an optional menu can sit beside it without being nested inside it.
+ * profile. Built on SummaryRow: the title is the only link, and its
+ * `::after` stretches over the row, so an optional menu can sit beside it
+ * without being nested inside it.
  */
 export function PostSummaryRow({ post, menu }: PostSummaryRowProps) {
   const likes = post.likes_count ?? 0;
@@ -21,27 +21,19 @@ export function PostSummaryRow({ post, menu }: PostSummaryRowProps) {
   const description = post.description?.trim();
 
   return (
-    <article className={styles.root}>
-      <div className={styles.body}>
-        <div className={styles.top}>
-          <Link href={`/posts/${post.id}`} className={styles.stretchedLink}>
-            {post.title}
-          </Link>
-          <span className={styles.scope}>
-            <ScopeBadge isGlobal={post.is_global} />
-          </span>
-        </div>
+    <SummaryRow
+      href={`/posts/${post.id}`}
+      title={post.title}
+      badge={<ScopeBadge isGlobal={post.is_global} />}
+      menu={menu}
+    >
+      {description && <p className={styles.description}>{description}</p>}
 
-        {description && <p className={styles.description}>{description}</p>}
-
-        <div className={styles.meta}>
-          <time dateTime={post.created_at}>{formatRelativeTime(new Date(post.created_at))}</time>
-          <span>{pluralize(likes, 'like')}</span>
-          <span>{pluralize(comments, 'comment')}</span>
-        </div>
-      </div>
-
-      {menu ? <div className={styles.menu}>{menu}</div> : null}
-    </article>
+      <SummaryRowMeta>
+        <time dateTime={post.created_at}>{formatRelativeTime(new Date(post.created_at))}</time>
+        <span>{pluralize(likes, 'like')}</span>
+        <span>{pluralize(comments, 'comment')}</span>
+      </SummaryRowMeta>
+    </SummaryRow>
   );
 }

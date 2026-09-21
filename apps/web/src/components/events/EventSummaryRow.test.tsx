@@ -20,10 +20,10 @@ type SummaryEvent = Pick<
 
 // Every fixture uses noon UTC (T12:00:00.000Z), the one convention that keeps
 // the rendered local date stable across the timezones this suite actually
-// runs in: noon UTC stays on the same calendar day from UTC-11 to UTC+11
-// (outside that range it rolls into the next or previous day). An evening UTC
-// time (e.g. T18:00Z) renders a day late from TZ=Asia/Tokyo (UTC+9) onward —
-// see apps/web/vitest.config.ts, which pins no TZ, so this suite runs in
+// runs in: noon UTC stays on the same calendar day from UTC-11 to UTC+11 and
+// only rolls into the next day from UTC+12. An evening UTC time (e.g.
+// T18:00Z) crosses midnight from UTC+6 onward (e.g. Asia/Dhaka) — see
+// apps/web/vitest.config.ts, which pins no TZ, so this suite runs in
 // whatever zone the machine or CI is in.
 const event: SummaryEvent = {
   id: 'event-1',

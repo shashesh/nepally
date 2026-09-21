@@ -1,8 +1,6 @@
 import React from 'react';
-import Link from 'next/link';
 import { formatDate, type Event } from '@nepally/shared';
-import { ScopeBadge } from '../ui';
-import styles from './EventSummaryRow.module.css';
+import { ScopeBadge, SummaryRow, SummaryRowMeta } from '../ui';
 
 export interface EventSummaryRowProps {
   event: Pick<
@@ -15,8 +13,8 @@ export interface EventSummaryRowProps {
 
 /**
  * One event in a list of summaries — a user's organized events, a public
- * profile. The title is the only link, and its `::after` stretches over the
- * row, matching PostSummaryRow.
+ * profile. Built on SummaryRow, matching PostSummaryRow: the title is the
+ * only link, and its `::after` stretches over the row.
  */
 export function EventSummaryRow({ event, now }: EventSummaryRowProps) {
   const going = event.rsvp_count ?? 0;
@@ -26,25 +24,16 @@ export function EventSummaryRow({ event, now }: EventSummaryRowProps) {
   const date = formatDate(new Date(event.start_date));
 
   return (
-    <article className={styles.root}>
-      <div className={styles.top}>
-        <Link href={`/events/${event.id}`} className={styles.stretchedLink}>
-          {event.title}
-        </Link>
-        <span className={styles.scope}>
-          <ScopeBadge isGlobal={event.is_global} />
-        </span>
-      </div>
-
-      <div className={styles.detail}>
+    <SummaryRow href={`/events/${event.id}`} title={event.title} badge={<ScopeBadge isGlobal={event.is_global} />}>
+      <SummaryRowMeta variant="detail">
         <time dateTime={event.start_date}>{date}</time>
         {event.location_name && <span>{event.location_name}</span>}
-      </div>
+      </SummaryRowMeta>
 
-      <div className={styles.meta}>
+      <SummaryRowMeta>
         <span>{going} going</span>
         {statusLabel && <span>{statusLabel}</span>}
-      </div>
-    </article>
+      </SummaryRowMeta>
+    </SummaryRow>
   );
 }
