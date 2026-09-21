@@ -217,6 +217,59 @@ describe('PostDetailPage', () => {
       expect(screen.getByLabelText('Write a comment')).toBeDefined();
     });
 
+    it('does not delete the previous post when its dialog is confirmed after the move', async () => {
+      postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'user-2', full_name: 'Bikal' } });
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: { ...mockPost, author_id: 'user-2' } })
+        .mockResolvedValueOnce({ data: { ...secondPost, author_id: 'user-2' } });
+      postDetailMocks.deletePostMock.mockResolvedValue({});
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+      fireEvent.click(screen.getByLabelText('Post options'));
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete Post' }));
+      await screen.findByText('Delete post');
+
+      // The dialog belongs to the app-level modal manager, so moving on — with
+      // Back, say — leaves it standing over the new post.
+      navigateToSecondPost(rerender);
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await act(async () => {});
+
+      expect(postDetailMocks.deletePostMock).not.toHaveBeenCalled();
+    });
+
+    it('does not delete the previous post comment when its dialog is confirmed after the move', async () => {
+      postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'comment-user-1', full_name: 'Bikal' } });
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: secondPost });
+      postDetailMocks.deleteCommentMock.mockResolvedValue({});
+      postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+        {
+          parent: {
+            id: 'comment-1',
+            content: 'Interested!',
+            author_id: 'comment-user-1',
+            created_at: '2026-02-24T11:00:00Z',
+            author: { full_name: 'Comment User', profile_photo: null, trust_level: 1 },
+          },
+          replies: [],
+        },
+      ]);
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Interested!')).toBeDefined());
+      fireEvent.click(screen.getByLabelText('Delete comment'));
+      await screen.findByText('Delete comment', { selector: '*:not([aria-label])' });
+
+      navigateToSecondPost(rerender);
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await act(async () => {});
+
+      expect(postDetailMocks.deleteCommentMock).not.toHaveBeenCalled();
+    });
+
     it('does not apply the previous post liked state to the new post', async () => {
       let settleLiked: (result: unknown) => void = () => {};
       postDetailMocks.getPostByIdMock

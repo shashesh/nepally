@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 // the whole run down with it. vitest.setup.ts sweeps them; this guards that.
 let timeoutFired = false;
 let frameFired = false;
+let intervalTicks = 0;
 
 describe('test harness', () => {
   it('lets a test schedule work it never waits for', () => {
@@ -14,6 +15,9 @@ describe('test harness', () => {
     window.requestAnimationFrame(() => {
       frameFired = true;
     });
+    window.setInterval(() => {
+      intervalTicks += 1;
+    }, 5);
 
     expect(timeoutFired).toBe(false);
   });
@@ -28,5 +32,6 @@ describe('test harness', () => {
 
     expect(timeoutFired).toBe(false);
     expect(frameFired).toBe(false);
+    expect(intervalTicks).toBe(0);
   });
 });

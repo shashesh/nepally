@@ -256,7 +256,11 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
   }
 
   async function handleDeleteComment(commentId: string) {
-    // CommentThread already asked; this only reports what went wrong.
+    // CommentThread already asked, but its dialog belongs to the app-level
+    // modal manager and stays open when this view goes: a reader who moves on
+    // and then confirms would delete a comment on the post they just left.
+    if (!viewActiveRef.current) return;
+
     const result = await deleteComment(supabase, commentId);
     if (!viewActiveRef.current) return;
 
@@ -356,6 +360,9 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
       danger: true,
     });
     if (!shouldDelete) return;
+    // Same dialog, same reason: confirming it after moving on must not delete
+    // the post behind it. Guarding after the request would be too late.
+    if (!viewActiveRef.current) return;
 
     const result = await deletePost(supabase, post.id);
     if (!viewActiveRef.current) return;
