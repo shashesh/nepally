@@ -1,0 +1,80 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+/* Compact surfaces get a border change on interaction; --shadow-float is
+   reserved for floating layers (menus, popovers, dropdowns). */
+.root:hover,
+.root:focus-within {
+  border-color: var(--border-solid);
+}
+
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* The row's only link, covering the row so the whole surface opens the event. */
+.stretchedLink {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-1);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stretchedLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.stretchedLink:hover {
+  text-decoration: underline;
+}
+
+/* Mantine's Badge root clips overflow, so flex would otherwise shrink it
+   down to its ellipsis when the title is long. */
+.scope {
+  flex-shrink: 0;
+}
+
+.detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-3);
+  font-size: var(--font-size-xs);
+}
+
+/* The alt text ('') keeps the dot itself out of the accessibility tree, so
+   screen readers hear "Mar 5, 2026 Dallas Convention Center", not
+   "Mar 5, 2026 dot Dallas Convention Center". */
+.detail > * + *::before,
+.meta > * + *::before {
+  content: '·';
+  content: '·' / '';
+  margin-right: var(--space-1);
+}
