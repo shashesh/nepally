@@ -44,3 +44,13 @@ export const PUBLIC_USER_COLUMNS: string = PUBLIC_USER_COLUMN_LIST.join(', ');
  * high-density screens.
  */
 export const PROFILE_PHOTO_SIZE_PX = 500;
+
+/**
+ * Largest source file the profile photo picker accepts, checked before the
+ * crop UI ever decodes it. A 48-50MP photo from a modern phone camera decodes
+ * to roughly 200MB of raw pixel data via `createImageBitmap`/canvas before
+ * any resize happens, which can kill the tab (iOS Safari especially). 15MB of
+ * JPEG/HEIC-converted source comfortably covers real camera output while
+ * catching the pathological cases.
+ */
+export const MAX_PROFILE_PHOTO_SOURCE_BYTES = 15 * 1024 * 1024;
