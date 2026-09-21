@@ -14,6 +14,12 @@ window.ResizeObserver = class {
   disconnect() {}
 };
 
+// jsdom does not implement the object-URL store (required by ImageUploader,
+// which mints a preview URL per picked file and revokes it again).
+let objectUrlCounter = 0;
+URL.createObjectURL = () => `blob:nepally/${(objectUrlCounter += 1)}`;
+URL.revokeObjectURL = () => {};
+
 // jsdom does not implement matchMedia (required by Mantine)
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

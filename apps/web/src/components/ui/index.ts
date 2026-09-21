@@ -10,3 +10,10 @@ export { useConfirm, usePrompt, type ConfirmOptions, type PromptOptions } from '
 export { notify } from './notify';
 export { PhotoCarousel, type PhotoCarouselProps } from './PhotoCarousel';
 export { ImageLightbox, type ImageLightboxProps } from './ImageLightbox';
+export {
+  ImageUploader,
+  photoSrc,
+  DEFAULT_IMAGE_MIME_TYPES,
+  type ImageUploaderProps,
+  type UploaderPhoto,
+} from './ImageUploader';

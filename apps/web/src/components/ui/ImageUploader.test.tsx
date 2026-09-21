@@ -1,0 +1,160 @@
+import React, { useState } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '../../test-utils';
+import { ImageUploader, type ImageUploaderProps, type UploaderPhoto } from './ImageUploader';
+
+const ONE_MB = 1024 * 1024;
+
+function makeFile(name: string, type = 'image/png', size = 1024): File {
+  const file = new File(['x'], name, { type });
+  // jsdom sizes a File from its parts; the tests need a size of their choosing.
+  Object.defineProperty(file, 'size', { value: size });
+  return file;
+}
+
+type HarnessProps = Partial<ImageUploaderProps> & {
+  initial?: UploaderPhoto[];
+  onChangeSpy?: (photos: UploaderPhoto[]) => void;
+};
+
+/**
+ * ImageUploader is controlled, so the tests need something to hold the array.
+ * The spy sees every change; the state keeps the rendered list honest.
+ */
+function Harness({ initial = [], onChangeSpy, ...props }: HarnessProps) {
+  const [photos, setPhotos] = useState<UploaderPhoto[]>(initial);
+
+  return (
+    <ImageUploader
+      photos={photos}
+      onChange={(next) => {
+        onChangeSpy?.(next);
+        setPhotos(next);
+      }}
+      max={3}
+      maxBytes={2 * ONE_MB}
+      label="Photos"
+      {...props}
+    />
+  );
+}
+
+async function pickFiles(files: File[]) {
+  const input = screen.getByLabelText('Add photos');
+  await act(async () => {
+    fireEvent.change(input, { target: { files } });
+  });
+}
+
+describe('ImageUploader', () => {
+  it('names the group after its label', () => {
+    render(<Harness />);
+
+    expect(screen.getByRole('group', { name: 'Photos' })).toBeDefined();
+  });
+
+  it('reports picked files as picked photos, in the order they were chosen', async () => {
+    const onChangeSpy = vi.fn();
+    render(<Harness onChangeSpy={onChangeSpy} />);
+
+    const first = makeFile('one.png');
+    const second = makeFile('two.png');
+    await pickFiles([first, second]);
+
+    expect(onChangeSpy).toHaveBeenCalledTimes(1);
+    const next = onChangeSpy.mock.calls[0][0] as UploaderPhoto[];
+    expect(next).toHaveLength(2);
+    expect(next.every((photo) => photo.kind === 'picked')).toBe(true);
+    expect(next.map((photo) => (photo.kind === 'picked' ? photo.file : null))).toEqual([first, second]);
+  });
+
+  it('rejects a file larger than maxBytes and keeps the list unchanged', async () => {
+    const onChangeSpy = vi.fn();
+    render(<Harness onChangeSpy={onChangeSpy} maxBytes={ONE_MB} />);
+
+    await pickFiles([makeFile('huge.png', 'image/png', 4 * ONE_MB)]);
+
+    expect(onChangeSpy).not.toHaveBeenCalled();
+    expect(screen.getByText(/too large/i)).toBeDefined();
+  });
+
+  it('rejects a file whose type is not accepted', async () => {
+    const onChangeSpy = vi.fn();
+    render(<Harness onChangeSpy={onChangeSpy} accept={['image/png']} />);
+
+    await pickFiles([makeFile('notes.pdf', 'application/pdf')]);
+
+    expect(onChangeSpy).not.toHaveBeenCalled();
+    expect(screen.getByText(/not a supported image/i)).toBeDefined();
+  });
+
+  it('takes only the remaining slots when more files are picked than fit, and says so', async () => {
+    const onChangeSpy = vi.fn();
+    render(<Harness onChangeSpy={onChangeSpy} max={2} />);
+
+    await pickFiles([makeFile('one.png'), makeFile('two.png'), makeFile('three.png')]);
+
+    const next = onChangeSpy.mock.calls[0][0] as UploaderPhoto[];
+    expect(next).toHaveLength(2);
+    expect(screen.getByText(/you can add up to 2 photos/i)).toBeDefined();
+  });
+
+  it('removes the photo its button names', async () => {
+    const onChangeSpy = vi.fn();
+    render(<Harness onChangeSpy={onChangeSpy} />);
+
+    await pickFiles([makeFile('one.png'), makeFile('two.png')]);
+    onChangeSpy.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove photo 2' }));
+
+    const next = onChangeSpy.mock.calls[0][0] as UploaderPhoto[];
+    expect(next).toHaveLength(1);
+    expect(next[0].kind === 'picked' && next[0].file.name).toBe('one.png');
+  });
+
+  it('counts the photos against the maximum', async () => {
+    render(<Harness max={3} />);
+
+    expect(screen.getByText('0/3 photos')).toBeDefined();
+
+    await pickFiles([makeFile('one.png'), makeFile('two.png')]);
+
+    expect(screen.getByText('2/3 photos')).toBeDefined();
+  });
+
+  it('renders a stored photo and removes it like any other', () => {
+    const onChangeSpy = vi.fn();
+    render(
+      <Harness
+        onChangeSpy={onChangeSpy}
+        initial={[{ kind: 'stored', url: 'https://cdn.example.com/a.jpg' }]}
+      />
+    );
+
+    expect(screen.getByRole('img', { name: 'Photo 1' })).toBeDefined();
+    expect(screen.getByText('1/3 photos')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }));
+
+    expect(onChangeSpy).toHaveBeenCalledWith([]);
+  });
+
+  it('stops accepting files once it is full', async () => {
+    render(
+      <Harness
+        max={1}
+        initial={[{ kind: 'stored', url: 'https://cdn.example.com/a.jpg' }]}
+      />
+    );
+
+    expect(screen.getByLabelText('Add photos').hasAttribute('disabled')).toBe(true);
+  });
+
+  it('shows the description and the error it is given', () => {
+    render(<Harness description="Optional. JPG, PNG or WEBP." error="Pick at least one photo" />);
+
+    expect(screen.getByText('Optional. JPG, PNG or WEBP.')).toBeDefined();
+    expect(screen.getByText('Pick at least one photo')).toBeDefined();
+  });
+});

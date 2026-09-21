@@ -11607,6 +11607,7 @@ Work on `feat/web-ui-create-flows`, branched from `master` at `4f6b96d`. Same co
 4. **Placeholders are load-bearing.** Eleven unit and e2e assertions look a field up by placeholder (`'e.g. Dashain Celebration 2026'`, `"Tell people about your event..."`, `'What are you listing?'`, `'Describe your listing in detail...'`, `'e.g. Dallas Convention Center'`, `'Your business name'`). Keep every placeholder string byte-for-byte.
 5. **`ImageUploader` owns object URLs.** It creates one preview URL per picked file and revokes it on remove and on unmount. The pages stop calling `URL.createObjectURL` and `revokeObjectURL` altogether, which deletes the preview-ref dance at events/create 110–115 and 163–170 and `clearSelectedPhotos` at posts/create 389–394.
 6. **The three validation models stay as they are.** posts/create derives validity inline, marketplace/create maps zod issues into a `Record<string, string>`, events/create validates a zod schema on submit. Converging them is a larger change than this PR's remit and none of it is user-visible; the fields simply render whatever error string their page already computes.
+7. **One PR, not a 5a/5b split** (decided with the user, 2026-09-20). The diff lands near 3,000 lines, close to what split PR 4, but splitting would cost a second Visual baselines run and Actions minutes are the scarcer budget. Tasks 5.1–5.4 build the shared pieces first, so a primitive that is wrong shows up before three pages depend on it.
 
 **Files this PR creates:**
 
