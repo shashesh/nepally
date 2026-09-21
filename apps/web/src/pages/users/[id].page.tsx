@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Badge, Button, Tabs } from '@mantine/core';
 import { formatPublicName, getFirstName, getOrCreateConversation } from '@nepally/shared';
-import type { PublicUser } from '@nepally/shared';
+import type { Event, PublicUser } from '@nepally/shared';
 import { EmptyState, LoadingState, TrustBadge, notify } from '../../components/ui';
 import { PublicProfileHeader } from '../../components/users/PublicProfileHeader';
 import { PostSummaryRow } from '../../components/posts/PostSummaryRow';
@@ -97,32 +97,61 @@ function AboutPanel({ profileUser, metroName, postCount, eventCount, listingCoun
   );
 }
 
+interface EventsListProps {
+  events: Event[];
+  loading: boolean;
+  emptyTitle: string;
+  emptyAction?: ReactNode;
+}
+
+/**
+ * The Events tab's rows. Its own component so useNow's interval runs only
+ * while the tab is open: `keepMounted={false}` unmounts inactive panels.
+ */
+function EventsList({ events, loading, emptyTitle, emptyAction }: EventsListProps) {
+  const now = useNow();
+  return (
+    <RowList
+      loading={loading}
+      loadingLabel="Loading events…"
+      isEmpty={events.length === 0}
+      emptyTitle={emptyTitle}
+      emptyAction={emptyAction}
+    >
+      {events.map((event) => (
+        <EventSummaryRow key={event.id} event={event} now={now} />
+      ))}
+    </RowList>
+  );
+}
+
 export default function PublicProfilePage() {
   const router = useRouter();
   const memberId = typeof router.query.id === 'string' ? router.query.id : undefined;
+  // The Pages Router keeps this page mounted from /users/A to /users/B. A new
+  // key gives each visit a fresh view: tab, messaging state and loaded data
+  // start over, and requests from the previous visit can't act on this one.
+  return <PublicProfileView key={memberId ?? ''} memberId={memberId} />;
+}
+
+function PublicProfileView({ memberId }: { memberId: string | undefined }) {
+  const router = useRouter();
   const { user: currentUser } = useAuth();
   const profile = usePublicProfile(memberId);
-  const now = useNow();
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
-  const [tabMemberId, setTabMemberId] = useState(memberId);
   const [messagingLoading, setMessagingLoading] = useState(false);
 
-  // The Pages Router keeps this page mounted from /users/A to /users/B, so the
-  // tab and A's "Opening conversation…" would carry over. Open each member
-  // fresh, resetting during render as usePublicProfile does with its data.
-  if (memberId !== tabMemberId) {
-    setTabMemberId(memberId);
-    setActiveTab('posts');
-    setMessagingLoading(false);
-  }
-
-  // The member on screen, for handleMessage to check after its await (its own
-  // closure still holds the member it started for). Written in an effect,
-  // never during render.
-  const shownMemberIdRef = useRef(memberId);
+  // False once this visit's view unmounts, so a conversation request that
+  // finishes afterwards neither navigates nor toasts on the next member's page.
+  // Set true in the effect body, not just its cleanup, so it's correct under
+  // StrictMode's double mount too.
+  const mounted = useRef(false);
   useEffect(() => {
-    shownMemberIdRef.current = memberId;
-  }, [memberId]);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const { profileUser, posts, events, listings } = profile;
 
@@ -132,7 +161,6 @@ export default function PublicProfilePage() {
       return;
     }
 
-    const startedFor = memberId;
     setMessagingLoading(true);
     const result = await getOrCreateConversation(
       supabase,
@@ -141,9 +169,7 @@ export default function PublicProfilePage() {
       profileUser.id,
       profileUser.full_name
     );
-    // Moved on to another member: the reset above already cleared the label,
-    // and neither A's conversation nor A's failure belongs on B's page.
-    if (shownMemberIdRef.current !== startedFor) return;
+    if (!mounted.current) return;
     setMessagingLoading(false);
 
     if (result.data) {
@@ -179,11 +205,10 @@ export default function PublicProfilePage() {
 
   const isOwnProfile = currentUser?.id === profileUser.id;
   const firstName = getFirstName(profileUser.full_name);
-  const counts: Record<ProfileTab, number> = {
+  const counts: Partial<Record<ProfileTab, number>> = {
     posts: posts.length,
     events: events.length,
     listings: listings.length,
-    about: 0,
   };
 
   return (
@@ -207,24 +232,28 @@ export default function PublicProfilePage() {
           keepMounted={false}
         >
           <Tabs.List aria-label="Profile sections">
-            {TABS.map(({ value, label }) => (
-              <Tabs.Tab
-                key={value}
-                value={value}
-                rightSection={
-                  counts[value] > 0 ? (
-                    <Badge variant="light" color="ink" size="sm">
-                      {counts[value]}
-                    </Badge>
-                  ) : null
-                }
-              >
-                {label}
-              </Tabs.Tab>
-            ))}
+            {TABS.map(({ value, label }) => {
+              const count = counts[value];
+              return (
+                <Tabs.Tab
+                  key={value}
+                  value={value}
+                  rightSection={
+                    count ? (
+                      <Badge variant="light" color="ink" size="sm">
+                        {count}
+                      </Badge>
+                    ) : null
+                  }
+                >
+                  {label}
+                </Tabs.Tab>
+              );
+            })}
           </Tabs.List>
 
-          <Tabs.Panel value="posts" pt="md">
+          {/* tabIndex: with nothing focusable in a panel, Tab from the tab list would skip it. */}
+          <Tabs.Panel value="posts" pt="md" tabIndex={0}>
             <RowList
               loading={profile.postsLoading}
               loadingLabel="Loading posts…"
@@ -246,20 +275,24 @@ export default function PublicProfilePage() {
             </RowList>
           </Tabs.Panel>
 
-          <Tabs.Panel value="events" pt="md">
-            <RowList
+          <Tabs.Panel value="events" pt="md" tabIndex={0}>
+            <EventsList
+              events={events}
               loading={profile.eventsLoading}
-              loadingLabel="Loading events…"
-              isEmpty={events.length === 0}
-              emptyTitle={`${firstName} hasn’t organized any events.`}
-            >
-              {events.map((event) => (
-                <EventSummaryRow key={event.id} event={event} now={now} />
-              ))}
-            </RowList>
+              emptyTitle={
+                isOwnProfile ? 'You haven’t organized any events.' : `${firstName} hasn’t organized any events.`
+              }
+              emptyAction={
+                isOwnProfile ? (
+                  <Button component={Link} href="/events/create">
+                    Create an event
+                  </Button>
+                ) : undefined
+              }
+            />
           </Tabs.Panel>
 
-          <Tabs.Panel value="listings" pt="md">
+          <Tabs.Panel value="listings" pt="md" tabIndex={0}>
             <RowList
               loading={profile.listingsLoading}
               loadingLabel="Loading listings…"
@@ -281,7 +314,7 @@ export default function PublicProfilePage() {
             </RowList>
           </Tabs.Panel>
 
-          <Tabs.Panel value="about" pt="md">
+          <Tabs.Panel value="about" pt="md" tabIndex={0}>
             <AboutPanel
               profileUser={profileUser}
               metroName={profile.metroName}

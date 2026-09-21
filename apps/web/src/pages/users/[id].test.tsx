@@ -16,8 +16,12 @@ const profilePageMocks = vi.hoisted(() => ({
   getHelperScoreMock: vi.fn(),
   getMetroAreaByIdMock: vi.fn(),
   formatRelativeTimeMock: vi.fn(),
+  notificationsShowMock: vi.fn(),
 }));
 
+vi.mock('@mantine/notifications', () => ({
+  notifications: { show: profilePageMocks.notificationsShowMock },
+}));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: profilePageMocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: profilePageMocks.useRouterMock }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
@@ -117,6 +121,24 @@ const mockUserListings = [
     contacts_count: 0,
   },
 ];
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
+
+/** The About panel's term/definition pairs, e.g. { Posts: '1' }. */
+function aboutEntries(): Record<string, string> {
+  const panel = within(screen.getByRole('tabpanel'));
+  const terms = panel.getAllByRole('term');
+  const definitions = panel.getAllByRole('definition');
+  return Object.fromEntries(
+    terms.map((term, index) => [term.textContent ?? '', definitions[index]?.textContent ?? ''])
+  );
+}
 
 import PublicProfilePage from './[id].page';
 
@@ -348,6 +370,21 @@ describe('PublicProfilePage', () => {
     });
   });
 
+  it('reports a failed conversation start and stays on the profile', async () => {
+    profilePageMocks.getOrCreateConversationMock.mockResolvedValue({ error: new Error('boom') });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('button', { name: 'Message Bikal S.' }));
+    await act(async () => {});
+
+    expect(profilePageMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Failed to start conversation. Please try again.', color: 'red' })
+    );
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Message Bikal S.' })).toBeDefined();
+  });
+
   describe('moving to another member while a conversation is opening', () => {
     function showMember(userId: string): void {
       profilePageMocks.useRouterMock.mockReturnValue({
@@ -385,12 +422,8 @@ describe('PublicProfilePage', () => {
     });
 
     it('does not open the previous member’s conversation when it arrives late', async () => {
-      let resolveConversation: (value: unknown) => void = () => {};
-      profilePageMocks.getOrCreateConversationMock.mockReturnValue(
-        new Promise((resolve) => {
-          resolveConversation = resolve;
-        })
-      );
+      const conversation = deferred<unknown>();
+      profilePageMocks.getOrCreateConversationMock.mockReturnValue(conversation.promise);
       const { rerender } = render(<PublicProfilePage />);
       await act(async () => {});
 
@@ -401,11 +434,55 @@ describe('PublicProfilePage', () => {
       await act(async () => {});
 
       await act(async () => {
-        resolveConversation({ data: { conversationId: 'conv-bikal', isNew: false } });
+        conversation.resolve({ data: { conversationId: 'conv-bikal', isNew: false } });
       });
 
       expect(mockPush).not.toHaveBeenCalled();
       expect(screen.getByRole('button', { name: 'Message Sita G.' })).toBeDefined();
+    });
+
+    it('does not report the previous member’s failure when it arrives late', async () => {
+      const conversation = deferred<unknown>();
+      profilePageMocks.getOrCreateConversationMock.mockReturnValue(conversation.promise);
+      const { rerender } = render(<PublicProfilePage />);
+      await act(async () => {});
+
+      fireEvent.click(screen.getByRole('button', { name: 'Message Bikal S.' }));
+
+      showMember('another-user');
+      rerender(<PublicProfilePage />);
+      await act(async () => {});
+
+      await act(async () => {
+        conversation.resolve({ error: new Error('boom') });
+      });
+
+      expect(profilePageMocks.notificationsShowMock).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Message Sita G.' })).toBeDefined();
+    });
+
+    it('ignores a request from an earlier visit after going A → B → A', async () => {
+      const firstVisit = deferred<unknown>();
+      profilePageMocks.getOrCreateConversationMock.mockReturnValue(firstVisit.promise);
+      const { rerender } = render(<PublicProfilePage />);
+      await act(async () => {});
+
+      fireEvent.click(screen.getByRole('button', { name: 'Message Bikal S.' }));
+
+      showMember('another-user');
+      rerender(<PublicProfilePage />);
+      await act(async () => {});
+
+      showMember('profile-user');
+      rerender(<PublicProfilePage />);
+      await act(async () => {});
+
+      await act(async () => {
+        firstVisit.resolve({ data: { conversationId: 'conv-bikal', isNew: false } });
+      });
+
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Message Bikal S.' })).toBeDefined();
     });
   });
 
@@ -571,17 +648,19 @@ describe('PublicProfilePage', () => {
   });
 
   it('About tab lists all activity counts including listings', async () => {
+    profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: [] });
+    profilePageMocks.getActiveListingsBySellerMock.mockResolvedValue({
+      data: [mockUserListings[0], { ...mockUserListings[0], id: 'listing-2' }],
+    });
     render(<PublicProfilePage />);
-    await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
+    await act(async () => {});
 
     fireEvent.click(screen.getByRole('tab', { name: 'About' }));
 
-    await waitFor(() => {
-      // Row labels in the About section are unique — tab labels now include a nested count.
-      expect(screen.getByText('Active listings')).toBeDefined();
-      expect(screen.getByText('Events organized')).toBeDefined();
-      // The bare "Posts" label only appears in the About row (tab reads "Posts 1").
-      expect(screen.getAllByText('Posts').length).toBeGreaterThanOrEqual(1);
+    expect(aboutEntries()).toMatchObject({
+      Posts: '1',
+      'Events organized': '0',
+      'Active listings': '2',
     });
   });
 
@@ -640,7 +719,7 @@ describe('PublicProfilePage', () => {
     expect(screen.getByText('Nepali Networking Night')).toBeDefined();
   });
 
-  it('keeps inactive panels out of the DOM', async () => {
+  it("renders only the active panel's content", async () => {
     render(<PublicProfilePage />);
     await act(async () => {});
 
@@ -648,6 +727,17 @@ describe('PublicProfilePage', () => {
 
     expect(screen.queryByText('Roommate needed')).toBeNull();
     expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+  });
+
+  it('makes the active panel focusable, so Tab reaches it from the tab list', async () => {
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    expect(screen.getByRole('tabpanel').getAttribute('tabindex')).toBe('0');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
+
+    expect(screen.getByRole('tabpanel').getAttribute('tabindex')).toBe('0');
   });
 
   it('shows the Posts tab again after moving to another member', async () => {
@@ -675,17 +765,23 @@ describe('PublicProfilePage', () => {
 
   // ─── Own empty profile ─────────────────────────────────────────────────────
 
-  it('offers "Start a post" and "Post a listing" on your own empty profile', async () => {
+  it('offers "Start a post", "Create an event" and "Post a listing" on your own empty profile', async () => {
     profilePageMocks.useAuthMock.mockReturnValue({
       user: { ...mockCurrentUser, id: 'profile-user' },
     });
     profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
+    profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: [] });
     profilePageMocks.getActiveListingsBySellerMock.mockResolvedValue({ data: [] });
     render(<PublicProfilePage />);
     await act(async () => {});
 
     expect(screen.getByRole('heading', { name: 'You haven’t posted anything yet.' })).toBeDefined();
     expect(screen.getByRole('link', { name: 'Start a post' }).getAttribute('href')).toBe('/posts/create');
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Events/ }));
+
+    expect(screen.getByRole('heading', { name: 'You haven’t organized any events.' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Create an event' }).getAttribute('href')).toBe('/events/create');
 
     fireEvent.click(screen.getByRole('tab', { name: /^Listings/ }));
 
@@ -697,11 +793,17 @@ describe('PublicProfilePage', () => {
 
   it('offers no create actions on someone else’s empty profile', async () => {
     profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
+    profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: [] });
     render(<PublicProfilePage />);
     await act(async () => {});
 
     expect(screen.getByRole('heading', { name: 'Bikal hasn’t posted anything yet.' })).toBeDefined();
     expect(screen.queryByRole('link', { name: 'Start a post' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Events/ }));
+
+    expect(screen.getByRole('heading', { name: 'Bikal hasn’t organized any events.' })).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Create an event' })).toBeNull();
   });
 
   // ─── Follow button, counts, and identity chips ────────────────────────────
