@@ -12295,6 +12295,8 @@ The public view adds the relative time. The owner view adds:
 
 The status chip is text with a 1px border, in `--success` (active), `--warning` (inactive) or `--danger` (removed), on `--surface-1`. A `data-status` attribute selects the colour (recon 5). PR 8's my-listings page can adopt both the row and `isListingExpiringSoon`.
 
+*(Tightened in review, `ffed30a` and after.)* The status labels are the shared `LISTING_STATUS_LABELS`, not a local map, and the chip carries a visually hidden "Status: " prefix. The expiry line is coloured `--warning` through `data-tone="warning"`. Its wording comes from the shared `getListingExpiryNotice(listing, now)`: at 0 days left an active listing is already past soft expiry, so it reads "Refresh to stay visible in search" rather than "Expires in 0 days", which today's profile and my-listings show forever. `photos` may be null in the database, so the row reads `photos?.[0]`.
+
 Build it on `SummaryRow` (Task 6.5a): the thumbnail is `leading`, the owner view's status chip is `badge` (the public view has none), and the lines are `SummaryRowMeta`s. Its own stylesheet then holds only the thumbnail and the status chip.
 
 - [ ] **Step 1: Write the failing test.** Link name and href. `price: 80` shows "$80", and "Negotiable" shows as typed. No price when it is `null`. The category emoji when there are no photos. The public view shows the relative time and no status. The owner view shows "Active" and the three counts. "Expires in 10 days" appears at 80 days since refresh, and not for an inactive listing.
@@ -12725,7 +12727,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - Replace native dialogs (my-listings, listing actions).
   - Adopt `useInfiniteScroll` (index 178–193), the carousel (listing/[id] ~166–195) and `LoadingState`.
   - Convert the Mantine component mocks in the 7 marketplace tests to role-based assertions against real Mantine.
-- **Already built:** `ListingSummaryRow` with its owner view, and the shared `isListingExpiringSoon` (PR 6, Tasks 6.1 and 6.5). my-listings (118) should adopt both rather than keep its own `<= 14` check.
+- **Already built:** `ListingSummaryRow` with its owner view, and the shared `isListingExpiringSoon`, `getListingExpiryNotice` and `LISTING_STATUS_LABELS` (PR 6, Tasks 6.1 and 6.5). my-listings (118, 158) should adopt them rather than keep its own `<= 14` check and its "Expires in 0 days" copy. Mobile's `MyListingsScreen.tsx` (`STATUS_CONFIG` 36–40, expiry 136 and 181) and `ProfileScreen.tsx` (323) have the same duplicates and should move to the shared helpers too.
 
 ## PR 9 — Messages, notifications, moderation (`feat/web-ui-messaging`)
 
