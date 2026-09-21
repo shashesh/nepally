@@ -13,3 +13,4 @@ export * from './notificationRouting';
 export * from './sponsoredFeed';
 export * from './searchQuery';
 export * from './listingPrice';
+export * from './text';

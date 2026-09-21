@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react';
 import Link from 'next/link';
-import { formatRelativeTime, type Post } from '@nepally/shared';
+import { formatRelativeTime, pluralize, type Post } from '@nepally/shared';
 import { ScopeBadge } from '../ui';
 import styles from './PostSummaryRow.module.css';
 
@@ -8,10 +8,6 @@ export interface PostSummaryRowProps {
   post: Pick<Post, 'id' | 'title' | 'description' | 'is_global' | 'created_at' | 'likes_count' | 'comments_count'>;
   /** Sits beside the link, never inside it — e.g. an ActionMenu. */
   menu?: ReactNode;
-}
-
-function pluralize(count: number, singular: string): string {
-  return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }
 
 /**
@@ -22,6 +18,7 @@ function pluralize(count: number, singular: string): string {
 export function PostSummaryRow({ post, menu }: PostSummaryRowProps) {
   const likes = post.likes_count ?? 0;
   const comments = post.comments_count ?? 0;
+  const description = post.description?.trim();
 
   return (
     <article className={styles.root}>
@@ -30,19 +27,22 @@ export function PostSummaryRow({ post, menu }: PostSummaryRowProps) {
           <Link href={`/posts/${post.id}`} className={styles.stretchedLink}>
             {post.title}
           </Link>
-          <ScopeBadge isGlobal={post.is_global} />
+          {/* Mantine's Badge root clips overflow, so flex would otherwise shrink it. */}
+          <span className={styles.scope}>
+            <ScopeBadge isGlobal={post.is_global} />
+          </span>
         </div>
 
-        {post.description && <p className={styles.description}>{post.description}</p>}
+        {description && <p className={styles.description}>{description}</p>}
 
         <div className={styles.meta}>
-          <span>{formatRelativeTime(new Date(post.created_at))}</span>
+          <time dateTime={post.created_at}>{formatRelativeTime(new Date(post.created_at))}</time>
           <span>{pluralize(likes, 'like')}</span>
           <span>{pluralize(comments, 'comment')}</span>
         </div>
       </div>
 
-      {menu && <div className={styles.menu}>{menu}</div>}
+      {menu != null && <div className={styles.menu}>{menu}</div>}
     </article>
   );
 }

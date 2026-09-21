@@ -7,12 +7,14 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
   background: var(--surface-1);
-  transition: box-shadow var(--duration-fast) var(--ease-out);
+  transition: border-color var(--duration-fast) var(--ease-out);
 }
 
+/* Compact surfaces get a border change on interaction; --shadow-float is
+   reserved for floating layers (menus, popovers, dropdowns). */
 .root:hover,
 .root:focus-within {
-  box-shadow: var(--shadow-float);
+  border-color: var(--border-solid);
 }
 
 .body {
@@ -51,6 +53,12 @@
   text-decoration: underline;
 }
 
+/* Mantine's Badge root clips overflow, so flex would otherwise shrink it
+   down to its ellipsis when the title is long. */
+.scope {
+  flex-shrink: 0;
+}
+
 .description {
   margin: 0;
   color: var(--text-2);
@@ -66,13 +74,16 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   color: var(--text-3);
   font-size: var(--font-size-xs);
 }
 
-.meta span + span::before {
-  content: '· ';
+/* The alt text ('') keeps the dot itself out of the accessibility tree, so
+   screen readers hear "2h ago 3 likes", not "2h ago dot 3 likes". */
+.meta > * + *::before {
+  content: '·' / '';
+  margin-right: var(--space-1);
 }
 
 /* Sits above the stretched link's overlay so it stays clickable. */

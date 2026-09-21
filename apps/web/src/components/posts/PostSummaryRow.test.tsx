@@ -30,7 +30,7 @@ const post: SummaryPost = {
 
 describe('PostSummaryRow', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-18T09:00:00.000Z'));
   });
 
@@ -64,9 +64,15 @@ describe('PostSummaryRow', () => {
   });
 
   it('omits the description paragraph when there is none', () => {
-    const { container } = render(<PostSummaryRow post={{ ...post, description: '' }} />);
+    render(<PostSummaryRow post={{ ...post, description: '' }} />);
 
-    expect(container.querySelector('p')).toBeNull();
+    expect(screen.queryByRole('paragraph')).toBeNull();
+  });
+
+  it('omits the description paragraph when it is only whitespace', () => {
+    render(<PostSummaryRow post={{ ...post, description: '   ' }} />);
+
+    expect(screen.queryByRole('paragraph')).toBeNull();
   });
 
   it('shows relative age, likes and comments, each on its own', () => {
@@ -75,6 +81,12 @@ describe('PostSummaryRow', () => {
     expect(screen.getByText('2h ago')).toBeDefined();
     expect(screen.getByText('3 likes')).toBeDefined();
     expect(screen.getByText('1 comment')).toBeDefined();
+  });
+
+  it('marks the age with a machine-readable dateTime', () => {
+    render(<PostSummaryRow post={post} />);
+
+    expect(screen.getByText('2h ago').closest('time')?.getAttribute('dateTime')).toBe(post.created_at);
   });
 
   it('singularises a lone like or comment', () => {
@@ -112,9 +124,9 @@ describe('PostSummaryRow', () => {
     expect(link.contains(menuButton)).toBe(false);
   });
 
-  it('renders no menu region when none is given', () => {
-    render(<PostSummaryRow post={post} />);
+  it('adds no extra wrapper element when no menu is given', () => {
+    const { container } = render(<PostSummaryRow post={post} />);
 
-    expect(screen.queryByRole('button')).toBeNull();
+    expect(container.querySelector('article')?.children).toHaveLength(1);
   });
 });
