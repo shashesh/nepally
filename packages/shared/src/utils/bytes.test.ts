@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMegabytes } from './formatMegabytes';
+import { formatMegabytes } from './bytes';
 
 describe('formatMegabytes', () => {
   it('formats an exact megabyte count', () => {

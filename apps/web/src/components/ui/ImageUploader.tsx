@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { ActionIcon, Text, VisuallyHidden } from '@mantine/core';
 import { Dropzone, type FileRejection } from '@mantine/dropzone';
 import { IconArrowLeft, IconArrowRight, IconPhotoPlus, IconX } from '@tabler/icons-react';
-import { formatMegabytes } from '../../lib/formatMegabytes';
+import { formatMegabytes } from '@nepally/shared';
 import styles from './ImageUploader.module.css';
 
 /** What every caller accepts unless it narrows the list further. */

@@ -34,7 +34,10 @@
   background: color-mix(in oklch, var(--action-bg) 70%, transparent);
 }
 
-.loader {
+/* Descendant selector (not a bare `.loader`) so this wins on specificity
+   alone, regardless of stylesheet order relative to Mantine's own
+   `--loader-color` default on its root class (`.m_...`, Loader.css). */
+.scrim .loader {
   --loader-color: var(--action-fg);
 }
 

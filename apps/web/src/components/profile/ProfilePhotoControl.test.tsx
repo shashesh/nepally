@@ -184,7 +184,7 @@ describe('ProfilePhotoControl', () => {
     expect(props.onRemove).toHaveBeenCalledTimes(1);
   });
 
-  it('marks both buttons aria-disabled (not natively disabled) and announces "Updating photo…" while busy', () => {
+  it('marks both buttons aria-disabled/data-disabled (not natively disabled) and announces "Updating photo…" while busy', () => {
     renderControl({ photoUrl: 'https://example.com/me.jpg', busy: true });
 
     const addButton = screen.getByRole('button', { name: 'Change Photo' });
@@ -192,6 +192,8 @@ describe('ProfilePhotoControl', () => {
 
     expect(addButton.getAttribute('aria-disabled')).toBe('true');
     expect(removeButton.getAttribute('aria-disabled')).toBe('true');
+    expect(addButton.getAttribute('data-disabled')).toBe('true');
+    expect(removeButton.getAttribute('data-disabled')).toBe('true');
     expect(addButton.hasAttribute('disabled')).toBe(false);
     expect(removeButton.hasAttribute('disabled')).toBe(false);
 
@@ -205,6 +207,15 @@ describe('ProfilePhotoControl', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
 
     expect(props.onRemove).not.toHaveBeenCalled();
+  });
+
+  it('does not open the file input when Add/Change is clicked while busy', () => {
+    renderControl({ busy: true });
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Photo' }));
+
+    expect(clickSpy).not.toHaveBeenCalled();
   });
 
   it('shows no busy announcement when not busy', () => {
@@ -234,5 +245,34 @@ describe('ProfilePhotoControl', () => {
 
     const addButton = screen.getByRole('button', { name: 'Add Photo' });
     expect(document.activeElement).toBe(addButton);
+  });
+
+  it('does not move focus when it was already elsewhere during the removal', () => {
+    function Harness() {
+      const [photoUrl, setPhotoUrl] = useState<string | null>('https://example.com/me.jpg');
+      return (
+        <div>
+          <button type="button">Elsewhere</button>
+          <ProfilePhotoControl
+            name="Ram Sharma"
+            photoUrl={photoUrl}
+            busy={false}
+            onPick={() => {}}
+            onRemove={() => setPhotoUrl(null)}
+          />
+        </div>
+      );
+    }
+    render(<Harness />);
+
+    const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+    elsewhere.focus();
+    // Deliberately not focusing Remove first: fireEvent.click dispatches the
+    // click without the browser's mousedown-driven focus change, so focus
+    // stays on `elsewhere` throughout — the scenario where the member's
+    // focus was already elsewhere when the removal committed.
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(document.activeElement).toBe(elsewhere);
   });
 });

@@ -1,8 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { Button, FileButton, Loader, Text, VisuallyHidden } from '@mantine/core';
-import { MAX_PROFILE_PHOTO_SOURCE_BYTES } from '@nepally/shared';
+import { formatMegabytes, MAX_PROFILE_PHOTO_SOURCE_BYTES } from '@nepally/shared';
 import Avatar from '../Avatar';
-import { formatMegabytes } from '../../lib/formatMegabytes';
 import { DEFAULT_IMAGE_MIME_TYPES } from '../ui';
 import styles from './ProfilePhotoControl.module.css';
 
@@ -21,7 +20,13 @@ export interface ProfilePhotoControlProps {
  * Success/failure toasts are the caller's job (Task 6.16); this control only
  * rejects a file that can't be a usable photo before it ever reaches `onPick`.
  */
-export function ProfilePhotoControl({ name, photoUrl, busy, onPick, onRemove }: ProfilePhotoControlProps) {
+export function ProfilePhotoControl({
+  name,
+  photoUrl,
+  busy,
+  onPick,
+  onRemove,
+}: ProfilePhotoControlProps) {
   const resetRef = useRef<() => void>(null);
   const errorId = useId();
   const [pickError, setPickError] = useState<string | null>(null);
@@ -32,20 +37,25 @@ export function ProfilePhotoControl({ name, photoUrl, busy, onPick, onRemove }: 
   const [errorGeneration, setErrorGeneration] = useState(0);
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
-  const removeButtonRef = useRef<HTMLButtonElement>(null);
-  // Set at the moment Remove is clicked, iff it had focus then. Removing the
-  // photo unmounts the Remove button on the next render, and a real browser
-  // (unlike jsdom) drops focus to <body> when a focused element disappears.
-  // Reading document.activeElement in the effect below would be too late —
-  // by then the button is already gone — so the click handler captures it.
-  const focusWasOnRemoveRef = useRef(false);
+  // Set true only by a real Remove click, so this effect never fires for an
+  // unrelated update that happens to clear photoUrl (e.g. someone else's
+  // edit landing via realtime) — that must never steal focus from whatever
+  // the member is doing elsewhere on the page.
+  const removedRef = useRef(false);
 
-  // Runs only after a remove actually took focus away, never on an unrelated
-  // update that happens to clear photoUrl, so this never steals focus from
-  // something else the member is doing.
+  // Removing the photo unmounts the Remove button on the next render. jsdom
+  // (v29+) and every real browser both drop focus to <body> when the
+  // focused element is removed from the document, so checking focus here —
+  // after the removal has committed — is enough to tell whether it was lost.
+  // Checking *what* used to be focused (e.g. at click time) would be wrong
+  // too: a mouse click doesn't focus a button in every browser (Safari),
+  // and if the member had already moved focus elsewhere before the removal
+  // committed, that focus must be left alone rather than stolen back.
   useEffect(() => {
-    if (!photoUrl && focusWasOnRemoveRef.current) {
-      focusWasOnRemoveRef.current = false;
+    if (photoUrl || !removedRef.current) return;
+    removedRef.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) {
       addButtonRef.current?.focus();
     }
   }, [photoUrl]);
@@ -68,7 +78,9 @@ export function ProfilePhotoControl({ name, photoUrl, busy, onPick, onRemove }: 
     }
 
     if (file.size > MAX_PROFILE_PHOTO_SOURCE_BYTES) {
-      rejectPick(`That photo is too large. It must be ${formatMegabytes(MAX_PROFILE_PHOTO_SOURCE_BYTES)} or smaller.`);
+      rejectPick(
+        `That photo is too large. It must be ${formatMegabytes(MAX_PROFILE_PHOTO_SOURCE_BYTES)} or smaller.`
+      );
       return;
     }
 
@@ -78,7 +90,7 @@ export function ProfilePhotoControl({ name, photoUrl, busy, onPick, onRemove }: 
 
   function handleRemoveClick() {
     if (busy) return;
-    focusWasOnRemoveRef.current = document.activeElement === removeButtonRef.current;
+    removedRef.current = true;
     setPickError(null);
     onRemove();
   }
@@ -122,6 +134,7 @@ export function ProfilePhotoControl({ name, photoUrl, busy, onPick, onRemove }: 
               variant="light"
               size="compact-sm"
               aria-disabled={busy || undefined}
+              data-disabled={busy || undefined}
               aria-describedby={pickError ? errorId : undefined}
             >
               {photoUrl ? 'Change Photo' : 'Add Photo'}
@@ -130,11 +143,11 @@ export function ProfilePhotoControl({ name, photoUrl, busy, onPick, onRemove }: 
         </FileButton>
         {photoUrl && (
           <Button
-            ref={removeButtonRef}
             variant="light"
             color="red"
             size="compact-sm"
             aria-disabled={busy || undefined}
+            data-disabled={busy || undefined}
             onClick={busy ? undefined : handleRemoveClick}
           >
             Remove

@@ -14,3 +14,4 @@ export * from './sponsoredFeed';
 export * from './searchQuery';
 export * from './listingPrice';
 export * from './text';
+export * from './bytes';
