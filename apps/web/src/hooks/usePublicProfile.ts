@@ -35,13 +35,16 @@ export interface PublicProfileState {
  * Five parallel requests plus a follow-up metro lookup; the profile and the
  * three lists have loading flags.
  *
- * The Pages Router keeps this hook mounted across /users/A -> /users/B
+ * The Pages Router keeps a page mounted across /users/A -> /users/B
  * (profile links in the persistent chrome go straight from one profile to
- * another), so a bare `id` effect would leave A's data on screen — and A's
- * in-flight responses could still land — under B's URL. To prevent that,
- * every field resets during render when `id` changes (react.dev "Adjusting
- * some state when a prop changes"), before the effect below fetches the new
- * member; the effect itself only ever sets state after an `await`.
+ * another), so in a caller that stays mounted a bare `id` effect would leave
+ * A's data on screen — and A's in-flight responses could still land — under
+ * B's URL. To prevent that, every field resets during render when `id`
+ * changes (react.dev "Adjusting some state when a prop changes"), before the
+ * effect below fetches the new member; the effect itself only ever sets
+ * state after an `await`. The public profile page now remounts its view per
+ * member (keyed by id), so there this reset is a safeguard for any caller
+ * that keeps the hook mounted across an id change.
  */
 export function usePublicProfile(id: string | undefined): PublicProfileState {
   const [profileUser, setProfileUser] = useState<PublicUser | null>(null);

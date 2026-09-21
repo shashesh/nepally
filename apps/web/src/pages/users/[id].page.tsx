@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Badge, Button, Tabs } from '@mantine/core';
-import { formatPublicName, getFirstName, getOrCreateConversation } from '@nepally/shared';
+import { formatPublicName, getFirstName, getOrCreateConversation, TrustLevel } from '@nepally/shared';
 import type { Event, PublicUser } from '@nepally/shared';
 import { EmptyState, LoadingState, TrustBadge, notify } from '../../components/ui';
 import { PublicProfileHeader } from '../../components/users/PublicProfileHeader';
@@ -204,6 +204,11 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
   }
 
   const isOwnProfile = currentUser?.id === profileUser.id;
+  // /posts/create and /events/create send members below Verified away, so
+  // only offer those links to members who can use them. Listings need only
+  // a sign-in.
+  const canPostAndOrganize =
+    isOwnProfile && (currentUser?.trust_level ?? TrustLevel.NEW) >= TrustLevel.VERIFIED;
   const firstName = getFirstName(profileUser.full_name);
   const counts: Partial<Record<ProfileTab, number>> = {
     posts: posts.length,
@@ -262,7 +267,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
                 isOwnProfile ? 'You haven’t posted anything yet.' : `${firstName} hasn’t posted anything yet.`
               }
               emptyAction={
-                isOwnProfile ? (
+                canPostAndOrganize ? (
                   <Button component={Link} href="/posts/create">
                     Start a post
                   </Button>
@@ -283,7 +288,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
                 isOwnProfile ? 'You haven’t organized any events.' : `${firstName} hasn’t organized any events.`
               }
               emptyAction={
-                isOwnProfile ? (
+                canPostAndOrganize ? (
                   <Button component={Link} href="/events/create">
                     Create an event
                   </Button>

@@ -765,9 +765,9 @@ describe('PublicProfilePage', () => {
 
   // ─── Own empty profile ─────────────────────────────────────────────────────
 
-  it('offers "Start a post", "Create an event" and "Post a listing" on your own empty profile', async () => {
+  it('offers a verified member "Start a post", "Create an event" and "Post a listing" on their own empty profile', async () => {
     profilePageMocks.useAuthMock.mockReturnValue({
-      user: { ...mockCurrentUser, id: 'profile-user' },
+      user: { ...mockCurrentUser, id: 'profile-user', trust_level: 1 },
     });
     profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
     profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: [] });
@@ -786,6 +786,35 @@ describe('PublicProfilePage', () => {
     fireEvent.click(screen.getByRole('tab', { name: /^Listings/ }));
 
     expect(screen.getByRole('heading', { name: 'You haven’t listed anything yet.' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Post a listing' }).getAttribute('href')).toBe(
+      '/marketplace/create'
+    );
+  });
+
+  it('offers a new (Level 0) member only "Post a listing" on their own empty profile', async () => {
+    // /posts/create and /events/create send members below Verified away.
+    profilePageMocks.useAuthMock.mockReturnValue({
+      user: { ...mockCurrentUser, id: 'profile-user', trust_level: 0 },
+    });
+    profilePageMocks.getUserByIdMock.mockResolvedValue({
+      data: { ...mockProfileUser, trust_level: 0 },
+    });
+    profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
+    profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: [] });
+    profilePageMocks.getActiveListingsBySellerMock.mockResolvedValue({ data: [] });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    expect(screen.getByRole('heading', { name: 'You haven’t posted anything yet.' })).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Start a post' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Events/ }));
+
+    expect(screen.getByRole('heading', { name: 'You haven’t organized any events.' })).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Create an event' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Listings/ }));
+
     expect(screen.getByRole('link', { name: 'Post a listing' }).getAttribute('href')).toBe(
       '/marketplace/create'
     );
