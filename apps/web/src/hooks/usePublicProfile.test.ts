@@ -206,6 +206,29 @@ describe('usePublicProfile', () => {
     expect(result.current.metroName).toBeNull();
   });
 
+  it('clears a not-found error when the next member loads', async () => {
+    mocks.getUserById.mockImplementation((_client: unknown, requestedId: string) =>
+      Promise.resolve(
+        requestedId === 'user-a'
+          ? { error: new Error('not found') }
+          : { data: { ...mockProfileUser, id: 'user-b' } }
+      )
+    );
+
+    const { result, rerender } = renderHook(({ id }: { id: string }) => usePublicProfile(id), {
+      initialProps: { id: 'user-a' },
+    });
+
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+
+    rerender({ id: 'user-b' });
+
+    expect(result.current.error).toBeNull();
+
+    await waitFor(() => expect(result.current.profileUser?.id).toBe('user-b'));
+    expect(result.current.error).toBeNull();
+  });
+
   it('has empty posts and loading true on the first render after id changes', async () => {
     const { result, rerender } = renderHook(({ id }: { id: string }) => usePublicProfile(id), {
       initialProps: { id: 'user-a' },
@@ -216,8 +239,15 @@ describe('usePublicProfile', () => {
 
     rerender({ id: 'user-b' });
 
+    expect(result.current.profileUser).toBeNull();
     expect(result.current.posts).toEqual([]);
+    expect(result.current.events).toEqual([]);
+    expect(result.current.listings).toEqual([]);
+    expect(result.current.helperScore).toBeNull();
     expect(result.current.loading).toBe(true);
+    expect(result.current.postsLoading).toBe(true);
+    expect(result.current.eventsLoading).toBe(true);
+    expect(result.current.listingsLoading).toBe(true);
   });
 
   it('keeps the list loading flags true while their requests are pending', () => {
@@ -240,7 +270,11 @@ describe('usePublicProfile', () => {
 
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    await waitFor(() => expect(result.current.postsLoading).toBe(false));
+    await waitFor(() => {
+      expect(result.current.postsLoading).toBe(false);
+      expect(result.current.eventsLoading).toBe(false);
+      expect(result.current.listingsLoading).toBe(false);
+    });
     expect(result.current.posts).toEqual([]);
     expect(result.current.events).toEqual([]);
     expect(result.current.listings).toEqual([]);

@@ -36,8 +36,8 @@ export interface PublicProfileState {
  * three lists have loading flags.
  *
  * The Pages Router keeps this hook mounted across /users/A -> /users/B
- * (UserMenuTrigger, SearchResultItem, etc. all link straight between
- * profiles), so a bare `id` effect would leave A's data on screen — and A's
+ * (profile links in the persistent chrome go straight from one profile to
+ * another), so a bare `id` effect would leave A's data on screen — and A's
  * in-flight responses could still land — under B's URL. To prevent that,
  * every field resets during render when `id` changes (react.dev "Adjusting
  * some state when a prop changes"), before the effect below fetches the new
