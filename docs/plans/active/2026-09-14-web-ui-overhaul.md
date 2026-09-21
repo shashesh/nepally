@@ -12068,6 +12068,7 @@ Run on `master` at `e685317` (the "Starting an area PR" commands), 2026-09-21.
 7. **The profile's tab tests look for buttons.** 14 cases in `profile.test.tsx`, 3 in `e2e/tests/06-profile.spec.ts` and `11-marketplace.spec.ts:101–102` find the tabs by `role=button`. Mantine `Tabs` makes them `role=tab`, so all of them change. The public profile's tests already use `role=tab`.
 8. **Manage Locations fails silently three times.** Rename, remove and set-default await the shared call and ignore its `error` (locations 104, 112, 118). Task 6.19 reports each failure with `notify.error`.
 9. **Manage Locations has no screenshot.** Task 6.20 adds it to `VISUAL_PAGES`. As with every new page, it may not add baseline entries.
+10. **Storage deletes do nothing on staging** (found in Task 6.2 review, 2026-09-21). Migration 027 dropped the only SELECT policies on `storage.objects`, and `remove()` needs SELECT as well as DELETE, so avatar, post, listing and event photo deletes report success and delete nothing; an upsert over an existing avatar most likely fails for the same reason. `pg_policies` on nusa-staging confirms no SELECT policy exists. The fix is an additive migration `039` granting each member SELECT on their own objects only (avatars: `name = auth.uid() || '.jpg'`; the other buckets: first folder = `auth.uid()`), which does not reopen the listing that 027 closed. It is raised with the user and kept out of this PR unless they decide otherwise.
 
 ## PR 6 — Task breakdown
 
@@ -12085,6 +12086,7 @@ Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same convent
 8. **`FollowButton` keeps its text while loading.** Its tests assert `textContent === '…'` (`FollowButton.test.tsx:111`, `129`). Mantine's `loading` prop would replace that text with a spinner, so the button swaps its label as it does today.
 9. **One PR, with the public profile first.** Tasks 6.3–6.10 finish the public profile before 6.11–6.19 touch the own profile and Manage Locations. If the diff runs long, the PR can split cleanly after 6.10. The default is one PR, as with PR 5, because each PR costs a Visual baselines run.
 10. **No `useInfiniteScroll` here.** The definition of done asks lists to use it, but none of these lists are paged. Each is one request capped at 30 (posts, saved posts, listings) or 50 (organised events), with no "load more" today. Adding pagination would be a behaviour change and a new API cursor, which is more than this PR's remit. The caps stay as they are.
+11. **Rows lift with a border, not a shadow** (settled in Task 6.3 review). `web-ui-system.md` keeps `--shadow-float` for floating layers, so every summary row takes `border-color: var(--border-solid)` on `:hover` and `:focus-within`, as `PulseCard` and `SponsoredRail` already do. `PostCard` and the feed's inline sponsored card still lift with a shadow; PR 10's cleanup moves them over.
 
 **Files this PR creates:**
 
@@ -12092,6 +12094,7 @@ Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same convent
 |---|---|
 | `packages/shared/src/utils/listingPrice.ts`, `.test.ts` | `formatListingPrice`: the free-text price column, for display |
 | `packages/shared/src/api/metroArea.test.ts` | Tests for the new `getMetroAreaById` (the file had none) |
+| `packages/shared/src/utils/text.ts`, `.test.ts` | `pluralize(count, singular, plural?)`, shared by the summary rows *(added in review, 3ea26a3)* |
 | `apps/web/src/components/posts/PostSummaryRow.tsx`, `.module.css`, `.test.tsx` | One post as a row: title link, scope, excerpt, counts |
 | `apps/web/src/components/events/EventSummaryRow.tsx`, `.module.css`, `.test.tsx` | One event as a row: date, place, going count, past or cancelled |
 | `apps/web/src/components/marketplace/ListingSummaryRow.tsx`, `.module.css`, `.test.tsx` | One listing as a row, with an owner view for status, stats and expiry |
@@ -12247,7 +12250,7 @@ This replaces profile 485–537 and users/[id] 392–439. Both views show:
 The public view adds the relative time. The owner view adds:
 
 - a status chip
-- "12 views · 3 saves · 1 contact"
+- "12 views · 3 saves · 1 contact", built with the shared `pluralize` (`packages/shared/src/utils/text.ts`) rather than a local copy
 - "Expires in 10 days", when `isListingExpiringSoon` is true
 
 The status chip is text with a 1px border, in `--success` (active), `--warning` (inactive) or `--danger` (removed), on `--surface-1`. A `data-status` attribute selects the colour (recon 5). PR 8's my-listings page can adopt both the row and `isListingExpiringSoon`.
@@ -12700,6 +12703,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] `a11y-baseline.json` is `{}`, meaning no known serious or critical violations remain.
   - [ ] Mark `docs/wireframes/00-design-system-foundation/00-design-system-foundation.md` as superseded, with a link to `docs/architecture/web-ui-system.md`.
   - [ ] Update `docs/product/roadmap.md` with the shipped web UI overhaul and search.
+  - [ ] Move `PostCard`'s hover (`PostCard.module.css`) and the feed's `.inlineSponsoredCard:hover` (`Feed.module.css`) off `--shadow-float` onto the border treatment the summary rows use (PR 6 decision 11).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
 
 ## After the overhaul — Mantine 9

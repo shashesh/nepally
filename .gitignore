@@ -74,3 +74,4 @@ error.jpeg
 
 # Generated repo digests
 repomix-output.xml
+.playwright-mcp/
