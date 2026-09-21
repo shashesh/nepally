@@ -1,14 +1,20 @@
+/** A US-style price: optional `$`, optional thousands separators, optional cents. */
+const NUMERIC_PRICE = /^\$?\s*(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?$/;
+
 function formatDollars(value: number): string {
+  const digits = Math.round(value * 100) % 100 === 0 ? 0 : 2;
   return value.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
   });
 }
 
 /**
- * `price` is a free-text column. A number reads as dollars — "80" is "$80",
- * "80.5" is "$80.50" — and anything else ("Negotiable") is shown as typed.
+ * `price` is a free-text column. A value that looks like a US price ("80",
+ * "80.50", "$1,200") reads as dollars; anything else ("Negotiable", "80 OBO")
+ * is shown as typed.
  */
 export function formatListingPrice(price: string | number | null | undefined): string | null {
   if (price === null || price === undefined) return null;
@@ -19,9 +25,7 @@ export function formatListingPrice(price: string | number | null | undefined): s
 
   const trimmed = price.trim();
   if (trimmed === '') return null;
+  if (!NUMERIC_PRICE.test(trimmed)) return trimmed;
 
-  const stripped = trimmed.replace(/[$,]/g, '');
-  const numeric = Number(stripped);
-
-  return stripped !== '' && Number.isFinite(numeric) ? formatDollars(numeric) : trimmed;
+  return formatDollars(Number(trimmed.replace(/[$,\s]/g, '')));
 }

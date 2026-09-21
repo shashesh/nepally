@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getDaysSinceRefresh, getDaysUntilSoftExpiry, isListingExpiringSoon } from './listingAge';
-import { LISTING_SOFT_EXPIRY_DAYS } from '../../constants/marketplace';
+import { LISTING_SOFT_EXPIRY_DAYS, LISTING_EXPIRY_WARNING_DAYS } from '../../constants/marketplace';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = new Date('2026-09-18T12:00:00Z');
@@ -62,5 +62,16 @@ describe('isListingExpiringSoon', () => {
   it('is false for an inactive listing even at 80 days since refresh', () => {
     const listing = { status: 'inactive' as const, refreshed_at: daysBefore(80) };
     expect(isListingExpiringSoon(listing, NOW)).toBe(false);
+  });
+
+  it('is false one day before the warning window opens (15 days left)', () => {
+    const daysSinceRefresh = LISTING_SOFT_EXPIRY_DAYS - LISTING_EXPIRY_WARNING_DAYS - 1;
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(daysSinceRefresh) };
+    expect(isListingExpiringSoon(listing, NOW)).toBe(false);
+  });
+
+  it('is true for an active listing already past soft expiry (100 days since refresh, 0 days left)', () => {
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(100) };
+    expect(isListingExpiringSoon(listing, NOW)).toBe(true);
   });
 });

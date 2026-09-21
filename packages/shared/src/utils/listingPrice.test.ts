@@ -33,4 +33,36 @@ describe('formatListingPrice', () => {
   it('returns null for undefined', () => {
     expect(formatListingPrice(undefined)).toBeNull();
   });
+
+  it('shows a lone dollar sign as typed', () => {
+    expect(formatListingPrice('$')).toBe('$');
+  });
+
+  it('shows a number with trailing free text as typed, not just the number', () => {
+    expect(formatListingPrice('80 OBO')).toBe('80 OBO');
+  });
+
+  it('formats zero as a whole dollar amount', () => {
+    expect(formatListingPrice('0')).toBe('$0');
+  });
+
+  it('shows a malformed thousands separator as typed, not silently reparsed', () => {
+    expect(formatListingPrice('80,50')).toBe('80,50');
+  });
+
+  it('shows a negative value as typed, not as negative currency', () => {
+    expect(formatListingPrice('-5')).toBe('-5');
+  });
+
+  it('tolerates internal whitespace between the dollar sign and digits', () => {
+    expect(formatListingPrice('$ 80')).toBe('$80');
+  });
+
+  it('rounds a near-whole decimal to whole dollars', () => {
+    expect(formatListingPrice('1.999')).toBe('$2');
+  });
+
+  it('returns null for NaN', () => {
+    expect(formatListingPrice(NaN)).toBeNull();
+  });
 });

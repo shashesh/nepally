@@ -4,7 +4,7 @@ import { getMetroAreaById } from './metroArea';
 
 function makeChain(final: unknown) {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  for (const method of ['select', 'eq', 'ilike', 'order', 'limit', 'single']) {
+  for (const method of ['select', 'eq', 'single']) {
     chain[method] = vi.fn().mockReturnValue(chain);
   }
   chain.single.mockResolvedValue(final);
@@ -31,7 +31,7 @@ describe('getMetroAreaById', () => {
   it('returns an error when no such metro exists', async () => {
     const chain = makeChain({
       data: null,
-      error: { message: 'Row not found', code: 'PGRST116' },
+      error: Object.assign(new Error('Row not found'), { code: 'PGRST116' }),
     });
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
@@ -39,5 +39,6 @@ describe('getMetroAreaById', () => {
 
     expect(res.data).toBeUndefined();
     expect(res.error).toBeInstanceOf(Error);
+    expect(res.error?.message).toBe('Row not found');
   });
 });
