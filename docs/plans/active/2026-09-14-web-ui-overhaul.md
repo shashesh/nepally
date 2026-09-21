@@ -185,8 +185,8 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
 | 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | Merged (PR #79) | 2026-09-19 | no migration; the `count(*) OVER ()` fix stays deferred with its trigger |
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
-| 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | In Review (PR #81) | 2026-09-20 | #80 merged, so this now targets `master`; baselines regenerated from eb849d7 (run 35527351030) |
-| 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
+| 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
+| 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.12 | In Progress | 2026-09-20 | branched from `master` at 4f6b96d; area inventory below |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -11561,6 +11561,39 @@ Replace the post options menu (597–637) with `ActionMenu`, and all three avata
 - **Fields:** move every raw input (10 in events/create) to Mantine `TextInput` / `Textarea` / `Select` / `Switch`, with `label`, `description` and `error`. Character counters use `Textarea` `description`.
 - **Shared:** consolidate the duplicated post photo upload logic (posts/create 369–439 vs 447–509) into one shared API function in `packages/shared/src/api/storage.ts`, with tests.
 - **Also:** replace native dialogs in posts/create and marketplace/create.
+
+### PR 5 — Area inventory
+
+Run on `master` at `4f6b96d` (the "Starting an area PR" commands), 2026-09-20.
+
+| File | Lines | CSS violations | Raw form elements | Native dialogs |
+|---|---|---|---|---|
+| `pages/posts/create.page.tsx` | 760 | — | 7 | 1 |
+| `styles/CreatePost.module.css` | 267 | 53 (51 legacy tokens, 2 literals) | — | — |
+| `pages/marketplace/create.page.tsx` | 483 | — | 7 | 3 |
+| `pages/marketplace/marketplace.module.css` | 1011 | 192 (124 literals, 54 legacy tokens, 14 named) | — | — |
+| `pages/events/create.page.tsx` | 599 | — | 13 | 0 |
+| `pages/events/createEvent.module.css` | 347 | 59 (57 literals, 2 legacy tokens) | — | — |
+
+`outline: none` sits at `CreatePost.module.css` 33 and 53, `createEvent.module.css` 69, and `marketplace.module.css` 46.
+
+The dialogs are `confirm` before discarding an unsaved post (posts/create 237) and `alert` on a failed photo upload, create and update (marketplace/create 220, 232, 243).
+
+**What the recon changed** (the three pages read on 2026-09-20):
+
+1. **The shared upload consolidation has already landed.** `packages/shared/src/api/storage.ts` exports `uploadPostPhoto(s)`, `uploadListingPhoto(s)`, `uploadEventPhoto`, `deletePostPhotos`, `deleteListingPhotos` and `getPostPhotoPathFromUrl`, all with tests, and all three pages already call them. What is still duplicated is the **web-side call site**: posts/create builds the same `File[] → PostPhotoUploadInput[]` `Promise.all` block twice (edit branch 403–421, create branch 484–500). That block is DOM-bound (`File.arrayBuffer`), so it belongs in `apps/web`, not in `packages/shared`. Task 5.2 extracts it there and the plan's "one shared API function" item is closed as already done.
+
+2. **`marketplace.module.css` cannot come off the allowlist in this PR.** It is one 1011-line file serving six pages; PR 8 owns the other five. A class-usage pass shows a clean split, though: **19 classes are create-only** — `createFormContainer`, `formSection`, `formLabel`, `toggleGroup`, `toggleButton(Active)`, `categoryChips`, `categoryChip(Active)`, `errorText`, `photoPreviewGrid`, `photoThumb`, `photoThumbImg`, `photoRemoveBtn`, `addPhotoBtn`, `addPhotoIcon`, `addPhotoText`, `hiddenFileInput`, `photoHint` — and only `title` and `backLink` are shared with the PR 8 pages. Task 5.9 moves the 19 into a new token-clean `pages/marketplace/createListing.module.css` and gives it its own `title` and `backLink` rules, so the create page stops importing the allowlisted file. `marketplace.module.css` stays on the allowlist for PR 8.
+
+3. **Two of the three pages are not screenshotted.** `VISUAL_PAGES` has `create-post` but no create-listing or create-event entry, and `a11y-baseline.json` has no `create-post` key, so that page is already free of serious and critical violations. Task 5.12 adds the two missing pages. New pages may not add baseline entries — any violation they surface gets fixed, not recorded.
+
+4. **The three pages disagree about everything.** posts/create uses raw `<input>`/`<textarea>` with `aria-label` and no `<form>`; marketplace/create already uses Mantine `TextInput`/`Textarea` inside a real `<form>`; events/create uses raw inputs with `<label htmlFor>` inside a `<form>`. Only events/create validates with a zod schema on submit and shows per-field errors; posts/create derives validity inline and marketplace/create maps zod issues to a `Record<string, string>`. The breakdown converges them on Mantine fields with `label`/`description`/`error`, but does **not** unify the three validation models — that is a bigger change than this PR's remit and none of it is user-visible.
+
+5. **Photo handling differs three ways, and the uploader must absorb all three.** posts/create: up to `MAX_PHOTOS_PER_POST`, drag-and-drop reorder plus ←/→ buttons (edit mode only), mixes already-uploaded URLs with newly picked `File`s. marketplace/create: up to `MAX_PHOTOS_PER_LISTING`, **client-side resize to 1200px wide JPEG at 0.8 quality** before upload (`resizeImageFile`, 122–178), no reorder. events/create: exactly one photo, no reorder. `ImageUploader` therefore needs `max`, an optional `transformFile` hook, and optional reorder — see Task 5.1.
+
+6. **`resizeImageFile` has no test and silently drops failures.** `handleFileChange` catches per-file and continues with `// Skip photos that fail to process`, so a user who picks four photos and sees two appear gets no explanation. Task 5.1 keeps the resize but surfaces the skipped count with `notify.error`, which is a small deliberate behaviour change.
+
+7. **marketplace/create swallows its category error and has no submit-time feedback path.** `errors.category_id` renders, but the three `alert()` calls are the only failure channel for upload/create/update. They become `notify.error`, matching the feed and post detail.
 
 ## PR 6 — Profile + public profile (`feat/web-ui-profile`)
 
