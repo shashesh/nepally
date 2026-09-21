@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDaysSinceRefresh, getDaysUntilSoftExpiry } from './listingAge';
+import { getDaysSinceRefresh, getDaysUntilSoftExpiry, isListingExpiringSoon } from './listingAge';
 import { LISTING_SOFT_EXPIRY_DAYS } from '../../constants/marketplace';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -40,5 +40,27 @@ describe('getDaysUntilSoftExpiry', () => {
 
   it('never exceeds the soft-expiry window when refreshed_at is later than `now`', () => {
     expect(getDaysUntilSoftExpiry(daysBefore(-1), NOW)).toBe(LISTING_SOFT_EXPIRY_DAYS);
+  });
+});
+
+describe('isListingExpiringSoon', () => {
+  it('is true for an active listing with 10 days left (80 days since refresh)', () => {
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(80) };
+    expect(isListingExpiringSoon(listing, NOW)).toBe(true);
+  });
+
+  it('is false for an active listing with 20 days left', () => {
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(70) };
+    expect(isListingExpiringSoon(listing, NOW)).toBe(false);
+  });
+
+  it('is true at exactly 14 days left (the boundary)', () => {
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(76) };
+    expect(isListingExpiringSoon(listing, NOW)).toBe(true);
+  });
+
+  it('is false for an inactive listing even at 80 days since refresh', () => {
+    const listing = { status: 'inactive' as const, refreshed_at: daysBefore(80) };
+    expect(isListingExpiringSoon(listing, NOW)).toBe(false);
   });
 });

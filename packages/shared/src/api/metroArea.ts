@@ -62,6 +62,33 @@ export async function getMetroByZip(
 }
 
 /**
+ * Get a single metro area by id. Errors when no such metro exists.
+ */
+export async function getMetroAreaById(
+  supabase: SupabaseClient,
+  metroAreaId: string
+): Promise<MetroAreaResult> {
+  try {
+    const { data, error } = await supabase
+      .from('metro_areas')
+      .select('id, name, state, population')
+      .eq('id', metroAreaId)
+      .single();
+
+    if (error) throw error;
+    if (!data) throw new Error('Metro area not found');
+
+    return { data: data as MetroArea };
+  } catch (error) {
+    return {
+      error: error instanceof Error
+        ? error
+        : new Error('Failed to fetch metro area'),
+    };
+  }
+}
+
+/**
  * Search metro areas by name (case-insensitive partial match).
  * Returns up to 10 results.
  */

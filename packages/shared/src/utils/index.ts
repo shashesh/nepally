@@ -12,3 +12,4 @@ export * from './user';
 export * from './notificationRouting';
 export * from './sponsoredFeed';
 export * from './searchQuery';
+export * from './listingPrice';

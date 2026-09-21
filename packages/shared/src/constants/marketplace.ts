@@ -36,6 +36,9 @@ export const MAX_LISTING_DESCRIPTION_LENGTH = 3000;
 /** Days before a listing is considered stale (deprioritized in search) */
 export const LISTING_SOFT_EXPIRY_DAYS = 90;
 
+/** How close to soft expiry an active listing gets before its owner is warned */
+export const LISTING_EXPIRY_WARNING_DAYS = 14;
+
 /** Max listings a single user can create */
 export const MAX_LISTINGS_PER_USER = 20;
 
