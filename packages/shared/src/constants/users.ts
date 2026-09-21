@@ -47,10 +47,13 @@ export const PROFILE_PHOTO_SIZE_PX = 500;
 
 /**
  * Largest source file the profile photo picker accepts, checked before the
- * crop UI ever decodes it. A 48-50MP photo from a modern phone camera decodes
- * to roughly 200MB of raw pixel data via `createImageBitmap`/canvas before
- * any resize happens, which can kill the tab (iOS Safari especially). 15MB of
- * JPEG/HEIC-converted source comfortably covers real camera output while
- * catching the pathological cases.
+ * centre-crop step (`cropToSquare` in apps/web/src/lib/resizeImage.ts) ever
+ * decodes it. A 48-50MP photo from a modern phone camera decodes to roughly
+ * 200MB of raw pixel data via `createImageBitmap`/canvas before any resize
+ * happens, which can kill the tab (iOS Safari especially). File size is only
+ * a proxy for pixel count — a lightly compressed JPEG can pack far fewer
+ * megapixels per byte than a heavily compressed one — but it's a cheap,
+ * synchronous check before that expensive decode, and 15MB comfortably
+ * covers real camera output while catching the pathological cases.
  */
 export const MAX_PROFILE_PHOTO_SOURCE_BYTES = 15 * 1024 * 1024;

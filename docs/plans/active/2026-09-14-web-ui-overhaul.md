@@ -12484,7 +12484,6 @@ export async function replaceProfilePhoto(
 export interface ProfilePhotoControlProps {
   name: string;
   photoUrl: string | null | undefined;
-  trustLevel: number;
   busy: boolean;
   onPick: (file: File) => void;
   onRemove: () => void;
@@ -12496,7 +12495,7 @@ This replaces profile 606–652:
 - **Avatar.** `Avatar` at `xlarge`. While `busy`, a scrim with a Mantine `Loader`, and a visually hidden "Updating photo…" in a `role="status"`.
 - **Picking a file.** `FileButton` with `accept={DEFAULT_IMAGE_MIME_TYPES.join(',')}` and `inputProps={{ 'aria-label': 'Upload profile photo' }}`, which is today's accessible name (620). It also takes a `resetRef`, reset after each pick so the same file can be chosen twice (today's `e.target.value = ''`, 364). Its child is `Button variant="light" size="compact-sm"`, labelled "Add Photo" or "Change Photo".
 - **Removing.** "Remove" appears only when there is a photo.
-- **While busy.** Both buttons are disabled.
+- **While busy.** Both buttons are `aria-disabled` and ignore presses, but stay focusable (decision 8). Removing a photo moves focus to the file button.
 
 The narrower `accept` replaces today's `image/*`. iOS converts HEIC to JPEG for an input that lists specific image types, and `createImageBitmap` cannot decode HEIC anyway.
 

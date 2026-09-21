@@ -11,28 +11,31 @@
   display: inline-flex;
 }
 
-/* Busy scrim over the circular avatar. No semantic token in tokens.css pairs
-   a colour with alpha, so translucency comes from `opacity` on a full-bleed
-   pseudo-element instead of a colour literal (guard-css-tokens.js forbids
-   rgba()/oklch() with a digit and raw primitive tokens in CSS Modules). The
-   Loader is a normal child painted after the pseudo-element, so it stays
-   fully opaque against the dimmed circle. */
+/* Busy scrim over the avatar. `border-radius` matches Avatar's own
+   `radius="xl"` (16px, mantine-theme.ts) — the avatar is a rounded square,
+   not a circle, so a fully round scrim would show corners of un-dimmed
+   avatar peeking out. No semantic token in tokens.css pairs a colour with
+   alpha, so translucency comes from color-mix() over the semantic
+   `--action-bg` token rather than a raw rgba()/oklch() literal or a
+   primitive token (--ink-800 etc.) — both of which guard-css-tokens.js
+   forbids in CSS Modules. The background is a plain (non-positioned)
+   property on this element, not a positioned pseudo-element in front of the
+   Loader: a positioned box always paints above a statically positioned one
+   regardless of DOM order, so a `::before` overlay here would paint over the
+   Loader and hide it (most visible once prefers-reduced-motion freezes its
+   spin). */
 .scrim {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
-  overflow: hidden;
+  border-radius: var(--radius-overlay);
+  background: color-mix(in oklch, var(--action-bg) 70%, transparent);
 }
 
-.scrim::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--action-bg);
-  opacity: 0.7;
+.loader {
+  --loader-color: var(--action-fg);
 }
 
 .actions {

@@ -1,11 +1,12 @@
-import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import React, { useState } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MAX_PROFILE_PHOTO_SOURCE_BYTES } from '@nepally/shared';
 import { act, fireEvent, render, screen } from '../../test-utils';
 import { ProfilePhotoControl, type ProfilePhotoControlProps } from './ProfilePhotoControl';
 
 function makeFile(name: string, size = 1024, type = 'image/png'): File {
   const file = new File(['x'], name, { type });
+  // jsdom sizes a File from its parts; the tests need a size of their choosing.
   Object.defineProperty(file, 'size', { value: size });
   return file;
 }
@@ -14,7 +15,6 @@ function renderControl(overrides: Partial<ProfilePhotoControlProps> = {}) {
   const props: ProfilePhotoControlProps = {
     name: 'Ram Sharma',
     photoUrl: null,
-    trustLevel: 1,
     busy: false,
     onPick: vi.fn(),
     onRemove: vi.fn(),
@@ -24,14 +24,18 @@ function renderControl(overrides: Partial<ProfilePhotoControlProps> = {}) {
   return props;
 }
 
-async function pickFile(file: File) {
+async function pickFile(file: File | null) {
   const input = screen.getByLabelText('Upload profile photo');
   await act(async () => {
-    fireEvent.change(input, { target: { files: [file] } });
+    fireEvent.change(input, { target: { files: file ? [file] : [] } });
   });
 }
 
 describe('ProfilePhotoControl', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('shows "Add Photo" and no Remove button without a photo', () => {
     renderControl({ photoUrl: null });
 
@@ -48,12 +52,29 @@ describe('ProfilePhotoControl', () => {
 
   it('calls onPick with the chosen file', async () => {
     const props = renderControl();
-    const file = new File(['x'], 'me.png', { type: 'image/png' });
+    const file = makeFile('me.png');
 
     await pickFile(file);
 
     expect(props.onPick).toHaveBeenCalledTimes(1);
     expect(props.onPick).toHaveBeenCalledWith(file);
+  });
+
+  it('clicking the visible button opens the hidden file input', () => {
+    renderControl();
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Photo' }));
+
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not call onPick when a pick is cancelled', async () => {
+    const props = renderControl();
+
+    await pickFile(null);
+
+    expect(props.onPick).not.toHaveBeenCalled();
   });
 
   it('rejects a file over the size cap without calling onPick, and shows the message', async () => {
@@ -63,21 +84,85 @@ describe('ProfilePhotoControl', () => {
     await pickFile(huge);
 
     expect(props.onPick).not.toHaveBeenCalled();
-    expect(screen.getByText('That photo is too large. Choose one under 15MB.')).toBeDefined();
+    expect(screen.getByRole('alert').textContent).toBe(
+      'That photo is too large. It must be 15MB or smaller.'
+    );
+  });
+
+  it('accepts a file at exactly the size cap', async () => {
+    const props = renderControl();
+    const exact = makeFile('exact.png', MAX_PROFILE_PHOTO_SOURCE_BYTES);
+
+    await pickFile(exact);
+
+    expect(props.onPick).toHaveBeenCalledWith(exact);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('rejects a file whose type is unsupported without calling onPick', async () => {
+    const props = renderControl();
+    const pdf = makeFile('resume.pdf', 1024, 'application/pdf');
+
+    await pickFile(pdf);
+
+    expect(props.onPick).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert').textContent).toBe(
+      'That file is not a supported image. Use JPG, PNG or WEBP.'
+    );
+  });
+
+  it('rejects an empty file without calling onPick', async () => {
+    const props = renderControl();
+    const empty = makeFile('empty.png', 0);
+
+    await pickFile(empty);
+
+    expect(props.onPick).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert').textContent).toBe(
+      'That file is not a supported image. Use JPG, PNG or WEBP.'
+    );
   });
 
   it('clears the too-large message and calls onPick on a following valid pick', async () => {
     const props = renderControl();
     const huge = makeFile('huge.png', MAX_PROFILE_PHOTO_SOURCE_BYTES + 1);
     await pickFile(huge);
-    expect(screen.getByText(/too large/i)).toBeDefined();
+    expect(screen.getByRole('alert')).toBeDefined();
 
-    const valid = makeFile('ok.png', 1024);
+    const valid = makeFile('ok.png');
     await pickFile(valid);
 
-    expect(screen.queryByText(/too large/i)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(props.onPick).toHaveBeenCalledTimes(1);
     expect(props.onPick).toHaveBeenCalledWith(valid);
+  });
+
+  it('remounts the alert on a repeat rejection so it re-announces', async () => {
+    renderControl();
+    await pickFile(makeFile('bad1.pdf', 1024, 'application/pdf'));
+    const first = screen.getByRole('alert');
+
+    await pickFile(makeFile('bad2.pdf', 1024, 'application/pdf'));
+    const second = screen.getByRole('alert');
+
+    expect(second).not.toBe(first);
+  });
+
+  it('links the Add/Change button to the alert while an error is showing', async () => {
+    renderControl();
+    await pickFile(makeFile('resume.pdf', 1024, 'application/pdf'));
+
+    const button = screen.getByRole('button', { name: 'Add Photo' });
+    const alert = screen.getByRole('alert');
+    expect(button.getAttribute('aria-describedby')).toBe(alert.id);
+  });
+
+  it('has no aria-describedby when there is no error', () => {
+    renderControl();
+
+    expect(screen.getByRole('button', { name: 'Add Photo' }).hasAttribute('aria-describedby')).toBe(
+      false
+    );
   });
 
   it('calls onRemove when "Remove" is clicked', () => {
@@ -88,12 +173,66 @@ describe('ProfilePhotoControl', () => {
     expect(props.onRemove).toHaveBeenCalledTimes(1);
   });
 
-  it('disables both buttons and announces "Updating photo…" while busy', () => {
+  it('clears a pending pick error when Remove is clicked', async () => {
+    const props = renderControl({ photoUrl: 'https://example.com/me.jpg' });
+    await pickFile(makeFile('resume.pdf', 1024, 'application/pdf'));
+    expect(screen.getByRole('alert')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(props.onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks both buttons aria-disabled (not natively disabled) and announces "Updating photo…" while busy', () => {
     renderControl({ photoUrl: 'https://example.com/me.jpg', busy: true });
 
-    expect(screen.getByRole('button', { name: 'Change Photo' }).hasAttribute('disabled')).toBe(true);
-    expect(screen.getByRole('button', { name: 'Remove' }).hasAttribute('disabled')).toBe(true);
+    const addButton = screen.getByRole('button', { name: 'Change Photo' });
+    const removeButton = screen.getByRole('button', { name: 'Remove' });
+
+    expect(addButton.getAttribute('aria-disabled')).toBe('true');
+    expect(removeButton.getAttribute('aria-disabled')).toBe('true');
+    expect(addButton.hasAttribute('disabled')).toBe(false);
+    expect(removeButton.hasAttribute('disabled')).toBe(false);
+
     const status = screen.getByRole('status');
     expect(status.textContent).toBe('Updating photo…');
+  });
+
+  it('does not call onRemove when Remove is clicked while busy', () => {
+    const props = renderControl({ photoUrl: 'https://example.com/me.jpg', busy: true });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(props.onRemove).not.toHaveBeenCalled();
+  });
+
+  it('shows no busy announcement when not busy', () => {
+    renderControl({ busy: false });
+
+    expect(screen.getByRole('status').textContent).toBe('');
+  });
+
+  it('moves focus to the Add/Change button after a remove takes focus away', () => {
+    function Harness() {
+      const [photoUrl, setPhotoUrl] = useState<string | null>('https://example.com/me.jpg');
+      return (
+        <ProfilePhotoControl
+          name="Ram Sharma"
+          photoUrl={photoUrl}
+          busy={false}
+          onPick={() => {}}
+          onRemove={() => setPhotoUrl(null)}
+        />
+      );
+    }
+    render(<Harness />);
+
+    const removeButton = screen.getByRole('button', { name: 'Remove' });
+    removeButton.focus();
+    fireEvent.click(removeButton);
+
+    const addButton = screen.getByRole('button', { name: 'Add Photo' });
+    expect(document.activeElement).toBe(addButton);
   });
 });
