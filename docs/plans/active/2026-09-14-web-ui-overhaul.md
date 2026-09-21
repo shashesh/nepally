@@ -12519,6 +12519,8 @@ export interface ProfileEditing {
   editName: () => Promise<void>;
   editBio: () => Promise<void>;
   changePassword: () => Promise<void>;
+  /** True while a write (and its refresh) is in flight; Task 6.16 disables the menu items. */
+  saving: boolean;
 }
 
 export function useProfileEditing(
@@ -12529,7 +12531,7 @@ export function useProfileEditing(
 
 This replaces `handleEditName`, `handleEditBio` and `handleChangePassword` (profile 185–274), and all nine `setMenuOpen(false)` calls in them, since `ActionMenu` closes itself.
 
-- **`editName`** opens `usePrompt({ title: 'Edit name', label: 'Full name', initialValue, validate: (value) => (value.trim() ? null : 'Name cannot be empty') })` and writes the trimmed value.
+- **`editName`** opens `usePrompt({ title: 'Edit name', label: 'Full name', initialValue, maxLength: FULL_NAME_MAX_LENGTH, validate })`. `validate` returns the shared `fullNameSchema`'s first issue message: 2–100 characters after trimming, with control characters stripped and no letters-only rule. It then writes `fullNameSchema.parse(value)`. *(Changed in review: the first draft only rejected blanks, and nothing anywhere capped `full_name`.)*
 - **`editBio`** opens ``usePrompt({ title: 'Edit bio', label: `Bio (up to ${BIO_MAX_LENGTH} characters)`, initialValue, multiline: true, validate })``. `validate` returns `bioSchema`'s first issue message, or null (decision 7). It then writes `bioSchema.parse(value)`.
 - **`changePassword`** is today's `resetPasswordForEmail` call.
 - **Messages.** Every toast keeps today's words ("Profile updated", "Bio updated", "Bio cleared", "Password reset email sent", and the three failures), sent through `notify`.
@@ -12779,6 +12781,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Five private copies of `getErrorMessage(error, fallback)` exist: web `profile.page.tsx` and `lib/profilePhoto.ts`, and mobile `EditProfileScreen`, `ChangePasswordScreen` and `EmailSignupScreen`. Export one from `packages/shared/src/utils/` (found in PR 6's Task 6.11 review).
   - [ ] Mobile should adopt the shared `setProfilePhoto` and `PROFILE_PHOTO_SIZE_PX` (`EditProfileScreen.tsx` 129–147 duplicates both) (found in PR 6's Task 6.11 review).
   - [ ] Two more copies of the megabyte formula should use the shared `formatMegabytes`: mobile `CreatePostScreen.tsx` ~804 and shared `validation/post.ts` ~53 (found in PR 6's Task 6.12 review).
+  - [ ] Mobile's `EditProfileScreen` (min-2 check ~240) and web signup's `validateFullName` should adopt the shared `fullNameSchema`. `users.full_name` also has no length limit in the database: add a `CHECK (char_length(full_name) <= 100)` in a new additive migration, which needs the user's go-ahead to apply (found in PR 6's Task 6.13 review).
   - [ ] Mantine's global CSS loads after the app's own theme modules. `_app.page.tsx` imports `Layout` and `mantine-theme` (which pulls in `mantine-components.module.css`) before `@mantine/core/styles.css`, so Mantine wins any equal-specificity tie. For example, the theme's Badge `text-transform: none` is ignored and TrustBadge/ScopeBadge render uppercase. Move the `@mantine/*` style imports to the top of `_app.page.tsx`, as Mantine's docs require. This changes screenshots on most pages, so do it in its own PR or in PR 10's baseline run (found in PR 6's Task 6.10 review).
   - [ ] Search's result `Tabs` (`search.page.tsx:125`) wrap on phones like the public profile's did. Give them the same `tabList`/`tab` treatment the public profile got: nowrap plus scroll, `flex-shrink: 0`, an inset focus ring, a token underline, and an `onFocus` `scrollIntoView({ inline: 'nearest' })`, because Chromium leaves a partly clipped focused tab clipped. Better still, extract one shared scrolling-tabs wrapper for both pages (found in PR 6's Task 6.10 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
