@@ -75,6 +75,22 @@
   --warning: var(--amber-600);
   --danger: var(--crimson-600);
 
+  /* ── Event types (fg / bg pairs) ──────────────────────────
+     Converted from EVENT_TYPE_COLORS in packages/shared, which mobile still
+     styles its chips from. `cultural` is darkened from the shared #E65100:
+     that orange on its own tint is 3.46:1, under AA, and is one of the
+     color-contrast violations the events pages carry in the a11y baseline. */
+  --event-cultural-fg: oklch(56% 0.172 40);
+  --event-cultural-bg: oklch(97% 0.028 79);
+  --event-religious-fg: oklch(42% 0.190 308);
+  --event-religious-bg: oklch(94% 0.026 322);
+  --event-social-fg: oklch(43% 0.116 144);
+  --event-social-bg: oklch(96% 0.021 148);
+  --event-career-fg: oklch(42% 0.157 260);
+  --event-career-bg: oklch(95% 0.022 239);
+  --event-other-fg: oklch(38% 0 0);
+  --event-other-bg: oklch(97% 0 0);
+
   /* ── Topic dots (decorative; always paired with a label) ─ */
   --tag-housing: oklch(55% 0.12 155);
   --tag-jobs: oklch(52% 0.11 255);

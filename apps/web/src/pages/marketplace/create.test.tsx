@@ -10,7 +10,14 @@ type MockImageProps = { src: string; alt: string };
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useRouter: vi.fn(),
+  notificationsShow: vi.fn(),
+  uploadPhotosInOrder: vi.fn(),
 }));
+
+vi.mock('@mantine/notifications', () => ({ notifications: { show: mocks.notificationsShow } }));
+// The upload path itself is covered in lib/photoUploads.test.ts; here it is
+// stubbed so the page's own success and failure handling can be exercised.
+vi.mock('../../lib/photoUploads', () => ({ uploadPhotosInOrder: mocks.uploadPhotosInOrder }));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
@@ -73,12 +80,15 @@ vi.mock('@nepally/shared', () => ({
   LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
   ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
   MAX_PHOTOS_PER_LISTING: 5,
+  MAX_LISTING_PHOTO_BYTES: 2 * 1024 * 1024,
+  ALLOWED_LISTING_PHOTO_MIME_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
 }));
 
 import CreateListingPage from './create.page';
 
 const mockGetCategories = getCategories as ReturnType<typeof vi.fn>;
 const mockCreateListing = createListing as ReturnType<typeof vi.fn>;
+const mockUploadPhotosInOrder = mocks.uploadPhotosInOrder;
 
 describe('CreateListingPage', () => {
   const mockReplace = vi.fn();
@@ -89,6 +99,7 @@ describe('CreateListingPage', () => {
     mocks.useRouter.mockReturnValue({ replace: mockReplace, push: mockPush, query: {} });
     mockGetCategories.mockResolvedValue({ data: MOCK_CATEGORIES });
     mockSafeParse.mockReturnValue({ success: true, data: {} });
+    mockUploadPhotosInOrder.mockResolvedValue({ urls: [], paths: [] });
   });
 
   it('redirects to /login when not logged in', async () => {
@@ -119,9 +130,55 @@ describe('CreateListingPage', () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(CreateListingPage));
     await waitFor(() => {
-      expect(screen.getByText('Food & Restaurants')).toBeDefined();
-      expect(screen.getByText('Professional Services')).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Food & Restaurants' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Professional Services' })).toBeDefined();
     });
+  });
+
+  it('reports which category is chosen', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+    const chip = await screen.findByRole('button', { name: 'Food & Restaurants' });
+
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.click(chip);
+
+    expect(screen.getByRole('button', { name: 'Food & Restaurants' }).getAttribute('aria-pressed')).toBe('true');
+    expect(
+      screen.getByRole('button', { name: 'Professional Services' }).getAttribute('aria-pressed')
+    ).toBe('false');
+  });
+
+  it('shows a missing category as an error on its group', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mockSafeParse.mockReturnValue({
+      success: false,
+      error: { issues: [{ path: ['category_id'], message: 'Pick a category' }] },
+    });
+    render(React.createElement(CreateListingPage));
+    await waitFor(() => expect(screen.getAllByText('Create Listing').length).toBe(2));
+
+    fireEvent.click(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => expect(screen.getByText('Pick a category')).toBeDefined());
+    const group = screen.getByRole('group', { name: 'Category *' });
+    expect(group.getAttribute('aria-describedby')?.split(' ')).toContain(
+      screen.getByText('Pick a category').id
+    );
+  });
+
+  it('offers the condition control only for an individual listing', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+    await waitFor(() => expect(screen.getByPlaceholderText('Your business name')).toBeDefined());
+
+    expect(screen.queryByRole('radiogroup', { name: 'Condition' })).toBeNull();
+
+    fireEvent.click(screen.getByText('Individual'));
+
+    await waitFor(() => expect(screen.getByRole('radiogroup', { name: 'Condition' })).toBeDefined());
+    expect(screen.queryByPlaceholderText('Your business name')).toBeNull();
   });
 
   it('renders form fields', async () => {
@@ -164,5 +221,61 @@ describe('CreateListingPage', () => {
     // Page shows null while loading in edit mode, then loads
     // Just verify no crash
     expect(true).toBe(true);
+  });
+
+  describe('failures reach the member', () => {
+    const signedIn = { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' };
+
+    async function submit() {
+      render(React.createElement(CreateListingPage));
+      await waitFor(() => expect(screen.getAllByText('Create Listing').length).toBe(2));
+      fireEvent.click(screen.getAllByText('Create Listing')[1]);
+    }
+
+    it('reports a failed photo upload instead of swallowing it', async () => {
+      mocks.useAuth.mockReturnValue({ user: signedIn });
+      mockSafeParse.mockReturnValue({ success: true, data: {} });
+      mockUploadPhotosInOrder.mockResolvedValue({ error: new Error('Storage is full') });
+
+      await submit();
+
+      await waitFor(() =>
+        expect(mocks.notificationsShow).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Storage is full', color: 'red' })
+        )
+      );
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('reports a failed create instead of swallowing it', async () => {
+      mocks.useAuth.mockReturnValue({ user: signedIn });
+      mockSafeParse.mockReturnValue({ success: true, data: {} });
+      mockUploadPhotosInOrder.mockResolvedValue({ urls: [], paths: [] });
+      mockCreateListing.mockResolvedValue({ error: new Error('Listing rejected') });
+
+      await submit();
+
+      await waitFor(() =>
+        expect(mocks.notificationsShow).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Listing rejected', color: 'red' })
+        )
+      );
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('goes to the marketplace when the listing saves', async () => {
+      mocks.useAuth.mockReturnValue({ user: signedIn });
+      mockSafeParse.mockReturnValue({ success: true, data: {} });
+      mockUploadPhotosInOrder.mockResolvedValue({ urls: ['u/a'], paths: ['p/a'] });
+      mockCreateListing.mockResolvedValue({ data: { id: 'new-1' } });
+
+      await submit();
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/marketplace'));
+      expect(mockCreateListing).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ photos: ['u/a'] })
+      );
+    });
   });
 });

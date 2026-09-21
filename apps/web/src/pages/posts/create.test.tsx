@@ -356,4 +356,170 @@ describe('CreatePostPage', () => {
     expect(screen.queryByText('Loading post...')).toBeNull();
     expect((screen.getByLabelText('Post title, required') as HTMLInputElement).value).toBe('');
   });
+
+  describe('leaving the page', () => {
+    it('leaves straight away when nothing has been typed', async () => {
+      render(<CreatePostPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed'));
+      expect(screen.queryByText('Discard this post?')).toBeNull();
+    });
+
+    it('asks before discarding a started post, and stays put when dismissed', async () => {
+      render(<CreatePostPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
+      fireEvent.change(screen.getByLabelText('Post title, required'), {
+        target: { value: 'Half-written title' },
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() => expect(screen.getByText('Discard this post?')).toBeDefined());
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('leaves once discarding is confirmed', async () => {
+      render(<CreatePostPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
+      fireEvent.change(screen.getByLabelText('Post title, required'), {
+        target: { value: 'Half-written title' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.getByText('Discard this post?')).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed'));
+    });
+  });
+
+  describe('tags', () => {
+    it('reports which tags are chosen', async () => {
+      render(<CreatePostPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
+
+      expect(screen.getByRole('button', { name: /Housing/ }).getAttribute('aria-pressed')).toBe('false');
+
+      fireEvent.click(screen.getByRole('button', { name: /Housing/ }));
+
+      expect(screen.getByRole('button', { name: /Housing/ }).getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('stops offering more tags once the cap is reached', async () => {
+      render(<CreatePostPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
+
+      // MAX_TAGS_PER_POST is mocked to 3 and the fixture has exactly 3 tags,
+      // so choosing two must leave the third available and choosing all three
+      // must leave none to add.
+      fireEvent.click(screen.getByRole('button', { name: /Housing/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Jobs/ }));
+      expect(screen.getByRole('button', { name: /Emergency/ }).hasAttribute('disabled')).toBe(false);
+
+      fireEvent.click(screen.getByRole('button', { name: /Emergency/ }));
+      expect(screen.getByRole('button', { name: /Housing/ }).hasAttribute('disabled')).toBe(false);
+    });
+  });
+
+  describe('photos', () => {
+    it('offers the photo uploader with the per-post limit', async () => {
+      render(<CreatePostPage />);
+
+      await waitFor(() => expect(screen.getByRole('group', { name: 'Photos' })).toBeDefined());
+      expect(screen.getByText('0/4 photos')).toBeDefined();
+    });
+
+    it('shows the photos of the post being edited, in order', async () => {
+      createMocks.useRouterMock.mockReturnValue({
+        push: mockPush,
+        replace: mockReplace,
+        query: { edit: 'post-existing' },
+      });
+      createMocks.getPostByIdMock.mockResolvedValue({
+        data: {
+          id: 'post-existing',
+          author_id: 'user-1',
+          title: 'Existing post',
+          description: 'Existing body text',
+          tags: [mockTags[0]],
+          is_global: false,
+          photos: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+        },
+      });
+      render(<CreatePostPage />);
+
+      await waitFor(() => expect(screen.getByText('2/4 photos')).toBeDefined());
+      expect(screen.getByRole('button', { name: 'Remove photo 1' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Remove photo 2' })).toBeDefined();
+    });
+
+    it('saves the photos of an edited post in the order they are shown', async () => {
+      createMocks.useRouterMock.mockReturnValue({
+        push: mockPush,
+        replace: mockReplace,
+        query: { edit: 'post-existing' },
+      });
+      createMocks.getPostByIdMock.mockResolvedValue({
+        data: {
+          id: 'post-existing',
+          author_id: 'user-1',
+          title: 'Existing post',
+          description: 'Existing body text',
+          tags: [mockTags[0]],
+          is_global: false,
+          photos: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+        },
+      });
+      createMocks.updatePostMock.mockResolvedValue({ data: { id: 'post-existing' } });
+      createMocks.deletePostPhotosMock.mockResolvedValue({});
+      render(<CreatePostPage />);
+
+      await waitFor(() => expect(screen.getByText('2/4 photos')).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: 'Move photo 2 left' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(createMocks.updatePostMock).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            photos: ['https://cdn.example.com/b.jpg', 'https://cdn.example.com/a.jpg'],
+          })
+        )
+      );
+    });
+
+    it('deletes a photo the member removed, once the post has saved', async () => {
+      createMocks.useRouterMock.mockReturnValue({
+        push: mockPush,
+        replace: mockReplace,
+        query: { edit: 'post-existing' },
+      });
+      createMocks.getPostByIdMock.mockResolvedValue({
+        data: {
+          id: 'post-existing',
+          author_id: 'user-1',
+          title: 'Existing post',
+          description: 'Existing body text',
+          tags: [mockTags[0]],
+          is_global: false,
+          photos: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+        },
+      });
+      createMocks.updatePostMock.mockResolvedValue({ data: { id: 'post-existing' } });
+      createMocks.deletePostPhotosMock.mockResolvedValue({});
+      createMocks.getPostPhotoPathFromUrlMock.mockImplementation((url: string) => `user-1/${url.slice(-5)}`);
+      render(<CreatePostPage />);
+
+      await waitFor(() => expect(screen.getByText('2/4 photos')).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: 'Remove photo 2' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(createMocks.deletePostPhotosMock).toHaveBeenCalledWith(expect.anything(), ['user-1/b.jpg'])
+      );
+    });
+  });
 });

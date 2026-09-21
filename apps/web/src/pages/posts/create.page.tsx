@@ -1,48 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Button, Switch, Text } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert, Button, Switch, Text, TextInput, Textarea } from '@mantine/core';
 import Head from 'next/head';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
+import { submitEditedPost, submitNewPost } from '../../lib/postSubmit';
 import {
-  createPost,
+  ImageUploader,
+  ToggleChipGroup,
+  notify,
+  useConfirm,
+  type UploaderPhoto,
+} from '../../components/ui';
+import {
   getPostById,
-  updatePost,
-  deletePostPhotos,
-  getPostPhotoPathFromUrl,
   getTags,
   TAG_EMOJI,
   MAX_TAGS_PER_POST,
   MAX_PHOTOS_PER_POST,
   MAX_POST_PHOTO_BYTES,
-  uploadPostPhotos,
-  validatePostPhotoFile,
 } from '@nepally/shared';
 import type { Tag } from '@nepally/shared';
 import styles from '../../styles/CreatePost.module.css';
 
 const TITLE_MAX = 150;
 const TITLE_COUNTER_THRESHOLD = 120;
+/** Past this the counter turns red, so the limit does not arrive as a surprise. */
+const TITLE_NEAR_LIMIT = 140;
 const BODY_MAX = 5000;
 const BODY_COUNTER_THRESHOLD = 4500;
-
-type SelectedPhoto = {
-  id: string;
-  file: File;
-  preview_url: string;
-};
-
-type EditablePhoto =
-  | { kind: 'existing'; existing_url: string }
-  | { kind: 'new'; photo: SelectedPhoto };
+const BODY_NEAR_LIMIT = 4800;
 
 export default function CreatePostPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { activeLocation } = useLocation();
+  const confirm = useConfirm();
   const editQueryParam = router.query.edit;
   const editPostId = typeof editQueryParam === 'string' ? editQueryParam : null;
   const isEditing = Boolean(editPostId);
@@ -50,9 +44,7 @@ export default function CreatePostPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
-  const [removedExistingPhotoPaths, setRemovedExistingPhotoPaths] = useState<string[]>([]);
-  const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
+  const [photos, setPhotos] = useState<UploaderPhoto[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -60,21 +52,19 @@ export default function CreatePostPage() {
   const [tagsLoading, setTagsLoading] = useState(true);
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [loadingExistingPost, setLoadingExistingPost] = useState(false);
   const [initialForm, setInitialForm] = useState<{
     title: string;
     body: string;
     selectedTagIds: string[];
     isGlobal: boolean;
-    existingPhotos: string[];
+    photoUrls: string[];
   }>({
     title: '',
     body: '',
     selectedTagIds: [],
     isGlobal: false,
-    existingPhotos: [],
+    photoUrls: [],
   });
 
   const initialTagSet = new Set(initialForm.selectedTagIds);
@@ -83,16 +73,19 @@ export default function CreatePostPage() {
     initialForm.selectedTagIds.length !== selectedTagIds.length ||
     selectedTagIds.some((id) => !initialTagSet.has(id)) ||
     initialForm.selectedTagIds.some((id) => !currentTagSet.has(id));
-  const existingPhotosChanged =
-    initialForm.existingPhotos.length !== existingPhotos.length ||
-    initialForm.existingPhotos.some((url, index) => existingPhotos[index] !== url);
+  const storedPhotoUrls = photos
+    .filter((photo): photo is Extract<UploaderPhoto, { kind: 'stored' }> => photo.kind === 'stored')
+    .map((photo) => photo.url);
+  const photosChanged =
+    photos.some((photo) => photo.kind === 'picked') ||
+    initialForm.photoUrls.length !== storedPhotoUrls.length ||
+    initialForm.photoUrls.some((url, index) => storedPhotoUrls[index] !== url);
   const isDirty =
     title.trim() !== initialForm.title.trim() ||
     body.trim() !== initialForm.body.trim() ||
     tagsChanged ||
     isGlobal !== initialForm.isGlobal ||
-    existingPhotosChanged ||
-    selectedPhotos.length > 0;
+    photosChanged;
   const titleLength = title.trim().length;
   const bodyLength = body.trim().length;
   const titleValid = titleLength >= 5;
@@ -197,18 +190,18 @@ export default function CreatePostPage() {
         }
 
         const existingTagIds = (result.data.tags || []).map((tag) => tag.id);
+        const existingPhotoUrls = result.data.photos || [];
         setTitle(result.data.title || '');
         setBody(result.data.description || '');
         setSelectedTagIds(existingTagIds);
         setIsGlobal(Boolean(result.data.is_global));
-        setExistingPhotos(result.data.photos || []);
-        setRemovedExistingPhotoPaths([]);
+        setPhotos(existingPhotoUrls.map((url) => ({ kind: 'stored' as const, url })));
         setInitialForm({
           title: result.data.title || '',
           body: result.data.description || '',
           selectedTagIds: existingTagIds,
           isGlobal: Boolean(result.data.is_global),
-          existingPhotos: result.data.photos || [],
+          photoUrls: existingPhotoUrls,
         });
       })
       .finally(() => {
@@ -222,175 +215,21 @@ export default function CreatePostPage() {
     };
   }, [isEditing, editPostId, user, availableTags.length]);
 
-  function toggleTag(tagId: string) {
-    setSelectedTagIds((prev) => {
-      if (prev.includes(tagId)) {
-        return prev.filter((id) => id !== tagId);
-      }
-      if (prev.length >= MAX_TAGS_PER_POST) return prev;
-      return [...prev, tagId];
-    });
-  }
-
-  function handleCancel() {
+  async function handleCancel() {
     if (isDirty) {
-      if (!confirm('You have unsaved changes. Are you sure you want to discard this post?')) {
-        return;
-      }
+      const discard = await confirm({
+        title: 'Discard this post?',
+        message: 'You have unsaved changes. They will be lost.',
+        confirmLabel: 'Discard',
+        danger: true,
+      });
+      if (!discard) return;
     }
-    clearSelectedPhotos();
     if (isEditing && editPostId) {
       router.push(`/posts/${editPostId}`);
       return;
     }
     router.push('/feed');
-  }
-
-  function handlePhotoInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = '';
-
-    if (files.length === 0) return;
-
-    if (existingPhotos.length + selectedPhotos.length + files.length > MAX_PHOTOS_PER_POST) {
-      setError(`You can upload up to ${MAX_PHOTOS_PER_POST} photos per post.`);
-      return;
-    }
-
-    const nextPhotos: SelectedPhoto[] = [];
-    for (const file of files) {
-      const validation = validatePostPhotoFile({
-        mime_type: file.type,
-        size_bytes: file.size,
-      });
-      if (validation.error) {
-        setError(validation.error.message);
-        return;
-      }
-
-      nextPhotos.push({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        file,
-        preview_url: URL.createObjectURL(file),
-      });
-    }
-
-    setError('');
-    setSelectedPhotos((prev) => [...prev, ...nextPhotos]);
-  }
-
-  function removeSelectedPhoto(photoId: string) {
-    setSelectedPhotos((prev) => {
-      const target = prev.find((item) => item.id === photoId);
-      if (target) {
-        URL.revokeObjectURL(target.preview_url);
-      }
-      return prev.filter((item) => item.id !== photoId);
-    });
-  }
-
-  function removeExistingPhoto(photoUrl: string) {
-    setExistingPhotos((prev) => prev.filter((url) => url !== photoUrl));
-    const path = getPostPhotoPathFromUrl(photoUrl);
-    if (path) {
-      setRemovedExistingPhotoPaths((prev) => {
-        if (prev.includes(path)) return prev;
-        return [...prev, path];
-      });
-    }
-  }
-
-  function getCombinedEditablePhotos(): EditablePhoto[] {
-    return [
-      ...existingPhotos.map((url) => ({ kind: 'existing' as const, existing_url: url })),
-      ...selectedPhotos.map((photo) => ({ kind: 'new' as const, photo })),
-    ];
-  }
-
-  function applyCombinedEditablePhotos(photos: EditablePhoto[]) {
-    setExistingPhotos(
-      photos
-        .filter((item): item is { kind: 'existing'; existing_url: string } => item.kind === 'existing')
-        .map((item) => item.existing_url)
-    );
-    setSelectedPhotos(
-      photos
-        .filter((item): item is { kind: 'new'; photo: SelectedPhoto } => item.kind === 'new')
-        .map((item) => item.photo)
-    );
-  }
-
-  function movePhotoAtIndex(photoIndex: number, direction: -1 | 1) {
-    const combined = getCombinedEditablePhotos();
-    const targetIndex = photoIndex + direction;
-    if (targetIndex < 0 || targetIndex >= combined.length) return;
-
-    const reordered = [...combined];
-    [reordered[photoIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[photoIndex]];
-    applyCombinedEditablePhotos(reordered);
-  }
-
-  function movePhotoToIndex(fromIndex: number, toIndex: number) {
-    const combined = getCombinedEditablePhotos();
-    if (
-      fromIndex < 0 ||
-      toIndex < 0 ||
-      fromIndex >= combined.length ||
-      toIndex >= combined.length ||
-      fromIndex === toIndex
-    ) {
-      return;
-    }
-
-    const reordered = [...combined];
-    const [moved] = reordered.splice(fromIndex, 1);
-    reordered.splice(toIndex, 0, moved);
-    applyCombinedEditablePhotos(reordered);
-  }
-
-  function handlePhotoDragStart(index: number, event: React.DragEvent<HTMLDivElement>) {
-    if (!isEditing) return;
-    setDragFromIndex(index);
-    setDragOverIndex(index);
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', String(index));
-  }
-
-  function handlePhotoDragOver(index: number, event: React.DragEvent<HTMLDivElement>) {
-    if (!isEditing) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    setDragOverIndex(index);
-  }
-
-  function handlePhotoDrop(dropIndex: number, event: React.DragEvent<HTMLDivElement>) {
-    if (!isEditing) return;
-    event.preventDefault();
-
-    const fallbackFrom = Number(event.dataTransfer.getData('text/plain'));
-    const fromIndex = dragFromIndex ?? (Number.isNaN(fallbackFrom) ? null : fallbackFrom);
-
-    if (fromIndex === null) {
-      setDragFromIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-
-    movePhotoToIndex(fromIndex, dropIndex);
-    setDragFromIndex(null);
-    setDragOverIndex(null);
-  }
-
-  function handlePhotoDragEnd() {
-    setDragFromIndex(null);
-    setDragOverIndex(null);
-  }
-
-  function clearSelectedPhotos() {
-    selectedPhotos.forEach((photo) => {
-      URL.revokeObjectURL(photo.preview_url);
-    });
-    setSelectedPhotos([]);
   }
 
   async function handleSubmit() {
@@ -399,70 +238,24 @@ export default function CreatePostPage() {
 
     if (isEditing && editPostId) {
       setSubmitting(true);
-      let uploadedPhotoPaths: string[] = [];
       try {
-        const combinedPhotos = getCombinedEditablePhotos();
-        let newPhotoUrls: string[] = [];
-        const uploadedUrlByPhotoId = new Map<string, string>();
-        if (selectedPhotos.length > 0) {
-          const uploadInputs = await Promise.all(
-            selectedPhotos.map(async (photo) => ({
-              user_id: user.id,
-              file_data: await photo.file.arrayBuffer(),
-              mime_type: photo.file.type || 'image/jpeg',
-              size_bytes: photo.file.size,
-              file_name: photo.file.name,
-            }))
-          );
-
-          const uploadResult = await uploadPostPhotos(supabase, uploadInputs);
-          if (uploadResult.error || !uploadResult.urls) {
-            setError(uploadResult.error?.message || 'Failed to upload photos');
-            return;
-          }
-
-          newPhotoUrls = uploadResult.urls;
-          uploadedPhotoPaths = uploadResult.paths || [];
-          selectedPhotos.forEach((photo, index) => {
-            const uploadedUrl = newPhotoUrls[index];
-            if (uploadedUrl) {
-              uploadedUrlByPhotoId.set(photo.id, uploadedUrl);
-            }
-          });
-        }
-
-        const orderedPhotoUrls = combinedPhotos
-          .map((photo) => {
-            if (photo.kind === 'existing') return photo.existing_url;
-            return uploadedUrlByPhotoId.get(photo.photo.id) || null;
-          })
-          .filter((url): url is string => Boolean(url));
-
-        const result = await updatePost(supabase, {
-          post_id: editPostId,
+        const result = await submitEditedPost(supabase, {
+          postId: editPostId,
+          userId: user.id,
           title: title.trim(),
           description: body.trim(),
-          tag_ids: selectedTagIds,
-          is_global: user.is_premium ? isGlobal : false,
-          photos: orderedPhotoUrls,
+          tagIds: selectedTagIds,
+          photos,
+          isGlobal: user.is_premium ? isGlobal : false,
+          originalPhotoUrls: initialForm.photoUrls,
         });
 
-        if (result.error) {
-          if (uploadedPhotoPaths.length > 0) {
-            await deletePostPhotos(supabase, uploadedPhotoPaths);
-          }
-          setError(result.error.message);
+        if (!result.ok) {
+          setError(result.message ?? 'Could not update post.');
           return;
         }
 
-        if (removedExistingPhotoPaths.length > 0) {
-          await deletePostPhotos(supabase, removedExistingPhotoPaths);
-        }
-
-        clearSelectedPhotos();
         router.push(`/posts/${editPostId}`);
-      } catch {
-        setError('Could not update post. Please check your connection and try again.');
       } finally {
         setSubmitting(false);
       }
@@ -476,65 +269,32 @@ export default function CreatePostPage() {
     }
 
     setSubmitting(true);
-    let uploadedPhotoPaths: string[] = [];
     try {
-      const cityName = activeLocation?.metro_name?.split('-')[0]?.trim() || 'Unknown';
-      const stateName = activeLocation?.metro_state || 'Unknown';
-
-      let photoUrls: string[] = [];
-      if (selectedPhotos.length > 0) {
-        const uploadInputs = await Promise.all(
-          selectedPhotos.map(async (photo) => ({
-            user_id: user.id,
-            file_data: await photo.file.arrayBuffer(),
-            mime_type: photo.file.type || 'image/jpeg',
-            size_bytes: photo.file.size,
-            file_name: photo.file.name,
-          }))
-        );
-
-        const uploadResult = await uploadPostPhotos(supabase, uploadInputs);
-        if (uploadResult.error || !uploadResult.urls) {
-          setError(uploadResult.error?.message || 'Failed to upload photos');
-          return;
-        }
-
-        photoUrls = uploadResult.urls;
-        uploadedPhotoPaths = uploadResult.paths || [];
-      }
-
-      const result = await createPost(supabase, {
+      const result = await submitNewPost(supabase, {
+        userId: user.id,
         title: title.trim(),
         description: body.trim(),
-        tag_ids: selectedTagIds,
-        photos: photoUrls,
-        is_global: isGlobal,
+        tagIds: selectedTagIds,
+        photos,
+        isGlobal,
         metroAreaId,
         locationZipCode: user.zip_code,
-        locationCity: cityName,
-        locationState: stateName,
+        locationCity: activeLocation?.metro_name?.split('-')[0]?.trim() || 'Unknown',
+        locationState: activeLocation?.metro_state || 'Unknown',
         requiresModeration,
       });
 
-      if (result.error) {
-        if (uploadedPhotoPaths.length > 0) {
-          await deletePostPhotos(supabase, uploadedPhotoPaths);
-        }
-        setError(result.error.message);
+      if (!result.ok) {
+        setError(result.message ?? 'Could not create post.');
         return;
       }
 
-      clearSelectedPhotos();
-      if (requiresModeration) {
-        notifications.show({
-          title: 'Submitted for review',
-          message:
-            'Your emergency post was sent to a moderator for review. It will appear in the feed once approved.',
-        });
+      if (result.pendingModeration) {
+        notify.success(
+          'Your emergency post was sent to a moderator for review. It will appear in the feed once approved.'
+        );
       }
       router.push('/feed');
-    } catch {
-      setError('Could not create post. Please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -560,75 +320,66 @@ export default function CreatePostPage() {
         {error && <Alert color="red" variant="light">{error}</Alert>}
 
         {/* Title */}
-        <div className={styles.titleSection}>
-          <input
-            className={styles.titleInput}
+        <div className={styles.section}>
+          <TextInput
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="What's this about?"
             maxLength={TITLE_MAX}
             aria-label="Post title, required"
+            error={!titleValid && title.length > 0 ? 'Title must be at least 5 characters' : undefined}
+            description={
+              title.length >= TITLE_COUNTER_THRESHOLD ? (
+                <Text span size="xs" c={title.length >= TITLE_NEAR_LIMIT ? 'red' : 'dimmed'}>
+                  {title.length}/{TITLE_MAX}
+                </Text>
+              ) : undefined
+            }
           />
-          {title.length >= TITLE_COUNTER_THRESHOLD && (
-            <Text size="xs" c={title.length >= 140 ? 'red' : 'dimmed'} ta="right" mt={4}>
-              {title.length}/{TITLE_MAX}
-            </Text>
-          )}
-          {!titleValid && title.length > 0 && (
-            <Text c="red" size="xs" mt={6}>Title must be at least 5 characters</Text>
-          )}
         </div>
 
         {/* Body */}
-        <div className={styles.bodySection}>
-          <textarea
-            className={styles.bodyInput}
+        <div className={styles.section}>
+          <Textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write your post details here..."
             maxLength={BODY_MAX}
+            autosize
+            minRows={6}
             aria-label="Post body, required"
+            error={!bodyValid && body.length > 0 ? 'Body must be at least 10 characters' : undefined}
+            description={
+              body.length >= BODY_COUNTER_THRESHOLD ? (
+                <Text span size="xs" c={body.length >= BODY_NEAR_LIMIT ? 'red' : 'dimmed'}>
+                  {body.length}/{BODY_MAX}
+                </Text>
+              ) : undefined
+            }
           />
-          {body.length >= BODY_COUNTER_THRESHOLD && (
-            <Text size="xs" c={body.length >= 4800 ? 'red' : 'dimmed'} ta="right" mt={4}>
-              {body.length}/{BODY_MAX}
-            </Text>
-          )}
-          {!bodyValid && body.length > 0 && (
-            <Text c="red" size="xs" mt={6}>Body must be at least 10 characters</Text>
-          )}
         </div>
 
         {/* Tags */}
         <div className={styles.section}>
-          <div className={styles.sectionLabelRow}>
-            <div className={styles.sectionLabel}>Tags (1-3 required)</div>
-            <Text size="xs" c="dimmed">{selectedTagIds.length}/{MAX_TAGS_PER_POST}</Text>
-          </div>
-          {tagsError && <Text c="red" size="xs" mt={6}>{tagsError}</Text>}
-          <div className={styles.tagGrid}>
-            {availableTags.map((tag) => {
-              const isSelected = selectedTagIds.includes(tag.id);
+          <ToggleChipGroup
+            label="Tags (1-3 required)"
+            description={`${selectedTagIds.length}/${MAX_TAGS_PER_POST}`}
+            options={availableTags.map((tag) => {
               const emoji = TAG_EMOJI[tag.slug] || '';
-              const isDisabled = !isSelected && selectedTagIds.length >= MAX_TAGS_PER_POST;
-
-              return (
-                <button
-                  key={tag.id}
-                  className={`${styles.tagChip} ${isSelected ? styles.tagChipSelected : ''} ${isDisabled ? styles.tagChipDisabled : ''}`}
-                  onClick={() => toggleTag(tag.id)}
-                  disabled={isDisabled}
-                  aria-label={`${tag.name} tag, ${isSelected ? 'selected' : 'not selected'}`}
-                >
-                  {emoji ? `${emoji} ${tag.name}` : tag.name}
-                </button>
-              );
+              return {
+                value: tag.id,
+                label: emoji ? `${emoji} ${tag.name}` : tag.name,
+                name: `${tag.name} tag`,
+              };
             })}
-          </div>
-
-          {!tagsValid && !tagsLoading && (
-            <Text c="red" size="xs" mt={6}>Please select at least 1 tag</Text>
-          )}
+            value={selectedTagIds}
+            onChange={setSelectedTagIds}
+            max={MAX_TAGS_PER_POST}
+            error={
+              tagsError ??
+              (!tagsValid && !tagsLoading ? 'Please select at least 1 tag' : undefined)
+            }
+          />
 
           {hasEmergencyTag && (
             <Alert color="red" variant="light" mt={10}>
@@ -637,98 +388,18 @@ export default function CreatePostPage() {
           )}
         </div>
 
-        {/* Photo Attachment */}
+        {/* Photos */}
         <div className={styles.section}>
-          <label className={styles.photoRowButton}>
-            <input
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp"
-              multiple
-              aria-label="Add post photos"
-              className={styles.hiddenFileInput}
-              onChange={handlePhotoInputChange}
-              disabled={existingPhotos.length + selectedPhotos.length >= MAX_PHOTOS_PER_POST || submitting}
-            />
-            <span className={styles.photoRow}>
-              <span className={styles.photoIcon}>📷</span>
-              <span className={styles.photoLabel}>Add Photos (optional)</span>
-              <span className={styles.photoCount}>{existingPhotos.length + selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</span>
-            </span>
-          </label>
-          <Text size="xs" c="dimmed" mt={6}>Photos are optional and not required to publish.</Text>
-          <Text size="xs" c="dimmed" mt={6}>Allowed: JPG, PNG, WEBP up to {Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each.</Text>
-
-          {(existingPhotos.length > 0 || selectedPhotos.length > 0) && (
-            <div className={styles.photoPreviewRow}>
-              {getCombinedEditablePhotos().map((photo, index, arr) => {
-                const isExisting = photo.kind === 'existing';
-                const photoUrl = isExisting ? photo.existing_url : photo.photo.preview_url;
-                const altText = isExisting ? `Existing photo ${index + 1}` : `Selected photo ${index + 1}`;
-
-                return (
-                  <div
-                    key={`${isExisting ? 'existing' : 'new'}-${photoUrl}-${index}`}
-                    className={`${styles.photoPreviewItem} ${isEditing ? styles.photoPreviewItemDraggable : ''} ${dragOverIndex === index ? styles.photoPreviewItemDragOver : ''} ${dragFromIndex === index ? styles.photoPreviewItemDragging : ''}`}
-                    draggable={isEditing}
-                    onDragStart={(event) => handlePhotoDragStart(index, event)}
-                    onDragOver={(event) => handlePhotoDragOver(index, event)}
-                    onDrop={(event) => handlePhotoDrop(index, event)}
-                    onDragEnd={handlePhotoDragEnd}
-                  >
-                    <Image
-                      src={photoUrl}
-                      alt={altText}
-                      fill
-                      sizes="80px"
-                      unoptimized
-                      className={styles.photoPreviewImage}
-                    />
-                    <button
-                      type="button"
-                      className={styles.photoRemoveBtn}
-                      onClick={() => {
-                        if (isExisting) {
-                          removeExistingPhoto(photo.existing_url);
-                        } else {
-                          removeSelectedPhoto(photo.photo.id);
-                        }
-                      }}
-                      aria-label={`Remove photo ${index + 1}`}
-                    >
-                      ✕
-                    </button>
-
-                    {isEditing && arr.length > 1 && (
-                      <div className={styles.photoReorderControls}>
-                        <button
-                          type="button"
-                          className={styles.photoReorderBtn}
-                          onClick={() => movePhotoAtIndex(index, -1)}
-                          disabled={index === 0}
-                          aria-label={`Move photo ${index + 1} left`}
-                        >
-                          ←
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.photoReorderBtn}
-                          onClick={() => movePhotoAtIndex(index, 1)}
-                          disabled={index === arr.length - 1}
-                          aria-label={`Move photo ${index + 1} right`}
-                        >
-                          →
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {isEditing && existingPhotos.length + selectedPhotos.length > 1 && (
-            <Text size="xs" c="dimmed" mt={6}>Reorder photos by drag-and-drop, or use ← and → controls on each thumbnail.</Text>
-          )}
+          <ImageUploader
+            photos={photos}
+            onChange={setPhotos}
+            reorderable
+            max={MAX_PHOTOS_PER_POST}
+            maxBytes={MAX_POST_PHOTO_BYTES}
+            disabled={submitting}
+            label="Photos"
+            description={`Optional. JPG, PNG or WEBP up to ${Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each. Use the ← and → buttons to reorder.`}
+          />
         </div>
 
         {/* Location Info */}

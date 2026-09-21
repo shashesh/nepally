@@ -36,6 +36,10 @@ for (let tone = 1; tone <= 8; tone++) {
   TEXT_PAIRS.push([`--avatar-tone-${tone}-fg`, `--avatar-tone-${tone}-bg`]);
 }
 
+for (const type of ['cultural', 'religious', 'social', 'career', 'other']) {
+  TEXT_PAIRS.push([`--event-${type}-fg`, `--event-${type}-bg`]);
+}
+
 describe('design token contrast (WCAG AA)', () => {
   it.each(TEXT_PAIRS)('%s on %s is at least 4.5:1', (foreground, background) => {
     const ratio = wcagContrast(resolveToken(tokens, foreground), resolveToken(tokens, background));

@@ -77,6 +77,29 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 
 `PhotoCarousel` shows one photo at a time with wrap-around previous and next, announces "Photo 2 of 3", and keeps a 40px swipe threshold. `ImageLightbox` is the full-screen viewer over Mantine `Modal`, which owns the focus trap, Escape and scroll lock; it adds paging, seven zoom levels and controls that fade after 1.5s.
 
+`ImageUploader` is the only photo picker: drop or click to choose, thumbnails, remove, and optional reorder. Over @mantine/dropzone.
+
+| Prop | Meaning |
+|---|---|
+| `photos` / `onChange` | Controlled `UploaderPhoto[]`. Each entry is `{ kind: 'stored', url }` for a photo already in storage or `{ kind: 'picked', id, previewUrl, file }` for one just chosen |
+| `max`, `maxBytes`, `accept` | Limits, read from shared constants by the caller. Picking past `max` takes the remaining slots and says so |
+| `label`, `description`, `error` | The group's accessible name, its hint and its error. The add control is named "Add {label}" |
+| `reorderable` | Adds "Move photo N left/right", with a live region announcing where a photo landed |
+| `transformFile` | Runs per accepted file before it enters state — create listing passes `resizeImage`. A file that throws is skipped and counted in one message |
+
+It owns every object URL it mints and revokes them on removal and unmount, so pages never touch `URL.createObjectURL`. Once every slot is used the input is marked `disabled` explicitly, because react-dropzone only drops its handlers.
+
+`ToggleChipGroup` is the labelled row of toggle chips behind post tags, event types and listing categories. The chips are buttons with `aria-pressed`, not checkboxes, so state is announced by the platform rather than baked into the name. `mode` is `'single'` or `'multiple'`; `max` disables the unpressed chips at the cap while leaving pressed ones releasable. Each chip carries `data-value`, which is how create event colours its five types from `--event-<type>-fg` / `-bg` without the component knowing any event vocabulary.
+
+## Web-only helpers (`src/lib`)
+
+| Helper | Notes |
+|---|---|
+| `toPhotoUploadInputs(files, userId)` | `File[]` → the byte-carrying shape the shared storage API takes. The `File` API is DOM-only, which is why this is not in `packages/shared` |
+| `uploadPhotosInOrder(photos, userId, upload)` | Uploads the picked photos, then returns every photo's URL in display order. Concatenation is not enough: a member can drop a new photo in front of a saved one |
+| `resizeImage(file)` | Downscales to 1200px wide at JPEG quality 0.8, returning a `File`. Passed to `ImageUploader` as `transformFile` |
+| `submitNewPost` / `submitEditedPost` | Create post's two submit paths, as pure functions. They own the rollback rules: delete what was just uploaded when the write fails, delete what the member dropped only once it succeeds |
+
 ## Post and feed components
 
 | Component | Location | Notes |
@@ -89,6 +112,7 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 | `PostComposer` | `components/feed/` | The prompt row; it links to the composer, or to verification below trust level 1 |
 | `SponsoredRail` | `components/feed/` | The `<aside>` holding paid listings and the upcoming-events widget |
 | `UserMenuTrigger` | `components/users/` | An avatar that opens View profile / Chat through `ActionMenu` |
+| `DateTimeField` | `components/events/` | A date and a time behaving as one `YYYY-MM-DDTHH:mm` value. The time does nothing until a date is set. Takes both input ids from its caller, because the e2e suite drives them directly |
 
 ## Guards
 

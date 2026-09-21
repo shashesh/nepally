@@ -1,6 +1,6 @@
 # Nepally Technology Versions
 
-**Last Updated:** 2026-09-18
+**Last Updated:** 2026-09-20
 
 This document serves as the single source of truth for all technology versions used in the Nepally project.
 
@@ -29,7 +29,7 @@ This document serves as the single source of truth for all technology versions u
 |---------|---------|-------|
 | **next** | 16.3.x | Turbopack; works with React 19.2.3 |
 | **eslint-config-next** | 16.x | Flat config, exported as a config array; requires ESLint >= 9 |
-| **@mantine/core / hooks / form / notifications / modals** | 8.3.x | All on one version; 9.x is unblocked by React 19.2.3 but ships as its own PR (see Deferred Upgrades) |
+| **@mantine/core / hooks / form / notifications / modals / dropzone** | 8.3.x | All on one version; 9.x is unblocked by React 19.2.3 but ships as its own PR (see Deferred Upgrades). `dropzone` arrived with the web UI overhaul's `ImageUploader` and pulls in `react-dropzone` 15 |
 
 ### Shared Package (`packages/shared`)
 

@@ -10,6 +10,7 @@ import { cssVariablesResolver, nepallyTheme } from '../styles/mantine-theme';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/dropzone/styles.css';
 import '../styles/globals.css';
 
 export default function App({ Component, pageProps }: AppProps) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '../../test-utils';
+import { render, screen, waitFor, fireEvent, act } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 type MockHeadProps = { children?: React.ReactNode };
@@ -22,11 +22,10 @@ vi.mock('next/link', () => ({
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
-vi.mock('@nepally/shared', () => ({
-  createEvent: vi.fn(async () => ({ data: { id: 'new-event' } })),
-  updateEvent: vi.fn(async () => ({ data: { id: 'edit-event' } })),
-  getEventById: vi.fn(async () => ({ data: null })),
-  createEventSchema: {
+vi.mock('@nepally/shared', () => {
+  // The page picks the update schema in edit mode; both validate the same
+  // fields, so one stub serves as both.
+  const eventSchema = {
     safeParse: (data: unknown) => {
       const parsed = data as Partial<{
         title: string;
@@ -54,19 +53,29 @@ vi.mock('@nepally/shared', () => ({
       if (errors.length > 0) return { success: false, error: { issues: errors } };
       return { success: true, data: parsed };
     },
-  },
-  EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],
-  EVENT_TYPE_LABELS: { cultural: 'Cultural', religious: 'Religious', social: 'Social', career: 'Career', other: 'Other' },
-  EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
-  EVENT_TYPE_COLORS: {
-    cultural: { text: '#E65100', background: '#FFF3E0' },
-    religious: { text: '#6A1B9A', background: '#F3E5F5' },
-    social: { text: '#1B5E20', background: '#E8F5E9' },
-    career: { text: '#0D47A1', background: '#E3F2FD' },
-    other: { text: '#424242', background: '#F5F5F5' },
-  },
-  TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
-}));
+  };
+
+  return {
+    createEvent: vi.fn(async () => ({ data: { id: 'new-event' } })),
+    updateEvent: vi.fn(async () => ({ data: { id: 'edit-event' } })),
+    getEventById: vi.fn(async () => ({ data: null })),
+    createEventSchema: eventSchema,
+    updateEventSchema: eventSchema,
+      EVENT_TYPES: ['cultural', 'religious', 'social', 'career', 'other'],
+    EVENT_TYPE_LABELS: { cultural: 'Cultural', religious: 'Religious', social: 'Social', career: 'Career', other: 'Other' },
+    EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
+    EVENT_TYPE_COLORS: {
+      cultural: { text: '#E65100', background: '#FFF3E0' },
+      religious: { text: '#6A1B9A', background: '#F3E5F5' },
+      social: { text: '#1B5E20', background: '#E8F5E9' },
+      career: { text: '#0D47A1', background: '#E3F2FD' },
+      other: { text: '#424242', background: '#F5F5F5' },
+    },
+    TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
+    MAX_EVENT_PHOTO_BYTES: 2 * 1024 * 1024,
+    uploadEventPhoto: vi.fn(async () => ({ url: 'https://cdn.example.com/event.jpg', path: 'u/event.jpg' })),
+  };
+});
 
 import CreateEventPage from './create.page';
 
@@ -222,6 +231,175 @@ describe('CreateEventPage', () => {
           event_type: 'cultural',
           location_name: 'Dallas Convention Center',
         })
+      );
+    });
+  });
+  describe('the converted fields', () => {
+    it('keeps the ids the e2e suite drives the date and time by', () => {
+      render(React.createElement(CreateEventPage));
+
+      expect(document.getElementById('event-start-date')).not.toBeNull();
+      expect(document.getElementById('event-start-time')).not.toBeNull();
+      expect(document.getElementById('event-end-date')).not.toBeNull();
+      expect(document.getElementById('event-end-time')).not.toBeNull();
+      expect(document.getElementById('event-title')).not.toBeNull();
+      expect(document.getElementById('event-location-name')).not.toBeNull();
+      expect(document.getElementById('event-location-address')).not.toBeNull();
+      expect(document.getElementById('event-description')).not.toBeNull();
+    });
+
+    it('reports which event type is chosen', () => {
+      render(React.createElement(CreateEventPage));
+
+      const cultural = screen.getByRole('button', { name: '🎭 Cultural' });
+      expect(cultural.getAttribute('aria-pressed')).toBe('false');
+
+      fireEvent.click(cultural);
+
+      expect(screen.getByRole('button', { name: '🎭 Cultural' }).getAttribute('aria-pressed')).toBe('true');
+      expect(screen.getByRole('button', { name: '🕌 Religious' }).getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('offers RSVP visibility as a radio group, public by default', () => {
+      render(React.createElement(CreateEventPage));
+
+      const group = screen.getByRole('radiogroup', { name: 'RSVP Visibility' });
+      expect(group).toBeDefined();
+      expect((screen.getByRole('radio', { name: /Public/ }) as HTMLInputElement).checked).toBe(true);
+      expect((screen.getByRole('radio', { name: /Private/ }) as HTMLInputElement).checked).toBe(false);
+    });
+
+    it('lets the error banner be dismissed', async () => {
+      render(React.createElement(CreateEventPage));
+
+      // Submitting an empty form is blocked by the disabled button, so drive
+      // the banner through a failing create instead.
+      fireEvent.change(screen.getByPlaceholderText('e.g. Dashain Celebration 2026'), {
+        target: { value: 'Dashain Celebration 2026' },
+      });
+      fireEvent.change(screen.getByPlaceholderText('Tell people about your event...'), {
+        target: { value: 'Annual Dashain celebration with cultural programs.' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: '🎭 Cultural' }));
+      fireEvent.change(screen.getByPlaceholderText('e.g. Dallas Convention Center'), {
+        target: { value: 'Dallas Convention Center' },
+      });
+      const future = new Date(Date.now() + 48 * 60 * 60 * 1000);
+      fireEvent.change(document.getElementById('event-start-date')!, {
+        target: { value: future.toISOString().slice(0, 10) },
+      });
+      const { createEvent } = await import('@nepally/shared');
+      vi.mocked(createEvent).mockResolvedValue({ error: new Error('Event rejected') } as never);
+
+      fireEvent.click(screen.getByRole('button', { name: /Create Event/ }));
+
+      await waitFor(() => expect(screen.getByRole('alert')).toBeDefined());
+      expect(screen.getByText('Event rejected')).toBeDefined();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss error' }));
+
+      await waitFor(() => expect(screen.queryByText('Event rejected')).toBeNull());
+    });
+  });
+
+  describe('the event photo', () => {
+    it('offers a one-slot uploader', () => {
+      render(React.createElement(CreateEventPage));
+
+      expect(screen.getByRole('group', { name: 'Event photo' })).toBeDefined();
+      expect(screen.getByText('0/1 photos')).toBeDefined();
+    });
+
+    it('shows the photo an edited event already has', async () => {
+      mocks.useRouter.mockReturnValue({ query: { edit: 'event-1' }, replace: mockReplace, push: mockPush });
+      const { getEventById } = await import('@nepally/shared');
+      vi.mocked(getEventById).mockResolvedValue({
+        data: {
+          id: 'event-1',
+          title: 'Existing event',
+          description: 'A description that is long enough',
+          event_type: 'cultural',
+          start_date: new Date(Date.now() + 86_400_000).toISOString(),
+          end_date: null,
+          location_name: 'Some Venue',
+          location_address: '',
+          photo_url: 'https://cdn.example.com/event.jpg',
+          rsvp_visibility: 'public',
+          is_global: false,
+        },
+      } as never);
+      render(React.createElement(CreateEventPage));
+
+      await waitFor(() => expect(screen.getByText('1/1 photos')).toBeDefined());
+      expect(screen.getByRole('button', { name: 'Remove photo 1' })).toBeDefined();
+    });
+
+    it('can replace the photo an edited event already has', async () => {
+      mocks.useRouter.mockReturnValue({ query: { edit: 'event-1' }, replace: mockReplace, push: mockPush });
+      const { getEventById } = await import('@nepally/shared');
+      vi.mocked(getEventById).mockResolvedValue({
+        data: {
+          id: 'event-1',
+          title: 'Existing event',
+          description: 'A description that is long enough',
+          event_type: 'cultural',
+          start_date: new Date(Date.now() + 86_400_000).toISOString(),
+          end_date: null,
+          location_name: 'Some Venue',
+          location_address: '',
+          photo_url: 'https://cdn.example.com/event.jpg',
+          rsvp_visibility: 'public',
+          is_global: false,
+        },
+      } as never);
+      render(React.createElement(CreateEventPage));
+      await waitFor(() => expect(screen.getByText('1/1 photos')).toBeDefined());
+
+      // The slot is full, but a one-photo uploader replaces rather than locks:
+      // the old page had a "Change Photo" button and this is its replacement.
+      const input = screen.getByLabelText('Replace event photo');
+      expect(input.hasAttribute('disabled')).toBe(false);
+
+      const file = new File(['x'], 'replacement.png', { type: 'image/png' });
+      Object.defineProperty(file, 'size', { value: 1024 });
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [file] } });
+      });
+
+      expect(screen.getByText('1/1 photos')).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Remove photo 1' })).toBeDefined();
+    });
+
+    it('keeps the stored photo when an edit does not touch it', async () => {
+      mocks.useRouter.mockReturnValue({ query: { edit: 'event-1' }, replace: mockReplace, push: mockPush });
+      const { getEventById } = await import('@nepally/shared');
+      vi.mocked(getEventById).mockResolvedValue({
+        data: {
+          id: 'event-1',
+          title: 'Existing event',
+          description: 'A description that is long enough',
+          event_type: 'cultural',
+          start_date: new Date(Date.now() + 86_400_000).toISOString(),
+          end_date: null,
+          location_name: 'Some Venue',
+          location_address: '',
+          photo_url: 'https://cdn.example.com/event.jpg',
+          rsvp_visibility: 'public',
+          is_global: false,
+        },
+      } as never);
+      const { updateEvent } = await import('@nepally/shared');
+      render(React.createElement(CreateEventPage));
+      await waitFor(() => expect(screen.getByText('1/1 photos')).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: /Save Changes/ }));
+
+      await waitFor(() =>
+        expect(updateEvent).toHaveBeenCalledWith(
+          {},
+          'event-1',
+          expect.objectContaining({ photo_url: 'https://cdn.example.com/event.jpg' })
+        )
       );
     });
   });

@@ -61,6 +61,23 @@ export const VISUAL_PAGES: VisualPage[] = [
   },
   { name: 'create-post', path: '/posts/create', signedIn: true, ready: (page) => heading(page, /create post/i) },
   {
+    name: 'create-listing',
+    path: '/marketplace/create',
+    signedIn: true,
+    // The category chips arrive with the categories request, so the heading
+    // alone can screenshot an empty group.
+    ready: async (page) => {
+      await heading(page, /create listing/i);
+      await expect(page.getByRole('group', { name: 'Category *' })).toBeVisible(READY_TIMEOUT);
+    },
+  },
+  {
+    name: 'create-event',
+    path: '/events/create',
+    signedIn: true,
+    ready: (page) => heading(page, /create event/i),
+  },
+  {
     name: 'profile',
     path: '/profile',
     signedIn: true,
