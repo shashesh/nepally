@@ -12562,12 +12562,16 @@ export interface ListState<T> {
   error: string | null;
 }
 
+export interface ListResource<T> extends ListState<T> {
+  reload: () => void;
+}
+
 export interface OwnProfileContent {
-  posts: ListState<Post>;
-  saved: ListState<Post>;
-  listings: ListState<MarketplaceListing>;
-  /** Drops a post from the saved list, for an optimistic unsave. */
-  dropSaved: (postId: string) => void;
+  posts: ListResource<Post>;
+  saved: ListResource<Post>;
+  listings: ListResource<MarketplaceListing>;
+  /** Hides the post at once, deletes the save, and shows it again in the same place if the delete fails. */
+  unsave: (postId: string) => Promise<{ error?: Error }>;
 }
 
 export function useOwnProfileContent(userId: string | null): OwnProfileContent;
@@ -12577,6 +12581,11 @@ This moves profile 49–56 and 91–148 out of the page, with two small fixes:
 
 - **Lists start loading.** With a user, each list starts in `loading: true`. Today they start idle, so "You have not created any posts yet." flashes for one render before the request begins.
 - **A failed listings load says so.** It reports "Failed to load your listings" instead of falling through to "No marketplace listings yet." (today's `result.data || []`, 137).
+
+*(Changed in review, 2026-09-21.)*
+
+- **Loading helper.** Each list comes from a small internal `useUserList<T>(userId, fetchList, fallbackError)` in `hooks/useUserList.ts`. Each list has its own `reload`, so `ErrorState` can offer a retry. PR 10's public-profile list-errors item can reuse the helper.
+- **Unsave.** The first draft's one-way `dropSaved` became `unsave`, which owns the whole mutation. It hides the post through a set of hidden ids and restores it in place if `unsavePost` fails. Today the page toasts "Failed to unsave post." while the post stays gone.
 
 - [ ] **Step 1: Write the failing test** with `renderHook`. Posts are requested with `includeOwnPending` true. Each list reports its error. A failed listings load sets its error. `dropSaved` removes exactly one post. A null `userId` requests nothing.
 - [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useOwnProfileContent.test.ts`
@@ -12613,7 +12622,9 @@ This replaces profile 720–771. It renders the Bio, Account Info and Activity s
 | Avatar, file input, photo buttons, status line (606–652) | `ProfilePhotoControl`. `onPick` calls `replaceProfilePhoto`, and `onRemove` calls the shared `removeProfilePhoto` (Task 6.2). Both then refresh and toast "Photo updated" / "Photo removed", or the error (decision 2) |
 | `trustBadge` span and `trustClass` (163–171, 657–661) | `TrustBadge` |
 | four tab `<button>`s (664–693) | Mantine `Tabs` with `keepMounted={false}` and `Tabs.List aria-label="Profile sections"`: "Posts", "Listings", "Saved Posts", "About" |
-| `renderPostList` / `renderSavedPostList` / `renderListingsList` (395–537) | `LoadingState`, `ErrorState`, or `EmptyState` with today's sentences ("Start a post" and "Post a listing" as actions). Otherwise `PostSummaryRow`s, saved ones with `menu={<ActionMenu label="Post options" items={[{ key: 'unsave', label: 'Unsave Post', … }]} />}`, and `ListingSummaryRow owner={{ now }}` |
+| list state and load effect (49–56, 91–148) | `useOwnProfileContent(user?.id ?? null)` (Task 6.14) |
+| `handleUnsave` (385–393) | `const { error } = await unsave(postId)`, then `notify.error('Failed to unsave post.')` or `notify.success('Post unsaved.')`. The hook restores the post if the delete fails |
+| `renderPostList` / `renderSavedPostList` / `renderListingsList` (395–537) | `LoadingState`, `ErrorState` with `onRetry={list.reload}`, or `EmptyState` with today's sentences ("Start a post" and "Post a listing" as actions). Otherwise `PostSummaryRow`s, saved ones with `menu={<ActionMenu label="Post options" items={[{ key: 'unsave', label: 'Unsave Post', … }]} />}`, and `ListingSummaryRow owner={{ now }}` |
 | About's read-only sections (720–771) | `AccountDetails` |
 | `notifications.show` in sign-out, About You save and unsave | `notify` |
 
