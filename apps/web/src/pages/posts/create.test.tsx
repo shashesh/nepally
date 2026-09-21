@@ -356,4 +356,103 @@ describe('CreatePostPage', () => {
     expect(screen.queryByText('Loading post...')).toBeNull();
     expect((screen.getByLabelText('Post title, required') as HTMLInputElement).value).toBe('');
   });
+
+  describe('photos', () => {
+    it('offers the photo uploader with the per-post limit', async () => {
+      render(<CreatePostPage />);
+
+      await waitFor(() => expect(screen.getByRole('group', { name: 'Photos' })).toBeDefined());
+      expect(screen.getByText('0/4 photos')).toBeDefined();
+    });
+
+    it('shows the photos of the post being edited, in order', async () => {
+      createMocks.useRouterMock.mockReturnValue({
+        push: mockPush,
+        replace: mockReplace,
+        query: { edit: 'post-existing' },
+      });
+      createMocks.getPostByIdMock.mockResolvedValue({
+        data: {
+          id: 'post-existing',
+          author_id: 'user-1',
+          title: 'Existing post',
+          description: 'Existing body text',
+          tags: [mockTags[0]],
+          is_global: false,
+          photos: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+        },
+      });
+      render(<CreatePostPage />);
+
+      await waitFor(() => expect(screen.getByText('2/4 photos')).toBeDefined());
+      expect(screen.getByRole('button', { name: 'Remove photo 1' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Remove photo 2' })).toBeDefined();
+    });
+
+    it('saves the photos of an edited post in the order they are shown', async () => {
+      createMocks.useRouterMock.mockReturnValue({
+        push: mockPush,
+        replace: mockReplace,
+        query: { edit: 'post-existing' },
+      });
+      createMocks.getPostByIdMock.mockResolvedValue({
+        data: {
+          id: 'post-existing',
+          author_id: 'user-1',
+          title: 'Existing post',
+          description: 'Existing body text',
+          tags: [mockTags[0]],
+          is_global: false,
+          photos: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+        },
+      });
+      createMocks.updatePostMock.mockResolvedValue({ data: { id: 'post-existing' } });
+      createMocks.deletePostPhotosMock.mockResolvedValue({});
+      render(<CreatePostPage />);
+
+      await waitFor(() => expect(screen.getByText('2/4 photos')).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: 'Move photo 2 left' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(createMocks.updatePostMock).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            photos: ['https://cdn.example.com/b.jpg', 'https://cdn.example.com/a.jpg'],
+          })
+        )
+      );
+    });
+
+    it('deletes a photo the member removed, once the post has saved', async () => {
+      createMocks.useRouterMock.mockReturnValue({
+        push: mockPush,
+        replace: mockReplace,
+        query: { edit: 'post-existing' },
+      });
+      createMocks.getPostByIdMock.mockResolvedValue({
+        data: {
+          id: 'post-existing',
+          author_id: 'user-1',
+          title: 'Existing post',
+          description: 'Existing body text',
+          tags: [mockTags[0]],
+          is_global: false,
+          photos: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+        },
+      });
+      createMocks.updatePostMock.mockResolvedValue({ data: { id: 'post-existing' } });
+      createMocks.deletePostPhotosMock.mockResolvedValue({});
+      createMocks.getPostPhotoPathFromUrlMock.mockImplementation((url: string) => `user-1/${url.slice(-5)}`);
+      render(<CreatePostPage />);
+
+      await waitFor(() => expect(screen.getByText('2/4 photos')).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: 'Remove photo 2' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(createMocks.deletePostPhotosMock).toHaveBeenCalledWith(expect.anything(), ['user-1/b.jpg'])
+      );
+    });
+  });
 });
