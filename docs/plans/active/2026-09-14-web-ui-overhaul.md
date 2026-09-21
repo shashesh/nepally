@@ -12101,7 +12101,7 @@ Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same convent
 | `apps/web/src/components/marketplace/ListingSummaryRow.tsx`, `.module.css`, `.test.tsx` | One listing as a row, with an owner view for status, stats and expiry |
 | `apps/web/src/components/users/PublicProfileHeader.tsx`, `.module.css`, `.test.tsx` | The public profile card: avatar, name, trust, bio, follow, chips, message button |
 | `apps/web/src/hooks/usePublicProfile.ts`, `.test.ts` | Loads a member's profile, metro, posts, events, listings and helper score |
-| `apps/web/src/lib/profilePhoto.ts`, `.test.ts` | `replaceProfilePhoto`: crop, upload, write the URL |
+| `apps/web/src/lib/profilePhoto.ts`, `.test.ts` | `replaceProfilePhoto`: crop, then the shared `setProfilePhoto` |
 | `apps/web/src/components/profile/ProfilePhotoControl.tsx`, `.module.css`, `.test.tsx` | The avatar with Add/Change/Remove photo |
 | `apps/web/src/hooks/useProfileEditing.ts`, `.test.tsx` | Edit name, edit bio and change password, through `usePrompt` and `notify` |
 | `apps/web/src/hooks/useOwnProfileContent.ts`, `.test.ts` | Loads the signed-in member's posts, saved posts and listings |
@@ -12460,6 +12460,14 @@ export async function replaceProfilePhoto(
 
 `cropToSquare` is profile 286–306, lifted out and made to close its bitmap, which the page never does. `replaceProfilePhoto` is 309–323 without the UI: `cropToSquare`, `arrayBuffer()`, `uploadProfilePhoto`, then `updateUserProfile({ profile_photo: url })`. It returns the thrown message, or "Failed to upload photo". Removal needs nothing here, because the shared `removeProfilePhoto` from Task 6.2 covers it.
 
+*(As built, after review: `b433b2d`, `c787aa3` and the follow-up.)*
+
+- **Upload step.** The upload-then-save step is the shared `setProfilePhoto(supabase, userId, bytes)`, which sits beside `removeProfilePhoto` in `packages/shared/src/api/users.ts`. `replaceProfilePhoto` is crop → `arrayBuffer()` → `setProfilePhoto`.
+- **Size constant.** `PROFILE_PHOTO_SIZE_PX` lives in `packages/shared/src/constants/users.ts`, not in `resizeImage.ts`. Import it from `@nepally/shared`.
+- **Crop failures** log `profile_photo_crop_failed` and return fixed copy. Shared-API messages pass through unchanged.
+- **Image quality.** Both `cropToSquare` and `resizeImage` matte transparency to white, use high-quality smoothing and name their output `.jpg`. `cropToSquare` never upscales.
+- **Marketplace listings.** These `resizeImage` changes also affect listing photos, so the PR description must say so.
+
 - [ ] **Step 1: Write the failing tests.** Stub `createImageBitmap` and `HTMLCanvasElement.prototype.toBlob` as `resizeImage.test.ts` already does. `cropToSquare` on a 1000×600 image draws the source rectangle (200, 0, 600, 600) into (0, 0, 500, 500); on 600×1000 it draws (0, 200, 600, 600). The result is `image/jpeg`. The bitmap is closed on success and on a failed encode. A missing 2D context rejects. `replaceProfilePhoto`: success uploads the bytes, writes the URL and returns `error: null`. An upload error returns its message and never touches the profile. A profile write error returns its message.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/lib/resizeImage.test.ts src/lib/profilePhoto.test.ts`
 - [ ] **Step 3: Implement.**
@@ -12768,7 +12776,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Public profile list failures look like empty lists: `usePublicProfile` turns a failed posts/events/listings request into `[]`, and any `getUserById` failure reads "They may have deleted their account". Expose per-list errors plus a reload, show `ErrorState` with retry, and separate "not found" from "couldn't load" (found in PR 6's Task 6.8 review).
   - [ ] `EmptyState` always renders an `h3`, so tab panels jump h1 → h3 and the public profile's "Member not found" page has no h1. Add a `titleOrder` prop (default 3) and use `order={1}` for page-level empty states (found in PR 6's Task 6.9 review).
   - [ ] Raw storage and RLS error text reaches users verbatim across web (e.g. "new row violates row-level security policy" from `postSubmit` and `replaceProfilePhoto`). Decide one policy: map shared-API failures to friendly copy and log the detail with `logClientEvent` (found in PR 6's Task 6.11 review).
-  - [ ] Six private copies of `getErrorMessage(error, fallback)` exist: web `profile.page.tsx` and `lib/profilePhoto.ts`, and mobile `EditProfileScreen`, `ChangePasswordScreen` and `EmailSignupScreen`. Export one from `packages/shared/src/utils/` (found in PR 6's Task 6.11 review).
+  - [ ] Five private copies of `getErrorMessage(error, fallback)` exist: web `profile.page.tsx` and `lib/profilePhoto.ts`, and mobile `EditProfileScreen`, `ChangePasswordScreen` and `EmailSignupScreen`. Export one from `packages/shared/src/utils/` (found in PR 6's Task 6.11 review).
   - [ ] Mobile should adopt the shared `setProfilePhoto` and `PROFILE_PHOTO_SIZE_PX` (`EditProfileScreen.tsx` 129–147 duplicates both) (found in PR 6's Task 6.11 review).
   - [ ] Mantine's global CSS loads after the app's own theme modules. `_app.page.tsx` imports `Layout` and `mantine-theme` (which pulls in `mantine-components.module.css`) before `@mantine/core/styles.css`, so Mantine wins any equal-specificity tie. For example, the theme's Badge `text-transform: none` is ignored and TrustBadge/ScopeBadge render uppercase. Move the `@mantine/*` style imports to the top of `_app.page.tsx`, as Mantine's docs require. This changes screenshots on most pages, so do it in its own PR or in PR 10's baseline run (found in PR 6's Task 6.10 review).
   - [ ] Search's result `Tabs` (`search.page.tsx:125`) wrap on phones like the public profile's did. Give them the same `tabList`/`tab` treatment the public profile got: nowrap plus scroll, `flex-shrink: 0`, an inset focus ring, a token underline, and an `onFocus` `scrollIntoView({ inline: 'nearest' })`, because Chromium leaves a partly clipped focused tab clipped. Better still, extract one shared scrolling-tabs wrapper for both pages (found in PR 6's Task 6.10 review).
