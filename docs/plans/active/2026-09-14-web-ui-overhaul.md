@@ -12103,6 +12103,7 @@ Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same convent
 | `apps/web/src/hooks/usePublicProfile.ts`, `.test.ts` | Loads a member's profile, metro, posts, events, listings and helper score |
 | `apps/web/src/lib/profilePhoto.ts`, `.test.ts` | `replaceProfilePhoto`: crop, then the shared `setProfilePhoto` |
 | `apps/web/src/components/profile/ProfilePhotoControl.tsx`, `.module.css`, `.test.tsx` | The avatar with Add/Change/Remove photo |
+| `packages/shared/src/utils/bytes.ts`, `.test.ts` | `formatMegabytes`, shared by `ProfilePhotoControl` and `ImageUploader` *(added in review, Task 6.12)* |
 | `apps/web/src/hooks/useProfileEditing.ts`, `.test.tsx` | Edit name, edit bio and change password, through `usePrompt` and `notify` |
 | `apps/web/src/hooks/useOwnProfileContent.ts`, `.test.ts` | Loads the signed-in member's posts, saved posts and listings |
 | `apps/web/src/components/profile/AccountDetails.tsx`, `.module.css`, `.test.tsx` | The About tab's read-only Bio, Account Info and Activity sections |
@@ -12476,7 +12477,7 @@ export async function replaceProfilePhoto(
 
 ### Task 6.12: `ProfilePhotoControl`
 
-**Files:** create `components/profile/ProfilePhotoControl.tsx`, `.module.css`, `.test.tsx`.
+**Files:** create `components/profile/ProfilePhotoControl.tsx`, `.module.css`, `.test.tsx`; `packages/shared/src/constants/users.ts` (`MAX_PROFILE_PHOTO_SOURCE_BYTES`); `packages/shared/src/utils/bytes.ts` (`formatMegabytes`, moved out of `ImageUploader` in review).
 
 **Interface:**
 
@@ -12493,13 +12494,13 @@ export interface ProfilePhotoControlProps {
 This replaces profile 606–652:
 
 - **Avatar.** `Avatar` at `xlarge`. While `busy`, a scrim with a Mantine `Loader`, and a visually hidden "Updating photo…" in a `role="status"`.
-- **Picking a file.** `FileButton` with `accept={DEFAULT_IMAGE_MIME_TYPES.join(',')}` and `inputProps={{ 'aria-label': 'Upload profile photo' }}`, which is today's accessible name (620). It also takes a `resetRef`, reset after each pick so the same file can be chosen twice (today's `e.target.value = ''`, 364). Its child is `Button variant="light" size="compact-sm"`, labelled "Add Photo" or "Change Photo".
+- **Picking a file.** `FileButton` with `accept={DEFAULT_IMAGE_MIME_TYPES.join(',')}` and `inputProps={{ 'aria-label': 'Upload profile photo' }}`. The input is `display: none`, so this name is only a test and e2e locator; the visible button carries the name and the `aria-describedby`. It also takes a `resetRef`, reset after each pick so the same file can be chosen twice (today's `e.target.value = ''`, 364). Its child is `Button variant="light" size="compact-sm"`, labelled "Add Photo" or "Change Photo".
 - **Removing.** "Remove" appears only when there is a photo.
 - **While busy.** Both buttons are `aria-disabled` and ignore presses, but stay focusable (decision 8). Removing a photo moves focus to the file button.
 
 The narrower `accept` replaces today's `image/*`. iOS converts HEIC to JPEG for an input that lists specific image types, and `createImageBitmap` cannot decode HEIC anyway.
 
-*(Added from the Task 6.11 review.)* Cap the source file size at the picker. A 48–50MP photo decodes to about 200MB before the crop, and iOS Safari can kill the tab. Add a shared `MAX_PROFILE_PHOTO_SOURCE_BYTES` (e.g. 15MB) beside the other photo limits in `packages/shared/src/constants`. `ProfilePhotoControl` should reject a larger file with friendly copy ("That photo is too large. Choose one under 15MB.") before calling `onPick`.
+*(Added from the Task 6.11 review.)* Cap the source file size at the picker. A 48–50MP photo decodes to about 200MB before the crop, and iOS Safari can kill the tab. Add a shared `MAX_PROFILE_PHOTO_SOURCE_BYTES` (e.g. 15MB) beside the other photo limits in `packages/shared/src/constants`. `ProfilePhotoControl` should reject a larger file with friendly copy ("That photo is too large. It must be 15MB or smaller.") before calling `onPick`. It should also reject an unsupported type or an empty file ("That file is not a supported image. Use JPG, PNG or WEBP."), as `ImageUploader` does.
 
 - [ ] **Step 1: Read the installed types.** In `node_modules/@mantine/core/lib/components/FileButton/FileButton.d.ts`, confirm `inputProps` and `resetRef` exist in 8.3.18. If `inputProps` is missing, give the input its name through the `FileButton` render prop's `{...props}` instead, and note it here.
 - [ ] **Step 2: Write the failing test.** "Add Photo" shows without a photo, and "Change Photo" plus "Remove" with one. Choosing a file on the "Upload profile photo" input calls `onPick` with it. "Remove" calls `onRemove`. `busy` disables both buttons and announces "Updating photo…".
@@ -12777,6 +12778,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Raw storage and RLS error text reaches users verbatim across web (e.g. "new row violates row-level security policy" from `postSubmit` and `replaceProfilePhoto`). Decide one policy: map shared-API failures to friendly copy and log the detail with `logClientEvent` (found in PR 6's Task 6.11 review).
   - [ ] Five private copies of `getErrorMessage(error, fallback)` exist: web `profile.page.tsx` and `lib/profilePhoto.ts`, and mobile `EditProfileScreen`, `ChangePasswordScreen` and `EmailSignupScreen`. Export one from `packages/shared/src/utils/` (found in PR 6's Task 6.11 review).
   - [ ] Mobile should adopt the shared `setProfilePhoto` and `PROFILE_PHOTO_SIZE_PX` (`EditProfileScreen.tsx` 129–147 duplicates both) (found in PR 6's Task 6.11 review).
+  - [ ] Two more copies of the megabyte formula should use the shared `formatMegabytes`: mobile `CreatePostScreen.tsx` ~804 and shared `validation/post.ts` ~53 (found in PR 6's Task 6.12 review).
   - [ ] Mantine's global CSS loads after the app's own theme modules. `_app.page.tsx` imports `Layout` and `mantine-theme` (which pulls in `mantine-components.module.css`) before `@mantine/core/styles.css`, so Mantine wins any equal-specificity tie. For example, the theme's Badge `text-transform: none` is ignored and TrustBadge/ScopeBadge render uppercase. Move the `@mantine/*` style imports to the top of `_app.page.tsx`, as Mantine's docs require. This changes screenshots on most pages, so do it in its own PR or in PR 10's baseline run (found in PR 6's Task 6.10 review).
   - [ ] Search's result `Tabs` (`search.page.tsx:125`) wrap on phones like the public profile's did. Give them the same `tabList`/`tab` treatment the public profile got: nowrap plus scroll, `flex-shrink: 0`, an inset focus ring, a token underline, and an `onFocus` `scrollIntoView({ inline: 'nearest' })`, because Chromium leaves a partly clipped focused tab clipped. Better still, extract one shared scrolling-tabs wrapper for both pages (found in PR 6's Task 6.10 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
