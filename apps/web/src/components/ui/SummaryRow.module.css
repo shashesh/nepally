@@ -75,8 +75,7 @@
   flex-shrink: 0;
 }
 
-.detail,
-.meta {
+.line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -84,20 +83,19 @@
   overflow-wrap: anywhere;
 }
 
-.detail {
+.line[data-variant='detail'] {
   color: var(--text-2);
   font-size: var(--font-size-sm);
 }
 
-.meta {
+.line[data-variant='meta'] {
   color: var(--text-3);
   font-size: var(--font-size-xs);
 }
 
 /* The alt text ('') keeps the dot itself out of the accessibility tree, so
    screen readers hear "2h ago 3 likes", not "2h ago dot 3 likes". */
-.detail > * + *::before,
-.meta > * + *::before {
+.line > * + *::before {
   content: '·';
   content: '·' / '';
   margin-right: var(--space-1);

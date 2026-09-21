@@ -8,9 +8,10 @@ export interface SummaryRowProps {
   title: string;
   /**
    * Beside the title, e.g. a ScopeBadge or a status chip. It never shrinks.
-   * Sits below the link's overlay — only `menu` sits above it — so a
-   * positioned or interactive element here would not be clickable; the
-   * link's overlay would catch the click instead.
+   * Below the link's overlay: an interactive element here is covered and
+   * can't be clicked, and a positioned element paints above the overlay and
+   * swallows clicks meant for the link, leaving a dead spot. Keep this
+   * content static and unpositioned.
    */
   badge?: ReactNode;
   /**
@@ -23,8 +24,10 @@ export interface SummaryRowProps {
   menu?: ReactNode;
   /**
    * The lines under the title, typically one or two `SummaryRowMeta` rows.
-   * Below the link's overlay, so any interactive content here isn't
-   * clickable either.
+   * Below the link's overlay: an interactive element here is covered and
+   * can't be clicked, and a positioned element paints above the overlay and
+   * swallows clicks meant for the link, leaving a dead spot. Keep this
+   * content static and unpositioned.
    */
   children?: ReactNode;
 }
@@ -33,11 +36,10 @@ export interface SummaryRowProps {
  * Shell for one row in a list of summaries — posts, events, listings. The
  * title is the only link, and its `::after` stretches over the row so an
  * optional menu can sit beside it without being nested inside it. Only
- * `menu` renders above that overlay; `badge`, `leading` and `children` sit
- * below it. A row built on this shell should only add what makes it
- * different: its body content (via `children`, typically one or two
- * `SummaryRowMeta` lines) and any row-specific styling, such as a
- * description clamp.
+ * `menu` is meant to sit above the overlay. A row built on this shell
+ * should only add what makes it different: its body content (via
+ * `children`, typically one or two `SummaryRowMeta` lines) and any
+ * row-specific styling, such as a description clamp.
  */
 export function SummaryRow({ href, title, badge, leading, menu, children }: SummaryRowProps) {
   return (
@@ -60,7 +62,11 @@ export function SummaryRow({ href, title, badge, leading, menu, children }: Summ
 }
 
 export interface SummaryRowMetaProps {
-  /** Each item must be its own element (e.g. `<span>`, `<time>`) — bare text is one text node, so the dot separator has nothing to attach to and won't render. */
+  /**
+   * Each item must be its own element (e.g. `<span>`, `<time>`) — bare text
+   * is one text node, so the dot separator has nothing to attach to and
+   * won't render.
+   */
   children: ReactNode;
   /** `detail` is the body-size line under a title; `meta` is the smaller, quieter one. Default `meta`. */
   variant?: 'detail' | 'meta';
@@ -69,7 +75,7 @@ export interface SummaryRowMetaProps {
 /** One line of items separated by a dot that screen readers skip. */
 export function SummaryRowMeta({ children, variant = 'meta' }: SummaryRowMetaProps) {
   return (
-    <div className={variant === 'detail' ? styles.detail : styles.meta} data-variant={variant}>
+    <div className={styles.line} data-variant={variant}>
       {children}
     </div>
   );

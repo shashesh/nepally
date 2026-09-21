@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen } from '../../test-utils';
-import { cleanup } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SummaryRow, SummaryRowMeta } from './SummaryRow';
 
@@ -52,8 +51,23 @@ describe('SummaryRow', () => {
 
     const article = screen.getByRole('article');
     const leading = screen.getByText('Leading content');
+    const link = screen.getByRole('link', { name: 'A thing' });
 
     expect(article.children[0].contains(leading)).toBe(true);
+    expect(article.children[0].contains(link)).toBe(false);
+  });
+
+  it('renders no leading wrapper and no stray "0" for leading={0}, such as photos.length && <Thumb />', () => {
+    render(<SummaryRow href="/things/1" title="A thing" leading={0} />);
+
+    expect(screen.getByRole('article').children).toHaveLength(1);
+    expect(screen.queryByText('0')).toBeNull();
+  });
+
+  it('renders no leading wrapper for leading={false}', () => {
+    render(<SummaryRow href="/things/1" title="A thing" leading={false} />);
+
+    expect(screen.getByRole('article').children).toHaveLength(1);
   });
 
   it('renders menu outside the link', () => {
@@ -78,11 +92,12 @@ describe('SummaryRow', () => {
   });
 
   it('renders one more article child for a real menu than for none', () => {
-    render(<SummaryRow href="/things/1" title="A thing" menu={<button type="button">Options</button>} />);
+    const { rerender } = render(
+      <SummaryRow href="/things/1" title="A thing" menu={<button type="button">Options</button>} />
+    );
     const withMenu = screen.getByRole('article').children.length;
-    cleanup();
 
-    render(<SummaryRow href="/things/1" title="A thing" />);
+    rerender(<SummaryRow href="/things/1" title="A thing" />);
     const withoutMenu = screen.getByRole('article').children.length;
 
     expect(withMenu).toBe(withoutMenu + 1);
