@@ -4,8 +4,7 @@ import { VisuallyHidden } from '@mantine/core';
 import {
   formatListingPrice,
   formatRelativeTime,
-  getDaysUntilSoftExpiry,
-  isListingExpiringSoon,
+  getListingExpiryNotice,
   LISTING_STATUS_LABELS,
   pluralize,
   type MarketplaceListing,
@@ -23,12 +22,6 @@ export interface ListingSummaryRowProps {
   owner?: { now: Date };
 }
 
-/** "Expires in N days", or a nudge to refresh once there are none left. */
-function formatExpiryWarning(refreshedAt: string, now: Date): string {
-  const daysLeft = getDaysUntilSoftExpiry(refreshedAt, now);
-  return daysLeft === 0 ? 'Refresh to stay visible in search' : `Expires in ${pluralize(daysLeft, 'day')}`;
-}
-
 /**
  * One listing in a list of summaries — a user's own listings, a public
  * profile. Built on SummaryRow, matching PostSummaryRow and EventSummaryRow:
@@ -41,6 +34,7 @@ export function ListingSummaryRow({ listing, owner }: ListingSummaryRowProps) {
   const price = formatListingPrice(listing.price);
   const categoryName = listing.category?.name ?? 'Marketplace';
   const photo = listing.photos?.[0];
+  const expiryNotice = owner ? getListingExpiryNotice(listing, owner.now) : null;
 
   return (
     <SummaryRow
@@ -77,10 +71,10 @@ export function ListingSummaryRow({ listing, owner }: ListingSummaryRowProps) {
             <span>{pluralize(listing.contacts_count ?? 0, 'contact')}</span>
           </SummaryRowMeta>
 
-          {isListingExpiringSoon(listing, owner.now) && (
+          {expiryNotice && (
             <SummaryRowMeta>
               <span className={styles.expiry} data-tone="warning">
-                {formatExpiryWarning(listing.refreshed_at, owner.now)}
+                {expiryNotice}
               </span>
             </SummaryRowMeta>
           )}

@@ -19,8 +19,10 @@
   object-fit: cover;
 }
 
-/* Text-only chip so it stays unpositioned — a positioned element in `badge`
-   would paint above the link's overlay and swallow clicks (SummaryRow.tsx). */
+/* Text-only chip so it stays unpositioned apart from the VisuallyHidden
+   "Status: " prefix inside it, which is clipped to nothing and so takes no
+   clicks either. A positioned element in `badge` would paint above the
+   link's overlay and swallow clicks (SummaryRow.tsx). */
 .statusChip {
   display: inline-flex;
   align-items: center;
@@ -44,8 +46,10 @@
   color: var(--danger);
 }
 
-/* Not positioned — safe below the link's overlay, like `.statusChip`. */
-.expiry {
+/* Not positioned — safe below the link's overlay, like `.statusChip`.
+   `data-tone` is the styling hook (the same attribute the tests assert on),
+   not the bare class. */
+.expiry[data-tone='warning'] {
   color: var(--warning);
   font-weight: var(--font-weight-medium);
 }

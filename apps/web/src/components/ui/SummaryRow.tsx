@@ -11,7 +11,9 @@ export interface SummaryRowProps {
    * Below the link's overlay: an interactive element here is covered and
    * can't be clicked, and a positioned element paints above the overlay and
    * swallows clicks meant for the link, leaving a dead spot. Keep this
-   * content static and unpositioned.
+   * content static and unpositioned — a visually-hidden element clipped to
+   * nothing (e.g. Mantine's VisuallyHidden) is the one exception, since it
+   * takes no clicks either way.
    */
   badge?: ReactNode;
   /**

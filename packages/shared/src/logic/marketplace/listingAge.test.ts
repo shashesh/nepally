@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDaysSinceRefresh, getDaysUntilSoftExpiry, isListingExpiringSoon } from './listingAge';
+import { getDaysSinceRefresh, getDaysUntilSoftExpiry, getListingExpiryNotice, isListingExpiringSoon } from './listingAge';
 import { LISTING_SOFT_EXPIRY_DAYS, LISTING_EXPIRY_WARNING_DAYS } from '../../constants/marketplace';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -73,5 +73,32 @@ describe('isListingExpiringSoon', () => {
   it('is true for an active listing already past soft expiry (100 days since refresh, 0 days left)', () => {
     const listing = { status: 'active' as const, refreshed_at: daysBefore(100) };
     expect(isListingExpiringSoon(listing, NOW)).toBe(true);
+  });
+});
+
+describe('getListingExpiryNotice', () => {
+  it('is null for an inactive listing, even one that is stale', () => {
+    const listing = { status: 'inactive' as const, refreshed_at: daysBefore(80) };
+    expect(getListingExpiryNotice(listing, NOW)).toBeNull();
+  });
+
+  it('is null for an active listing with plenty of time left', () => {
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(70) };
+    expect(getListingExpiryNotice(listing, NOW)).toBeNull();
+  });
+
+  it('reads "Expires in 10 days" at 80 days since refresh', () => {
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(80) };
+    expect(getListingExpiryNotice(listing, NOW)).toBe('Expires in 10 days');
+  });
+
+  it('singularises "Expires in 1 day"', () => {
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(LISTING_SOFT_EXPIRY_DAYS - 1) };
+    expect(getListingExpiryNotice(listing, NOW)).toBe('Expires in 1 day');
+  });
+
+  it('nudges to refresh instead of "Expires in 0 days" once soft expiry has passed', () => {
+    const listing = { status: 'active' as const, refreshed_at: daysBefore(120) };
+    expect(getListingExpiryNotice(listing, NOW)).toBe('Refresh to stay visible in search');
   });
 });
