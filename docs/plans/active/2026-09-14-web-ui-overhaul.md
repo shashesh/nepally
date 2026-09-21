@@ -12138,13 +12138,14 @@ export function isListingExpiringSoon(
 
 // utils/listingPrice.ts
 /**
- * `price` is a free-text column. A number reads as dollars — "80" is "$80",
- * "80.5" is "$80.50" — and anything else ("Negotiable") is shown as typed.
+ * `price` is a free-text column. A value that looks like a US price ("80",
+ * "80.50", "$1,200") reads as dollars; anything else ("Negotiable", "80 OBO")
+ * is shown as typed.
  */
 export function formatListingPrice(price: string | number | null | undefined): string | null;
 ```
 
-`getMetroAreaById` selects `id, name, state, population` from `metro_areas` with `.eq('id', …).single()`, in the style of `searchMetroAreas` beside it. `formatListingPrice` strips `$` and `,` before parsing, so `"$1,200"` stays `"$1,200"`. It uses whole dollars for whole numbers and cents otherwise, which matches `formatPrice` (users/[id] 45–55), the function it replaces. Test data passes `price: 80` as a number, so the parameter accepts one.
+`getMetroAreaById` selects `id, name, state, population` from `metro_areas` with `.eq('id', …).single()`, in the style of `searchMetroAreas` beside it. `formatListingPrice` formats a string only when it matches a US price: an optional `$`, digits with optional thousands separators, and optional cents. So `"$1,200"` stays `"$1,200"`, while `"80,50"`, `"-5"` and `"1e3"` are shown as typed rather than reparsed. It uses whole dollars when the rounded value is whole and cents otherwise, which matches `formatPrice` (users/[id] 45–55), the function it replaces. Test data passes `price: 80` as a number, so the parameter accepts one. *(Tightened in review, `7f1ed61`.)*
 
 - [ ] **Step 1: Write the failing tests.** `metroArea.test.ts`, with the `makeChain` pattern from `follows.test.ts`: selects from `metro_areas` filtered by id and returns the row; a PostgREST error comes back as `error`. `listingAge.test.ts`: active and 80 days since refresh (10 left) is expiring; active with 20 left is not; exactly 14 left is; inactive at 80 days is not. `listingPrice.test.ts`: `80` → `"$80"`, `"80"` → `"$80"`, `"80.5"` → `"$80.50"`, `"$1,200"` → `"$1,200"`, `"Negotiable"` → `"Negotiable"`, `"  "` → `null`, `null` → `null`.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/api/metroArea.test.ts src/logic/marketplace/listingAge.test.ts src/utils/listingPrice.test.ts`
