@@ -848,6 +848,59 @@ describe('PostDetailPage', () => {
     });
   });
 
+  describe('when the write fails before the snapshot arrives', () => {
+    it('lets the snapshot correct a like the server had rejected', async () => {
+      let settleLiked: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserLikedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLiked = resolve;
+        })
+      );
+      postDetailMocks.likePostMock.mockResolvedValue({
+        error: new Error('duplicate key value violates unique constraint'),
+      });
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      // The write fails first this time, with nothing yet to roll back to.
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      await act(async () => {
+        settleLiked({ data: ['post-1'] });
+      });
+
+      expect(screen.getByRole('button', { name: '5 likes' }).getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('lets the snapshot correct a save the server had rejected', async () => {
+      let settleSaved: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserSavedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleSaved = resolve;
+        })
+      );
+      postDetailMocks.savePostMock.mockResolvedValue({
+        error: new Error('duplicate key value violates unique constraint'),
+      });
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+      await act(async () => {
+        settleSaved({ data: ['post-1'] });
+      });
+
+      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+    });
+  });
+
   describe('when the post itself cannot be loaded', () => {
     it('offers a retry instead of claiming the post does not exist', async () => {
       postDetailMocks.getPostByIdMock.mockResolvedValueOnce({ error: new Error('offline') });

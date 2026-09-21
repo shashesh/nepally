@@ -222,7 +222,10 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
         // Put the heart back rather than showing a like the server rejected —
         // back to the snapshot where there is one, because a click made before
         // it landed was a guess, and the server may have rejected the insert
-        // precisely because the member had already liked this post.
+        // precisely because the member had already liked this post. Where the
+        // snapshot has not arrived yet, stand the toggle down so that it can
+        // correct this when it does.
+        likeTouchedRef.current = hydratedLikedRef.current !== null;
         setLiked(hydratedLikedRef.current ?? wasLiked);
         setLikesCount((count) => count + (wasLiked ? 1 : -1));
         notify.error(wasLiked ? 'Could not remove your like.' : 'Could not like this post.');
@@ -248,7 +251,9 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
       if (!viewActiveRef.current) return;
       if (error) {
         // Same reasoning as the like: do not leave the button claiming a state
-        // the server never took, and prefer the snapshot over the guess.
+        // the server never took, prefer the snapshot over the guess, and let a
+        // snapshot still in flight have the last word.
+        saveTouchedRef.current = hydratedSavedRef.current !== null;
         setSaved(hydratedSavedRef.current ?? wasSaved);
         notify.error(wasSaved ? 'Failed to unsave post.' : 'Failed to save post.');
         return;
