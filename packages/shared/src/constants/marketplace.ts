@@ -2,6 +2,7 @@
  * Marketplace domain constants — categories, limits, and display config.
  * Single source of truth for both mobile and web platforms.
  */
+import type { ListingStatus } from '../types/marketplace';
 
 export interface MarketplaceCategoryConfig {
   slug: string;
@@ -66,6 +67,13 @@ export const LISTING_TYPE_LABELS: Record<string, string> = {
 export const ITEM_CONDITION_LABELS: Record<string, string> = {
   new: 'New',
   used: 'Used',
+};
+
+/** Listing status labels for display */
+export const LISTING_STATUS_LABELS: Record<ListingStatus, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  removed: 'Removed',
 };
 
 /** Days of the week for business hours form */

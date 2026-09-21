@@ -1,26 +1,32 @@
 import React from 'react';
 import Image from 'next/image';
+import { VisuallyHidden } from '@mantine/core';
 import {
   formatListingPrice,
   formatRelativeTime,
   getDaysUntilSoftExpiry,
   isListingExpiringSoon,
+  LISTING_STATUS_LABELS,
   pluralize,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { SummaryRow, SummaryRowMeta } from '../ui';
 import styles from './ListingSummaryRow.module.css';
 
-const STATUS_LABELS: Record<MarketplaceListing['status'], string> = {
-  active: 'Active',
-  inactive: 'Inactive',
-  removed: 'Removed',
-};
-
 export interface ListingSummaryRowProps {
   listing: MarketplaceListing;
-  /** The owner's view: status, view/save/contact counts and the expiry warning. */
+  /**
+   * The owner's view: status, view/save/contact counts and the expiry
+   * warning. `now` should come from `useNow()`, like EventSummaryRow's — so
+   * every row agrees on what's stale, and tests can fix it.
+   */
   owner?: { now: Date };
+}
+
+/** "Expires in N days", or a nudge to refresh once there are none left. */
+function formatExpiryWarning(refreshedAt: string, now: Date): string {
+  const daysLeft = getDaysUntilSoftExpiry(refreshedAt, now);
+  return daysLeft === 0 ? 'Refresh to stay visible in search' : `Expires in ${pluralize(daysLeft, 'day')}`;
 }
 
 /**
@@ -34,7 +40,7 @@ export interface ListingSummaryRowProps {
 export function ListingSummaryRow({ listing, owner }: ListingSummaryRowProps) {
   const price = formatListingPrice(listing.price);
   const categoryName = listing.category?.name ?? 'Marketplace';
-  const photo = listing.photos[0];
+  const photo = listing.photos?.[0];
 
   return (
     <SummaryRow
@@ -52,7 +58,8 @@ export function ListingSummaryRow({ listing, owner }: ListingSummaryRowProps) {
       badge={
         owner && (
           <span className={styles.statusChip} data-status={listing.status}>
-            {STATUS_LABELS[listing.status]}
+            <VisuallyHidden>Status: </VisuallyHidden>
+            {LISTING_STATUS_LABELS[listing.status]}
           </span>
         )
       }
@@ -72,7 +79,9 @@ export function ListingSummaryRow({ listing, owner }: ListingSummaryRowProps) {
 
           {isListingExpiringSoon(listing, owner.now) && (
             <SummaryRowMeta>
-              <span>Expires in {pluralize(getDaysUntilSoftExpiry(listing.refreshed_at, owner.now), 'day')}</span>
+              <span className={styles.expiry} data-tone="warning">
+                {formatExpiryWarning(listing.refreshed_at, owner.now)}
+              </span>
             </SummaryRowMeta>
           )}
         </>

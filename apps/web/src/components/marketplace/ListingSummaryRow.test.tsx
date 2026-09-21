@@ -125,8 +125,17 @@ describe('ListingSummaryRow', () => {
   it('shows an image, not the emoji, when there is a photo', () => {
     render(<ListingSummaryRow listing={{ ...baseListing, photos: ['https://cdn.example.com/car.jpg'] }} />);
 
-    expect(screen.getByRole('presentation')).toBeDefined();
+    const image = screen.getByRole('presentation');
+    expect(image).toBeDefined();
+    expect(image.getAttribute('sizes')).toBe('64px');
     expect(screen.queryByText('🍜')).toBeNull();
+  });
+
+  it('shows the category emoji when photos is null, as the DB column allows', () => {
+    render(<ListingSummaryRow listing={{ ...baseListing, photos: null as unknown as string[] }} />);
+
+    expect(screen.getByText('🍜')).toBeDefined();
+    expect(screen.queryByRole('presentation')).toBeNull();
   });
 
   describe('public view', () => {
@@ -152,15 +161,26 @@ describe('ListingSummaryRow', () => {
       render(<ListingSummaryRow listing={baseListing} />);
 
       expect(screen.queryByText('12 views')).toBeNull();
+      expect(screen.queryByText('3 saves')).toBeNull();
+      expect(screen.queryByText('1 contact')).toBeNull();
     });
   });
 
   describe('owner view', () => {
-    it('shows the Active status', () => {
+    it('links the title, and only the title, to the listing, with the status chip present', () => {
+      render(<ListingSummaryRow listing={baseListing} owner={{ now }} />);
+
+      const link = screen.getByRole('link', { name: 'Toyota Camry 2015' });
+      expect(link.getAttribute('href')).toBe('/marketplace/listing/listing-1');
+      expect(screen.getAllByRole('link')).toHaveLength(1);
+    });
+
+    it('shows the Active status, with a visually hidden "Status:" label for screen readers', () => {
       render(<ListingSummaryRow listing={baseListing} owner={{ now }} />);
 
       const chip = screen.getByText('Active');
       expect(chip.getAttribute('data-status')).toBe('active');
+      expect(chip.textContent).toBe('Status: Active');
     });
 
     it('shows the Inactive status', () => {
@@ -168,6 +188,7 @@ describe('ListingSummaryRow', () => {
 
       const chip = screen.getByText('Inactive');
       expect(chip.getAttribute('data-status')).toBe('inactive');
+      expect(chip.textContent).toBe('Status: Inactive');
     });
 
     it('shows the Removed status', () => {
@@ -175,6 +196,7 @@ describe('ListingSummaryRow', () => {
 
       const chip = screen.getByText('Removed');
       expect(chip.getAttribute('data-status')).toBe('removed');
+      expect(chip.textContent).toBe('Status: Removed');
     });
 
     it('shows views, saves and contacts, each on its own', () => {
@@ -202,7 +224,8 @@ describe('ListingSummaryRow', () => {
         <ListingSummaryRow listing={{ ...baseListing, refreshed_at: refreshedAt80DaysAgo }} owner={{ now }} />
       );
 
-      expect(screen.getByText('Expires in 10 days')).toBeDefined();
+      const warning = screen.getByText('Expires in 10 days');
+      expect(warning.getAttribute('data-tone')).toBe('warning');
     });
 
     it('singularises "Expires in 1 day"', () => {
@@ -212,6 +235,17 @@ describe('ListingSummaryRow', () => {
       );
 
       expect(screen.getByText('Expires in 1 day')).toBeDefined();
+    });
+
+    it('nudges to refresh instead of "Expires in 0 days" once the soft expiry has passed', () => {
+      const refreshedAt120DaysAgo = new Date(now.getTime() - 120 * MS_PER_DAY).toISOString();
+      render(
+        <ListingSummaryRow listing={{ ...baseListing, refreshed_at: refreshedAt120DaysAgo }} owner={{ now }} />
+      );
+
+      const warning = screen.getByText('Refresh to stay visible in search');
+      expect(warning.getAttribute('data-tone')).toBe('warning');
+      expect(screen.queryByText(/Expires in 0 days/)).toBeNull();
     });
 
     it('shows no expiry warning for a listing refreshed recently', () => {

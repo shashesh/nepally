@@ -17,7 +17,10 @@ export interface SummaryRowProps {
   /**
    * Before the text, e.g. a thumbnail. Outside the link, and — like `badge`
    * and `children` — below the link's overlay, so it isn't independently
-   * clickable; clicking it opens the row's link.
+   * clickable; clicking it opens the row's link. It comes before the link in
+   * document order, so even positioned content here (e.g. a `next/image`
+   * with `fill`) still paints under the overlay — the one slot where that's
+   * safe.
    */
   leading?: ReactNode;
   /** Beside the row, above the link's overlay, e.g. an ActionMenu. A falsy value renders no slot. */
