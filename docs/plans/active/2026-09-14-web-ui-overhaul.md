@@ -11623,7 +11623,15 @@ Work on `feat/web-ui-create-flows`, branched from `master` at `4f6b96d`. Same co
 
 **One chip component, three call sites.** Post tags, event types and marketplace categories are the same control three times: a labelled group of toggle chips, multi-select with a cap in one case and single-select in the other two. Task 5.4 builds `ToggleChipGroup` once in `components/ui/` rather than three near-identical selectors, and PR 7's event filters and PR 8's marketplace filters inherit it.
 
-**Where the pages land.** The definition of done asks for roughly 350 lines a page. After this PR: marketplace/create about 300 (from 483), events/create about 330 (from 599), and posts/create about 390 (from 760). posts/create stays above the line because it is one form with two submit paths and an edit-mode loader; Task 5.5 lifts both submit paths into `lib/postSubmit.ts`, which is the real duplication, and splitting the remaining JSX would scatter one screen across files for no reader's benefit. Recorded here as a deliberate deviation.
+**Where the pages land.** The definition of done asks for roughly 350 lines a page. Measured after Task 5.13:
+
+| Page | Before | After | Under ~350? |
+|---|---|---|---|
+| `pages/marketplace/create.page.tsx` | 483 | 332 | yes |
+| `pages/posts/create.page.tsx` | 760 | 431 | no |
+| `pages/events/create.page.tsx` | 599 | 448 | no |
+
+Two miss, and both are deliberate. What is left on each is one form, its edit-mode loader and its submit path — not inline sub-components. Every repeated piece has already been extracted: the photo picker, the chip group and the date pair are components, and create post's two submit branches are pure functions in `lib/postSubmit.ts`. Splitting what remains would mean cutting a single screen's JSX across files, which costs a reader more than it saves. `events/create` is the larger of the two because it carries a nine-field form plus the local-to-ISO date conversion its API needs.
 
 ### Task 5.1: Install `@mantine/dropzone` and build `ImageUploader`
 
