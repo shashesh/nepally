@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button } from '@mantine/core';
 import {
   formatPublicName,
+  getFirstName,
   LANGUAGE_LABELS,
   HELPER_SCORE_VISIBILITY_THRESHOLD,
   pluralize,
@@ -64,7 +65,7 @@ export function PublicProfileHeader({
   onMessage,
 }: PublicProfileHeaderProps) {
   const publicName = formatPublicName(profileUser.full_name);
-  const firstName = profileUser.full_name.trim().split(/\s+/)[0] ?? profileUser.full_name;
+  const firstName = getFirstName(profileUser.full_name);
   const memberSinceYear = new Date(profileUser.created_at).getFullYear();
 
   const baseMessageLabel = viewerId ? `Message ${publicName}` : 'Sign in to message';
@@ -75,12 +76,20 @@ export function PublicProfileHeader({
   const showHelperBadge = typeof helperScore === 'number' && helperScore >= HELPER_SCORE_VISIBILITY_THRESHOLD;
 
   return (
-    <div className={styles.root}>
+    <div>
       <div className={styles.banner} aria-hidden="true" />
 
       <div className={styles.card}>
         <div className={styles.cardTop}>
-          <Avatar name={publicName} photoUrl={profileUser.profile_photo} size="xlarge" />
+          <span className={styles.avatarRing}>
+            <Avatar
+              name={publicName}
+              photoUrl={profileUser.profile_photo}
+              size="xlarge"
+              toneKey={profileUser.full_name}
+              decorative
+            />
+          </span>
           <div className={styles.identity}>
             <h1 className={styles.displayName}>{publicName}</h1>
             <TrustBadge level={profileUser.trust_level} />
@@ -102,7 +111,7 @@ export function PublicProfileHeader({
             </p>
           ) : null}
 
-          <div className={styles.statsRow}>
+          <div className={styles.statsRow} data-testid="profile-stats">
             {metroName && (
               <>
                 <span>{metroName}</span>
@@ -126,7 +135,11 @@ export function PublicProfileHeader({
           </div>
 
           {chips.length > 0 && (
-            <ul className={styles.chipRow} aria-label={`About ${firstName}`}>
+            <ul
+              className={styles.chipRow}
+              role="list"
+              aria-label={firstName ? `About ${firstName}` : undefined}
+            >
               {chips.map((chip) => (
                 <li key={chip.key} className={styles.chip}>
                   {chip.label}
@@ -158,8 +171,8 @@ export function PublicProfileHeader({
                 variant="filled"
                 radius="var(--radius-full)"
                 className={styles.ctaButton}
-                onClick={onMessage}
-                disabled={messaging}
+                aria-disabled={messaging || undefined}
+                onClick={messaging ? undefined : onMessage}
               >
                 {messageLabel}
               </Button>

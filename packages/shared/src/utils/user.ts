@@ -35,6 +35,15 @@ export function formatPublicName(fullName: string): string {
 }
 
 /**
+ * The first word of a full name, for casual references ("Bikal hasn't posted
+ * anything yet"). Returns '' for a blank name.
+ */
+export function getFirstName(fullName: string): string {
+  if (!fullName || !fullName.trim()) return '';
+  return fullName.trim().split(/\s+/)[0];
+}
+
+/**
  * Initials for avatar placeholders: first + last word initials, or the first two
  * letters of a single word. "?" when the name is blank.
  *

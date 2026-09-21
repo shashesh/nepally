@@ -1,8 +1,8 @@
 import React from 'react';
 import type { PublicUser } from '@nepally/shared';
 import { HELPER_SCORE_VISIBILITY_THRESHOLD } from '@nepally/shared';
-import { render, screen, fireEvent } from '../../test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent, within } from '../../test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PublicProfileHeader, type PublicProfileHeaderProps } from './PublicProfileHeader';
 
 vi.mock('next/link', () => ({
@@ -16,9 +16,15 @@ vi.mock('next/link', () => ({
 
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
+const mocks = vi.hoisted(() => ({ followButtonSpy: vi.fn() }));
+
 vi.mock('./FollowButton', () => ({
-  FollowButton: ({ viewerId }: { viewerId: string | null; targetUserId: string }) =>
-    viewerId ? React.createElement('button', { type: 'button', 'data-testid': 'follow-button' }, 'Follow') : null,
+  FollowButton: (props: { viewerId: string | null; targetUserId: string }) => {
+    mocks.followButtonSpy(props);
+    return props.viewerId
+      ? React.createElement('button', { type: 'button', 'data-testid': 'follow-button' }, 'Follow')
+      : null;
+  },
 }));
 
 const baseUser: PublicUser = {
@@ -59,6 +65,10 @@ function renderHeader(overrides: Partial<PublicProfileHeaderProps> = {}) {
 }
 
 describe('PublicProfileHeader', () => {
+  beforeEach(() => {
+    mocks.followButtonSpy.mockClear();
+  });
+
   // ─── Identity ──────────────────────────────────────────────────────────────
 
   it('renders the public name as the only h1', () => {
@@ -93,7 +103,7 @@ describe('PublicProfileHeader', () => {
   });
 
   it('hides the new-member hint at level 0 on your own profile', () => {
-    renderHeader({ profileUser: { ...baseUser, trust_level: 0 }, isOwnProfile: true });
+    renderHeader({ profileUser: { ...baseUser, trust_level: 0 }, isOwnProfile: true, viewerId: baseUser.id });
     expect(screen.queryByText(/New to Nepally/i)).toBeNull();
   });
 
@@ -110,9 +120,9 @@ describe('PublicProfileHeader', () => {
   });
 
   it('shows "Add a short bio" linking to /profile on your own profile when bio is empty', () => {
-    renderHeader({ profileUser: { ...baseUser, bio: null }, isOwnProfile: true });
-    const link = screen.getByText(/Add a short bio/i).closest('a');
-    expect(link?.getAttribute('href')).toBe('/profile');
+    renderHeader({ profileUser: { ...baseUser, bio: null }, isOwnProfile: true, viewerId: baseUser.id });
+    const link = screen.getByRole('link', { name: /Add a short bio/i });
+    expect(link.getAttribute('href')).toBe('/profile');
   });
 
   it('does not show "Add a short bio" on another user’s profile', () => {
@@ -121,7 +131,7 @@ describe('PublicProfileHeader', () => {
   });
 
   it('does not show "Add a short bio" on your own profile once a bio is set', () => {
-    renderHeader({ profileUser: { ...baseUser, bio: 'Hi there.' }, isOwnProfile: true });
+    renderHeader({ profileUser: { ...baseUser, bio: 'Hi there.' }, isOwnProfile: true, viewerId: baseUser.id });
     expect(screen.queryByText(/Add a short bio/i)).toBeNull();
   });
 
@@ -137,11 +147,24 @@ describe('PublicProfileHeader', () => {
     expect(screen.getByRole('button', { name: /Sign in to message/i })).toBeDefined();
   });
 
-  it('shows "Opening conversation…" and disables the button while messaging', () => {
+  it('shows "Opening conversation…" while busy, without a signed-out label', () => {
+    renderHeader({ viewerId: null, isOwnProfile: false, messaging: true });
+    expect(screen.getByRole('button', { name: /Opening conversation/i })).toBeDefined();
+    expect(screen.queryByRole('button', { name: /Sign in to message/i })).toBeNull();
+  });
+
+  it('keeps the message button focusable while busy (aria-disabled, not native disabled)', () => {
     renderHeader({ viewerId: 'viewer-1', isOwnProfile: false, messaging: true });
-    const button = screen.getByText(/Opening conversation/i).closest('button');
-    expect(button).not.toBeNull();
-    expect((button as HTMLButtonElement).disabled).toBe(true);
+    const button = screen.getByRole('button', { name: /Opening conversation/i });
+    expect(button.hasAttribute('disabled')).toBe(false);
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('does not call onMessage when clicked while busy', () => {
+    const onMessage = vi.fn();
+    renderHeader({ viewerId: 'viewer-1', isOwnProfile: false, messaging: true, onMessage });
+    fireEvent.click(screen.getByRole('button', { name: /Opening conversation/i }));
+    expect(onMessage).not.toHaveBeenCalled();
   });
 
   it('calls onMessage when the message button is clicked', () => {
@@ -154,10 +177,15 @@ describe('PublicProfileHeader', () => {
   // ─── Edit profile (own profile) ─────────────────────────────────────────────
 
   it('shows an Edit profile link to /profile on your own profile, and no message button', () => {
-    renderHeader({ isOwnProfile: true });
-    const link = screen.getByText(/Edit profile/i).closest('a');
-    expect(link?.getAttribute('href')).toBe('/profile');
+    renderHeader({ isOwnProfile: true, viewerId: baseUser.id });
+    const link = screen.getByRole('link', { name: 'Edit profile' });
+    expect(link.getAttribute('href')).toBe('/profile');
     expect(screen.queryByRole('button', { name: /Message/i })).toBeNull();
+  });
+
+  it('does not show an Edit profile link on someone else’s profile', () => {
+    renderHeader({ isOwnProfile: false });
+    expect(screen.queryByRole('link', { name: /Edit profile/i })).toBeNull();
   });
 
   // ─── Follower / following counts ────────────────────────────────────────────
@@ -176,14 +204,17 @@ describe('PublicProfileHeader', () => {
     expect(screen.queryByText(/1 followings/)).toBeNull();
   });
 
-  it('renders the follow control for another profile when signed in', () => {
+  it('renders the follow control for another profile when signed in, targeting the profile user', () => {
     renderHeader({ viewerId: 'viewer-1', isOwnProfile: false });
     expect(screen.getByTestId('follow-button')).toBeDefined();
+    expect(mocks.followButtonSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ viewerId: 'viewer-1', targetUserId: 'profile-user' })
+    );
   });
 
   // ─── Identity chips ──────────────────────────────────────────────────────────
 
-  it('renders identity chips only for the fields that are set', () => {
+  it('renders identity chips only for the fields that are set, with an accessible list name', () => {
     renderHeader({
       profileUser: {
         ...baseUser,
@@ -193,11 +224,12 @@ describe('PublicProfileHeader', () => {
         languages: ['nepali', 'newari'],
       },
     });
-    expect(screen.getByText('Pokhara')).toBeDefined();
-    expect(screen.getByText('Pulchowk')).toBeDefined();
-    expect(screen.getByText('6 years in US')).toBeDefined();
-    expect(screen.getByText('Nepali')).toBeDefined();
-    expect(screen.getByText('Newari')).toBeDefined();
+    const list = screen.getByRole('list', { name: 'About Bikal' });
+    expect(within(list).getByText('Pokhara')).toBeDefined();
+    expect(within(list).getByText('Pulchowk')).toBeDefined();
+    expect(within(list).getByText('6 years in US')).toBeDefined();
+    expect(within(list).getByText('Nepali')).toBeDefined();
+    expect(within(list).getByText('Newari')).toBeDefined();
   });
 
   it('singularises a lone year in US', () => {
@@ -216,6 +248,22 @@ describe('PublicProfileHeader', () => {
       },
     });
     expect(screen.queryByRole('list')).toBeNull();
+  });
+
+  // ─── Stats row (metro + member-since) ───────────────────────────────────────
+
+  it('shows the metro name alongside the joined year when metroName is set', () => {
+    renderHeader({ metroName: 'Dallas-Fort Worth, TX' });
+    const stats = within(screen.getByTestId('profile-stats'));
+    expect(stats.getByText('Dallas-Fort Worth, TX')).toBeDefined();
+    expect(stats.getByText(/Joined 2024/)).toBeDefined();
+  });
+
+  it('omits the metro name and its separator when metroName is null', () => {
+    renderHeader({ metroName: null });
+    const stats = within(screen.getByTestId('profile-stats'));
+    expect(stats.getByText(/Joined 2024/)).toBeDefined();
+    expect(stats.queryByText('·')).toBeNull();
   });
 
   // ─── Helper badge ────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 import React from 'react';
+import { getAvatarToneIndex } from '@nepally/shared';
 import { render, screen } from '../test-utils';
 import { describe, expect, it } from 'vitest';
 import Avatar from './Avatar';
@@ -26,5 +27,36 @@ describe('Avatar', () => {
     expect(screen.queryByTestId('verified-mark')).toBeNull();
     rerender(<Avatar name="Sita Gurung" trustLevel={2} />);
     expect(screen.queryByTestId('verified-mark')).toBeNull();
+  });
+
+  it('uses toneKey instead of name to choose the placeholder tone when provided', () => {
+    const nameA = 'Sunita Karki';
+    const nameB = 'Bibek Thapa';
+    // Guard the fixture itself: the assertion below is only meaningful if these
+    // two names really do hash to different tones.
+    expect(getAvatarToneIndex(nameA, 8)).not.toBe(getAvatarToneIndex(nameB, 8));
+
+    const { container: baseline } = render(<Avatar name={nameA} />);
+    const { container: overridden } = render(<Avatar name={nameB} toneKey={nameA} />);
+
+    const baselineTone = baseline.querySelector('[class*="tone"]')?.className;
+    const overriddenTone = overridden.querySelector('[class*="tone"]')?.className;
+
+    expect(baselineTone).toBeTruthy();
+    // Different `name`, but the same toneKey as the baseline — same tone class.
+    expect(overriddenTone).toBe(baselineTone);
+  });
+
+  it('hides the avatar from assistive tech and clears alt text when decorative', () => {
+    const { container } = render(
+      <Avatar name="Sita Gurung" photoUrl="https://example.com/photo.jpg" decorative />
+    );
+    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(container.querySelector('img')?.getAttribute('alt')).toBe('');
+  });
+
+  it('still renders initials visually when decorative and there is no photo', () => {
+    render(<Avatar name="Sita Gurung" photoUrl={null} decorative />);
+    expect(screen.getByText('SG')).toBeDefined();
   });
 });

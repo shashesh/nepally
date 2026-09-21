@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPublicName, getAvatarToneIndex, getInitials, getTrustLabel } from './user';
+import { formatPublicName, getAvatarToneIndex, getFirstName, getInitials, getTrustLabel } from './user';
 import { TrustLevel } from '../constants/trustLevels';
 
 describe('formatPublicName', () => {
@@ -25,6 +25,25 @@ describe('formatPublicName', () => {
 
   it('uppercases the last initial', () => {
     expect(formatPublicName('anjali sharma')).toBe('anjali S.');
+  });
+});
+
+describe('getFirstName', () => {
+  it('returns the first word of a multi-word name', () => {
+    expect(getFirstName('Bikal Shrestha')).toBe('Bikal');
+  });
+
+  it('returns the whole name when only one word is given', () => {
+    expect(getFirstName('Ramesh')).toBe('Ramesh');
+  });
+
+  it('returns empty string for a blank name', () => {
+    expect(getFirstName('')).toBe('');
+    expect(getFirstName('   ')).toBe('');
+  });
+
+  it('handles extra whitespace gracefully', () => {
+    expect(getFirstName('  Hari  Prasad  ')).toBe('Hari');
   });
 });
 

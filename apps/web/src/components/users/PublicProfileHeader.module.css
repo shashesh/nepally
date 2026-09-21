@@ -8,8 +8,8 @@
 
 .banner {
   height: 140px;
-  background: linear-gradient(135deg, var(--action-bg) 0%, var(--accent) 100%);
-  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  background: var(--action-bg);
+  border-radius: var(--radius-card);
 }
 
 /* ── Card (overlaps banner) ──────────────────── */
@@ -18,17 +18,25 @@
   background: var(--surface-1);
   border: 1px solid var(--border-solid);
   border-radius: var(--radius-card);
-  margin: calc(-1 * var(--space-7)) var(--space-3) 0;
-  padding: 0 var(--space-4) var(--space-4);
+  margin: calc(-1 * var(--space-7)) var(--space-4) 0;
+  padding: 0 var(--card-padding) var(--card-padding);
   position: relative;
 }
 
 .cardTop {
   display: flex;
   align-items: flex-end;
-  gap: var(--space-3);
+  gap: var(--space-4);
   transform: translateY(calc(-1 * var(--space-5)));
   margin-bottom: calc(-1 * var(--space-2));
+}
+
+/* ── Avatar ring (matches the surface, sits over the banner) ─ */
+
+.avatarRing {
+  display: inline-flex;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 4px var(--surface-1);
 }
 
 /* ── Identity (name + trust badge, beside avatar) ─ */
@@ -44,7 +52,7 @@
 .displayName {
   font-family: var(--font-display);
   font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-regular);
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-tight);
   color: var(--text-1);
@@ -99,7 +107,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1) var(--space-3);
+  gap: var(--space-1) var(--space-4);
   font-size: var(--font-size-sm);
   color: var(--text-3);
   padding-top: var(--space-1);
@@ -109,13 +117,17 @@
 
 .socialRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+  row-gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .followCount {
   font-size: var(--font-size-sm);
   color: var(--text-2);
+  white-space: nowrap;
 }
 
 .dot {
@@ -130,7 +142,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
-  margin: 0;
+  margin: var(--space-1) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -166,15 +178,14 @@
 
 /* ── Responsive ───────────────────────────────── */
 
-@media (max-width: 640px) {
+@media (max-width: $mantine-breakpoint-sm) {
   .banner {
     height: 100px;
-    border-radius: 0;
   }
 
   .card {
     margin: calc(-1 * var(--space-6)) var(--space-2) 0;
-    padding: 0 var(--space-3) var(--space-3);
+    padding: 0 var(--space-4) var(--space-4);
   }
 
   .cardTop {
@@ -188,12 +199,5 @@
 
   .ctaButton {
     width: 100%;
-    justify-content: center;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card {
-    transition: none;
   }
 }
