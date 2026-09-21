@@ -35,6 +35,7 @@
 
 .avatarRing {
   display: inline-flex;
+  flex-shrink: 0;
   border-radius: var(--radius-full);
   box-shadow: 0 0 0 4px var(--surface-1);
 }
@@ -130,6 +131,15 @@
   white-space: nowrap;
 }
 
+/* A count/dot/count (or metro/dot) trio that moves down as one unit when the
+   row wraps, instead of stranding the dot on its own line. */
+.counts {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+
 .dot {
   color: var(--text-3);
   opacity: 0.6;
@@ -178,7 +188,7 @@
 
 /* ── Responsive ───────────────────────────────── */
 
-@media (max-width: $mantine-breakpoint-sm) {
+@mixin smaller-than $mantine-breakpoint-sm {
   .banner {
     height: 100px;
   }

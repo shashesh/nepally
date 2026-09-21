@@ -111,26 +111,28 @@ export function PublicProfileHeader({
             </p>
           ) : null}
 
-          <div className={styles.statsRow} data-testid="profile-stats">
+          <div className={styles.statsRow} aria-label="Location and membership">
             {metroName && (
-              <>
+              <span className={styles.counts}>
                 <span>{metroName}</span>
                 <span className={styles.dot} aria-hidden="true">
                   &middot;
                 </span>
-              </>
+              </span>
             )}
             <span>Joined {memberSinceYear}</span>
           </div>
 
           <div className={styles.socialRow}>
             <FollowButton supabase={supabase} viewerId={viewerId} targetUserId={profileUser.id} />
-            <span className={styles.followCount}>{pluralize(profileUser.follower_count ?? 0, 'follower')}</span>
-            <span className={styles.dot} aria-hidden="true">
-              &middot;
-            </span>
-            <span className={styles.followCount}>
-              {pluralize(profileUser.following_count ?? 0, 'following', 'following')}
+            <span className={styles.counts}>
+              <span className={styles.followCount}>{pluralize(profileUser.follower_count ?? 0, 'follower')}</span>
+              <span className={styles.dot} aria-hidden="true">
+                &middot;
+              </span>
+              <span className={styles.followCount}>
+                {pluralize(profileUser.following_count ?? 0, 'following', 'following')}
+              </span>
             </span>
           </div>
 

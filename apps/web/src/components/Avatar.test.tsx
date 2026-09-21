@@ -51,8 +51,11 @@ describe('Avatar', () => {
     const { container } = render(
       <Avatar name="Sita Gurung" photoUrl="https://example.com/photo.jpg" decorative />
     );
-    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
-    expect(container.querySelector('img')?.getAttribute('alt')).toBe('');
+    const img = container.querySelector('img');
+    expect(img?.getAttribute('alt')).toBe('');
+    // Walk up from the img to Avatar's own root span — MantineProvider/ModalsProvider
+    // inject their own nodes ahead of it in `container`, so `firstElementChild` isn't it.
+    expect(img?.closest('span')?.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('still renders initials visually when decorative and there is no photo', () => {

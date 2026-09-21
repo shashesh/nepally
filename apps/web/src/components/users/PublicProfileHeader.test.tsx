@@ -254,16 +254,24 @@ describe('PublicProfileHeader', () => {
 
   it('shows the metro name alongside the joined year when metroName is set', () => {
     renderHeader({ metroName: 'Dallas-Fort Worth, TX' });
-    const stats = within(screen.getByTestId('profile-stats'));
+    const stats = within(screen.getByLabelText('Location and membership'));
     expect(stats.getByText('Dallas-Fort Worth, TX')).toBeDefined();
     expect(stats.getByText(/Joined 2024/)).toBeDefined();
   });
 
   it('omits the metro name and its separator when metroName is null', () => {
     renderHeader({ metroName: null });
-    const stats = within(screen.getByTestId('profile-stats'));
+    const stats = within(screen.getByLabelText('Location and membership'));
     expect(stats.getByText(/Joined 2024/)).toBeDefined();
     expect(stats.queryByText('·')).toBeNull();
+  });
+
+  // ─── Avatar mode ─────────────────────────────────────────────────────────────
+
+  it('renders the avatar as decorative: no element (or img alt) named after the person', () => {
+    renderHeader({ profileUser: { ...baseUser, profile_photo: 'https://example.com/photo.jpg' } });
+    expect(screen.queryByAltText(/Bikal S\.'s avatar/i)).toBeNull();
+    expect(screen.queryByRole('img')).toBeNull();
   });
 
   // ─── Helper badge ────────────────────────────────────────────────────────────
