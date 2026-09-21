@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { getPostsByAuthorId, getSavedPostsByUserId, getListingsByOwner, unsavePost } from '@nepally/shared';
 import type { Post, MarketplaceListing } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
-import { useUserList, PROFILE_LIST_LIMIT } from './useUserList';
+import { useUserList } from './useUserList';
 import type { ListFetcher, ListResource } from './useUserList';
 
 export type { ListState, ListResource } from './useUserList';
+
+// Row limit for the profile page's own lists. Kept here rather than in the
+// generic useUserList helper: PR 10's public-profile events list needs 50,
+// so the helper stays limit-agnostic and each caller bakes its own limit
+// into the fetcher it passes in.
+const PROFILE_LIST_LIMIT = 30;
 
 // includeOwnPending: this is the viewer's own profile, so a pending
 // Emergency post they submitted should still show up while it waits.
@@ -38,6 +44,9 @@ export function useOwnProfileContent(userId: string | null): OwnProfileContent {
   const savedList = useUserList(userId, fetchSavedPosts, 'Failed to load saved posts');
   const listings = useUserList(userId, fetchOwnListings, 'Failed to load your listings');
 
+  // Ids stay hidden for the life of the mount: a later fetch can't tell a
+  // stale read from a re-save, and hiding an id that's no longer in the
+  // list is a no-op.
   const [hiddenSavedIds, setHiddenSavedIds] = useState<ReadonlySet<string>>(() => new Set());
 
   // A different user: the veil only ever hid this user's own saved posts,
@@ -53,7 +62,7 @@ export function useOwnProfileContent(userId: string | null): OwnProfileContent {
       ? savedList
       : { ...savedList, items: savedList.items.filter((post) => !hiddenSavedIds.has(post.id)) };
 
-  async function unsave(postId: string): Promise<{ error?: Error }> {
+  const unsave = useCallback(async (postId: string): Promise<{ error?: Error }> => {
     setHiddenSavedIds((previous) => new Set(previous).add(postId));
 
     const result = await unsavePost(supabase, postId);
@@ -71,7 +80,7 @@ export function useOwnProfileContent(userId: string | null): OwnProfileContent {
     }
 
     return result;
-  }
+  }, []);
 
   return { posts, saved, listings, unsave };
 }

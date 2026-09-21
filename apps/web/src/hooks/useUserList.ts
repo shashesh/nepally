@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-
-/** Shared row limit for the profile page's user-scoped lists. */
-export const PROFILE_LIST_LIMIT = 30;
 
 export interface ListState<T> {
   items: T[];
@@ -28,6 +25,8 @@ function startState<T>(userId: string | null): ListState<T> {
 /**
  * Loads one user-scoped list — a member's own posts, saved posts, or
  * listings — with its own loading/error state and a `reload` escape hatch.
+ * The row limit is baked into `fetchList` by the caller, so this helper
+ * stays limit-agnostic (different lists need different limits).
  *
  * Mirrors usePublicProfile's pattern: state resets during render when
  * `userId` changes (react.dev "Adjusting some state when a prop changes"),
@@ -79,10 +78,13 @@ export function useUserList<T>(
     };
   }, [userId, attempt, fetchList, fallbackError]);
 
-  function reload(): void {
+  const reload = useCallback((): void => {
+    // Without a user there's nothing to fetch, and the effect above bails
+    // out too, so loading would flip on and never come back off.
+    if (!userId) return;
     setState((previous) => ({ ...previous, loading: true, error: null }));
     setAttempt((count) => count + 1);
-  }
+  }, [userId]);
 
   return { ...state, reload };
 }

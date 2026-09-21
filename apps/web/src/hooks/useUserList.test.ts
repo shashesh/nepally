@@ -42,6 +42,19 @@ describe('useUserList', () => {
     expect(fetchList).not.toHaveBeenCalled();
   });
 
+  it('reload does nothing when there is no user', () => {
+    const { result } = renderHook(() =>
+      useUserList<Item>(null, fetchList as ListFetcher<Item>, FALLBACK)
+    );
+
+    act(() => result.current.reload());
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.items).toEqual([]);
+    expect(result.current.error).toBeNull();
+    expect(fetchList).not.toHaveBeenCalled();
+  });
+
   it('loads items on success', async () => {
     const { result } = renderHook(() =>
       useUserList<Item>('user-1', fetchList as ListFetcher<Item>, FALLBACK)

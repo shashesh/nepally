@@ -127,7 +127,7 @@ describe('useOwnProfileContent', () => {
     expect(result.current.saved.items).toEqual(mockSaved);
   });
 
-  it('a failed unsave after a userId change does not resurrect anything', async () => {
+  it('a user change un-hides a post the previous user was unsaving', async () => {
     let resolveUnsave: (value: { error?: Error }) => void = () => {};
     mocks.unsavePost.mockReturnValue(
       new Promise((resolve) => {
@@ -147,18 +147,41 @@ describe('useOwnProfileContent', () => {
     });
     expect(result.current.saved.items).toEqual(savedWithoutTwo);
 
-    // Switch users before the delete resolves — the veil resets for the new user.
-    const savedB = [{ id: 'saved-b-1', title: "B's saved post" }];
+    // Switch users before the delete resolves. B's own saved list happens to
+    // reuse the id 'saved-2' for an unrelated post — the veil resetting for
+    // the new user is what keeps that post visible.
+    const savedB = [
+      { id: 'saved-b-1', title: "B's saved post" },
+      { id: 'saved-2', title: "B's other saved post" },
+    ];
     mocks.getSavedPostsByUserId.mockResolvedValue({ data: savedB });
     rerender({ id: 'user-b' });
 
     await waitFor(() => expect(result.current.saved.items).toEqual(savedB));
+    expect(result.current.saved.items.map((post) => post.id)).toContain('saved-2');
 
+    // A's unsave finally succeeds after the switch; it must not hide B's
+    // post that happens to share the id.
     await act(async () => {
-      resolveUnsave({ error: new Error('delete failed') });
+      resolveUnsave({});
       await unsavePromise;
     });
 
     expect(result.current.saved.items).toEqual(savedB);
+  });
+
+  // ─── composed: one list's failure doesn't affect the others ────────────
+
+  it('a listings failure falls back to a message and leaves posts and saved unaffected', async () => {
+    mocks.getListingsByOwner.mockResolvedValue({ error: new Error('') });
+    const { result } = renderHook(() => useOwnProfileContent('user-1'));
+
+    await waitFor(() => expect(result.current.listings.error).toBe('Failed to load your listings'));
+    expect(result.current.listings.items).toEqual([]);
+
+    await waitFor(() => expect(result.current.posts.items).toEqual(mockPosts));
+    await waitFor(() => expect(result.current.saved.items).toEqual(mockSaved));
+    expect(result.current.posts.error).toBeNull();
+    expect(result.current.saved.error).toBeNull();
   });
 });
