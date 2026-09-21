@@ -1,38 +1,26 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../../test-utils';
+import { render, screen, fireEvent, waitFor, act, within } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
 
-const profilePageMocks = vi.hoisted(() => {
-  const supabaseSingleMock = vi.fn();
-  const supabaseEqMock = vi.fn(() => ({ single: supabaseSingleMock }));
-  const supabaseSelectMock = vi.fn(() => ({ eq: supabaseEqMock }));
-  const supabaseFromMock = vi.fn(() => ({ select: supabaseSelectMock }));
-
-  return {
-    useAuthMock: vi.fn(),
-    useRouterMock: vi.fn(),
-    getUserByIdMock: vi.fn(),
-    getPostsByAuthorIdMock: vi.fn(),
-    getEventsByOrganizerMock: vi.fn(),
-    getActiveListingsBySellerMock: vi.fn(),
-    getOrCreateConversationMock: vi.fn(),
-    isFollowingMock: vi.fn(),
-    getHelperScoreMock: vi.fn(),
-    formatRelativeTimeMock: vi.fn(),
-    supabaseSingleMock,
-    supabaseEqMock,
-    supabaseSelectMock,
-    supabaseFromMock,
-  };
-});
+const profilePageMocks = vi.hoisted(() => ({
+  useAuthMock: vi.fn(),
+  useRouterMock: vi.fn(),
+  getUserByIdMock: vi.fn(),
+  getPostsByAuthorIdMock: vi.fn(),
+  getEventsByOrganizerMock: vi.fn(),
+  getActiveListingsBySellerMock: vi.fn(),
+  getOrCreateConversationMock: vi.fn(),
+  isFollowingMock: vi.fn(),
+  getHelperScoreMock: vi.fn(),
+  getMetroAreaByIdMock: vi.fn(),
+  formatRelativeTimeMock: vi.fn(),
+}));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: profilePageMocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: profilePageMocks.useRouterMock }));
-vi.mock('../../lib/supabase', () => ({
-  supabase: { from: profilePageMocks.supabaseFromMock },
-}));
+vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<object>('@nepally/shared');
   return {
@@ -44,6 +32,7 @@ vi.mock('@nepally/shared', async () => {
     getOrCreateConversation: profilePageMocks.getOrCreateConversationMock,
     isFollowing: profilePageMocks.isFollowingMock,
     getHelperScore: profilePageMocks.getHelperScoreMock,
+    getMetroAreaById: profilePageMocks.getMetroAreaByIdMock,
     HELPER_SCORE_VISIBILITY_THRESHOLD: 10,
     formatRelativeTime: profilePageMocks.formatRelativeTimeMock,
   };
@@ -154,18 +143,8 @@ describe('PublicProfilePage', () => {
     profilePageMocks.getHelperScoreMock.mockResolvedValue({
       data: { userId: 'profile-user', helperScore: 0, helpfulComments: 0, likesReceivedOnOwnPosts: 0 },
     });
-    // Wire up supabase chain for metro area query
-    profilePageMocks.supabaseSingleMock.mockResolvedValue({
-      data: { name: 'Dallas-Fort Worth', state: 'TX' },
-    });
-    profilePageMocks.supabaseEqMock.mockReturnValue({
-      single: profilePageMocks.supabaseSingleMock,
-    });
-    profilePageMocks.supabaseSelectMock.mockReturnValue({
-      eq: profilePageMocks.supabaseEqMock,
-    });
-    profilePageMocks.supabaseFromMock.mockReturnValue({
-      select: profilePageMocks.supabaseSelectMock,
+    profilePageMocks.getMetroAreaByIdMock.mockResolvedValue({
+      data: { id: '19100', name: 'Dallas-Fort Worth', state: 'TX', population: 7000000 },
     });
   });
 
@@ -176,7 +155,22 @@ describe('PublicProfilePage', () => {
     profilePageMocks.getPostsByAuthorIdMock.mockReturnValue(new Promise(() => {}));
     profilePageMocks.getActiveListingsBySellerMock.mockReturnValue(new Promise(() => {}));
     const { container } = render(<PublicProfilePage />);
-    expect(container.querySelector('[aria-busy="true"]')).toBeDefined();
+    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+  });
+
+  it('announces the loading profile as a status', () => {
+    profilePageMocks.getUserByIdMock.mockReturnValue(new Promise(() => {}));
+    render(<PublicProfilePage />);
+    expect(within(screen.getByRole('status')).getByText('Loading profile…')).toBeDefined();
+  });
+
+  it('shows "Member not found" with a Back to feed link to the feed', async () => {
+    profilePageMocks.getUserByIdMock.mockResolvedValue({ data: null });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    expect(screen.getByRole('heading', { name: 'Member not found' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Back to feed' }).getAttribute('href')).toBe('/');
   });
 
   it('shows error message when getUserById returns an error', async () => {
@@ -220,7 +214,7 @@ describe('PublicProfilePage', () => {
   it('renders trust chip for verified user (level 1)', async () => {
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText(/Level 1.*Verified/)).toBeDefined();
+      expect(screen.getByText('Verified')).toBeDefined();
     });
   });
 
@@ -230,7 +224,7 @@ describe('PublicProfilePage', () => {
     });
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText(/Level 0.*New/)).toBeDefined();
+      expect(screen.getByText('New Member')).toBeDefined();
       expect(screen.getByText(/New to Nepally.*message carefully/i)).toBeDefined();
     });
   });
@@ -241,7 +235,7 @@ describe('PublicProfilePage', () => {
     });
     render(<PublicProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText(/Level 2.*Contributor/)).toBeDefined();
+      expect(screen.getByText('Contributor')).toBeDefined();
     });
   });
 
@@ -408,7 +402,7 @@ describe('PublicProfilePage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Nepali Networking Night')).toBeDefined();
-      expect(screen.getByText('18 goings')).toBeDefined();
+      expect(screen.getByText('18 going')).toBeDefined();
     });
   });
 
@@ -504,6 +498,17 @@ describe('PublicProfilePage', () => {
     });
   });
 
+  it('shows trust in the About tab through the same badge as the header', async () => {
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
+
+    expect(screen.getByText('Trust level')).toBeDefined();
+    expect(screen.getAllByText('Verified')).toHaveLength(2);
+    expect(screen.queryByText(/Level \d/)).toBeNull();
+  });
+
   it('About tab lists all activity counts including listings', async () => {
     render(<PublicProfilePage />);
     await waitFor(() => expect(screen.getByText('Bikal S.')).toBeDefined());
@@ -532,6 +537,110 @@ describe('PublicProfilePage', () => {
     await waitFor(() => {
       expect(screen.getByText('Roommate needed')).toBeDefined();
     });
+  });
+
+  // ─── Tabs ──────────────────────────────────────────────────────────────────
+
+  it('names the tab list "Profile sections" and gives it four tabs', async () => {
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    const tabList = screen.getByRole('tablist', { name: 'Profile sections' });
+    const tabs = within(tabList).getAllByRole('tab');
+    expect(tabs).toHaveLength(4);
+    expect(tabs[0].textContent).toMatch(/^Posts/);
+    expect(tabs[1].textContent).toMatch(/^Events/);
+    expect(tabs[2].textContent).toMatch(/^Listings/);
+    expect(tabs[3].textContent).toBe('About');
+  });
+
+  it('shows each list count beside its tab label when above zero', async () => {
+    profilePageMocks.getEventsByOrganizerMock.mockResolvedValue({ data: [] });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    expect(within(screen.getByRole('tab', { name: /^Posts/ })).getByText('1')).toBeDefined();
+    expect(within(screen.getByRole('tab', { name: /^Listings/ })).getByText('1')).toBeDefined();
+    // No events: the tab shows its label alone, not a "0" badge.
+    expect(screen.getByRole('tab', { name: /^Events/ }).textContent).toBe('Events');
+  });
+
+  it('moves focus from Posts to Events with ArrowRight', async () => {
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    const postsTab = screen.getByRole('tab', { name: /^Posts/ });
+    postsTab.focus();
+    fireEvent.keyDown(postsTab, { key: 'ArrowRight' });
+
+    const eventsTab = screen.getByRole('tab', { name: /^Events/ });
+    expect(document.activeElement).toBe(eventsTab);
+    expect(eventsTab.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText('Nepali Networking Night')).toBeDefined();
+  });
+
+  it('keeps inactive panels out of the DOM', async () => {
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
+
+    expect(screen.queryByText('Roommate needed')).toBeNull();
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+  });
+
+  it('shows the Posts tab again after moving to another member', async () => {
+    profilePageMocks.getUserByIdMock.mockImplementation((_client: unknown, userId: string) =>
+      Promise.resolve({ data: { ...mockProfileUser, id: userId } })
+    );
+    const { rerender } = render(<PublicProfilePage />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Events/ }));
+    expect(screen.getByRole('tab', { name: /^Events/ }).getAttribute('aria-selected')).toBe('true');
+
+    profilePageMocks.useRouterMock.mockReturnValue({
+      query: { id: 'another-user' },
+      push: mockPush,
+      replace: mockReplace,
+    });
+    rerender(<PublicProfilePage />);
+    await act(async () => {});
+
+    expect(profilePageMocks.getUserByIdMock).toHaveBeenLastCalledWith(expect.anything(), 'another-user');
+    expect(screen.getByRole('tab', { name: /^Posts/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText('Roommate needed')).toBeDefined();
+  });
+
+  // ─── Own empty profile ─────────────────────────────────────────────────────
+
+  it('offers "Start a post" and "Post a listing" on your own empty profile', async () => {
+    profilePageMocks.useAuthMock.mockReturnValue({
+      user: { ...mockCurrentUser, id: 'profile-user' },
+    });
+    profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
+    profilePageMocks.getActiveListingsBySellerMock.mockResolvedValue({ data: [] });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    expect(screen.getByRole('heading', { name: 'You haven’t posted anything yet.' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Start a post' }).getAttribute('href')).toBe('/posts/create');
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Listings/ }));
+
+    expect(screen.getByRole('heading', { name: 'You haven’t listed anything yet.' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Post a listing' }).getAttribute('href')).toBe(
+      '/marketplace/create'
+    );
+  });
+
+  it('offers no create actions on someone else’s empty profile', async () => {
+    profilePageMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    expect(screen.getByRole('heading', { name: 'Bikal hasn’t posted anything yet.' })).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Start a post' })).toBeNull();
   });
 
   // ─── Follow button, counts, and identity chips ────────────────────────────
