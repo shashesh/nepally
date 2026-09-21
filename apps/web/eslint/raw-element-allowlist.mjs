@@ -13,7 +13,6 @@ export const RAW_ELEMENT_ALLOWLIST = [
   "src/pages/events/create.page.tsx",
   "src/pages/events/index.page.tsx",
   "src/pages/login.page.tsx",
-  "src/pages/marketplace/create.page.tsx",
   "src/pages/marketplace/listing/[id].page.tsx",
   "src/pages/marketplace/listing/promote/[id].page.tsx",
   "src/pages/marketplace/my-listings.page.tsx",

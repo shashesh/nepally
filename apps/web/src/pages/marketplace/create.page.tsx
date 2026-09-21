@@ -24,7 +24,7 @@ import {
   type ListingType,
   type ItemCondition,
 } from '@nepally/shared';
-import styles from './marketplace.module.css';
+import styles from './createListing.module.css';
 
 export default function CreateListingPage() {
   const router = useRouter();

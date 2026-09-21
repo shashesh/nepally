@@ -5,12 +5,6 @@
   padding: 24px;
 }
 
-.createFormContainer {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
 .header {
   display: flex;
   justify-content: space-between;
@@ -562,83 +556,6 @@
 }
 
 /* Form styles */
-.formSection {
-  margin-bottom: 20px;
-}
-
-.formLabel {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary, #212121);
-  margin-bottom: 6px;
-  display: block;
-}
-
-.toggleGroup {
-  display: flex;
-  gap: 8px;
-}
-
-.toggleButton {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid var(--color-border, #e0e0e0);
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  text-align: center;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.toggleButton:hover {
-  border-color: var(--color-primary, #1565C0);
-}
-
-.toggleButtonActive {
-  border-color: var(--color-primary, #1565C0);
-  background: #E3F2FD;
-  color: var(--color-primary, #1565C0);
-  font-weight: 600;
-}
-
-.categoryChips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.categoryChip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid var(--color-border, #e0e0e0);
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-}
-
-.categoryChip:hover {
-  border-color: var(--color-primary, #1565C0);
-}
-
-.categoryChipActive {
-  border-color: var(--category-color, var(--color-primary, #1565C0));
-  background-color: var(--category-bg, transparent);
-  color: var(--category-color, var(--color-primary, #1565C0));
-  font-weight: 600;
-}
-
-.errorText {
-  color: #C62828;
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-/* My Listings thumbnail */
 .myListingThumb {
   width: 100%;
   height: 120px;
@@ -660,96 +577,6 @@
 }
 
 /* Photo Upload (Create/Edit Listing) */
-.photoPreviewGrid {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-
-.photoThumb {
-  position: relative;
-  width: 88px;
-  height: 88px;
-  border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.photoThumbImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.photoRemoveBtn {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.65);
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.photoRemoveBtn:hover {
-  background: rgba(0, 0, 0, 0.85);
-}
-
-.addPhotoBtn {
-  width: 88px;
-  height: 88px;
-  border-radius: 8px;
-  border: 1.5px dashed var(--color-primary, #1565C0);
-  background: #E3F2FD;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  transition: background 0.2s;
-}
-
-.addPhotoBtn:hover:not(:disabled) {
-  background: #BBDEFB;
-}
-
-.addPhotoBtn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.addPhotoIcon {
-  font-size: 22px;
-}
-
-.addPhotoText {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-primary, #1565C0);
-}
-
-.hiddenFileInput {
-  display: none;
-}
-
-.photoHint {
-  font-size: 12px;
-  color: var(--color-text-tertiary, #9E9E9E);
-  margin: 0;
-}
-
-/* Redesigned Listing Card (stacked, gradient placeholder, Contact Seller CTA) */
 .featuredCard {
   position: relative;
   display: flex;

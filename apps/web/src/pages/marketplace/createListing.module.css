@@ -1,0 +1,40 @@
+/**
+ * Create and edit listing.
+ *
+ * Split out of marketplace.module.css, which serves six pages and cannot come
+ * off the token guard's allowlist until PR 8 migrates the other five. This
+ * file is token-clean from the start, so the create page no longer depends on
+ * the allowlisted one. `title` and `backLink` are duplicated here rather than
+ * shared, because the originals are still on the legacy tokens.
+ */
+
+.createFormContainer {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+.title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-1);
+}
+
+.backLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--text-1);
+}
+
+.formSection {
+  margin-bottom: var(--space-5);
+}
