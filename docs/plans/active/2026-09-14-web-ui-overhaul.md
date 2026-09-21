@@ -186,7 +186,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | Merged (PR #79) | 2026-09-19 | no migration; the `count(*) OVER ()` fix stays deferred with its trigger |
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
-| 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.12 | In Progress | 2026-09-20 | branched from `master` at 4f6b96d; area inventory below |
+| 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | In Progress | 2026-09-20 | branched from `master` at 4f6b96d; area inventory below |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -11594,6 +11594,425 @@ The dialogs are `confirm` before discarding an unsaved post (posts/create 237) a
 6. **`resizeImageFile` has no test and silently drops failures.** `handleFileChange` catches per-file and continues with `// Skip photos that fail to process`, so a user who picks four photos and sees two appear gets no explanation. Task 5.1 keeps the resize but surfaces the skipped count with `notify.error`, which is a small deliberate behaviour change.
 
 7. **marketplace/create swallows its category error and has no submit-time feedback path.** `errors.category_id` renders, but the three `alert()` calls are the only failure channel for upload/create/update. They become `notify.error`, matching the feed and post detail.
+
+## PR 5 — Task breakdown
+
+Work on `feat/web-ui-create-flows`, branched from `master` at `4f6b96d`. Same conventions as PR 4a and 4b: test first, one commit per task, query by role, label or text, semantic tokens only, no inline styles, and Mantine components rather than raw elements outside `components/ui/`. `ImageUploader` lands first because all three pages adopt it.
+
+**Decisions this breakdown locks in:**
+
+1. **Toggle chips stay buttons.** Post tags (posts/create 602–639) and event types (events/create 372–392) are toggle groups. A Mantine `Chip` would make them checkboxes and break `e2e/tests/05-create-post.spec.ts:52` (`role=button`, name `/Housing tag/`) and `e2e/tests/10-events.spec.ts:365–370` (`role=button`, `/Cultural/i`). They become Mantine `UnstyledButton` with `aria-pressed`, keeping today's accessible names (`"Housing tag"`, `"🎭 Cultural"`). Dropping `", selected"` / `", not selected"` from the name is the accessibility gain: the platform announces the state instead of the name carrying it.
+2. **Listing type and condition become `SegmentedControl`.** Those two (marketplace/create 273–289, 438–456) are single-select and mutually exclusive, so a radio group is the correct semantic. Nothing queries them by role — `create.test.tsx:113–114` uses `getByText`, which `SegmentedControl` still satisfies.
+3. **The date and time fields keep their ids.** `10-events.spec.ts:389–392` and `:410–413` drive `#event-start-date` and `#event-start-time` through `page.locator()`. Mantine `TextInput` forwards `id`, so pass it explicitly rather than letting Mantine generate one. The same holds for `#event-title`, `#event-location-name`, `#event-location-address`, `#event-description` and `#event-is-global`.
+4. **Placeholders are load-bearing.** Eleven unit and e2e assertions look a field up by placeholder (`'e.g. Dashain Celebration 2026'`, `"Tell people about your event..."`, `'What are you listing?'`, `'Describe your listing in detail...'`, `'e.g. Dallas Convention Center'`, `'Your business name'`). Keep every placeholder string byte-for-byte.
+5. **`ImageUploader` owns object URLs.** It creates one preview URL per picked file and revokes it on remove and on unmount. The pages stop calling `URL.createObjectURL` and `revokeObjectURL` altogether, which deletes the preview-ref dance at events/create 110–115 and 163–170 and `clearSelectedPhotos` at posts/create 389–394.
+6. **The three validation models stay as they are.** posts/create derives validity inline, marketplace/create maps zod issues into a `Record<string, string>`, events/create validates a zod schema on submit. Converging them is a larger change than this PR's remit and none of it is user-visible; the fields simply render whatever error string their page already computes.
+
+**Files this PR creates:**
+
+| Path | Responsibility |
+|---|---|
+| `apps/web/src/components/ui/ImageUploader.tsx`, `.module.css`, `.test.tsx` | Drop, pick, remove, reorder; count, type and size limits |
+| `apps/web/src/components/ui/ToggleChipGroup.tsx`, `.module.css`, `.test.tsx` | A labelled group of `aria-pressed` toggle chips, single or multi-select |
+| `apps/web/src/components/events/DateTimeField.tsx`, `.module.css`, `.test.tsx` | The paired date + time inputs, used twice on create event |
+| `apps/web/src/lib/resizeImage.ts`, `.test.ts` | Downscale a picked image to a 1200px-wide JPEG |
+| `apps/web/src/lib/photoUploads.ts`, `.test.ts` | `File[]` → upload inputs for the shared storage API |
+| `apps/web/src/lib/postSubmit.ts`, `.test.ts` | The two create-post submit paths, as pure functions |
+| `apps/web/src/pages/marketplace/createListing.module.css` | The 19 create-only classes, on semantic tokens |
+
+**One chip component, three call sites.** Post tags, event types and marketplace categories are the same control three times: a labelled group of toggle chips, multi-select with a cap in one case and single-select in the other two. Task 5.4 builds `ToggleChipGroup` once in `components/ui/` rather than three near-identical selectors, and PR 7's event filters and PR 8's marketplace filters inherit it.
+
+**Where the pages land.** The definition of done asks for roughly 350 lines a page. After this PR: marketplace/create about 300 (from 483), events/create about 330 (from 599), and posts/create about 390 (from 760). posts/create stays above the line because it is one form with two submit paths and an edit-mode loader; Task 5.5 lifts both submit paths into `lib/postSubmit.ts`, which is the real duplication, and splitting the remaining JSX would scatter one screen across files for no reader's benefit. Recorded here as a deliberate deviation.
+
+### Task 5.1: Install `@mantine/dropzone` and build `ImageUploader`
+
+**Files:** `apps/web/package.json`, `TECH-VERSIONS.md`; create `components/ui/ImageUploader.tsx`, `.module.css`, `.test.tsx`; modify `components/ui/index.ts`.
+
+**Interface:**
+
+```ts
+/** One slot in the uploader: a photo already in storage, or a file just picked. */
+export type UploaderPhoto =
+  | { kind: 'stored'; url: string }
+  | { kind: 'picked'; id: string; previewUrl: string; file: File };
+
+export interface ImageUploaderProps {
+  photos: UploaderPhoto[];
+  onChange: (photos: UploaderPhoto[]) => void;
+  /** Total slots across stored and picked photos. */
+  max: number;
+  maxBytes: number;
+  /** Group label, e.g. "Photos". Also names the add button: "Add photos". */
+  label: string;
+  description?: string;
+  error?: string;
+  disabled?: boolean;
+  /** MIME types; defaults to JPEG, PNG and WEBP. */
+  accept?: string[];
+}
+```
+
+The component renders `<div role="group" aria-labelledby aria-describedby>` around a Mantine `Dropzone` and a `<ul>` of thumbnails. Each thumbnail carries a "Remove photo N" button. Over-count, wrong-type and over-size files are rejected with a message inside the group, not a toast — the member is looking at the control. The count reads `"{n}/{max} photos"`, matching today's marketplace copy so `create.test.tsx:140` keeps passing.
+
+- [ ] **Step 1: Install and record the dependency.** `npx npm@12 install --workspace=apps/web @mantine/dropzone@^8.3.18` (the lockfile is npm 12 format — plain `npm install` strips libc fields). It pins `@mantine/core`/`@mantine/hooks` to exactly `8.3.18`, which matches the app. Add the row to `TECH-VERSIONS.md` beside the other `@mantine/*` packages.
+- [ ] **Step 2: Read the installed types before writing against them.** `node_modules/@mantine/dropzone/lib/Dropzone.d.ts`. Confirm how to give the hidden file input an accessible name (`inputProps`) and how to open the file dialog programmatically (`openRef`). If `inputProps` is absent in 8.3.18, name the control with an explicit Mantine `Button` wired to `openRef` instead, and say so in the task notes.
+- [ ] **Step 3: Write the failing test.** `ImageUploader.test.tsx`: the group has the accessible name from `label`; picking two files calls `onChange` with two `picked` entries carrying the files; a file over `maxBytes` is rejected with a visible message and no `onChange`; a file whose type is not in `accept` is likewise rejected; picking past `max` accepts only the remaining slots and says so; "Remove photo 2" calls `onChange` without that entry; the count text reads `"2/3 photos"`; a `stored` entry renders its URL and can be removed the same way.
+- [ ] **Step 4: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/ui/ImageUploader.test.tsx`
+- [ ] **Step 5: Implement**, colocating `ImageUploader.module.css` on semantic tokens, and export both the component and `UploaderPhoto` from `components/ui/index.ts`.
+- [ ] **Step 6: Run and watch it pass**, then `npm run lint --workspace=apps/web`.
+- [ ] **Step 7: Commit** as `feat(web): add ImageUploader over Mantine Dropzone`.
+
+### Task 5.2: Reordering and the transform hook
+
+**Files:** `components/ui/ImageUploader.tsx`, `.module.css`, `.test.tsx`.
+
+**Added props:**
+
+```ts
+  /** Shows "Move photo N left" / "Move photo N right" on every thumbnail. */
+  reorderable?: boolean;
+  /** Runs on each accepted file before it enters state, e.g. downscaling. */
+  transformFile?: (file: File) => Promise<File>;
+```
+
+Reorder replaces posts/create's ←/→ buttons (`movePhotoAtIndex` 323–331, JSX 700–722) and its drag-and-drop (`handlePhotoDragStart` 351–392, state 61–62). **Drag-and-drop is dropped**: it was edit-mode only, had no keyboard equivalent beyond the arrow buttons that survive, and no test or e2e covers it. Task 5.4 removes the "Reorder photos by drag-and-drop, or use ← and → controls" hint (posts/create 729–731) in favour of "Use the ← and → buttons to reorder photos."
+
+When `transformFile` rejects for a file, that file is skipped and the group shows `"{n} photo(s) could not be processed."` — today marketplace/create swallows those silently (`// Skip photos that fail to process`, 152–154).
+
+- [ ] **Step 1: Extend the tests** — the move buttons appear only with `reorderable`; "Move photo 2 left" calls `onChange` with 1 and 2 swapped; the first photo's left button and the last photo's right button are disabled; a live region announces `"Photo 2 moved to position 1"`; `transformFile` output replaces the picked file; a rejecting `transformFile` skips that file, keeps the others and shows the count that failed.
+- [ ] **Step 2: Run and watch the new cases fail.** `npm run test --workspace=apps/web -- src/components/ui/ImageUploader.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): let ImageUploader reorder and transform photos`.
+
+### Task 5.3: `resizeImage` and `photoUploads` helpers
+
+**Files:** create `apps/web/src/lib/resizeImage.ts`, `resizeImage.test.ts`, `photoUploads.ts`, `photoUploads.test.ts`.
+
+```ts
+// resizeImage.ts — moved out of marketplace/create.page.tsx 34–59, returning a File
+export const MAX_IMAGE_WIDTH_PX = 1200;
+export const JPEG_QUALITY = 0.8;
+export async function resizeImage(file: File): Promise<File>;
+
+// photoUploads.ts — replaces the block duplicated at posts/create 403–421 and 484–500
+export interface PhotoUploadInput {
+  user_id: string;
+  file_data: ArrayBuffer;
+  mime_type: string;
+  size_bytes: number;
+  file_name: string;
+}
+export function toPhotoUploadInputs(files: File[], userId: string): Promise<PhotoUploadInput[]>;
+```
+
+`PhotoUploadInput` is structurally what `uploadPostPhotos`, `uploadListingPhotos` and `uploadEventPhoto` already accept, so all three pages feed it straight through. `resizeImage` returns a `File` rather than the old `NewPhotoWeb` record, which is what `ImageUploader`'s `transformFile` takes; the ArrayBuffer conversion happens once, at submit, in `toPhotoUploadInputs`.
+
+- [ ] **Step 1: Write the failing tests.** `resizeImage.test.ts`: an image wider than 1200px comes back scaled to 1200 with the aspect ratio kept and `type === 'image/jpeg'`; a narrower image is not upscaled; the returned `File` keeps the original name; a missing 2D context rejects. Stub `createImageBitmap` and `HTMLCanvasElement.prototype.toBlob` in the test — jsdom has neither. `photoUploads.test.ts`: three files map to three inputs in order, each carrying the user id, the file's bytes, type, size and name; a file with an empty `type` falls back to `'image/jpeg'`, matching posts/create 407 today; an empty array resolves to an empty array.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/lib/resizeImage.test.ts src/lib/photoUploads.test.ts`
+- [ ] **Step 3: Implement**, moving `resizeImageFile` out of `marketplace/create.page.tsx` (34–59) and deleting the `NewPhotoWeb` type (26–32) in the same edit. The page is fixed in Task 5.7; leaving it broken between commits is fine only if the build stays green, so do the page's import swap here too.
+- [ ] **Step 4: Run and watch them pass**, then `npm run type-check`.
+- [ ] **Step 5: Commit** as `refactor(web): extract the image resize and upload-input helpers`.
+
+### Task 5.4: `ToggleChipGroup`
+
+**Files:** create `components/ui/ToggleChipGroup.tsx`, `.module.css`, `.test.tsx`; modify `components/ui/index.ts`.
+
+**Interface:**
+
+```ts
+export interface ToggleChipOption {
+  value: string;
+  /** Rendered inside the chip; may carry an emoji. */
+  label: ReactNode;
+  /** Accessible name, when the label is decorated. Defaults to `label` as text. */
+  name?: string;
+}
+
+export interface ToggleChipGroupProps {
+  /** Names the group for assistive technology, e.g. "Tags". */
+  label: string;
+  options: ToggleChipOption[];
+  value: string[];
+  onChange: (value: string[]) => void;
+  /** Single-select clears the previous pick; multi keeps both. Default 'multiple'. */
+  mode?: 'single' | 'multiple';
+  /** Multi-select cap. Unselected chips go disabled once it is reached. */
+  max?: number;
+  description?: ReactNode;
+  error?: string;
+  disabled?: boolean;
+}
+```
+
+One `<div role="group" aria-labelledby>` of Mantine `UnstyledButton` chips, each with `aria-pressed`. This is the third copy of the same control in the codebase (posts/create 616–632, events/create 376–390, marketplace/create 356–367), so it is built once here.
+
+Every chip also renders `data-value={option.value}`, so a caller's stylesheet can colour individual chips without the component knowing any domain colours. Task 5.13 uses that hook to give the five event types their tokens, replacing today's `TYPE_ACTIVE_CLASS` map (events/create 25–31).
+
+Per decision 1, chips are buttons rather than Mantine `Chip` checkboxes, because three e2e assertions and four unit assertions look them up by `role=button`.
+
+- [ ] **Step 1: Write the failing test.** The group carries the accessible name from `label`; a chip reports `aria-pressed="false"` until pressed, then `"true"`; multi-select keeps both picks and single-select replaces; at `max` the unselected chips are disabled and the selected ones are not; pressing a selected chip deselects it even at `max`; `name` overrides the accessible name when the label carries an emoji; `error` renders and is linked to the group with `aria-describedby`.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/ui/ToggleChipGroup.test.tsx`
+- [ ] **Step 3: Implement**, with `ToggleChipGroup.module.css` on semantic tokens, and export it from `components/ui/index.ts`.
+- [ ] **Step 4: Run and watch it pass**, then `npm run lint --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `feat(web): add ToggleChipGroup`.
+
+### Task 5.5: posts/create adopts `ImageUploader`, and its submit paths move out
+
+**Files:** `pages/posts/create.page.tsx`, `create.test.tsx`; create `lib/postSubmit.ts`, `postSubmit.test.ts`.
+
+About 200 lines of photo code go. Deleted: `SelectedPhoto` and `EditablePhoto` (32–39), the photo state (51–53, 61–62), `handlePhotoInputChange` (249–280), `removeSelectedPhoto` (282–290), `removeExistingPhoto` (292–301), `getCombinedEditablePhotos` (303–308), `applyCombinedEditablePhotos` (310–321), `movePhotoAtIndex` (323–331), `movePhotoToIndex` (333–349), the four drag handlers (351–392), `clearSelectedPhotos` (389–394) and the photo JSX (640–732).
+
+What replaces them: one `photos: UploaderPhoto[]` state and
+
+```tsx
+<ImageUploader
+  photos={photos}
+  onChange={setPhotos}
+  reorderable
+  max={MAX_PHOTOS_PER_POST}
+  maxBytes={MAX_POST_PHOTO_BYTES}
+  label="Photos"
+  description="Optional. JPG, PNG or WEBP up to 5MB each."
+/>
+```
+
+`removedExistingPhotoPaths` stops being its own state. On submit, diff the `stored` URLs against `initialForm.existingPhotos` and run each dropped URL through the existing `getPostPhotoPathFromUrl`, which still feeds the `deletePostPhotos` cleanup.
+
+`handleSubmit` (396–537) is 141 lines of two near-identical branches. Both move into `lib/postSubmit.ts` as pure async functions that take everything they need and return a result, so the page keeps only the state plumbing:
+
+```ts
+export interface SubmitResult {
+  ok: boolean;
+  /** Set when ok is false; the page renders it in its error Alert. */
+  message?: string;
+  /** Set by submitNewPost when the post went to a moderator instead of the feed. */
+  pendingModeration?: boolean;
+}
+
+export interface NewPostParams {
+  userId: string;
+  title: string;
+  description: string;
+  tagIds: string[];
+  /** In display order. `picked` entries are uploaded; there are no `stored` ones yet. */
+  photos: UploaderPhoto[];
+  isGlobal: boolean;
+  metroAreaId: string;
+  locationZipCode: string;
+  locationCity: string;
+  locationState: string;
+  requiresModeration: boolean;
+}
+
+export interface EditedPostParams {
+  postId: string;
+  userId: string;
+  title: string;
+  description: string;
+  tagIds: string[];
+  /** In display order, mixing `stored` and `picked`. */
+  photos: UploaderPhoto[];
+  isGlobal: boolean;
+  /** The post's photo URLs as loaded, so dropped ones can be deleted. */
+  originalPhotoUrls: string[];
+}
+
+export function submitNewPost(supabase: SupabaseClient, params: NewPostParams): Promise<SubmitResult>;
+export function submitEditedPost(supabase: SupabaseClient, params: EditedPostParams): Promise<SubmitResult>;
+```
+
+Both call `toPhotoUploadInputs` for the picked files, then `uploadPostPhotos`, and both keep today's rollback: on a failed `createPost` / `updatePost` they call `deletePostPhotos` for anything they just uploaded (456–458, 519–521). `submitEditedPost` keeps the `uploadedUrlByPhotoId` ordering step (406, 424–430) so a reordered mix of stored and new photos is written in display order.
+
+- [ ] **Step 1: Write the failing tests for `postSubmit.ts`** — a new post with no photos calls `createPost` with `photos: []`; with two picked files it uploads first and passes both URLs; a failed `createPost` deletes the uploaded photos and returns `ok: false` with the message; an edit that reorders one stored and one new photo writes them in display order; an edit that drops a stored photo deletes that path only after `updatePost` succeeds.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/lib/postSubmit.test.ts`
+- [ ] **Step 3: Implement `postSubmit.ts`, then rewrite the page against it and `ImageUploader`.** `create.test.tsx` asserts `'Add post photos'`, which no longer exists; rewrite those cases against the "Photos" group and the "Remove photo 1" button.
+- [ ] **Step 4: Run both suites.** `npm run test --workspace=apps/web -- src/lib/postSubmit.test.ts src/pages/posts/create.test.tsx`
+- [ ] **Step 5: Commit** as `refactor(web): use ImageUploader on create post and lift its submit paths out`.
+
+### Task 5.6: posts/create fields, chips, dialog and toasts
+
+**Files:** `pages/posts/create.page.tsx`, `create.test.tsx`.
+
+- The title `<input>` (563–571) becomes a Mantine `TextInput` and the body `<textarea>` (583–591) a `Textarea` with `autosize minRows={6}`. Both keep their placeholders and their accessible names — pass `aria-label="Post title, required"` and `aria-label="Post body, required"`, because `create.test.tsx:100–101` and six later cases look them up that way.
+- The two character counters (572–576, 592–596) move into each field's `description`, so the field stops changing height as the count crosses the threshold. Show the counter from `TITLE_COUNTER_THRESHOLD` / `BODY_COUNTER_THRESHOLD` upward, as today.
+- The inline validity messages (577–579, 597–599) become each field's `error` prop.
+- The tag grid (602–639) becomes `<ToggleChipGroup label="Tags" mode="multiple" max={MAX_TAGS_PER_POST} />`, with each option's `name` set to `` `${tag.name} tag` `` so `05-create-post.spec.ts:52` still matches. `toggleTag` (225–233) goes; the cap now lives in the component.
+- `handleCancel`'s `confirm()` (235–247) becomes `useConfirm({ title: 'Discard this post?', message: 'You have unsaved changes.', confirmLabel: 'Discard', danger: true })`.
+- The emergency-post `notifications.show` (519–524, now inside `postSubmit`) becomes `notify.success` at the page's call site.
+
+- [ ] **Step 1: Write the failing tests** — Cancel with a dirty form opens the dialog and stays put when dismissed, and navigates when confirmed; a selected tag reports `aria-pressed="true"`; selecting a third tag disables the rest; the title field shows its counter in the description past 120 characters.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/posts/create.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `refactor(web): move create post onto Mantine fields and the shared dialog`.
+
+### Task 5.7: `CreatePost.module.css` onto semantic tokens
+
+**Files:** `styles/CreatePost.module.css`, `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs`.
+
+53 violations: 51 legacy `var(--color-*)` tokens and 2 colour literals. The rules whose markup Tasks 5.5 and 5.6 deleted go with it — `titleInput`, `bodyInput`, `tagChip*`, `photoRowButton`, `photoRow`, `photoIcon`, `photoLabel`, `photoCount`, `hiddenFileInput`, `photoPreview*`, `photoRemoveBtn`, `photoReorder*`. `outline: none` at 33 and 53 belonged to the two fields that are now Mantine's, so both disappear rather than needing a focus ring.
+
+- [ ] **Step 1: Map every legacy token to its semantic replacement** using the spec §4.1 table, and delete the rules whose markup is gone.
+- [ ] **Step 2: Remove `apps/web/src/styles/CreatePost.module.css` from `scripts/guard-css-tokens.allowlist.json` and `src/pages/posts/create.page.tsx` from `RAW_ELEMENT_ALLOWLIST`**, in this same commit — the CSS guard fails on an allowlisted file that is already clean (implementation decision 7).
+- [ ] **Step 3: Run the guards.** `npm run lint:guards` and `npm run lint --workspace=apps/web`. Both must pass.
+- [ ] **Step 4: Run the web suite.** `npm run test --workspace=apps/web`
+- [ ] **Step 5: Commit** as `style(web): move the create post stylesheet onto semantic tokens`.
+
+### Task 5.8: marketplace/create adopts `ImageUploader`
+
+**Files:** `pages/marketplace/create.page.tsx`, `create.test.tsx`.
+
+`existingPhotoUrls` and `newPhotos` (73–74) collapse into one `photos: UploaderPhoto[]`. `handleFileChange` (135–159), `handleRemoveExisting` (161–163), `handleRemoveNew` (165–171), the revoke effect (128–133), `fileInputRef` (68) and the photo JSX (290–350) all go, replaced by
+
+```tsx
+<ImageUploader
+  photos={photos}
+  onChange={setPhotos}
+  max={MAX_PHOTOS_PER_LISTING}
+  maxBytes={MAX_LISTING_PHOTO_BYTES}
+  accept={[...ALLOWED_LISTING_PHOTO_MIME_TYPES]}
+  transformFile={resizeImage}
+  label="Photos"
+/>
+```
+
+Not `reorderable`: the page has no reorder today, and listing detail shows photos in stored order.
+
+`handleSubmit` (173–251) keeps its two branches but feeds `toPhotoUploadInputs` instead of hand-mapping `newPhotos` (205–212). The three `alert()` calls (220, 232, 243) become `notify.error`.
+
+- [ ] **Step 1: Update the tests.** `create.test.tsx:140` asserts `'0/5 photos'`; `ImageUploader` renders the same string, so check that case survives unchanged rather than assuming it. Add: a failed upload calls `notify.error` and leaves the member on the page; a failed create does the same; a picked file is passed through `resizeImage` before upload.
+- [ ] **Step 2: Run and watch the new cases fail.** `npm run test --workspace=apps/web -- src/pages/marketplace/create.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `refactor(web): use ImageUploader and notify on create listing`.
+
+### Task 5.9: marketplace/create fields
+
+**Files:** `pages/marketplace/create.page.tsx`, `create.test.tsx`.
+
+- Listing type (273–289) and condition (438–456) become Mantine `SegmentedControl`, with `data` built from `LISTING_TYPE_LABELS` and `ITEM_CONDITION_LABELS` (decision 2).
+- The category chips (353–370) become `<ToggleChipGroup label="Category" mode="single" />`, with `error={errors.category_id}` replacing the loose `<p className={styles.errorText}>` at 369.
+- The `<form>` (272) stays; it is already correct.
+
+- [ ] **Step 1: Write the failing tests** — the listing type control is a radio group with "Business" selected by default; choosing "Individual" reveals Condition and hides Business Name; a selected category reports `aria-pressed="true"`; submitting with no category renders the error inside the category group.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/marketplace/create.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `refactor(web): move create listing onto Mantine form controls`.
+
+### Task 5.10: Split `createListing.module.css` out of the marketplace stylesheet
+
+**Files:** create `pages/marketplace/createListing.module.css`; modify `pages/marketplace/create.page.tsx`, `marketplace.module.css`, `apps/web/eslint/raw-element-allowlist.mjs`.
+
+`marketplace.module.css` is 1011 lines serving six pages and PR 8 owns the other five, so it cannot leave the CSS allowlist here. The 19 create-only classes move to a new file that is token-clean from the start. Tasks 5.8 and 5.9 delete the markup behind `toggleGroup`, `toggleButton`, `toggleButtonActive`, `photoPreviewGrid`, `photoThumb`, `photoThumbImg`, `photoRemoveBtn`, `addPhotoBtn`, `addPhotoIcon`, `addPhotoText`, `hiddenFileInput` and `photoHint`, so those twelve are not carried over at all. Seven still have markup: `createFormContainer`, `formSection`, `formLabel`, `categoryChips`, `categoryChip`, `categoryChipActive` and `errorText` — and of those, the last four may also fall out once `ToggleChipGroup` brings its own styles, so check before copying. `title` and `backLink` are shared with the PR 8 pages, so the new file gets its own copies and `marketplace.module.css` keeps the originals.
+
+- [ ] **Step 1: Create `createListing.module.css`** with the classes that still have markup, on semantic tokens, plus its own `title` and `backLink`, and point `create.page.tsx`'s import at it.
+- [ ] **Step 2: Delete the 19 create-only class blocks from `marketplace.module.css`.** Keep `title` and `backLink` there for the PR 8 pages.
+- [ ] **Step 3: Verify the split.** `node scripts/guard-css-tokens.js apps/web/src/pages/marketplace/createListing.module.css` reports zero violations, and `marketplace.module.css`'s count drops but the file stays allowlisted.
+- [ ] **Step 4: Remove `src/pages/marketplace/create.page.tsx` from `RAW_ELEMENT_ALLOWLIST`**, then run `npm run lint --workspace=apps/web`, `npm run lint:guards` and `npm run test --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `style(web): give create listing its own token-clean stylesheet`.
+
+### Task 5.11: `DateTimeField`
+
+**Files:** create `components/events/DateTimeField.tsx`, `.module.css`, `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface DateTimeFieldProps {
+  /** Group label, e.g. "Start Date & Time *". */
+  label: string;
+  /** Local `YYYY-MM-DDTHH:mm`, or '' when unset. */
+  value: string;
+  onChange: (value: string) => void;
+  /** Ids for the two inputs; e2e drives them directly. */
+  dateId: string;
+  timeId: string;
+  /** Accessible names, e.g. "Start date" / "Start time". */
+  dateLabel: string;
+  timeLabel: string;
+  /** Earliest selectable date, `YYYY-MM-DD`. */
+  minDate?: string;
+  error?: string;
+}
+```
+
+Replaces the two near-identical blocks at events/create 393–420 and 422–449, and absorbs `getDatePart`, `getTimePart` and `combineDateAndTime` (70–84) along with `handleDateChange` and `handleTimeChange` (206–216). It keeps today's rule that the time input does nothing until a date is set.
+
+Per decision 3, `dateId` and `timeId` are passed straight to Mantine `TextInput`'s `id`, because `10-events.spec.ts` drives `#event-start-date` and `#event-start-time` with `page.locator()`.
+
+- [ ] **Step 1: Write the failing test.** Both inputs carry the given ids and accessible names; typing a date emits `YYYY-MM-DDT00:00`; typing a time with a date already set emits the combined value; typing a time with no date set emits nothing; a value round-trips into the two inputs split correctly; `minDate` reaches the date input's `min`; `error` renders once for the pair.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/events/DateTimeField.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add DateTimeField`.
+
+### Task 5.12: events/create fields and photo
+
+**Files:** `pages/events/create.page.tsx`, `create.test.tsx`.
+
+The largest field conversion: 13 raw elements go.
+
+| Today | Becomes |
+|---|---|
+| `#event-title` input (359–366) | `TextInput` with the same `id`, placeholder and `maxLength`; `error={errors.title}`; the 150-counter moves into `description` |
+| Event type buttons (376–390) | `<ToggleChipGroup label="Event Type" mode="single" />`, options built from `EVENT_TYPE_ICONS` and `EVENT_TYPE_LABELS` exactly as today: `"🎭 Cultural"`, `"🕌 Religious"`, `"🎉 Social"`, `"💼 Career"`, `"📌 Other"` |
+| Start and end date/time blocks (393–449) | two `<DateTimeField>`s |
+| `#event-location-name` (454–461) | `TextInput`, `error={errors.location_name}` |
+| `#event-location-address` (468–474) | `TextInput` |
+| `#event-description` textarea (481–488) | `Textarea autosize minRows={4}`, counter into `description` |
+| Two file inputs (509–514, 524–529) | one `<ImageUploader max={1} maxBytes={MAX_EVENT_PHOTO_BYTES} label="Event photo" description="Optional. Max 2MB — JPG, PNG or WEBP." />` |
+| RSVP radios (540–552) | Mantine `Radio.Group` + `Radio`, labels unchanged |
+| Error-dismiss `<button>` (578) | Mantine `Alert` with `withCloseButton`, keeping `role="alert"` |
+
+The photo swap also deletes `selectedPhoto` and `selectedPhotoPreview` (107–108), the preview ref and its effect (110–115), `handlePhotoChange` (218–243) and `handleRemovePhoto` (245–252). `handleSubmit` (254–262) reads the single `picked` file out of `photos` and still calls `toPhotoUploadInputs`; `resolvedPhotoUrl` (271–273) keeps its "a stored URL survives an edit with no new pick" behaviour by reading the `stored` entry instead.
+
+`TYPE_ACTIVE_CLASS` (25–31) goes: the per-type colours become the tokens Task 5.13 adds, applied by `ToggleChipGroup`'s `data-value` attribute rather than five class names.
+
+`isFormValid` (338–344) is unchanged — it reads `form`, not the photo state.
+
+- [ ] **Step 1: Write the failing tests** — every field keeps its placeholder and id; a selected event type reports `aria-pressed="true"`; the RSVP group is a radio group with "public" selected; picking a photo shows a remove button and removing it restores the picker; in edit mode an event that already has `photo_url` shows it as a stored photo, and submitting without touching it keeps that URL.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/events/create.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass**, then check `10-events.spec.ts`'s `#event-start-date` and `#event-start-time` locators still resolve.
+- [ ] **Step 5: Commit** as `refactor(web): move create event onto Mantine fields and ImageUploader`.
+
+### Task 5.13: `createEvent.module.css` onto semantic tokens
+
+**Files:** `pages/events/createEvent.module.css`, `apps/web/src/styles/tokens.css`, `tokens.test.ts`, `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs`.
+
+59 violations: 57 colour literals and 2 legacy tokens. The five `typeChipActive*` variants carry per-type colours; they become the `--event-<type>-fg` and `--event-<type>-bg` semantic tokens that **PR 7 also needs**. Add them to `tokens.css` here, and note in PR 7's section that the tokens already exist. `outline: none` at 69 belonged to `.input`, which is now Mantine's, so it goes.
+
+The source values are already shared: `EVENT_TYPE_COLORS` in `packages/shared/src/constants/events.ts:16–22` pairs a text and a background hex per type (cultural `#E65100`/`#FFF3E0` through other `#424242`/`#F5F5F5`). Convert those ten to oklch for `tokens.css`. **Leave the shared constant alone** — mobile styles its event chips from it, and `packages/shared` has no access to web tokens.
+
+- [ ] **Step 1: Add the ten event-type tokens to `tokens.css`** — a foreground and a background for each of `cultural`, `religious`, `social`, `career` and `other`, converted from `EVENT_TYPE_COLORS` — and extend the token contrast test to cover each pair.
+- [ ] **Step 2: Run the contrast test.** `npm run test --workspace=apps/web -- src/styles/tokens.test.ts`. Shrink any chroma that fails 4.5:1, the way implementation decision 4 did.
+- [ ] **Step 3: Rewrite `createEvent.module.css`** on semantic tokens and delete the rules whose markup Tasks 5.11 and 5.12 removed.
+- [ ] **Step 4: Remove the stylesheet from `guard-css-tokens.allowlist.json` and `src/pages/events/create.page.tsx` from `RAW_ELEMENT_ALLOWLIST`**, then run `npm run lint:guards`, `npm run lint --workspace=apps/web` and `npm run test --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `style(web): move the create event stylesheet onto semantic tokens`.
+
+### Task 5.14: E2E, screenshots, accessibility, docs and the PR
+
+**Files:** `apps/web/e2e/visual/pages.ts`, `apps/web/e2e/tests/05-create-post.spec.ts`, `10-events.spec.ts`, `11-marketplace.spec.ts`, `docs/architecture/web-ui-system.md`.
+
+Two of the three pages have no screenshot today (inventory finding 3). Add them to `VISUAL_PAGES`:
+
+```ts
+{ name: 'create-listing', path: '/marketplace/create', signedIn: true, ready: (page) => heading(page, /create listing/i) },
+{ name: 'create-event', path: '/events/create', signedIn: true, ready: (page) => heading(page, /create event/i) },
+```
+
+`a11y-baseline.json` has no `create-post` key, so that page is already free of serious and critical violations and must stay that way. The two new pages may **not** add entries — whatever axe reports on them is fixed here.
+
+- [ ] **Step 1: Add the two visual pages** and run the smoke pass, which needs no Docker: `node scripts/visual/smoke.mjs`.
+- [ ] **Step 2: Run the e2e suite.** `npm run test:e2e:web`. Fix any selector the earlier tasks moved; the known risks are the tag and event-type chip names and the four date/time ids.
+- [ ] **Step 3: Check the definition of done's structural items.** No `confirm(`, `alert(` or `prompt(` left in the three pages; no `<Link>` wrapping a `<Button>`; both allowlists have lost all three pages and their two stylesheets; page line counts are near the figures in the preamble.
+- [ ] **Step 4: Regenerate the baselines.** Push a commit whose message contains `[visual-baselines]` to run the Visual baselines workflow (implementation decision 1), download the `visual-baselines` artifact, review **every** changed PNG, and commit the screenshots plus the a11y diff. The a11y diff must contain no added lines.
+- [ ] **Step 5: Document the new components.** Add `ImageUploader`, `ToggleChipGroup` and `DateTimeField` to `docs/architecture/web-ui-system.md`, with their props, plus the three helpers in `src/lib/`. No feature doc changes: nothing user-facing changes except the dropped drag-and-drop reorder and the new failure messages, both recorded here.
+- [ ] **Step 6: Run the full gate.** `npm run lint`, `npm run lint:guards`, `npm run type-check`, `npm run test`, `npm run test:e2e:web`, `npm run test:visual:web` and `npm run docs:check`.
+- [ ] **Step 7: Walk the keyboard** through all three forms: Tab, Shift+Tab, Enter, Space and Escape, including the uploader's move and remove buttons, the chip groups and the confirm dialog.
+- [ ] **Step 8: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`, then `gh pr edit <number> --add-reviewer @copilot`. Update the Live tracker row to `In Review (PR #NN)`.
 
 ## PR 6 — Profile + public profile (`feat/web-ui-profile`)
 
