@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../../test-utils';
+import { render, screen, fireEvent, waitFor, act } from '../../test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { CommentComposer } from './CommentComposer';
 
@@ -32,6 +32,29 @@ describe('CommentComposer', () => {
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith('Great post'));
     expect(field.value).toBe('Great post');
+  });
+
+  it('keeps text typed while the submit was in flight', async () => {
+    let settleSubmit: () => void = () => {};
+    const onSubmit = vi.fn().mockReturnValue(
+      new Promise<void>((resolve) => {
+        settleSubmit = resolve;
+      })
+    );
+    render(<CommentComposer onSubmit={onSubmit} />);
+
+    const field = screen.getByLabelText('Write a comment') as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Great post' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith('Great post'));
+
+    // The next comment, started before the first one landed.
+    fireEvent.change(field, { target: { value: 'One more thing' } });
+    await act(async () => {
+      settleSubmit();
+    });
+
+    expect(field.value).toBe('One more thing');
   });
 
   it('will not submit blank text', () => {

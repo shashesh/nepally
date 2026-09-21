@@ -11,7 +11,7 @@ export interface CommentComposerProps {
   submitting?: boolean;
 }
 
-/** The comment field under a post. It clears only once the submit succeeds. */
+/** The comment field under a post. It clears only the text a successful submit sent. */
 export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submitting = false }: CommentComposerProps) {
   const [text, setText] = useState('');
   const isReply = Boolean(replyingToName);
@@ -28,7 +28,9 @@ export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submi
       // The caller reports the failure; keeping the text lets them try again.
       return;
     }
-    setText('');
+    // Clear what was sent, not whatever is there now: anything typed while the
+    // request was in flight is the start of the next comment.
+    setText((current) => (current.trim() === trimmed ? '' : current));
   }
 
   return (
