@@ -12765,7 +12765,6 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] The public profile's follower count doesn't move when you follow or unfollow: wire `FollowButton`'s `onChange` into `PublicProfileHeader` so the count adjusts (found in PR 6's Task 6.7 review).
   - [ ] Public profile list failures look like empty lists: `usePublicProfile` turns a failed posts/events/listings request into `[]`, and any `getUserById` failure reads "They may have deleted their account". Expose per-list errors plus a reload, show `ErrorState` with retry, and separate "not found" from "couldn't load" (found in PR 6's Task 6.8 review).
   - [ ] `EmptyState` always renders an `h3`, so tab panels jump h1 → h3 and the public profile's "Member not found" page has no h1. Add a `titleOrder` prop (default 3) and use `order={1}` for page-level empty states (found in PR 6's Task 6.9 review).
-  - [ ] The public profile's own-profile empty states offer "Start a post" and "Create an event" to Level 0 members, whom `/posts/create` and `/events/create` redirect away. Gate the actions on trust level 1, or link to verification as the feed's `PostComposer` does (found in PR 6's Task 6.9 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
 
 ## After the overhaul — Mantine 9
