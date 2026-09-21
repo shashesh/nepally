@@ -235,6 +235,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
             if (value) setActiveTab(value as ProfileTab);
           }}
           keepMounted={false}
+          classNames={{ list: styles.tabList }}
         >
           <Tabs.List aria-label="Profile sections">
             {TABS.map(({ value, label }) => {
