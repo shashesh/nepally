@@ -1,11 +1,15 @@
 /**
  * Crop, upload, and point the profile at the new photo. Lifted out of
- * profile.page.tsx's processAndUpload so the upload/write sequence can be
- * tested without rendering the page. The UI concerns it left behind —
+ * profile.page.tsx's processAndUpload so the crop/upload/write sequence can
+ * be tested without rendering the page. The UI concerns it left behind —
  * retry state, refreshing the cached user — stay on the page.
+ *
+ * If the upload succeeds but the profile write fails, `<userId>.jpg` has
+ * already been overwritten in storage — see setProfilePhoto's own doc
+ * comment; there is nothing here to roll back either.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { updateUserProfile, uploadProfilePhoto } from '@nepally/shared';
+import { logClientEvent, setProfilePhoto } from '@nepally/shared';
 import { cropToSquare } from './resizeImage';
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -17,17 +21,25 @@ export async function replaceProfilePhoto(
   userId: string,
   file: File
 ): Promise<{ error: string | null }> {
+  let cropped: File;
   try {
-    const cropped = await cropToSquare(file);
+    cropped = await cropToSquare(file);
+  } catch (error: unknown) {
+    // A failed decode surfaces raw browser text (Chrome: "The source image
+    // could not be decoded."), which isn't something a member can act on.
+    // Log the detail and show copy that points at a fix instead.
+    logClientEvent({
+      event: 'profile_photo_crop_failed',
+      context: { platform: 'web', userId },
+      error,
+    });
+    return { error: "We couldn't read that image. Try a JPEG or PNG." };
+  }
+
+  try {
     const arrayBuffer = await cropped.arrayBuffer();
-
-    const { url, error: uploadError } = await uploadProfilePhoto(supabase, userId, arrayBuffer);
-    if (uploadError) throw uploadError;
-
-    const { error: profileError } = await updateUserProfile(supabase, userId, { profile_photo: url });
-    if (profileError) throw profileError;
-
-    return { error: null };
+    const { error } = await setProfilePhoto(supabase, userId, arrayBuffer);
+    return { error: error ? error.message : null };
   } catch (error: unknown) {
     return { error: getErrorMessage(error, 'Failed to upload photo') };
   }

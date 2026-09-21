@@ -37,3 +37,10 @@ export type PublicUserColumn = (typeof PUBLIC_USER_COLUMN_LIST)[number];
 
 /** PostgREST select string for public profile reads. */
 export const PUBLIC_USER_COLUMNS: string = PUBLIC_USER_COLUMN_LIST.join(', ');
+
+/**
+ * Square avatar crop/encode size, shared by web and mobile so both produce
+ * the same asset. Avatars are shown at 80px; 500px leaves room for
+ * high-density screens.
+ */
+export const PROFILE_PHOTO_SIZE_PX = 500;
