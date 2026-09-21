@@ -298,6 +298,26 @@ describe('PostDetailScreen data loading', () => {
     expect(screen.queryByText("Couldn't load this post")).toBeNull();
   });
 
+  it('drops the failure as soon as the next post starts loading', async () => {
+    (getPostById as jest.Mock).mockResolvedValueOnce({ error: new Error('offline') });
+    mockUseRoute.mockReturnValue({ params: { postId: 'post-2' } });
+    const screen = render(<PostDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load this post")).toBeTruthy();
+    });
+
+    // post-3 is slow. Until it answers, the screen must not still be blaming
+    // post-2's failure.
+    (getPostById as jest.Mock).mockReturnValueOnce(new Promise(() => {}));
+    mockUseRoute.mockReturnValue({ params: { postId: 'post-3' } });
+    screen.rerender(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Couldn't load this post")).toBeNull();
+    });
+    expect(screen.queryByText('Post not found')).toBeNull();
+  });
+
   it("loads the viewer's like and save state for this post", async () => {
     (getUserLikedPostIds as jest.Mock).mockResolvedValueOnce({ data: ['post-1'] });
     (getUserSavedPostIds as jest.Mock).mockResolvedValueOnce({ data: ['post-1'] });

@@ -317,8 +317,11 @@ export default function PostDetailScreen() {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadFailed, setLoadFailed] = useState(false);
+  // Which postId each outcome belongs to, so a new postId is loading again by
+  // definition rather than by a reset the effect has to remember to do. The
+  // comments below already work this way.
+  const [loadedPostId, setLoadedPostId] = useState<string | null>(null);
+  const [failedPostId, setFailedPostId] = useState<string | null>(null);
   // Bumped by the Retry button to re-run the post fetch effect.
   const [reloadKey, setReloadKey] = useState(0);
   const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
@@ -340,6 +343,10 @@ export default function PostDetailScreen() {
   // Comments count as loading until the fetch for the current postId has settled.
   const [commentsLoadedForPostId, setCommentsLoadedForPostId] = useState<string | null>(null);
   const commentsLoading = commentsLoadedForPostId !== postId;
+  // A failure belongs to the postId that hit it, so navigating away from it is
+  // already a fresh load and the old error cannot linger over the new post.
+  const loadFailed = failedPostId === postId;
+  const loading = !loadFailed && loadedPostId !== postId;
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [replyTarget, setReplyTarget] = useState<PostComment | null>(null);
@@ -371,18 +378,15 @@ export default function PostDetailScreen() {
       if (result.error) {
         // A lookup that failed is not a post that was deleted: saying so would
         // send the reader away from a post that is still there.
-        setLoadFailed(true);
-        setLoading(false);
+        setFailedPostId(postId);
         return;
       }
       // A missing post clears the previous one, so the screen shows "Post not found"
-      // instead of the last post for the new postId. Clearing the failure too,
-      // so moving from a post that would not load to one that does works
-      // without pressing Retry first.
-      setLoadFailed(false);
+      // instead of the last post for the new postId.
+      setFailedPostId(null);
       setPost(result.data ?? null);
       setLocalLikesCount(result.data?.likes_count ?? 0);
-      setLoading(false);
+      setLoadedPostId(postId);
     });
 
     getPostComments(supabase, postId).then((result) => {
@@ -719,20 +723,10 @@ export default function PostDetailScreen() {
   };
 
   const handleRetryLoad = () => {
-    setLoading(true);
-    setLoadFailed(false);
+    setLoadedPostId(null);
+    setFailedPostId(null);
     setReloadKey((key) => key + 1);
   };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary.main} />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   if (loadFailed) {
     return (
@@ -742,6 +736,16 @@ export default function PostDetailScreen() {
           <TouchableOpacity style={styles.retryButton} onPress={handleRetryLoad}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary.main} />
         </View>
       </SafeAreaView>
     );
