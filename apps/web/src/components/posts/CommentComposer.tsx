@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button, TextInput } from '@mantine/core';
 import styles from './CommentComposer.module.css';
 
@@ -14,6 +14,9 @@ export interface CommentComposerProps {
 /** The comment field under a post. It clears only the text a successful submit sent. */
 export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submitting = false }: CommentComposerProps) {
   const [text, setText] = useState('');
+  /** Bumped by every edit, so a submit can tell whether the field still holds
+   *  what it sent — text that reads the same may be a new draft. */
+  const draftVersionRef = useRef(0);
   const isReply = Boolean(replyingToName);
   const label = isReply ? 'Write a reply' : 'Write a comment';
 
@@ -21,6 +24,8 @@ export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submi
     event.preventDefault();
     const trimmed = text.trim();
     if (!trimmed || submitting) return;
+
+    const submittedVersion = draftVersionRef.current;
 
     try {
       await onSubmit(trimmed);
@@ -30,7 +35,8 @@ export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submi
     }
     // Clear what was sent, not whatever is there now: anything typed while the
     // request was in flight is the start of the next comment.
-    setText((current) => (current.trim() === trimmed ? '' : current));
+    if (draftVersionRef.current !== submittedVersion) return;
+    setText('');
   }
 
   return (
@@ -51,7 +57,10 @@ export function CommentComposer({ replyingToName, onCancelReply, onSubmit, submi
           labelProps={{ className: styles.visuallyHiddenLabel }}
           placeholder={`${label}…`}
           value={text}
-          onChange={(event) => setText(event.currentTarget.value)}
+          onChange={(event) => {
+            draftVersionRef.current += 1;
+            setText(event.currentTarget.value);
+          }}
         />
         <Button type="submit" disabled={!text.trim()} loading={submitting}>
           Post

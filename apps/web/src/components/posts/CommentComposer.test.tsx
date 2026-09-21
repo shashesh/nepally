@@ -57,6 +57,31 @@ describe('CommentComposer', () => {
     expect(field.value).toBe('One more thing');
   });
 
+  it('keeps an identical draft retyped while the submit was in flight', async () => {
+    let settleSubmit: () => void = () => {};
+    const onSubmit = vi.fn().mockReturnValue(
+      new Promise<void>((resolve) => {
+        settleSubmit = resolve;
+      })
+    );
+    render(<CommentComposer onSubmit={onSubmit} />);
+
+    const field = screen.getByLabelText('Write a comment') as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Great post' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith('Great post'));
+
+    // Cleared and retyped, so the field holds a new draft that happens to read
+    // the same as the one in flight.
+    fireEvent.change(field, { target: { value: '' } });
+    fireEvent.change(field, { target: { value: 'Great post' } });
+    await act(async () => {
+      settleSubmit();
+    });
+
+    expect(field.value).toBe('Great post');
+  });
+
   it('will not submit blank text', () => {
     const onSubmit = vi.fn();
     render(<CommentComposer onSubmit={onSubmit} />);

@@ -48,17 +48,22 @@ import styles from '../../styles/PostDetail.module.css';
 
 export default function PostDetailPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { id } = router.query;
   const routePostId = typeof id === 'string' ? id : null;
 
-  // One instance per post. Next reuses this page across an A -> B navigation,
-  // so without the key every piece of state below outlives the post it belongs
-  // to: the reply target, the submit flag, liked/saved, the comment list and
-  // any write still in flight. Keying discards them, and a response that lands
-  // after the reader has moved on updates a dead instance instead of the new
-  // post. Guards inside this component are therefore only about races within
-  // one post, not across posts.
-  return <PostDetailView key={routePostId ?? 'no-post'} routePostId={routePostId} />;
+  // One instance per post and per member. Next reuses this page across an
+  // A -> B navigation, and AuthContext can replace the member without the
+  // route changing at all, so without the key every piece of state below
+  // outlives what it belongs to: the reply target, the submit flag,
+  // liked/saved, the comment list and any write still in flight. Keying
+  // discards them, and a response that lands after the reader has moved on —
+  // or after someone else has signed in — updates a dead instance instead.
+  // Guards inside this component are therefore only about races within one
+  // post and one member.
+  const viewKey = `${user?.id ?? 'anon'}:${routePostId ?? 'no-post'}`;
+
+  return <PostDetailView key={viewKey} routePostId={routePostId} />;
 }
 
 function PostDetailView({ routePostId }: { routePostId: string | null }) {
@@ -85,7 +90,8 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
   /** Bumped by anything that edits comments locally, retiring in-flight loads. */
   const commentsGenerationRef = useRef(0);
   /** One like and one save in flight at a time, so overlapping clicks cannot
-   *  apply stale rollback deltas. Route changes are handled by the key above. */
+   *  apply stale rollback deltas. A change of route or member is handled by
+   *  the key above, which discards these along with everything else. */
   const likePendingRef = useRef(false);
   const savePendingRef = useRef(false);
   /** Set the moment the reader toggles, which retires the hydration below:

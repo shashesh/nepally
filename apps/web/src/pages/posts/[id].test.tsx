@@ -677,6 +677,58 @@ describe('PostDetailPage', () => {
     expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
   });
 
+  describe('when the signed-in member changes', () => {
+    function signInAs(rerender: (ui: React.ReactElement) => void, user: { id: string; full_name: string }) {
+      postDetailMocks.useAuthMock.mockReturnValue({ user });
+      rerender(<PostDetailPage />);
+    }
+
+    it('hydrates for the new member instead of keeping the old one state', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.likePostMock.mockResolvedValue({});
+      postDetailMocks.getUserLikedPostIdsMock.mockResolvedValue({ data: [] });
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined());
+
+      // Someone else signs in on this tab. The first member's like is theirs,
+      // not the new member's.
+      signInAs(rerender, { id: 'user-9', full_name: 'Other Member' });
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '5 likes' }).getAttribute('aria-pressed')).toBe('false')
+      );
+    });
+
+    it('does not report the previous member request on the new member view', async () => {
+      let settleLike: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.likePostMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLike = resolve;
+        })
+      );
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+
+      signInAs(rerender, { id: 'user-9', full_name: 'Other Member' });
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      await act(async () => {
+        settleLike({ error: new Error('rejected') });
+      });
+
+      expect(postDetailMocks.notificationsShowMock).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Could not like this post.' })
+      );
+    });
+  });
+
   describe('when a hydration lands after the reader has acted', () => {
     it('does not let a stale liked snapshot undo an optimistic like', async () => {
       let settleLiked: (result: unknown) => void = () => {};
