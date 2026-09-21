@@ -318,6 +318,9 @@ export default function PostDetailScreen() {
 
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Bumped by the Retry button to re-run the post fetch effect.
+  const [reloadKey, setReloadKey] = useState(0);
   const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
   const [avatarMenuUser, setAvatarMenuUser] = useState<AvatarMenuUser | null>(null);
   const [avatarMenuPos, setAvatarMenuPos] = useState({ top: 0, left: 0 });
@@ -365,8 +368,18 @@ export default function PostDetailScreen() {
 
     getPostById(supabase, postId).then((result) => {
       if (cancelled) return;
+      if (result.error) {
+        // A lookup that failed is not a post that was deleted: saying so would
+        // send the reader away from a post that is still there.
+        setLoadFailed(true);
+        setLoading(false);
+        return;
+      }
       // A missing post clears the previous one, so the screen shows "Post not found"
-      // instead of the last post for the new postId.
+      // instead of the last post for the new postId. Clearing the failure too,
+      // so moving from a post that would not load to one that does works
+      // without pressing Retry first.
+      setLoadFailed(false);
       setPost(result.data ?? null);
       setLocalLikesCount(result.data?.likes_count ?? 0);
       setLoading(false);
@@ -381,7 +394,7 @@ export default function PostDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [postId]);
+  }, [postId, reloadKey]);
 
   // Load the viewer's like/save state for this post.
   useEffect(() => {
@@ -705,11 +718,30 @@ export default function PostDetailScreen() {
     }));
   };
 
+  const handleRetryLoad = () => {
+    setLoading(true);
+    setLoadFailed(false);
+    setReloadKey((key) => key + 1);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.main} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>Couldn&apos;t load this post</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetryLoad}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -1327,6 +1359,19 @@ const styles = StyleSheet.create({
   errorText: {
     ...typography.body,
     color: colors.text.secondary,
+  },
+  retryButton: {
+    marginTop: spacing.s,
+    backgroundColor: colors.primary.main,
+    borderRadius: 10,
+    paddingHorizontal: spacing.m,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryButtonText: {
+    ...typography.button,
+    color: colors.white,
   },
   scrollFlex: {
     flex: 1,

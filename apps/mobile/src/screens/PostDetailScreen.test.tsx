@@ -256,6 +256,48 @@ describe('PostDetailScreen data loading', () => {
     expect(getPostById).toHaveBeenLastCalledWith(expect.anything(), 'missing-post');
   });
 
+  it('offers a retry instead of claiming the post is gone when the lookup fails', async () => {
+    const screen = render(<PostDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Post title')).toBeTruthy();
+    });
+
+    (getPostById as jest.Mock).mockResolvedValueOnce({ error: new Error('offline') });
+    mockUseRoute.mockReturnValue({ params: { postId: 'post-2' } });
+    screen.rerender(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load this post")).toBeTruthy();
+    });
+    // A request that failed is not a post that was deleted.
+    expect(screen.queryByText('Post not found')).toBeNull();
+
+    (getPostById as jest.Mock).mockResolvedValueOnce({ data: { ...mockPost, id: 'post-2' } });
+    fireEvent.press(screen.getByText('Retry'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Post title')).toBeTruthy();
+    });
+  });
+
+  it('clears the failure when the reader moves to a post that loads', async () => {
+    (getPostById as jest.Mock).mockResolvedValueOnce({ error: new Error('offline') });
+    mockUseRoute.mockReturnValue({ params: { postId: 'post-2' } });
+    const screen = render(<PostDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load this post")).toBeTruthy();
+    });
+
+    (getPostById as jest.Mock).mockResolvedValueOnce({ data: { ...mockPost, id: 'post-3' } });
+    mockUseRoute.mockReturnValue({ params: { postId: 'post-3' } });
+    screen.rerender(<PostDetailScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Post title')).toBeTruthy();
+    });
+    expect(screen.queryByText("Couldn't load this post")).toBeNull();
+  });
+
   it("loads the viewer's like and save state for this post", async () => {
     (getUserLikedPostIds as jest.Mock).mockResolvedValueOnce({ data: ['post-1'] });
     (getUserSavedPostIds as jest.Mock).mockResolvedValueOnce({ data: ['post-1'] });

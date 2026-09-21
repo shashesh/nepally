@@ -11387,7 +11387,7 @@ Every interactive child then sits beside the link rather than inside it, so no `
 
 ## PR 4b — Post detail (`feat/web-ui-post-detail`)
 
-Stacked on `feat/web-ui-feed` (PR #80), the way PR 3b stacked on 3a, so it can adopt what 4a built without waiting for the merge. Retarget the PR to `master` once #80 lands.
+Branched from `feat/web-ui-feed` (PR #80), the way PR 3b branched from 3a, so it could adopt what 4a built without waiting for the merge. #80 merged on 2026-09-20 and PR #81 was retargeted to `master` then.
 
 **Inventory** (run on the branch point, 2026-09-19):
 
