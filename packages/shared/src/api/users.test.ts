@@ -13,7 +13,6 @@ import {
   updateUserProfile,
 } from './users';
 import { PUBLIC_USER_COLUMNS } from '../constants/users';
-import * as storage from './storage';
 
 /** Mocks the get_my_profile RPC: `supabase.rpc('get_my_profile').maybeSingle()`. */
 function mockOwnProfileRpc(row: Record<string, unknown> | null, error: Error | null = null) {
@@ -400,13 +399,18 @@ describe('users api', () => {
   });
 
   describe('removeProfilePhoto', () => {
-    it('clears profile_photo on the row, then deletes the storage file', async () => {
+    it('clears profile_photo on the row, then deletes <userId>.jpg from the avatars bucket', async () => {
       const query = { update: vi.fn(), eq: vi.fn() };
       query.update.mockReturnValue(query);
       query.eq.mockResolvedValue({ error: null });
       const { rpc } = mockOwnProfileRpc({ id: 'user-1', profile_photo: null });
-      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
-      const deleteSpy = vi.spyOn(storage, 'deleteProfilePhoto').mockResolvedValue({});
+      const remove = vi.fn().mockResolvedValue({ data: [], error: null });
+      const storageFrom = vi.fn().mockReturnValue({ remove });
+      const supabase = {
+        from: vi.fn().mockReturnValue(query),
+        rpc,
+        storage: { from: storageFrom },
+      } as unknown as SupabaseClient;
 
       const result = await removeProfilePhoto(supabase, 'user-1');
 
@@ -414,9 +418,9 @@ describe('users api', () => {
       expect(query.update).toHaveBeenCalledWith(
         expect.objectContaining({ profile_photo: null })
       );
-      expect(deleteSpy).toHaveBeenCalledWith(supabase, 'user-1');
-
-      deleteSpy.mockRestore();
+      // 'avatars' is AVATARS_BUCKET in storage.ts (not exported).
+      expect(storageFrom).toHaveBeenCalledWith('avatars');
+      expect(remove).toHaveBeenCalledWith(['user-1.jpg']);
     });
 
     it('does not touch storage when clearing the column fails', async () => {
@@ -424,15 +428,18 @@ describe('users api', () => {
       query.update.mockReturnValue(query);
       query.eq.mockResolvedValue({ error: new Error('row-level security') });
       const { rpc } = mockOwnProfileRpc({ id: 'user-1' });
-      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
-      const deleteSpy = vi.spyOn(storage, 'deleteProfilePhoto').mockResolvedValue({});
+      const remove = vi.fn();
+      const storageFrom = vi.fn().mockReturnValue({ remove });
+      const supabase = {
+        from: vi.fn().mockReturnValue(query),
+        rpc,
+        storage: { from: storageFrom },
+      } as unknown as SupabaseClient;
 
       const result = await removeProfilePhoto(supabase, 'user-1');
 
       expect(result.error?.message).toBe('row-level security');
-      expect(deleteSpy).not.toHaveBeenCalled();
-
-      deleteSpy.mockRestore();
+      expect(remove).not.toHaveBeenCalled();
     });
 
     it('still succeeds when the storage delete fails, since the next upload overwrites the orphaned file', async () => {
@@ -440,16 +447,19 @@ describe('users api', () => {
       query.update.mockReturnValue(query);
       query.eq.mockResolvedValue({ error: null });
       const { rpc } = mockOwnProfileRpc({ id: 'user-1', profile_photo: null });
-      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
-      const deleteSpy = vi
-        .spyOn(storage, 'deleteProfilePhoto')
-        .mockResolvedValue({ error: new Error('storage unavailable') });
+      const remove = vi.fn().mockResolvedValue({ data: null, error: new Error('storage unavailable') });
+      const storageFrom = vi.fn().mockReturnValue({ remove });
+      const supabase = {
+        from: vi.fn().mockReturnValue(query),
+        rpc,
+        storage: { from: storageFrom },
+      } as unknown as SupabaseClient;
 
       const result = await removeProfilePhoto(supabase, 'user-1');
 
       expect(result.error).toBeUndefined();
-
-      deleteSpy.mockRestore();
+      // Proves the failure path actually ran, not just that the mock was wired.
+      expect(remove).toHaveBeenCalledWith(['user-1.jpg']);
     });
   });
 

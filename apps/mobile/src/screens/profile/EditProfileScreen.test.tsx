@@ -113,7 +113,7 @@ const mockedUpdateUserProfile =
 const mockedRemoveProfilePhoto =
   removeProfilePhoto as jest.MockedFunction<typeof removeProfilePhoto>;
 
-jest.spyOn(Alert, 'alert');
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 const baseUser = {
   id: 'user-1',
@@ -188,7 +188,7 @@ describe('EditProfileScreen', () => {
     });
   });
 
-  it('removes the photo via removeProfilePhoto when "Remove Photo" is pressed', async () => {
+  it('removes the photo via removeProfilePhoto and shows "Photo removed"', async () => {
     mockUseAuth.mockReturnValue({
       user: { ...baseUser, profile_photo: 'https://example.com/photo.jpg' },
       refreshUser: mockRefreshUser,
@@ -201,6 +201,7 @@ describe('EditProfileScreen', () => {
     const removeButton = alertArgs[2].find(
       (btn: { text: string }) => btn.text === 'Remove Photo'
     );
+    expect(removeButton).toBeDefined();
 
     await act(async () => {
       await removeButton.onPress();
@@ -208,5 +209,30 @@ describe('EditProfileScreen', () => {
 
     expect(mockedRemoveProfilePhoto).toHaveBeenCalledWith(expect.anything(), 'user-1');
     expect(mockRefreshUser).toHaveBeenCalled();
+    expect(getByText('Photo removed')).toBeTruthy();
+  });
+
+  it('shows the error and does not refresh the user when removeProfilePhoto fails', async () => {
+    mockedRemoveProfilePhoto.mockResolvedValueOnce({ error: new Error('RLS denied') });
+    mockUseAuth.mockReturnValue({
+      user: { ...baseUser, profile_photo: 'https://example.com/photo.jpg' },
+      refreshUser: mockRefreshUser,
+    });
+
+    const { getByText } = render(<EditProfileScreen />);
+    fireEvent.press(getByText('Change Photo'));
+
+    const alertArgs = (Alert.alert as jest.Mock).mock.calls[0];
+    const removeButton = alertArgs[2].find(
+      (btn: { text: string }) => btn.text === 'Remove Photo'
+    );
+    expect(removeButton).toBeDefined();
+
+    await act(async () => {
+      await removeButton.onPress();
+    });
+
+    expect(getByText('RLS denied')).toBeTruthy();
+    expect(mockRefreshUser).not.toHaveBeenCalled();
   });
 });
