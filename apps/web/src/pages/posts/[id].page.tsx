@@ -98,6 +98,11 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
    *  the snapshot it is waiting on was taken before they acted. */
   const likeTouchedRef = useRef(false);
   const saveTouchedRef = useRef(false);
+  /** What the server last said, kept even when the hydration was too late to
+   *  apply, so a rejected toggle rolls back to the truth and not to the guess
+   *  the reader clicked on. Null until a snapshot arrives. */
+  const hydratedLikedRef = useRef<boolean | null>(null);
+  const hydratedSavedRef = useRef<boolean | null>(null);
   /**
    * False once this post's view is gone. The key above throws away state, but
    * a toast or a redirect is not state: every async handler checks this before
@@ -171,8 +176,10 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
 
     let cancelled = false;
     getUserLikedPostIds(supabase, user.id).then((result) => {
-      if (cancelled || likeTouchedRef.current || !result.data) return;
-      setLiked(result.data.includes(post.id));
+      if (cancelled || !result.data) return;
+      hydratedLikedRef.current = result.data.includes(post.id);
+      if (likeTouchedRef.current) return;
+      setLiked(hydratedLikedRef.current);
     });
 
     return () => {
@@ -185,8 +192,10 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
 
     let cancelled = false;
     getUserSavedPostIds(supabase, user.id).then((result) => {
-      if (cancelled || saveTouchedRef.current || !result.data) return;
-      setSaved(result.data.includes(post.id));
+      if (cancelled || !result.data) return;
+      hydratedSavedRef.current = result.data.includes(post.id);
+      if (saveTouchedRef.current) return;
+      setSaved(hydratedSavedRef.current);
     });
 
     return () => {
@@ -210,8 +219,11 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
       const { error } = wasLiked ? await unlikePost(supabase, postId) : await likePost(supabase, postId);
       if (!viewActiveRef.current) return;
       if (error) {
-        // Put the heart back rather than showing a like the server rejected.
-        setLiked(wasLiked);
+        // Put the heart back rather than showing a like the server rejected —
+        // back to the snapshot where there is one, because a click made before
+        // it landed was a guess, and the server may have rejected the insert
+        // precisely because the member had already liked this post.
+        setLiked(hydratedLikedRef.current ?? wasLiked);
         setLikesCount((count) => count + (wasLiked ? 1 : -1));
         notify.error(wasLiked ? 'Could not remove your like.' : 'Could not like this post.');
       }
@@ -236,8 +248,8 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
       if (!viewActiveRef.current) return;
       if (error) {
         // Same reasoning as the like: do not leave the button claiming a state
-        // the server never took.
-        setSaved(wasSaved);
+        // the server never took, and prefer the snapshot over the guess.
+        setSaved(hydratedSavedRef.current ?? wasSaved);
         notify.error(wasSaved ? 'Failed to unsave post.' : 'Failed to save post.');
         return;
       }

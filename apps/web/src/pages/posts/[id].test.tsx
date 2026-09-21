@@ -778,6 +778,76 @@ describe('PostDetailPage', () => {
     });
   });
 
+  describe('when the reader acts before the snapshot arrives', () => {
+    it('lands on liked when the like was rejected as one the member already had', async () => {
+      let settleLiked: (result: unknown) => void = () => {};
+      let settleLike: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserLikedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLiked = resolve;
+        })
+      );
+      postDetailMocks.likePostMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLike = resolve;
+        })
+      );
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      // The heart is still off because the snapshot has not landed.
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined());
+
+      // It lands, and says this member liked the post long ago.
+      await act(async () => {
+        settleLiked({ data: ['post-1'] });
+      });
+      // So the insert hits the (post_id, user_id) unique constraint.
+      await act(async () => {
+        settleLike({ error: new Error('duplicate key value violates unique constraint') });
+      });
+
+      // Rolling back to the pre-click guess would claim the member never
+      // liked it, and every further click would fail the same way.
+      const likeButton = screen.getByRole('button', { name: '5 likes' });
+      expect(likeButton.getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('lands on saved when the save was rejected as one the member already had', async () => {
+      let settleSaved: (result: unknown) => void = () => {};
+      let settleSave: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserSavedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleSaved = resolve;
+        })
+      );
+      postDetailMocks.savePostMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleSave = resolve;
+        })
+      );
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
+
+      await act(async () => {
+        settleSaved({ data: ['post-1'] });
+      });
+      await act(async () => {
+        settleSave({ error: new Error('duplicate key value violates unique constraint') });
+      });
+
+      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+    });
+  });
+
   describe('when the post itself cannot be loaded', () => {
     it('offers a retry instead of claiming the post does not exist', async () => {
       postDetailMocks.getPostByIdMock.mockResolvedValueOnce({ error: new Error('offline') });
