@@ -5,7 +5,6 @@
   "apps/web/src/components/marketplace/ListingStrip.module.css",
   "apps/web/src/components/profile/AboutYouSection.module.css",
   "apps/web/src/components/users/FollowButton.module.css",
-  "apps/web/src/pages/events/createEvent.module.css",
   "apps/web/src/pages/events/eventDetail.module.css",
   "apps/web/src/pages/events/events.module.css",
   "apps/web/src/pages/marketplace/listing/promote.module.css",

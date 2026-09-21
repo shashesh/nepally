@@ -1,25 +1,36 @@
+/**
+ * Create and edit event. The inputs, type chips, radios and photo picker this
+ * file used to style are now Mantine, ToggleChipGroup, DateTimeField and
+ * ImageUploader, so what is left is the page frame and the rows around the
+ * form.
+ *
+ * The five per-type colours moved to `--event-<type>-fg` / `-bg` in tokens.css
+ * and are applied through ToggleChipGroup's `data-value`, which is why there
+ * is no longer a class per event type.
+ */
+
 .page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #F4F8FF 0%, #F7F7F7 100%);
+  background: var(--surface-1);
 }
 
 .container {
   max-width: 700px;
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding: var(--space-5) var(--space-4) var(--space-7);
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .backLink {
-  color: #1565C0;
+  color: var(--accent-ink);
+  font-size: var(--font-size-sm);
   text-decoration: none;
-  font-size: 14px;
 }
 
 .backLink:hover {
@@ -27,265 +38,76 @@
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #212121;
   margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-1);
 }
 
 .form {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid #E6EAF0;
-  box-shadow: 0 8px 30px rgba(11, 37, 69, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-0);
+  box-shadow: var(--shadow-float);
 }
-
 
 .fieldGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
-.label {
-  font-size: 13px;
-  font-weight: 700;
-  color: #212121;
+/* Colour each event-type chip from its token. ToggleChipGroup puts the
+   option's value on data-value, so the page can theme chips without the
+   component knowing any event vocabulary. */
+.fieldGroup :global([data-value='cultural'][data-pressed]) {
+  border-color: var(--event-cultural-fg);
+  background: var(--event-cultural-bg);
+  color: var(--event-cultural-fg);
 }
 
-.input {
-  border: 1.5px solid #E0E0E0;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 15px;
-  color: #1C1F23 !important;
-  background: #FFFFFF !important;
-  -webkit-text-fill-color: #1C1F23;
-  color-scheme: light;
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
-  width: 100%;
-  box-sizing: border-box;
+.fieldGroup :global([data-value='religious'][data-pressed]) {
+  border-color: var(--event-religious-fg);
+  background: var(--event-religious-bg);
+  color: var(--event-religious-fg);
 }
 
-.input::placeholder {
-  color: #8A94A6;
-  opacity: 1;
+.fieldGroup :global([data-value='social'][data-pressed]) {
+  border-color: var(--event-social-fg);
+  background: var(--event-social-bg);
+  color: var(--event-social-fg);
 }
 
-.input:hover {
-  border-color: #C7D0DC;
+.fieldGroup :global([data-value='career'][data-pressed]) {
+  border-color: var(--event-career-fg);
+  background: var(--event-career-bg);
+  color: var(--event-career-fg);
 }
 
-.input:focus {
-  border-color: #1565C0;
-  box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.16);
-}
-
-.input[type='date']::-webkit-calendar-picker-indicator,
-.input[type='time']::-webkit-calendar-picker-indicator {
-  opacity: 0.75;
-  cursor: pointer;
-}
-
-.dateTimeRow {
-  display: flex;
-  gap: 10px;
-}
-
-.dateTimeField {
-  flex: 1;
-}
-
-.errorBanner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: #FFF5F5;
-  border: 1px solid #FEB2B2;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: #C53030;
-}
-
-.errorDismiss {
-  background: none;
-  border: none;
-  color: #C53030;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.inputError {
-  border-color: #C62828;
-}
-
-.textarea {
-  resize: vertical;
-  min-height: 120px;
-  line-height: 1.5;
-}
-
-.charCount {
-  font-size: 11px;
-  color: #9E9E9E;
-  text-align: right;
-}
-
-.typeChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.typeChip {
-  padding: 8px 14px;
-  border-radius: 20px;
-  border: 1.5px solid #E0E0E0;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  color: #757575;
-  cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
-}
-
-.typeChip:hover {
-  border-color: #BCC7D4;
-  color: #495262;
-}
-
-.typeChipActive {
-  border-color: transparent;
-}
-
-.typeChipActiveCultural {
-  background: #FCE4EC;
-  color: #AD1457;
-}
-
-.typeChipActiveReligious {
-  background: #E8EAF6;
-  color: #3949AB;
-}
-
-.typeChipActiveSocial {
-  background: #E0F7FA;
-  color: #00838F;
-}
-
-.typeChipActiveCareer {
-  background: #E8F5E9;
-  color: #2E7D32;
-}
-
-.typeChipActiveOther {
-  background: #F5F5F5;
-  color: #424242;
+.fieldGroup :global([data-value='other'][data-pressed]) {
+  border-color: var(--event-other-fg);
+  background: var(--event-other-bg);
+  color: var(--event-other-fg);
 }
 
 .radioGroup {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.radioOption {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.radioInput {
-  margin-top: 3px;
-  accent-color: #1565C0;
-}
-
-.radioLabel {
-  font-size: 14px;
-  color: #212121;
-}
-
-.photoPicker {
-  border: 1.5px dashed #BDBDBD;
-  border-radius: 8px;
-  padding: 14px 12px;
-  background: #F9FCFF;
-  color: #1565C0;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.photoPicker:hover {
-  border-color: #90A4C1;
-  background: #F2F8FF;
-}
-
-.photoHelp {
-  font-size: 12px;
-  color: #757575;
-  font-weight: 500;
-}
-
-.hiddenInput {
-  display: none;
-}
-
-.photoCard {
-  border: 1px solid #E0E0E0;
-  border-radius: 8px;
-  padding: 10px;
-  background: #FFFFFF;
-}
-
-.photoPreview {
-  width: 100%;
-  max-height: 240px;
-  object-fit: cover;
-  border-radius: 8px;
-  background: #F5F5F5;
-}
-
-.photoActions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.photoBtnSecondary {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1.5px solid #E0E0E0;
-  color: #616161;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  background: #FFFFFF;
-  display: inline-flex;
-  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
 .switchRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #F5F5F5;
-  border-radius: 8px;
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--surface-1);
 }
 
 .switchLabel {
@@ -295,52 +117,30 @@
 }
 
 .switchTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: #212121;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-1);
 }
 
 .switchSubtitle {
-  font-size: 12px;
-  color: #757575;
+  font-size: var(--font-size-xs);
+  color: var(--text-2);
 }
 
 .postingFooter {
-  background: #E3F2FD;
-  border-radius: 8px;
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   text-align: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1565C0;
 }
 
 .submitRow {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding-top: 8px;
-  border-top: 1px solid #E0E0E0;
-}
-
-@media (max-width: 640px) {
-  .container {
-    padding: 16px 12px 28px;
-  }
-
-  .form {
-    padding: 16px;
-    gap: 16px;
-  }
-
-  .submitRow {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
-    margin: 0 -16px -16px;
-    padding: 10px 16px;
-    border-top: 1px solid var(--color-border-solid);
-    background: var(--color-surface);
-    gap: 8px;
-  }
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
 }

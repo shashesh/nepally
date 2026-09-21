@@ -10,7 +10,6 @@ export const RAW_ELEMENT_ALLOWLIST = [
   "src/components/marketplace/ListingStrip.tsx",
   "src/components/profile/AboutYouSection.tsx",
   "src/components/users/FollowButton.tsx",
-  "src/pages/events/create.page.tsx",
   "src/pages/events/index.page.tsx",
   "src/pages/login.page.tsx",
   "src/pages/marketplace/listing/[id].page.tsx",
