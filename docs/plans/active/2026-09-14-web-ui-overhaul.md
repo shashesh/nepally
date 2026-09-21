@@ -187,7 +187,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | Merged (PR #83) | 2026-09-21 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
-| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20 | In Progress | 2026-09-21 | branched from `master` at e685317 |
+| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a | In Progress | 2026-09-21 | branched from `master` at e685317 |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -12095,6 +12095,7 @@ Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same convent
 | `packages/shared/src/utils/listingPrice.ts`, `.test.ts` | `formatListingPrice`: the free-text price column, for display |
 | `packages/shared/src/api/metroArea.test.ts` | Tests for the new `getMetroAreaById` (the file had none) |
 | `packages/shared/src/utils/text.ts`, `.test.ts` | `pluralize(count, singular, plural?)`, shared by the summary rows *(added in review, 3ea26a3)* |
+| `apps/web/src/components/ui/SummaryRow.tsx`, `.module.css`, `.test.tsx` | The shell every summary row shares: stretched title link, badge, leading, menu, dotted meta lines *(added in review, Task 6.5a)* |
 | `apps/web/src/components/posts/PostSummaryRow.tsx`, `.module.css`, `.test.tsx` | One post as a row: title link, scope, excerpt, counts |
 | `apps/web/src/components/events/EventSummaryRow.tsx`, `.module.css`, `.test.tsx` | One event as a row: date, place, going count, past or cancelled |
 | `apps/web/src/components/marketplace/ListingSummaryRow.tsx`, `.module.css`, `.test.tsx` | One listing as a row, with an owner view for status, stats and expiry |
@@ -12227,6 +12228,45 @@ This replaces users/[id] 324–367, and uses the same stretched link as `PostSum
 - [ ] **Step 4: Run and watch it pass.**
 - [ ] **Step 5: Commit** as `feat(web): add EventSummaryRow`.
 
+### Task 6.5a: `SummaryRow` shell *(added in review of 6.4)*
+
+**Files:** create `components/ui/SummaryRow.tsx`, `.module.css`, `.test.tsx`; modify `components/ui/index.ts`, `components/posts/PostSummaryRow.tsx` / `.module.css`, `components/events/EventSummaryRow.tsx` / `.module.css`.
+
+After Tasks 6.3 and 6.4, about 50 of `EventSummaryRow.module.css`'s 80 lines copy `PostSummaryRow.module.css` word for word. That includes the stretched link, the no-shrink badge wrapper, the border hover (decision 11) and the `content: '·' / ''` separator. `ListingSummaryRow` would be the third copy. This task moves the shared part into one shell, so the rule "only the title is a link, and the menu sits outside it" lives in one place.
+
+**Interface:**
+
+```ts
+export interface SummaryRowProps {
+  /** The row's only link. Its `::after` covers the row. */
+  href: string;
+  title: string;
+  /** Beside the title, e.g. a ScopeBadge or a status chip. It never shrinks. */
+  badge?: ReactNode;
+  /** Before the text, e.g. a thumbnail. Outside the link. */
+  leading?: ReactNode;
+  /** Beside the row, above the link's overlay, e.g. an ActionMenu. A falsy value renders no slot. */
+  menu?: ReactNode;
+  /** The lines under the title. */
+  children?: ReactNode;
+}
+
+/** One line of items separated by a dot that screen readers skip. */
+export interface SummaryRowMetaProps {
+  children: ReactNode;
+  /** `detail` is the body-size line under a title; `meta` is the smaller, quieter one. Default `meta`. */
+  variant?: 'detail' | 'meta';
+}
+```
+
+`PostSummaryRow` becomes `SummaryRow` with a `ScopeBadge` badge, its clamped description, and a `SummaryRowMeta`. `EventSummaryRow` becomes `SummaryRow` with two `SummaryRowMeta` lines. Each row keeps only its own rules: the description clamp for posts, and nothing much for events. `overflow-wrap: anywhere` moves into `SummaryRowMeta`, so every row gets it. `PostCard` is left alone, because its hover is PR 10's (decision 11).
+
+- [ ] **Step 1: Write the failing test** for `SummaryRow`. The only link is named by `title` and points to `href`. `badge`, `leading` and `menu` each render outside the link. `menu={false}` renders no slot (the article has one fewer child). `SummaryRowMeta` renders each item in its own element.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/ui/SummaryRow.test.tsx`
+- [ ] **Step 3: Implement**, export both from `components/ui/index.ts`, and move the two rows onto it. **Their existing tests are the specification and must pass unchanged.**
+- [ ] **Step 4: Run all three suites**, then `npm run lint --workspace=apps/web`, `npm run lint:guards` and `npm run type-check --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `refactor(web): share one SummaryRow shell between the summary rows`.
+
 ### Task 6.5: `ListingSummaryRow`
 
 **Files:** create `components/marketplace/ListingSummaryRow.tsx`, `.module.css`, `.test.tsx`.
@@ -12254,6 +12294,8 @@ The public view adds the relative time. The owner view adds:
 - "Expires in 10 days", when `isListingExpiringSoon` is true
 
 The status chip is text with a 1px border, in `--success` (active), `--warning` (inactive) or `--danger` (removed), on `--surface-1`. A `data-status` attribute selects the colour (recon 5). PR 8's my-listings page can adopt both the row and `isListingExpiringSoon`.
+
+Build it on `SummaryRow` (Task 6.5a): the thumbnail is `leading`, the owner view's status chip is `badge` (the public view has none), and the lines are `SummaryRowMeta`s. Its own stylesheet then holds only the thumbnail and the status chip.
 
 - [ ] **Step 1: Write the failing test.** Link name and href. `price: 80` shows "$80", and "Negotiable" shows as typed. No price when it is `null`. The category emoji when there are no photos. The public view shows the relative time and no status. The owner view shows "Active" and the three counts. "Expires in 10 days" appears at 80 days since refresh, and not for an inactive listing.
 - [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/marketplace/ListingSummaryRow.test.tsx`
@@ -12671,6 +12713,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
 - **Tokens:** event-type colours become semantic tokens (`--event-<type>-fg/-bg`), added to `tokens.css` with contrast pairs.
 - **Also:** adopt `useInfiniteScroll` (events/index 110–125), `PageHeader` and `EmptyState`; replace `confirm()` in events/[id]; the filter search input uses a Mantine `TextInput`.
 - **Already built:** `EventSummaryRow` (PR 6, Task 6.4) renders an event as a compact row, for any list that does not need the full `EventCard`.
+- **Also:** add a shared `isEventPast(event, now)` to `packages/shared/src/logic` and replace the eight inline copies of `new Date(end_date ?? start_date) < now` (four in web, three in mobile, one in `EventSummaryRow`) — found in PR 6's Task 6.4 review.
 
 ## PR 8 — Marketplace (`feat/web-ui-marketplace`)
 
