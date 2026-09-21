@@ -101,6 +101,14 @@ export function ImageUploader({
   const [message, setMessage] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
 
+  // The latest controlled value. A transform runs between the drop and the
+  // onChange, and the member can remove or reorder photos while it does, so
+  // appending to the `photos` captured at drop time would undo that change.
+  const photosRef = useRef(photos);
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+
   // Every preview URL this component minted, so unmount can revoke the ones
   // still in play. Removal revokes eagerly and drops the entry.
   const createdUrlsRef = useRef<Set<string>>(new Set());
@@ -142,25 +150,41 @@ export function ImageUploader({
       })
     );
 
-    const usable = prepared.filter((file): file is File => file !== null);
-    const failed = prepared.length - usable.length;
+    const transformed = prepared.filter((file): file is File => file !== null);
+    const failed = prepared.length - transformed.length;
+
+    // Size is checked here, not by the dropzone, whenever a transform runs:
+    // the limit belongs to what gets uploaded, and a 5MB camera photo that
+    // downscales to 400KB is perfectly acceptable.
+    const usable = transformFile ? transformed.filter((file) => file.size <= maxBytes) : transformed;
+    const tooLarge = transformed.length - usable.length;
+
+    // Re-read the array, which may have moved on while the transform ran.
+    const current = photosRef.current;
+    const room = Math.max(0, max - current.length);
+    const fitting = usable.slice(0, room);
 
     const notices: string[] = [];
-    if (overflow > 0) notices.push(capMessage());
+    if (overflow > 0 || fitting.length < usable.length) notices.push(capMessage());
     if (failed > 0) {
       notices.push(`${failed} ${failed === 1 ? 'photo' : 'photos'} could not be processed.`);
     }
+    if (tooLarge > 0) {
+      notices.push(
+        `${tooLarge} ${tooLarge === 1 ? 'file is' : 'files are'} too large. Each photo must be ${formatMegabytes(maxBytes)} or smaller.`
+      );
+    }
     setMessage(notices.length > 0 ? notices.join(' ') : null);
 
-    if (usable.length === 0) return;
+    if (fitting.length === 0) return;
 
-    const picked: UploaderPhoto[] = usable.map((file) => {
+    const picked: UploaderPhoto[] = fitting.map((file) => {
       const previewUrl = URL.createObjectURL(file);
       createdUrlsRef.current.add(previewUrl);
       return { kind: 'picked', id: newPickedId(), previewUrl, file };
     });
 
-    onChange([...photos, ...picked]);
+    onChange([...current, ...picked]);
   }
 
   function handleMove(index: number, direction: -1 | 1) {
@@ -202,7 +226,9 @@ export function ImageUploader({
         onDrop={handleDrop}
         onReject={handleReject}
         accept={accept}
-        maxSize={maxBytes}
+        // With a transform, the size limit applies to its output instead; see
+        // handleDrop. Without one, the dropzone is the only size check.
+        maxSize={transformFile ? undefined : maxBytes}
         disabled={disabled || isFull}
         // react-dropzone only drops its handlers when disabled; it leaves the
         // input focusable and activatable. Mark it disabled for real.

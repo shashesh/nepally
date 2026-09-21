@@ -243,6 +243,69 @@ describe('ImageUploader', () => {
       expect(screen.getByText(/1 photo could not be processed/i)).toBeDefined();
     });
 
+    it('checks the size of what the transform produced, not what was picked', async () => {
+      const onChangeSpy = vi.fn();
+      // A camera photo far over the limit that downscales to well under it —
+      // the case create listing has always supported.
+      const transformFile = vi.fn().mockResolvedValue(makeFile('small.jpg', 'image/jpeg', 200 * 1024));
+      render(<Harness onChangeSpy={onChangeSpy} maxBytes={ONE_MB} transformFile={transformFile} />);
+
+      await pickFiles([makeFile('huge.png', 'image/png', 8 * ONE_MB)]);
+
+      expect(transformFile).toHaveBeenCalled();
+      expect(onChangeSpy).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(/too large/i)).toBeNull();
+    });
+
+    it('rejects a file the transform could not bring under the limit', async () => {
+      const onChangeSpy = vi.fn();
+      const transformFile = vi.fn().mockResolvedValue(makeFile('still-big.jpg', 'image/jpeg', 4 * ONE_MB));
+      render(<Harness onChangeSpy={onChangeSpy} maxBytes={ONE_MB} transformFile={transformFile} />);
+
+      await pickFiles([makeFile('huge.png', 'image/png', 8 * ONE_MB)]);
+
+      expect(onChangeSpy).not.toHaveBeenCalled();
+      expect(screen.getByText(/too large/i)).toBeDefined();
+    });
+
+    it('appends to the list as it stands when the transform finishes, not as it was', async () => {
+      const onChangeSpy = vi.fn();
+      let release: (file: File) => void = () => {};
+      const transformFile = vi.fn(
+        () => new Promise<File>((resolve) => { release = resolve; })
+      );
+      render(
+        <Harness
+          onChangeSpy={onChangeSpy}
+          transformFile={transformFile}
+          initial={[{ kind: 'stored', url: 'https://cdn.example.com/a.jpg' }]}
+        />
+      );
+
+      // Start the drop; the transform stays pending until `release` is called.
+      await pickFiles([makeFile('one.png')]);
+      expect(transformFile).toHaveBeenCalled();
+      expect(onChangeSpy).not.toHaveBeenCalled();
+
+      // Remove the stored photo while the transform is still running.
+      fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }));
+      expect(onChangeSpy).toHaveBeenLastCalledWith([]);
+
+      await act(async () => {
+        release(makeFile('one.png'));
+        // Promise.all, then the async continuation in handleDrop.
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      // The removal must survive: the picked photo lands alone, not behind the
+      // photo the member just took out.
+      const next = onChangeSpy.mock.calls.at(-1)?.[0] as UploaderPhoto[];
+      expect(next).toHaveLength(1);
+      expect(next[0].kind).toBe('picked');
+    });
+
     it('reports a failure even when nothing survives', async () => {
       const onChangeSpy = vi.fn();
       const transformFile = vi.fn().mockRejectedValue(new Error('unreadable'));
