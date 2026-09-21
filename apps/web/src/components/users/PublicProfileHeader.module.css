@@ -16,7 +16,7 @@
 
 .card {
   background: var(--surface-1);
-  border: 1px solid var(--border-solid);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
   margin: calc(-1 * var(--space-7)) var(--space-4) 0;
   padding: 0 var(--card-padding) var(--card-padding);

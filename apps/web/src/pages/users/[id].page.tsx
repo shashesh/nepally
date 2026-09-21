@@ -25,15 +25,22 @@ const TABS: { value: ProfileTab; label: string }[] = [
   { value: 'about', label: 'About' },
 ];
 
-function ProfileShell({ title, children }: { title: string; children: ReactNode }) {
+interface ProfileShellProps {
+  title: string;
+  children: ReactNode;
+  /** 'state' is the loading/not-found single-card layout; see .stateContainer. */
+  variant?: 'default' | 'state';
+}
+
+function ProfileShell({ title, children, variant = 'default' }: ProfileShellProps) {
+  const containerClassName =
+    variant === 'state' ? `${styles.container} ${styles.stateContainer}` : styles.container;
   return (
     <>
       <Head>
         <title>{title}</title>
       </Head>
-      <div className={styles.page}>
-        <div className={styles.container}>{children}</div>
-      </div>
+      <div className={containerClassName}>{children}</div>
     </>
   );
 }
@@ -181,7 +188,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
 
   if (profile.loading) {
     return (
-      <ProfileShell title="Profile · Nepally">
+      <ProfileShell title="Profile · Nepally" variant="state">
         <LoadingState variant="detail" label="Loading profile…" />
       </ProfileShell>
     );
@@ -189,7 +196,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
 
   if (profile.error || !profileUser) {
     return (
-      <ProfileShell title="Profile · Nepally">
+      <ProfileShell title="Profile · Nepally" variant="state">
         <EmptyState
           title="Member not found"
           description={profile.error ?? undefined}
@@ -235,7 +242,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
             if (value) setActiveTab(value as ProfileTab);
           }}
           keepMounted={false}
-          classNames={{ list: styles.tabList }}
+          classNames={{ list: styles.tabList, tab: styles.tab }}
         >
           <Tabs.List aria-label="Profile sections">
             {TABS.map(({ value, label }) => {

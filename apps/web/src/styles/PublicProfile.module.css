@@ -7,26 +7,25 @@
  * (components/users/); loading and not-found states are components/ui/LoadingState
  * and components/ui/EmptyState; post/event/listing rows are components/ui/SummaryRow
  * and its callers (PostSummaryRow, EventSummaryRow, ListingSummaryRow).
+ *
+ * No .page wrapper: AppShell.Main (Layout.module.css .main) already paints
+ * --surface-0 and sizes itself to the viewport; a second min-height: 100vh
+ * here just added an extra empty scroll region below the fold.
  */
 
 /* ── Page shell ──────────────────────────────── */
-
-.page {
-  min-height: 100vh;
-  background: var(--surface-0);
-}
 
 .container {
   max-width: var(--layout-content-width);
   margin: 0 auto;
 }
 
-/* Loading and not-found states render a single child (LoadingState /
-   EmptyState) directly in the container, with no header card above it —
-   give that child its own top gap. The loaded state's header card sits
-   flush with the page top, so it's untouched (two children: header + .content). */
-.container > *:only-child {
-  margin-top: var(--space-7);
+/* ProfileShell applies this alongside .container only for the loading and
+   not-found states, which render a single card with no header above it.
+   Padding (not the loaded state's margin-based spacing) insets that card
+   by the same amount .content sits in from, so both line up. */
+.stateContainer {
+  padding: var(--space-7) var(--space-4) 0;
 }
 
 /* ── Content area (tabs + panels) ─────────────── */
@@ -37,18 +36,46 @@
 
 /* Keeps all four tabs (three with count badges) on one row down to phone
    widths instead of Mantine's default wrap; matches the old tab rail's
-   horizontal scroll. Wired via <Tabs classNames={{ list: styles.tabList }}>
-   — this class merges onto Mantine's own list element, whose ::before
-   draws the bottom border across the full row width, so it stays visible
-   regardless of scroll position. */
+   horizontal scroll. Wired via <Tabs classNames={{ list: styles.tabList,
+   tab: styles.tab }}> — both classes merge onto Mantine's own elements.
+   Mantine draws the default-variant underline with a ::before positioned
+   inside this same scrolling element (Tabs.css .m_576c9d4::before), so it
+   scrolls away with the tabs; redraw it as an inset box-shadow on the list
+   itself instead (not part of the scrolled content, so it stays put) and
+   hide the native pseudo. --tabs-list-border-width is 2px for the default
+   variant — every Tabs.Tab reserves a transparent bottom border of that
+   same width, so this line sits flush under inactive tabs and the active
+   tab's own colored border replaces it exactly, with no thickness jump. */
 .tabList {
+  --tab-border-color: var(--border-subtle);
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+  box-shadow: inset 0 calc(-1 * var(--tabs-list-border-width, 2px)) 0 var(--tab-border-color);
+}
+
+.tabList::before {
+  display: none;
 }
 
 .tabList::-webkit-scrollbar {
   display: none;
+}
+
+/* Without this, nowrap lets each tab (and the count Badge inside it, which
+   clips its own content) shrink below its label's width instead of the row
+   scrolling — the badge's number gets clipped to an empty circle first. */
+.tab {
+  flex-shrink: 0;
+}
+
+/* The global :focus-visible ring (globals.css) is a 2px outline at a 2px
+   offset plus a 6px halo; overflow-x: auto here forces overflow-y: auto too
+   (a scroll container can't leave one axis visible), which clips both at
+   every width. Draw the ring inside the tab instead. */
+.tab:focus-visible {
+  outline-offset: -2px;
+  box-shadow: none;
 }
 
 /* ── About tab ─────────────────────────────────── */
@@ -57,7 +84,7 @@
   display: flex;
   flex-direction: column;
   background: var(--surface-1);
-  border: 1px solid var(--border-solid);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
   padding: var(--space-4);
 }
@@ -77,6 +104,7 @@
   line-height: var(--leading-normal);
   max-width: 48ch;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .aboutDivider {
@@ -88,7 +116,7 @@
 .aboutRow {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-2);
   padding: var(--space-2) 0;
 }
@@ -104,6 +132,7 @@
   color: var(--text-1);
   font-weight: var(--font-weight-medium);
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 /* ── Rows (posts / events / listings) ─────────── */
@@ -117,6 +146,10 @@
 /* ── Responsive ────────────────────────────────── */
 
 @mixin smaller-than $mantine-breakpoint-sm {
+  .stateContainer {
+    padding-inline: var(--space-2);
+  }
+
   .content {
     margin: var(--space-4) var(--space-2) var(--space-7);
   }
