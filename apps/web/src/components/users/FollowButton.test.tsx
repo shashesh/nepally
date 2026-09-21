@@ -116,11 +116,8 @@ describe('FollowButton (web)', () => {
     button.focus();
     fireEvent.click(button);
 
-    // Mid-toggle: optimistic label, marked disabled for assistive tech via aria-disabled,
-    // but never natively `disabled` — that's the real guard here, since a real browser (unlike
-    // jsdom, which doesn't implement the disabled-focused-element-loses-focus rule) would move
-    // focus to <body> the instant a focused button gains the `disabled` attribute. The
-    // activeElement check below documents intent but can't catch that regression by itself.
+    // Mid-toggle: optimistic label, aria-disabled — but `.disabled` is the real guard, since a
+    // real browser (unlike jsdom) moves focus to <body> the moment a focused button gets `disabled`.
     expect(document.activeElement).toBe(button);
     expect(button.textContent).toBe('Following');
     expect(button.disabled).toBe(false);
@@ -132,9 +129,9 @@ describe('FollowButton (web)', () => {
     expect(button.disabled).toBe(false);
   });
 
-  it('ignores a stale toggle result after the target changes', async () => {
-    // /users/[id] keeps FollowButton mounted while navigating between profiles, so a
-    // toggle still in flight for the old target must not touch the new target's state.
+  it('reports a stale toggle failure but leaves the new profile alone', async () => {
+    // FollowButton keys its inner toggle by viewer/target, so navigating to a new profile
+    // remounts it; a request still in flight for the old profile must not touch the new one.
     const toggleResult = deferred<{ error?: unknown }>();
     mocks.followUser.mockReturnValue(toggleResult.promise);
     const onChange = vi.fn();
@@ -151,11 +148,10 @@ describe('FollowButton (web)', () => {
     rerender(
       <FollowButton supabase={supabase} viewerId="viewer" targetUserId="target-2" onChange={onChange} />
     );
-    await waitFor(() => expect(mocks.isFollowing).toHaveBeenLastCalledWith(supabase, 'viewer', 'target-2'));
     await waitFor(() => expect(getButton().textContent).toBe('Following'));
 
-    // target-1's stale request now fails. If it were applied, it would revert `following`
-    // to target-1's pre-click value (false) and paint over target-2's loaded state.
+    // target-1's stale request now fails: still reported, since that follow really did fail,
+    // but the remounted target-2 instance is a separate component with its own state.
     await act(async () => {
       toggleResult.resolve({ error: 'network' });
       await toggleResult.promise;
@@ -164,7 +160,9 @@ describe('FollowButton (web)', () => {
     expect(getButton().textContent).toBe('Following');
     expect(getButton().getAttribute('aria-disabled')).toBeNull();
     expect(onChange).not.toHaveBeenCalled();
-    expect(mocks.notificationsShow).not.toHaveBeenCalled();
+    expect(mocks.notificationsShow).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Couldn't update follow. Please try again." })
+    );
   });
 
   it('reverts the optimistic update when the request fails', async () => {
