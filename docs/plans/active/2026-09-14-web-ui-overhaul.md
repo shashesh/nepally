@@ -12105,7 +12105,8 @@ Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same convent
 | `apps/web/src/components/profile/ProfilePhotoControl.tsx`, `.module.css`, `.test.tsx` | The avatar with Add/Change/Remove photo |
 | `packages/shared/src/utils/bytes.ts`, `.test.ts` | `formatMegabytes`, shared by `ProfilePhotoControl` and `ImageUploader` *(added in review, Task 6.12)* |
 | `apps/web/src/hooks/useProfileEditing.ts`, `.test.tsx` | Edit name, edit bio and change password, through `usePrompt` and `notify` |
-| `apps/web/src/hooks/useOwnProfileContent.ts`, `.test.ts` | Loads the signed-in member's posts, saved posts and listings |
+| `apps/web/src/hooks/useOwnProfileContent.ts`, `.test.ts` | Loads the signed-in member's posts, saved posts and listings; `unsave` with rollback |
+| `apps/web/src/hooks/useUserList.ts`, `.test.ts` | One user-scoped list with loading, error and `reload`; reusable by PR 10 *(added in review, Task 6.14)* |
 | `apps/web/src/components/profile/AccountDetails.tsx`, `.module.css`, `.test.tsx` | The About tab's read-only Bio, Account Info and Activity sections |
 | `apps/web/src/components/profile/AboutYouSection.test.tsx` | Tests for a component that had none |
 
@@ -12551,7 +12552,7 @@ This replaces `handleEditName`, `handleEditBio` and `handleChangePassword` (prof
 
 ### Task 6.14: `useOwnProfileContent`
 
-**Files:** create `hooks/useOwnProfileContent.ts`, `.test.ts`.
+**Files:** create `hooks/useOwnProfileContent.ts`, `.test.ts`, and the internal `hooks/useUserList.ts`, `.test.ts` (added in review).
 
 **Interface:**
 
@@ -12587,7 +12588,11 @@ This moves profile 49–56 and 91–148 out of the page, with two small fixes:
 - **Loading helper.** Each list comes from a small internal `useUserList<T>(userId, fetchList, fallbackError)` in `hooks/useUserList.ts`. Each list has its own `reload`, so `ErrorState` can offer a retry. PR 10's public-profile list-errors item can reuse the helper.
 - **Unsave.** The first draft's one-way `dropSaved` became `unsave`, which owns the whole mutation. It hides the post through a set of hidden ids and restores it in place if `unsavePost` fails. Today the page toasts "Failed to unsave post." while the post stays gone.
 
-- [ ] **Step 1: Write the failing test** with `renderHook`. Posts are requested with `includeOwnPending` true. Each list reports its error. A failed listings load sets its error. `dropSaved` removes exactly one post. A null `userId` requests nothing.
+- [ ] **Step 1: Write the failing test** with `renderHook`.
+  - `useUserList` covers the mechanism: loading, success, error and fallback, reload, stale responses, and user changes.
+  - `useOwnProfileContent` covers the wiring: posts are requested with `includeOwnPending` true, and a failed listings load reports "Failed to load your listings".
+  - It also covers `unsave`: it hides at once, and restores the post in place on failure.
+  - A user change un-hides a post the previous user was unsaving.
 - [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useOwnProfileContent.test.ts`
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run and watch it pass.**
@@ -12786,7 +12791,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Map Mantine's disabled palette (`--mantine-color-disabled`, `-disabled-color`, `-disabled-border`) onto tokens in `mantine-theme.ts`'s `cssVariablesResolver`; today every disabled Mantine control is a cool grey outside the palette (found in PR 6's Task 6.6 review).
   - [ ] Avatar alt text leaks full surnames: every `Avatar` caller except `PublicProfileHeader` passes `full_name`, so alt reads "Bikal Shrestha's avatar" on pages that otherwise show "Bikal S." Pass the public name (keeping `toneKey={full_name}` for the colour) or `decorative` where a name is already visible (found in PR 6's Task 6.7 review).
   - [ ] The public profile's follower count doesn't move when you follow or unfollow: wire `FollowButton`'s `onChange` into `PublicProfileHeader` so the count adjusts (found in PR 6's Task 6.7 review).
-  - [ ] Public profile list failures look like empty lists: `usePublicProfile` turns a failed posts/events/listings request into `[]`, and any `getUserById` failure reads "They may have deleted their account". Expose per-list errors plus a reload, show `ErrorState` with retry, and separate "not found" from "couldn't load" (found in PR 6's Task 6.8 review).
+  - [ ] Public profile list failures look like empty lists: `usePublicProfile` turns a failed posts/events/listings request into `[]`, and any `getUserById` failure reads "They may have deleted their account". Expose per-list errors plus a reload by adopting `useUserList` from Task 6.14; events need their own limit of 50. Show `ErrorState` with retry, and separate "not found" from "couldn't load" (found in PR 6's Task 6.8 review).
   - [ ] `EmptyState` always renders an `h3`, so tab panels jump h1 → h3 and the public profile's "Member not found" page has no h1. Add a `titleOrder` prop (default 3) and use `order={1}` for page-level empty states (found in PR 6's Task 6.9 review).
   - [ ] Raw storage and RLS error text reaches users verbatim across web (e.g. "new row violates row-level security policy" from `postSubmit` and `replaceProfilePhoto`). Decide one policy: map shared-API failures to friendly copy and log the detail with `logClientEvent` (found in PR 6's Task 6.11 review).
   - [ ] Five private copies of `getErrorMessage(error, fallback)` exist: web `profile.page.tsx` and `lib/profilePhoto.ts`, and mobile `EditProfileScreen`, `ChangePasswordScreen` and `EmailSignupScreen`. Export one from `packages/shared/src/utils/` (found in PR 6's Task 6.11 review).
