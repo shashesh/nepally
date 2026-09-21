@@ -186,8 +186,8 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | Merged (PR #79) | 2026-09-19 | no migration; the `count(*) OVER ()` fix stays deferred with its trigger |
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
-| 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | In Review (PR #83) | 2026-09-20 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
-| 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
+| 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | Merged (PR #83) | 2026-09-21 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
+| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20 | In Progress | 2026-09-21 | branched from `master` at e685317 |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -12038,6 +12038,627 @@ Two of the three pages have no screenshot today (inventory finding 3). Add them 
   - Adopt `EmptyState` and `LoadingState`, replacing the custom skeleton (users/[id] 199–217).
 - **Locations:** replace native dialogs in `profile/locations`.
 
+### PR 6 — Area inventory
+
+Run on `master` at `e685317` (the "Starting an area PR" commands), 2026-09-21.
+
+| File | Lines | CSS violations | Raw form elements | Native dialogs |
+|---|---|---|---|---|
+| `pages/profile.page.tsx` | 800 | — | 5 | 2 |
+| `styles/Profile.module.css` | 422 | 104 (94 legacy tokens, 9 literals, 1 named) | — | — |
+| `pages/users/[id].page.tsx` | 678 | — | 2 | 0 |
+| `styles/PublicProfile.module.css` | 786 | 202 (192 legacy tokens, 10 literals) | — | — |
+| `pages/profile/locations.page.tsx` | 302 | — | 4 | 2 |
+| `styles/ManageLocations.module.css` | 158 | 16 (15 legacy tokens, 1 named) | — | — |
+| `components/profile/AboutYouSection.tsx` / `.module.css` | 117 / 29 | 11 literals | 4 | — |
+| `components/users/FollowButton.tsx` / `.module.css` | 74 / 12 | 5 literals | 1 | — |
+
+`outline: none` sits at `ManageLocations.module.css` 64 and 93. The dialogs are `window.prompt` for the name and the bio (profile 188, 220), and `alert` on a duplicate location name and `confirm` before removing a location (locations 101, 111). `a11y-baseline.json` holds four entries for this area: `color-contrast` on `profile` and `public-profile`, at both widths.
+
+`pages/profile/notifications.page.tsx` lives under `profile/` and is on the raw-element allowlist, but it is the notification preferences page and belongs to PR 9.
+
+**What the recon changed** (the three pages read on 2026-09-21):
+
+1. **The profile photo does not fit `ImageUploader`.** Picking a file uploads it at once, the avatar is the preview, and the file is centre-cropped to a 500px square first (profile 281–333). `ImageUploader` holds files in form state for a later submit, and adds a dropzone, a thumbnail and a "0/1 photos" count that the avatar already covers. See decision 1.
+2. **Removing a profile photo never cleared it**, on web or on mobile. Both send `updateUserProfile(..., { profile_photo: undefined })` (profile 342, mobile `EditProfileScreen.tsx` 205). `JSON.stringify` drops `undefined`, so the update writes only `updated_at`. The file is deleted from storage while `users.profile_photo` still points at it. Task 6.2 adds a shared `removeProfilePhoto` that writes `null`, and both apps call it.
+3. **The public profile queries `metro_areas` from the page** (users/[id] 102–106), which the shared-first rule forbids. Task 6.1 adds `getMetroAreaById` to `packages/shared/src/api/metroArea.ts`. `contexts/LocationContext.tsx:81` runs the same raw query; it is not a UI file, so it stays.
+4. **The two pages render the same rows two ways.** Both list a member's posts and listings, with different markup, different copy ("❤️ 3" against "3 likes", "📍 Local" against "Local") and different prices: the profile prints the free-text `price` column as stored, while the public profile parses it and hides anything that is not a number. Tasks 6.3–6.5 build one row per kind. The public profile's text-only style wins, because its tests already rule out the emoji (`[id].test.tsx:380`). Events get a row too, which fixes "18 goings" (users/[id] 362, asserted at `[id].test.tsx:411`).
+5. **The listing status badge is an inline style.** profile 492–497 and 514 pass six hex literals through Mantine's `styles` prop, which neither guard can see. Task 6.5 moves status onto `--success`, `--warning` and `--danger`, which `tokens.contrast.test.ts` already clears for AA on `--surface-1`.
+6. **The "expiring soon" rule exists four times:** `daysUntilExpiry <= 14 && status === 'active'` in web profile 499, web my-listings 118, mobile `ProfileScreen.tsx` 323 and mobile `MyListingsScreen.tsx` 136. Task 6.1 adds `isListingExpiringSoon` to shared. This PR adopts it on the profile only; PR 8 and mobile pick it up later.
+7. **The profile's tab tests look for buttons.** 14 cases in `profile.test.tsx`, 3 in `e2e/tests/06-profile.spec.ts` and `11-marketplace.spec.ts:101–102` find the tabs by `role=button`. Mantine `Tabs` makes them `role=tab`, so all of them change. The public profile's tests already use `role=tab`.
+8. **Manage Locations fails silently three times.** Rename, remove and set-default await the shared call and ignore its `error` (locations 104, 112, 118). Task 6.19 reports each failure with `notify.error`.
+9. **Manage Locations has no screenshot.** Task 6.20 adds it to `VISUAL_PAGES`. As with every new page, it may not add baseline entries.
+
+## PR 6 — Task breakdown
+
+Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same conventions as PRs 4a–5: test first, one commit per task, query by role, label or text, semantic tokens only, no inline styles (Mantine style props such as `miw` included, since they render a `style` attribute), and Mantine components rather than raw elements outside `components/ui/`. No new dependencies: `Tabs`, `FileButton`, `NativeSelect` and `NumberInput` all ship in `@mantine/core`.
+
+**Decisions this breakdown locks in:**
+
+1. **The profile photo uses Mantine `FileButton`, not `ImageUploader`** (recon 1). `FileButton` replaces the raw `<input type="file">` and keeps today's flow: pick, crop, upload. `ImageUploader` was planned to replace four uploaders, "and profile in PR 6" (PR 5 section). That last one is closed as not taken, so `ImageUploader` has three callers.
+2. **Photo feedback becomes toasts.** The status line under the avatar (profile 645–652) stays on screen until the next action. Success and failure go through `notify` instead, like the name and bio edits next to it.
+3. **Tabs stay in component state, not the URL.** Search keeps its tab in the URL, but nothing links to a profile tab. Driving the tab from the URL would also need a stateful router mock in the two dozen cases that switch tabs.
+4. **`Tabs` use `keepMounted={false}`, as search does.** Otherwise Mantine keeps inactive panels in the DOM, hidden, and `profile.test.tsx:168` asserts that the posts empty text is gone on the About tab.
+5. **Hometown district is a `NativeSelect`.** 77 districts suit the platform picker on a phone, and a native `<select>` keeps working for the two About You tests that set it by value (`profile.test.tsx:415`, `432–434`).
+6. **Trust shows only through `TrustBadge`.** "Level 1: Verified" and "Level 1 · Verified" become the badge's "Verified", as on every post. Four unit assertions change (`profile.test.tsx:117`, `[id].test.tsx:223`, `233`, `244`). The e2e regex `/level 1|verified/i` already matches.
+7. **Name and bio are validated inside the dialog.** With `usePrompt`'s `validate`, the dialog stays open showing "Name cannot be empty" or the `bioSchema` message. Today the prompt closes and a toast reports the problem.
+8. **`FollowButton` keeps its text while loading.** Its tests assert `textContent === '…'` (`FollowButton.test.tsx:111`, `129`). Mantine's `loading` prop would replace that text with a spinner, so the button swaps its label as it does today.
+9. **One PR, with the public profile first.** Tasks 6.3–6.10 finish the public profile before 6.11–6.19 touch the own profile and Manage Locations. If the diff runs long, the PR can split cleanly after 6.10. The default is one PR, as with PR 5, because each PR costs a Visual baselines run.
+10. **No `useInfiniteScroll` here.** The definition of done asks lists to use it, but none of these lists are paged. Each is one request capped at 30 (posts, saved posts, listings) or 50 (organised events), with no "load more" today. Adding pagination would be a behaviour change and a new API cursor, which is more than this PR's remit. The caps stay as they are.
+
+**Files this PR creates:**
+
+| Path | Responsibility |
+|---|---|
+| `packages/shared/src/utils/listingPrice.ts`, `.test.ts` | `formatListingPrice`: the free-text price column, for display |
+| `packages/shared/src/api/metroArea.test.ts` | Tests for the new `getMetroAreaById` (the file had none) |
+| `apps/web/src/components/posts/PostSummaryRow.tsx`, `.module.css`, `.test.tsx` | One post as a row: title link, scope, excerpt, counts |
+| `apps/web/src/components/events/EventSummaryRow.tsx`, `.module.css`, `.test.tsx` | One event as a row: date, place, going count, past or cancelled |
+| `apps/web/src/components/marketplace/ListingSummaryRow.tsx`, `.module.css`, `.test.tsx` | One listing as a row, with an owner view for status, stats and expiry |
+| `apps/web/src/components/users/PublicProfileHeader.tsx`, `.module.css`, `.test.tsx` | The public profile card: avatar, name, trust, bio, follow, chips, message button |
+| `apps/web/src/hooks/usePublicProfile.ts`, `.test.ts` | Loads a member's profile, metro, posts, events, listings and helper score |
+| `apps/web/src/lib/profilePhoto.ts`, `.test.ts` | `replaceProfilePhoto`: crop, upload, write the URL |
+| `apps/web/src/components/profile/ProfilePhotoControl.tsx`, `.module.css`, `.test.tsx` | The avatar with Add/Change/Remove photo |
+| `apps/web/src/hooks/useProfileEditing.ts`, `.test.tsx` | Edit name, edit bio and change password, through `usePrompt` and `notify` |
+| `apps/web/src/hooks/useOwnProfileContent.ts`, `.test.ts` | Loads the signed-in member's posts, saved posts and listings |
+| `apps/web/src/components/profile/AccountDetails.tsx`, `.module.css`, `.test.tsx` | The About tab's read-only Bio, Account Info and Activity sections |
+| `apps/web/src/components/profile/AboutYouSection.test.tsx` | Tests for a component that had none |
+
+**Where the pages should land.** Each page keeps its state plumbing and its layout. Every list, card and handler group moves out.
+
+| Page | Before | Target |
+|---|---|---|
+| `pages/profile.page.tsx` | 800 | ~320 |
+| `pages/users/[id].page.tsx` | 678 | ~300 |
+| `pages/profile/locations.page.tsx` | 302 | ~290 |
+
+### Task 6.1: Shared helpers — metro by id, listing price, expiry warning
+
+**Files:** `packages/shared/src/api/metroArea.ts`; create `packages/shared/src/api/metroArea.test.ts`; `packages/shared/src/constants/marketplace.ts`; `packages/shared/src/logic/marketplace/listingAge.ts`, `listingAge.test.ts`; create `packages/shared/src/utils/listingPrice.ts`, `listingPrice.test.ts`; `packages/shared/src/utils/index.ts`.
+
+**Interface:**
+
+```ts
+// api/metroArea.ts
+/** One metro's display fields by id; an error when no such metro exists. */
+export async function getMetroAreaById(
+  supabase: SupabaseClient,
+  metroAreaId: string
+): Promise<MetroAreaResult>;
+
+// constants/marketplace.ts, beside LISTING_SOFT_EXPIRY_DAYS
+/** How close to soft expiry an active listing gets before its owner is warned. */
+export const LISTING_EXPIRY_WARNING_DAYS = 14;
+
+// logic/marketplace/listingAge.ts
+export function isListingExpiringSoon(
+  listing: Pick<MarketplaceListing, 'status' | 'refreshed_at'>,
+  now: Date
+): boolean;
+
+// utils/listingPrice.ts
+/**
+ * `price` is a free-text column. A number reads as dollars — "80" is "$80",
+ * "80.5" is "$80.50" — and anything else ("Negotiable") is shown as typed.
+ */
+export function formatListingPrice(price: string | number | null | undefined): string | null;
+```
+
+`getMetroAreaById` selects `id, name, state, population` from `metro_areas` with `.eq('id', …).single()`, in the style of `searchMetroAreas` beside it. `formatListingPrice` strips `$` and `,` before parsing, so `"$1,200"` stays `"$1,200"`. It uses whole dollars for whole numbers and cents otherwise, which matches `formatPrice` (users/[id] 45–55), the function it replaces. Test data passes `price: 80` as a number, so the parameter accepts one.
+
+- [ ] **Step 1: Write the failing tests.** `metroArea.test.ts`, with the `makeChain` pattern from `follows.test.ts`: selects from `metro_areas` filtered by id and returns the row; a PostgREST error comes back as `error`. `listingAge.test.ts`: active and 80 days since refresh (10 left) is expiring; active with 20 left is not; exactly 14 left is; inactive at 80 days is not. `listingPrice.test.ts`: `80` → `"$80"`, `"80"` → `"$80"`, `"80.5"` → `"$80.50"`, `"$1,200"` → `"$1,200"`, `"Negotiable"` → `"Negotiable"`, `"  "` → `null`, `null` → `null`.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/api/metroArea.test.ts src/logic/marketplace/listingAge.test.ts src/utils/listingPrice.test.ts`
+- [ ] **Step 3: Implement**, and export `listingPrice` from `utils/index.ts`. `logic/index.ts` already re-exports `./marketplace`; confirm `isListingExpiringSoon` reaches `@nepally/shared` through it.
+- [ ] **Step 4: Run and watch them pass**, then `npm run type-check`.
+- [ ] **Step 5: Commit** as `feat(shared): add getMetroAreaById, formatListingPrice and isListingExpiringSoon`.
+
+### Task 6.2: Removing a profile photo clears it
+
+**Files:** `packages/shared/src/api/users.ts`, `users.test.ts`; `apps/mobile/src/screens/profile/EditProfileScreen.tsx`, `EditProfileScreen.test.tsx`.
+
+**Interface:**
+
+```ts
+/**
+ * Clears the member's photo. The column is cleared first, so a storage delete
+ * that fails leaves an orphaned file rather than a profile pointing at nothing.
+ */
+export async function removeProfilePhoto(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ error?: Error }>;
+```
+
+It calls `updateUserProfile(supabase, userId, { profile_photo: null })`. On success it calls `deleteProfilePhoto` and ignores that call's error: the file is named `<userId>.jpg`, and the next upload overwrites it. `users.ts` imports `deleteProfilePhoto` from `./storage`. `storage.ts` does not import `users.ts`, so this adds no cycle.
+
+This is the fix for recon 2. It is a bug on both apps, so mobile adopts it here. Web adopts it in Task 6.16.
+
+- [ ] **Step 1: Write the failing tests** in `users.test.ts`. On success, `from('users').update` receives `profile_photo: null`, and then storage removes `<userId>.jpg`. When the update fails, the error comes back and storage is not touched. When the storage delete fails, the result is still success.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/api/users.test.ts`
+- [ ] **Step 3: Implement**, then switch mobile's `handleRemovePhoto` (`EditProfileScreen.tsx` 195–222) from the `deleteProfilePhoto` + `updateUserProfile` pair to `removeProfilePhoto`. In `EditProfileScreen.test.tsx`, mock `removeProfilePhoto` where `deleteProfilePhoto` is mocked (line 46), and add a case where removing the photo calls it.
+- [ ] **Step 4: Run both suites.** `npm run test --workspace=packages/shared -- src/api/users.test.ts` and `npm run test --workspace=apps/mobile -- EditProfileScreen`
+- [ ] **Step 5: Commit** as `fix: clear profile_photo when a member removes their photo`.
+
+### Task 6.3: `PostSummaryRow`
+
+**Files:** create `components/posts/PostSummaryRow.tsx`, `.module.css`, `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface PostSummaryRowProps {
+  post: Pick<Post, 'id' | 'title' | 'description' | 'is_global' | 'created_at' | 'likes_count' | 'comments_count'>;
+  /** Sits beside the link, never inside it — e.g. an ActionMenu. */
+  menu?: ReactNode;
+}
+```
+
+A stretched link, like `PostCard`: the title is the only link, and its `::after` covers the row, so a menu can sit beside it without being nested. The row shows the title, a `ScopeBadge`, the description clamped to two lines when there is one, and "2h ago · 3 likes · 1 comment". It replaces profile 445–483, the saved-post copy at 395–443, and users/[id] 280–309.
+
+- [ ] **Step 1: Write the failing test.** The link's accessible name is the title and it points to `/posts/<id>`. The badge reads "Local" or "Global". The description renders only when non-empty. Counts pluralise ("1 like", "2 comments"). A `menu` renders outside the link (`link.contains(menuButton)` is false).
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/posts/PostSummaryRow.test.tsx`
+- [ ] **Step 3: Implement**, with the module on semantic tokens.
+- [ ] **Step 4: Run and watch it pass**, then `npm run lint --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `feat(web): add PostSummaryRow`.
+
+### Task 6.4: `EventSummaryRow`
+
+**Files:** create `components/events/EventSummaryRow.tsx`, `.module.css`, `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface EventSummaryRowProps {
+  event: Pick<Event, 'id' | 'title' | 'start_date' | 'end_date' | 'location_name' | 'rsvp_count' | 'is_global' | 'status'>;
+  /** From useNow(), so every row agrees on what is past — and tests can fix it. */
+  now: Date;
+}
+```
+
+This replaces users/[id] 324–367, and uses the same stretched link as `PostSummaryRow`. The second line reads "Mar 5, 2026 · Dallas Convention Center". The meta line reads "18 going", fixing "18 goings", and adds "Cancelled" or "Past" when either applies. PR 7's event lists can use it.
+
+- [ ] **Step 1: Write the failing test.** Link name and href. The date and place line. "18 going". "Cancelled" for a cancelled event, even an upcoming one. "Past" when `end_date` is before `now`, or `start_date` when there is no end date. Neither label for an upcoming event.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/events/EventSummaryRow.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add EventSummaryRow`.
+
+### Task 6.5: `ListingSummaryRow`
+
+**Files:** create `components/marketplace/ListingSummaryRow.tsx`, `.module.css`, `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface ListingSummaryRowProps {
+  listing: MarketplaceListing;
+  /** The owner's view: status, view/save/contact counts and the expiry warning. */
+  owner?: { now: Date };
+}
+```
+
+This replaces profile 485–537 and users/[id] 392–439. Both views show:
+
+- a 64px thumbnail: the first photo through `next/image` with `alt=""`, since the title follows, or the category emoji on `--surface-sunken`
+- the title, as a stretched link to `/marketplace/listing/<id>`
+- `formatListingPrice` and the category name
+
+The public view adds the relative time. The owner view adds:
+
+- a status chip
+- "12 views · 3 saves · 1 contact"
+- "Expires in 10 days", when `isListingExpiringSoon` is true
+
+The status chip is text with a 1px border, in `--success` (active), `--warning` (inactive) or `--danger` (removed), on `--surface-1`. A `data-status` attribute selects the colour (recon 5). PR 8's my-listings page can adopt both the row and `isListingExpiringSoon`.
+
+- [ ] **Step 1: Write the failing test.** Link name and href. `price: 80` shows "$80", and "Negotiable" shows as typed. No price when it is `null`. The category emoji when there are no photos. The public view shows the relative time and no status. The owner view shows "Active" and the three counts. "Expires in 10 days" appears at 80 days since refresh, and not for an inactive listing.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/marketplace/ListingSummaryRow.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add ListingSummaryRow`.
+
+### Task 6.6: `FollowButton` onto Mantine `Button`
+
+**Files:** `components/users/FollowButton.tsx`, `FollowButton.module.css`, `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs`.
+
+The raw `<button>` (63–72) becomes `Button` with `variant={following ? 'default' : 'filled'}`, `radius="xl"` and `size="sm"`. It keeps `data-testid="follow-button"`, `aria-pressed` and the `'…'` label while loading (decision 8). The theme's ink replaces the hard-coded red (`#c8102e`). The stylesheet shrinks to one rule, `min-inline-size: 7rem`, so the button does not change width when `'…'` becomes "Follow". The five colour literals go.
+
+- [ ] **Step 1: Run the existing tests first** — `npm run test --workspace=apps/web -- src/components/users/FollowButton.test.tsx` — and confirm they pass. They are the specification for this change.
+- [ ] **Step 2: Implement**, and remove `FollowButton.module.css` from the CSS allowlist and `src/components/users/FollowButton.tsx` from `RAW_ELEMENT_ALLOWLIST` in the same commit.
+- [ ] **Step 3: Run the tests again** — unchanged, all eight pass — then `npm run lint:guards` and `npm run lint --workspace=apps/web`.
+- [ ] **Step 4: Commit** as `refactor(web): build FollowButton on Mantine Button`.
+
+### Task 6.7: `PublicProfileHeader`
+
+**Files:** create `components/users/PublicProfileHeader.tsx`, `.module.css`, `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface PublicProfileHeaderProps {
+  profileUser: PublicUser;
+  metroName: string | null;
+  helperScore: number | null;
+  isOwnProfile: boolean;
+  viewerId: string | null;
+  messaging: boolean;
+  onMessage: () => void;
+}
+```
+
+This takes over users/[id] 494–612, the derived values at 242–257, and the local `getInitials` at 34–39.
+
+| Today | Becomes |
+|---|---|
+| hand-built avatar, 88px image or initials (499–514) | `Avatar` at `xlarge` (80px). The shared `getInitials` gives single-word names two letters |
+| `trustChip` (518–521) | `TrustBadge` (decision 6) |
+| raw message `<button>` (601–608) | `Button onClick={onMessage}`, with the same labels ("Message Bikal S.", "Sign in to message", "Opening conversation…") and `disabled` while messaging |
+| "Edit profile →" link (597–599) | `Button component={Link} href="/profile" variant="default"` |
+| identity chip spans (572–587) | a `<ul>` of chips on tokens |
+
+The banner stays, as a decorative `aria-hidden` block on tokens. The header's rules go into `PublicProfileHeader.module.css`, written on semantic tokens from the start.
+
+- [ ] **Step 1: Write the failing test.** The `h1` is the public name. `TrustBadge` shows "Verified" at level 1. The new-member hint appears at level 0, and only on someone else's profile. The bio shows when set, and "Add a short bio" appears only on your own profile. The message button labels (signed in, signed out, busy) and `onMessage`. The "Edit profile" link on your own profile. The follower counts. Identity chips appear only for the fields that are set. The helper badge appears at `HELPER_SCORE_VISIBILITY_THRESHOLD` and not below it.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/users/PublicProfileHeader.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add PublicProfileHeader`.
+
+### Task 6.8: `usePublicProfile`
+
+**Files:** create `hooks/usePublicProfile.ts`, `.test.ts`.
+
+**Interface:**
+
+```ts
+export interface PublicProfileState {
+  profileUser: PublicUser | null;
+  metroName: string | null;
+  posts: Post[];
+  events: Event[];
+  listings: MarketplaceListing[];
+  helperScore: number | null;
+  /** The profile itself; the three lists load on their own flags. */
+  loading: boolean;
+  postsLoading: boolean;
+  eventsLoading: boolean;
+  listingsLoading: boolean;
+  error: string | null;
+}
+
+export function usePublicProfile(id: string | undefined): PublicProfileState;
+```
+
+This moves users/[id] 62–152 out of the page, calling `getMetroAreaById` instead of the raw query (recon 3). Otherwise nothing changes: the same five requests, the same cancel-on-unmount guard, and the same "We couldn’t find this member. They may have deleted their account." message.
+
+- [ ] **Step 1: Write the failing test** with `renderHook`. It loads the profile, "Dallas-Fort Worth, TX", the three lists and the helper score. A missing member sets the error message. A member with no `metro_area_id` leaves `metroName` null and never calls `getMetroAreaById`. An `undefined` id requests nothing.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/usePublicProfile.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `refactor(web): load the public profile through usePublicProfile`.
+
+### Task 6.9: The public profile page on the new pieces
+
+**Files:** `pages/users/[id].page.tsx`, `[id].test.tsx`.
+
+| Today | Becomes |
+|---|---|
+| Skeleton (192–220) | `<LoadingState variant="detail" label="Loading profile…" />`; the test at 174 still finds `aria-busy` |
+| Error notice (222–239) | `EmptyState` titled "Member not found", with the hook's message as its description and a `Button component={Link} href="/"` "Back to feed" |
+| Profile card (494–612) | `PublicProfileHeader` |
+| `role="tablist"` rail (614–673) | Mantine `Tabs` with `keepMounted={false}` (decision 4) and `Tabs.List aria-label="Profile sections"`. Counts render as a `rightSection` badge when above zero, as on search |
+| `renderPosts` / `renderEvents` / `renderListings` (260–440) | `LoadingState`, then `EmptyState` with today's sentences, or the rows from Tasks 6.3–6.5. Your own empty profile gets `Button component={Link}` actions, "Start a post" and "Post a listing", in place of the inline links at 269 and 381 |
+| `renderAbout` (442–483) | stays in the page, as a `<dl>`. `TrustBadge` replaces its trust chip |
+
+`formatPrice` (45–55) and `pluralize` (41–43) are deleted.
+
+- [ ] **Step 1: Update the tests first.** The three trust assertions (223, 233, 244) read "Verified", "New Member" and "Contributor". "18 goings" becomes "18 going" (411). Add these cases: loading shows a `status`; not-found shows a "Back to feed" link to `/`; the tab list is named "Profile sections" and has four tabs; ArrowRight on the Posts tab moves focus to Events.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/users/[id].test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass**, and check that the page is near its ~300-line target.
+- [ ] **Step 5: Commit** as `refactor(web): rebuild the public profile on shared rows and Mantine Tabs`.
+
+### Task 6.10: `PublicProfile.module.css` onto semantic tokens
+
+**Files:** `styles/PublicProfile.module.css`, `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs`.
+
+The file has 202 violations (192 legacy tokens, 10 literals), and most of it is deleted rather than converted:
+
+- `skeleton*`, `@keyframes shimmer` and its reduced-motion block go, because `LoadingState` replaces them
+- `tab*` goes to Mantine `Tabs`
+- `trust*` and `avatar*` go to `TrustBadge` and `Avatar`
+- `row*` and `listing*` go to the rows
+- the card rules moved to `PublicProfileHeader.module.css` in Task 6.7
+
+The rules left over (`page`, `container`, `content`, `about*`, `notice`) are rewritten on tokens. Expect the file to drop from 786 lines to well under 200.
+
+- [ ] **Step 1: Delete the dead rules.** Diff the class list against `grep -o "styles\.[a-zA-Z]*" src/pages/users/[id].page.tsx`, and confirm with grep that nothing else imports the stylesheet.
+- [ ] **Step 2: Map the rest** to semantic tokens using the spec §4.1 table.
+- [ ] **Step 3: Remove `apps/web/src/styles/PublicProfile.module.css` from the CSS allowlist and `src/pages/users/[id].page.tsx` from `RAW_ELEMENT_ALLOWLIST`**, in this commit.
+- [ ] **Step 4: Run the guards and the suite.** `npm run lint:guards`, `npm run lint --workspace=apps/web` and `npm run test --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `style(web): move the public profile stylesheet onto semantic tokens`.
+
+### Task 6.11: `cropToSquare` and `replaceProfilePhoto`
+
+**Files:** `lib/resizeImage.ts`, `resizeImage.test.ts`; create `lib/profilePhoto.ts`, `profilePhoto.test.ts`.
+
+**Interface:**
+
+```ts
+// resizeImage.ts
+/** Avatars are shown at 80px; 500px leaves room for high-density screens. */
+export const PROFILE_PHOTO_SIZE_PX = 500;
+/** Centre-crops to the largest square, scales it to `size`, and encodes JPEG. */
+export async function cropToSquare(file: File, size?: number): Promise<File>;
+
+// profilePhoto.ts
+/** Crop, upload, and point the profile at the new photo. */
+export async function replaceProfilePhoto(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File
+): Promise<{ error: string | null }>;
+```
+
+`cropToSquare` is profile 286–306, lifted out and made to close its bitmap, which the page never does. `replaceProfilePhoto` is 309–323 without the UI: `cropToSquare`, `arrayBuffer()`, `uploadProfilePhoto`, then `updateUserProfile({ profile_photo: url })`. It returns the thrown message, or "Failed to upload photo". Removal needs nothing here, because the shared `removeProfilePhoto` from Task 6.2 covers it.
+
+- [ ] **Step 1: Write the failing tests.** Stub `createImageBitmap` and `HTMLCanvasElement.prototype.toBlob` as `resizeImage.test.ts` already does. `cropToSquare` on a 1000×600 image draws the source rectangle (200, 0, 600, 600) into (0, 0, 500, 500); on 600×1000 it draws (0, 200, 600, 600). The result is `image/jpeg`. The bitmap is closed on success and on a failed encode. A missing 2D context rejects. `replaceProfilePhoto`: success uploads the bytes, writes the URL and returns `error: null`. An upload error returns its message and never touches the profile. A profile write error returns its message.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/lib/resizeImage.test.ts src/lib/profilePhoto.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `refactor(web): extract the profile photo crop and upload`.
+
+### Task 6.12: `ProfilePhotoControl`
+
+**Files:** create `components/profile/ProfilePhotoControl.tsx`, `.module.css`, `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface ProfilePhotoControlProps {
+  name: string;
+  photoUrl: string | null | undefined;
+  trustLevel: number;
+  busy: boolean;
+  onPick: (file: File) => void;
+  onRemove: () => void;
+}
+```
+
+This replaces profile 606–652:
+
+- **Avatar.** `Avatar` at `xlarge`. While `busy`, a scrim with a Mantine `Loader`, and a visually hidden "Updating photo…" in a `role="status"`.
+- **Picking a file.** `FileButton` with `accept={DEFAULT_IMAGE_MIME_TYPES.join(',')}` and `inputProps={{ 'aria-label': 'Upload profile photo' }}`, which is today's accessible name (620). It also takes a `resetRef`, reset after each pick so the same file can be chosen twice (today's `e.target.value = ''`, 364). Its child is `Button variant="light" size="compact-sm"`, labelled "Add Photo" or "Change Photo".
+- **Removing.** "Remove" appears only when there is a photo.
+- **While busy.** Both buttons are disabled.
+
+The narrower `accept` replaces today's `image/*`. iOS converts HEIC to JPEG for an input that lists specific image types, and `createImageBitmap` cannot decode HEIC anyway.
+
+- [ ] **Step 1: Read the installed types.** In `node_modules/@mantine/core/lib/components/FileButton/FileButton.d.ts`, confirm `inputProps` and `resetRef` exist in 8.3.18. If `inputProps` is missing, give the input its name through the `FileButton` render prop's `{...props}` instead, and note it here.
+- [ ] **Step 2: Write the failing test.** "Add Photo" shows without a photo, and "Change Photo" plus "Remove" with one. Choosing a file on the "Upload profile photo" input calls `onPick` with it. "Remove" calls `onRemove`. `busy` disables both buttons and announces "Updating photo…".
+- [ ] **Step 3: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/profile/ProfilePhotoControl.test.tsx`
+- [ ] **Step 4: Implement**, then run and watch it pass.
+- [ ] **Step 5: Commit** as `feat(web): add ProfilePhotoControl`.
+
+### Task 6.13: `useProfileEditing`
+
+**Files:** create `hooks/useProfileEditing.ts`, `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface ProfileEditing {
+  editName: () => Promise<void>;
+  editBio: () => Promise<void>;
+  changePassword: () => Promise<void>;
+}
+
+export function useProfileEditing(
+  user: Pick<User, 'id' | 'email' | 'full_name' | 'bio'> | null,
+  refreshUser: () => Promise<void>
+): ProfileEditing;
+```
+
+This replaces `handleEditName`, `handleEditBio` and `handleChangePassword` (profile 185–274), and all nine `setMenuOpen(false)` calls in them, since `ActionMenu` closes itself.
+
+- **`editName`** opens `usePrompt({ title: 'Edit name', label: 'Full name', initialValue, validate: (value) => (value.trim() ? null : 'Name cannot be empty') })` and writes the trimmed value.
+- **`editBio`** opens ``usePrompt({ title: 'Edit bio', label: `Bio (up to ${BIO_MAX_LENGTH} characters)`, initialValue, multiline: true, validate })``. `validate` returns `bioSchema`'s first issue message, or null (decision 7). It then writes `bioSchema.parse(value)`.
+- **`changePassword`** is today's `resetPasswordForEmail` call.
+- **Messages.** Every toast keeps today's words ("Profile updated", "Bio updated", "Bio cleared", "Password reset email sent", and the three failures), sent through `notify`.
+
+- [ ] **Step 1: Write the failing test.** Render a harness with three buttons inside `test-utils`, which provides `ModalsProvider`. Mock `@mantine/notifications` the way `profile.test.tsx` does. Cases:
+  - Dismissing the name dialog writes nothing.
+  - A blank name shows "Name cannot be empty" inside the dialog and writes nothing.
+  - `"  Sita Gurung "` saves "Sita Gurung", refreshes and toasts "Profile updated".
+  - A failed write toasts the error.
+  - A 201-character bio shows the schema message in the dialog.
+  - Emptying the bio writes `null` and toasts "Bio cleared".
+  - `changePassword` toasts both outcomes.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useProfileEditing.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useProfileEditing over the shared prompt dialog`.
+
+### Task 6.14: `useOwnProfileContent`
+
+**Files:** create `hooks/useOwnProfileContent.ts`, `.test.ts`.
+
+**Interface:**
+
+```ts
+export interface ListState<T> {
+  items: T[];
+  loading: boolean;
+  error: string | null;
+}
+
+export interface OwnProfileContent {
+  posts: ListState<Post>;
+  saved: ListState<Post>;
+  listings: ListState<MarketplaceListing>;
+  /** Drops a post from the saved list, for an optimistic unsave. */
+  dropSaved: (postId: string) => void;
+}
+
+export function useOwnProfileContent(userId: string | null): OwnProfileContent;
+```
+
+This moves profile 49–56 and 91–148 out of the page, with two small fixes:
+
+- **Lists start loading.** With a user, each list starts in `loading: true`. Today they start idle, so "You have not created any posts yet." flashes for one render before the request begins.
+- **A failed listings load says so.** It reports "Failed to load your listings" instead of falling through to "No marketplace listings yet." (today's `result.data || []`, 137).
+
+- [ ] **Step 1: Write the failing test** with `renderHook`. Posts are requested with `includeOwnPending` true. Each list reports its error. A failed listings load sets its error. `dropSaved` removes exactly one post. A null `userId` requests nothing.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useOwnProfileContent.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `refactor(web): load the profile's lists through useOwnProfileContent`.
+
+### Task 6.15: `AccountDetails`
+
+**Files:** create `components/profile/AccountDetails.tsx`, `.module.css`, `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface AccountDetailsProps {
+  user: Pick<User, 'bio' | 'email' | 'phone' | 'zip_code' | 'created_at' | 'posts_count' | 'helpful_votes_received'>;
+}
+```
+
+This replaces profile 720–771. It renders the Bio, Account Info and Activity sections, each an `h2` over a `<dl>`, with today's text: "Not set", the long "Member Since" date, and "No bio set. Tap the menu → Edit Bio to add one."
+
+- [ ] **Step 1: Write the failing test.** The three headings. "Not set" for a missing phone and ZIP code. The formatted member-since date. The bio, and its fallback text when there is none.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/profile/AccountDetails.test.tsx`
+- [ ] **Step 3: Implement**, then run and watch it pass.
+- [ ] **Step 4: Commit** as `feat(web): add AccountDetails`.
+
+### Task 6.16: The profile page on the new pieces
+
+**Files:** `pages/profile.page.tsx`, `profile.test.tsx`, `e2e/tests/06-profile.spec.ts`, `e2e/tests/11-marketplace.spec.ts`.
+
+| Today | Becomes |
+|---|---|
+| Top bar, hamburger, overlay (545–602) | `PageHeader title="Profile"`, whose `actions` hold `<ActionMenu label="Open profile menu">`. Its items are Edit Name, Edit Bio and Change Password from `useProfileEditing`, then Logout (`danger`) |
+| Avatar, file input, photo buttons, status line (606–652) | `ProfilePhotoControl`. `onPick` calls `replaceProfilePhoto`, and `onRemove` calls the shared `removeProfilePhoto` (Task 6.2). Both then refresh and toast "Photo updated" / "Photo removed", or the error (decision 2) |
+| `trustBadge` span and `trustClass` (163–171, 657–661) | `TrustBadge` |
+| four tab `<button>`s (664–693) | Mantine `Tabs` with `keepMounted={false}` and `Tabs.List aria-label="Profile sections"`: "Posts", "Listings", "Saved Posts", "About" |
+| `renderPostList` / `renderSavedPostList` / `renderListingsList` (395–537) | `LoadingState`, `ErrorState`, or `EmptyState` with today's sentences ("Start a post" and "Post a listing" as actions). Otherwise `PostSummaryRow`s, saved ones with `menu={<ActionMenu label="Post options" items={[{ key: 'unsave', label: 'Unsave Post', … }]} />}`, and `ListingSummaryRow owner={{ now }}` |
+| About's read-only sections (720–771) | `AccountDetails` |
+| `notifications.show` in sign-out, About You save and unsave | `notify` |
+
+Deleted along the way: `menuOpen`, `unsaveMenuId` and its `mousedown` listener (150–157), `fileInputRef`, `photoStatus`, and `getErrorMessage`, which `lib/profilePhoto.ts` now owns. The "Settings & more" nav from PR 2 stays as it is.
+
+`profile.test.tsx` mocks `@mantine/notifications`. `notify` calls `notifications.show`, so the `objectContaining({ message })` assertions keep working.
+
+- [ ] **Step 1: Update the tests first.**
+  - Every `getByRole('button', { name: 'Posts' | 'Listings' | 'Saved Posts' | 'About' })` becomes `'tab'` (14 cases; recon 7).
+  - `/Level 1/` becomes "Verified".
+  - `'Loading...'` becomes `getByRole('status')`.
+  - "Unsave Post" and "Logout" are found as `menuitem`s after opening their menus.
+  - Add: Edit Name opens a dialog titled "Edit name". Removing the photo calls `removeProfilePhoto` and toasts "Photo removed". A failed upload toasts its error.
+  - In the e2e suite, `06-profile.spec.ts` 58, 64 and 72 and `11-marketplace.spec.ts` 101–102 switch to `getByRole('tab', …)`.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/profile.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass**, and check that the page is near its ~320-line target.
+- [ ] **Step 5: Commit** as `refactor(web): rebuild the profile page on shared rows, Tabs and the prompt dialog`.
+
+### Task 6.17: `AboutYouSection` onto Mantine fields
+
+**Files:** `components/profile/AboutYouSection.tsx`, `AboutYouSection.module.css`; create `AboutYouSection.test.tsx`; the two allowlists.
+
+| Today | Becomes |
+|---|---|
+| `<select id="about-district">` (41–57) | `NativeSelect` labelled "Hometown district", with `[{ value: '', label: '— Select —' }, ...NEPAL_DISTRICTS]` (decision 5) |
+| `<input id="about-college">` (62–75) | `TextInput` labelled "College / university", same placeholder, `maxLength={100}` |
+| `<input type="number" id="about-years">` (78–95) | `NumberInput` labelled "Years in the US", `min={0}`, `max={99}`, `allowDecimal={false}`, `allowNegative={false}`, `clampBehavior="strict"` |
+| language `<button>`s (98–114) | `ToggleChipGroup label="Languages you speak" mode="multiple"`, options from `SUPPORTED_LANGUAGES` and `LANGUAGE_LABELS` |
+| `h3` "About You" (33) | `h2`, since it follows the page's `h1` and precedes `AccountDetails`' `h2`s |
+
+The orphan `<label>` at 97, which labelled nothing, goes too. The stylesheet shrinks to the section, title and subtitle, on tokens.
+
+- [ ] **Step 1: Write the failing test.** Each field, found by label, shows its value. Picking a district emits it, and "— Select —" emits `null`. Emptying college emits `null`. Typing 5 years emits `5`, and emptying emits `null`. Pressing Nepali emits `['nepali']`, and pressing it again removes it. `disabled` disables every control.
+- [ ] **Step 2: Run and watch it fail**, alongside the page. `npm run test --workspace=apps/web -- src/components/profile/AboutYouSection.test.tsx src/pages/profile.test.tsx`. The two page tests that set the district by value must still pass.
+- [ ] **Step 3: Implement.** Remove the stylesheet from the CSS allowlist and `src/components/profile/AboutYouSection.tsx` from `RAW_ELEMENT_ALLOWLIST`.
+- [ ] **Step 4: Run both suites and the guards.** `npm run lint:guards`, `npm run lint --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `refactor(web): move About You onto Mantine fields and ToggleChipGroup`.
+
+### Task 6.18: `Profile.module.css` onto semantic tokens
+
+**Files:** `styles/Profile.module.css`, `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs`.
+
+The file has 104 violations (94 legacy tokens, 9 literals, 1 named colour). The rules whose markup Tasks 6.12–6.16 removed are deleted:
+
+- `topBar`, `pageTitle`, `menuWrap`, `menuOverlay` and `hamburger*` (now `PageHeader` and `ActionMenu`)
+- `menuTab*` (now `Tabs`)
+- `trust*` (now `TrustBadge`)
+- `hiddenInput`, `avatarWrapper`, `avatarOverlay` and `photoActions` (now `ProfilePhotoControl`)
+- `postList`, `postItem*` and `savedPost*` (now `PostSummaryRow`)
+- `listing*` (now `ListingSummaryRow`)
+- `info*` and `sectionTitle`'s About uses (now `AccountDetails`)
+
+What remains (`profilePage`, `profileCard`, `profileHeader`, `profileName`, `profileEmail`, `tabContent`, `saveAboutRow`, and the `settings*` rules PR 2 already wrote on tokens) is mapped with the spec §4.1 table. Any `rgba(var(--color-primary-rgb), α)` becomes `color-mix(in oklch, …)`.
+
+- [ ] **Step 1: Delete the dead rules**, after checking each class against `grep -o "styles\.[a-zA-Z]*" src/pages/profile.page.tsx`.
+- [ ] **Step 2: Map the rest to semantic tokens.**
+- [ ] **Step 3: Remove `apps/web/src/styles/Profile.module.css` from the CSS allowlist and `src/pages/profile.page.tsx` from `RAW_ELEMENT_ALLOWLIST`.**
+- [ ] **Step 4: Run** `npm run lint:guards`, `npm run lint --workspace=apps/web` and `npm run test --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `style(web): move the profile stylesheet onto semantic tokens`.
+
+### Task 6.19: Manage Locations
+
+**Files:** `pages/profile/locations.page.tsx`, `locations.test.tsx`, `styles/ManageLocations.module.css`, the two allowlists.
+
+| Today | Becomes |
+|---|---|
+| `h1` plus count (128–133) | `PageHeader title="Manage Locations"`, with ``description={`${n} of ${MAX_SAVED_LOCATIONS_PREMIUM}`}`` and `backHref="/profile"` / `backLabel="Profile"`. The test's "2 of 5" still matches |
+| rename `<input>` (150–161) | `TextInput size="sm"` named "Rename location {label}", still saving on blur and Enter, with `maxLength={30}`. Escape now cancels, which today does nothing |
+| `alert` on a duplicate rename (101) | that field's `error`, with the edit left open |
+| ✏️ / 🗑️ `ActionIcon`s (169–190) | `IconPencil` / `IconTrash`, named "Rename {label}" and "Remove {label}". Today every row's buttons are just "Rename" and "Remove" |
+| `confirm` before removing (111) | ``useConfirm({ title: 'Remove this location?', message: `"${label}" will no longer appear in your location switcher.`, confirmLabel: 'Remove', danger: true })`` |
+| search `<input>` (216–225) | `TextInput` with the same `aria-label` and placeholder, "Search by metro name or ZIP code" |
+| label `<input>` (250–258) plus loose error `Text` (259–261) | `TextInput` labelled "Name this location", `maxLength={30}`, `error={addError}` |
+| suggestion `<button>`s (262–275) | `ToggleChipGroup label="Suggestions" mode="single"`, whose value is `[newLabel]` when it matches a suggestion |
+| `h3` "Add a Location" (212) | `h2` |
+| ignored `error` from rename, remove and set-default (104, 112, 118) | `notify.error` (recon 8) |
+
+The default ⭐ stays, as `<span role="img" aria-label="Default location">`. The test at 107 still finds it by text. `outline: none` at 64 and 93 goes with the `editInput` and `input` rules, since both fields are now Mantine's.
+
+- [ ] **Step 1: Update the tests first.** The two `getByTitle('Search by metro name or ZIP code')` lookups become `getByLabelText`. Add these cases:
+  - Remove opens the dialog. Confirming calls `deleteSavedLocation`, and cancelling does not.
+  - A duplicate rename shows the error on the field and never calls `updateSavedLocation`.
+  - Escape cancels a rename.
+  - A failed set-default toasts.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/profile/locations.test.tsx`
+- [ ] **Step 3: Implement**, rewrite `ManageLocations.module.css` on tokens, and remove the stylesheet and `src/pages/profile/locations.page.tsx` from their allowlists.
+- [ ] **Step 4: Run and watch them pass**, then `npm run lint:guards` and `npm run lint --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `refactor(web): rebuild Manage Locations on Mantine fields and the shared dialogs`.
+
+### Task 6.20: E2E, screenshots, accessibility, docs and the PR
+
+**Files:** `apps/web/e2e/visual/pages.ts`, `apps/web/e2e/visual/a11y-baseline.json`, `docs/architecture/web-ui-system.md`.
+
+Manage Locations gets a screenshot (recon 9):
+
+```ts
+{ name: 'manage-locations', path: '/profile/locations', signedIn: true, ready: (page) => heading(page, /manage locations/i) },
+```
+
+The a11y diff must **delete** the four `profile` and `public-profile` entries and add nothing. Any serious or critical violation on `manage-locations` is fixed here, not recorded.
+
+- [ ] **Step 1: Add the visual page** and run the smoke pass, which needs no Docker: `node scripts/visual/smoke.mjs`.
+- [ ] **Step 2: Run the e2e suite.** `npm run test:e2e:web`. The known risks are the tab roles (Task 6.16), the trust text, and the account menu that `06-profile.spec.ts:40` opens on the feed, which this PR does not touch.
+- [ ] **Step 3: Check the definition of done's structural items.**
+  - No `confirm(`, `alert(` or `prompt(` remains in the three pages.
+  - No `<Link>` wraps a `<Button>`.
+  - The CSS allowlist has lost all five stylesheets, and `RAW_ELEMENT_ALLOWLIST` has lost `profile.page.tsx`, `profile/locations.page.tsx`, `users/[id].page.tsx`, `AboutYouSection.tsx` and `FollowButton.tsx`. `profile/notifications.page.tsx` stays for PR 9.
+  - The page line counts are near their targets.
+- [ ] **Step 4: Regenerate the baselines.** Push a commit whose message contains `[visual-baselines]`, download the `visual-baselines` artifact, review **every** changed PNG, and commit the screenshots and the a11y diff.
+- [ ] **Step 5: Document the new pieces** in `docs/architecture/web-ui-system.md`, with their props: `PostSummaryRow`, `EventSummaryRow`, `ListingSummaryRow`, `PublicProfileHeader`, `ProfilePhotoControl`, `AccountDetails`, the three hooks and `lib/profilePhoto.ts`. Record that `ImageUploader` has three callers (decision 1). No feature doc covers the profile. `dynamic-location-management.md` says nothing about the dialogs, so it needs no change.
+- [ ] **Step 6: Run the full gate.** `npm run lint`, `npm run lint:guards`, `npm run type-check`, `npm run test`, `npm run test:e2e:web`, `npm run test:visual:web` and `npm run docs:check`.
+- [ ] **Step 7: Walk the keyboard** through all three pages: Tab, Shift+Tab, Enter, Space and Escape, the arrow keys in both tab lists and in the profile menu, the photo buttons, the name and bio dialogs, rename with Enter and Escape, and the remove dialog.
+- [ ] **Step 8: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`, then run `gh pr edit <number> --add-reviewer @copilot`. Update the Live tracker row to `In Review (PR #NN)`.
+
 ## PR 7 — Events (`feat/web-ui-events`)
 
 - **Pages:** `pages/events/index.page.tsx`, `pages/events/[id].page.tsx`.
@@ -12045,6 +12666,7 @@ Two of the three pages have no screenshot today (inventory finding 3). Add them 
 - **CSS:** `pages/events/events.module.css`, `eventDetail.module.css` (19 hex), `components/events/EventCard.module.css` (16), `EventFilterBar.module.css` (12).
 - **Tokens:** event-type colours become semantic tokens (`--event-<type>-fg/-bg`), added to `tokens.css` with contrast pairs.
 - **Also:** adopt `useInfiniteScroll` (events/index 110–125), `PageHeader` and `EmptyState`; replace `confirm()` in events/[id]; the filter search input uses a Mantine `TextInput`.
+- **Already built:** `EventSummaryRow` (PR 6, Task 6.4) renders an event as a compact row, for any list that does not need the full `EventCard`.
 
 ## PR 8 — Marketplace (`feat/web-ui-marketplace`)
 
@@ -12056,6 +12678,7 @@ Two of the three pages have no screenshot today (inventory finding 3). Add them 
   - Replace native dialogs (my-listings, listing actions).
   - Adopt `useInfiniteScroll` (index 178–193), the carousel (listing/[id] ~166–195) and `LoadingState`.
   - Convert the Mantine component mocks in the 7 marketplace tests to role-based assertions against real Mantine.
+- **Already built:** `ListingSummaryRow` with its owner view, and the shared `isListingExpiringSoon` (PR 6, Tasks 6.1 and 6.5). my-listings (118) should adopt both rather than keep its own `<= 14` check.
 
 ## PR 9 — Messages, notifications, moderation (`feat/web-ui-messaging`)
 
