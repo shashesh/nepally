@@ -86,7 +86,7 @@ describe('PostSummaryRow', () => {
   it('marks the age with a machine-readable dateTime', () => {
     render(<PostSummaryRow post={post} />);
 
-    expect(screen.getByText('2h ago').closest('time')?.getAttribute('dateTime')).toBe(post.created_at);
+    expect(screen.getByRole('time').getAttribute('dateTime')).toBe(post.created_at);
   });
 
   it('singularises a lone like or comment', () => {
@@ -122,11 +122,18 @@ describe('PostSummaryRow', () => {
     const menuButton = screen.getByRole('button', { name: 'Post options' });
 
     expect(link.contains(menuButton)).toBe(false);
+    expect(screen.getByRole('article').children).toHaveLength(2);
   });
 
   it('adds no extra wrapper element when no menu is given', () => {
-    const { container } = render(<PostSummaryRow post={post} />);
+    render(<PostSummaryRow post={post} />);
 
-    expect(container.querySelector('article')?.children).toHaveLength(1);
+    expect(screen.getByRole('article').children).toHaveLength(1);
+  });
+
+  it('adds no extra wrapper element for a falsy menu, such as isOwn && <ActionMenu />', () => {
+    render(<PostSummaryRow post={post} menu={false} />);
+
+    expect(screen.getByRole('article').children).toHaveLength(1);
   });
 });

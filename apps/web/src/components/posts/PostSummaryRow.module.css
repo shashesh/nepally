@@ -82,6 +82,7 @@
 /* The alt text ('') keeps the dot itself out of the accessibility tree, so
    screen readers hear "2h ago 3 likes", not "2h ago dot 3 likes". */
 .meta > * + *::before {
+  content: '·';
   content: '·' / '';
   margin-right: var(--space-1);
 }

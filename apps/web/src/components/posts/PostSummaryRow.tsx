@@ -27,7 +27,6 @@ export function PostSummaryRow({ post, menu }: PostSummaryRowProps) {
           <Link href={`/posts/${post.id}`} className={styles.stretchedLink}>
             {post.title}
           </Link>
-          {/* Mantine's Badge root clips overflow, so flex would otherwise shrink it. */}
           <span className={styles.scope}>
             <ScopeBadge isGlobal={post.is_global} />
           </span>
@@ -42,7 +41,7 @@ export function PostSummaryRow({ post, menu }: PostSummaryRowProps) {
         </div>
       </div>
 
-      {menu != null && <div className={styles.menu}>{menu}</div>}
+      {menu ? <div className={styles.menu}>{menu}</div> : null}
     </article>
   );
 }
