@@ -99,14 +99,17 @@ export async function getPostById(
   postId: string
 ): Promise<PostResult> {
   try {
+    // maybeSingle, not single: single reports "no rows" as an error, which
+    // makes a deleted post indistinguishable from a request that failed. The
+    // difference matters to callers — one offers a retry, the other must not.
     const { data, error } = await supabase
       .from('posts')
       .select(POST_SELECT)
       .eq('id', postId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
-    if (!data) throw new Error('Post not found');
+    if (!data) return { data: null };
 
     return { data: flattenPostTags(data) };
   } catch (error) {

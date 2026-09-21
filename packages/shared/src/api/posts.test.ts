@@ -84,22 +84,37 @@ describe('posts api', () => {
     expect(result.hasMore).toBe(true);
   });
 
-  it('returns error for missing post in getPostById', async () => {
+  function postByIdQuery(final: { data: unknown; error: unknown }) {
     const query = {
       select: vi.fn(),
       eq: vi.fn(),
-      single: vi.fn(),
+      maybeSingle: vi.fn(),
     };
 
     query.select.mockReturnValue(query);
     query.eq.mockReturnValue(query);
-    query.single.mockResolvedValue({ data: null, error: null });
+    query.maybeSingle.mockResolvedValue(final);
 
-    const supabase = {
+    return {
       from: vi.fn().mockReturnValue(query),
     } as unknown as SupabaseClient;
+  }
+
+  it('reports a missing post as no post rather than a failure in getPostById', async () => {
+    const supabase = postByIdQuery({ data: null, error: null });
 
     const result = await getPostById(supabase, 'missing-post');
+
+    // A post that was deleted is not a request that failed: callers show
+    // "Post not found" for this and offer a retry only for the other case.
+    expect(result.error).toBeUndefined();
+    expect(result.data).toBeNull();
+  });
+
+  it('reports a failed lookup as an error in getPostById', async () => {
+    const supabase = postByIdQuery({ data: null, error: new Error('network down') });
+
+    const result = await getPostById(supabase, 'post-1');
 
     expect(result.data).toBeUndefined();
     expect(result.error).toBeInstanceOf(Error);

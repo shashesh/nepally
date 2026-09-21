@@ -49,12 +49,11 @@ test.describe('Phone navigation', () => {
     await expect(page.getByRole('heading', { name: /notifications/i })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
 
-    // mockSupabaseLoggedIn's generic /rest/v1/posts** route always returns an
-    // array (buildMockPostRows()), regardless of the Accept header, so it
-    // does not satisfy getPostById()'s .single() call the way a real
-    // PostgREST server would. Override it here for the single-post request,
-    // mirroring the same-purpose setup in e2e/visual/pages.ts's
-    // `post-detail` entry.
+    // mockSupabaseLoggedIn's generic /rest/v1/posts** route returns every mock
+    // row (buildMockPostRows()), and getPostById asks for one post with
+    // .maybeSingle(), which reports more than one row as an error. Override it
+    // here so the detail request sees only the post it asked for, mirroring
+    // the same-purpose setup in e2e/visual/pages.ts's `post-detail` entry.
     const detailPost = {
       ...MOCK_POST_OTHER_AUTHOR,
       post_tags: (MOCK_POST_OTHER_AUTHOR.tags ?? []).map((tag) => ({ tag })),
