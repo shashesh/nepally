@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { Button } from '@mantine/core';
 import { followUser, unfollowUser, isFollowing } from '@nepally/shared';
 import styles from './FollowButton.module.css';
 
@@ -60,15 +61,18 @@ export function FollowButton({ supabase, viewerId, targetUserId, onChange }: Pro
   };
 
   return (
-    <button
+    <Button
       type="button"
       data-testid="follow-button"
       aria-pressed={following}
-      className={`${styles.btn} ${following ? styles.following : styles.follow}`}
+      className={styles.root}
+      variant={following ? 'default' : 'filled'}
+      radius="xl"
+      size="sm"
       disabled={loading}
       onClick={toggle}
     >
       {loading ? '…' : following ? 'Following' : 'Follow'}
-    </button>
+    </Button>
   );
 }
