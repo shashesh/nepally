@@ -115,6 +115,7 @@ export function PostCard({
           commentCount={post.comments_count || 0}
           liked={liked}
           onShare={() => void onSharePost(post)}
+          showViewDetails
         />
       </div>
     </article>

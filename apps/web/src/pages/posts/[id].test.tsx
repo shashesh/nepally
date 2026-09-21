@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
+type MockLinkProps = { href: string; children?: React.ReactNode };
 type MockImageProps = { src: string; alt: string; className?: string };
 
 const postDetailMocks = vi.hoisted(() => ({
@@ -65,8 +65,11 @@ vi.mock('next/head', () => ({
     React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: MockLinkProps) =>
-    React.createElement('a', { href, className }, children),
+  // Forwards the ref and every other prop, so Mantine can render a Menu.Item
+  // as a link and still set role, handlers and classes on it.
+  default: React.forwardRef<HTMLAnchorElement, MockLinkProps>(function MockLink({ href, children, ...rest }, ref) {
+    return React.createElement('a', { href, ref, ...rest }, children);
+  }),
 }));
 vi.mock('next/image', () => ({
   default: ({ src, alt, className }: MockImageProps) =>
@@ -95,7 +98,9 @@ describe('PostDetailPage', () => {
   const mockUser = { id: 'user-1', full_name: 'Test User' };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    // resetAllMocks, not clearAllMocks: clear keeps implementations and any
+    // unconsumed mockResolvedValueOnce, which then leaks into the next test.
+    vi.resetAllMocks();
     postDetailMocks.useRouterMock.mockReturnValue({
       query: { id: 'post-1' },
       push: mockPush,
@@ -114,7 +119,7 @@ describe('PostDetailPage', () => {
   it('shows loading state while fetching post', () => {
     postDetailMocks.getPostByIdMock.mockReturnValue(new Promise(() => {}));
     render(<PostDetailPage />);
-    expect(screen.getByText('Loading...')).toBeDefined();
+    expect(screen.getByText('Loading post…')).toBeDefined();
   });
 
   describe('when the route id changes', () => {
@@ -128,6 +133,170 @@ describe('PostDetailPage', () => {
       rerender(<PostDetailPage />);
     }
 
+    it('does not let a failed like for the previous post touch the new one', async () => {
+      let settleLike: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: { ...secondPost, likes_count: 11 } });
+      postDetailMocks.likePostMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLike = resolve;
+        })
+      );
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined());
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+      expect(screen.getByRole('button', { name: '11 likes' })).toBeDefined();
+
+      // The first post's like now fails; its rollback belongs to a post the
+      // reader has left.
+      await act(async () => {
+        settleLike({ error: new Error('rejected') });
+      });
+
+      expect(screen.getByRole('button', { name: '11 likes' })).toBeDefined();
+      expect(postDetailMocks.notificationsShowMock).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Could not like this post.' })
+      );
+    });
+
+    it('lets the new post be liked while the previous request is still open', async () => {
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: { ...secondPost, likes_count: 11 } });
+      postDetailMocks.likePostMock.mockReturnValueOnce(new Promise(() => {}));
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+
+      postDetailMocks.likePostMock.mockResolvedValueOnce({});
+      fireEvent.click(screen.getByRole('button', { name: '11 likes' }));
+
+      // A pending write on post-1 must not gate post-2.
+      await waitFor(() => expect(postDetailMocks.likePostMock).toHaveBeenLastCalledWith(expect.anything(), 'post-2'));
+    });
+
+    it('drops the reply target when the route changes', async () => {
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: secondPost });
+      postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+        {
+          parent: {
+            id: 'comment-1',
+            content: 'Interested!',
+            author_id: 'comment-user-1',
+            created_at: '2026-02-24T11:00:00Z',
+            author: { full_name: 'Comment User', profile_photo: null, trust_level: 1 },
+          },
+          replies: [],
+        },
+      ]);
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Interested!')).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
+      expect(await screen.findByText('Replying to Comment User')).toBeDefined();
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+
+      // Otherwise the next comment is filed as a reply to the previous post's thread.
+      expect(screen.queryByText('Replying to Comment User')).toBeNull();
+      expect(screen.getByLabelText('Write a comment')).toBeDefined();
+    });
+
+    it('does not delete the previous post when its dialog is confirmed after the move', async () => {
+      postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'user-2', full_name: 'Bikal' } });
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: { ...mockPost, author_id: 'user-2' } })
+        .mockResolvedValueOnce({ data: { ...secondPost, author_id: 'user-2' } });
+      postDetailMocks.deletePostMock.mockResolvedValue({});
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+      fireEvent.click(screen.getByLabelText('Post options'));
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete Post' }));
+      await screen.findByText('Delete post');
+
+      // The dialog belongs to the app-level modal manager, so moving on — with
+      // Back, say — leaves it standing over the new post.
+      navigateToSecondPost(rerender);
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await act(async () => {});
+
+      expect(postDetailMocks.deletePostMock).not.toHaveBeenCalled();
+    });
+
+    it('does not delete the previous post comment when its dialog is confirmed after the move', async () => {
+      postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'comment-user-1', full_name: 'Bikal' } });
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: secondPost });
+      postDetailMocks.deleteCommentMock.mockResolvedValue({});
+      postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+        {
+          parent: {
+            id: 'comment-1',
+            content: 'Interested!',
+            author_id: 'comment-user-1',
+            created_at: '2026-02-24T11:00:00Z',
+            author: { full_name: 'Comment User', profile_photo: null, trust_level: 1 },
+          },
+          replies: [],
+        },
+      ]);
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Interested!')).toBeDefined());
+      fireEvent.click(screen.getByLabelText('Delete comment'));
+      await screen.findByText('Delete comment', { selector: '*:not([aria-label])' });
+
+      navigateToSecondPost(rerender);
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await act(async () => {});
+
+      expect(postDetailMocks.deleteCommentMock).not.toHaveBeenCalled();
+    });
+
+    it('does not apply the previous post liked state to the new post', async () => {
+      let settleLiked: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock
+        .mockResolvedValueOnce({ data: mockPost })
+        .mockResolvedValueOnce({ data: secondPost });
+      postDetailMocks.getUserLikedPostIdsMock
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            settleLiked = resolve;
+          })
+        )
+        .mockResolvedValue({ data: [] });
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+
+      navigateToSecondPost(rerender);
+      await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
+
+      // post-1's hydration lands late and says post-1 was liked.
+      await act(async () => {
+        settleLiked({ data: ['post-1'] });
+      });
+
+      expect(screen.getByRole('button', { name: '5 likes' }).getAttribute('aria-pressed')).toBe('false');
+    });
+
     it('shows the loading state and then the new post', async () => {
       let resolveSecond: (value: unknown) => void = () => {};
       postDetailMocks.getPostByIdMock
@@ -137,7 +306,7 @@ describe('PostDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
 
       navigateToSecondPost(rerender);
-      expect(screen.getByText('Loading...')).toBeDefined();
+      expect(screen.getByText('Loading post…')).toBeDefined();
 
       resolveSecond({ data: secondPost });
       await waitFor(() => expect(screen.getByText('Second post')).toBeDefined());
@@ -207,7 +376,7 @@ describe('PostDetailPage', () => {
       const { rerender } = render(<PostDetailPage />);
       await waitFor(() => expect(screen.getByAltText('Post image 1')).toBeDefined());
 
-      fireEvent.click(screen.getByRole('button', { name: 'Next image' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
       expect(screen.getByAltText('Post image 2').getAttribute('src')).toBe('https://example.com/b.jpg');
 
       navigateToSecondPost(rerender);
@@ -245,7 +414,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('📍 Local')).toBeDefined();
+      expect(screen.getByText('Local')).toBeDefined();
     });
   });
 
@@ -253,7 +422,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, is_global: true } });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('🌐 Global')).toBeDefined();
+      expect(screen.getByText('Global')).toBeDefined();
     });
   });
 
@@ -261,7 +430,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('🏠 Housing')).toBeDefined();
+      expect(screen.getByText('Housing')).toBeDefined();
     });
   });
 
@@ -278,7 +447,499 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('No comments yet. Be the first to comment!')).toBeDefined();
+      expect(screen.getByText('No comments yet')).toBeDefined();
+      expect(screen.getByText('Be the first to comment!')).toBeDefined();
+    });
+  });
+
+  describe('deleting your own post', () => {
+    async function openDeleteDialog() {
+      postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'user-2', full_name: 'Bikal' } });
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, author_id: 'user-2' } });
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+
+      fireEvent.click(screen.getByLabelText('Post options'));
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete Post' }));
+      await screen.findByText('Delete post');
+    }
+
+    it('asks first, and does nothing when dismissed', async () => {
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() => expect(postDetailMocks.deletePostMock).not.toHaveBeenCalled());
+      expect(mockPush).not.toHaveBeenCalledWith('/feed');
+    });
+
+    it('deletes and returns to the feed once confirmed', async () => {
+      postDetailMocks.deletePostMock.mockResolvedValue({});
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() => expect(postDetailMocks.deletePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1'));
+      await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed'));
+    });
+
+    it('stays on the post and says so when the delete fails', async () => {
+      postDetailMocks.deletePostMock.mockResolvedValue({ error: new Error('nope') });
+      await openDeleteDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() =>
+        expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Failed to delete post. Please try again.' })
+        )
+      );
+      expect(mockPush).not.toHaveBeenCalledWith('/feed');
+    });
+  });
+
+  it('keeps reply mode when the comment author is missing', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+      {
+        parent: {
+          id: 'comment-1',
+          content: 'Interested!',
+          author_id: 'deleted-user',
+          created_at: '2026-02-24T11:00:00Z',
+          author: null,
+        },
+        replies: [],
+      },
+    ]);
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText('Interested!')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
+
+    // Without a fallback name the banner disappears while the reply id is still set.
+    expect(await screen.findByText('Replying to Anonymous')).toBeDefined();
+    expect(screen.getByLabelText('Write a reply')).toBeDefined();
+  });
+
+  it('keeps the typed comment and reports when the create fails', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.createCommentMock.mockResolvedValue({ error: new Error('rejected') });
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Write a comment')).toBeDefined());
+
+    const field = screen.getByLabelText('Write a comment') as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Great post!' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+    await waitFor(() =>
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Could not post your comment. Please try again.' })
+      )
+    );
+    expect(field.value).toBe('Great post!');
+  });
+
+  it('does not offer a member menu when the post author row is missing', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, author: null } });
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+
+    // There is no member to open: the profile link would point at nothing.
+    expect(screen.queryByRole('button', { name: /^Options for/ })).toBeNull();
+    expect(screen.getAllByText('Anonymous').length).toBeGreaterThan(0);
+  });
+
+  it('keeps a comment posted while the comments were still loading', async () => {
+    let settleComments: (result: unknown) => void = () => {};
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.getPostCommentsMock.mockReturnValue(
+      new Promise((resolve) => {
+        settleComments = resolve;
+      })
+    );
+    postDetailMocks.createCommentMock.mockResolvedValue({
+      data: {
+        id: 'comment-live',
+        content: 'Posted mid-flight',
+        author_id: 'user-1',
+        post_id: 'post-1',
+        parent_comment_id: null,
+        created_at: '2026-02-24T12:00:00Z',
+      },
+    });
+    postDetailMocks.buildSingleLevelCommentThreadsMock.mockImplementation((comments: unknown[]) =>
+      comments.map((comment) => ({ parent: comment, replies: [] }))
+    );
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Write a comment')).toBeDefined());
+
+    fireEvent.change(screen.getByLabelText('Write a comment'), { target: { value: 'Posted mid-flight' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(screen.getByText('Posted mid-flight')).toBeDefined());
+
+    // The load that was already running now fails; it must not hide the comment.
+    await act(async () => {
+      settleComments({ error: new Error('late failure') });
+    });
+
+    expect(screen.getByText('Posted mid-flight')).toBeDefined();
+    expect(screen.queryByText("Couldn't load comments")).toBeNull();
+  });
+
+  it('puts the like back when the request fails', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.likePostMock.mockResolvedValue({ error: new Error('rejected') });
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+
+    await waitFor(() =>
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Could not like this post.' })
+      )
+    );
+    expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined();
+  });
+
+  it('puts the save back when the request fails', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.savePostMock.mockResolvedValue({ error: new Error('rejected') });
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+
+    await waitFor(() =>
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Failed to save post.' })
+      )
+    );
+    // Still offering Save, not Unsave, because the write did not land.
+    expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
+  });
+
+  it('ignores a second like while the first is still in flight', async () => {
+    let settleLike: (result: unknown) => void = () => {};
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.likePostMock.mockReturnValue(
+      new Promise((resolve) => {
+        settleLike = resolve;
+      })
+    );
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: '6 likes' }));
+
+    expect(postDetailMocks.likePostMock).toHaveBeenCalledTimes(1);
+    expect(postDetailMocks.unlikePostMock).not.toHaveBeenCalled();
+
+    // The one rollback that can happen lands on the count it started from.
+    await act(async () => {
+      settleLike({ error: new Error('rejected') });
+    });
+    expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined();
+  });
+
+  it('ignores a second save while the first is still in flight', async () => {
+    let settleSave: (result: unknown) => void = () => {};
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.savePostMock.mockReturnValue(
+      new Promise((resolve) => {
+        settleSave = resolve;
+      })
+    );
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Unsave post' }));
+
+    expect(postDetailMocks.savePostMock).toHaveBeenCalledTimes(1);
+    expect(postDetailMocks.unsavePostMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      settleSave({ error: new Error('rejected') });
+    });
+    expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
+  });
+
+  describe('when the signed-in member changes', () => {
+    function signInAs(rerender: (ui: React.ReactElement) => void, user: { id: string; full_name: string }) {
+      postDetailMocks.useAuthMock.mockReturnValue({ user });
+      rerender(<PostDetailPage />);
+    }
+
+    it('hydrates for the new member instead of keeping the old one state', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.likePostMock.mockResolvedValue({});
+      postDetailMocks.getUserLikedPostIdsMock.mockResolvedValue({ data: [] });
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined());
+
+      // Someone else signs in on this tab. The first member's like is theirs,
+      // not the new member's.
+      signInAs(rerender, { id: 'user-9', full_name: 'Other Member' });
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '5 likes' }).getAttribute('aria-pressed')).toBe('false')
+      );
+    });
+
+    it('does not report the previous member request on the new member view', async () => {
+      let settleLike: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.likePostMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLike = resolve;
+        })
+      );
+
+      const { rerender } = render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+
+      signInAs(rerender, { id: 'user-9', full_name: 'Other Member' });
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      await act(async () => {
+        settleLike({ error: new Error('rejected') });
+      });
+
+      expect(postDetailMocks.notificationsShowMock).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Could not like this post.' })
+      );
+    });
+  });
+
+  describe('when a hydration lands after the reader has acted', () => {
+    it('does not let a stale liked snapshot undo an optimistic like', async () => {
+      let settleLiked: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserLikedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLiked = resolve;
+        })
+      );
+      postDetailMocks.likePostMock.mockResolvedValue({});
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      await waitFor(() => expect(postDetailMocks.likePostMock).toHaveBeenCalled());
+
+      // The snapshot was taken before the like and does not know about it.
+      await act(async () => {
+        settleLiked({ data: [] });
+      });
+
+      expect(screen.getByRole('button', { name: '6 likes' }).getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('does not let a stale saved snapshot undo an optimistic save', async () => {
+      let settleSaved: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserSavedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleSaved = resolve;
+        })
+      );
+      postDetailMocks.savePostMock.mockResolvedValue({});
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+      await waitFor(() => expect(postDetailMocks.savePostMock).toHaveBeenCalled());
+
+      await act(async () => {
+        settleSaved({ data: [] });
+      });
+
+      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+    });
+  });
+
+  describe('when the reader acts before the snapshot arrives', () => {
+    it('lands on liked when the like was rejected as one the member already had', async () => {
+      let settleLiked: (result: unknown) => void = () => {};
+      let settleLike: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserLikedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLiked = resolve;
+        })
+      );
+      postDetailMocks.likePostMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLike = resolve;
+        })
+      );
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      // The heart is still off because the snapshot has not landed.
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined());
+
+      // It lands, and says this member liked the post long ago.
+      await act(async () => {
+        settleLiked({ data: ['post-1'] });
+      });
+      // So the insert hits the (post_id, user_id) unique constraint.
+      await act(async () => {
+        settleLike({ error: new Error('duplicate key value violates unique constraint') });
+      });
+
+      // Rolling back to the pre-click guess would claim the member never
+      // liked it, and every further click would fail the same way.
+      const likeButton = screen.getByRole('button', { name: '5 likes' });
+      expect(likeButton.getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('lands on saved when the save was rejected as one the member already had', async () => {
+      let settleSaved: (result: unknown) => void = () => {};
+      let settleSave: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserSavedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleSaved = resolve;
+        })
+      );
+      postDetailMocks.savePostMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleSave = resolve;
+        })
+      );
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
+
+      await act(async () => {
+        settleSaved({ data: ['post-1'] });
+      });
+      await act(async () => {
+        settleSave({ error: new Error('duplicate key value violates unique constraint') });
+      });
+
+      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+    });
+  });
+
+  describe('when the post itself cannot be loaded', () => {
+    it('offers a retry instead of claiming the post does not exist', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValueOnce({ error: new Error('offline') });
+
+      render(<PostDetailPage />);
+
+      await waitFor(() => expect(screen.getByText("Couldn't load this post")).toBeDefined());
+      // A failed request is not a deleted post; that wording sends readers away.
+      expect(screen.queryByText('Post not found')).toBeNull();
+
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
+    });
+
+    it('still says not found when the post genuinely is not there', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: null });
+
+      render(<PostDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Post not found')).toBeDefined());
+      expect(screen.queryByText("Couldn't load this post")).toBeNull();
+    });
+  });
+
+  describe('when comments cannot be loaded', () => {
+    it('shows an error instead of the empty state, and can retry', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getPostCommentsMock.mockResolvedValueOnce({ error: new Error('offline') });
+
+      render(<PostDetailPage />);
+
+      await waitFor(() => expect(screen.getByText("Couldn't load comments")).toBeDefined());
+      expect(screen.queryByText('No comments yet')).toBeNull();
+
+      postDetailMocks.getPostCommentsMock.mockResolvedValue({ data: [] });
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await waitFor(() => expect(screen.getByText('No comments yet')).toBeDefined());
+    });
+
+    it('acknowledges Retry instead of leaving the error and its button up', async () => {
+      let settleRetry: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getPostCommentsMock.mockResolvedValueOnce({ error: new Error('offline') });
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText("Couldn't load comments")).toBeDefined());
+
+      postDetailMocks.getPostCommentsMock.mockReturnValueOnce(
+        new Promise((resolve) => {
+          settleRetry = resolve;
+        })
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+      // Leaving the error up reads as a dead button, and a second click
+      // starts a second load.
+      expect(screen.getByText('Loading comments…')).toBeDefined();
+      expect(screen.queryByText("Couldn't load comments")).toBeNull();
+
+      await act(async () => {
+        settleRetry({ data: [] });
+      });
+      expect(screen.getByText('No comments yet')).toBeDefined();
+    });
+
+    it('shows a comment posted after the failure, without needing Retry', async () => {
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getPostCommentsMock.mockResolvedValue({ error: new Error('offline') });
+      const created = {
+        id: 'comment-9',
+        content: 'Posted anyway',
+        author_id: 'user-1',
+        post_id: 'post-1',
+        parent_comment_id: null,
+        created_at: '2026-02-24T12:00:00Z',
+      };
+      postDetailMocks.createCommentMock.mockResolvedValue({ data: created });
+      postDetailMocks.buildSingleLevelCommentThreadsMock.mockImplementation((comments: unknown[]) =>
+        comments.map((comment) => ({ parent: comment, replies: [] }))
+      );
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText("Couldn't load comments")).toBeDefined());
+
+      fireEvent.change(screen.getByLabelText('Write a comment'), { target: { value: 'Posted anyway' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Post' }));
+
+      await waitFor(() => expect(screen.getByText('Posted anyway')).toBeDefined());
+      expect(screen.queryByText("Couldn't load comments")).toBeNull();
     });
   });
 
@@ -362,7 +1023,7 @@ describe('PostDetailPage', () => {
     render(<PostDetailPage />);
     await waitFor(() => {
       // mockPost.author_id = 'user-2', current user = 'user-1'
-      expect(screen.getByText(/🏷️ Save/)).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
     });
   });
 
@@ -371,7 +1032,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: { ...mockPost, author_id: 'user-2' } });
     render(<PostDetailPage />);
     await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
-    expect(screen.queryByText(/🏷️ Save|🔖 Save/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /save post/i })).toBeNull();
   });
 
   it('shows "Save Post" option in post menu for non-owner', async () => {
@@ -398,9 +1059,9 @@ describe('PostDetailPage', () => {
   it('calls savePost when Save button is clicked', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
-    fireEvent.click(screen.getByText(/🏷️ Save/));
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
 
     await waitFor(() => {
       expect(postDetailMocks.savePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
@@ -410,9 +1071,9 @@ describe('PostDetailPage', () => {
   it('shows "Post saved." toast after clicking Save', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
-    fireEvent.click(screen.getByText(/🏷️ Save/));
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
 
     await waitFor(() => {
       expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
@@ -425,9 +1086,9 @@ describe('PostDetailPage', () => {
     postDetailMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByText(/🔖 Save/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
 
-    fireEvent.click(screen.getByText(/🔖 Save/));
+    fireEvent.click(screen.getByRole('button', { name: 'Unsave post' }));
 
     await waitFor(() => {
       expect(postDetailMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
@@ -441,9 +1102,9 @@ describe('PostDetailPage', () => {
     postDetailMocks.savePostMock.mockResolvedValue({ error: new Error('network') });
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByText(/🏷️ Save/)).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
-    fireEvent.click(screen.getByText(/🏷️ Save/));
+    fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
 
     await waitFor(() => {
       expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
@@ -465,11 +1126,9 @@ describe('PostDetailPage', () => {
       },
     });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByPlaceholderText('Write a comment...')).toBeDefined());
-    fireEvent.change(screen.getByPlaceholderText('Write a comment...'), {
-      target: { value: 'Great post!' },
-    });
-    fireEvent.submit(screen.getByPlaceholderText('Write a comment...').closest('form')!);
+    await waitFor(() => expect(screen.getByLabelText('Write a comment')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Write a comment'), { target: { value: 'Great post!' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post' }));
     await waitFor(() => {
       expect(postDetailMocks.createCommentMock).toHaveBeenCalledWith(
         expect.anything(),
@@ -504,15 +1163,11 @@ describe('PostDetailPage', () => {
       expect(screen.getAllByText('Comment User').length).toBeGreaterThan(0);
     });
 
-    const avatarOptionsButtons = screen.getAllByLabelText('User options');
-    fireEvent.click(avatarOptionsButtons[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Comment User' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('View Profile')).toBeDefined();
-      expect(screen.getByText('Chat')).toBeDefined();
-    });
+    expect(await screen.findByRole('menuitem', { name: 'View profile' })).toBeDefined();
 
-    fireEvent.click(screen.getByText('Chat'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Chat' }));
 
     await waitFor(() => {
       expect(postDetailMocks.getOrCreateConversationMock).toHaveBeenCalledWith(
@@ -525,7 +1180,7 @@ describe('PostDetailPage', () => {
     });
   });
 
-  it('renders anchored avatar dropdown near click position in post detail', async () => {
+  it('opens the author menu from the avatar', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
 
     render(<PostDetailPage />);
@@ -534,18 +1189,10 @@ describe('PostDetailPage', () => {
       expect(screen.getByText('Looking for a roommate')).toBeDefined();
     });
 
-    const avatarOptionsButtons = screen.getAllByLabelText('User options');
-    fireEvent.click(avatarOptionsButtons[0], { clientX: 120, clientY: 180 });
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal Shrestha' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('View Profile')).toBeDefined();
-      expect(screen.getByText('Chat')).toBeDefined();
-    });
-
-    const anchoredDropdown = document.querySelector('div[class*="avatarDropdownAnchored"]') as HTMLDivElement | null;
-    expect(anchoredDropdown).not.toBeNull();
-    expect(anchoredDropdown?.style.top).toBe('188px');
-    expect(anchoredDropdown?.style.left).toBe('120px');
+    expect(await screen.findByRole('menuitem', { name: 'View profile' })).toBeDefined();
+    expect(screen.getByRole('menuitem', { name: 'Chat' })).toBeDefined();
   });
 
   it('optimistically toggles like', async () => {
@@ -553,31 +1200,25 @@ describe('PostDetailPage', () => {
     postDetailMocks.likePostMock.mockResolvedValue({});
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/🤍 5/)).toBeDefined();
+      expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined();
     });
-    fireEvent.click(screen.getByText(/🤍 5/));
+    fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
     await waitFor(() => {
-      expect(screen.getByText(/❤️ 6/)).toBeDefined();
+      expect(screen.getByRole('button', { name: '6 likes' })).toBeDefined();
     });
   });
 
   // ─── Avatar dropdown: View Profile navigation ──────────────────────────────
 
-  it('clicking View Profile in avatar dropdown navigates to public profile page', async () => {
+  it('View profile links to the public profile', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
     await waitFor(() => expect(screen.getByText('Looking for a roommate')).toBeDefined());
 
-    // Open avatar dropdown for post author (author_id = 'user-2', current user = 'user-1')
-    const avatarOptionsButtons = screen.getAllByLabelText('User options');
-    fireEvent.click(avatarOptionsButtons[0], { clientX: 120, clientY: 180 });
+    // The post author is user-2; the signed-in member is user-1.
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal Shrestha' }));
 
-    await waitFor(() => expect(screen.getByText('View Profile')).toBeDefined());
-
-    fireEvent.click(screen.getByText('View Profile'));
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/users/user-2');
-    });
+    const link = await screen.findByRole('menuitem', { name: 'View profile' });
+    expect(link.getAttribute('href')).toBe('/users/user-2');
   });
 });

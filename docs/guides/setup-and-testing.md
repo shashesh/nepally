@@ -362,6 +362,15 @@ npm run test:visual:smoke --workspace=apps/web
 - **Accessibility baseline:** `apps/web/e2e/visual/a11y-baseline.json` records known serious/critical axe violations per `project:page`, and tests fail on anything new. After fixing violations, regenerate with `-- --update --write-a11y-baseline`. The diff of that file must only delete lines.
 - **Image tag:** the container tag in `ci.yml` and `visual-baselines.yml` must equal the installed `@playwright/test` version.
 
+### Timers in web unit tests
+
+`apps/web/vitest.setup.ts` cancels every `setTimeout`, `setInterval` and `requestAnimationFrame` a test leaves pending, right after React Testing Library unmounts it. Vitest destroys the jsdom environment at the end of each file, but timers scheduled inside it are ordinary Node timers that keep running: Mantine schedules several it never clears (the focus trap's restore, AppShell's resize flag, a `Transition`'s duration), and one firing after teardown calls `setState` against a window that no longer exists. That surfaces as an unhandled `ReferenceError: window is not defined` charged to whichever file happened to be running, and it fails the run even when every test passed.
+
+Two consequences when writing tests:
+
+- Work a test schedules never runs in a later test, so tests cannot leak state through a timer.
+- The sweep is a harness guard, not a licence: a component that starts a timer still has to clear it on unmount, or it calls `setState` after unmount in the browser too.
+
 ### Policy reminder
 
 - Every new functionality must include unit tests in the same change.

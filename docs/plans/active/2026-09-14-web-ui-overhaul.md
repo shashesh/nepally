@@ -184,8 +184,8 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 3a Search: data + shared | `feat/search-data` (stacked on PR 2) | 3a.1–3a.4 | Merged (PR #65) | 2026-09-18 | migration 037 applied to nusa-staging 2026-09-15; PII smoke test PASS |
 | 3b Search: web | `feat/search-web` (stacked on PR 3a) | 3b.1–3b.6 | Merged (PR #66) | 2026-09-18 | Linux baselines f8c9ebd (CI run 35276325905); a11y baseline unchanged |
 | 3c Search follow-ups | `fix/search-follow-ups` (stacked on PR #78) | 3c.1–3c.5 | Merged (PR #79) | 2026-09-19 | no migration; the `count(*) OVER ()` fix stays deferred with its trigger |
-| 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | In Review (PR #80) | 2026-09-19 | draft open; visual baselines still to run before it is marked ready |
-| 4b Post detail | `feat/web-ui-post-detail` | breakdown at PR start | Not Started | 2026-09-19 | split from PR 4; starts after 4a merges |
+| 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
+| 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | In Review (PR #81) | 2026-09-20 | #80 merged, so this now targets `master`; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 6 Profile + public profile | `feat/web-ui-profile` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -11378,7 +11378,7 @@ Every interactive child then sits beside the link rather than inside it, so no `
 
 - [ ] **Step 1: Update the e2e feed spec** `apps/web/e2e/tests/04-feed.spec.ts` for the new DOM. Replace `page.locator('a').filter({ hasText: title })` (65, 77, 87) and `page.locator('section')` (47) with role-based locators, and `page.locator('aside')` (112, 121, 132, 141, 154) with `getByRole('complementary')`. Keep `a[href="/feed?tags=housing"]` if the filter bar still renders that link; check rather than assume.
 - [ ] **Step 2: Run the e2e suite.** Run: `npm run test:e2e --workspace=apps/web -- e2e/tests/04-feed.spec.ts`. Expected: PASS.
-- [ ] **Step 3: Keyboard walk-through** of the feed: Tab order through composer, tag chips, post menus and the rail; Enter and Space on each menu; Escape closes menus and the lightbox; ←/→ move the carousel and the lightbox. Fix what does not work.
+- [x] **Step 3: Keyboard walk-through** of the feed: Tab order through composer, tag chips, post menus and the rail; Enter and Space on each menu; Escape closes menus and the lightbox; ←/→ move the carousel and the lightbox. Fix what does not work.
 - [ ] **Step 4: Run the whole local pipeline.** Run: `npm run ci:local`. Expected: exit 0.
 - [ ] **Step 5: Regenerate the visual baselines.** There is no local Docker (Decision 1), so push with `[visual-baselines]` in the commit message, download the `visual-baselines` artifact from the workflow run, review every changed PNG, and commit the screenshots plus the `a11y-baseline.json` diff. The feed, post-card and phone-feed screenshots all change, because the tag chips lose their uppercase and the card markup is new.
 - [ ] **Step 6: Clear the feed's accessibility entries.** Run the visual suite with `--write-a11y-baseline` and check the `a11y-baseline.json` diff only deletes lines. The feed pages are not in the baseline today, so this should be a no-op; if it adds an entry, fix the violation instead of recording it.
@@ -11387,17 +11387,171 @@ Every interactive child then sits beside the link rather than inside it, so no `
 
 ## PR 4b — Post detail (`feat/web-ui-post-detail`)
 
-Starts after 4a merges, so it can adopt what 4a built.
+Branched from `feat/web-ui-feed` (PR #80), the way PR 3b branched from 3a, so it could adopt what 4a built without waiting for the merge. #80 merged on 2026-09-20 and PR #81 was retargeted to `master` then.
+
+**Inventory** (run on the branch point, 2026-09-19):
+
+| File | Lines | CSS violations | Raw form elements | Native dialogs |
+|---|---|---|---|---|
+| `pages/posts/[id].page.tsx` | 1008 | — | 17 | 5 |
+| `styles/PostDetail.module.css` | 656 | 170 (160 legacy tokens, 9 literals, 1 named) | — | — |
 
 - **Pages:** `pages/posts/[id].page.tsx` (1008 lines, 17 raw form elements, 5 native dialogs).
 - **CSS:** `styles/PostDetail.module.css` (170 violations).
-- **Adopt from 4a:** `ImageLightbox` (replacing posts/[id] 369–487/887–980), `PhotoCarousel` (620–679), `PostMeta`, `PostActions` and `notify`.
+- **Adopt from 4a:** `ImageLightbox` (replacing posts/[id] 369–487/887–980), `PhotoCarousel` (620–679), `PostActions`, `ScopeBadge`, `TagChip` and `notify`. Not `PostMeta`: see the task breakdown.
 - **Extract into `components/posts/`:** `CommentThread`, `CommentComposer`.
 - **Adopt `UserMenuTrigger`** (built in 4a) for the hand-positioned `ref.style` menus (posts/[id] 139) and their manual `mousedown` listeners. PR 9 reuses it for the messages pages.
 - **Tests to rewrite:**
   - `pages/posts/[id].test.tsx:441` (anchored dropdown class and inline style) → assert `menuitem`s.
   - `e2e/tests/09-avatar-menu.spec.ts:59,102` (`div[class*="avatarDropdownAnchored"]`) → `getByRole('menu')`.
 - **Also:** replace the post and comment delete dialogs with `useConfirm`.
+
+## PR 4b — Task breakdown
+
+Work on `feat/web-ui-post-detail`, branched from `feat/web-ui-feed`. Same conventions as PR 4a: test first, commit per task, query by role, semantic tokens only, no inline styles, and `UnstyledButton`/`ActionIcon` rather than raw elements outside `components/ui/`.
+
+**What the recon changed** (page read on 2026-09-19):
+
+- The page has **no sub-components at all** — 1008 lines in one function with 24 helper functions. Everything is extraction.
+- `PostActions` as 4a shipped it **does not fit here**. Detail has a working like toggle, a scroll-to-comments button and a save button; 4a's version has none of those callbacks and adds a "View Details" cue that detail must not show. Task 4b.1 extends it rather than duplicating the row.
+- `PostMeta` bundles author, time, scope and tags, but detail also renders `location_city`/`location_state`, which `PostMeta` has no slot for. That span stays on the page.
+- The page **swallows two failures**: a failed comments fetch and a failed `createComment` both do nothing at all (no toast, no message). Task 4b.3 gives them `notify.error`, which is a small behaviour change and deliberate.
+
+### Task 4b.1: Make `PostActions` serve both surfaces
+
+**Files:** `components/posts/PostActions.tsx`, `PostActions.module.css`, `PostActions.test.tsx`, and `components/posts/PostCard.tsx` (the feed's caller).
+
+**Interface:**
+
+```ts
+export interface PostActionsProps {
+  likeCount: number;
+  commentCount: number;
+  liked?: boolean;
+  saved?: boolean;
+  /** Given: the count becomes a button. Omitted: it stays text. */
+  onLike?: () => void;
+  onComment?: () => void;
+  onSave?: () => void;
+  onShare: () => void;
+  /** The feed card's "View Details →" cue; detail omits it. */
+  showViewDetails?: boolean;
+}
+```
+
+Counts render as text when their callback is missing (the feed today) and as `UnstyledButton`s when it is present (detail). Labels stay "3 likes" / "2 comments"; the like button is `aria-pressed={liked}`, the save button reads "Save post" / "Unsave post".
+
+- [ ] **Step 1: Extend the tests** — the existing four still pass unchanged; add: a like button appears only with `onLike` and reports `aria-pressed`; clicking it calls back; the same for comment and save; "View Details" renders only with `showViewDetails`.
+- [ ] **Step 2: Run and watch the new cases fail.** `npm run test --workspace=apps/web -- src/components/posts/PostActions.test.tsx`
+- [ ] **Step 3: Implement**, and pass `showViewDetails` from `PostCard`.
+- [ ] **Step 4: Run the posts and feed suites.** Both must stay green: the feed's behaviour does not change.
+- [ ] **Step 5: Commit** as `feat(web): let PostActions carry like, comment and save`.
+
+### Task 4b.2: `CommentComposer`
+
+**Files:** create `components/posts/CommentComposer.tsx`, `.module.css`, `.test.tsx`.
+
+```ts
+export interface CommentComposerProps {
+  replyingToName?: string;       // shows the reply banner
+  onCancelReply?: () => void;
+  onSubmit: (text: string) => Promise<void> | void;
+  submitting?: boolean;
+}
+```
+
+Replaces page 750–773. The raw `<input>` (761–767, which has no label) becomes a Mantine `TextInput` with a real label, and the form keeps submit-on-enter. The submit button is disabled while empty or submitting.
+
+- [ ] **Step 1: Write the failing test**: the field has an accessible name; submitting passes the text and clears the field; an empty or whitespace-only value cannot be submitted; the reply banner names the person and Cancel calls back.
+- [ ] **Step 2: Run and watch it fail.**
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add CommentComposer`.
+
+### Task 4b.3: `CommentThread`
+
+**Files:** create `components/posts/CommentThread.tsx`, `.module.css`, `.test.tsx`.
+
+```ts
+export interface CommentThreadProps {
+  thread: PostCommentThread;     // from '@nepally/shared'
+  currentUserId?: string;
+  onReply: (parentId: string, authorName: string) => void;
+  onDelete: (commentId: string) => Promise<void> | void;
+  onChat?: (userId: string, name: string) => void;
+}
+```
+
+Replaces page 780–866: one parent plus its replies behind a "Show replies (n)" toggle. Each author avatar is a `UserMenuTrigger`, except your own, which renders a plain `Avatar` as `PostCard` does. Delete appears only on your own comments and goes through `useConfirm` ("Delete comment", danger), replacing the `confirm()` at page 210. The `alert()` at 224 becomes `notify.error`.
+
+- [ ] **Step 1: Write the failing test**: parent renders with author, time and body; replies hide until the toggle is pressed and the toggle names the count; Reply calls back with the parent id; Delete shows only on your own comment, opens the confirm dialog and calls back when confirmed; another member's avatar opens the menu and your own does not.
+- [ ] **Step 2: Run and watch it fail.**
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add CommentThread`.
+
+### Task 4b.4: Adopt the media primitives on the page
+
+**Files:** `pages/posts/[id].page.tsx`.
+
+Delete the lightbox (JSX 911–1004; state 76–79; effects and helpers 393–511) in favour of `ImageLightbox`, and the carousel (JSX 644–703; state 74–75, 80; helpers 351–391, 513–540) in favour of `PhotoCarousel`. Roughly 260 lines go.
+
+- [ ] **Step 1: Update the tests that name these controls.** `[id].test.tsx:210` uses "Next image"; the primitives say "Next photo". The carousel-reset test (199) covers state the component now owns — rewrite it to assert the first photo renders after a route change.
+- [ ] **Step 2: Run and watch those fail.**
+- [ ] **Step 3: Make the swap.**
+- [ ] **Step 4: Run the page suite.** Expected: green, minus the tests later tasks touch.
+- [ ] **Step 5: Commit** as `refactor(web): use the shared lightbox and carousel on post detail`.
+
+### Task 4b.5: Adopt the menus
+
+**Files:** `pages/posts/[id].page.tsx`, `pages/posts/[id].test.tsx`.
+
+Replace the post options menu (597–637) with `ActionMenu`, and all three avatar triggers (569–584, 783–802, 831–850) plus the shared dropdown (870–898) with `UserMenuTrigger`. That deletes the outside-click effect (139–157), the positioning effect (159–163), `openAvatarMenu` (231–255) with its four magic constants, and five pieces of state (68–71, 81–82).
+
+- [ ] **Step 1: Rewrite the affected tests.** `[id].test.tsx:528` asserts a CSS-module class substring (`div[class*="avatarDropdownAnchored"]`) and two inline pixel offsets; that test goes, because the anchored dropdown does. Menu names change: the trigger reads "Options for {name}" rather than "User options", the item reads "View profile" rather than "View Profile", and it is a link, so the `mockPush` assertion at 580 becomes an `href` check.
+- [ ] **Step 2: Run and watch them fail.**
+- [ ] **Step 3: Make the swap.**
+- [ ] **Step 4: Run the page suite.**
+- [ ] **Step 5: Commit** as `refactor(web): use ActionMenu and UserMenuTrigger on post detail`.
+
+### Task 4b.6: Adopt the rest, and wire the comment components
+
+**Files:** `pages/posts/[id].page.tsx`, `pages/posts/[id].test.tsx`.
+
+- Loading (542–544) → `LoadingState variant="detail"`; not-found (546–555) → `EmptyState` with the feed link as its `action`; no comments (775–778) → `EmptyState`.
+- Scope badge (593–595) and tags (728–741) → **`ScopeBadge` and `TagChip` directly, not `PostMeta`**. `PostMeta` also renders author and time, which this page lays out in its own header, and it has no slot for the location line that sits beside the tags. Both badges lose their emoji, so `[id].test.tsx:248, 256, 264` change.
+- Action bar (705–726) → the extended `PostActions`.
+- Comments (750–866) → `CommentComposer` and `CommentThread`.
+- `handleDeletePost` (330–343): `confirm()` → `useConfirm`, `alert()` → `notify.error`. `handleShare` (320) → `notify.success`. The silent `createComment` failure (202–206) and the swallowed comments-fetch error (98–101) → `notify.error`.
+
+- [ ] **Step 1: Update the tests** for the new strings and roles.
+- [ ] **Step 2: Run and watch them fail.**
+- [ ] **Step 3: Make the changes.**
+- [ ] **Step 4: Run the page suite, then the whole web suite.**
+- [ ] **Step 5: Check the page size.** Expected: about 350 lines or fewer.
+- [ ] **Step 6: Commit** as `refactor(web): rebuild post detail on the shared components`.
+
+### Task 4b.7: `PostDetail.module.css` onto semantic tokens
+
+170 violations in 656 lines, and most classes will be orphaned once the markup moves, exactly as on the feed.
+
+- [ ] **Step 1: List the classes the page still references**, with the same node one-liner used for `Feed.module.css` in Task 4a.11.
+- [ ] **Step 2: Delete the orphans, convert the rest**, mapping legacy names through `legacy-aliases.css`.
+- [ ] **Step 3: Check with the guard.** Expected: `0`.
+- [ ] **Step 4: Remove the file from `scripts/guard-css-tokens.allowlist.json`**, remove `src/pages/posts/[id].page.tsx` from the raw-element allowlist, and run `npm run lint:guards`.
+- [ ] **Step 5: Commit** as `style(web): move the post detail stylesheet onto semantic tokens`.
+
+### Task 4b.8: E2E, accessibility, docs and the PR
+
+- [x] **Step 1: Rewrite `e2e/tests/09-avatar-menu.spec.ts`.** Both tests key off `div[class*="avatarDropdownAnchored"]` and a bounding-box proximity check. Mantine positions the menu itself, so assert the menu opens from the right trigger and contains View profile and Chat, by role. Drop the geometry.
+- [x] **Step 2: Run the e2e suite.** `npm run test:e2e --workspace=apps/web -- e2e/tests/09-avatar-menu.spec.ts` — both pass by role.
+- [ ] **Step 3: Keyboard walk-through** of post detail: Tab through the carousel, action bar, menus, composer and comment actions; Enter and Space on each; Escape closes menus, the lightbox and the confirm dialog; ←/→ page the carousel and lightbox.
+- [x] **Step 4: Run `npm run ci:local`.** Exits 0.
+- [x] **Step 5: Check the accessibility baseline.** The premise here was wrong: `a11y-baseline.json` has never held entries for post detail, so there is nothing to delete. What matters is that the regenerated baseline gains none, and it does — the file is unchanged. Every colour pair the new CSS uses was checked against AA first, after the feed composer shipped a 4.25:1 pair in PR 4a.
+- [x] **Step 6: Docs.** `web-ui-system.md` lists `CommentThread`, `CommentComposer` and the extended `PostActions`; `docs:check` is clean.
+- [x] **Step 7: Push and open the draft PR**, request Copilot, leave it in draft. It was opened against `feat/web-ui-feed` while 4a was in review and retargeted to `master` when #80 merged.
+- [x] **Step 8: Regenerate and review the visual baselines.** Done from this branch's head (run 35527351030 checked out `eb849d7`): only the two post-detail screenshots move, and `a11y-baseline.json` is unchanged.
+  - Dispatch against a short-lived copy of the branch, not the PR branch, so the PR spends one CI run rather than two. Record the commit the run checked out, because `workflow_dispatch` reports the workflow file's ref (`master`) as the run's head, not the branch it built.
 
 ## PR 5 — Create flows (`feat/web-ui-create-flows`)
 

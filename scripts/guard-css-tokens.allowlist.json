@@ -20,7 +20,6 @@
   "apps/web/src/styles/Moderation.module.css",
   "apps/web/src/styles/NotificationPreferences.module.css",
   "apps/web/src/styles/Notifications.module.css",
-  "apps/web/src/styles/PostDetail.module.css",
   "apps/web/src/styles/Profile.module.css",
   "apps/web/src/styles/PublicProfile.module.css"
 ]

@@ -110,7 +110,8 @@ export interface PostsResult {
 }
 
 export interface PostResult {
-  data?: Post;
+  /** `null` means the post is not there; absent alongside `error` means the lookup failed. */
+  data?: Post | null;
   error?: Error;
 }
 
