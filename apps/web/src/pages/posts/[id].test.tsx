@@ -677,6 +677,55 @@ describe('PostDetailPage', () => {
     expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined();
   });
 
+  describe('when a hydration lands after the reader has acted', () => {
+    it('does not let a stale liked snapshot undo an optimistic like', async () => {
+      let settleLiked: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserLikedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleLiked = resolve;
+        })
+      );
+      postDetailMocks.likePostMock.mockResolvedValue({});
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: '5 likes' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: '5 likes' }));
+      await waitFor(() => expect(postDetailMocks.likePostMock).toHaveBeenCalled());
+
+      // The snapshot was taken before the like and does not know about it.
+      await act(async () => {
+        settleLiked({ data: [] });
+      });
+
+      expect(screen.getByRole('button', { name: '6 likes' }).getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('does not let a stale saved snapshot undo an optimistic save', async () => {
+      let settleSaved: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getUserSavedPostIdsMock.mockReturnValue(
+        new Promise((resolve) => {
+          settleSaved = resolve;
+        })
+      );
+      postDetailMocks.savePostMock.mockResolvedValue({});
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
+      await waitFor(() => expect(postDetailMocks.savePostMock).toHaveBeenCalled());
+
+      await act(async () => {
+        settleSaved({ data: [] });
+      });
+
+      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+    });
+  });
+
   describe('when the post itself cannot be loaded', () => {
     it('offers a retry instead of claiming the post does not exist', async () => {
       postDetailMocks.getPostByIdMock.mockResolvedValueOnce({ error: new Error('offline') });
@@ -717,6 +766,32 @@ describe('PostDetailPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
       await waitFor(() => expect(screen.getByText('No comments yet')).toBeDefined());
+    });
+
+    it('acknowledges Retry instead of leaving the error and its button up', async () => {
+      let settleRetry: (result: unknown) => void = () => {};
+      postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+      postDetailMocks.getPostCommentsMock.mockResolvedValueOnce({ error: new Error('offline') });
+
+      render(<PostDetailPage />);
+      await waitFor(() => expect(screen.getByText("Couldn't load comments")).toBeDefined());
+
+      postDetailMocks.getPostCommentsMock.mockReturnValueOnce(
+        new Promise((resolve) => {
+          settleRetry = resolve;
+        })
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+      // Leaving the error up reads as a dead button, and a second click
+      // starts a second load.
+      expect(screen.getByText('Loading comments…')).toBeDefined();
+      expect(screen.queryByText("Couldn't load comments")).toBeNull();
+
+      await act(async () => {
+        settleRetry({ data: [] });
+      });
+      expect(screen.getByText('No comments yet')).toBeDefined();
     });
 
     it('shows a comment posted after the failure, without needing Retry', async () => {

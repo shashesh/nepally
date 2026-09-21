@@ -88,6 +88,10 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
    *  apply stale rollback deltas. Route changes are handled by the key above. */
   const likePendingRef = useRef(false);
   const savePendingRef = useRef(false);
+  /** Set the moment the reader toggles, which retires the hydration below:
+   *  the snapshot it is waiting on was taken before they acted. */
+  const likeTouchedRef = useRef(false);
+  const saveTouchedRef = useRef(false);
   /**
    * False once this post's view is gone. The key above throws away state, but
    * a toast or a redirect is not state: every async handler checks this before
@@ -152,13 +156,16 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
   }, [routePostId, commentsReloadToken]);
 
   // Both hydrations cancel on cleanup: the key already stops them crossing
-  // posts, and this stops a superseded response within one post.
+  // posts, and this stops a superseded response within one post. They also
+  // stand down once the reader has toggled, because a snapshot taken before
+  // the click would otherwise undo it and leave the server and the screen
+  // disagreeing.
   useEffect(() => {
     if (!user || !post) return;
 
     let cancelled = false;
     getUserLikedPostIds(supabase, user.id).then((result) => {
-      if (cancelled || !result.data) return;
+      if (cancelled || likeTouchedRef.current || !result.data) return;
       setLiked(result.data.includes(post.id));
     });
 
@@ -172,7 +179,7 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
 
     let cancelled = false;
     getUserSavedPostIds(supabase, user.id).then((result) => {
-      if (cancelled || !result.data) return;
+      if (cancelled || saveTouchedRef.current || !result.data) return;
       setSaved(result.data.includes(post.id));
     });
 
@@ -188,6 +195,7 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
     if (likePendingRef.current) return;
 
     likePendingRef.current = true;
+    likeTouchedRef.current = true;
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikesCount((count) => count + (wasLiked ? -1 : 1));
@@ -213,6 +221,7 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
     if (savePendingRef.current) return;
 
     savePendingRef.current = true;
+    saveTouchedRef.current = true;
     const wasSaved = saved;
     setSaved(!wasSaved);
 
@@ -535,6 +544,7 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
               onRetry={() => {
                 // A fresh load is wanted now, even after a local edit.
                 commentsGenerationRef.current += 1;
+                setCommentsStatus('loading');
                 setCommentsReloadToken((token) => token + 1);
               }}
               retryLabel="Retry"
