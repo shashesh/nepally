@@ -27,13 +27,15 @@ export async function replaceProfilePhoto(
   } catch (error: unknown) {
     // A failed decode surfaces raw browser text (Chrome: "The source image
     // could not be decoded."), which isn't something a member can act on.
-    // Log the detail and show copy that points at a fix instead.
+    // Log the detail and show copy that points at a fix instead — this also
+    // covers the rare canvas failures (no 2D context, no blob) cropToSquare
+    // can throw.
     logClientEvent({
       event: 'profile_photo_crop_failed',
       context: { platform: 'web', userId },
       error,
     });
-    return { error: "We couldn't read that image. Try a JPEG or PNG." };
+    return { error: "We couldn't process that image. Try a different JPEG or PNG." };
   }
 
   try {

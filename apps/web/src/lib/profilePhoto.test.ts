@@ -64,7 +64,7 @@ describe('replaceProfilePhoto', () => {
     const result = await replaceProfilePhoto(supabase, 'user-1', pickedFile());
 
     expect(setProfilePhoto).not.toHaveBeenCalled();
-    expect(result).toEqual({ error: "We couldn't read that image. Try a JPEG or PNG." });
+    expect(result).toEqual({ error: "We couldn't process that image. Try a different JPEG or PNG." });
     expect(logClientEvent).toHaveBeenCalledWith({
       event: 'profile_photo_crop_failed',
       context: { platform: 'web', userId: 'user-1' },
@@ -77,7 +77,7 @@ describe('replaceProfilePhoto', () => {
 
     const result = await replaceProfilePhoto(supabase, 'user-1', pickedFile());
 
-    expect(result).toEqual({ error: "We couldn't read that image. Try a JPEG or PNG." });
+    expect(result).toEqual({ error: "We couldn't process that image. Try a different JPEG or PNG." });
     expect(logClientEvent).toHaveBeenCalledWith(
       expect.objectContaining({ event: 'profile_photo_crop_failed', error: 'boom' })
     );

@@ -50,9 +50,8 @@ function stubCanvas(options: { context?: boolean; blob?: Blob | null } = {}): Ca
 
 function stubBitmap(width: number, height: number) {
   const close = vi.fn();
-  const createImageBitmap = vi.fn(async () => ({ width, height, close }));
-  globalThis.createImageBitmap = createImageBitmap as never;
-  return { close, createImageBitmap };
+  globalThis.createImageBitmap = vi.fn(async () => ({ width, height, close })) as never;
+  return { close };
 }
 
 function makeFile(name: string, type = 'image/png'): File {
@@ -84,13 +83,13 @@ describe('resizeImage', () => {
     expect(canvases[0].height).toBe(400);
   });
 
-  it('returns a JPEG that keeps the original file name', async () => {
+  it('returns a JPEG whose name ends in .jpg, swapping the source extension', async () => {
     stubCanvas();
     stubBitmap(800, 600);
 
     const result = await resizeImage(makeFile('holiday.png'));
 
-    expect(result.name).toBe('holiday.png');
+    expect(result.name).toBe('holiday.jpg');
     expect(result.type).toBe('image/jpeg');
   });
 
@@ -144,16 +143,6 @@ describe('resizeImage', () => {
     await resizeImage(makeFile('holiday.png'));
 
     expect(contexts[0].imageSmoothingQuality).toBe('high');
-  });
-
-  it('requests EXIF-corrected orientation from the browser', async () => {
-    const { createImageBitmap } = stubBitmap(800, 600);
-    stubCanvas();
-    const file = makeFile('holiday.png');
-
-    await resizeImage(file);
-
-    expect(createImageBitmap).toHaveBeenCalledWith(file, { imageOrientation: 'from-image' });
   });
 });
 
@@ -288,15 +277,5 @@ describe('cropToSquare', () => {
     await cropToSquare(makeFile('avatar.png'));
 
     expect(contexts[0].imageSmoothingQuality).toBe('high');
-  });
-
-  it('requests EXIF-corrected orientation from the browser', async () => {
-    const { createImageBitmap } = stubBitmap(800, 800);
-    stubCanvas();
-    const file = makeFile('avatar.png');
-
-    await cropToSquare(file);
-
-    expect(createImageBitmap).toHaveBeenCalledWith(file, { imageOrientation: 'from-image' });
   });
 });

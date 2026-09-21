@@ -7,10 +7,10 @@ const { uploadProfilePhoto } = vi.hoisted(() => ({ uploadProfilePhoto: vi.fn() }
 // (including states — a missing url — the real storage chain can't easily
 // produce), while removeProfilePhoto's tests still exercise the real
 // deleteProfilePhoto against a mocked supabase client.
-vi.mock('./storage', async (original) => {
-  const mod = await (original as () => Promise<Record<string, unknown>>)();
-  return { ...mod, uploadProfilePhoto };
-});
+vi.mock('./storage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./storage')>()),
+  uploadProfilePhoto,
+}));
 
 import {
   createUserProfile,

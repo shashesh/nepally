@@ -17,8 +17,12 @@ export const JPEG_QUALITY = 0.8;
 /** A picked photo's transparent areas turn black once flattened to JPEG unless matted first. */
 export const PHOTO_MATTE_COLOR = '#ffffff';
 
-/** Shared by resizeImage and cropToSquare: encode a canvas as a JPEG File. */
-async function encodeCanvasAsJpegFile(canvas: HTMLCanvasElement, fileName: string): Promise<File> {
+/**
+ * Shared by resizeImage and cropToSquare: encode a canvas as a JPEG File,
+ * swapping whatever extension the source file had for `.jpg` since the
+ * encode always is one.
+ */
+async function encodeCanvasAsJpegFile(canvas: HTMLCanvasElement, sourceFileName: string): Promise<File> {
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (result) => (result ? resolve(result) : reject(new Error('Failed to process image'))),
@@ -27,21 +31,18 @@ async function encodeCanvasAsJpegFile(canvas: HTMLCanvasElement, fileName: strin
     );
   });
 
-  return new File([blob], fileName, { type: 'image/jpeg' });
-}
+  const dotIndex = sourceFileName.lastIndexOf('.');
+  const base = dotIndex === -1 ? sourceFileName : sourceFileName.slice(0, dotIndex);
 
-/** Swap whatever extension a picked file had for `.jpg`, since the encode always is one. */
-function toJpegFileName(fileName: string): string {
-  const dotIndex = fileName.lastIndexOf('.');
-  const base = dotIndex === -1 ? fileName : fileName.slice(0, dotIndex);
-  return `${base}.jpg`;
+  return new File([blob], `${base}.jpg`, { type: 'image/jpeg' });
 }
 
 export async function resizeImage(file: File): Promise<File> {
-  // 'from-image' applies the picked photo's own EXIF orientation rather than
-  // the sensor's raw pixels, so a phone photo taken sideways isn't stored on
-  // its side. Browsers already default to this, but it is spelled out here.
-  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  // Browsers already apply the source's own EXIF orientation by default, so
+  // this decodes correctly without passing an explicit imageOrientation —
+  // Chrome/Edge 111 (inside Next 16's support floor) throws a TypeError on
+  // the 'from-image' value some later browsers accept.
+  const bitmap = await createImageBitmap(file);
 
   try {
     const scale = Math.min(1, MAX_IMAGE_WIDTH_PX / bitmap.width);
@@ -74,7 +75,9 @@ export async function resizeImage(file: File): Promise<File> {
  * it to at most `size` (never upscaling a smaller source) and encode as JPEG.
  */
 export async function cropToSquare(file: File, size: number = PROFILE_PHOTO_SIZE_PX): Promise<File> {
-  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  // See resizeImage: no explicit imageOrientation, since it's the default
+  // and passing 'from-image' throws on Chrome/Edge 111.
+  const bitmap = await createImageBitmap(file);
 
   try {
     const srcSize = Math.min(bitmap.width, bitmap.height);
@@ -99,7 +102,7 @@ export async function cropToSquare(file: File, size: number = PROFILE_PHOTO_SIZE
     const srcY = (bitmap.height - srcSize) / 2;
     context.drawImage(bitmap, srcX, srcY, srcSize, srcSize, 0, 0, outputSize, outputSize);
 
-    return await encodeCanvasAsJpegFile(canvas, toJpegFileName(file.name));
+    return await encodeCanvasAsJpegFile(canvas, file.name);
   } finally {
     // Release the decoded bitmap whether or not the encode worked.
     bitmap.close();
