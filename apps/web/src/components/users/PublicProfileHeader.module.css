@@ -1,0 +1,199 @@
+/*
+ * PublicProfileHeader — banner + identity card for a public profile.
+ * Semantic tokens only (scripts/guard-css-tokens.js). Spec:
+ * docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1.
+ */
+
+/* ── Banner (decorative) ─────────────────────── */
+
+.banner {
+  height: 140px;
+  background: linear-gradient(135deg, var(--action-bg) 0%, var(--accent) 100%);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+}
+
+/* ── Card (overlaps banner) ──────────────────── */
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-solid);
+  border-radius: var(--radius-card);
+  margin: calc(-1 * var(--space-7)) var(--space-3) 0;
+  padding: 0 var(--space-4) var(--space-4);
+  position: relative;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  transform: translateY(calc(-1 * var(--space-5)));
+  margin-bottom: calc(-1 * var(--space-2));
+}
+
+/* ── Identity (name + trust badge, beside avatar) ─ */
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-bottom: var(--space-1);
+}
+
+.displayName {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-1);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Body (below avatar row) ─────────────────── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bio {
+  font-size: var(--font-size-base);
+  color: var(--text-2);
+  line-height: var(--leading-normal);
+  max-width: 60ch;
+  margin: 0;
+}
+
+.bioEmpty {
+  font-size: var(--font-size-sm);
+  color: var(--text-3);
+  margin: 0;
+}
+
+.bioEditLink {
+  color: var(--accent-ink);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.bioEditLink:hover {
+  text-decoration: underline;
+}
+
+.newMemberHint {
+  font-size: var(--font-size-sm);
+  color: var(--text-3);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Stats row ────────────────────────────────── */
+
+.statsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-3);
+  padding-top: var(--space-1);
+}
+
+/* ── Social row (follow control + counts) ─────── */
+
+.socialRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.followCount {
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+}
+
+.dot {
+  color: var(--text-3);
+  opacity: 0.6;
+  user-select: none;
+}
+
+/* ── Identity chips (district / college / years / languages) ─ */
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-2);
+}
+
+/* ── Helper badge ─────────────────────────────── */
+
+.helperBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+/* ── CTA row ──────────────────────────────────── */
+
+.ctaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+/* ── Responsive ───────────────────────────────── */
+
+@media (max-width: 640px) {
+  .banner {
+    height: 100px;
+    border-radius: 0;
+  }
+
+  .card {
+    margin: calc(-1 * var(--space-6)) var(--space-2) 0;
+    padding: 0 var(--space-3) var(--space-3);
+  }
+
+  .cardTop {
+    transform: translateY(calc(-1 * var(--space-4)));
+    margin-bottom: calc(-1 * var(--space-1));
+  }
+
+  .displayName {
+    font-size: var(--font-size-lg);
+  }
+
+  .ctaButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}
