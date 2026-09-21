@@ -11711,7 +11711,7 @@ export function toPhotoUploadInputs(files: File[], userId: string): Promise<Phot
 
 - [ ] **Step 1: Write the failing tests.** `resizeImage.test.ts`: an image wider than 1200px comes back scaled to 1200 with the aspect ratio kept and `type === 'image/jpeg'`; a narrower image is not upscaled; the returned `File` keeps the original name; a missing 2D context rejects. Stub `createImageBitmap` and `HTMLCanvasElement.prototype.toBlob` in the test — jsdom has neither. `photoUploads.test.ts`: three files map to three inputs in order, each carrying the user id, the file's bytes, type, size and name; a file with an empty `type` falls back to `'image/jpeg'`, matching posts/create 407 today; an empty array resolves to an empty array.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/lib/resizeImage.test.ts src/lib/photoUploads.test.ts`
-- [ ] **Step 3: Implement**, moving `resizeImageFile` out of `marketplace/create.page.tsx` (34–59) and deleting the `NewPhotoWeb` type (26–32) in the same edit. The page is fixed in Task 5.7; leaving it broken between commits is fine only if the build stays green, so do the page's import swap here too.
+- [ ] **Step 3: Implement.** `marketplace/create.page.tsx` keeps its own `resizeImageFile` (34–59) and `NewPhotoWeb` (26–32) until Task 5.8, which deletes both as it adopts `ImageUploader`. Adapting the page to `resizeImage` here would mean writing a `File` → `NewPhotoWeb` shim that Task 5.8 immediately deletes; the build is green either way, so the duplication stands for two commits instead.
 - [ ] **Step 4: Run and watch them pass**, then `npm run type-check`.
 - [ ] **Step 5: Commit** as `refactor(web): extract the image resize and upload-input helpers`.
 
