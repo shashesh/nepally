@@ -56,9 +56,15 @@
   text-decoration: underline;
 }
 
-/* Mantine's Badge root clips overflow, so flex would otherwise shrink it
-   down to its ellipsis when the title is long. */
-.scope {
+/* A pill-shaped badge's root (e.g. Mantine's Badge) clips overflow, so flex
+   would otherwise shrink it down to its ellipsis when the title is long. */
+.badge {
+  flex-shrink: 0;
+}
+
+/* A leading thumbnail or icon keeps its own size instead of being squeezed
+   by the text column. */
+.leading {
   flex-shrink: 0;
 }
 
@@ -69,22 +75,21 @@
   flex-shrink: 0;
 }
 
-.detail {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-  overflow-wrap: anywhere;
-  color: var(--text-2);
-  font-size: var(--font-size-sm);
-}
-
+.detail,
 .meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
   overflow-wrap: anywhere;
+}
+
+.detail {
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+}
+
+.meta {
   color: var(--text-3);
   font-size: var(--font-size-xs);
 }

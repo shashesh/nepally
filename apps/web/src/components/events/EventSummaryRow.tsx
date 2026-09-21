@@ -24,7 +24,11 @@ export function EventSummaryRow({ event, now }: EventSummaryRowProps) {
   const date = formatDate(new Date(event.start_date));
 
   return (
-    <SummaryRow href={`/events/${event.id}`} title={event.title} badge={<ScopeBadge isGlobal={event.is_global} />}>
+    <SummaryRow
+      href={`/events/${event.id}`}
+      title={event.title}
+      badge={<ScopeBadge isGlobal={event.is_global} />}
+    >
       <SummaryRowMeta variant="detail">
         <time dateTime={event.start_date}>{date}</time>
         {event.location_name && <span>{event.location_name}</span>}
