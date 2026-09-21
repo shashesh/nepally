@@ -13,6 +13,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { PublicUser, User } from '../types/user';
 import { PUBLIC_USER_COLUMNS } from '../constants/users';
+import { deleteProfilePhoto } from './storage';
 
 export interface UserResult {
   data?: User;
@@ -196,6 +197,24 @@ export async function updateUserProfile(
     };
   }
 }
+
+/**
+ * Clears the member's photo. The column is cleared first, so a storage delete
+ * that fails leaves an orphaned file rather than a profile pointing at nothing.
+ */
+export async function removeProfilePhoto(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ error?: Error }> {
+  const { error } = await updateUserProfile(supabase, userId, { profile_photo: null });
+  if (error) return { error };
+
+  // Best-effort: the file is named `<userId>.jpg`, so the next upload
+  // overwrites it even if this delete fails.
+  await deleteProfilePhoto(supabase, userId);
+  return {};
+}
+
 /**
  * Promote the calling user to Verified (trust_level 1) through the
  * `mark_user_verified` SECURITY DEFINER RPC. The server reads auth.users for

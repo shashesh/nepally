@@ -7,11 +7,13 @@ import {
   markEmailVerified,
   markGoogleVerified,
   markUserVerified,
+  removeProfilePhoto,
   resendVerificationEmail,
   updateUserLocation,
   updateUserProfile,
 } from './users';
 import { PUBLIC_USER_COLUMNS } from '../constants/users';
+import * as storage from './storage';
 
 /** Mocks the get_my_profile RPC: `supabase.rpc('get_my_profile').maybeSingle()`. */
 function mockOwnProfileRpc(row: Record<string, unknown> | null, error: Error | null = null) {
@@ -395,6 +397,60 @@ describe('users api', () => {
 
     expect(result.error).toBeDefined();
     expect(result.data).toBeUndefined();
+  });
+
+  describe('removeProfilePhoto', () => {
+    it('clears profile_photo on the row, then deletes the storage file', async () => {
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: null });
+      const { rpc } = mockOwnProfileRpc({ id: 'user-1', profile_photo: null });
+      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+      const deleteSpy = vi.spyOn(storage, 'deleteProfilePhoto').mockResolvedValue({});
+
+      const result = await removeProfilePhoto(supabase, 'user-1');
+
+      expect(result.error).toBeUndefined();
+      expect(query.update).toHaveBeenCalledWith(
+        expect.objectContaining({ profile_photo: null })
+      );
+      expect(deleteSpy).toHaveBeenCalledWith(supabase, 'user-1');
+
+      deleteSpy.mockRestore();
+    });
+
+    it('does not touch storage when clearing the column fails', async () => {
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: new Error('row-level security') });
+      const { rpc } = mockOwnProfileRpc({ id: 'user-1' });
+      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+      const deleteSpy = vi.spyOn(storage, 'deleteProfilePhoto').mockResolvedValue({});
+
+      const result = await removeProfilePhoto(supabase, 'user-1');
+
+      expect(result.error?.message).toBe('row-level security');
+      expect(deleteSpy).not.toHaveBeenCalled();
+
+      deleteSpy.mockRestore();
+    });
+
+    it('still succeeds when the storage delete fails, since the next upload overwrites the orphaned file', async () => {
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: null });
+      const { rpc } = mockOwnProfileRpc({ id: 'user-1', profile_photo: null });
+      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+      const deleteSpy = vi
+        .spyOn(storage, 'deleteProfilePhoto')
+        .mockResolvedValue({ error: new Error('storage unavailable') });
+
+      const result = await removeProfilePhoto(supabase, 'user-1');
+
+      expect(result.error).toBeUndefined();
+
+      deleteSpy.mockRestore();
+    });
   });
 
   describe('updateUserProfile — extended fields', () => {

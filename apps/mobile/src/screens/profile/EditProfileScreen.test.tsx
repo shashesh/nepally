@@ -43,7 +43,7 @@ jest.mock('../../hooks/useMetroArea', () => ({
 jest.mock('@nepally/shared', () => ({
   updateUserProfile: jest.fn().mockResolvedValue({ data: { id: 'user-1' }, error: null }),
   uploadProfilePhoto: jest.fn().mockResolvedValue({ data: null, error: null }),
-  deleteProfilePhoto: jest.fn().mockResolvedValue({ data: null, error: null }),
+  removeProfilePhoto: jest.fn().mockResolvedValue({ error: undefined }),
   APP_CONFIG: {
     minPasswordLength: 8,
     zipCodeLength: 5,
@@ -103,12 +103,17 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { EditProfileScreen } from './EditProfileScreen';
-import { updateUserProfile } from '@nepally/shared';
+import { removeProfilePhoto, updateUserProfile } from '@nepally/shared';
 
 const mockedUpdateUserProfile =
   updateUserProfile as jest.MockedFunction<typeof updateUserProfile>;
+const mockedRemoveProfilePhoto =
+  removeProfilePhoto as jest.MockedFunction<typeof removeProfilePhoto>;
+
+jest.spyOn(Alert, 'alert');
 
 const baseUser = {
   id: 'user-1',
@@ -181,5 +186,27 @@ describe('EditProfileScreen', () => {
         expect.objectContaining({ college: 'TU Kirtipur' })
       );
     });
+  });
+
+  it('removes the photo via removeProfilePhoto when "Remove Photo" is pressed', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { ...baseUser, profile_photo: 'https://example.com/photo.jpg' },
+      refreshUser: mockRefreshUser,
+    });
+
+    const { getByText } = render(<EditProfileScreen />);
+    fireEvent.press(getByText('Change Photo'));
+
+    const alertArgs = (Alert.alert as jest.Mock).mock.calls[0];
+    const removeButton = alertArgs[2].find(
+      (btn: { text: string }) => btn.text === 'Remove Photo'
+    );
+
+    await act(async () => {
+      await removeButton.onPress();
+    });
+
+    expect(mockedRemoveProfilePhoto).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(mockRefreshUser).toHaveBeenCalled();
   });
 });
