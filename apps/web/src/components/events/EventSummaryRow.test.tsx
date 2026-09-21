@@ -18,12 +18,16 @@ type SummaryEvent = Pick<
   'id' | 'title' | 'start_date' | 'end_date' | 'location_name' | 'rsvp_count' | 'is_global' | 'status'
 >;
 
-// Midday UTC keeps the rendered local date at "Mar 5, 2026" across any
-// reasonable machine timezone (see apps/web/vitest.config.ts — no TZ pin).
+// Every fixture uses noon UTC (T12:00:00.000Z), the one convention that keeps
+// the rendered local date stable across any timezone: even the widest zone
+// offsets (UTC-12 to UTC+14) can't push noon UTC into a different calendar
+// day. An evening UTC time (e.g. T18:00Z) renders a day late from
+// TZ=Asia/Tokyo (UTC+9) onward — see apps/web/vitest.config.ts, which pins no
+// TZ, so this suite runs in whatever zone the machine or CI is in.
 const event: SummaryEvent = {
   id: 'event-1',
   title: 'Nepali New Year Mela',
-  start_date: '2026-03-05T18:00:00.000Z',
+  start_date: '2026-03-05T12:00:00.000Z',
   end_date: undefined,
   location_name: 'Dallas Convention Center',
   rsvp_count: 18,
@@ -39,6 +43,7 @@ describe('EventSummaryRow', () => {
 
     const link = screen.getByRole('link', { name: 'Nepali New Year Mela' });
     expect(link.getAttribute('href')).toBe('/events/event-1');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
   });
 
   it('shows a Local badge for a metro event', () => {
@@ -62,11 +67,13 @@ describe('EventSummaryRow', () => {
     expect(screen.getByText('Dallas Convention Center')).toBeDefined();
   });
 
-  it('omits the location, and its separator, when there is none', () => {
+  it('drops the location entirely when there is none, leaving no dangling separator', () => {
     render(<EventSummaryRow event={{ ...event, location_name: '' }} now={now} />);
 
-    expect(screen.getByRole('time').textContent).toBe('Mar 5, 2026');
+    const time = screen.getByRole('time');
+    expect(time.textContent).toBe('Mar 5, 2026');
     expect(screen.queryByText('Dallas Convention Center')).toBeNull();
+    expect(time.parentElement?.children).toHaveLength(1);
   });
 
   it('shows the rsvp count as "N going"', () => {
@@ -86,7 +93,7 @@ describe('EventSummaryRow', () => {
     const upcomingCancelled: SummaryEvent = {
       ...event,
       status: 'cancelled',
-      start_date: '2026-05-01T18:00:00.000Z',
+      start_date: '2026-05-01T12:00:00.000Z',
       end_date: undefined,
     };
     render(<EventSummaryRow event={upcomingCancelled} now={now} />);
@@ -95,11 +102,24 @@ describe('EventSummaryRow', () => {
     expect(screen.queryByText('Past')).toBeNull();
   });
 
+  it('shows Cancelled, not Past, for a past cancelled event', () => {
+    const pastCancelled: SummaryEvent = {
+      ...event,
+      status: 'cancelled',
+      start_date: '2026-03-01T12:00:00.000Z',
+      end_date: '2026-03-02T12:00:00.000Z',
+    };
+    render(<EventSummaryRow event={pastCancelled} now={now} />);
+
+    expect(screen.getByText('Cancelled')).toBeDefined();
+    expect(screen.queryByText('Past')).toBeNull();
+  });
+
   it('shows Past when end_date is before now', () => {
     const pastEvent: SummaryEvent = {
       ...event,
-      start_date: '2026-03-01T18:00:00.000Z',
-      end_date: '2026-03-02T18:00:00.000Z',
+      start_date: '2026-03-01T12:00:00.000Z',
+      end_date: '2026-03-02T12:00:00.000Z',
     };
     render(<EventSummaryRow event={pastEvent} now={now} />);
 
@@ -110,7 +130,7 @@ describe('EventSummaryRow', () => {
   it('shows Past using start_date when there is no end_date', () => {
     const pastEvent: SummaryEvent = {
       ...event,
-      start_date: '2026-03-01T18:00:00.000Z',
+      start_date: '2026-03-01T12:00:00.000Z',
       end_date: undefined,
     };
     render(<EventSummaryRow event={pastEvent} now={now} />);
@@ -118,10 +138,22 @@ describe('EventSummaryRow', () => {
     expect(screen.getByText('Past')).toBeDefined();
   });
 
+  it('uses end_date over start_date: a past start with a future end shows neither label', () => {
+    const ongoing: SummaryEvent = {
+      ...event,
+      start_date: '2026-03-30T12:00:00.000Z',
+      end_date: '2026-04-02T12:00:00.000Z',
+    };
+    render(<EventSummaryRow event={ongoing} now={now} />);
+
+    expect(screen.queryByText('Past')).toBeNull();
+    expect(screen.queryByText('Cancelled')).toBeNull();
+  });
+
   it('shows neither label for an upcoming event', () => {
     const upcoming: SummaryEvent = {
       ...event,
-      start_date: '2026-05-01T18:00:00.000Z',
+      start_date: '2026-05-01T12:00:00.000Z',
       end_date: undefined,
     };
     render(<EventSummaryRow event={upcoming} now={now} />);

@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import type { Event } from '@nepally/shared';
+import { formatDate, type Event } from '@nepally/shared';
 import { ScopeBadge } from '../ui';
 import styles from './EventSummaryRow.module.css';
 
@@ -13,12 +13,6 @@ export interface EventSummaryRowProps {
   now: Date;
 }
 
-const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-};
-
 /**
  * One event in a list of summaries — a user's organized events, a public
  * profile. The title is the only link, and its `::after` stretches over the
@@ -29,7 +23,7 @@ export function EventSummaryRow({ event, now }: EventSummaryRowProps) {
   const isCancelled = event.status === 'cancelled';
   const isPast = !isCancelled && new Date(event.end_date ?? event.start_date) < now;
   const statusLabel = isCancelled ? 'Cancelled' : isPast ? 'Past' : null;
-  const date = new Date(event.start_date).toLocaleDateString('en-US', DATE_FORMAT_OPTIONS);
+  const date = formatDate(new Date(event.start_date));
 
   return (
     <article className={styles.root}>
