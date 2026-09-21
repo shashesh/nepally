@@ -1,5 +1,5 @@
 import React, { useId, type ReactNode } from 'react';
-import { Text, UnstyledButton } from '@mantine/core';
+import { Text } from '@mantine/core';
 import styles from './ToggleChipGroup.module.css';
 
 export interface ToggleChipOption {
@@ -32,6 +32,13 @@ export interface ToggleChipGroupProps {
  * read more naturally for the multi-select case, but the accessible name is
  * what several e2e and unit assertions look these up by, and switching the
  * role would move every one of them for no gain the member can feel.
+ *
+ * They are plain `<button>`s rather than Mantine `UnstyledButton`s, the way
+ * PhotoCarousel's controls are. UnstyledButton's reset sets padding, border
+ * and background from a single class, which ties this file's `.chip` on
+ * specificity and wins on order, leaving the chips looking like bare text.
+ * `components/ui/` is exempt from the raw-element lint rule for exactly this,
+ * and the focus ring comes from the `:where(...)` rule in globals.css.
  */
 export function ToggleChipGroup({
   label,
@@ -79,8 +86,9 @@ export function ToggleChipGroup({
           const isPressed = value.includes(option.value);
 
           return (
-            <UnstyledButton
+            <button
               key={option.value}
+              type="button"
               className={styles.chip}
               data-value={option.value}
               data-pressed={isPressed || undefined}
@@ -90,7 +98,7 @@ export function ToggleChipGroup({
               onClick={() => handlePress(option.value, isPressed)}
             >
               {option.label}
-            </UnstyledButton>
+            </button>
           );
         })}
       </div>
