@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Button, Switch, Text } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert, Button, Switch, Text, TextInput, Textarea } from '@mantine/core';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
 import { submitEditedPost, submitNewPost } from '../../lib/postSubmit';
-import { ImageUploader, type UploaderPhoto } from '../../components/ui';
+import {
+  ImageUploader,
+  ToggleChipGroup,
+  notify,
+  useConfirm,
+  type UploaderPhoto,
+} from '../../components/ui';
 import {
   getPostById,
   getTags,
@@ -21,13 +26,17 @@ import styles from '../../styles/CreatePost.module.css';
 
 const TITLE_MAX = 150;
 const TITLE_COUNTER_THRESHOLD = 120;
+/** Past this the counter turns red, so the limit does not arrive as a surprise. */
+const TITLE_NEAR_LIMIT = 140;
 const BODY_MAX = 5000;
 const BODY_COUNTER_THRESHOLD = 4500;
+const BODY_NEAR_LIMIT = 4800;
 
 export default function CreatePostPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { activeLocation } = useLocation();
+  const confirm = useConfirm();
   const editQueryParam = router.query.edit;
   const editPostId = typeof editQueryParam === 'string' ? editQueryParam : null;
   const isEditing = Boolean(editPostId);
@@ -206,21 +215,15 @@ export default function CreatePostPage() {
     };
   }, [isEditing, editPostId, user, availableTags.length]);
 
-  function toggleTag(tagId: string) {
-    setSelectedTagIds((prev) => {
-      if (prev.includes(tagId)) {
-        return prev.filter((id) => id !== tagId);
-      }
-      if (prev.length >= MAX_TAGS_PER_POST) return prev;
-      return [...prev, tagId];
-    });
-  }
-
-  function handleCancel() {
+  async function handleCancel() {
     if (isDirty) {
-      if (!confirm('You have unsaved changes. Are you sure you want to discard this post?')) {
-        return;
-      }
+      const discard = await confirm({
+        title: 'Discard this post?',
+        message: 'You have unsaved changes. They will be lost.',
+        confirmLabel: 'Discard',
+        danger: true,
+      });
+      if (!discard) return;
     }
     if (isEditing && editPostId) {
       router.push(`/posts/${editPostId}`);
@@ -287,11 +290,9 @@ export default function CreatePostPage() {
       }
 
       if (result.pendingModeration) {
-        notifications.show({
-          title: 'Submitted for review',
-          message:
-            'Your emergency post was sent to a moderator for review. It will appear in the feed once approved.',
-        });
+        notify.success(
+          'Your emergency post was sent to a moderator for review. It will appear in the feed once approved.'
+        );
       }
       router.push('/feed');
     } finally {
@@ -319,75 +320,66 @@ export default function CreatePostPage() {
         {error && <Alert color="red" variant="light">{error}</Alert>}
 
         {/* Title */}
-        <div className={styles.titleSection}>
-          <input
-            className={styles.titleInput}
+        <div className={styles.section}>
+          <TextInput
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="What's this about?"
             maxLength={TITLE_MAX}
             aria-label="Post title, required"
+            error={!titleValid && title.length > 0 ? 'Title must be at least 5 characters' : undefined}
+            description={
+              title.length >= TITLE_COUNTER_THRESHOLD ? (
+                <Text span size="xs" c={title.length >= TITLE_NEAR_LIMIT ? 'red' : 'dimmed'}>
+                  {title.length}/{TITLE_MAX}
+                </Text>
+              ) : undefined
+            }
           />
-          {title.length >= TITLE_COUNTER_THRESHOLD && (
-            <Text size="xs" c={title.length >= 140 ? 'red' : 'dimmed'} ta="right" mt={4}>
-              {title.length}/{TITLE_MAX}
-            </Text>
-          )}
-          {!titleValid && title.length > 0 && (
-            <Text c="red" size="xs" mt={6}>Title must be at least 5 characters</Text>
-          )}
         </div>
 
         {/* Body */}
-        <div className={styles.bodySection}>
-          <textarea
-            className={styles.bodyInput}
+        <div className={styles.section}>
+          <Textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write your post details here..."
             maxLength={BODY_MAX}
+            autosize
+            minRows={6}
             aria-label="Post body, required"
+            error={!bodyValid && body.length > 0 ? 'Body must be at least 10 characters' : undefined}
+            description={
+              body.length >= BODY_COUNTER_THRESHOLD ? (
+                <Text span size="xs" c={body.length >= BODY_NEAR_LIMIT ? 'red' : 'dimmed'}>
+                  {body.length}/{BODY_MAX}
+                </Text>
+              ) : undefined
+            }
           />
-          {body.length >= BODY_COUNTER_THRESHOLD && (
-            <Text size="xs" c={body.length >= 4800 ? 'red' : 'dimmed'} ta="right" mt={4}>
-              {body.length}/{BODY_MAX}
-            </Text>
-          )}
-          {!bodyValid && body.length > 0 && (
-            <Text c="red" size="xs" mt={6}>Body must be at least 10 characters</Text>
-          )}
         </div>
 
         {/* Tags */}
         <div className={styles.section}>
-          <div className={styles.sectionLabelRow}>
-            <div className={styles.sectionLabel}>Tags (1-3 required)</div>
-            <Text size="xs" c="dimmed">{selectedTagIds.length}/{MAX_TAGS_PER_POST}</Text>
-          </div>
-          {tagsError && <Text c="red" size="xs" mt={6}>{tagsError}</Text>}
-          <div className={styles.tagGrid}>
-            {availableTags.map((tag) => {
-              const isSelected = selectedTagIds.includes(tag.id);
+          <ToggleChipGroup
+            label="Tags (1-3 required)"
+            description={`${selectedTagIds.length}/${MAX_TAGS_PER_POST}`}
+            options={availableTags.map((tag) => {
               const emoji = TAG_EMOJI[tag.slug] || '';
-              const isDisabled = !isSelected && selectedTagIds.length >= MAX_TAGS_PER_POST;
-
-              return (
-                <button
-                  key={tag.id}
-                  className={`${styles.tagChip} ${isSelected ? styles.tagChipSelected : ''} ${isDisabled ? styles.tagChipDisabled : ''}`}
-                  onClick={() => toggleTag(tag.id)}
-                  disabled={isDisabled}
-                  aria-label={`${tag.name} tag, ${isSelected ? 'selected' : 'not selected'}`}
-                >
-                  {emoji ? `${emoji} ${tag.name}` : tag.name}
-                </button>
-              );
+              return {
+                value: tag.id,
+                label: emoji ? `${emoji} ${tag.name}` : tag.name,
+                name: `${tag.name} tag`,
+              };
             })}
-          </div>
-
-          {!tagsValid && !tagsLoading && (
-            <Text c="red" size="xs" mt={6}>Please select at least 1 tag</Text>
-          )}
+            value={selectedTagIds}
+            onChange={setSelectedTagIds}
+            max={MAX_TAGS_PER_POST}
+            error={
+              tagsError ??
+              (!tagsValid && !tagsLoading ? 'Please select at least 1 tag' : undefined)
+            }
+          />
 
           {hasEmergencyTag && (
             <Alert color="red" variant="light" mt={10}>

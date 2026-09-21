@@ -11836,7 +11836,7 @@ Both call `toPhotoUploadInputs` for the picked files, then `uploadPostPhotos`, a
 **Files:** `pages/posts/create.page.tsx`, `create.test.tsx`.
 
 - The title `<input>` (563–571) becomes a Mantine `TextInput` and the body `<textarea>` (583–591) a `Textarea` with `autosize minRows={6}`. Both keep their placeholders and their accessible names — pass `aria-label="Post title, required"` and `aria-label="Post body, required"`, because `create.test.tsx:100–101` and six later cases look them up that way.
-- The two character counters (572–576, 592–596) move into each field's `description`, so the field stops changing height as the count crosses the threshold. Show the counter from `TITLE_COUNTER_THRESHOLD` / `BODY_COUNTER_THRESHOLD` upward, as today.
+- The two character counters (572–576, 592–596) move into each field's `description`. They still appear only from `TITLE_COUNTER_THRESHOLD` / `BODY_COUNTER_THRESHOLD` upward, and still turn red near the limit, so nothing changes on screen. The gain is that `description` is wired to the input through `aria-describedby`, where today's loose `<Text>` is announced to nobody.
 - The inline validity messages (577–579, 597–599) become each field's `error` prop.
 - The tag grid (602–639) becomes `<ToggleChipGroup label="Tags" mode="multiple" max={MAX_TAGS_PER_POST} />`, with each option's `name` set to `` `${tag.name} tag` `` so `05-create-post.spec.ts:52` still matches. `toggleTag` (225–233) goes; the cap now lives in the component.
 - `handleCancel`'s `confirm()` (235–247) becomes `useConfirm({ title: 'Discard this post?', message: 'You have unsaved changes.', confirmLabel: 'Discard', danger: true })`.
