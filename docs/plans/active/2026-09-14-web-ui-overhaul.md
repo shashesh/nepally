@@ -12082,7 +12082,7 @@ Work on `feat/web-ui-profile`, branched from `master` at `e685317`. Same convent
 4. **`Tabs` use `keepMounted={false}`, as search does.** Otherwise Mantine keeps inactive panels in the DOM, hidden, and `profile.test.tsx:168` asserts that the posts empty text is gone on the About tab.
 5. **Hometown district is a `NativeSelect`.** 77 districts suit the platform picker on a phone, and a native `<select>` keeps working for the two About You tests that set it by value (`profile.test.tsx:415`, `432–434`).
 6. **Trust shows only through `TrustBadge`.** "Level 1: Verified" and "Level 1 · Verified" become the badge's "Verified", as on every post. Four unit assertions change (`profile.test.tsx:117`, `[id].test.tsx:223`, `233`, `244`). The e2e regex `/level 1|verified/i` already matches.
-7. **Name and bio are validated inside the dialog.** With `usePrompt`'s `validate`, the dialog stays open showing "Name cannot be empty" or the `bioSchema` message. Today the prompt closes and a toast reports the problem.
+7. **Name and bio are validated inside the dialog.** With `usePrompt`'s `validate`, the dialog stays open showing the shared `fullNameSchema` or `bioSchema` message (e.g. "Name must be at least 2 characters"). Today the prompt closes and a toast reports the problem.
 8. **`FollowButton` keeps its text while loading.** Its tests assert `textContent === '…'` while the status loads. Mantine's `loading` prop would hide the label behind a spinner and force `disabled`. *(Corrected in review: in 8.3.18 the label stays in the DOM, hidden by CSS, so `textContent` would survive; `loading` is still avoided because a disabled button loses keyboard focus.)* The button shows '…' with `aria-label="Loading follow status"` only while its initial status loads. While a follow or unfollow saves, it stays focusable (`aria-disabled`, not `disabled`) and shows the new state at once, so a keyboard user keeps focus and hears the change. Its label reads "Follow" / "Following" alongside `aria-pressed`, which repeats the state rather than contradicting it. That is a deliberate exception to `web-ui-system.md`'s rule that toggle state belongs to the platform, following the social-app convention.
 9. **One PR, with the public profile first.** Tasks 6.3–6.10 finish the public profile before 6.11–6.19 touch the own profile and Manage Locations. If the diff runs long, the PR can split cleanly after 6.10. The default is one PR, as with PR 5, because each PR costs a Visual baselines run.
 10. **No `useInfiniteScroll` here.** The definition of done asks lists to use it, but none of these lists are paged. Each is one request capped at 30 (posts, saved posts, listings) or 50 (organised events), with no "load more" today. Adding pagination would be a behaviour change and a new API cursor, which is more than this PR's remit. The caps stay as they are.
@@ -12538,7 +12538,7 @@ This replaces `handleEditName`, `handleEditBio` and `handleChangePassword` (prof
 
 - [ ] **Step 1: Write the failing test.** Render a harness with three buttons inside `test-utils`, which provides `ModalsProvider`. Mock `@mantine/notifications` the way `profile.test.tsx` does. Cases:
   - Dismissing the name dialog writes nothing.
-  - A blank name shows "Name cannot be empty" inside the dialog and writes nothing.
+  - A blank or one-character name shows "Name must be at least 2 characters" inside the dialog and writes nothing.
   - `"  Sita Gurung "` saves "Sita Gurung", refreshes and toasts "Profile updated".
   - A failed write toasts the error.
   - A 201-character bio shows the schema message in the dialog.
@@ -12609,7 +12609,7 @@ This replaces profile 720–771. It renders the Bio, Account Info and Activity s
 
 | Today | Becomes |
 |---|---|
-| Top bar, hamburger, overlay (545–602) | `PageHeader title="Profile"`, whose `actions` hold `<ActionMenu label="Open profile menu">`. Its items are Edit Name, Edit Bio and Change Password from `useProfileEditing`, then Logout (`danger`) |
+| Top bar, hamburger, overlay (545–602) | `PageHeader title="Profile"`, whose `actions` hold `<ActionMenu label="Open profile menu">`. Its items are Edit Name, Edit Bio and Change Password from `useProfileEditing`, each with `disabled: saving`, then Logout (`danger`) |
 | Avatar, file input, photo buttons, status line (606–652) | `ProfilePhotoControl`. `onPick` calls `replaceProfilePhoto`, and `onRemove` calls the shared `removeProfilePhoto` (Task 6.2). Both then refresh and toast "Photo updated" / "Photo removed", or the error (decision 2) |
 | `trustBadge` span and `trustClass` (163–171, 657–661) | `TrustBadge` |
 | four tab `<button>`s (664–693) | Mantine `Tabs` with `keepMounted={false}` and `Tabs.List aria-label="Profile sections"`: "Posts", "Listings", "Saved Posts", "About" |
