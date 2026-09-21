@@ -1,4 +1,4 @@
-import React, { useState, type ReactNode } from 'react';
+import React, { useEffect, useRef, useState, type ReactNode } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -108,12 +108,21 @@ export default function PublicProfilePage() {
   const [messagingLoading, setMessagingLoading] = useState(false);
 
   // The Pages Router keeps this page mounted from /users/A to /users/B, so the
-  // tab would carry over. Open each member on Posts, as a fresh visit does,
-  // resetting during render as usePublicProfile does with its data.
+  // tab and A's "Opening conversation…" would carry over. Open each member
+  // fresh, resetting during render as usePublicProfile does with its data.
   if (memberId !== tabMemberId) {
     setTabMemberId(memberId);
     setActiveTab('posts');
+    setMessagingLoading(false);
   }
+
+  // The member on screen, for handleMessage to check after its await (its own
+  // closure still holds the member it started for). Written in an effect,
+  // never during render.
+  const shownMemberIdRef = useRef(memberId);
+  useEffect(() => {
+    shownMemberIdRef.current = memberId;
+  }, [memberId]);
 
   const { profileUser, posts, events, listings } = profile;
 
@@ -123,6 +132,7 @@ export default function PublicProfilePage() {
       return;
     }
 
+    const startedFor = memberId;
     setMessagingLoading(true);
     const result = await getOrCreateConversation(
       supabase,
@@ -131,6 +141,9 @@ export default function PublicProfilePage() {
       profileUser.id,
       profileUser.full_name
     );
+    // Moved on to another member: the reset above already cleared the label,
+    // and neither A's conversation nor A's failure belongs on B's page.
+    if (shownMemberIdRef.current !== startedFor) return;
     setMessagingLoading(false);
 
     if (result.data) {

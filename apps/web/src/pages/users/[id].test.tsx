@@ -348,6 +348,67 @@ describe('PublicProfilePage', () => {
     });
   });
 
+  describe('moving to another member while a conversation is opening', () => {
+    function showMember(userId: string): void {
+      profilePageMocks.useRouterMock.mockReturnValue({
+        query: { id: userId },
+        push: mockPush,
+        replace: mockReplace,
+      });
+    }
+
+    beforeEach(() => {
+      profilePageMocks.getUserByIdMock.mockImplementation((_client: unknown, userId: string) =>
+        Promise.resolve({
+          data:
+            userId === 'another-user'
+              ? { ...mockProfileUser, id: userId, full_name: 'Sita Gurung' }
+              : mockProfileUser,
+        })
+      );
+    });
+
+    it('shows the next member’s own Message label, not "Opening conversation…"', async () => {
+      profilePageMocks.getOrCreateConversationMock.mockReturnValue(new Promise(() => {}));
+      const { rerender } = render(<PublicProfilePage />);
+      await act(async () => {});
+
+      fireEvent.click(screen.getByRole('button', { name: 'Message Bikal S.' }));
+      expect(screen.getByRole('button', { name: 'Opening conversation…' })).toBeDefined();
+
+      showMember('another-user');
+      rerender(<PublicProfilePage />);
+      await act(async () => {});
+
+      expect(screen.getByRole('button', { name: 'Message Sita G.' })).toBeDefined();
+      expect(screen.queryByText('Opening conversation…')).toBeNull();
+    });
+
+    it('does not open the previous member’s conversation when it arrives late', async () => {
+      let resolveConversation: (value: unknown) => void = () => {};
+      profilePageMocks.getOrCreateConversationMock.mockReturnValue(
+        new Promise((resolve) => {
+          resolveConversation = resolve;
+        })
+      );
+      const { rerender } = render(<PublicProfilePage />);
+      await act(async () => {});
+
+      fireEvent.click(screen.getByRole('button', { name: 'Message Bikal S.' }));
+
+      showMember('another-user');
+      rerender(<PublicProfilePage />);
+      await act(async () => {});
+
+      await act(async () => {
+        resolveConversation({ data: { conversationId: 'conv-bikal', isNew: false } });
+      });
+
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Message Sita G.' })).toBeDefined();
+    });
+  });
+
   // ─── Posts Tab (default) ───────────────────────────────────────────────────
 
   it('shows posts tab content by default', async () => {
