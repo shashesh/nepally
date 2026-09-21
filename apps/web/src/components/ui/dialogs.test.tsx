@@ -11,7 +11,12 @@ function ConfirmHarness() {
       <button
         type="button"
         onClick={async () => {
-          const ok = await confirm({ title: 'Delete post?', message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true });
+          const ok = await confirm({
+            title: 'Delete post?',
+            message: 'This cannot be undone.',
+            confirmLabel: 'Delete',
+            danger: true,
+          });
           setResult(String(ok));
         }}
       >
@@ -89,13 +94,23 @@ describe('usePrompt', () => {
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('null'));
   });
 
+  it('resolves null when Escape is pressed', async () => {
+    render(<PromptHarness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open prompt' }));
+    await screen.findByLabelText('Full name');
+    fireEvent.keyDown(document.body, { key: 'Escape', code: 'Escape' });
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('null'));
+  });
+
   // Cancel precedes Save in the form, so if it ever became a submit button it
   // would be the form's default and swallow Enter, discarding the typed value.
   // Mantine's UnstyledButton supplies type="button"; Save opts in explicitly.
   it('keeps Cancel out of the form submission path', async () => {
     render(<PromptHarness />);
     fireEvent.click(screen.getByRole('button', { name: 'Open prompt' }));
-    expect((await screen.findByRole('button', { name: 'Cancel' })).getAttribute('type')).toBe('button');
+    expect((await screen.findByRole('button', { name: 'Cancel' })).getAttribute('type')).toBe(
+      'button'
+    );
     expect(screen.getByRole('button', { name: 'Save' }).getAttribute('type')).toBe('submit');
   });
 });

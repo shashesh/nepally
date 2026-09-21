@@ -37,18 +37,34 @@ function Harness({
   user: HarnessUser | null;
   refreshUser: () => Promise<void>;
 }) {
-  const { editName, editBio, changePassword } = useProfileEditing(user, refreshUser);
+  const { editName, editBio, changePassword, saving } = useProfileEditing(user, refreshUser);
   return (
     <>
-      <button type="button" onClick={() => { editName(); }}>
+      <button
+        type="button"
+        onClick={() => {
+          editName();
+        }}
+      >
         Edit name
       </button>
-      <button type="button" onClick={() => { editBio(); }}>
+      <button
+        type="button"
+        onClick={() => {
+          editBio();
+        }}
+      >
         Edit bio
       </button>
-      <button type="button" onClick={() => { changePassword(); }}>
+      <button
+        type="button"
+        onClick={() => {
+          changePassword();
+        }}
+      >
         Change password
       </button>
+      <output data-testid="saving">{String(saving)}</output>
     </>
   );
 }
@@ -59,6 +75,15 @@ const mockUser: HarnessUser = {
   full_name: 'Bikal Shrestha',
   bio: null,
 };
+
+/** A never-settling controllable promise, for observing `saving` mid-flight. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
 
 describe('useProfileEditing', () => {
   let mockRefreshUser: Mock<() => Promise<void>>;
@@ -81,7 +106,7 @@ describe('useProfileEditing', () => {
       expect(mocks.updateUserProfile).not.toHaveBeenCalled();
     });
 
-    it('shows "Name cannot be empty" in the dialog and writes nothing for a blank name', async () => {
+    it('shows the schema message in the dialog and writes nothing for a blank name', async () => {
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Edit name' }));
@@ -89,14 +114,15 @@ describe('useProfileEditing', () => {
       fireEvent.change(input, { target: { value: '   ' } });
       fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-      expect(await screen.findByText('Name cannot be empty')).toBeDefined();
+      expect(await screen.findByText('Name must be at least 2 characters')).toBeDefined();
       await act(async () => {});
       expect(mocks.updateUserProfile).not.toHaveBeenCalled();
+      expect(mocks.notificationsShow).not.toHaveBeenCalled();
       // The dialog stays open.
       expect(screen.getByLabelText('Full name')).toBeDefined();
     });
 
-    it('trims and saves the name, refreshes, and toasts "Profile updated"', async () => {
+    it('trims and saves the name, refreshes before toasting, and toasts "Profile updated"', async () => {
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Edit name' }));
@@ -110,7 +136,10 @@ describe('useProfileEditing', () => {
       });
       expect(mockRefreshUser).toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Profile updated' })
+        expect.objectContaining({ message: 'Profile updated', color: 'green' })
+      );
+      expect(mockRefreshUser.mock.invocationCallOrder[0]).toBeLessThan(
+        mocks.notificationsShow.mock.invocationCallOrder[0]
       );
     });
 
@@ -126,23 +155,78 @@ describe('useProfileEditing', () => {
 
       expect(mockRefreshUser).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Network down' })
+        expect.objectContaining({ message: 'Network down', color: 'red' })
       );
+    });
+
+    it('falls back to "Failed to update profile" when the error has no message', async () => {
+      mocks.updateUserProfile.mockResolvedValue({ error: new Error('') });
+      render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Edit name' }));
+      const input = await screen.findByLabelText('Full name');
+      fireEvent.change(input, { target: { value: 'Sita Gurung' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await act(async () => {});
+
+      expect(mocks.notificationsShow).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Failed to update profile', color: 'red' })
+      );
+    });
+
+    it('flips saving true while the write is in flight and false once it settles', async () => {
+      const { promise, resolve } = deferred<{ data: object }>();
+      mocks.updateUserProfile.mockReturnValue(promise);
+      render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
+
+      expect(screen.getByTestId('saving').textContent).toBe('false');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Edit name' }));
+      const input = await screen.findByLabelText('Full name');
+      fireEvent.change(input, { target: { value: 'Sita Gurung' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await act(async () => {});
+
+      expect(screen.getByTestId('saving').textContent).toBe('true');
+
+      await act(async () => {
+        resolve({ data: {} });
+      });
+
+      expect(screen.getByTestId('saving').textContent).toBe('false');
     });
   });
 
   describe('editBio', () => {
-    it('shows the schema message in the dialog and writes nothing for a 201-character bio', async () => {
+    it('trims the bio before writing it', async () => {
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Edit bio' }));
       const textarea = await screen.findByLabelText(`Bio (up to ${BIO_MAX_LENGTH} characters)`);
-      fireEvent.change(textarea, { target: { value: 'a'.repeat(201) } });
+      fireEvent.change(textarea, { target: { value: '  Loves momo  ' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await act(async () => {});
+
+      expect(mocks.updateUserProfile).toHaveBeenCalledWith(expect.anything(), 'user-1', {
+        bio: 'Loves momo',
+      });
+    });
+
+    it('shows the schema message and keeps the dialog open for an over-limit bio', async () => {
+      render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Edit bio' }));
+      const textarea = await screen.findByLabelText(`Bio (up to ${BIO_MAX_LENGTH} characters)`);
+      fireEvent.change(textarea, { target: { value: 'a'.repeat(BIO_MAX_LENGTH + 1) } });
       fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-      expect(await screen.findByText('Bio must be at most 200 characters')).toBeDefined();
+      expect(
+        await screen.findByText(`Bio must be at most ${BIO_MAX_LENGTH} characters`)
+      ).toBeDefined();
       await act(async () => {});
       expect(mocks.updateUserProfile).not.toHaveBeenCalled();
+      // The dialog stays open.
+      expect(screen.getByLabelText(`Bio (up to ${BIO_MAX_LENGTH} characters)`)).toBeDefined();
     });
 
     it('writes null and toasts "Bio cleared" when the bio is emptied', async () => {
@@ -160,11 +244,11 @@ describe('useProfileEditing', () => {
       });
       expect(mockRefreshUser).toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Bio cleared' })
+        expect.objectContaining({ message: 'Bio cleared', color: 'green' })
       );
     });
 
-    it('writes the bio and toasts "Bio updated" for a normal bio', async () => {
+    it('writes the bio, refreshes before toasting, and toasts "Bio updated" for a normal bio', async () => {
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Edit bio' }));
@@ -176,8 +260,12 @@ describe('useProfileEditing', () => {
       expect(mocks.updateUserProfile).toHaveBeenCalledWith(expect.anything(), 'user-1', {
         bio: 'Loves momo and hiking',
       });
+      expect(mockRefreshUser).toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Bio updated' })
+        expect.objectContaining({ message: 'Bio updated', color: 'green' })
+      );
+      expect(mockRefreshUser.mock.invocationCallOrder[0]).toBeLessThan(
+        mocks.notificationsShow.mock.invocationCallOrder[0]
       );
     });
 
@@ -193,8 +281,25 @@ describe('useProfileEditing', () => {
 
       expect(mockRefreshUser).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Bio write failed' })
+        expect.objectContaining({ message: 'Bio write failed', color: 'red' })
       );
+    });
+
+    it('toasts the fallback message when the write throws unexpectedly', async () => {
+      mocks.updateUserProfile.mockRejectedValue(new Error('boom'));
+      render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Edit bio' }));
+      const textarea = await screen.findByLabelText(`Bio (up to ${BIO_MAX_LENGTH} characters)`);
+      fireEvent.change(textarea, { target: { value: 'Loves momo and hiking' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await act(async () => {});
+
+      expect(mockRefreshUser).not.toHaveBeenCalled();
+      expect(mocks.notificationsShow).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Failed to update bio', color: 'red' })
+      );
+      expect(screen.getByTestId('saving').textContent).toBe('false');
     });
   });
 
@@ -209,7 +314,7 @@ describe('useProfileEditing', () => {
         redirectTo: `${window.location.origin}/login`,
       });
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Password reset email sent' })
+        expect.objectContaining({ message: 'Password reset email sent', color: 'green' })
       );
     });
 
@@ -221,8 +326,25 @@ describe('useProfileEditing', () => {
       await act(async () => {});
 
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Rate limited' })
+        expect.objectContaining({ message: 'Rate limited', color: 'red' })
       );
+    });
+
+    it('flips saving true while the request is in flight and false once it settles', async () => {
+      const { promise, resolve } = deferred<{ error: null }>();
+      mocks.resetPasswordForEmail.mockReturnValue(promise);
+      render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
+      await act(async () => {});
+
+      expect(screen.getByTestId('saving').textContent).toBe('true');
+
+      await act(async () => {
+        resolve({ error: null });
+      });
+
+      expect(screen.getByTestId('saving').textContent).toBe('false');
     });
   });
 

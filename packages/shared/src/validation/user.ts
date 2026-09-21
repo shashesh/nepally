@@ -1,18 +1,43 @@
 import { z } from 'zod';
-import {
-  NEPAL_DISTRICTS,
-  type NepalDistrict,
-} from '../constants/nepalDistricts';
-import {
-  SUPPORTED_LANGUAGES,
-  type LanguageCode,
-} from '../constants/languages';
+import { NEPAL_DISTRICTS, type NepalDistrict } from '../constants/nepalDistricts';
+import { SUPPORTED_LANGUAGES, type LanguageCode } from '../constants/languages';
 
 /**
  * User profile validation schemas.
  */
 
 export const BIO_MAX_LENGTH = 200;
+
+export const FULL_NAME_MAX_LENGTH = 100;
+
+/**
+ * A member's display name. 001_schema.sql only constrains this column to
+ * `NOT NULL` — no length limit, and no character restriction — so this is
+ * the single source of truth both web and mobile should defer to.
+ * - trimmed + control characters stripped first, same normalization as
+ *   `bioSchema` (keeps tab + newline, though a name isn't expected to carry
+ *   either)
+ * - min 2 / max FULL_NAME_MAX_LENGTH applied AFTER normalization, so
+ *   surrounding whitespace or stripped control characters can't tip a name
+ *   over either boundary
+ * - deliberately has no letters-only pattern: OAuth names, Devanagari and
+ *   other non-Latin scripts, and punctuation like "O'Brien-Rai" are all
+ *   valid names (unlike `validateFullName` in utils/validators.ts, which
+ *   this schema is intended to replace)
+ */
+export const fullNameSchema = z
+  .string()
+  .transform((value) => value.trim())
+  // eslint-disable-next-line no-control-regex
+  .transform((value) => value.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, ''))
+  .pipe(
+    z
+      .string()
+      .min(2, 'Name must be at least 2 characters')
+      .max(FULL_NAME_MAX_LENGTH, `Name must be at most ${FULL_NAME_MAX_LENGTH} characters`)
+  );
+
+export type FullNameInput = z.infer<typeof fullNameSchema>;
 
 /**
  * Short self-description shown on the public profile.
@@ -28,9 +53,7 @@ export const bioSchema = z
   .transform((value) => value.trim())
   // eslint-disable-next-line no-control-regex
   .transform((value) => value.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, ''))
-  .pipe(
-    z.string().max(BIO_MAX_LENGTH, `Bio must be at most ${BIO_MAX_LENGTH} characters`)
-  )
+  .pipe(z.string().max(BIO_MAX_LENGTH, `Bio must be at most ${BIO_MAX_LENGTH} characters`))
   .transform((value) => (value.length === 0 ? null : value));
 
 /**
@@ -54,20 +77,13 @@ export const hometownDistrictSchema = z
     })
   );
 
-export const hometownDistrictUpdateSchema = hometownDistrictSchema
-  .nullable()
-  .optional();
+export const hometownDistrictUpdateSchema = hometownDistrictSchema.nullable().optional();
 
 export const collegeSchema = z
   .string()
   .transform((v) => v.trim())
   .pipe(
-    z
-      .string()
-      .max(
-        COLLEGE_MAX_LENGTH,
-        `College must be at most ${COLLEGE_MAX_LENGTH} characters`
-      )
+    z.string().max(COLLEGE_MAX_LENGTH, `College must be at most ${COLLEGE_MAX_LENGTH} characters`)
   )
   .transform((v) => (v.length === 0 ? null : v));
 
@@ -82,9 +98,7 @@ export const yearsInUsSchema = z
 export const yearsInUsUpdateSchema = yearsInUsSchema.nullable().optional();
 
 export const languagesSchema = z
-  .array(
-    z.enum(SUPPORTED_LANGUAGES as unknown as [LanguageCode, ...LanguageCode[]])
-  )
+  .array(z.enum(SUPPORTED_LANGUAGES as unknown as [LanguageCode, ...LanguageCode[]]))
   .max(SUPPORTED_LANGUAGES.length, 'Too many languages selected')
   .refine((arr) => new Set(arr).size === arr.length, {
     message: 'Languages must be unique',
