@@ -15,7 +15,7 @@ import {
   uploadPostPhotos,
 } from '@nepally/shared';
 import type { UploaderPhoto } from '../components/ui';
-import { toPhotoUploadInputs } from './photoUploads';
+import { uploadPhotosInOrder } from './photoUploads';
 
 export interface SubmitResult {
   ok: boolean;
@@ -53,52 +53,6 @@ export interface EditedPostParams {
   originalPhotoUrls: string[];
 }
 
-interface UploadedPhotos {
-  /** Uploaded URL per picked photo id, so display order can be restored. */
-  urlByPickedId: Map<string, string>;
-  /** Storage paths, for rolling back a failed write. */
-  paths: string[];
-}
-
-function pickedOnly(photos: UploaderPhoto[]) {
-  return photos.filter((photo): photo is Extract<UploaderPhoto, { kind: 'picked' }> => photo.kind === 'picked');
-}
-
-async function uploadPicked(
-  supabase: SupabaseClient,
-  photos: UploaderPhoto[],
-  userId: string
-): Promise<UploadedPhotos | { error: Error }> {
-  const picked = pickedOnly(photos);
-  if (picked.length === 0) {
-    return { urlByPickedId: new Map(), paths: [] };
-  }
-
-  const inputs = await toPhotoUploadInputs(
-    picked.map((photo) => photo.file),
-    userId
-  );
-  const result = await uploadPostPhotos(supabase, inputs);
-  if (result.error || !result.urls) {
-    return { error: result.error ?? new Error('Failed to upload photos') };
-  }
-
-  const urlByPickedId = new Map<string, string>();
-  picked.forEach((photo, index) => {
-    const url = result.urls?.[index];
-    if (url) urlByPickedId.set(photo.id, url);
-  });
-
-  return { urlByPickedId, paths: result.paths ?? [] };
-}
-
-/** The URLs to write, in the order the member arranged them. */
-function orderedUrls(photos: UploaderPhoto[], urlByPickedId: Map<string, string>): string[] {
-  return photos
-    .map((photo) => (photo.kind === 'stored' ? photo.url : urlByPickedId.get(photo.id) ?? null))
-    .filter((url): url is string => Boolean(url));
-}
-
 export async function submitNewPost(
   supabase: SupabaseClient,
   params: NewPostParams
@@ -106,7 +60,9 @@ export async function submitNewPost(
   let uploadedPaths: string[] = [];
 
   try {
-    const uploaded = await uploadPicked(supabase, params.photos, params.userId);
+    const uploaded = await uploadPhotosInOrder(params.photos, params.userId, (inputs) =>
+      uploadPostPhotos(supabase, inputs)
+    );
     if ('error' in uploaded) {
       return { ok: false, message: uploaded.error.message };
     }
@@ -116,7 +72,7 @@ export async function submitNewPost(
       title: params.title,
       description: params.description,
       tag_ids: params.tagIds,
-      photos: orderedUrls(params.photos, uploaded.urlByPickedId),
+      photos: uploaded.urls,
       is_global: params.isGlobal,
       metroAreaId: params.metroAreaId,
       locationZipCode: params.locationZipCode,
@@ -145,7 +101,9 @@ export async function submitEditedPost(
   let uploadedPaths: string[] = [];
 
   try {
-    const uploaded = await uploadPicked(supabase, params.photos, params.userId);
+    const uploaded = await uploadPhotosInOrder(params.photos, params.userId, (inputs) =>
+      uploadPostPhotos(supabase, inputs)
+    );
     if ('error' in uploaded) {
       return { ok: false, message: uploaded.error.message };
     }
@@ -157,7 +115,7 @@ export async function submitEditedPost(
       description: params.description,
       tag_ids: params.tagIds,
       is_global: params.isGlobal,
-      photos: orderedUrls(params.photos, uploaded.urlByPickedId),
+      photos: uploaded.urls,
     });
 
     if (result.error) {

@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Button, TextInput, Textarea } from '@mantine/core';
 import Head from 'next/head';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
+import { uploadPhotosInOrder } from '../../lib/photoUploads';
+import { resizeImage } from '../../lib/resizeImage';
+import { ImageUploader, notify, type UploaderPhoto } from '../../components/ui';
 import {
   getCategories,
   getListingById,
@@ -15,68 +17,27 @@ import {
   createListingSchema,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
+  ALLOWED_LISTING_PHOTO_MIME_TYPES,
+  MAX_LISTING_PHOTO_BYTES,
   MAX_PHOTOS_PER_LISTING,
   type MarketplaceCategory,
   type ListingType,
   type ItemCondition,
-  type ListingPhotoUploadInput,
 } from '@nepally/shared';
 import styles from './marketplace.module.css';
-
-type NewPhotoWeb = {
-  previewUrl: string;
-  fileData: ArrayBuffer;
-  mimeType: string;
-  sizeBytes: number;
-  fileName: string;
-};
-
-async function resizeImageFile(file: File): Promise<NewPhotoWeb> {
-  const bitmap = await createImageBitmap(file);
-  const MAX_WIDTH = 1200;
-  const scale = Math.min(1, MAX_WIDTH / bitmap.width);
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas not supported');
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) { reject(new Error('Failed to process image')); return; }
-      blob.arrayBuffer().then((buf) => {
-        resolve({
-          previewUrl: URL.createObjectURL(blob),
-          fileData: buf,
-          mimeType: 'image/jpeg',
-          sizeBytes: buf.byteLength,
-          fileName: file.name,
-        });
-      }).catch(reject);
-    }, 'image/jpeg', 0.8);
-  });
-}
 
 export default function CreateListingPage() {
   const router = useRouter();
   const { user } = useAuth();
   const editId = typeof router.query.edit === 'string' ? router.query.edit : null;
   const isEditing = !!editId;
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
   const [loading, setLoading] = useState(!!editId);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Photo state
-  const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]);
-  const [newPhotos, setNewPhotos] = useState<NewPhotoWeb[]>([]);
-  const [processingPhotos, setProcessingPhotos] = useState(false);
-
-  const totalPhotos = existingPhotoUrls.length + newPhotos.length;
+  const [photos, setPhotos] = useState<UploaderPhoto[]>([]);
 
   // Form state
   const [listingType, setListingType] = useState<ListingType>('business');
@@ -117,58 +78,13 @@ export default function CreateListingPage() {
           setEmail(l.email ?? '');
           setWebsiteUrl(l.website_url ?? '');
           setItemCondition(l.item_condition ?? undefined);
-          setExistingPhotoUrls(l.photos ?? []);
+          setPhotos((l.photos ?? []).map((url: string) => ({ kind: 'stored' as const, url })));
         }
         setLoading(false);
       }
     }
     init();
   }, [editId]);
-
-  // Revoke object URLs on unmount to avoid memory leaks
-  useEffect(() => {
-    return () => {
-      newPhotos.forEach((p) => URL.revokeObjectURL(p.previewUrl));
-    };
-  }, [newPhotos]);
-
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
-
-    const remaining = MAX_PHOTOS_PER_LISTING - totalPhotos;
-    const toProcess = files.slice(0, remaining);
-
-    setProcessingPhotos(true);
-    const processed: NewPhotoWeb[] = [];
-
-    for (const file of toProcess) {
-      try {
-        const photo = await resizeImageFile(file);
-        processed.push(photo);
-      } catch {
-        // Skip photos that fail to process
-      }
-    }
-
-    setNewPhotos((prev) => [...prev, ...processed]);
-    setProcessingPhotos(false);
-
-    // Reset input so same file can be re-selected
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [totalPhotos]);
-
-  const handleRemoveExisting = useCallback((index: number) => {
-    setExistingPhotoUrls((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const handleRemoveNew = useCallback((index: number) => {
-    setNewPhotos((prev) => {
-      const removed = prev[index];
-      if (removed) URL.revokeObjectURL(removed.previewUrl);
-      return prev.filter((_, i) => i !== index);
-    });
-  }, []);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -205,31 +121,22 @@ export default function CreateListingPage() {
 
       setSubmitting(true);
 
-      // Upload new photos first
-      let allPhotoUrls = [...existingPhotoUrls];
-      if (newPhotos.length > 0) {
-        const uploadInputs: ListingPhotoUploadInput[] = newPhotos.map((p) => ({
-          user_id: user.id,
-          file_data: p.fileData,
-          mime_type: p.mimeType,
-          size_bytes: p.sizeBytes,
-          file_name: p.fileName,
-        }));
-        const uploadResult = await uploadListingPhotos(supabase, uploadInputs);
-        if (uploadResult.error) {
-          alert(uploadResult.error.message);
-          setSubmitting(false);
-          return;
-        }
-        allPhotoUrls = [...allPhotoUrls, ...(uploadResult.urls ?? [])];
+      // Upload whatever is new, then read every photo back in display order.
+      const uploaded = await uploadPhotosInOrder(photos, user.id, (inputs) =>
+        uploadListingPhotos(supabase, inputs)
+      );
+      if ('error' in uploaded) {
+        notify.error(uploaded.error.message);
+        setSubmitting(false);
+        return;
       }
 
-      const payload = { ...formData, photos: allPhotoUrls };
+      const payload = { ...formData, photos: uploaded.urls };
 
       if (isEditing && editId) {
         const result = await updateListing(supabase, editId, payload);
         if (result.error) {
-          alert(result.error.message);
+          notify.error(result.error.message);
         } else {
           router.push('/marketplace/my-listings');
         }
@@ -240,7 +147,7 @@ export default function CreateListingPage() {
           metro_area_id: user.metro_area_id,
         });
         if (result.error) {
-          alert(result.error.message);
+          notify.error(result.error.message);
         } else {
           router.push('/marketplace');
         }
@@ -251,7 +158,7 @@ export default function CreateListingPage() {
     [
       user, listingType, title, description, categoryId, price,
       businessName, address, phone, email, websiteUrl, itemCondition,
-      existingPhotoUrls, newPhotos, isEditing, editId, router,
+      photos, isEditing, editId, router,
     ]
   );
 
@@ -289,65 +196,16 @@ export default function CreateListingPage() {
 
           {/* Photos */}
           <div className={styles.formSection}>
-            <label className={styles.formLabel}>
-              Photos (up to {MAX_PHOTOS_PER_LISTING})
-            </label>
-            <div className={styles.photoPreviewGrid}>
-              {/* Existing photos (edit mode) */}
-              {existingPhotoUrls.map((url, index) => (
-                <div key={`existing-${index}`} className={styles.photoThumb}>
-                  <Image src={url} alt="" className={styles.photoThumbImg} fill />
-                  <button
-                    type="button"
-                    className={styles.photoRemoveBtn}
-                    onClick={() => handleRemoveExisting(index)}
-                    aria-label="Remove photo"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              {/* New photos */}
-              {newPhotos.map((photo, index) => (
-                <div key={`new-${index}`} className={styles.photoThumb}>
-                  <Image src={photo.previewUrl} alt="" className={styles.photoThumbImg} fill />
-                  <button
-                    type="button"
-                    className={styles.photoRemoveBtn}
-                    onClick={() => handleRemoveNew(index)}
-                    aria-label="Remove photo"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              {/* Add photo button */}
-              {totalPhotos < MAX_PHOTOS_PER_LISTING && (
-                <button
-                  type="button"
-                  className={styles.addPhotoBtn}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={processingPhotos}
-                >
-                  {processingPhotos ? '...' : (
-                    <>
-                      <span className={styles.addPhotoIcon}>📷</span>
-                      <span className={styles.addPhotoText}>Add Photo</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileChange}
-              className={styles.hiddenFileInput}
-              aria-label="Upload listing photos"
+            <ImageUploader
+              photos={photos}
+              onChange={setPhotos}
+              max={MAX_PHOTOS_PER_LISTING}
+              maxBytes={MAX_LISTING_PHOTO_BYTES}
+              accept={[...ALLOWED_LISTING_PHOTO_MIME_TYPES]}
+              transformFile={resizeImage}
+              disabled={submitting}
+              label="Photos"
             />
-            <p className={styles.photoHint}>{totalPhotos}/{MAX_PHOTOS_PER_LISTING} photos</p>
           </div>
 
           {/* Category */}
