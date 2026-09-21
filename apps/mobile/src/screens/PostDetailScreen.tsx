@@ -723,6 +723,7 @@ export default function PostDetailScreen() {
   };
 
   const handleRetryLoad = () => {
+    setLoadedPostId(null);
     setFailedPostId(null);
     setReloadKey((key) => key + 1);
   };
