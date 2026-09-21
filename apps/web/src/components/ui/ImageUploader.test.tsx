@@ -140,22 +140,51 @@ describe('ImageUploader', () => {
     expect(onChangeSpy).toHaveBeenCalledWith([]);
   });
 
-  it('stops accepting files once it is full', async () => {
-    render(
-      <Harness
-        max={1}
-        initial={[{ kind: 'stored', url: 'https://cdn.example.com/a.jpg' }]}
-      />
-    );
-
-    expect(screen.getByLabelText('Add photos').hasAttribute('disabled')).toBe(true);
-  });
-
   it('shows the description and the error it is given', () => {
     render(<Harness description="Optional. JPG, PNG or WEBP." error="Pick at least one photo" />);
 
     expect(screen.getByText('Optional. JPG, PNG or WEBP.')).toBeDefined();
     expect(screen.getByText('Pick at least one photo')).toBeDefined();
+  });
+
+  describe('a single slot', () => {
+    const stored: UploaderPhoto = { kind: 'stored', url: 'https://cdn.example.com/a.jpg' };
+
+    it('stays open when it already holds a photo, so it can be replaced', () => {
+      render(<Harness max={1} initial={[stored]} />);
+
+      const input = screen.getByLabelText('Replace photos');
+      expect(input.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('replaces the photo it holds instead of refusing the pick', async () => {
+      const onChangeSpy = vi.fn();
+      render(<Harness max={1} initial={[stored]} onChangeSpy={onChangeSpy} />);
+
+      const input = screen.getByLabelText('Replace photos');
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [makeFile('new.png')] } });
+      });
+
+      const next = onChangeSpy.mock.calls.at(-1)?.[0] as UploaderPhoto[];
+      expect(next).toHaveLength(1);
+      expect(next[0].kind).toBe('picked');
+      expect(screen.getByText('1/1 photos')).toBeDefined();
+    });
+
+    it('still refuses a pick past the cap when there is more than one slot', async () => {
+      const onChangeSpy = vi.fn();
+      render(
+        <Harness
+          max={2}
+          initial={[stored, { kind: 'stored', url: 'https://cdn.example.com/b.jpg' }]}
+          onChangeSpy={onChangeSpy}
+        />
+      );
+
+      expect(screen.getByLabelText('Add photos').hasAttribute('disabled')).toBe(true);
+      expect(onChangeSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('reordering', () => {
@@ -304,6 +333,37 @@ describe('ImageUploader', () => {
       const next = onChangeSpy.mock.calls.at(-1)?.[0] as UploaderPhoto[];
       expect(next).toHaveLength(1);
       expect(next[0].kind).toBe('picked');
+    });
+
+    it('keeps both batches when two drops resolve in the same tick', async () => {
+      const onChangeSpy = vi.fn();
+      const releases: Array<(file: File) => void> = [];
+      const transformFile = vi.fn(
+        () => new Promise<File>((resolve) => { releases.push(resolve); })
+      );
+      render(<Harness onChangeSpy={onChangeSpy} max={3} transformFile={transformFile} />);
+
+      // Two selections, neither transform finished yet.
+      await pickFiles([makeFile('one.png')]);
+      await pickFiles([makeFile('two.png')]);
+      expect(releases).toHaveLength(2);
+      expect(onChangeSpy).not.toHaveBeenCalled();
+
+      await act(async () => {
+        releases[0](makeFile('one.png'));
+        releases[1](makeFile('two.png'));
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      // Neither batch may overwrite the other.
+      const next = onChangeSpy.mock.calls.at(-1)?.[0] as UploaderPhoto[];
+      expect(next).toHaveLength(2);
+      expect(next.map((photo) => (photo.kind === 'picked' ? photo.file.name : photo.url))).toEqual([
+        'one.png',
+        'two.png',
+      ]);
     });
 
     it('reports a failure even when nothing survives', async () => {

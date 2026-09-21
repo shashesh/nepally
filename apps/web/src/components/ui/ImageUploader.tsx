@@ -101,13 +101,20 @@ export function ImageUploader({
   const [message, setMessage] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
 
-  // The latest controlled value. A transform runs between the drop and the
-  // onChange, and the member can remove or reorder photos while it does, so
-  // appending to the `photos` captured at drop time would undo that change.
+  // The latest value this component knows about. A transform runs between the
+  // drop and the onChange, and the list can move underneath it — the member
+  // removes a photo, or a second drop resolves first. Every change goes
+  // through `commit`, which updates this synchronously, because an effect
+  // would not have run yet when a second drop resolves in the same tick.
   const photosRef = useRef(photos);
   useEffect(() => {
     photosRef.current = photos;
   }, [photos]);
+
+  function commit(next: UploaderPhoto[]) {
+    photosRef.current = next;
+    onChange(next);
+  }
 
   // Every preview URL this component minted, so unmount can revoke the ones
   // still in play. Removal revokes eagerly and drops the entry.
@@ -120,8 +127,12 @@ export function ImageUploader({
     };
   }, []);
 
+  // A one-slot uploader replaces rather than fills up, which is how create
+  // event's old "Change Photo" button behaved. Without this, an event that
+  // already has a photo offers no way to swap it but remove-then-add.
+  const isSingle = max === 1;
   const isFull = photos.length >= max;
-  const remaining = Math.max(0, max - photos.length);
+  const remaining = isSingle ? 1 : Math.max(0, max - photos.length);
 
   function capMessage(): string {
     return `You can add up to ${max} ${max === 1 ? 'photo' : 'photos'}.`;
@@ -161,7 +172,7 @@ export function ImageUploader({
 
     // Re-read the array, which may have moved on while the transform ran.
     const current = photosRef.current;
-    const room = Math.max(0, max - current.length);
+    const room = isSingle ? 1 : Math.max(0, max - current.length);
     const fitting = usable.slice(0, room);
 
     const notices: string[] = [];
@@ -184,7 +195,17 @@ export function ImageUploader({
       return { kind: 'picked', id: newPickedId(), previewUrl, file };
     });
 
-    onChange([...current, ...picked]);
+    // Replacing a single slot drops whatever was there, so let go of its
+    // preview URL. A stored photo has none to release.
+    const replaced = isSingle ? current : [];
+    for (const photo of replaced) {
+      if (photo.kind === 'picked') {
+        URL.revokeObjectURL(photo.previewUrl);
+        createdUrlsRef.current.delete(photo.previewUrl);
+      }
+    }
+
+    commit(isSingle ? picked : [...current, ...picked]);
   }
 
   function handleMove(index: number, direction: -1 | 1) {
@@ -194,7 +215,7 @@ export function ImageUploader({
     const reordered = [...photos];
     [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
     setAnnouncement(`Photo ${index + 1} moved to position ${target + 1}`);
-    onChange(reordered);
+    commit(reordered);
   }
 
   function handleReject(rejections: FileRejection[]) {
@@ -208,7 +229,7 @@ export function ImageUploader({
       createdUrlsRef.current.delete(removed.previewUrl);
     }
     setMessage(null);
-    onChange(photos.filter((_, position) => position !== index));
+    commit(photos.filter((_, position) => position !== index));
   }
 
   const describedBy =
@@ -229,16 +250,23 @@ export function ImageUploader({
         // With a transform, the size limit applies to its output instead; see
         // handleDrop. Without one, the dropzone is the only size check.
         maxSize={transformFile ? undefined : maxBytes}
-        disabled={disabled || isFull}
+        disabled={disabled || (isFull && !isSingle)}
         // react-dropzone only drops its handlers when disabled; it leaves the
         // input focusable and activatable. Mark it disabled for real.
-        inputProps={{ 'aria-label': `Add ${label.toLowerCase()}`, disabled: disabled || isFull }}
+        inputProps={{
+          'aria-label': isSingle && isFull ? `Replace ${label.toLowerCase()}` : `Add ${label.toLowerCase()}`,
+          disabled: disabled || (isFull && !isSingle),
+        }}
         className={styles.dropzone}
       >
         <div className={styles.dropzoneInner}>
           <IconPhotoPlus size={20} aria-hidden="true" />
           <Text size="sm">
-            {isFull ? 'All slots used' : 'Drag photos here, or click to choose'}
+            {isSingle && isFull
+              ? 'Drag a photo here to replace it, or click to choose'
+              : isFull
+                ? 'All slots used'
+                : 'Drag photos here, or click to choose'}
           </Text>
         </div>
       </Dropzone>

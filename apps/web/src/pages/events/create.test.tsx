@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '../../test-utils';
+import { render, screen, waitFor, fireEvent, act } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 type MockHeadProps = { children?: React.ReactNode };
@@ -331,6 +331,42 @@ describe('CreateEventPage', () => {
       render(React.createElement(CreateEventPage));
 
       await waitFor(() => expect(screen.getByText('1/1 photos')).toBeDefined());
+      expect(screen.getByRole('button', { name: 'Remove photo 1' })).toBeDefined();
+    });
+
+    it('can replace the photo an edited event already has', async () => {
+      mocks.useRouter.mockReturnValue({ query: { edit: 'event-1' }, replace: mockReplace, push: mockPush });
+      const { getEventById } = await import('@nepally/shared');
+      vi.mocked(getEventById).mockResolvedValue({
+        data: {
+          id: 'event-1',
+          title: 'Existing event',
+          description: 'A description that is long enough',
+          event_type: 'cultural',
+          start_date: new Date(Date.now() + 86_400_000).toISOString(),
+          end_date: null,
+          location_name: 'Some Venue',
+          location_address: '',
+          photo_url: 'https://cdn.example.com/event.jpg',
+          rsvp_visibility: 'public',
+          is_global: false,
+        },
+      } as never);
+      render(React.createElement(CreateEventPage));
+      await waitFor(() => expect(screen.getByText('1/1 photos')).toBeDefined());
+
+      // The slot is full, but a one-photo uploader replaces rather than locks:
+      // the old page had a "Change Photo" button and this is its replacement.
+      const input = screen.getByLabelText('Replace event photo');
+      expect(input.hasAttribute('disabled')).toBe(false);
+
+      const file = new File(['x'], 'replacement.png', { type: 'image/png' });
+      Object.defineProperty(file, 'size', { value: 1024 });
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [file] } });
+      });
+
+      expect(screen.getByText('1/1 photos')).toBeDefined();
       expect(screen.getByRole('button', { name: 'Remove photo 1' })).toBeDefined();
     });
 

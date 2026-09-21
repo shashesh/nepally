@@ -3,19 +3,12 @@
  * raw bytes so it can serve mobile too. Create post built this mapping twice,
  * once per submit path; create listing and create event built their own.
  */
+import type { PhotoUploadInput } from '@nepally/shared';
 import type { UploaderPhoto } from '../components/ui';
 
-/**
- * Structurally what `uploadPostPhotos`, `uploadListingPhotos` and
- * `uploadEventPhoto` accept, so the result feeds any of them.
- */
-export interface PhotoUploadInput {
-  user_id: string;
-  file_data: ArrayBuffer;
-  mime_type: string;
-  size_bytes: number;
-  file_name: string;
-}
+// The byte-level contract lives in packages/shared, where the upload
+// functions that consume it live. Only the File-to-bytes step is web-only.
+export type { PhotoUploadInput };
 
 export async function toPhotoUploadInputs(files: File[], userId: string): Promise<PhotoUploadInput[]> {
   return Promise.all(

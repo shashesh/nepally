@@ -21,13 +21,23 @@ import {
 const AVATARS_BUCKET = 'avatars';
 const EVENT_PHOTOS_BUCKET = 'event-photos';
 
-export interface PostPhotoUploadInput {
+/**
+ * One photo on its way to storage, as raw bytes.
+ *
+ * Bytes rather than a `File` because mobile has no `File`: React Native reads
+ * a picked asset into an ArrayBuffer, and the web hands over `File.arrayBuffer()`.
+ * Posts, listings and event photos all upload the same shape, so they share
+ * this one contract.
+ */
+export interface PhotoUploadInput {
   user_id: string;
   file_data: ArrayBuffer | Uint8Array;
   mime_type: string;
   size_bytes: number;
   file_name?: string;
 }
+
+export type PostPhotoUploadInput = PhotoUploadInput;
 
 function getExtensionFromMimeType(mimeType: string): string {
   if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') return 'jpg';
@@ -216,13 +226,7 @@ export async function uploadProfilePhoto(
   }
 }
 
-export interface EventPhotoUploadInput {
-  user_id: string;
-  file_data: ArrayBuffer | Uint8Array;
-  mime_type: string;
-  size_bytes: number;
-  file_name?: string;
-}
+export type EventPhotoUploadInput = PhotoUploadInput;
 
 /**
  * Upload a single event photo to Supabase Storage (event-photos bucket).
@@ -272,13 +276,7 @@ export async function uploadEventPhoto(
   }
 }
 
-export interface ListingPhotoUploadInput {
-  user_id: string;
-  file_data: ArrayBuffer | Uint8Array;
-  mime_type: string;
-  size_bytes: number;
-  file_name?: string;
-}
+export type ListingPhotoUploadInput = PhotoUploadInput;
 
 /**
  * Upload a single listing photo to Supabase Storage (listing-photos bucket).
