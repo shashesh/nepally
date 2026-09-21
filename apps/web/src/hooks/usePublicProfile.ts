@@ -32,8 +32,16 @@ export interface PublicProfileState {
 /**
  * Loads a public profile page's data for /users/[id]: the member record, the
  * metro area label, their posts/events/listings, and their helper score.
- * Five independent requests, each tracking its own loading flag; a response
- * arriving after unmount (or after `id` has changed) is dropped.
+ * Five parallel requests plus a follow-up metro lookup; the profile and the
+ * three lists have loading flags.
+ *
+ * The Pages Router keeps this hook mounted across /users/A -> /users/B
+ * (UserMenuTrigger, SearchResultItem, etc. all link straight between
+ * profiles), so a bare `id` effect would leave A's data on screen — and A's
+ * in-flight responses could still land — under B's URL. To prevent that,
+ * every field resets during render when `id` changes (react.dev "Adjusting
+ * some state when a prop changes"), before the effect below fetches the new
+ * member; the effect itself only ever sets state after an `await`.
  */
 export function usePublicProfile(id: string | undefined): PublicProfileState {
   const [profileUser, setProfileUser] = useState<PublicUser | null>(null);
@@ -43,24 +51,39 @@ export function usePublicProfile(id: string | undefined): PublicProfileState {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [helperScore, setHelperScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [postsLoading, setPostsLoading] = useState(false);
-  const [eventsLoading, setEventsLoading] = useState(false);
-  const [listingsLoading, setListingsLoading] = useState(false);
+  const [postsLoading, setPostsLoading] = useState(Boolean(id));
+  const [eventsLoading, setEventsLoading] = useState(Boolean(id));
+  const [listingsLoading, setListingsLoading] = useState(Boolean(id));
   const [error, setError] = useState<string | null>(null);
+
+  const [requestedId, setRequestedId] = useState(id);
+  // A different member: drop the previous one's data during render so none
+  // of it paints under the new URL.
+  if (id !== requestedId) {
+    setRequestedId(id);
+    setProfileUser(null);
+    setMetroName(null);
+    setPosts([]);
+    setEvents([]);
+    setListings([]);
+    setHelperScore(null);
+    setLoading(true);
+    setError(null);
+    setPostsLoading(Boolean(id));
+    setEventsLoading(Boolean(id));
+    setListingsLoading(Boolean(id));
+  }
 
   useEffect(() => {
     if (!id) return;
 
-    let isMounted = true;
+    let cancelled = false;
     const currentId = id;
 
     async function loadProfile(): Promise<void> {
-      setLoading(true);
-      setError(null);
-
       const result = await getUserById(supabase, currentId);
 
-      if (!isMounted) return;
+      if (cancelled) return;
 
       if (result.error || !result.data) {
         setError(
@@ -75,39 +98,36 @@ export function usePublicProfile(id: string | undefined): PublicProfileState {
 
       if (result.data.metro_area_id) {
         const metroResult = await getMetroAreaById(supabase, result.data.metro_area_id);
-        if (isMounted && metroResult.data) {
+        if (!cancelled && metroResult.data) {
           setMetroName(`${metroResult.data.name}, ${metroResult.data.state}`);
         }
       }
     }
 
     async function loadPosts(): Promise<void> {
-      setPostsLoading(true);
       const result = await getPostsByAuthorId(supabase, currentId, POSTS_LIMIT);
-      if (!isMounted) return;
+      if (cancelled) return;
       setPosts(result.data || []);
       setPostsLoading(false);
     }
 
     async function loadEvents(): Promise<void> {
-      setEventsLoading(true);
       const result = await getEventsByOrganizer(supabase, currentId, EVENTS_LIMIT);
-      if (!isMounted) return;
+      if (cancelled) return;
       setEvents(result.data || []);
       setEventsLoading(false);
     }
 
     async function loadListings(): Promise<void> {
-      setListingsLoading(true);
       const result = await getActiveListingsBySeller(supabase, currentId, LISTINGS_LIMIT);
-      if (!isMounted) return;
+      if (cancelled) return;
       setListings(result.data || []);
       setListingsLoading(false);
     }
 
     async function loadHelperScore(): Promise<void> {
       const result = await getHelperScore(supabase, currentId);
-      if (!isMounted) return;
+      if (cancelled) return;
       setHelperScore(result.data?.helperScore ?? 0);
     }
 
@@ -118,7 +138,7 @@ export function usePublicProfile(id: string | undefined): PublicProfileState {
     loadHelperScore();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
   }, [id]);
 

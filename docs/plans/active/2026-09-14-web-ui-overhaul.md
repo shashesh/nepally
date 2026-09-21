@@ -12379,6 +12379,8 @@ export function usePublicProfile(id: string | undefined): PublicProfileState;
 
 This moves users/[id] 62–152 out of the page, calling `getMetroAreaById` instead of the raw query (recon 3). Otherwise nothing changes: the same five requests, the same cancel-on-unmount guard, and the same "We couldn’t find this member. They may have deleted their account." message.
 
+*(Changed in review, 2026-09-21.)* One deliberate departure from a straight move. The Pages Router keeps this page mounted when you go from one member to another, and the old effect never cleared the previous member's state. A member with no metro therefore showed the previous member's location permanently, and the previous profile painted for one frame under the new URL. The hook resets its state during render when `id` changes, following the "adjust state when a prop changes" pattern `useSearchPage` uses.
+
 - [ ] **Step 1: Write the failing test** with `renderHook`. It loads the profile, "Dallas-Fort Worth, TX", the three lists and the helper score. A missing member sets the error message. A member with no `metro_area_id` leaves `metroName` null and never calls `getMetroAreaById`. An `undefined` id requests nothing.
 - [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/usePublicProfile.test.ts`
 - [ ] **Step 3: Implement.**
@@ -12753,6 +12755,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Map Mantine's disabled palette (`--mantine-color-disabled`, `-disabled-color`, `-disabled-border`) onto tokens in `mantine-theme.ts`'s `cssVariablesResolver`; today every disabled Mantine control is a cool grey outside the palette (found in PR 6's Task 6.6 review).
   - [ ] Avatar alt text leaks full surnames: every `Avatar` caller except `PublicProfileHeader` passes `full_name`, so alt reads "Bikal Shrestha's avatar" on pages that otherwise show "Bikal S." Pass the public name (keeping `toneKey={full_name}` for the colour) or `decorative` where a name is already visible (found in PR 6's Task 6.7 review).
   - [ ] The public profile's follower count doesn't move when you follow or unfollow: wire `FollowButton`'s `onChange` into `PublicProfileHeader` so the count adjusts (found in PR 6's Task 6.7 review).
+  - [ ] Public profile list failures look like empty lists: `usePublicProfile` turns a failed posts/events/listings request into `[]`, and any `getUserById` failure reads "They may have deleted their account". Expose per-list errors plus a reload, show `ErrorState` with retry, and separate "not found" from "couldn't load" (found in PR 6's Task 6.8 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
 
 ## After the overhaul — Mantine 9
