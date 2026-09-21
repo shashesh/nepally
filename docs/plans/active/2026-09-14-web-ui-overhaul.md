@@ -12410,7 +12410,7 @@ This moves users/[id] 62–152 out of the page, calling `getMetroAreaById` inste
 
 ### Task 6.10: `PublicProfile.module.css` onto semantic tokens
 
-**Files:** `styles/PublicProfile.module.css`, `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs`.
+**Files:** `styles/PublicProfile.module.css`, `scripts/guard-css-tokens.allowlist.json`, `pages/users/[id].page.tsx` (the `Tabs` `classNames` hook only).
 
 The file has 202 violations (192 legacy tokens, 10 literals), and most of it is deleted rather than converted:
 
@@ -12420,11 +12420,19 @@ The file has 202 violations (192 legacy tokens, 10 literals), and most of it is 
 - `row*` and `listing*` go to the rows
 - the card rules moved to `PublicProfileHeader.module.css` in Task 6.7
 
-The rules left over (`page`, `container`, `content`, `about*`, `notice`) are rewritten on tokens. Expect the file to drop from 786 lines to well under 200.
+The rules left over (`page`, `container`, `content`, `rowList`, `about*`) are rewritten on tokens. Expect the file to drop from 786 lines to well under 200.
+
+*(Added from the Task 6.9 review.)* Three layout fixes belong here, because this task owns the page wrappers:
+
+- **Tabs must not wrap on a phone.** Mantine's `Tabs.List` wraps, and with three count badges the four tabs need about 400px against about 311px at 375px. Pass `classNames={{ list: styles.tabList }}` with `flex-wrap: nowrap; overflow-x: auto`, which matches the old rail's horizontal scroll.
+- **The loading and not-found states need a top gap.** The old notice and skeleton had one.
+- **Space between header and tabs.** Restore `--space-4` between the header card and the tabs (`.content` currently has 8px).
+
+`users/[id].page.tsx` already left `RAW_ELEMENT_ALLOWLIST` in `2c1f849`, so only the CSS allowlist changes here.
 
 - [ ] **Step 1: Delete the dead rules.** Diff the class list against `grep -o "styles\.[a-zA-Z]*" src/pages/users/[id].page.tsx`, and confirm with grep that nothing else imports the stylesheet.
 - [ ] **Step 2: Map the rest** to semantic tokens using the spec §4.1 table.
-- [ ] **Step 3: Remove `apps/web/src/styles/PublicProfile.module.css` from the CSS allowlist and `src/pages/users/[id].page.tsx` from `RAW_ELEMENT_ALLOWLIST`**, in this commit.
+- [ ] **Step 3: Remove `apps/web/src/styles/PublicProfile.module.css` from the CSS allowlist** in this commit, and apply the three layout fixes above.
 - [ ] **Step 4: Run the guards and the suite.** `npm run lint:guards`, `npm run lint --workspace=apps/web` and `npm run test --workspace=apps/web`.
 - [ ] **Step 5: Commit** as `style(web): move the public profile stylesheet onto semantic tokens`.
 
@@ -12756,6 +12764,8 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Avatar alt text leaks full surnames: every `Avatar` caller except `PublicProfileHeader` passes `full_name`, so alt reads "Bikal Shrestha's avatar" on pages that otherwise show "Bikal S." Pass the public name (keeping `toneKey={full_name}` for the colour) or `decorative` where a name is already visible (found in PR 6's Task 6.7 review).
   - [ ] The public profile's follower count doesn't move when you follow or unfollow: wire `FollowButton`'s `onChange` into `PublicProfileHeader` so the count adjusts (found in PR 6's Task 6.7 review).
   - [ ] Public profile list failures look like empty lists: `usePublicProfile` turns a failed posts/events/listings request into `[]`, and any `getUserById` failure reads "They may have deleted their account". Expose per-list errors plus a reload, show `ErrorState` with retry, and separate "not found" from "couldn't load" (found in PR 6's Task 6.8 review).
+  - [ ] `EmptyState` always renders an `h3`, so tab panels jump h1 → h3 and the public profile's "Member not found" page has no h1. Add a `titleOrder` prop (default 3) and use `order={1}` for page-level empty states (found in PR 6's Task 6.9 review).
+  - [ ] The public profile's own-profile empty states offer "Start a post" and "Create an event" to Level 0 members, whom `/posts/create` and `/events/create` redirect away. Gate the actions on trust level 1, or link to verification as the feed's `PostComposer` does (found in PR 6's Task 6.9 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
 
 ## After the overhaul — Mantine 9
