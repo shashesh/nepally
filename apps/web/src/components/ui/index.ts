@@ -17,3 +17,8 @@ export {
   type ImageUploaderProps,
   type UploaderPhoto,
 } from './ImageUploader';
+export {
+  ToggleChipGroup,
+  type ToggleChipGroupProps,
+  type ToggleChipOption,
+} from './ToggleChipGroup';
