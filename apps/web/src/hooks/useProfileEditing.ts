@@ -5,6 +5,7 @@ import {
   BIO_MAX_LENGTH,
   fullNameSchema,
   FULL_NAME_MAX_LENGTH,
+  logClientEvent,
 } from '@nepally/shared';
 import type { User } from '@nepally/shared';
 import { usePrompt, notify } from '../components/ui';
@@ -68,7 +69,12 @@ export function useProfileEditing(
 
       await refreshUser();
       notify.success('Profile updated');
-    } catch {
+    } catch (error) {
+      logClientEvent({
+        event: 'profile_name_update_failed',
+        context: { platform: 'web', userId: user.id },
+        error,
+      });
       notify.error('Failed to update profile');
     } finally {
       setSaving(false);
@@ -102,7 +108,12 @@ export function useProfileEditing(
 
       await refreshUser();
       notify.success(bio ? 'Bio updated' : 'Bio cleared');
-    } catch {
+    } catch (error) {
+      logClientEvent({
+        event: 'profile_bio_update_failed',
+        context: { platform: 'web', userId: user.id },
+        error,
+      });
       notify.error('Failed to update bio');
     } finally {
       setSaving(false);
@@ -124,7 +135,12 @@ export function useProfileEditing(
       }
 
       notify.success('Password reset email sent');
-    } catch {
+    } catch (error) {
+      logClientEvent({
+        event: 'password_reset_request_failed',
+        context: { platform: 'web', userId: user.id },
+        error,
+      });
       notify.error('Failed to send password reset email');
     } finally {
       setSaving(false);

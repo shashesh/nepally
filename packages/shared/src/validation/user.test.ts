@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { bioSchema, bioUpdateSchema, BIO_MAX_LENGTH } from './user';
-import { fullNameSchema, FULL_NAME_MAX_LENGTH } from './user';
 import {
+  bioSchema,
+  bioUpdateSchema,
+  BIO_MAX_LENGTH,
+  fullNameSchema,
+  FULL_NAME_MAX_LENGTH,
   hometownDistrictSchema,
   collegeSchema,
   yearsInUsSchema,
@@ -47,6 +50,20 @@ describe('fullNameSchema', () => {
     const input = 'Sita\u0000\u0007Gurung';
     expect(fullNameSchema.parse(input)).toBe('SitaGurung');
   });
+
+  it('removes a bidi override character (U+202E)', () => {
+    const input = 'Sita‮Gurung';
+    expect(fullNameSchema.parse(input)).toBe('SitaGurung');
+  });
+
+  it('collapses a run of tabs and spaces to a single space', () => {
+    expect(fullNameSchema.parse('Sita\t  Gurung')).toBe('Sita Gurung');
+  });
+
+  it('keeps a zero-width joiner (U+200D)', () => {
+    const input = 'Sita‍Gurung';
+    expect(fullNameSchema.parse(input)).toBe(input);
+  });
 });
 
 describe('bioSchema', () => {
@@ -75,6 +92,11 @@ describe('bioSchema', () => {
   it('preserves newlines and tabs', () => {
     const input = 'line one\nline two\tindented';
     expect(bioSchema.parse(input)).toBe('line one\nline two\tindented');
+  });
+
+  it('keeps line breaks but removes a bidi override character (U+202E)', () => {
+    const input = 'line one‮\nline two';
+    expect(bioSchema.parse(input)).toBe('line one\nline two');
   });
 
   it('accepts emoji', () => {
