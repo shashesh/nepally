@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { MARKETPLACE_CATEGORIES } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
-import { parseMarketplaceQuery } from '../../lib/marketplaceQuery';
+import { parseMarketplaceQuery, SEARCH_SLUG } from '../../lib/marketplaceQuery';
 import { MarketplaceBrowse } from '../../components/marketplace/MarketplaceBrowse';
 import type { FilterBarValue } from '../../components/marketplace/FilterBar';
 
@@ -46,7 +46,7 @@ export default function MarketplaceCategoryPage() {
       router.push(
         {
           pathname: '/marketplace/[category]',
-          query: { ...params, category: query.isSearch ? 'search' : query.category },
+          query: { ...params, category: query.isSearch ? SEARCH_SLUG : query.category },
         },
         undefined,
         { shallow: true }

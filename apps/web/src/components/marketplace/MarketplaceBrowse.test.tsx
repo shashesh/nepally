@@ -163,6 +163,26 @@ describe('MarketplaceBrowse', () => {
     expect(screen.queryByRole('region', { name: /Trending/ })).toBeNull();
   });
 
+  it('names the sponsored strip and shows what it was given', () => {
+    mocks.useMarketplaceFeed.mockReturnValue(
+      feed({ sponsored: [listing('s1', 'Boosted Kitchen')] })
+    );
+    renderBrowse();
+
+    const strip = screen.getByRole('region', { name: /Sponsored/ });
+    expect(strip).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Boosted Kitchen' })).toBeDefined();
+  });
+
+  it('hides the sponsored strip once the view is narrowed', () => {
+    mocks.useMarketplaceFeed.mockReturnValue(
+      feed({ sponsored: [listing('s1', 'Boosted Kitchen')] })
+    );
+    renderBrowse({ query: parseMarketplaceQuery({ q: 'momo' }) });
+
+    expect(screen.queryByRole('region', { name: /Sponsored/ })).toBeNull();
+  });
+
   it('puts the listings in a list', () => {
     mocks.useMarketplaceFeed.mockReturnValue(feed({ grid: [listing('g1'), listing('g2')] }));
     renderBrowse();

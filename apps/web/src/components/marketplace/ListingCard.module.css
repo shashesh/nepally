@@ -62,8 +62,8 @@
 
 .title {
   margin: 0;
-  font-size: var(--text-md);
-  font-weight: var(--weight-semibold);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--leading-snug);
 }
 
@@ -86,7 +86,7 @@
 .price {
   margin: 0;
   color: var(--text-2);
-  font-size: var(--text-sm);
+  font-size: var(--font-size-sm);
 }
 
 .meta {
@@ -96,7 +96,7 @@
   gap: var(--space-1);
   margin-top: auto;
   color: var(--text-3);
-  font-size: var(--text-xs);
+  font-size: var(--font-size-xs);
 }
 
 .metaDot {
@@ -113,9 +113,9 @@
 .categoryChip {
   align-self: flex-start;
   padding: 2px var(--space-2);
-  border-radius: var(--radius-pill);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
 }
 
 .card[data-category='food-restaurants'] .categoryChip {

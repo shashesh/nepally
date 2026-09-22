@@ -84,14 +84,6 @@ vi.mock('@nepally/shared', async (importOriginal) => ({
   ],
 }));
 
-vi.mock('../../components/marketplace/ListingStrip', () => ({
-  ListingStrip: ({ title, listings }: { title: string; listings: { id: string }[] }) =>
-    React.createElement(
-      'div',
-      { 'data-testid': `strip-${title.toLowerCase()}` },
-      `strip:${title}:${listings.length}`
-    ),
-}));
 
 import MarketplaceCategoryPage from './[category].page';
 
@@ -231,7 +223,7 @@ describe('MarketplaceCategoryPage', () => {
     mocks.getFeaturedListings.mockResolvedValue({ data: [MOCK_LISTING] });
     render(React.createElement(MarketplaceCategoryPage));
     await waitFor(() => {
-      expect(screen.getByText('strip:Featured:1')).toBeDefined();
+      expect(screen.getByRole('region', { name: /Featured/ })).toBeDefined();
     });
     expect(mocks.getFeaturedListings).toHaveBeenCalledWith(
       expect.anything(),
@@ -248,7 +240,7 @@ describe('MarketplaceCategoryPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /Search: momo/ })).toBeDefined();
     });
-    expect(screen.queryByText(/strip:Featured/)).toBeNull();
+    expect(screen.queryByRole('region', { name: /Featured/ })).toBeNull();
     expect(mocks.getFeaturedListings).not.toHaveBeenCalled();
   });
 
@@ -260,7 +252,7 @@ describe('MarketplaceCategoryPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
     });
-    expect(screen.queryByText(/strip:Featured/)).toBeNull();
+    expect(screen.queryByRole('region', { name: /Featured/ })).toBeNull();
   });
 
   it('shows skeletons until the listings have loaded', async () => {

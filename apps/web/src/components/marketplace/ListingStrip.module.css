@@ -16,16 +16,16 @@
 
 .title {
   margin: 0;
-  font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
   color: var(--text-1);
 }
 
 .viewAllLink {
   flex-shrink: 0;
   color: var(--accent-ink);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   text-decoration: none;
 }
 
@@ -102,10 +102,10 @@
 
 .showAllArrow {
   font-size: 36px;
-  font-weight: var(--weight-bold);
+  font-weight: var(--font-weight-bold);
 }
 
 .showAllText {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
