@@ -145,6 +145,36 @@ describe('PromoteSuccessPage', () => {
     expect(mockGetPromotionById.mock.calls.length).toBeGreaterThan(callsBeforeRetry);
   });
 
+  it('drops the previous promotion when promotion_id changes', async () => {
+    mockGetPromotionById.mockResolvedValue({
+      data: { ...MOCK_PROMOTION, status: 'active' },
+    });
+
+    const { rerender } = render(React.createElement(PromoteSuccessPage));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('link', { name: /view listing/i }).getAttribute('href')
+      ).toBe('/marketplace/listing/listing-1');
+    });
+
+    // A second promotion is opened on the same mounted page. Nothing from the
+    // first one may survive: its link points at the wrong listing.
+    mocks.useRouter.mockReturnValue({
+      replace: mockReplace,
+      query: { promotion_id: 'promo-2' },
+      isReady: true,
+      asPath: '/marketplace/listing/promote/success?promotion_id=promo-2',
+    });
+    mockGetPromotionById.mockResolvedValue({ data: null });
+
+    await act(async () => {
+      rerender(React.createElement(PromoteSuccessPage));
+    });
+
+    expect(screen.queryByRole('link', { name: /view listing/i })).toBeNull();
+    expect(screen.getByRole('heading', { name: /processing payment/i })).toBeDefined();
+  });
+
   it('redirects to login when signed out', async () => {
     mocks.useAuth.mockReturnValue({ user: null });
 

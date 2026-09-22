@@ -14,7 +14,34 @@ const MAX_POLL_ATTEMPTS = 15;
 export default function PromoteSuccessPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { promotion_id: promotionId } = router.query;
+  const promotionId =
+    typeof router.query.promotion_id === 'string' ? router.query.promotion_id : undefined;
+
+  useEffect(() => {
+    if (!user) {
+      router.replace('/login');
+    }
+  }, [user, router]);
+
+  if (!user) return null;
+  // The Pages Router keeps this page mounted from one promotion to the next,
+  // so key the view by id. Without it a stale "View Listing" link would send
+  // the member to the previous promotion's listing.
+  return (
+    <PromoteSuccessView
+      key={promotionId ?? ''}
+      promotionId={promotionId}
+      ready={router.isReady}
+    />
+  );
+}
+
+interface PromoteSuccessViewProps {
+  promotionId: string | undefined;
+  ready: boolean;
+}
+
+function PromoteSuccessView({ promotionId, ready }: PromoteSuccessViewProps) {
   const mountedRef = useRef(true);
 
   const [promotion, setPromotion] = useState<ListingPromotion | null>(null);
@@ -39,13 +66,7 @@ export default function PromoteSuccessPage() {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      router.replace('/login');
-    }
-  }, [user, router]);
-
-  useEffect(() => {
-    if (!router.isReady || !promotionId || typeof promotionId !== 'string') return;
+    if (!ready || !promotionId) return;
 
     let cancelled = false;
     let attempts = 0;
@@ -81,9 +102,7 @@ export default function PromoteSuccessPage() {
     return () => {
       cancelled = true;
     };
-  }, [router.isReady, promotionId, router, attempt]);
-
-  if (!user) return null;
+  }, [ready, promotionId, attempt]);
 
   return (
     <>
@@ -92,9 +111,7 @@ export default function PromoteSuccessPage() {
       </Head>
       <div className={styles.container}>
         <div className={styles.confirmationContent}>
-          <div className={styles.successIcon}>
-            {active ? '✅' : timedOut ? '⏳' : '⏳'}
-          </div>
+          <div className={styles.successIcon}>{active ? '✅' : '⏳'}</div>
           <h1 className={styles.confirmationHeading}>
             {active
               ? 'Boost Active!'
