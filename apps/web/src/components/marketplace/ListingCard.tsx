@@ -2,23 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Badge } from '@mantine/core';
-import {
-  MARKETPLACE_CATEGORIES,
-  isVerifiedSeller,
-  type MarketplaceListing,
-} from '@nepally/shared';
+import { isVerifiedSeller, type MarketplaceListing } from '@nepally/shared';
+import { themeSlug } from './categoryTheme';
 import styles from './ListingCard.module.css';
-
-/** The categories that still exist, and so have `--category-<slug>` tokens. */
-const THEMED_SLUGS = new Set(MARKETPLACE_CATEGORIES.map((category) => category.slug));
-
-/**
- * Migration 016 consolidated twelve categories into five, but listings created
- * before it can still carry a retired slug. Anything unthemed reads as `other`.
- */
-function themeSlug(slug: string | undefined): string {
-  return slug && THEMED_SLUGS.has(slug) ? slug : 'other';
-}
 
 interface ListingCardProps {
   listing: MarketplaceListing;

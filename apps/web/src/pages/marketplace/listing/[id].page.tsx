@@ -1,145 +1,107 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Button } from '@mantine/core';
+import React, { useCallback, useEffect } from 'react';
+import { Anchor, Badge, Breadcrumbs } from '@mantine/core';
+import { IconBuildingStore } from '@tabler/icons-react';
 import Head from 'next/head';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../hooks/useAuth';
 import { useNow } from '../../../hooks/useNow';
+import { useListingDetail } from '../../../hooks/useListingDetail';
 import { supabase } from '../../../lib/supabase';
 import {
-  getListingById,
-  saveListing,
-  unsaveListing,
-  getUserSavedListingIds,
-  incrementListingViews,
   incrementListingContacts,
   getListingHighlights,
   getDaysSinceRefresh,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
-  BUSINESS_HOURS_DAYS,
-  type MarketplaceListing,
+  type User,
 } from '@nepally/shared';
-import styles from '../marketplace.module.css';
-
-const CATEGORY_THEME_CLASS_BY_SLUG: Record<string, string> = {
-  'food-restaurants': styles.categoryThemeFoodRestaurants,
-  'grocery-specialty': styles.categoryThemeGrocerySpecialty,
-  'professional-services': styles.categoryThemeProfessionalServices,
-  'immigration-legal': styles.categoryThemeImmigrationLegal,
-  'remittance-finance': styles.categoryThemeRemittanceFinance,
-  'health-wellness': styles.categoryThemeHealthWellness,
-  'education-tutoring': styles.categoryThemeEducationTutoring,
-  transportation: styles.categoryThemeTransportation,
-  'home-services': styles.categoryThemeHomeServices,
-  'beauty-wellness': styles.categoryThemeBeautyWellness,
-  'cultural-services': styles.categoryThemeCulturalServices,
-  other: styles.categoryThemeOther,
-};
+import Avatar from '../../../components/Avatar';
+import { EmptyState, ErrorState, LoadingState, PhotoCarousel } from '../../../components/ui';
+import { themeSlug } from '../../../components/marketplace/categoryTheme';
+import { ListingActionsPanel } from '../../../components/marketplace/ListingActionsPanel';
+import { ListingBusinessDetails } from '../../../components/marketplace/ListingBusinessDetails';
+import styles from './listingDetail.module.css';
 
 export default function ListingDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { id: listingId } = router.query;
-
-  const [listing, setListing] = useState<MarketplaceListing | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isSaved, setIsSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [photoIndex, setPhotoIndex] = useState(0);
-  const now = useNow();
+  const id = typeof router.query.id === 'string' ? router.query.id : undefined;
 
   useEffect(() => {
-    if (!user) {
-      router.replace('/login');
-    }
+    if (!user) router.replace('/login');
   }, [user, router]);
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!router.isReady || !listingId || typeof listingId !== 'string') return;
+  if (!user) return null;
+  // The Pages Router keeps this page mounted from one listing to the next, so
+  // key the view by id: the photo on screen starts from the first one again.
+  return <ListingDetailView key={id ?? ''} id={id} viewer={user} />;
+}
 
-      const listingResult = await getListingById(supabase, listingId);
-      if (listingResult.data) {
-        setListing(listingResult.data);
-        incrementListingViews(supabase, listingId);
-      }
+interface ListingDetailViewProps {
+  id: string | undefined;
+  viewer: Pick<User, 'id'>;
+}
 
-      if (user) {
-        const savedResult = await getUserSavedListingIds(supabase, user.id);
-        if (savedResult.data) {
-          setIsSaved(savedResult.data.includes(listingId));
-        }
-      }
-
-      setLoading(false);
-    }
-    fetchData();
-  }, [listingId, user, router.isReady]);
-
-  const handleSave = useCallback(async () => {
-    if (typeof listingId !== 'string') return;
-    setSaving(true);
-    if (isSaved) {
-      const result = await unsaveListing(supabase, listingId);
-      if (!result.error) setIsSaved(false);
-    } else {
-      const result = await saveListing(supabase, listingId);
-      if (!result.error) setIsSaved(true);
-    }
-    setSaving(false);
-  }, [isSaved, listingId]);
+function ListingDetailView({ id, viewer }: ListingDetailViewProps) {
+  const router = useRouter();
+  const now = useNow();
+  const detail = useListingDetail(id, viewer);
+  const { listing } = detail;
 
   const handleContact = useCallback(async () => {
-    if (!listing?.owner || typeof listingId !== 'string') return;
-    await incrementListingContacts(supabase, listingId);
+    if (!listing?.owner || !id) return;
+    await incrementListingContacts(supabase, id);
     router.push(`/messages?to=${listing.owner.id}`);
-  }, [listing, listingId, router]);
+  }, [listing, id, router]);
 
-  if (!user) return null;
-
-  if (loading) {
+  if (detail.loading) {
     return (
-      <div className={styles.detailContainerWide}>
-        <p>Loading...</p>
+      <div className={styles.container}>
+        <LoadingState variant="detail" label="Loading listing…" />
       </div>
     );
   }
 
-  if (!listing) {
+  if (detail.error) {
     return (
-      <div className={styles.detailContainerWide}>
-        <Link href="/marketplace" className={styles.backLink}>← Back to Marketplace</Link>
-        <p>Listing not found.</p>
+      <div className={styles.container}>
+        <ErrorState
+          title="Couldn't load this listing"
+          message={detail.error}
+          onRetry={detail.reload}
+        />
       </div>
     );
   }
 
-  const isOwner = user.id === listing.owner_id;
+  if (detail.notFound || !listing) {
+    return (
+      <div className={styles.container}>
+        <EmptyState
+          icon={<IconBuildingStore size={40} />}
+          title="Listing not found"
+          description="It may have been removed by its owner."
+          action={<Anchor component={Link} href="/marketplace">Back to Marketplace</Anchor>}
+        />
+      </div>
+    );
+  }
+
+  const isOwner = viewer.id === listing.owner_id;
   const daysAgo = getDaysSinceRefresh(listing.refreshed_at, now);
-  const categoryThemeClass =
-    CATEGORY_THEME_CLASS_BY_SLUG[listing.category?.slug ?? ''] ?? styles.categoryThemeOther;
   const highlights = getListingHighlights(listing, now);
+  const slug = themeSlug(listing.category?.slug);
 
-  const sidebarContent = !isOwner ? (
-    <>
-      {listing.price && <div className={styles.sidebarPrice}>{listing.price}</div>}
-      <Button onClick={handleContact}>Contact Seller</Button>
-      <Button variant={isSaved ? 'filled' : 'outline'} onClick={handleSave} loading={saving}>
-        {isSaved ? '✓ Saved' : 'Save listing'}
-      </Button>
-    </>
-  ) : (
-    <>
-      {listing.price && <div className={styles.sidebarPrice}>{listing.price}</div>}
-      <Link href={`/marketplace/create?edit=${listing.id}`}>
-        <Button variant="outline">Edit Listing</Button>
-      </Link>
-      <Link href={`/marketplace/listing/promote/${listing.id}`}>
-        <Button>Promote</Button>
-      </Link>
-    </>
+  const actions = (
+    <ListingActionsPanel
+      listing={listing}
+      isOwner={isOwner}
+      isSaved={detail.isSaved}
+      saving={detail.saving}
+      onContact={handleContact}
+      onToggleSave={detail.toggleSave}
+    />
   );
 
   return (
@@ -147,181 +109,105 @@ export default function ListingDetailPage() {
       <Head>
         <title>{listing.title} - Marketplace - Nepally</title>
       </Head>
-      <div className={`${styles.detailContainerWide} ${categoryThemeClass}`}>
-        <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-          <Link href="/marketplace">Marketplace</Link>
+      <div className={styles.container} data-category={slug}>
+        <Breadcrumbs className={styles.breadcrumbs} separator="›">
+          <Anchor component={Link} href="/marketplace" className={styles.crumb}>
+            Marketplace
+          </Anchor>
           {listing.category && (
-            <>
-              <span className={styles.breadcrumbSep}>›</span>
-              <Link href={`/marketplace/${listing.category.slug}`}>{listing.category.name}</Link>
-            </>
+            <Anchor component={Link} href={`/marketplace/${listing.category.slug}`} className={styles.crumb}>
+              {listing.category.name}
+            </Anchor>
           )}
-          <span className={styles.breadcrumbSep}>›</span>
-          <span className={styles.breadcrumbCurrent}>{listing.title}</span>
-        </nav>
+          <span className={styles.crumbCurrent}>{listing.title}</span>
+        </Breadcrumbs>
 
-        <div className={styles.twoColumnGrid}>
-          <div className={styles.mainColumn}>
+        <div className={styles.layout}>
+          <div className={styles.main}>
             {listing.photos.length > 0 && (
-              <div className={styles.photoGallery}>
-                <Image
-                  src={listing.photos[photoIndex]}
-                  alt={`${listing.title} photo ${photoIndex + 1}`}
-                  className={styles.mainPhoto}
-                  fill
-                  sizes="(max-width: 960px) 100vw, 720px"
-                  priority
-                />
-                {listing.photos.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      className={styles.galleryPrev}
-                      onClick={() =>
-                        setPhotoIndex((i) => (i - 1 + listing.photos.length) % listing.photos.length)
-                      }
-                      aria-label="Previous photo"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.galleryNext}
-                      onClick={() => setPhotoIndex((i) => (i + 1) % listing.photos.length)}
-                      aria-label="Next photo"
-                    >
-                      ›
-                    </button>
-                    <div className={styles.galleryIndicator}>
-                      {photoIndex + 1} / {listing.photos.length}
-                    </div>
-                  </>
-                )}
-              </div>
+              <PhotoCarousel photos={listing.photos} alt={listing.title} />
             )}
 
-            <div className={styles.detailSection}>
-              <h1 className={styles.detailTitle}>{listing.title}</h1>
+            <section className={styles.section}>
+              <h1 className={styles.title}>{listing.title}</h1>
 
-              <div className={styles.listingMeta}>
-                <span className={styles.badge}>
-                  {listing.category?.emoji} {listing.category?.name}
-                </span>
-                <span className={styles.badgeType}>
+              <div className={styles.badges}>
+                {listing.category && (
+                  <Badge variant="default" size="sm" radius="xl" className={styles.categoryBadge}>
+                    <span aria-hidden="true">{listing.category.emoji}</span>{' '}
+                    {listing.category.name}
+                  </Badge>
+                )}
+                <Badge variant="default" size="sm" radius="xl">
                   {LISTING_TYPE_LABELS[listing.listing_type]}
-                </span>
+                </Badge>
                 {listing.item_condition && (
-                  <span className={styles.badgeType}>
+                  <Badge variant="default" size="sm" radius="xl">
                     {ITEM_CONDITION_LABELS[listing.item_condition]}
-                  </span>
+                  </Badge>
                 )}
               </div>
 
               {highlights.length > 0 && (
-                <div className={styles.highlightsStrip}>
+                <ul className={styles.highlights}>
                   {highlights.map((chip) => (
-                    <span
+                    <li
                       key={chip.key}
-                      className={`${styles.highlightChip} ${
-                        chip.key === 'open_now' ? styles.highlightChipOpen : ''
-                      }`}
+                      className={styles.highlight}
+                      data-open={chip.key === 'open_now' ? '' : undefined}
                     >
                       <span aria-hidden="true">{chip.icon}</span>
                       {chip.value}
-                    </span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
 
-              <div className={styles.inlinePriceCard}>
-                {sidebarContent}
-              </div>
+              <div className={styles.inlineActions}>{actions}</div>
 
-              <p className={styles.detailDescription}>{listing.description}</p>
-            </div>
+              <p className={styles.description}>{listing.description}</p>
+            </section>
 
             {listing.listing_type === 'business' && (
-              <div className={styles.detailSection}>
-                <h3 className={styles.sectionTitle}>Business Details</h3>
-                {listing.business_name && (
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Business:</span>
-                    <span className={styles.detailValue}>{listing.business_name}</span>
-                  </div>
-                )}
-                {listing.address && (
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Address:</span>
-                    <span className={styles.detailValue}>{listing.address}</span>
-                  </div>
-                )}
-                {listing.phone && (
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Phone:</span>
-                    <span className={styles.detailValue}>{listing.phone}</span>
-                  </div>
-                )}
-                {listing.email && (
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Email:</span>
-                    <span className={styles.detailValue}>{listing.email}</span>
-                  </div>
-                )}
-                {listing.website_url && (
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Website:</span>
-                    <span className={styles.detailValue}>{listing.website_url}</span>
-                  </div>
-                )}
-                {listing.business_hours && (
-                  <>
-                    <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Hours:</span>
-                    </div>
-                    {BUSINESS_HOURS_DAYS.map((day) => {
-                      const hours = listing.business_hours?.[day];
-                      if (!hours) return null;
-                      return (
-                        <div key={day} className={styles.businessHourRow}>
-                          <span className={styles.detailLabel}>
-                            {day.charAt(0).toUpperCase() + day.slice(1)}
-                          </span>
-                          <span className={styles.detailValue}>
-                            {hours.open} - {hours.close}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
+              <section className={styles.section} aria-labelledby="listing-business">
+                <h2 id="listing-business" className={styles.sectionTitle}>
+                  Business Details
+                </h2>
+                <ListingBusinessDetails listing={listing} />
+              </section>
             )}
 
             {listing.owner && (
-              <div className={styles.detailSection}>
-                <h3 className={styles.sectionTitle}>Posted by</h3>
-                <div className={styles.ownerRow}>
-                  <div className={styles.ownerAvatar}>
-                    {listing.owner.full_name.charAt(0).toUpperCase()}
-                  </div>
+              <section className={styles.section} aria-labelledby="listing-owner">
+                <h2 id="listing-owner" className={styles.sectionTitle}>
+                  Posted by
+                </h2>
+                <div className={styles.owner}>
+                  <Avatar
+                    name={listing.owner.full_name}
+                    photoUrl={listing.owner.profile_photo}
+                    trustLevel={listing.owner.trust_level}
+                    size="medium"
+                    decorative
+                  />
                   <div>
-                    <div className={styles.ownerName}>{listing.owner.full_name}</div>
-                    <div className={styles.ownerMeta}>
+                    <p className={styles.ownerName}>{listing.owner.full_name}</p>
+                    <p className={styles.ownerMeta}>
                       {daysAgo === 0 ? 'Refreshed today' : `Refreshed ${daysAgo}d ago`}
-                    </div>
+                    </p>
                   </div>
                 </div>
-              </div>
+              </section>
             )}
 
-            <div className={styles.listingStats}>
+            <p className={styles.stats}>
               <span>{listing.views_count} views</span>
               <span>{listing.saves_count} saves</span>
-            </div>
+            </p>
           </div>
 
           <aside className={styles.sidebar} aria-label="Listing actions">
-            {sidebarContent}
+            {actions}
           </aside>
         </div>
       </div>

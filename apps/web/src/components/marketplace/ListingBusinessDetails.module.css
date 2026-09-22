@@ -1,0 +1,46 @@
+/* ListingBusinessDetails — a definition list, where the page previously used
+   div/span rows that carried no label relationship. */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.label {
+  flex: 0 0 96px;
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.value {
+  margin: 0;
+  min-width: 0;
+  color: var(--text-1);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.hours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hourRow {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  max-width: 260px;
+}

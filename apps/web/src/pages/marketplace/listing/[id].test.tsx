@@ -25,14 +25,7 @@ vi.mock('next/link', () => ({
 vi.mock('next/image', () => ({
   default: ({ src, alt }: MockImageProps) => React.createElement('img', { src, alt }),
 }));
-vi.mock('@mantine/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    Button: ({ children, onClick, variant, loading }: MockButtonProps) =>
-      React.createElement('button', { onClick, disabled: loading }, children),
-  };
-});
+// Real Mantine: the page's buttons are exercised as rendered.
 vi.mock('../../../lib/supabase', () => ({ supabase: {} }));
 
 const MOCK_CATEGORY = {
@@ -77,6 +70,7 @@ const MOCK_LISTING = {
 vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
   return {
+    ...actual,
     getListingById: vi.fn(async () => ({ data: null })),
     saveListing: vi.fn(async () => ({ error: null })),
     unsaveListing: vi.fn(async () => ({ error: null })),
@@ -182,13 +176,28 @@ describe('ListingDetailPage', () => {
     });
   });
 
-  it('shows "Listing not found" when listing is null', async () => {
+  it('says a missing listing is not found, and offers a way back', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingById.mockResolvedValue({ data: null });
+    mockGetListingById.mockResolvedValue({ error: new Error('Listing not found'), notFound: true });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('Listing not found.')).toBeDefined();
+      expect(screen.getByText('Listing not found')).toBeDefined();
     });
+    expect(
+      screen.getByRole('link', { name: 'Back to Marketplace' }).getAttribute('href')
+    ).toBe('/marketplace');
+  });
+
+  // recon 6: a failed read used to render as "Listing not found."
+  it('shows a failed read as an error with a retry, not as not-found', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mockGetListingById.mockResolvedValue({ error: new Error('network down') });
+    render(React.createElement(ListingDetailPage));
+    await waitFor(() => {
+      expect(screen.getByText('network down')).toBeDefined();
+    });
+    expect(screen.queryByText('Listing not found')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
   });
 
   it('shows Contact and Save buttons when not owner', async () => {
@@ -212,19 +221,56 @@ describe('ListingDetailPage', () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('Hours:')).toBeDefined();
+      expect(screen.getByText('Hours')).toBeDefined();
       expect(screen.getByText('Monday')).toBeDefined();
       expect(screen.getByText('9:00 - 17:00')).toBeDefined();
     });
   });
 
-  it('renders breadcrumb with category name', async () => {
+  it('renders breadcrumb links to the marketplace and the category', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('Marketplace')).toBeDefined();
-      expect(screen.getByText('Food & Restaurants')).toBeDefined();
+      expect(
+        screen.getByRole('link', { name: 'Marketplace' }).getAttribute('href')
+      ).toBe('/marketplace');
     });
+    expect(
+      screen.getByRole('link', { name: 'Food & Restaurants' }).getAttribute('href')
+    ).toBe('/marketplace/food-restaurants');
+  });
+
+  it('descends from h1 to h2 with no skipped level', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(ListingDetailPage));
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toBeDefined());
+
+    const levels = screen
+      .getAllByRole('heading')
+      .map((h) => Number(h.tagName.slice(1)))
+      .filter((n) => Number.isFinite(n));
+    expect(levels[0]).toBe(1);
+    expect(levels.every((n) => n <= 2)).toBe(true);
+  });
+
+  it('never nests a button inside a link', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    const { container } = render(React.createElement(ListingDetailPage));
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toBeDefined());
+
+    expect(container.querySelector('a button')).toBeNull();
+    expect(container.querySelector('button a')).toBeNull();
+  });
+
+  it('announces which photo is on screen', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, photos: ['a.jpg', 'b.jpg', 'c.jpg'] },
+    });
+    render(React.createElement(ListingDetailPage));
+
+    await waitFor(() => expect(screen.getByText(/Photo 1 of 3/i)).toBeDefined());
+    expect(screen.getByRole('button', { name: /next photo/i })).toBeDefined();
   });
 
   it('renders highlights strip with phone chip for business listing', async () => {
