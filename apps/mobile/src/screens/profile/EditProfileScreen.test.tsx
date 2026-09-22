@@ -140,26 +140,29 @@ describe('EditProfileScreen', () => {
   it('clears profile_photo with null when the photo is removed', async () => {
     // undefined would be dropped from the JSON body and leave the old URL in place.
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
-    mockUseAuth.mockReturnValue({
-      user: { ...baseUser, profile_photo: 'https://example.com/avatars/user-1.jpg' },
-      refreshUser: mockRefreshUser,
-    });
+    try {
+      mockUseAuth.mockReturnValue({
+        user: { ...baseUser, profile_photo: 'https://example.com/avatars/user-1.jpg' },
+        refreshUser: mockRefreshUser,
+      });
 
-    const { getByText } = render(<EditProfileScreen />);
-    fireEvent.press(getByText('Change Photo'));
+      const { getByText } = render(<EditProfileScreen />);
+      fireEvent.press(getByText('Change Photo'));
 
-    const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2] as AlertButton[];
-    const removeButton = buttons.find((button) => button.text === 'Remove Photo');
-    expect(removeButton).toBeDefined();
-    await act(async () => {
-      await removeButton?.onPress?.();
-    });
+      const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2] as AlertButton[];
+      const removeButton = buttons.find((button) => button.text === 'Remove Photo');
+      expect(removeButton).toBeDefined();
+      await act(async () => {
+        await removeButton?.onPress?.();
+      });
 
-    expect(mockedDeleteProfilePhoto).toHaveBeenCalledWith(expect.anything(), 'user-1');
-    expect(mockedUpdateUserProfile).toHaveBeenCalledWith(expect.anything(), 'user-1', {
-      profile_photo: null,
-    });
-    alertSpy.mockRestore();
+      expect(mockedDeleteProfilePhoto).toHaveBeenCalledWith(expect.anything(), 'user-1');
+      expect(mockedUpdateUserProfile).toHaveBeenCalledWith(expect.anything(), 'user-1', {
+        profile_photo: null,
+      });
+    } finally {
+      alertSpy.mockRestore();
+    }
   });
 
   it('renders the About You section with the initial values', () => {

@@ -9,9 +9,15 @@
  *   2. A upserts the same avatar again and succeeds (SELECT + UPDATE).
  *   3. A uploads a post photo with upsert: false and succeeds (INSERT only).
  *   4. B's remove() of A's files deletes nothing: it returns [] and the service
- *      role still finds both objects.
- *   5. Nobody else can enumerate: anon list() of every bucket returns [], and B
- *      cannot list A's post-photos folder. A can list it (the positive control).
+ *      role still finds both objects. B's writes into A's files are rejected
+ *      outright too: an upload into A's post-photos folder and an avatar
+ *      upsert over A's avatar both error, and A's avatar is unchanged.
+ *   5. Nobody else can enumerate: anon list() of every bucket returns [], and
+ *      B's root listing of every bucket is also empty — the avatars SELECT
+ *      predicate (`name = uid || '.jpg'`) differs from post-photos' folder
+ *      predicate, so this is checked per bucket, not just post-photos. B
+ *      specifically cannot list A's post-photos folder either. A can list it
+ *      (the positive control).
  *   6. A's remove() of its own files returns one item each, and the service
  *      role confirms both are gone.
  *
@@ -131,7 +137,34 @@ async function expectUpload(
     contentType: 'image/jpeg',
     upsert,
   });
-  assertCondition(!error, `${label}: upload to ${file.bucket}/${file.path} should succeed: ${error?.message}`);
+  assertCondition(
+    !error,
+    `${label}: upload to ${file.bucket}/${file.path} should succeed: ${error?.message}`
+  );
+}
+
+/**
+ * Asserts a write is rejected by RLS. If it unexpectedly succeeds, the caller's
+ * `createdFiles` list gets the path immediately, so cleanup still removes it.
+ */
+async function expectUploadRejected(
+  client: SupabaseClient,
+  file: StoredFile,
+  upsert: boolean,
+  label: string,
+  createdFiles: StoredFile[]
+): Promise<void> {
+  const { error } = await client.storage.from(file.bucket).upload(file.path, FAKE_JPEG, {
+    contentType: 'image/jpeg',
+    upsert,
+  });
+  if (!error) {
+    createdFiles.push(file);
+  }
+  assertCondition(
+    !!error,
+    `${label}: upload to ${file.bucket}/${file.path} should be rejected by RLS, but it succeeded`
+  );
 }
 
 async function expectListEmpty(
@@ -182,7 +215,10 @@ async function main(): Promise<void> {
     // 4. B cannot delete A's files; remove() reports nothing deleted.
     for (const file of [avatar, postPhoto]) {
       const { data, error } = await otherClient.storage.from(file.bucket).remove([file.path]);
-      assertCondition(!error, `other member remove of ${file.bucket}/${file.path} errored: ${error?.message}`);
+      assertCondition(
+        !error,
+        `other member remove of ${file.bucket}/${file.path} errored: ${error?.message}`
+      );
       assertCondition(
         (data ?? []).length === 0,
         `other member must not delete ${file.bucket}/${file.path}, but remove() returned ${(data ?? []).length} items`
@@ -193,9 +229,41 @@ async function main(): Promise<void> {
       );
     }
 
-    // 5. No enumeration: anon sees no objects anywhere; B cannot list A's folder.
+    // 4b. B cannot write into A's files either. A's failed remove() above is
+    // blocked by the DELETE policy regardless of what SELECT allows, so on its
+    // own it would not reveal an over-broad avatars SELECT predicate; these
+    // upload attempts need SELECT for their INSERT/UPDATE ... RETURNING checks,
+    // so a rejection here is a direct check on B's SELECT scope too.
+    const otherPostPhoto: StoredFile = {
+      bucket: 'post-photos',
+      path: `${owner.id}/storage-smoke-other-${randomToken(6)}.jpg`,
+    };
+    await expectUploadRejected(
+      otherClient,
+      otherPostPhoto,
+      false,
+      'other member post photo upload into owner folder',
+      createdFiles
+    );
+    await expectUploadRejected(
+      otherClient,
+      avatar,
+      true,
+      'other member avatar upsert over owner avatar',
+      createdFiles
+    );
+    assertCondition(
+      await objectExists(service, avatar),
+      "owner's avatar must survive another member's upsert attempt"
+    );
+
+    // 5. No enumeration: anon sees no objects anywhere. B's root listing of every
+    // bucket is also empty — the avatars SELECT predicate differs from
+    // post-photos, so this is checked per bucket rather than relying on the
+    // post-photos folder check alone. B cannot list A's post-photos folder either.
     for (const bucket of BUCKETS) {
       await expectListEmpty(anon, bucket, '', 'anon');
+      await expectListEmpty(otherClient, bucket, '', 'other member');
     }
     await expectListEmpty(anon, 'post-photos', owner.id, 'anon');
     await expectListEmpty(otherClient, 'post-photos', owner.id, 'other member');
@@ -212,7 +280,10 @@ async function main(): Promise<void> {
     // 6. A deletes its own files; the storage API really removes them.
     for (const file of [avatar, postPhoto]) {
       const { data, error } = await ownerClient.storage.from(file.bucket).remove([file.path]);
-      assertCondition(!error, `owner remove of ${file.bucket}/${file.path} errored: ${error?.message}`);
+      assertCondition(
+        !error,
+        `owner remove of ${file.bucket}/${file.path} errored: ${error?.message}`
+      );
       assertCondition(
         (data ?? []).length === 1,
         `owner remove of ${file.bucket}/${file.path} should delete 1 object, deleted ${(data ?? []).length}`
@@ -225,12 +296,39 @@ async function main(): Promise<void> {
 
     console.log('PASS: storage RLS smoke test verified owner-only access to storage objects.');
   } finally {
-    // Service-role remove() bypasses RLS; files already deleted are simply skipped.
+    // Service-role remove() bypasses RLS; files already deleted are simply skipped
+    // (no error, empty data). Best-effort: every item is still attempted, even
+    // after an earlier one fails.
+    const leftoverFiles: StoredFile[] = [];
     for (const file of createdFiles) {
-      await service.storage.from(file.bucket).remove([file.path]);
+      const { error } = await service.storage.from(file.bucket).remove([file.path]);
+      if (error) {
+        leftoverFiles.push(file);
+      }
     }
+
+    const leftoverUserIds: string[] = [];
     for (const userId of createdUsers) {
-      await service.auth.admin.deleteUser(userId);
+      const { error } = await service.auth.admin.deleteUser(userId);
+      if (error) {
+        leftoverUserIds.push(userId);
+      }
+    }
+
+    if (leftoverFiles.length > 0) {
+      console.error(
+        `Cleanup failed to remove ${leftoverFiles.length} file(s): ${leftoverFiles
+          .map((file) => `${file.bucket}/${file.path}`)
+          .join(', ')}`
+      );
+    }
+    if (leftoverUserIds.length > 0) {
+      console.error(
+        `Cleanup failed to delete ${leftoverUserIds.length} auth user(s): ${leftoverUserIds.join(', ')}`
+      );
+    }
+    if (leftoverFiles.length > 0 || leftoverUserIds.length > 0) {
+      process.exitCode = 1;
     }
   }
 }
