@@ -1,5 +1,6 @@
 import React, { useId, type ReactNode } from 'react';
-import { Text } from '@mantine/core';
+import { Text, VisuallyHidden } from '@mantine/core';
+import { scrollFocusedTabIntoView } from './scrollingTabs';
 import styles from './ToggleChipGroup.module.css';
 
 export interface ToggleChipOption {
@@ -23,6 +24,10 @@ export interface ToggleChipGroupProps {
   description?: ReactNode;
   error?: string;
   disabled?: boolean;
+  /** Keeps the group's name for assistive technology only. */
+  hideLabel?: boolean;
+  /** 'scroll' keeps the chips on one line and scrolls them sideways below 40em. Default 'wrap'. */
+  layout?: 'wrap' | 'scroll';
 }
 
 /**
@@ -50,6 +55,8 @@ export function ToggleChipGroup({
   description,
   error,
   disabled,
+  hideLabel = false,
+  layout = 'wrap',
 }: ToggleChipGroupProps) {
   const baseId = useId();
   const labelId = `${baseId}-label`;
@@ -72,16 +79,20 @@ export function ToggleChipGroup({
     );
   }
 
+  const labelNode = (
+    <Text id={labelId} component="span" className={styles.label}>
+      {label}
+    </Text>
+  );
+
   const describedBy =
     [description ? descriptionId : null, error ? errorId : null].filter(Boolean).join(' ') || undefined;
 
   return (
     <div className={styles.root} role="group" aria-labelledby={labelId} aria-describedby={describedBy}>
-      <Text id={labelId} component="span" className={styles.label}>
-        {label}
-      </Text>
+      {hideLabel ? <VisuallyHidden>{labelNode}</VisuallyHidden> : labelNode}
 
-      <div className={styles.chips}>
+      <div className={styles.chips} data-layout={layout}>
         {options.map((option) => {
           const isPressed = value.includes(option.value);
 
@@ -96,6 +107,8 @@ export function ToggleChipGroup({
               aria-label={option.name}
               disabled={disabled || (atCap && !isPressed)}
               onClick={() => handlePress(option.value, isPressed)}
+              // Chromium's focus scroll skips a chip that is only partly clipped.
+              onFocus={layout === 'scroll' ? scrollFocusedTabIntoView : undefined}
             >
               {option.label}
             </button>
