@@ -7,8 +7,11 @@
 }
 
 .avatarWrapper {
+  --profile-photo-radius: var(--radius-full);
   position: relative;
   display: inline-flex;
+  border-radius: var(--profile-photo-radius);
+  overflow: hidden;
 }
 
 /* Busy scrim over the avatar. `border-radius` matches Avatar's own
@@ -30,7 +33,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
+  border-radius: inherit;
   background: color-mix(in oklch, var(--action-bg) 70%, transparent);
 }
 

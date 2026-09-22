@@ -10,6 +10,7 @@ interface AvatarProps {
   photoUrl?: string | null;
   trustLevel?: number;
   size?: AvatarSize;
+  radius?: string;
   /** Overlay a small check for Level 1+ members. */
   showVerifiedMark?: boolean;
   /**
@@ -50,6 +51,7 @@ export default function Avatar({
   photoUrl,
   trustLevel = 0,
   size = 'medium',
+  radius = 'var(--radius-full)',
   showVerifiedMark = false,
   toneKey,
   decorative = false,
@@ -62,7 +64,7 @@ export default function Avatar({
         src={photoUrl ?? null}
         alt={decorative ? '' : `${name}'s avatar`}
         size={SIZE_MAP[size]}
-        radius="var(--radius-full)"
+        radius={radius}
         classNames={{ placeholder: toneClass }}
       >
         {getInitials(name)}

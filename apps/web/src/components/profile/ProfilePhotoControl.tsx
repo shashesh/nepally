@@ -99,7 +99,7 @@ export function ProfilePhotoControl({
     <div className={styles.root}>
       <div className={styles.avatarWrapper}>
         {/* The member's name renders right beside this control (profile header), so the avatar is decorative. */}
-        <Avatar name={name} photoUrl={photoUrl} size="xlarge" decorative />
+        <Avatar name={name} photoUrl={photoUrl} size="xlarge" radius="var(--profile-photo-radius)" decorative />
         {busy && (
           <div className={styles.scrim} aria-hidden="true">
             <Loader size="sm" className={styles.loader} />
