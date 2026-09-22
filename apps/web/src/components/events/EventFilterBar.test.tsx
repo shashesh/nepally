@@ -30,14 +30,24 @@ describe('EventFilterBar (web)', () => {
       expect(screen.getByRole('searchbox', { name: 'Search events' })).toBeDefined();
     });
 
-    it('renders all type chips', () => {
+    it('renders all type chips, named without their emoji', () => {
       render(<EventFilterBar value={DEFAULT_VALUE} onChange={vi.fn()} />);
-      expect(screen.getByText('🗓️ All')).toBeDefined();
-      expect(screen.getByText('🎭 Cultural')).toBeDefined();
-      expect(screen.getByText('🕌 Religious')).toBeDefined();
-      expect(screen.getByText('🎉 Social')).toBeDefined();
-      expect(screen.getByText('💼 Career')).toBeDefined();
-      expect(screen.getByText('📌 Other')).toBeDefined();
+      for (const name of ['All', 'Cultural', 'Religious', 'Social', 'Career', 'Other']) {
+        expect(screen.getByRole('button', { name })).toBeDefined();
+      }
+    });
+
+    it('groups the chips under an "Event type" name', () => {
+      render(<EventFilterBar value={DEFAULT_VALUE} onChange={vi.fn()} />);
+      expect(screen.getByRole('group', { name: 'Event type' })).toBeDefined();
+    });
+
+    it('presses All by default', () => {
+      render(<EventFilterBar value={DEFAULT_VALUE} onChange={vi.fn()} />);
+      expect(screen.getByRole('button', { name: 'All' }).getAttribute('aria-pressed')).toBe('true');
+      expect(screen.getByRole('button', { name: 'Cultural' }).getAttribute('aria-pressed')).toBe(
+        'false'
+      );
     });
 
     it('does not show clear button when query is empty', () => {
@@ -55,21 +65,21 @@ describe('EventFilterBar (web)', () => {
     it('calls onChange with selected type when a chip is clicked', () => {
       const onChange = vi.fn();
       render(<EventFilterBar value={DEFAULT_VALUE} onChange={onChange} />);
-      fireEvent.click(screen.getByText('🎭 Cultural'));
+      fireEvent.click(screen.getByRole('button', { name: 'Cultural' }));
       expect(onChange).toHaveBeenCalledWith({ type: 'cultural', query: '' });
     });
 
     it('calls onChange with "all" when All chip is clicked', () => {
       const onChange = vi.fn();
       render(<EventFilterBar value={{ type: 'cultural', query: '' }} onChange={onChange} />);
-      fireEvent.click(screen.getByText('🗓️ All'));
+      fireEvent.click(screen.getByRole('button', { name: 'All' }));
       expect(onChange).toHaveBeenCalledWith({ type: 'all', query: '' });
     });
 
     it('preserves existing query when changing type', () => {
       const onChange = vi.fn();
       render(<EventFilterBar value={{ type: 'all', query: 'dashain' }} onChange={onChange} />);
-      fireEvent.click(screen.getByText('💼 Career'));
+      fireEvent.click(screen.getByRole('button', { name: 'Career' }));
       expect(onChange).toHaveBeenCalledWith({ type: 'career', query: 'dashain' });
     });
   });

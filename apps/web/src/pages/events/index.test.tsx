@@ -110,7 +110,7 @@ describe('EventsPage', () => {
     render(React.createElement(EventsPage));
     await waitFor(() => screen.getByText('Dashain Celebration'));
 
-    fireEvent.click(screen.getByRole('button', { name: '💼 Career' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Career' }));
     await waitFor(() => {
       expect(screen.queryByText('Dashain Celebration')).toBeNull();
       expect(screen.getByText('Career Networking Night')).toBeDefined();
@@ -122,7 +122,7 @@ describe('EventsPage', () => {
     render(React.createElement(EventsPage));
     await waitFor(() => screen.getByText('Dashain Celebration'));
 
-    fireEvent.click(screen.getByRole('button', { name: '🎉 Social' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Social' }));
     await waitFor(() => {
       expect(screen.getByText('No Social events')).toBeDefined();
     });
