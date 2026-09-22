@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../../test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '../../test-utils';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ActionMenu } from './ActionMenu';
+import { useConfirm } from './dialogs';
 
 vi.mock('next/link', () => ({
   default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
@@ -61,5 +62,84 @@ describe('ActionMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Post options' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Report' }));
     expect(onClick).not.toHaveBeenCalled();
+  });
+});
+
+function MenuThatConfirms() {
+  const confirm = useConfirm();
+  return (
+    <ActionMenu
+      label="Post options"
+      items={[
+        {
+          key: 'delete',
+          label: 'Delete',
+          danger: true,
+          onClick: () => {
+            void confirm({ title: 'Delete post?', message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true });
+          },
+        },
+      ]}
+    />
+  );
+}
+
+describe('ActionMenu focus', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('moves focus to its trigger before running an item action', async () => {
+    let focusedDuringAction: Element | null = null;
+    const onClick = () => {
+      focusedDuringAction = document.activeElement;
+    };
+    render(<ActionMenu label="Post options" items={[{ key: 'edit', label: 'Edit', onClick }]} />);
+    const trigger = screen.getByRole('button', { name: 'Post options' });
+    fireEvent.click(trigger);
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Edit' }));
+    expect(focusedDuringAction).toBe(trigger);
+  });
+
+  it('leaves focus in a dialog an item opens, then returns it to the trigger when the dialog closes', async () => {
+    render(<MenuThatConfirms />);
+    const trigger = screen.getByRole('button', { name: 'Post options' });
+    fireEvent.click(trigger);
+    const item = await screen.findByRole('menuitem', { name: 'Delete' });
+
+    // Mantine returns focus on 10ms timers, from the menu as it closes and
+    // from the dialog as it closes, so run them rather than wait for them.
+    vi.useFakeTimers();
+    fireEvent.click(item);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    expect(document.activeElement).toBe(cancel);
+
+    fireEvent.click(cancel);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('moves focus to its trigger when a link item is chosen', async () => {
+    render(<ActionMenu label="Post options" items={[{ key: 'profile', label: 'View profile', href: '/users/u1' }]} />);
+    const trigger = screen.getByRole('button', { name: 'Post options' });
+    fireEvent.click(trigger);
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'View profile' }));
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('returns focus to the trigger when Escape closes it', async () => {
+    render(<ActionMenu label="Post options" items={[{ key: 'edit', label: 'Edit', onClick: vi.fn() }]} />);
+    const trigger = screen.getByRole('button', { name: 'Post options' });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const menu = await screen.findByRole('menu');
+    fireEvent.keyDown(menu, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+    expect(document.activeElement).toBe(trigger);
   });
 });

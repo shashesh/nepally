@@ -119,6 +119,8 @@ A control that is busy because the member just used it keeps focus. It gets `ari
 
 When an action removes the control that had focus (unsaving a post, removing a photo or a location), the page moves focus to a neighbour after the next commit, but only if `isFocusStranded()` says focus has nowhere useful to be. It never takes focus back from wherever the member has moved since.
 
+`ActionMenu` moves focus from the menu to its trigger before an item's action runs, and turns off Mantine's delayed `returnFocus`. A dialog the action opens therefore keeps focus while it's open and returns it to the trigger when it closes, instead of to the unmounted menu item, which would drop it to `<body>`.
+
 ## Web-only helpers (`src/lib`)
 
 | Helper | Notes |

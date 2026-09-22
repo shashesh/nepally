@@ -47,6 +47,24 @@ test.describe('Profile page', () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 
+  test('a dialog opened from the profile menu takes focus and gives it back to the menu', async ({ page }) => {
+    await page.goto('/profile');
+
+    const trigger = page.getByRole('button', { name: 'Open profile menu' });
+    await trigger.click();
+    await page.getByRole('menuitem', { name: 'Edit Name' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Edit name' });
+    const field = dialog.getByRole('textbox', { name: 'Full name' });
+    await expect(field).toBeFocused();
+    await page.keyboard.type(' Jr');
+    await expect(field).toHaveValue(`${MOCK_USER_PROFILE.full_name} Jr`);
+
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
   test('Saved Posts tab is visible on the profile page', async ({ page }) => {
     await page.goto('/profile');
 
