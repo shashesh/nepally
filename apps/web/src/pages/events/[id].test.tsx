@@ -1,7 +1,15 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '../../test-utils';
+import { render, screen, fireEvent, act, within } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getEventById, getUserEventResponse, rsvpToEvent } from '@nepally/shared';
+import {
+  cancelEvent,
+  deleteEvent,
+  getEventAttendees,
+  getEventById,
+  getOrCreateConversation,
+  getUserEventResponse,
+  setEventResponse,
+} from '@nepally/shared';
 import type { Event } from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
@@ -10,6 +18,7 @@ type MockLinkProps = { href: string; children?: React.ReactNode; className?: str
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useRouter: vi.fn(),
+  notificationsShow: vi.fn(),
 }));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
@@ -20,6 +29,9 @@ vi.mock('next/head', () => ({
 vi.mock('next/link', () => ({
   default: ({ href, children, className }: MockLinkProps) =>
     React.createElement('a', { href, className }, children),
+}));
+vi.mock('@mantine/notifications', () => ({
+  notifications: { show: mocks.notificationsShow },
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
@@ -43,136 +55,294 @@ vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
-    getEventById: vi.fn(async () => ({ data: MOCK_EVENT })),
-    getEventAttendees: vi.fn(async () => ({ data: [] })),
-    getUserEventResponse: vi.fn(async () => ({ data: null })),
-    getOrCreateConversation: vi.fn(async () => ({ data: { conversationId: 'conv-1', isNew: true } })),
-    rsvpToEvent: vi.fn(async () => ({})),
-    unrsvpFromEvent: vi.fn(async () => ({})),
-    cancelEvent: vi.fn(async () => ({})),
-    deleteEvent: vi.fn(async () => ({})),
-    formatPublicName: (name: string) => name,
-    TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
-    EVENT_TYPE_COLORS: {
-      cultural: { text: '#E65100', background: '#FFF3E0' },
-      religious: { text: '#6A1B9A', background: '#F3E5F5' },
-      social: { text: '#1B5E20', background: '#E8F5E9' },
-      career: { text: '#0D47A1', background: '#E3F2FD' },
-      other: { text: '#424242', background: '#F5F5F5' },
-    },
-    EVENT_TYPE_LABELS: { cultural: 'Cultural', religious: 'Religious', social: 'Social', career: 'Career', other: 'Other' },
-    EVENT_TYPE_ICONS: { cultural: '🎭', religious: '🕌', social: '🎉', career: '💼', other: '📌' },
+    getEventById: vi.fn(),
+    getEventAttendees: vi.fn(),
+    getUserEventResponse: vi.fn(),
+    getOrCreateConversation: vi.fn(),
+    setEventResponse: vi.fn(),
+    removeEventResponse: vi.fn(),
+    cancelEvent: vi.fn(),
+    deleteEvent: vi.fn(),
   };
 });
 
 import EventDetailPage from './[id].page';
+
+async function settle() {
+  await act(async () => {});
+  await act(async () => {});
+}
+
+async function renderPage() {
+  render(React.createElement(EventDetailPage));
+  await settle();
+}
+
+const attendance = () => screen.getByRole('region', { name: 'Attendance' });
 
 describe('EventDetailPage', () => {
   const mockReplace = vi.fn();
   const mockPush = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mocks.useRouter.mockReturnValue({ query: { id: 'event-1' }, replace: mockReplace, push: mockPush });
-    mocks.useAuth.mockReturnValue({ user: { id: 'user-2', trust_level: 1 } });
+    mocks.useAuth.mockReturnValue({ user: { id: 'user-2', full_name: 'Bikal Shrestha', trust_level: 1 } });
+    vi.mocked(getEventById).mockResolvedValue({ data: MOCK_EVENT });
+    vi.mocked(getUserEventResponse).mockResolvedValue({ data: null });
+    vi.mocked(getEventAttendees).mockResolvedValue({ data: [] });
+    vi.mocked(getOrCreateConversation).mockResolvedValue({
+      data: { conversationId: 'conv-1', isNew: true },
+    } as Awaited<ReturnType<typeof getOrCreateConversation>>);
+    vi.mocked(setEventResponse).mockResolvedValue({});
+    vi.mocked(cancelEvent).mockResolvedValue({});
+    vi.mocked(deleteEvent).mockResolvedValue({});
   });
 
   it('renders event details after fetch', async () => {
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Dashain Celebration' })).toBeDefined();
-      expect(screen.getByText('Annual cultural celebration in Dallas.')).toBeDefined();
-    });
+    await renderPage();
+    expect(screen.getByRole('heading', { level: 1, name: 'Dashain Celebration' })).toBeDefined();
+    expect(screen.getByText('Annual cultural celebration in Dallas.')).toBeDefined();
+    expect(screen.getByText('650 S Griffin St, Dallas, TX')).toBeDefined();
   });
 
-  it('shows RSVP button for non-organizer Level 1 user', async () => {
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => {
-      expect(screen.getByText('RSVP')).toBeDefined();
-    });
-  });
-
-  it('offers RSVP to an interested member, and RSVP marks them going', async () => {
-    vi.mocked(getUserEventResponse).mockResolvedValueOnce({ data: 'interested' });
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => expect(screen.getByText('RSVP')).toBeDefined());
-    expect(screen.queryByText('Going ✓')).toBeNull();
-
-    fireEvent.click(screen.getByText('RSVP'));
-    await waitFor(() => expect(rsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2'));
-  });
-
-  it('shows Going ✓ to a member who is going', async () => {
-    vi.mocked(getUserEventResponse).mockResolvedValueOnce({ data: 'going' });
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => expect(screen.getByText('Going ✓')).toBeDefined());
-  });
-
-  it('shows cancelled banner for cancelled event', async () => {
-    vi.mocked(getEventById).mockResolvedValueOnce({
-      data: { ...MOCK_EVENT, status: 'cancelled' },
-    });
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => {
-      expect(screen.getByText('This event has been cancelled.')).toBeDefined();
-    });
-  });
-
-  it('shows past banner for past event', async () => {
-    vi.mocked(getEventById).mockResolvedValueOnce({
-      data: { ...MOCK_EVENT, start_date: PAST },
-    });
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => {
-      expect(screen.getByText('This event has passed.')).toBeDefined();
-    });
-  });
-
-  it('shows error state on fetch failure', async () => {
-    vi.mocked(getEventById).mockResolvedValueOnce({ error: new Error('Not found') });
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => {
-      expect(screen.getByText('Not found')).toBeDefined();
-    });
+  it('names the breadcrumb and marks the current page', async () => {
+    await renderPage();
+    const nav = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(nav).getByRole('link', { name: 'Events' }).getAttribute('href')).toBe('/events');
+    expect(within(nav).getByText('Dashain Celebration').getAttribute('aria-current')).toBe('page');
   });
 
   it('redirects to /login when not logged in', async () => {
     mocks.useAuth.mockReturnValue({ user: null });
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
+    await renderPage();
+    expect(mockReplace).toHaveBeenCalledWith('/login');
   });
 
-  it('toggles RSVP on button click and re-syncs from server', async () => {
-    const { getEventById, getUserEventResponse, rsvpToEvent } = await import('@nepally/shared');
-    render(React.createElement(EventDetailPage));
-    await waitFor(() => screen.getByText('RSVP'));
-    fireEvent.click(screen.getByText('RSVP'));
-    await waitFor(() => {
-      expect(rsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
+  describe('response', () => {
+    it('offers Interested and Going to a Level 1 member who is not the organizer', async () => {
+      await renderPage();
+      const going = within(attendance()).getByRole('button', { name: 'Going' });
+      expect(going.getAttribute('aria-pressed')).toBe('false');
+      expect(within(attendance()).getByRole('button', { name: 'Interested' })).toBeDefined();
+    });
+
+    it('shows an interested viewer Interested pressed', async () => {
+      vi.mocked(getUserEventResponse).mockResolvedValue({ data: 'interested' });
+      await renderPage();
+      expect(
+        within(attendance()).getByRole('button', { name: 'Interested' }).getAttribute('aria-pressed')
+      ).toBe('true');
+    });
+
+    it('marks the viewer going and re-syncs from the server', async () => {
+      await renderPage();
+      fireEvent.click(within(attendance()).getByRole('button', { name: 'Going' }));
+      await settle();
+
+      expect(setEventResponse).toHaveBeenCalledWith({}, 'event-1', 'user-2', 'going');
       expect(getEventById).toHaveBeenCalledTimes(2);
       expect(getUserEventResponse).toHaveBeenCalledTimes(2);
     });
-  });
 
-  it('creates a conversation and navigates when Message Organizer is clicked', async () => {
-    const { getOrCreateConversation } = await import('@nepally/shared');
-    render(React.createElement(EventDetailPage));
-
-    await waitFor(() => {
-      expect(screen.getByText('Message Organizer')).toBeDefined();
+    it('tells the organizer why there is no control', async () => {
+      mocks.useAuth.mockReturnValue({ user: { id: 'user-1', full_name: 'Asha Kumar', trust_level: 1 } });
+      await renderPage();
+      expect(within(attendance()).getByText("You're the organizer.")).toBeDefined();
+      expect(within(attendance()).queryByRole('group', { name: 'Your response' })).toBeNull();
     });
 
-    fireEvent.click(screen.getByText('Message Organizer'));
+    it('tells a Level 0 member to verify', async () => {
+      mocks.useAuth.mockReturnValue({ user: { id: 'user-2', full_name: 'Bikal Shrestha', trust_level: 0 } });
+      await renderPage();
+      expect(within(attendance()).getByText('Verify your account to respond.')).toBeDefined();
+    });
+  });
 
-    await waitFor(() => {
-      expect(getOrCreateConversation).toHaveBeenCalledWith(
-        {},
-        'user-2',
-        undefined,
-        'user-1',
-        'Asha Kumar'
-      );
+  describe('status alerts', () => {
+    it('shows the cancelled alert, and no response control, for a cancelled event', async () => {
+      vi.mocked(getEventById).mockResolvedValue({ data: { ...MOCK_EVENT, status: 'cancelled' } });
+      await renderPage();
+      expect(screen.getByRole('alert').textContent).toContain('This event has been cancelled.');
+      expect(within(attendance()).queryByRole('group', { name: 'Your response' })).toBeNull();
+    });
+
+    it('shows the past alert for a past event', async () => {
+      vi.mocked(getEventById).mockResolvedValue({ data: { ...MOCK_EVENT, start_date: PAST } });
+      await renderPage();
+      expect(screen.getByRole('alert').textContent).toContain('This event has passed.');
+    });
+
+    it('shows the Global badge only for a global event', async () => {
+      vi.mocked(getEventById).mockResolvedValue({ data: { ...MOCK_EVENT, is_global: true } });
+      await renderPage();
+      expect(screen.getByText('Global')).toBeDefined();
+    });
+  });
+
+  describe('load failures', () => {
+    it('offers Back to events when there is no such event', async () => {
+      vi.mocked(getEventById).mockResolvedValue({ error: new Error('Event not found'), notFound: true });
+      await renderPage();
+
+      expect(screen.getByText('Event not found')).toBeDefined();
+      expect(screen.getByText('It may have been deleted.')).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Back to events' }).getAttribute('href')).toBe('/events');
+    });
+
+    it('offers Try again, which reloads, when the request fails', async () => {
+      vi.mocked(getEventById)
+        .mockResolvedValueOnce({ error: new Error('Failed to fetch') })
+        .mockResolvedValue({ data: MOCK_EVENT });
+      await renderPage();
+
+      expect(screen.getByText("Couldn't load this event")).toBeDefined();
+      fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      await settle();
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Dashain Celebration' })).toBeDefined();
+    });
+  });
+
+  describe('attendees', () => {
+    it('opens the people going from the count', async () => {
+      vi.mocked(getEventAttendees).mockResolvedValue({
+        data: [
+          {
+            id: 'r1', event_id: 'event-1', user_id: 'user-3', status: 'going',
+            created_at: new Date().toISOString(),
+            user: { id: 'user-3', full_name: 'Rohan Shrestha', trust_level: 1, profile_photo: null },
+          },
+        ],
+      });
+      await renderPage();
+
+      fireEvent.click(screen.getByRole('button', { name: '8 people going' }));
+      await settle();
+
+      const dialog = screen.getByRole('dialog', { name: 'People going' });
+      expect(within(dialog).getByText('Rohan S.')).toBeDefined();
+    });
+
+    it('shows a failed attendee request with Try again', async () => {
+      vi.mocked(getEventAttendees)
+        .mockResolvedValueOnce({ error: new Error('Failed to fetch attendees') })
+        .mockResolvedValue({ data: [] });
+      await renderPage();
+
+      fireEvent.click(screen.getByRole('button', { name: '8 people going' }));
+      await settle();
+
+      const dialog = screen.getByRole('dialog', { name: 'People going' });
+      expect(within(dialog).getByText("Couldn't load attendees")).toBeDefined();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
+      await settle();
+
+      expect(getEventAttendees).toHaveBeenCalledTimes(2);
+      expect(within(dialog).getByText('No attendees yet.')).toBeDefined();
+    });
+  });
+
+  describe('organizer and messaging', () => {
+    it('creates a conversation and navigates when Message Organizer is clicked', async () => {
+      await renderPage();
+      fireEvent.click(screen.getByRole('button', { name: 'Message Organizer' }));
+      await settle();
+
+      expect(getOrCreateConversation).toHaveBeenCalledWith({}, 'user-2', 'Bikal Shrestha', 'user-1', 'Asha Kumar');
       expect(mockPush).toHaveBeenCalledWith('/messages/conv-1');
+    });
+
+    it('raises a toast when the conversation can’t start', async () => {
+      vi.mocked(getOrCreateConversation).mockResolvedValue({
+        error: new Error('RLS'),
+      } as Awaited<ReturnType<typeof getOrCreateConversation>>);
+      await renderPage();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Message Organizer' }));
+      await settle();
+
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(mocks.notificationsShow).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Couldn't start a conversation. Try again." })
+      );
+    });
+  });
+
+  describe('manage event', () => {
+    beforeEach(() => {
+      mocks.useAuth.mockReturnValue({ user: { id: 'user-1', full_name: 'Asha Kumar', trust_level: 1 } });
+    });
+
+    it('heads the organizer’s actions "Manage event"', async () => {
+      await renderPage();
+      const section = screen.getByRole('region', { name: 'Manage event' });
+      expect(within(section).getByRole('link', { name: 'Edit Event' }).getAttribute('href')).toBe(
+        '/events/create?edit=event-1'
+      );
+    });
+
+    it('cancels the event after the dialog confirms', async () => {
+      await renderPage();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel Event' }));
+      await settle();
+
+      const dialog = screen.getByRole('dialog', { name: 'Cancel this event?' });
+      expect(within(dialog).getByText('Your attendees will see it as cancelled.')).toBeDefined();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel event' }));
+      await settle();
+
+      expect(cancelEvent).toHaveBeenCalledWith({}, 'event-1');
+      expect(screen.getByRole('alert').textContent).toContain('This event has been cancelled.');
+      expect(mocks.notificationsShow).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Event cancelled.' })
+      );
+    });
+
+    it('keeps the event when the dialog is dismissed', async () => {
+      await renderPage();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel Event' }));
+      await settle();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Keep event' }));
+      await settle();
+
+      expect(cancelEvent).not.toHaveBeenCalled();
+    });
+
+    it('deletes the event and returns to the list after the dialog confirms', async () => {
+      await renderPage();
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Event' }));
+      await settle();
+
+      const dialog = screen.getByRole('dialog', { name: 'Delete this event?' });
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+      await settle();
+
+      expect(deleteEvent).toHaveBeenCalledWith({}, 'event-1');
+      expect(mockPush).toHaveBeenCalledWith('/events');
+      expect(mocks.notificationsShow).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Event deleted.' })
+      );
+    });
+
+    it('raises a toast when the delete fails', async () => {
+      vi.mocked(deleteEvent).mockResolvedValue({ error: new Error('Failed to delete event') });
+      await renderPage();
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Event' }));
+      await settle();
+
+      fireEvent.click(
+        within(screen.getByRole('dialog', { name: 'Delete this event?' })).getByRole('button', {
+          name: 'Delete',
+        })
+      );
+      await settle();
+
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(mocks.notificationsShow).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Failed to delete event' })
+      );
     });
   });
 });

@@ -299,9 +299,9 @@ test.describe('Event detail page', () => {
     await expect(page.getByText(/Asha K\./)).toBeVisible();
   });
 
-  test('shows RSVP button for non-organizer user', async ({ page }) => {
+  test('shows the Going button for non-organizer user', async ({ page }) => {
     await page.goto('/events/event-e2e-001');
-    await expect(page.getByRole('button', { name: 'RSVP' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Going', exact: true })).toBeVisible({ timeout: 10_000 });
   });
 
   test('shows attendance count', async ({ page }) => {
@@ -335,7 +335,7 @@ test.describe('Event detail page', () => {
   test('shows organizer Manage Event card when user is organizer', async ({ page }) => {
     await mockEventsEndpoints(page, { eventDetail: MOCK_ORGANIZER_EVENT });
     await page.goto('/events/event-e2e-001');
-    await expect(page.getByText('Manage Event')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /manage event/i })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('link', { name: 'Edit Event' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Cancel Event' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete Event' })).toBeVisible();
@@ -344,7 +344,7 @@ test.describe('Event detail page', () => {
   test('does not show Message Organizer button when user is organizer', async ({ page }) => {
     await mockEventsEndpoints(page, { eventDetail: MOCK_ORGANIZER_EVENT });
     await page.goto('/events/event-e2e-001');
-    await expect(page.getByText('Manage Event')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /manage event/i })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: /Message Organizer/i })).not.toBeVisible();
   });
 });

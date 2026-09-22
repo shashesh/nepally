@@ -1,7 +1,6 @@
 [
   "apps/web/src/components/marketplace/FilterBar.module.css",
   "apps/web/src/components/marketplace/ListingStrip.module.css",
-  "apps/web/src/pages/events/eventDetail.module.css",
   "apps/web/src/pages/marketplace/listing/promote.module.css",
   "apps/web/src/pages/marketplace/marketplace.module.css",
   "apps/web/src/styles/Auth.module.css",
