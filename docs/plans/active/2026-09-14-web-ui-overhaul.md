@@ -187,7 +187,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | Merged (PR #83) | 2026-09-21 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
-| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a | In Progress | 2026-09-21 | branched from `master` at e685317 |
+| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a, 6.19b | In Progress | 2026-09-21 | branched from `master` at e685317 |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -12744,6 +12744,21 @@ In production builds (`next build` / `next start`), the CSS chunk for `component
 - [ ] **Step 4: Check the pages PR 6 doesn't own** at 375 and 1280 for regressions: feed, search, post detail, create post, events, marketplace. Every screenshot changes in Task 6.20's baseline run anyway, so list what to look for.
 - [ ] **Step 5: Commit** as `fix(web): load Mantine's CSS before the app's so module overrides win in production`.
 
+### Task 6.19b: Name the shared dialogs' close button *(added from the Task 6.19 review)*
+
+**Files:** `apps/web/src/components/ui/dialogs.tsx`, `dialogs.test.tsx`, and the Modal `defaultProps` in `apps/web/src/styles/mantine-theme.ts`.
+
+Every `useConfirm` and `usePrompt` dialog opens with focus on its close button, and that button has no accessible name: the aria snapshot reads `button: - img`. The axe baselines never open a dialog, so nothing has caught it. A destructive confirm, such as Remove this location, also puts focus somewhere Enter can reach the destructive button too easily.
+
+- [ ] **Step 1: Write the tests first.**
+  - The close button's accessible name is "Close".
+  - A `danger: true` confirm opens with focus on Cancel.
+  - A non-destructive confirm and a prompt keep today's initial focus. For a prompt, that's the text field.
+- [ ] **Step 2: Name the close button.** Add `closeButtonProps: { 'aria-label': 'Close' }` to the theme's Modal `defaultProps`. Check that `modals.openConfirmModal` picks up the theme's Modal defaults. If it doesn't, pass `closeButtonProps` from `dialogs.tsx`.
+- [ ] **Step 3: Focus Cancel first on destructive confirms.** Pass `cancelProps: { 'data-autofocus': true }` when `danger` is set.
+- [ ] **Step 4: Run the checks.** Run `npm run test --workspace=apps/web`. `ReportPostModal`, `ImageLightbox` and every `useConfirm` / `usePrompt` caller must still pass. Then run `npm run lint --workspace=apps/web`.
+- [ ] **Step 5: Commit** as `fix(web): name the dialogs' close button and focus Cancel first on destructive confirms`.
+
 ### Task 6.20: E2E, screenshots, accessibility, docs and the PR
 
 **Files:** `apps/web/e2e/visual/pages.ts`, `apps/web/e2e/visual/a11y-baseline.json`, `docs/architecture/web-ui-system.md`.
@@ -12834,6 +12849,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Two more copies of the megabyte formula should use the shared `formatMegabytes`: mobile `CreatePostScreen.tsx` ~804 and shared `validation/post.ts` ~53 (found in PR 6's Task 6.12 review).
   - [ ] Mobile's `EditProfileScreen` (min-2 check ~240) and web signup's `validateFullName` should adopt the shared `fullNameSchema`. `users.full_name` also has no length limit in the database: add a `CHECK (char_length(full_name) <= 100)` in a new additive migration, which needs the user's go-ahead to apply (found in PR 6's Task 6.13 review).
   - [ ] Mobile About You still hard-codes its limits and saves raw values. `apps/mobile/src/screens/profile/components/AboutYouSection.tsx` uses `maxLength={100}` (75) and `n >= 0 && n <= 99` (89): switch these to the shared `COLLEGE_MAX_LENGTH`, `YEARS_IN_US_MIN` and `YEARS_IN_US_MAX`. `EditProfileScreen.tsx` (~280) sends `aboutYou` unparsed, so a whitespace-only college is stored as spaces. Run `extendedProfileUpdateSchema` before saving and write the parsed values, as web's `handleSaveAboutYou` has done since Task 6.17. Seed the form with the shared `getAboutYouFormValues(user)` first (`EditProfileScreen.tsx:55` seeds straight from `user` today), and replace the local `AboutYouValues` (`AboutYouSection.tsx:17`) with the shared `AboutYouFormValues`. The database accepts any district or language string, so without that step a saved value outside `NEPAL_DISTRICTS` or `SUPPORTED_LANGUAGES` would block every save (found in PR 6's Task 6.17 review).
+  - [ ] Extract a `useFocusAfterUpdate(dep)` hook that returns `arm(getTarget)`. It would focus the target after the next commit, but only if focus is stranded (`lib/focus.ts` `isFocusStranded`). Three hand-rolled copies exist today: Manage Locations' pending-focus effect, `ProfilePhotoControl`'s restore after remove, and `profile.page.tsx`'s saved-panel refocus (found in PR 6's Task 6.19 review).
   - [ ] Own profile widths:
     - `Profile.module.css` `.profilePage` still uses a raw `max-width: 600px`, while the public profile uses `--layout-content-width` (800px). Pick one width for both profile pages.
     - At desktop the profile card's content starts 8px further in than the Settings card's (`--space-6` against `--card-padding`). Align them.
