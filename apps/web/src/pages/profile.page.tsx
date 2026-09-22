@@ -267,7 +267,7 @@ export default function ProfilePage() {
               onPick={handlePhotoPick}
               onRemove={handlePhotoRemove}
             />
-            <div>
+            <div className={styles.profileIdentity}>
               <h2 className={styles.profileName}>{user.full_name}</h2>
               <div className={styles.profileEmail}>{user.email}</div>
               <TrustBadge level={user.trust_level} />

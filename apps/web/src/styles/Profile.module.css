@@ -33,12 +33,26 @@
   margin-bottom: var(--space-6);
 }
 
+/* The name/email column beside the avatar. A flex item defaults to
+   min-width: auto, which stops it — and the unbreakable text inside it,
+   e.g. a long email address — from shrinking below its content's natural
+   width. At 320px that ran a long email past the card and off-screen
+   (html { overflow-x: hidden } in globals.css just clips it silently). */
+.profileIdentity {
+  min-width: 0;
+}
+
+.profileName,
+.profileEmail {
+  overflow-wrap: anywhere;
+}
+
 .profileName {
-  /* Gambarino only ships weight 400 — the global h2 rule (globals.css)
-     already sets it, so this only adds spacing below the name; the default
-     h2 size (--font-size-xl) already matches the public profile's name
-     heading (components/users/PublicProfileHeader.module.css .displayName). */
-  font-size: var(--font-size-xl);
+  /* Weight comes from the shared h1…h6 rule (globals.css: Gambarino ships
+     only weight 400); the h2 rule sets the size. This only sets tracking
+     and spacing below the name, matching PublicProfileHeader.module.css's
+     .displayName. */
+  letter-spacing: var(--tracking-tight);
   margin-bottom: var(--space-1);
 }
 
@@ -50,14 +64,14 @@
 
 /* The Tabs panel class (Mantine `classNames={{ panel: styles.tabContent }}`).
    --space-4 top padding matches the public profile's panels, which get the
-   same 16px via Mantine's `pt="md"` (mantine-theme.ts spacing.md).  */
+   same 16px via Mantine's `pt="md"` (mantine-theme.ts spacing.md). */
 .tabContent {
   padding-top: var(--space-4);
 }
 
 /* ── Settings & more ─────────────────────── */
 .sectionTitle {
-  /* Gambarino only ships weight 400 — the global h2 rule (globals.css)
+  /* Gambarino only ships weight 400 — the shared h1…h6 rule (globals.css)
      already sets it, so this only overrides size and spacing, same as
      .profileName above and AccountDetails.module.css's .title. */
   font-size: var(--font-size-lg);
@@ -68,7 +82,6 @@
 .saveAboutRow {
   margin-top: var(--space-5);
   display: flex;
-  justify-content: flex-start;
 }
 
 .settingsCard {
@@ -107,11 +120,29 @@
    wraps its rows), so titles clip and language chips wrap onto extra rows.
    Shrinking the card's padding and dropping its border on phones is the
    smaller fix versus restructuring the page to move Tabs out of the card
-   (as the public profile does); it brings own-profile rows within a couple
-   of px of the public profile's at the same viewport. */
+   (as the public profile does); it matches the public profile's row width
+   exactly at the same viewport (327px at 375, 272px at 320) — keep the
+   horizontal padding at --space-2 so that keeps holding. The header and
+   the Settings card below are retuned here too, so the phone rhythm (top
+   padding, header gap, Settings card inset) matches the public profile's
+   without touching that row width. */
 @mixin smaller-than $mantine-breakpoint-sm {
   .profileCard {
     border: none;
-    padding: var(--space-2);
+    padding: var(--space-4) var(--space-2) var(--space-2);
+  }
+
+  .profileHeader {
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+
+  .profileName {
+    font-size: var(--font-size-lg);
+  }
+
+  .settingsCard {
+    margin-inline: var(--space-2);
+    padding: var(--space-4);
   }
 }
