@@ -31,45 +31,7 @@ vi.mock('next/image', () => ({
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
-vi.mock('@mantine/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    Button: ({ children, onClick, size, variant }: Record<string, unknown>) =>
-      React.createElement(
-        'button',
-        { onClick: onClick as () => void, 'data-size': size as string, 'data-variant': variant as string },
-        children as React.ReactNode
-      ),
-    Skeleton: ({ height }: Record<string, unknown>) =>
-      React.createElement('div', { 'data-testid': 'skeleton', 'data-height': height as number }),
-    Select: ({
-      value,
-      onChange,
-      disabled,
-      'aria-label': ariaLabel,
-      data,
-    }: {
-      value: string;
-      onChange: (v: string | null) => void;
-      disabled?: boolean;
-      'aria-label'?: string;
-      data: { value: string; label: string }[];
-    }) =>
-      React.createElement(
-        'select',
-        {
-          'aria-label': ariaLabel,
-          value,
-          disabled,
-          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
-        },
-        data.map((opt) =>
-          React.createElement('option', { key: opt.value, value: opt.value }, opt.label)
-        )
-      ),
-  };
-});
+// Real Mantine throughout: the page's controls are exercised as rendered.
 
 const MOCK_CATEGORY = {
   id: 'cat-1',
@@ -191,14 +153,15 @@ describe('MarketplaceIndexPage', () => {
     });
   });
 
-  it('filtered state (category): hides strips, renders grid only', async () => {
+  // decision 1: ?category= used to leave the heading reading "All Listings",
+  // so a category reached that way looked like the whole marketplace.
+  it('filtered state (category): names the category and hides the strips', async () => {
     mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
     mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants' }));
     render(React.createElement(MarketplaceIndexPage));
     await waitFor(() => {
-      expect(screen.getByText('All Listings')).toBeDefined();
+      expect(screen.getByRole('region', { name: 'Food & Restaurants' })).toBeDefined();
     });
-    // Strips should not render in filtered state
     expect(screen.queryByRole('region', { name: 'Recently Added' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Trending' })).toBeNull();
   });
@@ -261,11 +224,11 @@ describe('MarketplaceIndexPage', () => {
     mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
     mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceIndexPage));
-    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('loading-row').length).toBeGreaterThan(0);
     await waitFor(() => {
       expect(screen.getByRole('region', { name: 'Trending' })).toBeDefined();
     });
-    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+    expect(screen.queryAllByTestId('loading-row')).toHaveLength(0);
   });
 
   it('shows skeletons again while a newly applied filter loads, then the filtered grid', async () => {
@@ -275,7 +238,7 @@ describe('MarketplaceIndexPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('region', { name: 'Trending' })).toBeDefined();
     });
-    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+    expect(screen.queryAllByTestId('loading-row')).toHaveLength(0);
 
     let resolveFiltered: (value: { data: (typeof MOCK_LISTING)[] }) => void = () => {};
     mocks.getListingsByMetro.mockImplementationOnce(
@@ -286,22 +249,55 @@ describe('MarketplaceIndexPage', () => {
     );
     mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants' }));
     rerender(React.createElement(MarketplaceIndexPage));
-    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('loading-row').length).toBeGreaterThan(0);
 
     await act(async () => {
       resolveFiltered({ data: [{ ...MOCK_LISTING, id: 'food-1', title: 'Filtered Momo' }] });
     });
     expect(screen.getByText('Filtered Momo')).toBeDefined();
-    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+    expect(screen.queryAllByTestId('loading-row')).toHaveLength(0);
   });
 
-  it('filtered state with no data shows the no-match empty state', async () => {
-    mocks.getListingsByMetro.mockResolvedValue({ data: null });
+  it('an empty category says so, rather than blaming the filters', async () => {
+    mocks.getListingsByMetro.mockResolvedValue({ data: [] });
     mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
     mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants' }));
     render(React.createElement(MarketplaceIndexPage));
     await waitFor(() => {
-      expect(screen.getByText('No listings match your filters')).toBeDefined();
+      expect(screen.getByText('No listings in this category yet')).toBeDefined();
     });
+  });
+
+  it('an empty search says so', async () => {
+    mocks.getListingsByMetro.mockResolvedValue({ data: [] });
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter({ q: 'momo' }));
+    render(React.createElement(MarketplaceIndexPage));
+    await waitFor(() => {
+      expect(screen.getByText('No listings match your search')).toBeDefined();
+    });
+  });
+
+  // recon 1: a failed fetch used to be indistinguishable from an empty result.
+  it('a failed load is an error with a retry, not an empty list', async () => {
+    mocks.getListingsByMetro.mockResolvedValue({ error: new Error('network down') });
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants' }));
+    render(React.createElement(MarketplaceIndexPage));
+    await waitFor(() => {
+      expect(screen.getByText('network down')).toBeDefined();
+    });
+    expect(screen.queryByText(/No listings/i)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+  });
+
+  it('never nests a button inside a link in the header', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    const { container } = render(React.createElement(MarketplaceIndexPage));
+    await waitFor(() => expect(screen.getByText('All Listings')).toBeDefined());
+
+    expect(container.querySelector('a button')).toBeNull();
+    expect(container.querySelector('button a')).toBeNull();
   });
 });

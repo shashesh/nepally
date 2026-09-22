@@ -189,6 +189,10 @@
   /* ── Layout ───────────────────────────────────────────── */
   --layout-max-width: 1200px;
   --layout-content-width: 800px;
+  /* Wider than reading width, for pages whose content is a multi-column grid
+     rather than a column of text. The marketplace's three-up grid is the
+     first; listing detail's two-column layout is the second. */
+  --layout-content-width-wide: 960px;
   --layout-aside-width: 300px;
   --layout-rail-width: 240px;
   --layout-rail-compact-width: 72px;

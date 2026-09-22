@@ -28,39 +28,7 @@ vi.mock('next/image', () => ({
   default: (props: Record<string, unknown>) =>
     React.createElement('img', { src: props.src as string, alt: props.alt as string }),
 }));
-vi.mock('@mantine/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    Skeleton: ({ height }: MockSkeletonProps) =>
-      React.createElement('div', { 'data-testid': 'skeleton', 'data-height': height }),
-    Select: ({
-      value,
-      onChange,
-      disabled,
-      'aria-label': ariaLabel,
-      data,
-    }: {
-      value: string;
-      onChange: (v: string | null) => void;
-      disabled?: boolean;
-      'aria-label'?: string;
-      data: { value: string; label: string }[];
-    }) =>
-      React.createElement(
-        'select',
-        {
-          'aria-label': ariaLabel,
-          value,
-          disabled,
-          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
-        },
-        data.map((opt) =>
-          React.createElement('option', { key: opt.value, value: opt.value }, opt.label)
-        )
-      ),
-  };
-});
+// Real Mantine throughout: the page's controls are exercised as rendered.
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
 const MOCK_CATEGORY = {
@@ -299,11 +267,11 @@ describe('MarketplaceCategoryPage', () => {
     mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
     mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceCategoryPage));
-    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('loading-row').length).toBeGreaterThan(0);
     await waitFor(() => {
       expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
     });
-    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+    expect(screen.queryAllByTestId('loading-row')).toHaveLength(0);
   });
 
   it('waits for the router to be ready before fetching', async () => {
@@ -311,7 +279,7 @@ describe('MarketplaceCategoryPage', () => {
     mocks.useRouter.mockReturnValue({ ...buildRouter({}), isReady: false });
     const { rerender } = render(React.createElement(MarketplaceCategoryPage));
     expect(mocks.getListingsByMetro).not.toHaveBeenCalled();
-    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('loading-row').length).toBeGreaterThan(0);
 
     mocks.useRouter.mockReturnValue(buildRouter());
     rerender(React.createElement(MarketplaceCategoryPage));
@@ -337,13 +305,13 @@ describe('MarketplaceCategoryPage', () => {
     );
     mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants', sort: 'price_asc' }));
     rerender(React.createElement(MarketplaceCategoryPage));
-    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('loading-row').length).toBeGreaterThan(0);
     expect(screen.queryByText('Himalayan Kitchen')).toBeNull();
 
     await act(async () => {
       resolveSorted({ data: [{ ...MOCK_LISTING, id: 'listing-2', title: 'Cheapest Momo' }] });
     });
     expect(screen.getByText('Cheapest Momo')).toBeDefined();
-    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+    expect(screen.queryAllByTestId('loading-row')).toHaveLength(0);
   });
 });
