@@ -12687,13 +12687,13 @@ The file has 104 violations (94 legacy tokens, 9 literals, 1 named colour). The 
 - `hiddenInput`, `avatarWrapper`, `avatarOverlay` and `photoActions` (now `ProfilePhotoControl`)
 - `postList`, `postItem*` and `savedPost*` (now `PostSummaryRow`)
 - `listing*` (now `ListingSummaryRow`)
-- `info*` and `sectionTitle`'s About uses (now `AccountDetails`)
+- `info*` (now `AccountDetails`). Keep `sectionTitle`: the "Settings & more" `h2` still uses it
 
-What remains (`profilePage`, `profileCard`, `profileHeader`, `profileName`, `profileEmail`, `tabContent`, `saveAboutRow`, and the `settings*` rules PR 2 already wrote on tokens) is mapped with the spec §4.1 table. Map `tabContent` (the Tabs panel class since Task 6.16) to `--space-4` top padding, matching the public profile's panels. Any `rgba(var(--color-primary-rgb), α)` becomes `color-mix(in oklch, …)`.
+What remains (`profilePage`, `profileCard`, `profileHeader`, `profileName`, `profileEmail`, `tabContent`, `saveAboutRow`, `sectionTitle`, and the `settings*` rules PR 2 already wrote on tokens) is mapped with the spec §4.1 table. *(From the Task 6.16 review.)* On a phone the rows sit in a card inside a card: about 277px wide against the public profile's 327px, so titles cut off at about 12 characters. Reduce `.profileCard`'s padding on phones, or move the tabs out of the card as the public profile does, and check it at 375px. Map `tabContent` (the Tabs panel class since Task 6.16) to `--space-4` top padding, matching the public profile's panels. Any `rgba(var(--color-primary-rgb), α)` becomes `color-mix(in oklch, …)`.
 
 - [ ] **Step 1: Delete the dead rules**, after checking each class against `grep -o "styles\.[a-zA-Z]*" src/pages/profile.page.tsx`.
 - [ ] **Step 2: Map the rest to semantic tokens.**
-- [ ] **Step 3: Remove `apps/web/src/styles/Profile.module.css` from the CSS allowlist and `src/pages/profile.page.tsx` from `RAW_ELEMENT_ALLOWLIST`.**
+- [ ] **Step 3: Remove `apps/web/src/styles/Profile.module.css` from the CSS allowlist.** The page already left `RAW_ELEMENT_ALLOWLIST` in Task 6.16.
 - [ ] **Step 4: Run** `npm run lint:guards`, `npm run lint --workspace=apps/web` and `npm run test --workspace=apps/web`.
 - [ ] **Step 5: Commit** as `style(web): move the profile stylesheet onto semantic tokens`.
 
@@ -12804,6 +12804,9 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Mobile should adopt the shared `setProfilePhoto` and `PROFILE_PHOTO_SIZE_PX` (`EditProfileScreen.tsx` 129–147 duplicates both) (found in PR 6's Task 6.11 review).
   - [ ] Two more copies of the megabyte formula should use the shared `formatMegabytes`: mobile `CreatePostScreen.tsx` ~804 and shared `validation/post.ts` ~53 (found in PR 6's Task 6.12 review).
   - [ ] Mobile's `EditProfileScreen` (min-2 check ~240) and web signup's `validateFullName` should adopt the shared `fullNameSchema`. `users.full_name` also has no length limit in the database: add a `CHECK (char_length(full_name) <= 100)` in a new additive migration, which needs the user's go-ahead to apply (found in PR 6's Task 6.13 review).
+  - [ ] Share the list states: the own profile's `ListPanel` and the public profile's `RowList` nearly duplicate each other (loading → error with retry → empty → rows). Extract one `components/ui` component taking `{ loading, error, onRetry, isEmpty, empty, children }` when the public profile adopts `useUserList` (found in PR 6's Task 6.16 review).
+  - [ ] Sign-out has three labels: "Logout" in the profile menu, "Sign out" in the Settings nav and "Sign Out" in `AccountMenu`. Pick one (found in PR 6's Task 6.16 review).
+  - [ ] `SummaryRowMeta`'s separator dot starts the wrapped line on narrow rows ("· Food & Restaurants"), because the dot attaches to the following item. Keep the dot with the item before it, or hide a line-leading dot (found in PR 6's Task 6.16 review).
   - [ ] Extract `components/ui/DetailList` (`DetailList` + `DetailRow`) from the identical `dl > div > dt + dd` markup in the public profile's `AboutPanel` and `AccountDetails`. Add `white-space: pre-line` to `PublicProfile.module.css` `.aboutBio`, so visitors see a bio's line breaks as the member does (found in PR 6's Task 6.15 review).
   - [ ] Phone: web has no way to set or clear `users.phone`, so the own profile's Phone row always leads nowhere on web. Either show the row only when it is set, or add phone to web profile editing. Separately, mobile `EditProfileScreen.tsx:277` saves `phone: phone.trim() || undefined`, which the client drops, so a member can never clear their phone. This is the same class of bug Task 6.2 fixed for photos: write `null` (found in PR 6's Task 6.15 review).
   - [ ] Mantine's global CSS loads after the app's own theme modules. `_app.page.tsx` imports `Layout` and `mantine-theme` (which pulls in `mantine-components.module.css`) before `@mantine/core/styles.css`, so Mantine wins any equal-specificity tie. For example, the theme's Badge `text-transform: none` is ignored and TrustBadge/ScopeBadge render uppercase. Move the `@mantine/*` style imports to the top of `_app.page.tsx`, as Mantine's docs require. This changes screenshots on most pages, so do it in its own PR or in PR 10's baseline run (found in PR 6's Task 6.10 review).
