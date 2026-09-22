@@ -1,11 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Button } from '@mantine/core';
 import { useAuth } from '../../../../hooks/useAuth';
 import { supabase } from '../../../../lib/supabase';
 import { getPromotionById, type ListingPromotion } from '@nepally/shared';
 import styles from '../promote.module.css';
+
+const POLL_INTERVAL_MS = 2000;
+const MAX_POLL_ATTEMPTS = 15;
 
 export default function PromoteSuccessPage() {
   const router = useRouter();
@@ -16,8 +20,19 @@ export default function PromoteSuccessPage() {
   const [promotion, setPromotion] = useState<ListingPromotion | null>(null);
   const [active, setActive] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
+  // Set when every attempt failed and the promotion was never read, so the
+  // page can say so instead of sitting on "Still Processing" forever.
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = useCallback(() => {
+    setTimedOut(false);
+    setUnconfirmed(false);
+    setAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
@@ -34,15 +49,16 @@ export default function PromoteSuccessPage() {
 
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 15;
+    let everRead = false;
 
     const poll = async () => {
-      while (!cancelled && attempts < maxAttempts) {
+      while (!cancelled && attempts < MAX_POLL_ATTEMPTS) {
         attempts++;
         const result = await getPromotionById(supabase, promotionId);
         if (cancelled) return;
 
         if (result.data) {
+          everRead = true;
           setPromotion(result.data);
           if (result.data.status === 'active') {
             setActive(true);
@@ -50,11 +66,14 @@ export default function PromoteSuccessPage() {
           }
         }
 
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
       }
 
       if (!cancelled && mountedRef.current) {
         setTimedOut(true);
+        // Every read failed, so there is no listing to link to. Say so, and
+        // offer a retry plus a route back to the member's own listings.
+        if (!everRead) setUnconfirmed(true);
       }
     };
 
@@ -62,7 +81,7 @@ export default function PromoteSuccessPage() {
     return () => {
       cancelled = true;
     };
-  }, [router.isReady, promotionId, router]);
+  }, [router.isReady, promotionId, router, attempt]);
 
   if (!user) return null;
 
@@ -79,20 +98,35 @@ export default function PromoteSuccessPage() {
           <h1 className={styles.confirmationHeading}>
             {active
               ? 'Boost Active!'
-              : timedOut
-                ? 'Still Processing'
-                : 'Processing Payment...'}
+              : unconfirmed
+                ? "We couldn't confirm your promotion"
+                : timedOut
+                  ? 'Still Processing'
+                  : 'Processing Payment...'}
           </h1>
-          <p className={styles.confirmationSubtext}>
-            {active
-              ? 'Your promotion is now live! Your listing will get increased visibility.'
-              : timedOut
-                ? 'Your payment is being confirmed. This may take a minute. Check back on your listing shortly.'
-                : 'Your payment is being processed. This usually takes a few seconds.'}
-          </p>
+          {unconfirmed ? (
+            <p className={styles.confirmationSubtext} role="alert">
+              We couldn&apos;t confirm your promotion just now. Your payment is safe — if it
+              went through, the boost will appear on your listing shortly.
+            </p>
+          ) : (
+            <p className={styles.confirmationSubtext}>
+              {active
+                ? 'Your promotion is now live! Your listing will get increased visibility.'
+                : timedOut
+                  ? 'Your payment is being confirmed. This may take a minute. Check back on your listing shortly.'
+                  : 'Your payment is being processed. This usually takes a few seconds.'}
+            </p>
+          )}
 
           {!active && !timedOut && (
             <div className={styles.loader}>Processing...</div>
+          )}
+
+          {unconfirmed && (
+            <Button variant="outline" size="sm" onClick={retry}>
+              Try again
+            </Button>
           )}
 
           {(active || timedOut) && promotion && (
@@ -101,6 +135,12 @@ export default function PromoteSuccessPage() {
               className={styles.viewListingLink}
             >
               View Listing
+            </Link>
+          )}
+
+          {unconfirmed && (
+            <Link href="/marketplace/my-listings" className={styles.viewListingLink}>
+              Go to My Listings
             </Link>
           )}
         </div>
