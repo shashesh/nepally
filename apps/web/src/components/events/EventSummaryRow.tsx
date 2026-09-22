@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatDate, type Event } from '@nepally/shared';
+import { formatDate, isEventPast, type Event } from '@nepally/shared';
 import { ScopeBadge, SummaryRow, SummaryRowMeta } from '../ui';
 
 export interface EventSummaryRowProps {
@@ -19,7 +19,7 @@ export interface EventSummaryRowProps {
 export function EventSummaryRow({ event, now }: EventSummaryRowProps) {
   const going = event.rsvp_count ?? 0;
   const isCancelled = event.status === 'cancelled';
-  const isPast = !isCancelled && new Date(event.end_date ?? event.start_date) < now;
+  const isPast = !isCancelled && isEventPast(event, now);
   const statusLabel = isCancelled ? 'Cancelled' : isPast ? 'Past' : null;
   const date = formatDate(new Date(event.start_date));
 

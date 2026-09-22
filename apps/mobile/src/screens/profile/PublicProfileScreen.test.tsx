@@ -49,6 +49,7 @@ jest.mock('../../config/supabase', () => ({
 }));
 
 jest.mock('@nepally/shared', () => ({
+  isEventPast: jest.requireActual('@nepally/shared').isEventPast,
   getUserById: (...args: Parameters<typeof mockGetUserById>) => mockGetUserById(...args),
   getPostsByAuthorId: (...args: Parameters<typeof mockGetPostsByAuthorId>) =>
     mockGetPostsByAuthorId(...args),

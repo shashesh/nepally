@@ -6,7 +6,7 @@
 
 .label {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   color: var(--text-1);
 }
 
@@ -14,6 +14,28 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+/* One line that scrolls sideways on phones, as a filter row does. The
+   padding (taken back by the margin) leaves room for the 6px focus halo,
+   which the scroll container would otherwise clip on both axes. */
+@media (max-width: 40em) {
+  .chips[data-layout='scroll'] {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: calc(-1 * var(--space-2));
+    padding: var(--space-2);
+    scrollbar-width: none;
+  }
+
+  .chips[data-layout='scroll']::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chips[data-layout='scroll'] .chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 }
 
 .chip {

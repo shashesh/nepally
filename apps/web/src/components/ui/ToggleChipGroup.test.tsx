@@ -139,4 +139,43 @@ describe('ToggleChipGroup', () => {
 
     expect(chip('Housing tag').getAttribute('data-value')).toBe('housing');
   });
+
+  describe('hideLabel', () => {
+    it('keeps the group named by its label', () => {
+      render(<Harness hideLabel />);
+
+      expect(screen.getByRole('group', { name: 'Tags' })).toBeDefined();
+    });
+
+    it('still lets a chip be pressed', () => {
+      const onChangeSpy = vi.fn();
+      render(<Harness hideLabel onChangeSpy={onChangeSpy} />);
+
+      fireEvent.click(chip('Jobs tag'));
+
+      expect(onChangeSpy).toHaveBeenCalledWith(['jobs']);
+    });
+  });
+
+  describe('layout', () => {
+    it('scrolls a focused chip into view in the scroll layout', () => {
+      const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView');
+      render(<Harness layout="scroll" />);
+
+      chip('Help tag').focus();
+
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
+      scrollIntoView.mockRestore();
+    });
+
+    it('leaves focus scrolling to the browser in the default wrap layout', () => {
+      const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView');
+      render(<Harness />);
+
+      chip('Help tag').focus();
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      scrollIntoView.mockRestore();
+    });
+  });
 });

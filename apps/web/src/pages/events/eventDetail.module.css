@@ -1,223 +1,165 @@
-.page {
-  min-height: 100vh;
-  background: #F5F5F5;
-}
+/*
+ * Event detail. Semantic tokens only (scripts/guard-css-tokens.js); the page
+ * sits on the shell's --surface-0 and inside its padding. The attendance and
+ * organizer cards own their own styles, and the loading, error and empty
+ * states come from the ui components.
+ */
 
 .container {
-  max-width: 1100px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 24px 16px;
 }
 
 .breadcrumb {
-  font-size: 13px;
-  color: #757575;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
 }
 
-.breadcrumbLink {
-  color: #1565C0;
-  text-decoration: none;
+/* Breadcrumbs sets `white-space: nowrap` on every child it clones, which ran
+   a long title off the side of a phone with no way to scroll to the rest.
+   Two classes, so this wins in either stylesheet order. */
+.breadcrumb .breadcrumbCurrent {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-.breadcrumbLink:hover {
-  text-decoration: underline;
-}
-
+/* Main column plus a 320px aside, one column below 64em (1024px). */
 .layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
-  align-items: flex-start;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-6);
+  align-items: start;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 64em) {
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
-/* Main event info */
 .main {
-  background: #fff;
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
 }
 
 .hero {
+  display: block;
   width: 100%;
   height: 280px;
   object-fit: cover;
 }
 
 .heroPlaceholder {
-  width: 100%;
-  height: 280px;
-  background: #E3F2FD;
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 280px;
+  background: var(--surface-2);
   font-size: 72px;
 }
 
 .mainBody {
-  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
+  padding: var(--space-6);
+}
+
+/* Mantine colours the light variant's message with --mantine-color-black, not
+   the root's colour, so the message class makes it inherit instead. */
+.cancelledAlert {
+  border-color: var(--emergency-border);
+  background: var(--emergency-bg);
+  color: var(--emergency-fg);
+}
+
+.pastAlert {
+  border-color: var(--border-subtle);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.alertMessage {
+  color: inherit;
 }
 
 .badgeRow {
   display: flex;
-  align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .title {
-  font-size: 26px;
-  font-weight: 700;
-  color: #212121;
-  margin: 4px 0;
+  margin: var(--space-1) 0;
+  color: var(--text-1);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
 }
 
 .editedLabel {
-  font-size: 13px;
-  color: #9E9E9E;
+  color: var(--text-3);
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
   font-style: italic;
+  font-weight: var(--font-weight-regular);
 }
 
 .infoRow {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  font-size: 15px;
-  color: #212121;
+  gap: var(--space-2);
+  color: var(--text-1);
+  font-size: var(--font-size-base);
 }
 
 .infoIcon {
-  font-size: 18px;
   flex-shrink: 0;
-}
-
-.infoText {
-  flex: 1;
+  margin-top: 3px;
+  color: var(--text-3);
 }
 
 .infoSubtext {
-  font-size: 13px;
-  color: #757575;
   margin-top: 2px;
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
 }
 
 .description {
-  font-size: 16px;
-  color: #212121;
-  line-height: 1.6;
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--font-size-base);
+  line-height: var(--leading-relaxed);
   white-space: pre-wrap;
 }
 
-/* Sidebar */
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .sidebarCard {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  padding: var(--card-padding);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
 }
 
-.sectionTitle {
-  font-size: 12px;
-  font-weight: 700;
-  color: #9E9E9E;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin: 0 0 12px;
+.manageTitle {
+  margin: 0 0 var(--space-3);
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
-.organizerRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.organizerInfo {
-  flex: 1;
-}
-
-.organizerName {
-  font-size: 15px;
-  font-weight: 600;
-  color: #212121;
-  text-decoration: none;
-}
-
-.organizerName:hover {
-  text-decoration: underline;
-}
-
-.rsvpCount {
-  font-size: 15px;
-  color: #212121;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.rsvpCountButton {
-  width: 100%;
-  text-align: left;
-  border: none;
-  padding: 0;
-  background: none;
-  font: inherit;
-}
-
-.rsvpCountClickable {
-  color: #1565C0;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.rsvpPrivate {
-  font-size: 13px;
-  color: #757575;
-  margin-bottom: 8px;
-}
-
-.rsvpHint {
-  margin: 10px 0 0;
-  font-size: 12px;
-  color: #757575;
-}
-
-.organizerActions {
+.manageActions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid #E0E0E0;
-  margin-top: 8px;
-}
-
-.centered {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-}
-
-.backLink {
-  color: #1565C0;
-  text-decoration: none;
-  font-size: 14px;
+  gap: var(--space-2);
 }

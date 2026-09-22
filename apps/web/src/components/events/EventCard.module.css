@@ -1,34 +1,38 @@
-/* EventCard — vertical square card for 3-column grid layout */
+/* EventCard — one card in the events grid (three, two or one columns). */
 
+/* `.card` is the stretched link's containing block: nothing between it and
+   the link may be positioned, or the overlay would shrink to that box.
+   Positioned content after the link (Avatar's root, for one) paints above
+   the overlay and takes its clicks, so it must pass them through (see
+   `.organizer`) or, like `.response`, be meant to sit on top.
+   `height: 100%` fills the grid cell, so cards in a row end level. */
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  text-decoration: none;
-  color: inherit;
-  background: #fff;
-  border-radius: 12px;
+  height: 100%;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  transition: border-color var(--duration-fast) var(--ease-out);
 }
 
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+/* Compact surfaces get a border change on interaction; --shadow-float is
+   reserved for floating layers (PR 6 decision 11). */
+.card:hover,
+.card:focus-within {
+  border-color: var(--border-solid);
 }
 
-.cardPast {
-  opacity: 0.6;
-}
-
-/* ── Cover image ── */
+/* ── Cover ── It comes before the link, so even its positioned content
+   (the `fill` image, the badges) paints under the overlay. */
 .cover {
   position: relative;
-  width: 100%;
+  flex-shrink: 0;
   height: 160px;
   overflow: hidden;
-  background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
-  flex-shrink: 0;
+  background: var(--surface-2);
 }
 
 .coverImage {
@@ -36,133 +40,126 @@
 }
 
 .coverPlaceholder {
-  width: 100%;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
   font-size: 44px;
 }
 
 .badges {
   position: absolute;
-  bottom: 8px;
-  left: 8px;
+  bottom: var(--space-2);
+  left: var(--space-2);
   display: flex;
-  gap: 4px;
   flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.cancelled {
+  border-color: var(--surface-1);
+  background: var(--surface-1);
+  color: var(--danger);
 }
 
 /* ── Body ── */
 .body {
-  padding: 12px 14px 8px;
-  flex: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) var(--space-2);
 }
 
+/* Not line-clamped: a clamp's `overflow: hidden` would clip the link's focus
+   ring, as PostCard's title avoids too. */
 .title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #212121;
-  line-height: 1.35;
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-snug);
 }
 
-.titlePast {
-  color: #9e9e9e;
+/* The card's only link; its `::after` covers the whole card. */
+.stretchedLink {
+  color: var(--text-1);
+  text-decoration: none;
 }
 
-.meta {
-  font-size: 12px;
-  color: #757575;
-  line-height: 1.4;
+.stretchedLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
 }
 
-.counts {
-  font-size: 12px;
-  color: #757575;
-  line-height: 1.4;
-  margin-top: 2px;
+.stretchedLink:hover {
+  text-decoration: underline;
+}
+
+.card[data-past] .stretchedLink {
+  color: var(--text-2);
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+}
+
+.detailIcon {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.place {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Footer ── */
 .footer {
-  padding: 8px 12px 12px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid #f0f0f0;
-  gap: 8px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--border-subtle);
 }
 
+/* Decorative, and after the link: Avatar's positioned root would otherwise
+   paint above the overlay and swallow clicks meant for the card.
+   The min-width keeps the name readable in a three-column card: when the
+   response control no longer fits beside it, the control wraps to its own
+   line instead of squeezing the name down to one letter. */
 .organizer {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
+  gap: var(--space-2);
+  min-width: 7rem;
+  pointer-events: none;
 }
 
 .organizerName {
   min-width: 0;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ── Response buttons ── */
-.responseGroup {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* The one element above the stretched link's overlay, so it stays clickable. */
+.response {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
-}
-
-.responseBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1.5px solid #1976D2;
-  background: transparent;
-  color: #1976D2;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
-  white-space: nowrap;
-}
-
-.responseBtn:hover {
-  background: #E3F2FD;
-}
-
-.responseBtnActive {
-  background: #1976D2;
-  color: #fff;
-}
-
-.responseBtnActive:hover {
-  background: #1565C0;
-}
-
-.chevron {
-  font-size: 10px;
-  opacity: 0.75;
-}
-
-.secondaryBtn {
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1.5px solid #e0e0e0;
-  background: transparent;
-  color: #616161;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 120ms ease;
-  white-space: nowrap;
-}
-
-.secondaryBtn:hover {
-  background: #f5f5f5;
 }

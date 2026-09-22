@@ -8,6 +8,7 @@ import type {
   EventResult,
   EventsResult,
   EventRsvp,
+  EventPeriod,
   EventRsvpsResult,
   RsvpStatus,
   UserEventResponses,
@@ -44,9 +45,58 @@ type AttendeeRow = {
   }[] | null;
 };
 
+export interface MetroEventsPageOptions {
+  period: EventPeriod;
+  /** One instant for the whole scroll, so no event changes period between pages. */
+  now: Date;
+  limit?: number; // default 20
+  offset?: number; // default 0
+}
+
 /**
- * Get upcoming events for a metro area (local + global), chronological.
- * Excludes removed events. Includes cancelled events (shown with banner).
+ * One page of a metro's events: local and global, never removed.
+ * Upcoming events haven't ended and come soonest first. Past events have ended
+ * and come most recent first.
+ */
+export async function getMetroEventsPage(
+  supabase: SupabaseClient,
+  metroId: string,
+  { period, now, limit = 20, offset = 0 }: MetroEventsPageOptions
+): Promise<EventsResult> {
+  try {
+    const iso = now.toISOString();
+    const ascending = period === 'upcoming';
+    let query = supabase
+      .from('events')
+      .select(EVENT_SELECT)
+      .neq('status', 'removed')
+      .or(`metro_area_id.eq.${metroId},is_global.eq.true`);
+
+    // PostgREST ANDs repeated filters, so these combine with the metro `or`.
+    // createEventSchema keeps every end after its start, so the two periods
+    // split events exactly as isEventPast does.
+    query = ascending
+      ? query.or(`start_date.gte.${iso},end_date.gte.${iso}`)
+      : query.lt('start_date', iso).or(`end_date.is.null,end_date.lt.${iso}`);
+
+    const { data, error } = await query
+      .order('start_date', { ascending })
+      .order('id', { ascending })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    const rows = (data || []) as Event[];
+    return { data: rows, hasMore: rows.length === limit };
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('Failed to fetch events') };
+  }
+}
+
+/**
+ * Get a metro area's events (local + global), by start date ascending,
+ * past ones included. Excludes removed events. Includes cancelled events
+ * (shown with banner). Mobile's EventsScreen still pages with this; web uses
+ * getMetroEventsPage, which puts upcoming events first.
  */
 export async function getEventsByMetro(
   supabase: SupabaseClient,
@@ -156,11 +206,14 @@ export async function getEventById(
       .neq('status', 'removed')
       .single();
 
-    if ((error as { code?: string } | null)?.code === 'PGRST116') {
-      return { error: new Error('Event not found') };
+    // PGRST116: no row. 22P02: the id isn't a UUID, as in a mistyped link,
+    // which no retry would fix.
+    const code = (error as { code?: string } | null)?.code;
+    if (code === 'PGRST116' || code === '22P02') {
+      return { error: new Error('Event not found'), notFound: true };
     }
     if (error) throw error;
-    if (!data) return { error: new Error('Event not found') };
+    if (!data) return { error: new Error('Event not found'), notFound: true };
     return { data: data as Event };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch event') };
@@ -195,8 +248,8 @@ export async function getEventsByOrganizer(
 }
 
 /**
- * Get the full attendee list for an event (user info joined from event_rsvps).
- * Fetched on demand (not on page load).
+ * Get the people going to an event (user info joined from event_rsvps).
+ * Interested members are not attendees. Fetched on demand (not on page load).
  */
 export async function getEventAttendees(
   supabase: SupabaseClient,
@@ -219,6 +272,7 @@ export async function getEventAttendees(
         )
       `)
       .eq('event_id', eventId)
+      .eq('status', 'going')
       .order('created_at', { ascending: true });
 
     if (error) throw error;
@@ -501,25 +555,23 @@ export async function getUserEventResponses(
   }
 }
 
-/**
- * Check whether a user has RSVP'd to a specific event.
- */
-export async function hasUserRsvp(
+/** The member's response to one event, or null when they have none. */
+export async function getUserEventResponse(
   supabase: SupabaseClient,
   eventId: string,
   userId: string
-): Promise<{ data?: boolean; error?: Error }> {
+): Promise<{ data?: RsvpStatus | null; error?: Error }> {
   try {
     const { data, error } = await supabase
       .from('event_rsvps')
-      .select('id')
+      .select('status')
       .eq('event_id', eventId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
-    return { data: !!data };
+    if (error) throw error;
+    return { data: (data as { status: RsvpStatus } | null)?.status ?? null };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to check RSVP') };
+    return { error: error instanceof Error ? error : new Error('Failed to fetch event response') };
   }
 }

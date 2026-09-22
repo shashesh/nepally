@@ -12,6 +12,8 @@ export type RsvpVisibility = 'public' | 'private';
 
 export type RsvpStatus = 'going' | 'interested';
 
+export type EventPeriod = 'upcoming' | 'past';
+
 export interface Event {
   id: string;
   title: string;
@@ -47,6 +49,8 @@ export interface EventRsvp {
 export interface EventResult {
   data?: Event;
   error?: Error;
+  /** Set when no such event exists, or it was removed; a failed request leaves it unset. */
+  notFound?: boolean;
 }
 
 export interface EventsResult {

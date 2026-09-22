@@ -11,7 +11,12 @@ import {
 import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { formatPublicName, type Event, type RsvpStatus } from '@nepally/shared';
+import {
+  formatEventDateShort,
+  formatPublicName,
+  type Event,
+  type RsvpStatus,
+} from '@nepally/shared';
 import { EventTypeBadge } from './EventTypeBadge';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -24,27 +29,6 @@ interface Props {
   userResponse?: RsvpStatus | null;
   canInteract?: boolean;
   onResponseChange?: (eventId: string, status: RsvpStatus | null) => void;
-}
-
-function formatEventDate(startDate: string, endDate?: string): string {
-  const start = new Date(startDate);
-  const opts: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
-
-  if (!endDate) {
-    const time = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    return `${start.toLocaleDateString('en-US', opts)} · ${time}`;
-  }
-
-  const end = new Date(endDate);
-  const sameDay = start.toDateString() === end.toDateString();
-  if (sameDay) {
-    const time = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    return `${start.toLocaleDateString('en-US', opts)} · ${time}`;
-  }
-
-  const startShort = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const endShort = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `${startShort} – ${endShort}`;
 }
 
 function formatCount(n: number, singular: string, plural: string): string {
@@ -122,7 +106,7 @@ export const EventCard: React.FC<Props> = React.memo(({
             {event.title}
           </Text>
           <Text style={[styles.meta, past && styles.metaPast]}>
-            📅 {formatEventDate(event.start_date, event.end_date)}
+            📅 {formatEventDateShort(event.start_date, event.end_date)}
           </Text>
           <Text style={[styles.meta, past && styles.metaPast]} numberOfLines={1}>
             📍 {event.location_name}

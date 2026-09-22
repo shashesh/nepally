@@ -1,0 +1,35 @@
+/*
+ * Event-type badges take the same `--event-<type>-fg` / `-bg` pairs as create
+ * event's chips, keyed on `data-type` here where the chips use `data-value`.
+ * The border matches the tint, so the badge reads as one solid pill.
+ */
+
+.badge[data-type='cultural'] {
+  color: var(--event-cultural-fg);
+  background: var(--event-cultural-bg);
+  border-color: var(--event-cultural-bg);
+}
+
+.badge[data-type='religious'] {
+  color: var(--event-religious-fg);
+  background: var(--event-religious-bg);
+  border-color: var(--event-religious-bg);
+}
+
+.badge[data-type='social'] {
+  color: var(--event-social-fg);
+  background: var(--event-social-bg);
+  border-color: var(--event-social-bg);
+}
+
+.badge[data-type='career'] {
+  color: var(--event-career-fg);
+  background: var(--event-career-bg);
+  border-color: var(--event-career-bg);
+}
+
+.badge[data-type='other'] {
+  color: var(--event-other-fg);
+  background: var(--event-other-bg);
+  border-color: var(--event-other-bg);
+}

@@ -187,8 +187,8 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | Merged (PR #83) | 2026-09-21 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
-| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a, 6.19b | In Review (PR #85) | 2026-09-22 | branched from `master` at e685317 |
-| 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
+| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a, 6.19b | Merged (PR #85) | 2026-09-22 | branched from `master` at e685317; baselines regenerated locally in Docker (25d56ce) |
+| 7 Events | `feat/web-ui-events` | 7.1–7.15, in four chunks | In Review (PR #86) | 2026-09-22 | branched from `master` at 3386a5d. **Chunk 1** (7.1–7.5, b9e4eb3..294c80e) done 2026-09-22: gate green (shared 660, web 1402, mobile 636 tests); review found no CRITICAL or HIGH. Routed from its review: (1) **for the user to decide:** `EventResponseControl`'s `data-disabled` gives both buttons Mantine's grey disabled look while a response saves, hiding the pressed state decision 6 says moves at once — the reason `FollowButton` sets only `aria-disabled`; (2) `getMetroEventsPage`'s comment should cite the `CHECK` in `006_events.sql`, not `createEventSchema`; (3) no test asserts `EventTypeBadge`'s `data-type`; (4) `getUserEventResponse` swaps a PostgREST error for a generic message, as the rest of `api/events.ts` does; (5) a malformed id returns `22P02`, so `notFound` stays unset — Task 7.11 should weigh that; (6) Task 7.15's docs pass also drops `hasUserRsvp` from `events-feature-breakdown.md:91` and `13-event-discovery-and-rsvp.md:499`; (7) a double blank line in `api/events.test.ts`. **Chunk 2** (7.6–7.10, e4e1fb9..30f1c6e) done 2026-09-22: gate green (shared 660, web 1428 tests); `events/index.page.tsx` 333 → 141 lines. Review: two HIGH fixed in 30f1c6e (the organizer avatar was a dead spot above the stretched link's overlay; the title clamp clipped the link's focus ring), plus ragged card heights, a regression from the `li` becoming the grid item. Routed from its review: (1) `useEventFeed.test.ts`'s "drops a page that lands after the reload" leans on the previous test's mock for its chained past call, so it fails alone — add `mockResolvedValueOnce(page([]))` and reset mocks in `beforeEach`; (2) the pages test's fake `IntersectionObserver` fires disconnected observers too, so it can't catch a sentinel unmounted while a filter shows nothing; (3) untested hook branches: the chained past page failing on first load, and the reset when metro or viewer changes; (4) `hasMore` stays true after a failed first load (no visible effect; add `&& error === null`); (5) a `loadMore` in flight when the metro becomes null still lands — bump the generation before the early return; (6) "Couldn't load more events" reads oddly when a metro's first past page fails and nothing is on screen; (7) a mid-row chip focused on a phone sits flush against the scroll edge and clips its ring — add `scroll-padding-inline`; (8) `EventCard.test.tsx` queries `time` with `querySelector` where `getByRole('time')` works; (9) the page tests check sections by `closest('section')`, not `getByRole('region')` and list items; (10) Task 7.15's list already covers the stale `pages.ts` comment and `ToggleChipGroup`'s new props in `web-ui-system.md`. **Chunk 3** (7.11–7.14, c917f93..616d3b4) done 2026-09-22: gate green (shared 661, web 1464 tests); `events/[id].page.tsx` 379 → 277 lines, against a ~230 target, the difference being the id-keyed view wrapper and the `blockedBy` helper. Review: one HIGH fixed in 616d3b4 (Mantine's `Breadcrumbs` nowrap clipped a long title on phones), with the two other breadcrumb nits on the same lines. Routed from its review: (1) `AttendeeList` rows pass `full_name` to a non-decorative `Avatar`, so screen readers hear the surname the row masks — PR 10, with the test id; (2) `useEventDetail` can't clear `responding` in its render-time reset, which only the page's id key makes safe — narrow the comment or clear it in the effect; (3) the load effect has no `.catch`, harmless while every shared API catches its own errors; (4) the sidebar card chrome is defined three times, a candidate for one primitive in PR 10; (5) the attendee list is cached per open, so the dialog can show 12 while the count reads 13 (pre-existing); (6) "This event has passed." appears in both the alert and the attendance card, which reads as helpful rather than redundant, but a cancelled event shows no line at all, and chunk 4's e2e must scope that string to a role. **Chunk 4** (7.15, 8407421) done 2026-09-22: smoke pass, e2e (102), baselines regenerated in Docker and the visual suite green, full gate green (shared 661, web 1464, mobile 636), docs updated, draft PR #86 open with Copilot requested. The a11y diff only deletes the four `events` / `event-detail` entries. Twelve screenshots changed and were reviewed; reviewing them caught a three-column card squeezing the organizer name to one letter, fixed by wrapping the response control to its own line. The feed's visual ready check waited only for its first post, so the Metro Pulse strip was in the shot or not depending on timing; it now waits for the strip. The keyboard walk ran in Chromium against the production build and passed every case in Step 7 |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 10 Static pages + cleanup | `feat/web-ui-cleanup` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -10927,8 +10927,8 @@ These PRs depend on the primitives and shell shipped in PR 2, so their task-leve
    node -e "const {findViolations}=require('./scripts/guard-css-tokens.js');const fs=require('fs');for(const f of process.argv.slice(1)){const v=findViolations(fs.readFileSync(f,'utf8'));console.log(f, v.length)}" <area .module.css files>
    # Native dialogs
    grep -rn "confirm(\|alert(\|prompt(" <area page/component files>
-   # Raw form elements
-   grep -rnE "<(button|input|select|textarea)[[:space:]>/]" <area .tsx files>
+   # Raw form elements (\b, not [[:space:]>/], so a tag that ends its line still counts — PR 7 inventory)
+   grep -rnE "<(button|input|select|textarea)\b" <area .tsx files>
    ```
 
 3. **Write the task breakdown.** Invoke `superpowers:writing-plans` and append a "PR N — Task breakdown" section under that PR below. Use the same task format as PRs 0–3b: files, interfaces, TDD steps with full code, commands, and commits.
@@ -12832,6 +12832,784 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
 - **Already built:** `EventSummaryRow` (PR 6, Task 6.4) renders an event as a compact row, for any list that does not need the full `EventCard`.
 - **Also:** add a shared `isEventPast(event, now)` to `packages/shared/src/logic` and replace the eight inline copies of `new Date(end_date ?? start_date) < now` (four in web, three in mobile, one in `EventSummaryRow`) — found in PR 6's Task 6.4 review.
 
+### PR 7 — Area inventory
+
+Run on `master` at `3386a5d` (the "Starting an area PR" commands), 2026-09-22.
+
+| File | Lines | CSS violations | Raw form elements | Native dialogs |
+|---|---|---|---|---|
+| `pages/events/index.page.tsx` | 333 | — | 1 | 0 |
+| `pages/events/events.module.css` | 120 | 9 literals | — | — |
+| `pages/events/[id].page.tsx` | 379 | — | 0 | 6 |
+| `pages/events/eventDetail.module.css` | 223 | 21 literals | — | — |
+| `components/events/EventCard.tsx` / `.module.css` | 164 / 168 | 21 literals | 3 | — |
+| `components/events/EventFilterBar.tsx` / `.module.css` | 124 / 108 | 27 (12 literals, 12 legacy tokens, 3 named) | 2 | — |
+| `components/events/RsvpButton.tsx` / `AttendeeList.tsx` / `EventTypeBadge.tsx` | 39 / 42 / 27 | — | 0 | — |
+
+All six dialogs are on event detail. `alert` fires when an RSVP fails (116) and when a conversation can't start (171). Cancel and delete each run `confirm` first, then `alert` on failure (135/138 and 146/149). `outline: none` sits at `EventFilterBar.module.css` 31. `a11y-baseline.json` holds four entries for this area: `color-contrast` on `events` and `event-detail`, at both widths. PR 5 finished `create.page.tsx` and `createEvent.module.css`; only decision 9 touches create event again.
+
+The raw-element grep first reported nothing. `[[:space:]>/]` needs a character after the tag name, and every one of these tags ends its line. The command in "Starting an area PR" now uses `\b`.
+
+**What the recon changed** (the area read on 2026-09-22):
+
+1. **Event detail treats "Interested" as "Going", then deletes it.** `hasUserRsvp` (shared `api/events.ts` 507) returns true for any `event_rsvps` row. A member who marked an event Interested on the list sees "Going ✓" on its page, and pressing it calls `unrsvpFromEvent`, which deletes the response. Mobile's `EventDetailScreen` (108, 131, 153–160) does the same. Task 7.2 adds `getUserEventResponse`, so both detail pages read the real status.
+2. **"12 people going" opens a list that includes the interested.** `getEventAttendees` (201) has no status filter. Task 7.2 filters it to `going`, which fixes mobile's list too.
+3. **The list pages oldest first.** `getEventsByMetro` orders by `start_date` ascending with no lower bound, 20 at a time.
+   - The first page is the metro's 20 oldest events. An upcoming event appears only once paging reaches it, and it lands above everything already on screen. Past events read oldest first.
+   - **This is live on `nusa-staging`:** metro 12060 has 29 events, all past (read-only count, 2026-09-22). The next event anyone creates there would sit behind 20 old ones.
+   - Task 7.3 adds `getMetroEventsPage`, which pages upcoming events first and then past events newest first. Mobile's `EventsScreen` pages the same way and keeps `getEventsByMetro` until it adopts the new function (routed to PR 10).
+4. **A filter can stall on "No Social events".** Type and text filters run over the loaded pages only. The empty branch renders no sentinel, so pages that might hold a match are never requested. Decision 3 fixes this.
+5. **`EventCard` nests buttons inside its link.** The whole card is a `<Link>`, and the Interested/Going buttons inside it call `preventDefault` to stop navigation. The main button also shows a "▾", which promises a menu that doesn't exist. Task 7.6 rebuilds the card on the stretched link that `PostCard` and `SummaryRow` use.
+6. **The list's rollback reads a value that may not exist yet.** `handleResponseChange` (index 141–201) captures `previous` inside a `setUserResponses` updater, then reads it on the next line. React runs an updater eagerly only when the fiber has no queued updates, so under batching `previous` can still be `null` when the counts are adjusted. The new hook reads the current response from a ref (Task 7.9).
+7. **Event detail keeps the previous event when the id changes, and hides failures.** Like the public profile before Task 6.8, the page never resets when the Pages Router reuses it, and its load effect has no cancel guard. A failed attendee request shows "No attendees yet." Tasks 7.11 and 7.12 fix both.
+8. **The same helpers live in several places.**
+   - `formatEventDate` (web `EventCard` 18, mobile `EventCard` 29) and `formatFullDate` (web detail 175, mobile `EventDetailScreen` 45) are identical across the two apps.
+   - The past-event test appears in six files: web `EventSummaryRow`, events index and event detail, and mobile `EventDetailScreen`, `EventsScreen` and `PublicProfileScreen`.
+   - The count adjustment after a response change appears four times: forward and rollback, in web's index and in mobile's `EventsScreen`.
+
+   Task 7.1 moves all three into shared.
+9. **The contrast failures.** `EventTypeBadge` still colours itself from Mantine's `light` palette, not the `--event-<type>` tokens create event uses; `tokens.css` records the old cultural pair at 3.46:1. The detail's section titles are `#9E9E9E` on white (about 2.7:1), and past cards fade to `opacity: 0.6`. Task 7.4 moves the badge onto the tokens, and Tasks 7.6, 7.10 and 7.14 replace the rest.
+
+## PR 7 — Task breakdown
+
+Work on `feat/web-ui-events`, branched from `master` at `3386a5d`. Same conventions as PRs 4a–6:
+
+- Test first, with one commit per task.
+- Tests query by role, label or text.
+- Semantic tokens only: no inline `style={{}}`, and no colour literals passed through Mantine's `styles` prop.
+- Mantine components rather than raw elements outside `components/ui/`.
+- No new dependencies. `Breadcrumbs`, `Alert`, `CloseButton` and `VisuallyHidden` ship in `@mantine/core`, and the icons in `@tabler/icons-react`.
+
+**How this PR runs** *(agreed 2026-09-22, because PR 6's per-task reviews made it slow)*
+
+The 15 tasks run in four chunks, and each chunk ends with something that works:
+
+| Chunk | Tasks | Ends with |
+|---|---|---|
+| 1. Shared layer and leaf components | 7.1–7.5 | The shared helpers, API fixes and paging query, with mobile on the shared fixes. `EventTypeBadge` on tokens, and `EventResponseControl` |
+| 2. Events list | 7.6–7.10 | The list page fully migrated, stylesheet included |
+| 3. Event detail | 7.11–7.14 | The detail page fully migrated, stylesheet included |
+| 4. Finish | 7.15 | e2e, baselines, a11y, docs and the draft PR |
+
+**Inside a chunk,** each task follows its steps: write the failing test, run **only that task's tests**, implement, run them again, commit. There is no review and no full-suite run between tasks. One exception: a task that edits an allowlist also runs `npm run lint:guards`, because the guard fails on an allowlisted file that is clean (decision 7).
+
+**At the end of each chunk,** run one gate:
+
+1. **Tests and checks:** `npm run type-check`, `npm run lint`, `npm run lint:guards`, and the full unit suite of every workspace the chunk touched. That is `npm run test --workspace=packages/shared` and `--workspace=apps/web`, plus `--workspace=apps/mobile` in chunk 1. Web Vitest fails whole files from a lowercase `c:\` working directory, so run it from `C:\…`.
+2. **Review:** one code-review agent reviews the chunk's whole diff (`git diff <chunk start>..HEAD`) against this breakdown and the definition of done.
+3. **Fixes:** CRITICAL and HIGH findings are fixed in the chunk, in one `fix(web): address chunk N review` commit. Other findings that aren't defects in this PR's own code go to PR 10's list, or to the chunk's line in the tracker. **They never become new tasks.**
+4. **Push, and record the chunk** in the tracker's Notes.
+
+The e2e and visual suites run only in chunk 4. The e2e suite builds for production and takes minutes, and the unit gate catches regressions chunk by chunk. Tasks 7.10 and 7.14 edit the e2e selectors they change, and chunk 4 runs them.
+
+**Decisions this breakdown locks in:**
+
+1. **One response control on both surfaces** (recon 1).
+   - `EventResponseControl` is a pair of toggle buttons, "Interested" and "Going". Each carries `aria-pressed` and a name that never changes, and pressing the pressed one clears the response.
+   - The card and the detail page both use it, so **event detail gains "Interested"**. The list, and mobile's list, already offer it.
+   - `RsvpButton` is deleted. Where a member can't respond, the detail page says why in a sentence instead of showing a disabled button, which can't take focus: "This event has passed.", "You're the organizer." or "Verify your account to respond."
+2. **Upcoming first, then past, newest first** (recon 3).
+   - Upcoming events page by `start_date` ascending, then past events by `start_date` descending. Each order breaks ties on `id` (decision 21's lesson), and past events used to read oldest first, so their order flips.
+   - Both phases share one `now`, taken when the first page loads, so no event moves between phases mid-scroll.
+   - When the first upcoming page comes back short, the first load also fetches the first past page. A metro with nothing upcoming, like staging's, then opens on its past events rather than on an empty list.
+3. **Filters stay on the client** (recon 4).
+   - **Why:** a metro holds dozens of events, not thousands, and a server-side text filter would need escaping for PostgREST's `or` syntax.
+   - **Instead:** the sentinel stays mounted while a filter shows nothing, so paging continues until a match loads or the pages run out. "No Social events" appears only once paging is done.
+4. **A failed "load more" stops and offers Try again.** Leaving `hasMore` set while the sentinel is on screen would retry in a tight loop (decision 22). The feed stops and shows a toast. Events also show "Couldn't load more events." with Try again, because the past events below would otherwise be unreachable until a reload.
+5. **Cards use the stretched link** (recon 5).
+   - The title is the only link, and its `::after` covers the card. The response control is the only thing above the overlay, like `SummaryRow`'s `menu`.
+   - The cover is `alt=""`, because the title follows it.
+   - Past cards drop `opacity: 0.6` for a "Past" label and a `--text-2` title (recon 9).
+   - Cards lift with a `--border-solid` border on hover and focus-within, not a shadow (PR 6 decision 11).
+6. **Busy controls stay focusable** (`web-ui-system.md`). While a response saves, both buttons in the control take `aria-disabled` and ignore presses, and the pressed state moves at once. Message Organizer does the same with a `Loader`, like the public profile's Message button.
+   - **Amended 2026-09-22, on the user's call.** This decision first asked for `data-disabled` as well, but Mantine paints a `data-disabled` button flat grey, which hid the very state the member had just chosen. The control now follows `FollowButton`, the documented exception: `aria-disabled` only, so the pressed button stays visibly pressed while the write lands. It keeps Mantine's pointer cursor while busy, which `globals.css` would otherwise suppress.
+7. **Event types colour from the tokens.** `EventTypeBadge` reads `--event-<type>-fg` / `-bg` through `data-type`, as create event's chips do through `data-value`. Its emoji becomes `aria-hidden`, so the badge reads "Cultural". Mobile keeps `EVENT_TYPE_COLORS`.
+8. **The filter chips are a `ToggleChipGroup`.**
+   - Single mode already makes pressing the current chip a no-op, which suits a filter that always has one pick.
+   - `hideLabel` is a new prop that keeps the "Event type" name for assistive technology only.
+   - `layout="scroll"` is another new prop. It keeps the chips on one line and scrolls them sideways on phones, as the filter bar does today.
+9. **One label style on create event** (the bullet above). Mantine's field labels are 15px at weight 500, while `ToggleChipGroup` and `DateTimeField` labels are 15px at 600, so those two drop to 500. The chip-group labels on create post and create listing change too, and the baseline review should expect that.
+10. **Mobile takes the shared fixes, not the list rewrite.** These land on mobile in Tasks 7.1 and 7.2:
+    - the detail status fix (recon 1)
+    - going-only attendees (recon 2)
+    - the shared date and past helpers, and the count adjustment (recon 8)
+
+    Mobile's detail keeps its single RSVP button. Moving mobile's list onto `getMetroEventsPage` changes `EventsScreen`'s paging, so it is routed to PR 10.
+
+**Files this PR creates:**
+
+| Path | Responsibility |
+|---|---|
+| `packages/shared/src/logic/events.ts`, `.test.ts` | `isEventPast`, and `applyEventResponseChange`: the counts after a response changes |
+| `packages/shared/src/utils/eventDates.ts`, `.test.ts` | `formatEventDateShort` (cards) and `formatEventDateLong` (detail) |
+| `apps/web/src/components/events/EventTypeBadge.module.css` | The per-type token colours |
+| `apps/web/src/components/events/EventResponseControl.tsx`, `.module.css`, `.test.tsx` | The Interested / Going toggle pair |
+| `apps/web/src/hooks/useEventFeed.ts`, `.test.ts` | A metro's events in two phases, the viewer's responses, and `respond` with rollback |
+| `apps/web/src/hooks/useEventDetail.ts`, `.test.ts` | One event and the viewer's response, with `respond`, `cancel` and `remove`; resets when the id changes |
+| `apps/web/src/components/events/EventAttendanceCard.tsx`, `.module.css`, `.test.tsx` | The detail sidebar's going count, attendee-list opener, response control and status line |
+| `apps/web/src/components/events/EventOrganizerCard.tsx`, `.module.css`, `.test.tsx` | The detail sidebar's organizer and Message Organizer button |
+
+**Files this PR deletes:** `components/events/RsvpButton.tsx` and `RsvpButton.test.tsx`.
+
+**Where the pages should land:**
+
+| Page | Before | Target |
+|---|---|---|
+| `pages/events/index.page.tsx` | 333 | ~180 |
+| `pages/events/[id].page.tsx` | 379 | ~230 |
+
+### Task 7.1: Shared event helpers
+
+**Files:**
+
+- **Create:** `packages/shared/src/logic/events.ts`, `events.test.ts`, `utils/eventDates.ts` and `eventDates.test.ts`.
+- **Modify:** `logic/index.ts` and `utils/index.ts`.
+- **Adopt the helpers in:** web `components/events/EventSummaryRow.tsx`, and mobile `components/events/EventCard.tsx`, `screens/EventDetailScreen.tsx`, `screens/EventsScreen.tsx` and `screens/profile/PublicProfileScreen.tsx`.
+
+**Interface:**
+
+```ts
+// logic/events.ts
+/** Past once its end has gone by, or its start when it has no end. */
+export function isEventPast(event: Pick<Event, 'start_date' | 'end_date'>, now: Date): boolean;
+
+export type EventResponseCounts = Pick<Event, 'rsvp_count' | 'interested_count'>;
+
+/**
+ * The counts after a member's response moves from `previous` to `next`;
+ * either may be null. Never below zero. A rollback is the same call with the
+ * two swapped. Returns a new object.
+ */
+export function applyEventResponseChange<T extends EventResponseCounts>(
+  event: T,
+  previous: RsvpStatus | null,
+  next: RsvpStatus | null
+): T;
+
+// utils/eventDates.ts
+/** "Thu, Mar 5 · 6:00 PM". A multi-day event reads "Mar 5 – Mar 7". */
+export function formatEventDateShort(startDate: string, endDate?: string | null): string;
+/** "Thursday, March 5 · 6:00 PM – 9:00 PM". A multi-day event reads "March 5 – March 7". */
+export function formatEventDateLong(startDate: string, endDate?: string | null): string;
+```
+
+The formatters are today's web and mobile functions, moved without changes except that `endDate` also accepts `null`, which PostgREST sends for an event with no end. `isEventPast` matches every copy it replaces. `EventSummaryRow` keeps its own cancelled check in front of it.
+
+Mobile adopts all three helpers here. The web pages pick them up in Tasks 7.6, 7.9 and 7.11, where their copies move into components and hooks anyway.
+
+- [ ] **Step 1: Write the failing tests.**
+  - **`isEventPast`:** an end before `now` is past. An end after `now` with a start before it is not past, because the event is still running. With no end, a start before `now` is past and one after it is not. An end exactly at `now` is not past.
+  - **`applyEventResponseChange`:**
+    - `null → going` adds one to `rsvp_count`.
+    - `going → interested` moves one count across.
+    - `interested → null` takes one from `interested_count`.
+    - `going → null` at `rsvp_count: 0` stays at 0.
+    - The result is a new object that keeps the event's other fields.
+  - **Formatters:** a start alone, a same-day start and end, a multi-day range, and a `null` end treated as no end.
+  - **Dates in the tests:** build them with the local-time constructor (`new Date(2026, 2, 5, 18, 0).toISOString()`), so the tests pass in any time zone. ICU puts U+202F before "PM", so match times with `\s` (`/6:00\sPM/`), never a literal space.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/logic/events.test.ts src/utils/eventDates.test.ts`
+- [ ] **Step 3: Implement**, and export the helpers from `logic/index.ts` and `utils/index.ts`.
+- [ ] **Step 4: Adopt them on mobile and in `EventSummaryRow`.**
+  - Mobile's `EventCard` and `EventDetailScreen` delete their formatters.
+  - `EventsScreen` swaps both halves of its count math (153–208) for `applyEventResponseChange`.
+  - The three past checks become `isEventPast`.
+  - Then run `npm run test --workspace=apps/mobile -- EventsScreen EventDetailScreen PublicProfileScreen EventCard` and `npm run test --workspace=apps/web -- src/components/events/EventSummaryRow.test.tsx`.
+- [ ] **Step 5: Commit** as `refactor(shared): share isEventPast, the event date formats and the response counts`.
+
+### Task 7.2: Shared events API — the real response, going-only attendees, not found
+
+**Files:** `packages/shared/src/api/events.ts`, `events.test.ts` and `types/events.ts`; mobile `screens/EventDetailScreen.tsx` and `EventDetailScreen.test.tsx`; web `pages/events/[id].page.tsx` and `[id].test.tsx`.
+
+**Interface:**
+
+```ts
+/** The member's response to one event, or null when they have none. */
+export async function getUserEventResponse(
+  supabase: SupabaseClient,
+  eventId: string,
+  userId: string
+): Promise<{ data?: RsvpStatus | null; error?: Error }>;
+
+// types/events.ts
+export interface EventResult {
+  data?: Event;
+  error?: Error;
+  /** Set when no such event exists, or it was removed; a failed request leaves it unset. */
+  notFound?: boolean;
+}
+```
+
+- **`getUserEventResponse`** selects `status` with `.eq('event_id', …).eq('user_id', …).maybeSingle()`.
+- **`getEventAttendees`** adds `.eq('status', 'going')` (recon 2).
+- **`getEventById`** sets `notFound: true` on both of its "Event not found" paths. The message stays the same, so mobile needs no change.
+- **`hasUserRsvp`** loses its last two callers here, and is deleted with its tests.
+
+On both detail pages "going" now means `response === 'going'`. RSVP upserts `going`, which also converts an Interested response, and un-RSVP happens only from Going. On web this is a stopgap until Task 7.14's control. The page swaps `hasUserRsvp` for `getUserEventResponse` and keeps its button, so every commit stays green.
+
+- [ ] **Step 1: Write the failing tests.**
+  - **`events.test.ts`:**
+    - `getUserEventResponse` returns `'interested'` for an interested row.
+    - It returns `null` when `maybeSingle` finds no row, and passes a PostgREST error through.
+    - `getEventAttendees` filters on `status = going`.
+    - `getEventById` sets `notFound` for `PGRST116` and not for a network error.
+  - **Mobile `EventDetailScreen.test.tsx` and web `[id].test.tsx`:** an interested member sees the RSVP button, not "Going ✓", and pressing it calls `rsvpToEvent`.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/api/events.test.ts`, `npm run test --workspace=apps/mobile -- EventDetailScreen` and `npm run test --workspace=apps/web -- src/pages/events/[id].test.tsx`.
+- [ ] **Step 3: Implement.** Delete `hasUserRsvp`, then switch both detail pages to `getUserEventResponse`, and in their test mocks replace `hasUserRsvp` with it.
+- [ ] **Step 4: Run all three suites again.**
+- [ ] **Step 5: Commit** as `fix: read the member's real event response, and list only the people going`.
+
+### Task 7.3: `getMetroEventsPage`
+
+**Files:** `packages/shared/src/api/events.ts`, `events.test.ts` and `types/events.ts`.
+
+**Interface:**
+
+```ts
+// types/events.ts
+export type EventPeriod = 'upcoming' | 'past';
+
+// api/events.ts
+export interface MetroEventsPageOptions {
+  period: EventPeriod;
+  /** One instant for the whole scroll, so no event changes period between pages. */
+  now: Date;
+  limit?: number; // default 20
+  offset?: number; // default 0
+}
+
+/**
+ * One page of a metro's events: local and global, never removed.
+ * Upcoming events haven't ended and come soonest first. Past events have ended
+ * and come most recent first.
+ */
+export async function getMetroEventsPage(
+  supabase: SupabaseClient,
+  metroId: string,
+  options: MetroEventsPageOptions
+): Promise<EventsResult>;
+```
+
+**Filters.** Both periods apply `.neq('status', 'removed')` and `.or('metro_area_id.eq.<id>,is_global.eq.true')`, as `getEventsByMetro` does.
+
+- **Upcoming** adds `.or('start_date.gte.<iso>,end_date.gte.<iso>')` and orders by `start_date` ascending, then `id` ascending.
+- **Past** adds `.lt('start_date', <iso>)` and `.or('end_date.is.null,end_date.lt.<iso>')`, and orders by `start_date` descending, then `id` descending.
+
+PostgREST ANDs repeated filters, two `or` parameters included, so the metro and period conditions combine. `createEventSchema` guarantees an end after the start, so the two periods split every event exactly as `isEventPast` does. `hasMore` is `rows.length === limit`, as today. `getEventsByMetro` stays for mobile (decision 10), and its doc comment says so.
+
+- [ ] **Step 1: Write the failing tests** with the chain mock `events.test.ts` already uses.
+  - The upcoming call filters on both `or` strings and orders `start_date` then `id`, both ascending.
+  - The past call filters `start_date < now` and `end_date` null or before `now`, ordered descending.
+  - Both call `range(offset, offset + limit - 1)`.
+  - A full page sets `hasMore`, and an error comes back as `error`.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/api/events.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(shared): page a metro's events upcoming first, then past newest first`.
+
+### Task 7.4: `EventTypeBadge` onto the event tokens
+
+**Files:** `components/events/EventTypeBadge.tsx` and `EventTypeBadge.test.tsx`; create `EventTypeBadge.module.css`.
+
+The badge becomes `Badge variant="default"` with `className={styles.badge}` and `data-type={type}`. Five rules in the module set `color`, `background` and `border-color` from `--event-<type>-fg` / `-bg`. The emoji sits in an `aria-hidden` span (decision 7).
+
+- [ ] **Step 1: Update the tests.** Each type's label reads as its text ("Cultural"), and the emoji is inside an element hidden from assistive technology.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/EventTypeBadge.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `style(web): colour event-type badges from the event tokens`.
+
+### Task 7.5: `EventResponseControl`
+
+**Files:** create `components/events/EventResponseControl.tsx`, `.module.css` and `.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface EventResponseControlProps {
+  value: RsvpStatus | null;
+  /** Pressing the pressed button passes null. */
+  onChange: (next: RsvpStatus | null) => void;
+  /** A change is saving: presses are ignored and focus stays put (decision 6). */
+  busy?: boolean;
+  /** Names the group. Cards pass "Your response to <title>", so many groups on one page stay distinguishable. */
+  label?: string; // default "Your response"
+  size?: 'sm' | 'md'; // default 'md'
+}
+```
+
+It renders a `div role="group" aria-label={label}` holding two Mantine `Button`s, "Interested" (`IconStar`) and "Going" (`IconCheck`), with the icons `aria-hidden`. The pressed button is `variant="filled"`, the other `variant="default"`, and each has `aria-pressed`. While `busy`, both take `aria-disabled` and `data-disabled` and their handlers return early, and neither uses native `disabled` or `loading`.
+
+- [ ] **Step 1: Write the failing test.**
+  - The group is named by `label`.
+  - Both buttons exist, and their `aria-pressed` follows `value`.
+  - Pressing Going from `null` or from `'interested'` passes `'going'`, and pressing Going from `'going'` passes `null`. Interested works the same way.
+  - While `busy`, both buttons are `aria-disabled`, a press calls nothing, and the focused button keeps focus.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/events/EventResponseControl.test.tsx`
+- [ ] **Step 3: Implement.** The module only lays the pair out on one line with a `--space-2` gap.
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add EventResponseControl`.
+
+### Task 7.6: `EventCard` on the stretched link and the tokens
+
+**Files:** `components/events/EventCard.tsx`, `EventCard.module.css` and `EventCard.test.tsx`; `pages/events/index.page.tsx`, for the renamed props only; `scripts/guard-css-tokens.allowlist.json`; `apps/web/eslint/raw-element-allowlist.mjs`.
+
+**Interface:**
+
+```ts
+export interface EventCardProps {
+  event: Event;
+  /** From the section the card sits in; hides the control and adds the "Past" label. */
+  past?: boolean;
+  response?: RsvpStatus | null;
+  /** Shows the response control. False for Level 0 members. */
+  canRespond?: boolean;
+  /** This card's response is saving. */
+  busy?: boolean;
+  onRespond?: (eventId: string, next: RsvpStatus | null) => void;
+}
+```
+
+The card becomes an `<article>`, in this order:
+
+- **Cover:** the photo through `next/image` with `fill` and `alt=""`, or an `aria-hidden` 📅 placeholder. The badges sit on it: `EventTypeBadge`; `ScopeBadge isGlobal` only when the event is global; and a "Cancelled" chip in `--danger` on `--surface-1`.
+- **Title:** an `h3` holding the only link, a `Link` whose `::after` covers the card (decision 5).
+- **Details:**
+  - the date, as `<time dateTime={start_date}>{formatEventDateShort(…)}</time>`
+  - the place
+  - "10 interested · 5 going", with the shared `formatCount`, which replaces the local K formatter
+  - "Past" on past cards
+- **Footer:** a decorative `Avatar` and the public name, which is plain text as today. `EventResponseControl` appears in its own wrapper above the overlay when `canRespond`, the event is active and it isn't past.
+
+Mantine `Text` gives way to plain elements styled by the module, which moves onto semantic tokens. The page passes the renamed props and nothing else on it changes until Task 7.10.
+
+- [ ] **Step 1: Rewrite the tests.** Keep the cases that still hold: title, place, counts, organizer, "Unknown", global, cancelled, placeholder, type badge, multi-day date and large counts. Then:
+  - The only link is named by the title and points to `/events/<id>`.
+  - The response group is outside the link (`link.contains(group)` is false).
+  - The control is hidden when `canRespond` is false, the event is cancelled or `past` is set.
+  - "Past" appears only on past cards.
+  - `onRespond` receives `('e1', null)` when the pressed button is pressed again.
+  - The cover image has an empty `alt`.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/EventCard.test.tsx`
+- [ ] **Step 3: Implement.** In the same commit, remove `apps/web/src/components/events/EventCard.module.css` from the CSS allowlist and `src/components/events/EventCard.tsx` from `RAW_ELEMENT_ALLOWLIST`.
+- [ ] **Step 4: Run the card and page suites**, then `npm run lint:guards`.
+- [ ] **Step 5: Commit** as `refactor(web): rebuild EventCard on a stretched link and semantic tokens`.
+
+### Task 7.7: `ToggleChipGroup` gains `hideLabel` and `layout`; one label weight
+
+**Files:** `components/ui/ToggleChipGroup.tsx`, `.module.css` and `.test.tsx`; `components/events/DateTimeField.module.css`.
+
+**Interface** (added to `ToggleChipGroupProps`):
+
+```ts
+  /** Keeps the group's name for assistive technology only. */
+  hideLabel?: boolean;
+  /** 'scroll' keeps the chips on one line and scrolls them sideways below 40em. Default 'wrap'. */
+  layout?: 'wrap' | 'scroll';
+```
+
+- **`hideLabel`** renders the label inside Mantine `VisuallyHidden`, keeping its `id`, so `aria-labelledby` still names the group.
+- **`layout="scroll"`** sets `data-layout="scroll"` on the chip row. Below 40em it is `flex-wrap: nowrap; overflow-x: auto`, and the chips don't shrink.
+  - Each chip takes `onFocus={scrollFocusedTabIntoView}` from `components/ui/scrollingTabs`, because Chromium leaves a partly clipped focused element clipped (as with the profile tabs).
+- **Labels:** both `.label` rules drop to `var(--font-weight-medium)` (decision 9).
+
+- [ ] **Step 1: Write the failing test.** With `hideLabel`, the group is still named by its label and a chip is still pressable. Without it, today's cases pass unchanged.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/ui/ToggleChipGroup.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run the suite and the three create-page suites**, because the label weight reaches them: `npm run test --workspace=apps/web -- src/components/ui/ToggleChipGroup.test.tsx src/pages/posts/create.test.tsx src/pages/marketplace/create.test.tsx src/pages/events/create.test.tsx`
+- [ ] **Step 5: Commit** as `feat(web): let ToggleChipGroup hide its label and scroll on phones`.
+
+### Task 7.8: `EventFilterBar` on Mantine and the tokens
+
+**Files:** `components/events/EventFilterBar.tsx`, `EventFilterBar.module.css` and `EventFilterBar.test.tsx`; the CSS allowlist; `RAW_ELEMENT_ALLOWLIST`.
+
+| Today | Becomes |
+|---|---|
+| raw `<input role="searchbox">` with an absolutely placed 🔍 (83–94) | `TextInput` keeping `role="searchbox"`, the "Search events" label and the placeholder, with `leftSection={<IconSearch aria-hidden />}`. It stays `type="text"`: `type="search"` would add Chromium's own clear button beside ours |
+| raw clear `<button>` (95–104) | `rightSection={searchText ? <CloseButton aria-label="Clear search" onClick={handleSearchClear} /> : null}` |
+| raw chip buttons (106–121) | `ToggleChipGroup` with `label="Event type"`, `hideLabel`, `layout="scroll"` and `mode="single"`. Its value is `[value.type]`, and its options carry `label={<><span aria-hidden="true">{icon}</span> {label}</>}` and `name={label}` |
+
+The debounce, the Enter shortcut, the clear and the external-value sync stay as they are. Most of the stylesheet is deleted, and only `.filterBar`'s column and gaps remain, on tokens. `outline: none` goes with the input rules.
+
+- [ ] **Step 1: Update the tests.** The chip text assertions (35–40) become role queries: `getByRole('button', { name: 'Cultural' })` and the other types, with "All" pressed by default. Everything else must pass unchanged.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/EventFilterBar.test.tsx`
+- [ ] **Step 3: Implement.** In the same commit, remove `apps/web/src/components/events/EventFilterBar.module.css` from the CSS allowlist and `src/components/events/EventFilterBar.tsx` from `RAW_ELEMENT_ALLOWLIST`.
+- [ ] **Step 4: Run the filter bar and events page suites**, then `npm run lint:guards`.
+- [ ] **Step 5: Commit** as `refactor(web): build EventFilterBar on TextInput and ToggleChipGroup`.
+
+### Task 7.9: `useEventFeed`
+
+**Files:** create `hooks/useEventFeed.ts` and `useEventFeed.test.ts`.
+
+**Interface:**
+
+```ts
+export interface EventFeedState {
+  upcoming: Event[];
+  past: Event[];
+  /** The first load, which may chain the first past page (decision 2). */
+  loading: boolean;
+  error: string | null;
+  loadingMore: boolean;
+  loadMoreError: string | null;
+  /** More pages exist and paging isn't paused by a failure. */
+  hasMore: boolean;
+  responses: UserEventResponses;
+  /** Ids whose response is saving. */
+  pending: ReadonlySet<string>;
+  reload: () => void;
+  loadMore: () => void;
+  /** Clears loadMoreError and loads the next page. */
+  retryLoadMore: () => void;
+  respond: (eventId: string, next: RsvpStatus | null) => void;
+}
+
+export function useEventFeed(metroId: string | null, userId: string | null): EventFeedState;
+```
+
+This moves index 31–201 out of the page and fixes recon 3 and 6.
+
+- **First load:**
+  - It takes `now` inside the effect, never in render (`react-hooks/purity`).
+  - It requests the first upcoming page and the viewer's responses in parallel.
+  - When the upcoming page comes back short, it requests the first past page before clearing `loading`.
+- **`loadMore`:**
+  - It requests the current period's next page. The offset is the number of rows that period has returned, and a short page ends the period.
+  - Rows are deduplicated by id across both lists.
+  - A failure sets `loadMoreError`, which reports `hasMore` false until `retryLoadMore` (decision 4).
+  - A generation counter drops any page that lands after `reload`.
+- **No metro:** a `null` metro requests nothing and reports not loading, as today.
+- **`respond`:**
+  - It reads the previous response from a ref, not from inside an updater (recon 6). It adds the id to `pending` and applies `applyEventResponseChange` at once.
+  - It then calls `removeEventResponse` or `setEventResponse`.
+  - On failure it applies the swap back and calls `notify.error("Couldn't update your response. Try again.")`.
+  - A second `respond` for a pending id is ignored.
+
+- [ ] **Step 1: Write the failing test** with `renderHook`.
+  - **Paging:**
+    - The first upcoming page fills `upcoming`.
+    - A short upcoming page chains past page 0, whose rows fill `past` in the order returned.
+    - `loadMore` asks for upcoming offset 20 after a full page, and for past after a short one.
+    - A duplicate id is dropped.
+  - **Failures:**
+    - A failed `loadMore` sets `loadMoreError` and `hasMore` false, and a second `loadMore` requests nothing.
+    - `retryLoadMore` resumes.
+  - **No metro:** a `null` metro makes no requests.
+  - **`reload`:** it requests page 0 again with a new `now`.
+  - **`respond`:**
+    - It moves the counts before `setEventResponse` resolves.
+    - A failure restores them and raises the toast.
+    - `null` calls `removeEventResponse`.
+    - A second call while pending is ignored.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useEventFeed.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): load events upcoming first through useEventFeed`.
+
+### Task 7.10: The events list on the new pieces, and its stylesheet
+
+**Files:** `pages/events/index.page.tsx`, `index.test.tsx` and `events.module.css`; `apps/web/e2e/tests/10-events.spec.ts`; `apps/web/e2e/helpers/supabase-mock.ts`; `scripts/guard-css-tokens.allowlist.json`; `RAW_ELEMENT_ALLOWLIST`.
+
+| Today | Becomes |
+|---|---|
+| `📅 Events` `h1` and "+ Create Event" (242–249) | `PageHeader title="Events"`, with `actions` holding `Button component={Link} href="/events/create" leftSection={<IconPlus aria-hidden />}` "Create event" for Level 1+ |
+| Level 0 banner with a raw ✕ (252–264) | `Alert` with `withCloseButton` and `closeButtonLabel="Dismiss banner"`, and a module class on `--accent-tint` / `--text-1`. The copy becomes "Verify your account to respond to events and create them." |
+| Six `Skeleton`s (270–278) | `LoadingState variant="card" count={6} label="Loading events…"` |
+| Red text and Retry (279–285) | `ErrorState title="Couldn't load events" message={error} onRetry={reload}` |
+| Empty block (286–291) | `EmptyState` with `getEmptyTitle()` and "Check back soon!", only once `hasMore` is false (decision 3) |
+| One grid with a "Past Events" `div` (293–317) | Two `<section aria-labelledby>`s, each rendered only when it has cards. `h2` "Upcoming" and `h2` "Past events" each head a `<ul>` of `<li><EventCard /></li>`, so each card's `h3` sits under a section heading |
+| Hand-rolled observer (124–139) and footer skeleton | `useInfiniteScroll({ hasMore, loading: loading \|\| loadingMore, onLoadMore: loadMore })`. The sentinel renders after the sections whenever `hasMore` is set, even while a filter shows nothing. `LoadingState variant="card" count={1} label="Loading more events…"` replaces the footer skeleton |
+| — | `loadMoreError` shows `ErrorState title="Couldn't load more events" message={loadMoreError} onRetry={retryLoadMore}` |
+
+The type and text filters stay in the page as a `useMemo` over `upcoming` and `past`. Each card gets `busy={pending.has(e.id)}`.
+
+**The e2e mocks.** Once the page asks for two periods, a mock that returns every event for every GET would put past events under "Upcoming".
+
+- `mockEventsEndpoints` in `10-events.spec.ts` answers the past request (its URL carries `start_date=lt.`) with the past events, and every other list request with the rest.
+- The shared mock in `supabase-mock.ts` answers the past request with `[]`, so the `events` screenshot keeps its two upcoming events.
+
+**The stylesheet.** Most of `events.module.css` is deleted rather than converted:
+
+- `emptyState*` goes to `EmptyState`, and `errorContainer` to `ErrorState`.
+- `divider` goes to the section headings.
+- `level0BannerClose` goes to the `Alert`'s close button.
+- `footerLoader` goes to `LoadingState`.
+
+The rules left over (`container`, `grid`, `sectionTitle`, `level0Banner` and `loadSentinel`) are rewritten on tokens, with the spec §4.1 table.
+
+- The container is `max-width: var(--layout-max-width)`.
+- The page background is the shell's `--surface-0`, so `.page`'s `#F5F5F5` goes.
+- The grid keeps three, two and one columns, breaking at 54em and 32.5em (today's 860px and 520px).
+
+- [ ] **Step 1: Update the tests first.**
+  - **Unit test:** mock `getMetroEventsPage` in place of `getEventsByMetro`, and `Retry` becomes `Try again` (182).
+  - **New cases:** a metro with nothing upcoming shows its past events under "Past events"; the Upcoming heading is absent then.
+  - **Paging:** a filter that matches nothing on page 1 keeps the sentinel, and shows the empty title only after the last page. Stub `IntersectionObserver` as `feed.test.tsx` does.
+  - **Failures:** a failed second page shows "Couldn't load more events" with Try again.
+  - **e2e:** "+ Create Event" becomes `/create event/i`, and "Past Events" becomes the heading `/past events/i`.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/events/index.test.tsx`
+- [ ] **Step 3: Implement the page**, and update both e2e mocks.
+- [ ] **Step 4: Rewrite the stylesheet.** Delete the rules no class uses any more; `grep -o "styles\.[a-zA-Z]*" src/pages/events/index.page.tsx` lists the live ones. Remove `apps/web/src/pages/events/events.module.css` from the CSS allowlist and `src/pages/events/index.page.tsx` from `RAW_ELEMENT_ALLOWLIST`.
+- [ ] **Step 5: Run the page suite and `npm run lint:guards`**, and check that the page is near its ~180-line target.
+- [ ] **Step 6: Commit** as `refactor(web): rebuild the events list on the design system`.
+
+### Task 7.11: `useEventDetail`
+
+**Files:** create `hooks/useEventDetail.ts` and `useEventDetail.test.ts`.
+
+**Interface:**
+
+```ts
+export interface EventDetailState {
+  event: Event | null;
+  response: RsvpStatus | null;
+  loading: boolean;
+  error: string | null;
+  /** getEventById said no such event; `error` alone means the request failed. */
+  notFound: boolean;
+  responding: boolean;
+  reload: () => void;
+  respond: (next: RsvpStatus | null) => void;
+  /** Resolve to an error message, or null on success. The page owns the dialogs and toasts. */
+  cancel: () => Promise<string | null>;
+  remove: () => Promise<string | null>;
+}
+
+export function useEventDetail(id: string | undefined, userId: string | null): EventDetailState;
+```
+
+This moves detail 34–153 out of the page and fixes recon 7.
+
+- **Loading:**
+  - When `id` changes, the state resets during render, following Task 6.8's "adjust state when a prop changes" pattern.
+  - The load requests `getEventById` and `getUserEventResponse` in parallel, where today it waits for one before the other, and drops a result that lands after the id has changed.
+  - A failed response request leaves `response` null, as today.
+- **`respond`:**
+  - It sets `responding`, moves `response` and the counts at once with `applyEventResponseChange`, and writes with `setEventResponse` or `removeEventResponse`.
+  - On failure it swaps both back and calls `notify.error("Couldn't update your response. Try again.")`.
+  - Either way it then re-reads the event and the response, keeping today's server re-sync.
+- **`cancel`:** on success it sets `status: 'cancelled'`.
+- **`remove`:** it only reports the result, and the page navigates away.
+
+- [ ] **Step 1: Write the failing test** with `renderHook`.
+  - **Loading:**
+    - The hook loads the event and the viewer's `'interested'`.
+    - A `notFound` result sets `notFound`, and a network error sets only `error`.
+    - Changing `id` clears the previous event before the new one loads.
+    - An `undefined` id requests nothing.
+  - **`respond`:**
+    - `respond('going')` moves `rsvp_count` before the write resolves, then re-reads twice.
+    - A failed write restores the count and raises the toast.
+  - **`cancel` and `remove`:** `cancel` sets the cancelled status, and both return the shared error message on failure.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useEventDetail.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): load event detail through useEventDetail`.
+
+### Task 7.12: `AttendeeList` states
+
+**Files:** `components/events/AttendeeList.tsx` and `AttendeeList.test.tsx`.
+
+**Interface:**
+
+```ts
+export interface AttendeeListProps {
+  opened: boolean;
+  attendees: EventRsvp[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  onClose: () => void;
+}
+```
+
+The modal stays mounted and follows `opened`. Today it mounts only while open, which skips Mantine's transition and its focus return to the opener.
+
+- **Title:** "People going", because Task 7.2 made the list exactly that.
+- **States:** loading shows `LoadingState label="Loading attendees…"`, and an error shows `ErrorState title="Couldn't load attendees"` with `onRetry`. "No attendees yet." stays as the empty text.
+- **Close button:** `closeButtonProps` goes, because the theme's `Modal` default already names the close button "Close" (the PR 7 bullet above).
+- **Rows:** Avatar and public name, as today.
+
+- [ ] **Step 1: Update the tests.** The title reads "People going". Loading shows a `status`, and an error shows its message and a Try again that calls `onRetry`. `opened={false}` renders no dialog. The existing name, avatar, close and "User" fallback cases must pass unchanged.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/AttendeeList.test.tsx`
+- [ ] **Step 3: Implement.** The detail page passes `opened={attendeesOpen}`, `error={null}` and an `onRetry` that reloads the list, until Task 7.14 wires the real error state.
+- [ ] **Step 4: Run the list and detail suites.**
+- [ ] **Step 5: Commit** as `refactor(web): give AttendeeList loading, error and retry states`.
+
+### Task 7.13: The detail sidebar cards — `EventAttendanceCard` and `EventOrganizerCard`
+
+**Files:** create `components/events/EventAttendanceCard.tsx` and `EventOrganizerCard.tsx`, each with a `.module.css` and a `.test.tsx`.
+
+**`EventAttendanceCard` interface:**
+
+```ts
+/** Why the member can't respond. `cancelled` renders no line, because the page's alert already says so. */
+export type EventResponseBlock = 'cancelled' | 'past' | 'organizer' | 'unverified';
+
+export interface EventAttendanceCardProps {
+  event: Pick<Event, 'rsvp_count' | 'rsvp_visibility'>;
+  isOrganizer: boolean;
+  blockedBy: EventResponseBlock | null;
+  response: RsvpStatus | null;
+  responding: boolean;
+  onRespond: (next: RsvpStatus | null) => void;
+  onShowAttendees: () => void;
+}
+```
+
+This takes over detail 289–313. It is a `<section aria-labelledby>` with `h2` "Attendance".
+
+**The going count:**
+
+- When the list is public, or the viewer is the organizer, and the count is above zero, the count is `Anchor component="button" type="button" aria-haspopup="dialog" onClick={onShowAttendees}`, reading "1 person going" or "12 people going". The theme's link colour replaces `#1565C0` (the PR 7 bullet above).
+- At zero it reads "0 people going" as text.
+- On a private list, for everyone but the organizer, it reads "12 going".
+
+**Below the count:**
+
+- With `blockedBy` null, the card shows `EventResponseControl` with `busy={responding}`.
+- Otherwise it shows one line: "This event has passed.", "You're the organizer." or "Verify your account to respond."
+- The hint lines "You are currently going." and "Tap RSVP if you plan to attend." go, because the pressed state already carries them.
+
+**`EventOrganizerCard` interface:**
+
+```ts
+export interface EventOrganizerCardProps {
+  organizer: NonNullable<Event['organizer']>;
+  /** Members who aren't the organizer and are Level 1+. */
+  canMessage: boolean;
+  messaging: boolean;
+  onMessage: () => void;
+}
+```
+
+This takes over detail 316–345. It is a `<section aria-labelledby>` with `h2` "Organizer".
+
+- **Avatar:** it becomes `decorative` with `toneKey={full_name}` and is no longer a link. Today the avatar and the name are two links to the same profile.
+- **Name:** the public name is the one `Link` to `/users/<id>`.
+- **Message Organizer:** it follows decision 6. While `messaging` it has `aria-disabled`, `data-disabled` and a `Loader` in `leftSection`, and presses are ignored.
+
+- [ ] **Step 1: Write the failing tests.**
+  - **`EventAttendanceCard`:**
+    - The section is named "Attendance".
+    - The count opens the list, and is a button only when the list is visible to the viewer.
+    - The singular and plural forms are right, and private lists read "12 going".
+    - The control shows only when `blockedBy` is null. Each block shows its line, with none for `cancelled`.
+    - `onRespond` receives the control's value.
+  - **`EventOrganizerCard`:**
+    - The section is named "Organizer".
+    - One link, named "Asha K.", points to `/users/u1`.
+    - The avatar has no alt text.
+    - The Message button appears only when `canMessage`, and calls `onMessage`. While `messaging` it is `aria-disabled`, ignores presses and keeps focus.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/EventAttendanceCard.test.tsx src/components/events/EventOrganizerCard.test.tsx`
+- [ ] **Step 3: Implement both**, with the modules on semantic tokens.
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): add the event detail sidebar cards`.
+
+### Task 7.14: The detail page on the new pieces, and its stylesheet
+
+**Files:** `pages/events/[id].page.tsx`, `[id].test.tsx` and `eventDetail.module.css`; `apps/web/e2e/tests/10-events.spec.ts`; `scripts/guard-css-tokens.allowlist.json`; delete `components/events/RsvpButton.tsx` and `RsvpButton.test.tsx`.
+
+| Today | Becomes |
+|---|---|
+| "Loading..." text (193–201) | `LoadingState variant="detail" label="Loading event…"` |
+| Red text and a back link (203–216) | `notFound`: `EmptyState title="Event not found"`, described as "It may have been deleted.", with `Button component={Link} href="/events"` "Back to events". Any other error: `ErrorState title="Couldn't load this event"` with `onRetry={reload}` |
+| Breadcrumb `div` (226–230) | `<nav aria-label="Breadcrumb">` holding Mantine `Breadcrumbs`: an `Anchor component={Link}` "Events", then the title with `aria-current="page"` |
+| Hero `alt={event.title}` | `alt=""`, because the `h1` follows; the placeholder is `aria-hidden` |
+| `Alert color="red"` / `color="gray"` | The same two `Alert`s with module classes: cancelled on `--emergency-bg` / `--emergency-fg`, past on `--surface-2` / `--text-2` |
+| `🌐 Global` light orange `Badge` | `ScopeBadge isGlobal`, only when the event is global |
+| Emoji info icons | `IconCalendar` and `IconMapPin`, `aria-hidden`. The date is `<time dateTime>` holding `formatEventDateLong(…)` |
+| Attendance and organizer cards (289–345) | `EventAttendanceCard` and `EventOrganizerCard`. `blockedBy` is `cancelled`, `past` (`isEventPast` with `useNow()`), `organizer` or `unverified`, checked in that order |
+| Manage card with `confirm` / `alert` (133–153, 348–363) | Stays in the page, as a `section` with `h2` "Manage event" |
+| `alert` when a conversation can't start (171) | `notify.error("Couldn't start a conversation. Try again.")` |
+| `handleShowAttendees` (123–131) | The same lazy load with an `attendeesError`, and `onRetry` loads again |
+
+**Manage event.** Both actions go through `useConfirm` with `danger: true`.
+
+- **Cancel:** the dialog reads "Cancel this event?" / "Your attendees will see it as cancelled.", with "Cancel event" and "Keep event" as its buttons. It is followed by `notify.success('Event cancelled.')` or `notify.error(message)`.
+- **Delete:** the dialog reads "Delete this event?" / "This can't be undone.", with "Delete" as its confirm button. On success the page runs `router.push('/events')` and `notify.success('Event deleted.')`. On failure it runs `notify.error(message)`.
+
+**The stylesheet.** These rules in `eventDetail.module.css` are deleted:
+
+- `rsvp*`, which moves to `EventAttendanceCard`
+- `organizer*`, which moves to `EventOrganizerCard`
+- `centered` and `backLink`, which move to the state components
+- `breadcrumbLink`, which moves to `Anchor`
+- `sectionTitle`, which the cards own now
+
+The rest is rewritten on tokens with the spec §4.1 table: `container`, `layout`, `main`, `hero*`, `mainBody`, `badgeRow`, `title`, `editedLabel`, `infoRow`, `description`, `sidebar`, `sidebarCard` and the two alert classes.
+
+- `sidebarCard` takes `--card-padding` and a `--border-subtle` border instead of the shadow.
+- The two-column layout keeps its 320px aside and collapses at 64em (today's 1024px).
+
+- [ ] **Step 1: Update the tests first.**
+  - **Response:** the RSVP button cases become `getByRole('button', { name: 'Going' })` with `aria-pressed`. "toggles RSVP and re-syncs" now expects `setEventResponse(…, 'going')`, and two calls each to `getEventById` and `getUserEventResponse`.
+  - **New cases:**
+    - An interested viewer sees Interested pressed.
+    - The organizer sees "You're the organizer." and no control.
+    - `notFound` shows "Back to events" linking to `/events`, and a load error's Try again reloads.
+    - Cancel opens a dialog, and confirming it shows the cancelled alert.
+    - Delete confirmed navigates to `/events`.
+    - A failed conversation raises the toast.
+    - The breadcrumb `nav` is named "Breadcrumb".
+  - **e2e:** `name: 'RSVP'` becomes `'Going'`, and "Manage Event" becomes the heading `/manage event/i`.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/events/[id].test.tsx`
+- [ ] **Step 3: Implement the page**, and delete `RsvpButton`.
+- [ ] **Step 4: Rewrite the stylesheet.** Delete the rules no class uses any more, and confirm that nothing else imports the stylesheet. Remove `apps/web/src/pages/events/eventDetail.module.css` from the CSS allowlist. `[id].page.tsx` was never on `RAW_ELEMENT_ALLOWLIST`.
+- [ ] **Step 5: Run the page suite and `npm run lint:guards`**, and check that the page is near its ~230-line target.
+- [ ] **Step 6: Commit** as `refactor(web): rebuild event detail on the design system`.
+
+### Task 7.15: E2E, screenshots, accessibility, docs and the PR
+
+**Files:** `apps/web/e2e/visual/pages.ts`, `apps/web/e2e/visual/a11y-baseline.json`, `docs/architecture/web-ui-system.md`, `docs/product/features/events.md`, this plan.
+
+The `events` shot's comment ("The h1 is "📅 Events"…") goes, because the heading is now plain "Events".
+
+The baseline review should expect these changes:
+
+- **Events list:**
+  - The `PageHeader`, and the "Upcoming" heading above the cards.
+  - Token badges.
+  - Bordered cards without the lift, and the control pair in place of "★ Interested ▾".
+  - The chip row, which now scrolls on the phone.
+- **Event detail:**
+  - The breadcrumb and the token alerts.
+  - `ScopeBadge`, and tabler icons in place of emoji.
+  - The "People going" link-button in the theme's link colour.
+  - The Interested / Going pair in place of RSVP, and bordered sidebar cards.
+- **Create post, create listing and create event:** chip-group and date labels at weight 500 (decision 9).
+
+The a11y diff must **delete** the four `events` and `event-detail` entries and add nothing.
+
+- [x] **Step 1: Run the smoke pass**, which needs no Docker: `node scripts/visual/smoke.mjs`.
+- [x] **Step 2: Run the e2e suite.** `npm run test:e2e:web`. The known risks are the period-aware mock (Task 7.10), the renamed buttons, and `11-marketplace.spec.ts`, which shares `supabase-mock.ts`.
+- [x] **Step 3: Check the definition of done's structural items.**
+  - No `confirm(`, `alert(` or `prompt(` remains in the area.
+  - No `<Link>` wraps a `<Button>` or a card.
+  - The CSS allowlist has lost all four stylesheets, and `RAW_ELEMENT_ALLOWLIST` has lost `EventCard.tsx`, `EventFilterBar.tsx` and `events/index.page.tsx`.
+  - The page line counts are near their targets.
+- [x] **Step 4: Regenerate the baselines** locally in Docker, as PR 6 did, with `npm run test:visual:docker --workspace=apps/web -- --update --write-a11y-baseline`. Review **every** changed PNG against the list above, and commit the screenshots and the a11y diff.
+- [x] **Step 5: Document the new pieces.**
+  - **`web-ui-system.md`:**
+    - `EventResponseControl` and its props, and the rule that event cards use the stretched link with the control above the overlay.
+    - `ToggleChipGroup`'s `hideLabel` and `layout`.
+    - `EventTypeBadge`'s `data-type` colours.
+    - `EventAttendanceCard`, `EventOrganizerCard` and the two hooks.
+    - Add the Message Organizer button to "Busy controls stay focusable".
+  - **`events.md`:** the detail page offers Interested as well as Going, the list shows upcoming events and then past ones newest first, and the attendee list shows only the people going.
+  - **Routed to PR 10's list:**
+    - Mobile `EventsScreen` onto `getMetroEventsPage`. Mobile's list has recon 3's ordering bug until then.
+    - Mobile's `EventCard` K formatter onto the shared `formatCount`.
+    - Mobile event detail onto Interested / Going, for parity with web.
+- [x] **Step 6: Run the full gate.** `npm run lint`, `npm run lint:guards`, `npm run type-check`, `npm run test`, `npm run test:e2e:web`, `npm run test:visual:web` and `npm run docs:check`.
+- [x] **Step 7: Walk the keyboard** through both pages:
+  - Tab and Shift+Tab through the cards, where each card should have one link stop followed by its two response buttons.
+  - The chip row with Tab and Space, at 375px too, where the focused chip scrolls into view.
+  - The search field, Enter and the clear button.
+  - The response pair on detail.
+  - The attendee dialog, where Escape returns focus to the count.
+  - The cancel and delete dialogs, which should open on their Cancel button.
+- [x] **Step 8: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`, then run `gh pr edit <number> --add-reviewer @copilot`. Update the Live tracker row to `In Review (PR #NN)`.
+
 ## PR 8 — Marketplace (`feat/web-ui-marketplace`)
 
 - **Pages:** `pages/marketplace/index.page.tsx`, `[category].page.tsx`, `listing/[id].page.tsx`, `my-listings.page.tsx`, `listing/promote/[id].page.tsx`, `listing/promote/success.page.tsx`.
@@ -12903,6 +13681,11 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Extract `components/ui/DetailList` (`DetailList` + `DetailRow`) from the identical `dl > div > dt + dd` markup in the public profile's `AboutPanel` and `AccountDetails`. Add `white-space: pre-line` to `PublicProfile.module.css` `.aboutBio`, so visitors see a bio's line breaks as the member does (found in PR 6's Task 6.15 review).
   - [ ] Phone: web has no way to set or clear `users.phone`, so the own profile's Phone row always leads nowhere on web. Either show the row only when it is set, or add phone to web profile editing. Separately, mobile `EditProfileScreen.tsx:277` saves `phone: phone.trim() || undefined`, which the client drops, so a member can never clear their phone. This is the same class of bug Task 6.2 fixed for photos: write `null` (found in PR 6's Task 6.15 review).
   - [ ] Search's result `Tabs` (`search.page.tsx:125`) wrap on phones like the public profile's did. Give them the same `tabList`/`tab` treatment the public profile got: nowrap plus scroll, `flex-shrink: 0`, an inset focus ring, a token underline, and an `onFocus` `scrollIntoView({ inline: 'nearest' })`, because Chromium leaves a partly clipped focused tab clipped. Adopt `scrollingTabsClassNames` and `scrollFocusedTabIntoView` from `components/ui/scrollingTabs`, which PR 6 extracted for both profile pages (found in PR 6's Task 6.10 review).
+  - [ ] Mobile `EventsScreen` onto `getMetroEventsPage`. Until then mobile's list still pages every event by start date ascending, so a metro whose events are mostly past opens on the oldest of them (PR 7 recon 3).
+  - [ ] Mobile's `EventCard` K formatter onto the shared `formatCount`, and mobile event detail onto Interested / Going, for parity with web (PR 7 decision 10).
+  - [ ] `AttendeeList` rows pass `full_name` to a non-decorative `Avatar`, so the alt text reads "Bikal Shrestha's avatar" beside the masked "Bikal S." Pass the public name with `toneKey={full_name}`, or `decorative`, and update the `avatar-<name>` test id. This is the same class of leak as the Avatar item above (found in PR 7's chunk 3 review).
+  - [ ] The attendee dialog caches its list per open, so after the viewer marks themselves going the count can read 13 while the reopened dialog lists 12. Reload when the count and the cached length disagree (found in PR 7's chunk 3 review).
+  - [ ] `EventAttendanceCard`, `EventOrganizerCard` and event detail's Manage card define the same sidebar-card chrome and section title three times. Extract one primitive when a fourth appears (found in PR 7's chunk 3 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
 
 ## After the overhaul — Mantine 9

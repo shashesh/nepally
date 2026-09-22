@@ -8,10 +8,11 @@ import {
   getEventById,
   getEventsByMetro,
   getEventsByOrganizer,
+  getMetroEventsPage,
   getUpcomingEventsByMetro,
+  getUserEventResponse,
   getUserEventResponses,
   getUserRsvps,
-  hasUserRsvp,
   removeEventResponse,
   rsvpToEvent,
   setEventResponse,
@@ -116,6 +117,103 @@ describe('getEventsByMetro', () => {
 
     await getEventsByMetro(supabase, '19100', 20, 40);
     expect(chain.range).toHaveBeenCalledWith(40, 59);
+  });
+});
+
+describe('getMetroEventsPage', () => {
+  const NOW = new Date('2026-03-05T12:00:00.000Z');
+  const ISO = NOW.toISOString();
+
+  function pageChain(result: { data: unknown; error: unknown }) {
+    return {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue(result),
+    };
+  }
+
+  function clientFor(chain: ReturnType<typeof pageChain>) {
+    return { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+  }
+
+  it('keeps removed events out and scopes to the metro plus global events', async () => {
+    const chain = pageChain({ data: [], error: null });
+    await getMetroEventsPage(clientFor(chain), '19100', { period: 'upcoming', now: NOW });
+
+    expect(chain.neq).toHaveBeenCalledWith('status', 'removed');
+    expect(chain.or).toHaveBeenCalledWith('metro_area_id.eq.19100,is_global.eq.true');
+  });
+
+  it('pages upcoming events by start date then id, both ascending', async () => {
+    const chain = pageChain({ data: [MOCK_EVENT], error: null });
+    const result = await getMetroEventsPage(clientFor(chain), '19100', {
+      period: 'upcoming',
+      now: NOW,
+    });
+
+    expect(chain.or).toHaveBeenCalledWith(`start_date.gte.${ISO},end_date.gte.${ISO}`);
+    expect(chain.lt).not.toHaveBeenCalled();
+    expect(chain.order.mock.calls).toEqual([
+      ['start_date', { ascending: true }],
+      ['id', { ascending: true }],
+    ]);
+    expect(result.data).toEqual([MOCK_EVENT]);
+  });
+
+  it('pages past events by start date then id, both descending', async () => {
+    const chain = pageChain({ data: [], error: null });
+    await getMetroEventsPage(clientFor(chain), '19100', { period: 'past', now: NOW });
+
+    expect(chain.lt).toHaveBeenCalledWith('start_date', ISO);
+    expect(chain.or).toHaveBeenCalledWith(`end_date.is.null,end_date.lt.${ISO}`);
+    expect(chain.order.mock.calls).toEqual([
+      ['start_date', { ascending: false }],
+      ['id', { ascending: false }],
+    ]);
+  });
+
+  it('requests rows offset to offset + limit - 1', async () => {
+    const defaults = pageChain({ data: [], error: null });
+    await getMetroEventsPage(clientFor(defaults), '19100', { period: 'upcoming', now: NOW });
+    expect(defaults.range).toHaveBeenCalledWith(0, 19);
+
+    const paged = pageChain({ data: [], error: null });
+    await getMetroEventsPage(clientFor(paged), '19100', {
+      period: 'past',
+      now: NOW,
+      limit: 10,
+      offset: 30,
+    });
+    expect(paged.range).toHaveBeenCalledWith(30, 39);
+  });
+
+  it('sets hasMore only for a full page', async () => {
+    const full = pageChain({ data: [MOCK_EVENT, { ...MOCK_EVENT, id: 'event-2' }], error: null });
+    const fullResult = await getMetroEventsPage(clientFor(full), '19100', {
+      period: 'upcoming',
+      now: NOW,
+      limit: 2,
+    });
+    expect(fullResult.hasMore).toBe(true);
+
+    const short = pageChain({ data: [MOCK_EVENT], error: null });
+    const shortResult = await getMetroEventsPage(clientFor(short), '19100', {
+      period: 'upcoming',
+      now: NOW,
+      limit: 2,
+    });
+    expect(shortResult.hasMore).toBe(false);
+  });
+
+  it('returns an error when the request fails', async () => {
+    const chain = pageChain({ data: null, error: new Error('DB error') });
+    const result = await getMetroEventsPage(clientFor(chain), '19100', { period: 'past', now: NOW });
+
+    expect(result.error?.message).toBe('DB error');
+    expect(result.data).toBeUndefined();
   });
 });
 
@@ -247,6 +345,52 @@ describe('getEventById', () => {
 
     const result = await getEventById(supabase, 'missing');
     expect(result.error?.message).toBe('Event not found');
+    expect(result.notFound).toBe(true);
+  });
+
+  it('sets notFound when no row comes back', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getEventById(supabase, 'missing');
+    expect(result.error?.message).toBe('Event not found');
+    expect(result.notFound).toBe(true);
+  });
+
+  it('sets notFound for an id that is not a UUID (22P02)', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: '22P02', message: 'invalid input syntax for type uuid: "abc"' },
+      }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getEventById(supabase, 'abc');
+    expect(result.error?.message).toBe('Event not found');
+    expect(result.notFound).toBe(true);
+  });
+
+  it('leaves notFound unset when the request fails', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getEventById(supabase, 'event-1');
+    expect(result.error?.message).toBe('Failed to fetch');
+    expect(result.notFound).toBeUndefined();
   });
 });
 
@@ -543,29 +687,45 @@ describe('getUserRsvps', () => {
   });
 });
 
-describe('hasUserRsvp', () => {
-  it('returns true when RSVP exists', async () => {
-    const chain = {
+describe('getUserEventResponse', () => {
+  function responseChain(result: { data: unknown; error: unknown }) {
+    return {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: { id: 'rsvp-1' }, error: null }),
+      maybeSingle: vi.fn().mockResolvedValue(result),
     };
+  }
+
+  it('returns the status of the member’s row', async () => {
+    const chain = responseChain({ data: { status: 'interested' }, error: null });
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
-    const result = await hasUserRsvp(supabase, 'event-1', 'user-1');
-    expect(result.data).toBe(true);
+    const result = await getUserEventResponse(supabase, 'event-1', 'user-1');
+    expect(result).toEqual({ data: 'interested' });
+    expect(supabase.from).toHaveBeenCalledWith('event_rsvps');
+    expect(chain.select).toHaveBeenCalledWith('status');
+    expect(chain.eq).toHaveBeenCalledWith('event_id', 'event-1');
+    expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-1');
   });
 
-  it('returns false when RSVP does not exist (PGRST116)', async () => {
-    const chain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
-    };
+  it('returns null when the member has no response', async () => {
+    const chain = responseChain({ data: null, error: null });
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
-    const result = await hasUserRsvp(supabase, 'event-1', 'user-2');
-    expect(result.data).toBe(false);
+    const result = await getUserEventResponse(supabase, 'event-1', 'user-2');
+    expect(result).toEqual({ data: null });
+  });
+
+  it('passes a PostgREST error through', async () => {
+    const chain = responseChain({
+      data: null,
+      error: { code: '42501', message: 'Permission denied' },
+    });
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUserEventResponse(supabase, 'event-1', 'user-1');
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.data).toBeUndefined();
   });
 });
 
@@ -583,6 +743,19 @@ describe('getEventAttendees', () => {
 
     const result = await getEventAttendees(supabase, 'event-1');
     expect(result.data).toHaveLength(1);
+  });
+
+  it('lists only the people going', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getEventAttendees(supabase, 'event-1');
+    expect(chain.eq).toHaveBeenCalledWith('event_id', 'event-1');
+    expect(chain.eq).toHaveBeenCalledWith('status', 'going');
   });
 
   it('returns empty array when no attendees', async () => {
@@ -751,22 +924,6 @@ describe('rsvpToEvent — additional paths', () => {
   });
 });
 
-describe('hasUserRsvp — additional paths', () => {
-  it('returns error for unexpected DB errors (non-PGRST116)', async () => {
-    const chain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({
-        data: null,
-        error: { code: '42501', message: 'Permission denied' },
-      }),
-    };
-    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
-
-    const result = await hasUserRsvp(supabase, 'event-1', 'user-1');
-    expect(result.error).toBeDefined();
-  });
-});
 
 describe('createEvent — additional paths', () => {
   it('normalizes whitespace-only photo_url to null in insert payload', async () => {

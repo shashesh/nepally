@@ -90,6 +90,7 @@ Nepally's metro-first location model makes it uniquely positioned to surface the
 - [ ] "All" selected by default; single-select (only one chip active at a time)
 - [ ] Events listed in chronological order (soonest start date first)
 - [ ] Upcoming events shown by default; past events appear below a "Past Events" divider after all upcoming events
+  - **Web (since 2026-09-22):** the two groups are paged separately under "Upcoming" and "Past events" headings. Upcoming events come soonest first, then past events **most recent first**. A metro with nothing upcoming opens on its past events rather than an empty list. Mobile still pages every event by start date ascending
 - [ ] Pull-to-refresh
 - [ ] Infinite scroll / pagination (20 events per page)
 - [ ] Empty state (no upcoming events): illustration + "No upcoming events in [City]. Check back soon!"
@@ -130,6 +131,7 @@ Each event card displays:
   - RSVP count: "34 going"
   - RSVP button (see Section 5)
   - Attendee list or count-only based on privacy setting (see Section 5)
+  - **Web (since 2026-09-22):** the detail page offers **Interested** as well as Going, the same pair the list's cards carry, so a member can mark either from either place. Where a member can't respond, the card says why in a sentence — "This event has passed.", "You're the organizer." or "Verify your account to respond." — instead of showing a disabled button. Mobile detail keeps its single RSVP button
 - [ ] Report button (links into existing report system; no auto-hide threshold for events)
 - [ ] Organizer-only: action menu (Edit, Cancel Event) — three-dot menu top right
 - [ ] Cancelled events: red "Cancelled" banner below hero image; all other content still visible; RSVP button replaced with "Event Cancelled" label
@@ -180,6 +182,7 @@ Each event card displays:
 
 - Attendee list (when public): avatar stack showing up to 5 attendee photos/initials; tap → sheet/modal with scrollable full list (masked names + trust badges)
 - Attendee list fetched on demand (not on page load)
+- The list holds **only the people going**. An Interested response counts towards the interested total and never appears among the attendees (fixed 2026-09-22; before, `getEventAttendees` returned every response)
 - Empty state: "Be the first to RSVP!"
 
 ### 6. Event Management (Organizer)

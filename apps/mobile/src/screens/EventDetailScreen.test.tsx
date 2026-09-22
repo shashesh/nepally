@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 import {
   getEventById,
   getEventAttendees,
-  hasUserRsvp,
+  getUserEventResponse,
   rsvpToEvent,
   unrsvpFromEvent,
   cancelEvent,
@@ -100,9 +100,11 @@ const MOCK_ATTENDEES: EventRsvp[] = [
 ];
 
 jest.mock('@nepally/shared', () => ({
+  formatEventDateLong: jest.requireActual('@nepally/shared').formatEventDateLong,
+  isEventPast: jest.requireActual('@nepally/shared').isEventPast,
   getEventById: jest.fn(async () => ({ data: null })),
   getEventAttendees: jest.fn(async () => ({ data: [] })),
-  hasUserRsvp: jest.fn(async () => ({ data: false })),
+  getUserEventResponse: jest.fn(async () => ({ data: null })),
   rsvpToEvent: jest.fn(async () => ({})),
   unrsvpFromEvent: jest.fn(async () => ({})),
   cancelEvent: jest.fn(async () => ({})),
@@ -138,7 +140,9 @@ jest.mock('@nepally/shared', () => ({
 
 // --- Helpers ---
 const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById>;
-const mockHasUserRsvp = hasUserRsvp as jest.MockedFunction<typeof hasUserRsvp>;
+const mockGetUserEventResponse = getUserEventResponse as jest.MockedFunction<
+  typeof getUserEventResponse
+>;
 const mockRsvpToEvent = rsvpToEvent as jest.MockedFunction<typeof rsvpToEvent>;
 const mockUnrsvpFromEvent = unrsvpFromEvent as jest.MockedFunction<typeof unrsvpFromEvent>;
 const mockCancelEvent = cancelEvent as jest.MockedFunction<typeof cancelEvent>;
@@ -172,7 +176,7 @@ describe('EventDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setEvent();
-    mockHasUserRsvp.mockResolvedValue({ data: false });
+    mockGetUserEventResponse.mockResolvedValue({ data: null });
     setAuthUser();
   });
 
@@ -478,7 +482,7 @@ describe('EventDetailScreen', () => {
 
       // After initial render, set up mocks for the refresh call
       mockGetEventById.mockResolvedValue({ data: { ...BASE_EVENT, rsvp_count: 9 } });
-      mockHasUserRsvp.mockResolvedValue({ data: true });
+      mockGetUserEventResponse.mockResolvedValue({ data: 'going' });
 
       await act(async () => {
         fireEvent.press(getByText('RSVP'));
@@ -489,11 +493,11 @@ describe('EventDetailScreen', () => {
       expect(mockRsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
       // Initial fetch + refresh
       expect(mockGetEventById).toHaveBeenCalledTimes(2);
-      expect(mockHasUserRsvp).toHaveBeenCalledTimes(2);
+      expect(mockGetUserEventResponse).toHaveBeenCalledTimes(2);
     });
 
     it('calls unrsvpFromEvent when already going', async () => {
-      mockHasUserRsvp.mockResolvedValue({ data: true });
+      mockGetUserEventResponse.mockResolvedValue({ data: 'going' });
       mockUnrsvpFromEvent.mockResolvedValue({});
 
       const { getByText } = await renderAndSettle();
@@ -505,11 +509,28 @@ describe('EventDetailScreen', () => {
       expect(mockUnrsvpFromEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
     });
 
+    it('offers RSVP to an interested member, and RSVP marks them going', async () => {
+      mockGetUserEventResponse.mockResolvedValue({ data: 'interested' });
+      mockRsvpToEvent.mockResolvedValue({});
+
+      const { getByText, queryByText } = await renderAndSettle();
+      expect(getByText('RSVP')).toBeTruthy();
+      expect(queryByText('Going ✓')).toBeNull();
+
+      await act(async () => {
+        fireEvent.press(getByText('RSVP'));
+      });
+      await act(async () => {});
+
+      expect(mockRsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
+      expect(mockUnrsvpFromEvent).not.toHaveBeenCalled();
+    });
+
     it('reverts RSVP state and shows error alert on failure', async () => {
       mockRsvpToEvent.mockResolvedValue({ error: new Error('RSVP failed') });
       // After failure, refreshRsvpState still runs
       mockGetEventById.mockResolvedValue({ data: BASE_EVENT });
-      mockHasUserRsvp.mockResolvedValue({ data: false });
+      mockGetUserEventResponse.mockResolvedValue({ data: null });
 
       const { getByText } = await renderAndSettle();
       await act(async () => {
@@ -521,7 +542,7 @@ describe('EventDetailScreen', () => {
     });
 
     it('shows "You are currently going." hint when going', async () => {
-      mockHasUserRsvp.mockResolvedValue({ data: true });
+      mockGetUserEventResponse.mockResolvedValue({ data: 'going' });
 
       const { getByText } = await renderAndSettle();
       expect(getByText('You are currently going.')).toBeTruthy();
@@ -573,8 +594,8 @@ describe('EventDetailScreen', () => {
       mockUseAuth.mockReturnValue({ user: null });
       const { getByText } = await renderAndSettle();
       expect(getByText('Dashain Celebration')).toBeTruthy();
-      // hasUserRsvp should not be called without a user
-      expect(mockHasUserRsvp).not.toHaveBeenCalled();
+      // getUserEventResponse should not be called without a user
+      expect(mockGetUserEventResponse).not.toHaveBeenCalled();
     });
   });
 });
