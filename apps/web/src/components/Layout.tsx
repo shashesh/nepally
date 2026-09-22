@@ -43,8 +43,11 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const handleSignOut = async () => {
+    // Leave first. Clearing the user swaps this AppShell for PublicShell,
+    // which remounts the page, and a protected page's fresh `!user` redirect
+    // would then win over the push, landing on /login instead of /.
+    await router.push('/');
     await signOut();
-    router.push('/');
   };
 
   const showTabs = !isTaskRoute(router.pathname);

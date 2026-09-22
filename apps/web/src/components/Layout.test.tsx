@@ -149,5 +149,24 @@ describe('Layout', () => {
         expect(mocks.push).toHaveBeenCalledWith('/');
       });
     });
+
+    it('leaves for / before signing out, so the remounted page has no signed-out redirect to race', async () => {
+      // Clearing the user swaps AppShell for PublicShell, which remounts the
+      // page; a protected page's `!user → /login` effect would then win.
+      mocks.push.mockResolvedValue(true);
+      mocks.signOut.mockResolvedValue(undefined);
+      render(<Layout>Content</Layout>);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Open account menu' }));
+      });
+      const signOutItem = await screen.findByRole('menuitem', { name: 'Sign Out' });
+      await act(async () => {
+        fireEvent.click(signOutItem);
+      });
+
+      expect(mocks.push).toHaveBeenCalledWith('/');
+      expect(mocks.signOut).toHaveBeenCalledTimes(1);
+      expect(mocks.push.mock.invocationCallOrder[0]).toBeLessThan(mocks.signOut.mock.invocationCallOrder[0]);
+    });
   });
 });
