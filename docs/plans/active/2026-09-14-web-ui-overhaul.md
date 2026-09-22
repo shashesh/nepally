@@ -12759,7 +12759,10 @@ The own profile's About tab has no baseline either, because the `profile` shot c
 Task 6.18 changed the `profile` baselines on purpose, so the review in Step 4 should expect these changes *(from the Task 6.18 review)*:
 
 - **Desktop:** the card radius is 12px, down from 16px (`--radius-card`). The double hairline is a single border. Everything below the tab list moves 8px down, because `tabContent` padding went from 8px to 16px.
-- **Phone (Pixel 7, 412px):** the card is borderless with 8px side padding. Rows are about 364px wide, and all four tabs fit.
+- **Phone (Pixel 7, 412px):**
+  - The card is borderless, with 16px top padding and 8px side padding. Rows are about 364px wide, and all four tabs fit.
+  - The header has a 16px gap and a 24px bottom margin. The name is 19px (`--font-size-lg`), as on the public profile.
+  - The Settings card is inset 8px each side, with 16px padding, so it lines up with the rows.
 - **Not covered by the mocks:** the mock email and name are short, so no baseline covers the long-email wrap Task 6.18 fixed. Check it by hand at 320px during the Step 7 walk.
 
 The a11y diff must **delete** the four `profile` and `public-profile` entries and add nothing. Any serious or critical violation on `manage-locations` is fixed here, not recorded.

@@ -49,9 +49,9 @@
 
 .profileName {
   /* Weight comes from the shared h1…h6 rule (globals.css: Gambarino ships
-     only weight 400); the h2 rule sets the size. This only sets tracking
-     and spacing below the name, matching PublicProfileHeader.module.css's
-     .displayName. */
+     only weight 400); the h2 rule sets the size (phones: --font-size-lg,
+     below). This sets tracking and spacing below the name, matching
+     PublicProfileHeader.module.css's .displayName. */
   letter-spacing: var(--tracking-tight);
   margin-bottom: var(--space-1);
 }
@@ -72,8 +72,8 @@
 /* ── Settings & more ─────────────────────── */
 .sectionTitle {
   /* Gambarino only ships weight 400 — the shared h1…h6 rule (globals.css)
-     already sets it, so this only overrides size and spacing, same as
-     .profileName above and AccountDetails.module.css's .title. */
+     already sets it, so this only overrides size and spacing, as
+     AccountDetails.module.css's .title does. */
   font-size: var(--font-size-lg);
   margin-bottom: var(--space-4);
 }
