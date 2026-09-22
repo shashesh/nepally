@@ -100,6 +100,8 @@ const MOCK_ATTENDEES: EventRsvp[] = [
 ];
 
 jest.mock('@nepally/shared', () => ({
+  formatEventDateLong: jest.requireActual('@nepally/shared').formatEventDateLong,
+  isEventPast: jest.requireActual('@nepally/shared').isEventPast,
   getEventById: jest.fn(async () => ({ data: null })),
   getEventAttendees: jest.fn(async () => ({ data: [] })),
   hasUserRsvp: jest.fn(async () => ({ data: false })),

@@ -90,6 +90,9 @@ const EVENT_TYPE_LABELS = {
 };
 
 jest.mock('@nepally/shared', () => ({
+  applyEventResponseChange: jest.requireActual('@nepally/shared').applyEventResponseChange,
+  formatEventDateShort: jest.requireActual('@nepally/shared').formatEventDateShort,
+  isEventPast: jest.requireActual('@nepally/shared').isEventPast,
   getEventsByMetro: jest.fn(async () => ({ data: [] })),
   getUserEventResponses: jest.fn(async () => ({ data: {} })),
   setEventResponse: jest.fn(async () => ({})),

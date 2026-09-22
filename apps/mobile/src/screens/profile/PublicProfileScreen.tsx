@@ -30,6 +30,7 @@ import {
   formatRelativeTime,
   formatPublicName,
   getTrustLabel,
+  isEventPast,
   LANGUAGE_LABELS,
   getHelperScore,
   HELPER_SCORE_VISIBILITY_THRESHOLD,
@@ -360,8 +361,7 @@ export default function PublicProfileScreen(): React.ReactElement {
     return (
       <View style={styles.rowList}>
         {userEvents.map((event) => {
-          const isPast =
-            new Date(event.end_date ?? event.start_date) < new Date();
+          const isPast = isEventPast(event, new Date());
           const isCancelled = event.status === 'cancelled';
           const statusLabel = isCancelled
             ? 'Cancelled'

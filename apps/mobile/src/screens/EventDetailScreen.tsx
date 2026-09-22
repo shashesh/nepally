@@ -23,7 +23,9 @@ import {
   unrsvpFromEvent,
   cancelEvent,
   deleteEvent,
+  formatEventDateLong,
   formatPublicName,
+  isEventPast,
   TrustLevel,
   type Event,
   type EventRsvp,
@@ -42,27 +44,6 @@ import type { EventsStackParamList } from '../types/navigation';
 type Nav = NativeStackNavigationProp<EventsStackParamList>;
 type Route = RouteProp<EventsStackParamList, 'EventDetail'>;
 
-function formatFullDate(startDate: string, endDate?: string): string {
-  const start = new Date(startDate);
-  const opts: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  };
-  if (!endDate) return start.toLocaleString('en-US', opts);
-  const end = new Date(endDate);
-  const sameDay = start.toDateString() === end.toDateString();
-  if (sameDay) {
-    const dateStr = start.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const startTime = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const endTime = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    return `${dateStr} · ${startTime} – ${endTime}`;
-  }
-  return `${start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${end.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
-}
-
 export default function EventDetailScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
@@ -80,9 +61,7 @@ export default function EventDetailScreen() {
   const [attendeesLoading, setAttendeesLoading] = useState(false);
 
   const isOrganizer = event?.organizer_id === userId;
-  const isPast = event
-    ? new Date(event.end_date ?? event.start_date) < new Date()
-    : false;
+  const isPast = event ? isEventPast(event, new Date()) : false;
   const isCancelled = event?.status === 'cancelled';
   const isLevel0 = (user?.trust_level ?? 0) < TrustLevel.VERIFIED;
 
@@ -370,7 +349,7 @@ export default function EventDetailScreen() {
           {/* Date */}
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>📅</Text>
-            <Text style={styles.infoText}>{formatFullDate(event.start_date, event.end_date)}</Text>
+            <Text style={styles.infoText}>{formatEventDateLong(event.start_date, event.end_date)}</Text>
           </View>
 
           {/* Location */}

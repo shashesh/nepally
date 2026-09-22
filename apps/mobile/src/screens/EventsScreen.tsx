@@ -16,6 +16,8 @@ import {
   getUserEventResponses,
   setEventResponse,
   removeEventResponse,
+  applyEventResponseChange,
+  isEventPast,
   EVENT_TYPE_LABELS,
   TrustLevel,
   type Event,
@@ -164,20 +166,7 @@ export default function EventsScreen() {
       });
 
       setEvents((prev) =>
-        prev.map((e) => {
-          if (e.id !== eventId) return e;
-          let { rsvp_count, interested_count } = e;
-
-          // Remove old response counter
-          if (previous === 'going') rsvp_count = Math.max(0, rsvp_count - 1);
-          if (previous === 'interested') interested_count = Math.max(0, interested_count - 1);
-
-          // Add new response counter
-          if (status === 'going') rsvp_count += 1;
-          if (status === 'interested') interested_count += 1;
-
-          return { ...e, rsvp_count, interested_count };
-        })
+        prev.map((e) => (e.id === eventId ? applyEventResponseChange(e, previous, status) : e))
       );
 
       // Persist to DB
@@ -198,15 +187,7 @@ export default function EventsScreen() {
           return next;
         });
         setEvents((prev) =>
-          prev.map((e) => {
-            if (e.id !== eventId) return e;
-            let { rsvp_count, interested_count } = e;
-            if (status === 'going') rsvp_count = Math.max(0, rsvp_count - 1);
-            if (status === 'interested') interested_count = Math.max(0, interested_count - 1);
-            if (previous === 'going') rsvp_count += 1;
-            if (previous === 'interested') interested_count += 1;
-            return { ...e, rsvp_count, interested_count };
-          })
+          prev.map((e) => (e.id === eventId ? applyEventResponseChange(e, status, previous) : e))
         );
       }
     },
@@ -230,11 +211,10 @@ export default function EventsScreen() {
     const past: Event[] = [];
 
     for (const e of filtered) {
-      const endOrStart = e.end_date ? new Date(e.end_date) : new Date(e.start_date);
-      if (endOrStart >= now) {
-        upcoming.push(e);
-      } else {
+      if (isEventPast(e, now)) {
         past.push(e);
+      } else {
+        upcoming.push(e);
       }
     }
     return { upcoming, past };

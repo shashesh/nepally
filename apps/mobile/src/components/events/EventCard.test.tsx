@@ -9,6 +9,7 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 jest.mock('@nepally/shared', () => ({
+  formatEventDateShort: jest.requireActual('@nepally/shared').formatEventDateShort,
   formatPublicName: (name: string) => {
     const parts = name.trim().split(' ');
     if (parts.length < 2) return parts[0];
