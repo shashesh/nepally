@@ -11,12 +11,6 @@
   "visual-desktop:marketplace": [
     "color-contrast"
   ],
-  "visual-desktop:profile": [
-    "color-contrast"
-  ],
-  "visual-desktop:public-profile": [
-    "color-contrast"
-  ],
   "visual-phone:event-detail": [
     "color-contrast"
   ],
@@ -27,12 +21,6 @@
     "color-contrast"
   ],
   "visual-phone:marketplace": [
-    "color-contrast"
-  ],
-  "visual-phone:profile": [
-    "color-contrast"
-  ],
-  "visual-phone:public-profile": [
     "color-contrast"
   ]
 }
