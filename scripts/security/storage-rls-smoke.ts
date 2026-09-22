@@ -7,19 +7,27 @@
  *      upsert check uses INSERT ... RETURNING, which needs SELECT even for a
  *      new object.
  *   2. A upserts the same avatar again and succeeds (SELECT + UPDATE).
- *   3. A uploads a post photo with upsert: false and succeeds (INSERT only).
- *   4. B's remove() of A's files deletes nothing: it returns [] and the service
- *      role still finds both objects. B's writes into A's files are rejected
- *      outright too: an upload into A's post-photos folder and an avatar
- *      upsert over A's avatar both error, and A's avatar is unchanged.
+ *   3. A uploads a photo into each folder-scoped bucket — post, event and
+ *      listing photos — with upsert: false, and each succeeds (INSERT only).
+ *   4. B's remove() of A's files (the avatar plus all three folder-scoped
+ *      photos) deletes nothing: it returns [] and the service role still
+ *      finds every object. B's writes into A's files are rejected outright
+ *      too: an upload into A's post-photos folder and an avatar upsert over
+ *      A's avatar are both denied by RLS specifically, not just any error,
+ *      and A's avatar is unchanged.
  *   5. Nobody else can enumerate: anon list() of every bucket returns [], and
  *      B's root listing of every bucket is also empty — the avatars SELECT
- *      predicate (`name = uid || '.jpg'`) differs from post-photos' folder
- *      predicate, so this is checked per bucket, not just post-photos. B
- *      specifically cannot list A's post-photos folder either. A can list it
- *      (the positive control).
- *   6. A's remove() of its own files returns one item each, and the service
- *      role confirms both are gone.
+ *      predicate (`name = uid || '.jpg'`) differs from the folder-scoped
+ *      buckets' predicate, so this is checked per bucket, not just
+ *      post-photos. For each folder-scoped bucket, anon and B specifically
+ *      cannot list A's own folder either — a broad or wrong-bucket SELECT
+ *      policy on event-photos or listing-photos would otherwise pass
+ *      unnoticed, since only post-photos and avatars had fixtures to probe
+ *      with before. A can list every one of A's own folders (the positive
+ *      control).
+ *   6. A's remove() of its own files (avatar plus all three folder-scoped
+ *      photos) returns one item each, and the service role confirms all are
+ *      gone.
  *
  * Before 039, steps 1, 2 and 6 fail: every avatar upload is rejected, and
  * remove() returns [] without an error.
@@ -41,6 +49,16 @@ type StoredFile = {
 };
 
 const BUCKETS = ['avatars', 'post-photos', 'event-photos', 'listing-photos'] as const;
+
+/**
+ * Buckets whose objects live at `<uid>/<file>`, per the app's upload helpers
+ * (`uploadPostPhoto`/`uploadEventPhoto`/`uploadListingPhoto` in
+ * packages/shared/src/api/storage.ts) and the matching INSERT policies
+ * (003_storage.sql, 006_events.sql, 015_listing_photos_storage.sql — all
+ * `(storage.foldername(name))[1] = auth.uid()::text`). `avatars` is excluded:
+ * its object lives at the bucket root as `<uid>.jpg`, not in a folder.
+ */
+const FOLDER_SCOPED_BUCKETS = ['post-photos', 'event-photos', 'listing-photos'] as const;
 
 /** Not a real image; the storage API does not inspect file contents. */
 const FAKE_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
@@ -143,9 +161,29 @@ async function expectUpload(
   );
 }
 
+/** The message Supabase Storage's Postgres backend raises when RLS blocks a write. */
+const RLS_DENIAL_MESSAGE = /row-level security/i;
+
 /**
- * Asserts a write is rejected by RLS. If it unexpectedly succeeds, the caller's
- * `createdFiles` list gets the path immediately, so cleanup still removes it.
+ * True only for an RLS denial specifically: a 403 (when the error exposes a
+ * status at all — see StorageError in @supabase/storage-js) whose message
+ * names the row-level security policy. A network failure, a bad content
+ * type, or a missing bucket would also leave `upload()`'s `error` truthy, so
+ * checking `!!error` alone can't tell an RLS rejection from a misconfigured
+ * run.
+ */
+function isRlsDenied(error: { message: string; status?: number }): boolean {
+  if (!RLS_DENIAL_MESSAGE.test(error.message)) {
+    return false;
+  }
+  return error.status === undefined || error.status === 403;
+}
+
+/**
+ * Asserts a write is denied by RLS specifically, not by some other failure
+ * that would also leave `error` truthy. If it unexpectedly succeeds, the
+ * caller's `createdFiles` list gets the path immediately, so cleanup still
+ * removes it.
  */
 async function expectUploadRejected(
   client: SupabaseClient,
@@ -160,10 +198,14 @@ async function expectUploadRejected(
   });
   if (!error) {
     createdFiles.push(file);
+    throw new Error(
+      `${label}: upload to ${file.bucket}/${file.path} should be rejected by RLS, but it succeeded`
+    );
   }
   assertCondition(
-    !!error,
-    `${label}: upload to ${file.bucket}/${file.path} should be rejected by RLS, but it succeeded`
+    isRlsDenied(error),
+    `${label}: upload to ${file.bucket}/${file.path} should be denied by RLS specifically, ` +
+      `but got a different error: ${JSON.stringify(error)}`
   );
 }
 
@@ -201,19 +243,26 @@ async function main(): Promise<void> {
     const otherClient = await createAuthedClient(supabaseUrl, supabaseAnonKey, other);
 
     const avatar: StoredFile = { bucket: 'avatars', path: `${owner.id}.jpg` };
-    const postPhoto: StoredFile = {
-      bucket: 'post-photos',
+    // One owner-owned fixture per folder-scoped bucket, so post-photos isn't
+    // the only one exercised — event-photos and listing-photos each got their
+    // own SELECT policy in 039 too, and an empty bucket can't catch a broad or
+    // wrong-bucket predicate on either of them.
+    const folderScopedPhotos: StoredFile[] = FOLDER_SCOPED_BUCKETS.map((bucket) => ({
+      bucket,
       path: `${owner.id}/storage-smoke-${randomToken(6)}.jpg`,
-    };
-    createdFiles.push(avatar, postPhoto);
+    }));
+    createdFiles.push(avatar, ...folderScopedPhotos);
 
-    // 1-3. A's uploads: first-time avatar upsert, repeat upsert, plain post photo.
+    // 1-3. A's uploads: first-time avatar upsert, repeat upsert, then a plain
+    // upload into each folder-scoped bucket.
     await expectUpload(ownerClient, avatar, true, 'owner first avatar upsert');
     await expectUpload(ownerClient, avatar, true, 'owner repeat avatar upsert');
-    await expectUpload(ownerClient, postPhoto, false, 'owner post photo upload');
+    for (const file of folderScopedPhotos) {
+      await expectUpload(ownerClient, file, false, `owner ${file.bucket} upload`);
+    }
 
     // 4. B cannot delete A's files; remove() reports nothing deleted.
-    for (const file of [avatar, postPhoto]) {
+    for (const file of [avatar, ...folderScopedPhotos]) {
       const { data, error } = await otherClient.storage.from(file.bucket).remove([file.path]);
       assertCondition(
         !error,
@@ -257,27 +306,35 @@ async function main(): Promise<void> {
     );
 
     // 5. No enumeration: anon sees no objects anywhere. B's root listing of every
-    // bucket is also empty — the avatars SELECT predicate differs from
-    // post-photos, so this is checked per bucket rather than relying on the
-    // post-photos folder check alone. B cannot list A's post-photos folder either.
+    // bucket is also empty — the avatars SELECT predicate differs from the
+    // folder-scoped buckets, so this is checked per bucket rather than relying
+    // on a single bucket's folder check alone. For each folder-scoped bucket,
+    // anon and B specifically cannot list A's own folder either, while A can
+    // (the positive control).
     for (const bucket of BUCKETS) {
       await expectListEmpty(anon, bucket, '', 'anon');
       await expectListEmpty(otherClient, bucket, '', 'other member');
     }
-    await expectListEmpty(anon, 'post-photos', owner.id, 'anon');
-    await expectListEmpty(otherClient, 'post-photos', owner.id, 'other member');
 
-    const { data: ownList, error: ownListError } = await ownerClient.storage
-      .from('post-photos')
-      .list(owner.id);
-    assertCondition(!ownListError, `owner list of own folder failed: ${ownListError?.message}`);
-    assertCondition(
-      (ownList ?? []).some((entry) => `${owner.id}/${entry.name}` === postPhoto.path),
-      'owner should see their own post photo when listing their folder'
-    );
+    for (const file of folderScopedPhotos) {
+      await expectListEmpty(anon, file.bucket, owner.id, 'anon');
+      await expectListEmpty(otherClient, file.bucket, owner.id, 'other member');
+
+      const { data: ownList, error: ownListError } = await ownerClient.storage
+        .from(file.bucket)
+        .list(owner.id);
+      assertCondition(
+        !ownListError,
+        `owner list of own ${file.bucket} folder failed: ${ownListError?.message}`
+      );
+      assertCondition(
+        (ownList ?? []).some((entry) => `${owner.id}/${entry.name}` === file.path),
+        `owner should see their own ${file.bucket} photo when listing their folder`
+      );
+    }
 
     // 6. A deletes its own files; the storage API really removes them.
-    for (const file of [avatar, postPhoto]) {
+    for (const file of [avatar, ...folderScopedPhotos]) {
       const { data, error } = await ownerClient.storage.from(file.bucket).remove([file.path]);
       assertCondition(
         !error,
