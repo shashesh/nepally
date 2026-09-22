@@ -12,6 +12,8 @@ export type RsvpVisibility = 'public' | 'private';
 
 export type RsvpStatus = 'going' | 'interested';
 
+export type EventPeriod = 'upcoming' | 'past';
+
 export interface Event {
   id: string;
   title: string;

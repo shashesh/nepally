@@ -8,6 +8,7 @@ import {
   getEventById,
   getEventsByMetro,
   getEventsByOrganizer,
+  getMetroEventsPage,
   getUpcomingEventsByMetro,
   getUserEventResponse,
   getUserEventResponses,
@@ -116,6 +117,103 @@ describe('getEventsByMetro', () => {
 
     await getEventsByMetro(supabase, '19100', 20, 40);
     expect(chain.range).toHaveBeenCalledWith(40, 59);
+  });
+});
+
+describe('getMetroEventsPage', () => {
+  const NOW = new Date('2026-03-05T12:00:00.000Z');
+  const ISO = NOW.toISOString();
+
+  function pageChain(result: { data: unknown; error: unknown }) {
+    return {
+      select: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue(result),
+    };
+  }
+
+  function clientFor(chain: ReturnType<typeof pageChain>) {
+    return { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+  }
+
+  it('keeps removed events out and scopes to the metro plus global events', async () => {
+    const chain = pageChain({ data: [], error: null });
+    await getMetroEventsPage(clientFor(chain), '19100', { period: 'upcoming', now: NOW });
+
+    expect(chain.neq).toHaveBeenCalledWith('status', 'removed');
+    expect(chain.or).toHaveBeenCalledWith('metro_area_id.eq.19100,is_global.eq.true');
+  });
+
+  it('pages upcoming events by start date then id, both ascending', async () => {
+    const chain = pageChain({ data: [MOCK_EVENT], error: null });
+    const result = await getMetroEventsPage(clientFor(chain), '19100', {
+      period: 'upcoming',
+      now: NOW,
+    });
+
+    expect(chain.or).toHaveBeenCalledWith(`start_date.gte.${ISO},end_date.gte.${ISO}`);
+    expect(chain.lt).not.toHaveBeenCalled();
+    expect(chain.order.mock.calls).toEqual([
+      ['start_date', { ascending: true }],
+      ['id', { ascending: true }],
+    ]);
+    expect(result.data).toEqual([MOCK_EVENT]);
+  });
+
+  it('pages past events by start date then id, both descending', async () => {
+    const chain = pageChain({ data: [], error: null });
+    await getMetroEventsPage(clientFor(chain), '19100', { period: 'past', now: NOW });
+
+    expect(chain.lt).toHaveBeenCalledWith('start_date', ISO);
+    expect(chain.or).toHaveBeenCalledWith(`end_date.is.null,end_date.lt.${ISO}`);
+    expect(chain.order.mock.calls).toEqual([
+      ['start_date', { ascending: false }],
+      ['id', { ascending: false }],
+    ]);
+  });
+
+  it('requests rows offset to offset + limit - 1', async () => {
+    const defaults = pageChain({ data: [], error: null });
+    await getMetroEventsPage(clientFor(defaults), '19100', { period: 'upcoming', now: NOW });
+    expect(defaults.range).toHaveBeenCalledWith(0, 19);
+
+    const paged = pageChain({ data: [], error: null });
+    await getMetroEventsPage(clientFor(paged), '19100', {
+      period: 'past',
+      now: NOW,
+      limit: 10,
+      offset: 30,
+    });
+    expect(paged.range).toHaveBeenCalledWith(30, 39);
+  });
+
+  it('sets hasMore only for a full page', async () => {
+    const full = pageChain({ data: [MOCK_EVENT, { ...MOCK_EVENT, id: 'event-2' }], error: null });
+    const fullResult = await getMetroEventsPage(clientFor(full), '19100', {
+      period: 'upcoming',
+      now: NOW,
+      limit: 2,
+    });
+    expect(fullResult.hasMore).toBe(true);
+
+    const short = pageChain({ data: [MOCK_EVENT], error: null });
+    const shortResult = await getMetroEventsPage(clientFor(short), '19100', {
+      period: 'upcoming',
+      now: NOW,
+      limit: 2,
+    });
+    expect(shortResult.hasMore).toBe(false);
+  });
+
+  it('returns an error when the request fails', async () => {
+    const chain = pageChain({ data: null, error: new Error('DB error') });
+    const result = await getMetroEventsPage(clientFor(chain), '19100', { period: 'past', now: NOW });
+
+    expect(result.error?.message).toBe('DB error');
+    expect(result.data).toBeUndefined();
   });
 });
 
