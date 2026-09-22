@@ -144,7 +144,8 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - The frozen files are safe on a fresh database.
   - Record the rehearsal in the same doc.
 - [ ] **Code:** Run `npm run seed:metro` against prod. The migrations do not seed `metro_areas` or `metro_area_zipcodes`. Check that the six markets exist and their ZIP counts roughly match staging (see [Launch markets](#launch-markets)).
-- [ ] **Code:** Migration `039`:
+- [ ] **Code:** Migration `039_storage_owner_select_policies`: owner-only SELECT policies on `storage.objects`, so photo deletes and avatar replacement work again (see [supabase-setup.md](../../architecture/supabase-setup.md#2-storage-policies)). Apply to staging, then to prod after `001`–`038`.
+- [ ] **Code:** Migration `040`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.

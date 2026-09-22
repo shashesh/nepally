@@ -213,117 +213,46 @@ npm run seed:metro
 
 ## Storage Setup
 
-### 1. Enable Storage
+### 1. Buckets
 
-Storage is enabled by default. Configure buckets:
+The migrations create every bucket, so there is nothing to set up by hand in **Storage**. All four buckets are public: the apps show photos through their public object URLs (`getPublicUrl`), and the storage API serves those without checking RLS.
 
-1. Go to **Storage**
-2. Create buckets:
+| Bucket | Created in | Object path | Shared API (`packages/shared/src/api/storage.ts`) |
+|---|---|---|---|
+| `avatars` | `003_storage.sql` | `<userId>.jpg` at the bucket root | `uploadProfilePhoto` (upsert), `deleteProfilePhoto` |
+| `post-photos` | `003_storage.sql` | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadPostPhoto(s)`, `deletePostPhotos` |
+| `event-photos` | `006_events.sql` | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadEventPhoto` (no delete yet) |
+| `listing-photos` | `015_listing_photos_storage.sql` | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadListingPhoto(s)`, `deleteListingPhotos` (no caller yet) |
 
-**Profile Photos Bucket:**
+The migrations set no `file_size_limit` or `allowed_mime_types` on the buckets. The shared API checks type and size for post, event and listing photos before uploading. Bucket-level limits are on the SEC-06 hardening backlog in the [production launch plan](../plans/active/2026-09-18-production-launch.md).
 
-```text
-Name: user-profiles
-Public: true
-File size limit: 5MB
-Allowed MIME types: image/jpeg, image/png, image/webp
-```
+### 2. Storage Policies
 
-**Post Photos Bucket:**
+Every policy on `storage.objects` is owner-only. A member can read, upload, overwrite and delete their own objects and nobody else's. Each policy tests `auth.role() = 'authenticated'` plus ownership:
 
-```text
-Name: post-photos
-Public: true
-File size limit: 10MB
-Allowed MIME types: image/jpeg, image/png, image/webp
-```
+- `avatars`: `name = auth.uid()::text || '.jpg'`. The INSERT policy also requires the object to sit at the bucket root.
+- `post-photos`, `event-photos`, `listing-photos`: the first folder of the path is the member's id, `(storage.foldername(name))[1] = auth.uid()::text`.
 
-**Chat Images Bucket:**
+| Command | Policies | Migrations |
+|---|---|---|
+| SELECT | "Users can view own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `039_storage_owner_select_policies.sql` |
+| INSERT | "Users can upload own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015` |
+| UPDATE | "Users can update own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015` |
+| DELETE | "Users can delete own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015` |
 
-```text
-Name: chat-images
-Public: false (only participants can access)
-File size limit: 10MB
-Allowed MIME types: image/jpeg, image/png, image/webp
-```
+The SELECT policies matter even though nobody downloads through RLS. Several storage operations read the row under RLS as well as writing it:
 
-### 2. Configure Storage Policies
+| Storage call | `storage.objects` permissions it needs |
+|---|---|
+| `upload()` of a new object | INSERT |
+| `upload()` with `upsert: true` over an existing object | INSERT, SELECT and UPDATE |
+| `remove()` | SELECT and DELETE |
+| `list()` | SELECT |
+| `getPublicUrl()` and public URL reads | none |
 
-**User Profiles Bucket:**
+Without SELECT, `remove()` deletes nothing and still reports success. The storage API cannot see the row, so its DELETE matches zero rows, and the file stays reachable at its public URL. That was the state of every bucket from `027_security_warnings_hardening.sql` until `039`. Migration 027 dropped the broad "Anyone can view …" SELECT policies and nothing replaced them. Replacing an existing avatar is expected to have failed in that period too, because `uploadProfilePhoto` upserts.
 
-```sql
--- Anyone can view profile photos
-CREATE POLICY "Public Access"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'user-profiles');
-
--- Users can upload their own profile photo
-CREATE POLICY "Users can upload own profile photo"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'user-profiles'
-    AND auth.uid()::text = (storage.foldername(name))[1]
-  );
-
--- Users can update their own profile photo
-CREATE POLICY "Users can update own profile photo"
-  ON storage.objects FOR UPDATE
-  USING (
-    bucket_id = 'user-profiles'
-    AND auth.uid()::text = (storage.foldername(name))[1]
-  );
-
--- Users can delete their own profile photo
-CREATE POLICY "Users can delete own profile photo"
-  ON storage.objects FOR DELETE
-  USING (
-    bucket_id = 'user-profiles'
-    AND auth.uid()::text = (storage.foldername(name))[1]
-  );
-```
-
-**Post Photos Bucket:**
-
-```sql
--- Anyone can view post photos
-CREATE POLICY "Public Access"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'post-photos');
-
--- Authenticated users can upload post photos
-CREATE POLICY "Authenticated users can upload"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'post-photos'
-    AND auth.role() = 'authenticated'
-  );
-```
-
-**Chat Images Bucket:**
-
-```sql
--- Only conversation participants can view
-CREATE POLICY "Participants can view"
-  ON storage.objects FOR SELECT
-  USING (
-    bucket_id = 'chat-images'
-    AND auth.uid() IN (
-      SELECT user_id FROM conversation_participants
-      WHERE conversation_id::text = (storage.foldername(name))[1]
-    )
-  );
-
--- Participants can upload
-CREATE POLICY "Participants can upload"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'chat-images'
-    AND auth.uid() IN (
-      SELECT user_id FROM conversation_participants
-      WHERE conversation_id::text = (storage.foldername(name))[1]
-    )
-  );
-```
+**Never add a broad `USING (bucket_id = '<bucket>')` SELECT policy.** That lets anyone, anon included, list every object in the bucket. It is what 027 removed, and Supabase's `public_bucket_allows_listing` advisor flags it. The owner-scoped SELECT policies from 039 do not trip that advisor.
 
 ### 3. Configure Image Transformations (Optional)
 
@@ -332,8 +261,8 @@ Supabase supports image transformations on the fly:
 ```typescript
 // Get optimized image
 const { data } = supabase.storage
-  .from('user-profiles')
-  .getPublicUrl('user-id/avatar.jpg', {
+  .from('avatars')
+  .getPublicUrl(`${userId}.jpg`, {
     transform: {
       width: 200,
       height: 200,
@@ -741,7 +670,17 @@ SELECT * FROM posts WHERE author_id = 'user-uuid-here';
 1. Verify bucket exists
 2. Check file size limit
 3. Verify MIME type is allowed
-4. Check storage policies
+4. Check storage policies. Overwriting an existing object (`upsert: true`) needs SELECT and UPDATE policies as well as INSERT (see [Storage Policies](#2-storage-policies)).
+
+### Issue: A photo delete reports success but the file is still there
+
+**Solution:** `remove()` needs a SELECT policy as well as DELETE. Without one it deletes nothing and returns no error. Check that the owner-only SELECT policies from `039_storage_owner_select_policies.sql` exist:
+
+```sql
+SELECT policyname, cmd FROM pg_policies
+WHERE schemaname = 'storage' AND tablename = 'objects'
+ORDER BY cmd, policyname;
+```
 
 ### Issue: Edge Functions timing out
 
