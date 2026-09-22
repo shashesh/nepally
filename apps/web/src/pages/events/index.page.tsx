@@ -295,9 +295,9 @@ export default function EventsPage() {
                   <EventCard
                     key={e.id}
                     event={e}
-                    userResponse={userResponses[e.id] ?? null}
-                    canInteract={canInteract}
-                    onResponseChange={handleResponseChange}
+                    response={userResponses[e.id] ?? null}
+                    canRespond={canInteract}
+                    onRespond={handleResponseChange}
                   />
                 ))}
                 {past.length > 0 && (
@@ -308,9 +308,9 @@ export default function EventsPage() {
                         key={e.id}
                         event={e}
                         past
-                        userResponse={userResponses[e.id] ?? null}
-                        canInteract={canInteract}
-                        onResponseChange={handleResponseChange}
+                        response={userResponses[e.id] ?? null}
+                        canRespond={canInteract}
+                        onRespond={handleResponseChange}
                       />
                     ))}
                   </>
