@@ -660,9 +660,9 @@ describe('ProfilePage', () => {
     // wait for About You section to appear
     await waitFor(() => expect(screen.getByLabelText('Hometown district')).toBeDefined());
 
-    // simulate selecting Pokhara — fireEvent.change fires React's onChange with the new value
+    // simulate selecting Lalitpur — fireEvent.change fires React's onChange with the new value
     const districtSelect = screen.getByLabelText('Hometown district');
-    Object.defineProperty(districtSelect, 'value', { writable: true, value: 'Pokhara' });
+    Object.defineProperty(districtSelect, 'value', { writable: true, value: 'Lalitpur' });
     fireEvent.change(districtSelect);
 
     // click save
@@ -672,7 +672,7 @@ describe('ProfilePage', () => {
       expect(profileMocks.updateUserProfileMock).toHaveBeenCalledWith(
         expect.anything(),
         'user-1',
-        expect.objectContaining({ hometown_district: 'Pokhara' })
+        expect.objectContaining({ hometown_district: 'Lalitpur' })
       );
     });
   });
@@ -693,6 +693,91 @@ describe('ProfilePage', () => {
       expect.objectContaining({ message: 'Failed to save', color: 'red' })
     );
     expect((screen.getByRole('button', { name: 'Save About You' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('saves a whitespace-only college as null', async () => {
+    profileMocks.updateUserProfileMock.mockResolvedValue({ data: { id: 'user-1' } });
+    await renderPage();
+    await openTab('About');
+
+    fireEvent.change(screen.getByLabelText('College / university'), { target: { value: '   ' } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
+    });
+
+    expect(profileMocks.updateUserProfileMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      expect.objectContaining({ college: null })
+    );
+  });
+
+  it('trims a padded college on save and shows the trimmed text afterward', async () => {
+    profileMocks.updateUserProfileMock.mockResolvedValue({ data: { id: 'user-1' } });
+    await renderPage();
+    await openTab('About');
+
+    fireEvent.change(screen.getByLabelText('College / university'), {
+      target: { value: '  Pulchowk Campus  ' },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
+    });
+
+    expect(profileMocks.updateUserProfileMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      expect.objectContaining({ college: 'Pulchowk Campus' })
+    );
+    expect((screen.getByLabelText('College / university') as HTMLInputElement).value).toBe(
+      'Pulchowk Campus'
+    );
+  });
+
+  it('shows the schema error and skips the save for a district outside NEPAL_DISTRICTS', async () => {
+    mockSignedIn({ hometown_district: 'Neverland' });
+    await renderPage();
+    await openTab('About');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
+    });
+
+    expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Select a valid Nepal district', color: 'red' })
+    );
+    expect(profileMocks.updateUserProfileMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps focus on Save while a save is pending and ignores a second click', async () => {
+    let resolveUpdate: (value: { data: { id: string } }) => void = () => {};
+    profileMocks.updateUserProfileMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveUpdate = resolve;
+        })
+    );
+    await renderPage();
+    await openTab('About');
+
+    const saveButton = screen.getByRole('button', { name: 'Save About You' });
+    saveButton.focus();
+
+    fireEvent.click(saveButton);
+    await act(async () => {});
+
+    expect(document.activeElement).toBe(saveButton);
+
+    fireEvent.click(saveButton);
+    await act(async () => {});
+
+    expect(profileMocks.updateUserProfileMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveUpdate({ data: { id: 'user-1' } });
+    });
   });
 
   it('shows the account details on the About tab and edits the bio from there', async () => {

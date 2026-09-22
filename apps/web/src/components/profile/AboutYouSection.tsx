@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { NativeSelect, NumberInput, Stack, TextInput } from '@mantine/core';
 import {
+  COLLEGE_MAX_LENGTH,
+  LANGUAGE_LABELS,
   NEPAL_DISTRICTS,
   SUPPORTED_LANGUAGES,
-  LANGUAGE_LABELS,
+  YEARS_IN_US_MAX,
+  YEARS_IN_US_MIN,
   type LanguageCode,
 } from '@nepally/shared';
 import { ToggleChipGroup, type ToggleChipOption } from '../ui/ToggleChipGroup';
@@ -33,10 +36,14 @@ const LANGUAGE_OPTIONS: ToggleChipOption[] = SUPPORTED_LANGUAGES.map((code: Lang
 }));
 
 export function AboutYouSection({ values, onChange, disabled }: Props) {
+  const baseId = useId();
+  const titleId = `${baseId}-title`;
+  const subtitleId = `${baseId}-subtitle`;
+
   return (
-    <section className={styles.section} aria-labelledby="about-you-title">
-      <h2 id="about-you-title" className={styles.title}>About You</h2>
-      <p className={styles.subtitle}>
+    <section className={styles.section} aria-labelledby={titleId} aria-describedby={subtitleId}>
+      <h2 id={titleId} className={styles.title}>About You</h2>
+      <p id={subtitleId} className={styles.subtitle}>
         Optional. Helps people in your metro find others from home.
       </p>
 
@@ -59,7 +66,7 @@ export function AboutYouSection({ values, onChange, disabled }: Props) {
           placeholder="e.g. Pulchowk Campus"
           value={values.college ?? ''}
           disabled={disabled}
-          maxLength={100}
+          maxLength={COLLEGE_MAX_LENGTH}
           onChange={(event) =>
             onChange({
               ...values,
@@ -70,23 +77,18 @@ export function AboutYouSection({ values, onChange, disabled }: Props) {
 
         <NumberInput
           label="Years in the US"
-          placeholder="5"
-          min={0}
-          max={99}
+          placeholder="e.g. 5"
+          inputMode="numeric"
+          min={YEARS_IN_US_MIN}
+          max={YEARS_IN_US_MAX}
           allowDecimal={false}
           allowNegative={false}
           clampBehavior="strict"
           disabled={disabled}
           value={values.years_in_us ?? ''}
-          onChange={(value) => {
-            if (value === '') {
-              onChange({ ...values, years_in_us: null });
-              return;
-            }
-            const years = typeof value === 'number' ? value : Number(value);
-            if (Number.isNaN(years)) return;
-            onChange({ ...values, years_in_us: years });
-          }}
+          onChange={(value) =>
+            onChange({ ...values, years_in_us: value === '' ? null : Number(value) })
+          }
         />
 
         <ToggleChipGroup

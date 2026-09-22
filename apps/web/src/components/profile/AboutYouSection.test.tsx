@@ -41,12 +41,20 @@ describe('AboutYouSection', () => {
     expect((screen.getByLabelText('College / university') as HTMLInputElement).value).toBe('Pulchowk');
     expect((screen.getByLabelText('Years in the US') as HTMLInputElement).value).toBe('5');
     expect(screen.getByRole('button', { name: 'Nepali' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'English' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Newari' }).getAttribute('aria-pressed')).toBe('false');
   });
 
   it('titles the section with an h2', () => {
     render(<Harness />);
 
     expect(screen.getByRole('heading', { level: 2, name: 'About You' })).toBeDefined();
+  });
+
+  it('names the section region "About You"', () => {
+    render(<Harness />);
+
+    expect(screen.getByRole('region', { name: 'About You' })).toBeDefined();
   });
 
   it('emits the picked district', () => {
@@ -98,6 +106,28 @@ describe('AboutYouSection', () => {
     });
 
     expect(onChangeSpy).toHaveBeenCalledWith(expect.objectContaining({ years_in_us: null }));
+  });
+
+  it('keeps years a whole number from 0 to 99', async () => {
+    const onChangeSpy = vi.fn();
+    render(<Harness initial={{ ...BASE_VALUES, years_in_us: 15 }} onChangeSpy={onChangeSpy} />);
+    const years = screen.getByLabelText('Years in the US') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(years, { target: { value: '150' } });
+    });
+    expect(onChangeSpy).not.toHaveBeenCalled();
+    expect(years.value).toBe('15');
+
+    await act(async () => {
+      fireEvent.change(years, { target: { value: '5.5' } });
+    });
+    expect(onChangeSpy).toHaveBeenLastCalledWith(expect.objectContaining({ years_in_us: 5 }));
+
+    await act(async () => {
+      fireEvent.change(years, { target: { value: '-3' } });
+    });
+    expect(onChangeSpy).toHaveBeenLastCalledWith(expect.objectContaining({ years_in_us: 3 }));
   });
 
   it('toggles a language on and off', () => {

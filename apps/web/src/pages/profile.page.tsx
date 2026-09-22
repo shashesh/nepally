@@ -4,7 +4,13 @@ import { IconChevronRight } from '@tabler/icons-react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { logClientEvent, removeProfilePhoto, TrustLevel, updateUserProfile } from '@nepally/shared';
+import {
+  extendedProfileUpdateSchema,
+  logClientEvent,
+  removeProfilePhoto,
+  TrustLevel,
+  updateUserProfile,
+} from '@nepally/shared';
 import type { MarketplaceListing } from '@nepally/shared';
 import {
   ActionMenu,
@@ -184,18 +190,42 @@ export default function ProfilePage() {
     }, 'Photo removed');
 
   const handleSaveAboutYou = async (): Promise<void> => {
+    // Defence in depth: the Save button already drops its onClick while
+    // aboutYouSaving is true, but a caller invoking this directly (or a
+    // handler still attached mid-render) must not queue a second save.
+    if (aboutYouSaving) return;
     setAboutYouSaving(true);
     try {
-      const { error } = await updateUserProfile(supabase, user.id, {
+      // Validate and normalize before it ever reaches the network: trims
+      // college, maps a blank college to null, and rejects a district that
+      // isn't one of NEPAL_DISTRICTS. onChange deliberately does not trim,
+      // so someone typing "Pulchowk Campus" doesn't have each space eaten
+      // as they type it.
+      const parsed = extendedProfileUpdateSchema.safeParse({
         hometown_district: aboutYou.hometown_district,
         college: aboutYou.college,
         years_in_us: aboutYou.years_in_us,
         languages: aboutYou.languages,
       });
+      if (!parsed.success) {
+        notify.error(parsed.error.issues[0]?.message ?? 'Failed to save');
+        return;
+      }
+      const nextAboutYou: AboutYouValues = {
+        hometown_district: parsed.data.hometown_district ?? null,
+        college: parsed.data.college ?? null,
+        years_in_us: parsed.data.years_in_us ?? null,
+        languages: parsed.data.languages ?? [],
+      };
+      const { error } = await updateUserProfile(supabase, user.id, nextAboutYou);
       if (error) {
         notify.error(error.message || 'Failed to save');
         return;
       }
+      // The user object only re-seeds aboutYou when userId changes (see the
+      // effect-on-render above), so without this the field would keep
+      // showing the untrimmed text after a successful save.
+      setAboutYou(nextAboutYou);
       await refreshUser();
       notify.success('Saved');
     } catch (error: unknown) {
@@ -310,8 +340,19 @@ export default function ProfilePage() {
                 <div>
                   <AboutYouSection values={aboutYou} onChange={setAboutYou} disabled={aboutYouSaving} />
                   <div className={styles.saveAboutRow}>
-                    <Button onClick={handleSaveAboutYou} loading={aboutYouSaving} aria-label="Save About You">
-                      Save About You
+                    {/* No `disabled`/`loading`: Mantine's `loading` sets native
+                        `disabled`, which drops focus to <body> on Enter and
+                        keeps it there. aria-disabled/data-disabled match
+                        AccountDetails' bio button and ProfilePhotoControl.
+                        aria-label keeps the accessible name stable while the
+                        visible text switches to "Saving…". */}
+                    <Button
+                      onClick={aboutYouSaving ? undefined : handleSaveAboutYou}
+                      aria-disabled={aboutYouSaving || undefined}
+                      data-disabled={aboutYouSaving || undefined}
+                      aria-label="Save About You"
+                    >
+                      {aboutYouSaving ? 'Saving…' : 'Save About You'}
                     </Button>
                   </div>
                 </div>
