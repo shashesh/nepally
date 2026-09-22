@@ -1,4 +1,5 @@
-import React, { type ReactNode } from 'react';
+import React, { useId, type ReactNode } from 'react';
+import { Button } from '@mantine/core';
 import type { User } from '@nepally/shared';
 import styles from './AccountDetails.module.css';
 
@@ -7,6 +8,10 @@ export interface AccountDetailsProps {
     User,
     'bio' | 'email' | 'phone' | 'zip_code' | 'created_at' | 'posts_count' | 'helpful_votes_received'
   >;
+  /** Opens the bio editor (useProfileEditing().editBio). */
+  onEditBio?: () => void;
+  /** useProfileEditing().saving — the button stays focusable but inert while true. */
+  editBioBusy?: boolean;
 }
 
 const NOT_SET = 'Not set';
@@ -34,24 +39,48 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
 }
 
 /**
- * Bio, Account Info and Activity — the profile page's About-tab sections
- * (Task 6.15; replaces profile.page.tsx's former inline markup at lines
- * 720-771). Account Info and Activity mirror the public profile's About
- * panel: an h2 over a <dl> of label/value rows. Bio is prose rather than a
- * label/value pair, so it renders as a paragraph under its own h2 instead.
+ * Bio, Account Info and Activity — the profile page's About-tab sections: an
+ * editable bio up top, then the member's read-only account fields and
+ * activity counts. Account Info and Activity share the public profile's
+ * About panel's dt/dd row styling (`pages/users/[id].page.tsx` AboutPanel).
+ * Bio is prose rather than a label/value pair, so it renders as a paragraph
+ * under its own h2 instead of a dl row.
  */
-export function AccountDetails({ user }: AccountDetailsProps) {
+export function AccountDetails({ user, onEditBio, editBioBusy }: AccountDetailsProps) {
+  const baseId = useId();
+  const bioTitleId = `${baseId}-bio-title`;
+  const infoTitleId = `${baseId}-info-title`;
+  const activityTitleId = `${baseId}-activity-title`;
+
+  // Trim only decides whether there's real content; the bio itself renders
+  // as the member wrote it (see the DetailRow-free <p> below).
+  const hasBio = Boolean(user.bio?.trim());
+
   return (
-    <>
-      <section className={styles.section} aria-labelledby="account-bio-title">
-        <h2 id="account-bio-title" className={styles.title}>Bio</h2>
-        <p className={styles.bio}>
-          {user.bio || 'No bio set. Tap the menu → Edit Bio to add one.'}
-        </p>
+    <div className={styles.root}>
+      <section aria-labelledby={bioTitleId}>
+        <h2 id={bioTitleId} className={styles.title}>Bio</h2>
+        {hasBio ? (
+          <p className={styles.bio}>{user.bio}</p>
+        ) : (
+          <p className={styles.bioEmpty}>No bio yet.</p>
+        )}
+        {onEditBio && (
+          <Button
+            variant={hasBio ? 'subtle' : 'light'}
+            size="compact-sm"
+            className={styles.bioButton}
+            aria-disabled={editBioBusy || undefined}
+            data-disabled={editBioBusy || undefined}
+            onClick={editBioBusy ? undefined : onEditBio}
+          >
+            {hasBio ? 'Edit bio' : 'Add a bio'}
+          </Button>
+        )}
       </section>
 
-      <section className={styles.section} aria-labelledby="account-info-title">
-        <h2 id="account-info-title" className={styles.title}>Account Info</h2>
+      <section aria-labelledby={infoTitleId}>
+        <h2 id={infoTitleId} className={styles.title}>Account Info</h2>
         <dl className={styles.list}>
           <DetailRow label="Email">{user.email}</DetailRow>
           <DetailRow label="Phone">{user.phone || NOT_SET}</DetailRow>
@@ -60,13 +89,13 @@ export function AccountDetails({ user }: AccountDetailsProps) {
         </dl>
       </section>
 
-      <section className={styles.section} aria-labelledby="account-activity-title">
-        <h2 id="account-activity-title" className={styles.title}>Activity</h2>
+      <section aria-labelledby={activityTitleId}>
+        <h2 id={activityTitleId} className={styles.title}>Activity</h2>
         <dl className={styles.list}>
-          <DetailRow label="Posts">{user.posts_count || 0}</DetailRow>
-          <DetailRow label="Helpful Votes">{user.helpful_votes_received || 0}</DetailRow>
+          <DetailRow label="Posts">{user.posts_count ?? 0}</DetailRow>
+          <DetailRow label="Helpful Votes">{user.helpful_votes_received ?? 0}</DetailRow>
         </dl>
       </section>
-    </>
+    </div>
   );
 }
