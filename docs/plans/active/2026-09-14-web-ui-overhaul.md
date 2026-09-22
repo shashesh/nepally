@@ -188,7 +188,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | Merged (PR #83) | 2026-09-21 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
 | 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a, 6.19b | Merged (PR #85) | 2026-09-22 | branched from `master` at e685317; baselines regenerated locally in Docker (25d56ce) |
-| 7 Events | `feat/web-ui-events` | 7.1–7.18 | In Progress | 2026-09-22 | branched from `master` at 3386a5d |
+| 7 Events | `feat/web-ui-events` | 7.1–7.15, in four chunks | In Progress | 2026-09-22 | branched from `master` at 3386a5d. Chunks done: none |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 10 Static pages + cleanup | `feat/web-ui-cleanup` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -12861,14 +12861,14 @@ The raw-element grep first reported nothing. `[[:space:]>/]` needs a character a
 4. **A filter can stall on "No Social events".** Type and text filters run over the loaded pages only. The empty branch renders no sentinel, so pages that might hold a match are never requested. Decision 3 fixes this.
 5. **`EventCard` nests buttons inside its link.** The whole card is a `<Link>`, and the Interested/Going buttons inside it call `preventDefault` to stop navigation. The main button also shows a "▾", which promises a menu that doesn't exist. Task 7.6 rebuilds the card on the stretched link that `PostCard` and `SummaryRow` use.
 6. **The list's rollback reads a value that may not exist yet.** `handleResponseChange` (index 141–201) captures `previous` inside a `setUserResponses` updater, then reads it on the next line. React runs an updater eagerly only when the fiber has no queued updates, so under batching `previous` can still be `null` when the counts are adjusted. The new hook reads the current response from a ref (Task 7.9).
-7. **Event detail keeps the previous event when the id changes, and hides failures.** Like the public profile before Task 6.8, the page never resets when the Pages Router reuses it, and its load effect has no cancel guard. A failed attendee request shows "No attendees yet." Tasks 7.12 and 7.13 fix both.
+7. **Event detail keeps the previous event when the id changes, and hides failures.** Like the public profile before Task 6.8, the page never resets when the Pages Router reuses it, and its load effect has no cancel guard. A failed attendee request shows "No attendees yet." Tasks 7.11 and 7.12 fix both.
 8. **The same helpers live in several places.**
    - `formatEventDate` (web `EventCard` 18, mobile `EventCard` 29) and `formatFullDate` (web detail 175, mobile `EventDetailScreen` 45) are identical across the two apps.
    - The past-event test appears in six files: web `EventSummaryRow`, events index and event detail, and mobile `EventDetailScreen`, `EventsScreen` and `PublicProfileScreen`.
    - The count adjustment after a response change appears four times: forward and rollback, in web's index and in mobile's `EventsScreen`.
 
    Task 7.1 moves all three into shared.
-9. **The contrast failures.** `EventTypeBadge` still colours itself from Mantine's `light` palette, not the `--event-<type>` tokens create event uses; `tokens.css` records the old cultural pair at 3.46:1. The detail's section titles are `#9E9E9E` on white (about 2.7:1), and past cards fade to `opacity: 0.6`. Task 7.4 moves the badge onto the tokens, and the stylesheet tasks replace the rest.
+9. **The contrast failures.** `EventTypeBadge` still colours itself from Mantine's `light` palette, not the `--event-<type>` tokens create event uses; `tokens.css` records the old cultural pair at 3.46:1. The detail's section titles are `#9E9E9E` on white (about 2.7:1), and past cards fade to `opacity: 0.6`. Task 7.4 moves the badge onto the tokens, and Tasks 7.6, 7.10 and 7.14 replace the rest.
 
 ## PR 7 — Task breakdown
 
@@ -12879,6 +12879,28 @@ Work on `feat/web-ui-events`, branched from `master` at `3386a5d`. Same conventi
 - Semantic tokens only: no inline `style={{}}`, and no colour literals passed through Mantine's `styles` prop.
 - Mantine components rather than raw elements outside `components/ui/`.
 - No new dependencies. `Breadcrumbs`, `Alert`, `CloseButton` and `VisuallyHidden` ship in `@mantine/core`, and the icons in `@tabler/icons-react`.
+
+**How this PR runs** *(agreed 2026-09-22, because PR 6's per-task reviews made it slow)*
+
+The 15 tasks run in four chunks, and each chunk ends with something that works:
+
+| Chunk | Tasks | Ends with |
+|---|---|---|
+| 1. Shared layer and leaf components | 7.1–7.5 | The shared helpers, API fixes and paging query, with mobile on the shared fixes. `EventTypeBadge` on tokens, and `EventResponseControl` |
+| 2. Events list | 7.6–7.10 | The list page fully migrated, stylesheet included |
+| 3. Event detail | 7.11–7.14 | The detail page fully migrated, stylesheet included |
+| 4. Finish | 7.15 | e2e, baselines, a11y, docs and the draft PR |
+
+**Inside a chunk,** each task follows its steps: write the failing test, run **only that task's tests**, implement, run them again, commit. There is no review and no full-suite run between tasks. One exception: a task that edits an allowlist also runs `npm run lint:guards`, because the guard fails on an allowlisted file that is clean (decision 7).
+
+**At the end of each chunk,** run one gate:
+
+1. **Tests and checks:** `npm run type-check`, `npm run lint`, `npm run lint:guards`, and the full unit suite of every workspace the chunk touched. That is `npm run test --workspace=packages/shared` and `--workspace=apps/web`, plus `--workspace=apps/mobile` in chunk 1. Web Vitest fails whole files from a lowercase `c:\` working directory, so run it from `C:\…`.
+2. **Review:** one code-review agent reviews the chunk's whole diff (`git diff <chunk start>..HEAD`) against this breakdown and the definition of done.
+3. **Fixes:** CRITICAL and HIGH findings are fixed in the chunk, in one `fix(web): address chunk N review` commit. Other findings that aren't defects in this PR's own code go to PR 10's list, or to the chunk's line in the tracker. **They never become new tasks.**
+4. **Push, and record the chunk** in the tracker's Notes.
+
+The e2e and visual suites run only in chunk 4. The e2e suite builds for production and takes minutes, and the unit gate catches regressions chunk by chunk. Tasks 7.10 and 7.14 edit the e2e selectors they change, and chunk 4 runs them.
 
 **Decisions this breakdown locks in:**
 
@@ -12972,7 +12994,7 @@ export function formatEventDateLong(startDate: string, endDate?: string | null):
 
 The formatters are today's web and mobile functions, moved without changes except that `endDate` also accepts `null`, which PostgREST sends for an event with no end. `isEventPast` matches every copy it replaces. `EventSummaryRow` keeps its own cancelled check in front of it.
 
-Mobile adopts all three helpers here. The web pages pick them up in Tasks 7.6, 7.9 and 7.12, where their copies move into components and hooks anyway.
+Mobile adopts all three helpers here. The web pages pick them up in Tasks 7.6, 7.9 and 7.11, where their copies move into components and hooks anyway.
 
 - [ ] **Step 1: Write the failing tests.**
   - **`isEventPast`:** an end before `now` is past. An end after `now` with a start before it is not past, because the event is still running. With no end, a start before `now` is past and one after it is not. An end exactly at `now` is not past.
@@ -12990,7 +13012,7 @@ Mobile adopts all three helpers here. The web pages pick them up in Tasks 7.6, 7
   - Mobile's `EventCard` and `EventDetailScreen` delete their formatters.
   - `EventsScreen` swaps both halves of its count math (153–208) for `applyEventResponseChange`.
   - The three past checks become `isEventPast`.
-  - Then run `npm run test --workspace=apps/mobile -- EventsScreen EventDetailScreen PublicProfileScreen EventCard`, `npm run test --workspace=apps/web -- src/components/events/EventSummaryRow.test.tsx` and `npm run type-check`.
+  - Then run `npm run test --workspace=apps/mobile -- EventsScreen EventDetailScreen PublicProfileScreen EventCard` and `npm run test --workspace=apps/web -- src/components/events/EventSummaryRow.test.tsx`.
 - [ ] **Step 5: Commit** as `refactor(shared): share isEventPast, the event date formats and the response counts`.
 
 ### Task 7.2: Shared events API — the real response, going-only attendees, not found
@@ -13021,7 +13043,7 @@ export interface EventResult {
 - **`getEventById`** sets `notFound: true` on both of its "Event not found" paths. The message stays the same, so mobile needs no change.
 - **`hasUserRsvp`** loses its last two callers here, and is deleted with its tests.
 
-On both detail pages "going" now means `response === 'going'`. RSVP upserts `going`, which also converts an Interested response, and un-RSVP happens only from Going. On web this is a stopgap until Task 7.16's control. The page swaps `hasUserRsvp` for `getUserEventResponse` and keeps its button, so every commit stays green.
+On both detail pages "going" now means `response === 'going'`. RSVP upserts `going`, which also converts an Interested response, and un-RSVP happens only from Going. On web this is a stopgap until Task 7.14's control. The page swaps `hasUserRsvp` for `getUserEventResponse` and keeps its button, so every commit stays green.
 
 - [ ] **Step 1: Write the failing tests.**
   - **`events.test.ts`:**
@@ -13032,7 +13054,7 @@ On both detail pages "going" now means `response === 'going'`. RSVP upserts `goi
   - **Mobile `EventDetailScreen.test.tsx` and web `[id].test.tsx`:** an interested member sees the RSVP button, not "Going ✓", and pressing it calls `rsvpToEvent`.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/api/events.test.ts`, `npm run test --workspace=apps/mobile -- EventDetailScreen` and `npm run test --workspace=apps/web -- src/pages/events/[id].test.tsx`.
 - [ ] **Step 3: Implement.** Delete `hasUserRsvp`, then switch both detail pages to `getUserEventResponse`, and in their test mocks replace `hasUserRsvp` with it.
-- [ ] **Step 4: Run all three suites again**, then `npm run type-check`.
+- [ ] **Step 4: Run all three suites again.**
 - [ ] **Step 5: Commit** as `fix: read the member's real event response, and list only the people going`.
 
 ### Task 7.3: `getMetroEventsPage`
@@ -13080,7 +13102,7 @@ PostgREST ANDs repeated filters, two `or` parameters included, so the metro and 
   - A full page sets `hasMore`, and an error comes back as `error`.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/api/events.test.ts`
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run and watch them pass**, then `npm run type-check`.
+- [ ] **Step 4: Run and watch them pass.**
 - [ ] **Step 5: Commit** as `feat(shared): page a metro's events upcoming first, then past newest first`.
 
 ### Task 7.4: `EventTypeBadge` onto the event tokens
@@ -13092,7 +13114,7 @@ The badge becomes `Badge variant="default"` with `className={styles.badge}` and 
 - [ ] **Step 1: Update the tests.** Each type's label reads as its text ("Cultural"), and the emoji is inside an element hidden from assistive technology.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/EventTypeBadge.test.tsx`
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run and watch them pass**, then `npm run lint:guards`.
+- [ ] **Step 4: Run and watch them pass.**
 - [ ] **Step 5: Commit** as `style(web): colour event-type badges from the event tokens`.
 
 ### Task 7.5: `EventResponseControl`
@@ -13123,7 +13145,7 @@ It renders a `div role="group" aria-label={label}` holding two Mantine `Button`s
   - While `busy`, both buttons are `aria-disabled`, a press calls nothing, and the focused button keeps focus.
 - [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/events/EventResponseControl.test.tsx`
 - [ ] **Step 3: Implement.** The module only lays the pair out on one line with a `--space-2` gap.
-- [ ] **Step 4: Run and watch it pass**, then `npm run lint --workspace=apps/web`.
+- [ ] **Step 4: Run and watch it pass.**
 - [ ] **Step 5: Commit** as `feat(web): add EventResponseControl`.
 
 ### Task 7.6: `EventCard` on the stretched link and the tokens
@@ -13168,7 +13190,7 @@ Mantine `Text` gives way to plain elements styled by the module, which moves ont
   - The cover image has an empty `alt`.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/EventCard.test.tsx`
 - [ ] **Step 3: Implement.** In the same commit, remove `apps/web/src/components/events/EventCard.module.css` from the CSS allowlist and `src/components/events/EventCard.tsx` from `RAW_ELEMENT_ALLOWLIST`.
-- [ ] **Step 4: Run the card and page suites**, then `npm run lint:guards` and `npm run lint --workspace=apps/web`.
+- [ ] **Step 4: Run the card and page suites**, then `npm run lint:guards`.
 - [ ] **Step 5: Commit** as `refactor(web): rebuild EventCard on a stretched link and semantic tokens`.
 
 ### Task 7.7: `ToggleChipGroup` gains `hideLabel` and `layout`; one label weight
@@ -13282,9 +13304,9 @@ This moves index 31–201 out of the page and fixes recon 3 and 6.
 - [ ] **Step 4: Run and watch it pass.**
 - [ ] **Step 5: Commit** as `feat(web): load events upcoming first through useEventFeed`.
 
-### Task 7.10: The events list on the new pieces
+### Task 7.10: The events list on the new pieces, and its stylesheet
 
-**Files:** `pages/events/index.page.tsx` and `index.test.tsx`; `apps/web/e2e/tests/10-events.spec.ts`; `apps/web/e2e/helpers/supabase-mock.ts`.
+**Files:** `pages/events/index.page.tsx`, `index.test.tsx` and `events.module.css`; `apps/web/e2e/tests/10-events.spec.ts`; `apps/web/e2e/helpers/supabase-mock.ts`; `scripts/guard-css-tokens.allowlist.json`; `RAW_ELEMENT_ALLOWLIST`.
 
 | Today | Becomes |
 |---|---|
@@ -13304,6 +13326,19 @@ The type and text filters stay in the page as a `useMemo` over `upcoming` and `p
 - `mockEventsEndpoints` in `10-events.spec.ts` answers the past request (its URL carries `start_date=lt.`) with the past events, and every other list request with the rest.
 - The shared mock in `supabase-mock.ts` answers the past request with `[]`, so the `events` screenshot keeps its two upcoming events.
 
+**The stylesheet.** Most of `events.module.css` is deleted rather than converted:
+
+- `emptyState*` goes to `EmptyState`, and `errorContainer` to `ErrorState`.
+- `divider` goes to the section headings.
+- `level0BannerClose` goes to the `Alert`'s close button.
+- `footerLoader` goes to `LoadingState`.
+
+The rules left over (`container`, `grid`, `sectionTitle`, `level0Banner` and `loadSentinel`) are rewritten on tokens, with the spec §4.1 table.
+
+- The container is `max-width: var(--layout-max-width)`.
+- The page background is the shell's `--surface-0`, so `.page`'s `#F5F5F5` goes.
+- The grid keeps three, two and one columns, breaking at 54em and 32.5em (today's 860px and 520px).
+
 - [ ] **Step 1: Update the tests first.**
   - **Unit test:** mock `getMetroEventsPage` in place of `getEventsByMetro`, and `Retry` becomes `Try again` (182).
   - **New cases:** a metro with nothing upcoming shows its past events under "Past events"; the Upcoming heading is absent then.
@@ -13311,30 +13346,12 @@ The type and text filters stay in the page as a `useMemo` over `upcoming` and `p
   - **Failures:** a failed second page shows "Couldn't load more events" with Try again.
   - **e2e:** "+ Create Event" becomes `/create event/i`, and "Past Events" becomes the heading `/past events/i`.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/events/index.test.tsx`
-- [ ] **Step 3: Implement**, and update both e2e mocks.
-- [ ] **Step 4: Run and watch them pass**, and check that the page is near its ~180-line target.
-- [ ] **Step 5: Commit** as `refactor(web): rebuild the events list on the design system`.
+- [ ] **Step 3: Implement the page**, and update both e2e mocks.
+- [ ] **Step 4: Rewrite the stylesheet.** Delete the rules no class uses any more; `grep -o "styles\.[a-zA-Z]*" src/pages/events/index.page.tsx` lists the live ones. Remove `apps/web/src/pages/events/events.module.css` from the CSS allowlist and `src/pages/events/index.page.tsx` from `RAW_ELEMENT_ALLOWLIST`.
+- [ ] **Step 5: Run the page suite and `npm run lint:guards`**, and check that the page is near its ~180-line target.
+- [ ] **Step 6: Commit** as `refactor(web): rebuild the events list on the design system`.
 
-### Task 7.11: `events.module.css` onto semantic tokens
-
-**Files:** `pages/events/events.module.css`; `scripts/guard-css-tokens.allowlist.json`; `RAW_ELEMENT_ALLOWLIST`, to drop `src/pages/events/index.page.tsx`.
-
-Most of the file is deleted rather than converted:
-
-- `emptyState*` goes to `EmptyState`, and `errorContainer` to `ErrorState`.
-- `divider` goes to the section headings.
-- `level0BannerClose` goes to the `Alert`'s close button.
-- `footerLoader` goes to `LoadingState`.
-
-The rules left over (`container`, `grid`, `sectionTitle`, `level0Banner` and `loadSentinel`) are rewritten on tokens. The container is `max-width: var(--layout-max-width)`. The page background is the shell's `--surface-0`, so `.page`'s `#F5F5F5` goes. The grid keeps three, two and one columns at 54em and 32.5em, today's 860px and 520px.
-
-- [ ] **Step 1: Delete the dead rules.** Diff the class list against `grep -o "styles\.[a-zA-Z]*" src/pages/events/index.page.tsx`.
-- [ ] **Step 2: Map the rest** with the spec §4.1 table.
-- [ ] **Step 3: Remove `apps/web/src/pages/events/events.module.css`** from the CSS allowlist, and `src/pages/events/index.page.tsx` from `RAW_ELEMENT_ALLOWLIST`, in this commit.
-- [ ] **Step 4: Run the guards and the suite.** `npm run lint:guards`, `npm run lint --workspace=apps/web` and `npm run test --workspace=apps/web`.
-- [ ] **Step 5: Commit** as `style(web): move the events list stylesheet onto semantic tokens`.
-
-### Task 7.12: `useEventDetail`
+### Task 7.11: `useEventDetail`
 
 **Files:** create `hooks/useEventDetail.ts` and `useEventDetail.test.ts`.
 
@@ -13387,7 +13404,7 @@ This moves detail 34–153 out of the page and fixes recon 7.
 - [ ] **Step 4: Run and watch it pass.**
 - [ ] **Step 5: Commit** as `feat(web): load event detail through useEventDetail`.
 
-### Task 7.13: `AttendeeList` states
+### Task 7.12: `AttendeeList` states
 
 **Files:** `components/events/AttendeeList.tsx` and `AttendeeList.test.tsx`.
 
@@ -13413,15 +13430,15 @@ The modal stays mounted and follows `opened`. Today it mounts only while open, w
 
 - [ ] **Step 1: Update the tests.** The title reads "People going". Loading shows a `status`, and an error shows its message and a Try again that calls `onRetry`. `opened={false}` renders no dialog. The existing name, avatar, close and "User" fallback cases must pass unchanged.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/AttendeeList.test.tsx`
-- [ ] **Step 3: Implement.** The detail page passes `opened={attendeesOpen}`, `error={null}` and an `onRetry` that reloads the list, until Task 7.16 wires the real error state.
+- [ ] **Step 3: Implement.** The detail page passes `opened={attendeesOpen}`, `error={null}` and an `onRetry` that reloads the list, until Task 7.14 wires the real error state.
 - [ ] **Step 4: Run the list and detail suites.**
 - [ ] **Step 5: Commit** as `refactor(web): give AttendeeList loading, error and retry states`.
 
-### Task 7.14: `EventAttendanceCard`
+### Task 7.13: The detail sidebar cards — `EventAttendanceCard` and `EventOrganizerCard`
 
-**Files:** create `components/events/EventAttendanceCard.tsx`, `.module.css` and `.test.tsx`.
+**Files:** create `components/events/EventAttendanceCard.tsx` and `EventOrganizerCard.tsx`, each with a `.module.css` and a `.test.tsx`.
 
-**Interface:**
+**`EventAttendanceCard` interface:**
 
 ```ts
 /** Why the member can't respond. `cancelled` renders no line, because the page's alert already says so. */
@@ -13452,22 +13469,7 @@ This takes over detail 289–313. It is a `<section aria-labelledby>` with `h2` 
 - Otherwise it shows one line: "This event has passed.", "You're the organizer." or "Verify your account to respond."
 - The hint lines "You are currently going." and "Tap RSVP if you plan to attend." go, because the pressed state already carries them.
 
-- [ ] **Step 1: Write the failing test.**
-  - The section is named "Attendance".
-  - The count opens the list and is a button only when the list is visible to the viewer.
-  - The singular and plural forms are right, and private lists read "12 going".
-  - The control shows only when `blockedBy` is null, and each block shows its line, with none for `cancelled`.
-  - `onRespond` receives the control's value.
-- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/events/EventAttendanceCard.test.tsx`
-- [ ] **Step 3: Implement**, with the module on semantic tokens.
-- [ ] **Step 4: Run and watch it pass.**
-- [ ] **Step 5: Commit** as `feat(web): add EventAttendanceCard`.
-
-### Task 7.15: `EventOrganizerCard`
-
-**Files:** create `components/events/EventOrganizerCard.tsx`, `.module.css` and `.test.tsx`.
-
-**Interface:**
+**`EventOrganizerCard` interface:**
 
 ```ts
 export interface EventOrganizerCardProps {
@@ -13485,19 +13487,26 @@ This takes over detail 316–345. It is a `<section aria-labelledby>` with `h2` 
 - **Name:** the public name is the one `Link` to `/users/<id>`.
 - **Message Organizer:** it follows decision 6. While `messaging` it has `aria-disabled`, `data-disabled` and a `Loader` in `leftSection`, and presses are ignored.
 
-- [ ] **Step 1: Write the failing test.**
-  - The section is named "Organizer".
-  - One link, named "Asha K.", points to `/users/u1`.
-  - The avatar has no alt text.
-  - The Message button appears only when `canMessage`, calls `onMessage`, and while `messaging` is `aria-disabled`, ignores presses and keeps focus.
-- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/events/EventOrganizerCard.test.tsx`
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run and watch it pass.**
-- [ ] **Step 5: Commit** as `feat(web): add EventOrganizerCard`.
+- [ ] **Step 1: Write the failing tests.**
+  - **`EventAttendanceCard`:**
+    - The section is named "Attendance".
+    - The count opens the list, and is a button only when the list is visible to the viewer.
+    - The singular and plural forms are right, and private lists read "12 going".
+    - The control shows only when `blockedBy` is null. Each block shows its line, with none for `cancelled`.
+    - `onRespond` receives the control's value.
+  - **`EventOrganizerCard`:**
+    - The section is named "Organizer".
+    - One link, named "Asha K.", points to `/users/u1`.
+    - The avatar has no alt text.
+    - The Message button appears only when `canMessage`, and calls `onMessage`. While `messaging` it is `aria-disabled`, ignores presses and keeps focus.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/events/EventAttendanceCard.test.tsx src/components/events/EventOrganizerCard.test.tsx`
+- [ ] **Step 3: Implement both**, with the modules on semantic tokens.
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): add the event detail sidebar cards`.
 
-### Task 7.16: The detail page on the new pieces
+### Task 7.14: The detail page on the new pieces, and its stylesheet
 
-**Files:** `pages/events/[id].page.tsx` and `[id].test.tsx`; `apps/web/e2e/tests/10-events.spec.ts`; delete `components/events/RsvpButton.tsx` and `RsvpButton.test.tsx`.
+**Files:** `pages/events/[id].page.tsx`, `[id].test.tsx` and `eventDetail.module.css`; `apps/web/e2e/tests/10-events.spec.ts`; `scripts/guard-css-tokens.allowlist.json`; delete `components/events/RsvpButton.tsx` and `RsvpButton.test.tsx`.
 
 | Today | Becomes |
 |---|---|
@@ -13518,6 +13527,19 @@ This takes over detail 316–345. It is a `<section aria-labelledby>` with `h2` 
 - **Cancel:** the dialog reads "Cancel this event?" / "Your attendees will see it as cancelled.", with "Cancel event" and "Keep event" as its buttons. It is followed by `notify.success('Event cancelled.')` or `notify.error(message)`.
 - **Delete:** the dialog reads "Delete this event?" / "This can't be undone.", with "Delete" as its confirm button. On success the page runs `router.push('/events')` and `notify.success('Event deleted.')`. On failure it runs `notify.error(message)`.
 
+**The stylesheet.** These rules in `eventDetail.module.css` are deleted:
+
+- `rsvp*`, which moves to `EventAttendanceCard`
+- `organizer*`, which moves to `EventOrganizerCard`
+- `centered` and `backLink`, which move to the state components
+- `breadcrumbLink`, which moves to `Anchor`
+- `sectionTitle`, which the cards own now
+
+The rest is rewritten on tokens with the spec §4.1 table: `container`, `layout`, `main`, `hero*`, `mainBody`, `badgeRow`, `title`, `editedLabel`, `infoRow`, `description`, `sidebar`, `sidebarCard` and the two alert classes.
+
+- `sidebarCard` takes `--card-padding` and a `--border-subtle` border instead of the shadow.
+- The two-column layout keeps its 320px aside and collapses at 64em (today's 1024px).
+
 - [ ] **Step 1: Update the tests first.**
   - **Response:** the RSVP button cases become `getByRole('button', { name: 'Going' })` with `aria-pressed`. "toggles RSVP and re-syncs" now expects `setEventResponse(…, 'going')`, and two calls each to `getEventById` and `getUserEventResponse`.
   - **New cases:**
@@ -13530,31 +13552,12 @@ This takes over detail 316–345. It is a `<section aria-labelledby>` with `h2` 
     - The breadcrumb `nav` is named "Breadcrumb".
   - **e2e:** `name: 'RSVP'` becomes `'Going'`, and "Manage Event" becomes the heading `/manage event/i`.
 - [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/events/[id].test.tsx`
-- [ ] **Step 3: Implement**, and delete `RsvpButton`.
-- [ ] **Step 4: Run and watch them pass**, and check that the page is near its ~230-line target.
-- [ ] **Step 5: Commit** as `refactor(web): rebuild event detail on the design system`.
+- [ ] **Step 3: Implement the page**, and delete `RsvpButton`.
+- [ ] **Step 4: Rewrite the stylesheet.** Delete the rules no class uses any more, and confirm that nothing else imports the stylesheet. Remove `apps/web/src/pages/events/eventDetail.module.css` from the CSS allowlist. `[id].page.tsx` was never on `RAW_ELEMENT_ALLOWLIST`.
+- [ ] **Step 5: Run the page suite and `npm run lint:guards`**, and check that the page is near its ~230-line target.
+- [ ] **Step 6: Commit** as `refactor(web): rebuild event detail on the design system`.
 
-### Task 7.17: `eventDetail.module.css` onto semantic tokens
-
-**Files:** `pages/events/eventDetail.module.css`; `scripts/guard-css-tokens.allowlist.json`.
-
-Deleted:
-
-- `rsvp*`, which moves to `EventAttendanceCard`
-- `organizer*`, which moves to `EventOrganizerCard`
-- `centered` and `backLink`, which move to the state components
-- `breadcrumbLink`, which moves to `Anchor`
-- `sectionTitle`, which the cards own now
-
-The rest (`container`, `layout`, `main`, `hero*`, `mainBody`, `badgeRow`, `title`, `editedLabel`, `infoRow`, `description`, `sidebar`, `sidebarCard` and the two alert classes) is rewritten on tokens. `sidebarCard` takes `--card-padding` and a `--border-subtle` border instead of the shadow. The two-column layout keeps its 320px aside and collapses at 64em, today's 1024px.
-
-- [ ] **Step 1: Delete the dead rules.** Diff the class list against `grep -o "styles\.[a-zA-Z]*"` for the page and confirm that nothing else imports the stylesheet.
-- [ ] **Step 2: Map the rest** with the spec §4.1 table.
-- [ ] **Step 3: Remove `apps/web/src/pages/events/eventDetail.module.css`** from the CSS allowlist in this commit. `[id].page.tsx` was never on `RAW_ELEMENT_ALLOWLIST`.
-- [ ] **Step 4: Run the guards and the suite.** `npm run lint:guards`, `npm run lint --workspace=apps/web` and `npm run test --workspace=apps/web`.
-- [ ] **Step 5: Commit** as `style(web): move the event detail stylesheet onto semantic tokens`.
-
-### Task 7.18: E2E, screenshots, accessibility, docs and the PR
+### Task 7.15: E2E, screenshots, accessibility, docs and the PR
 
 **Files:** `apps/web/e2e/visual/pages.ts`, `apps/web/e2e/visual/a11y-baseline.json`, `docs/architecture/web-ui-system.md`, `docs/product/features/events.md`, this plan.
 
