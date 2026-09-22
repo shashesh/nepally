@@ -187,7 +187,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | Merged (PR #83) | 2026-09-21 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
-| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a | In Progress | 2026-09-21 | branched from `master` at e685317 |
+| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a | In Progress | 2026-09-21 | branched from `master` at e685317 |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
@@ -10229,7 +10229,7 @@ The review of PR #65 left five small search defects open (decision 21). Web does
    - **Evidence:** stems read from `nusa-staging` with `ts_lexize('english_stem', …)` group room/rooms, job/jobs, house/houses/housing, rent/rents/renting/rented, city/cities, share/shared/sharing, nurse/nurses/nursing, study/studies/studying, class/classes, ride/rides/riding, hire/hiring/hired, move/moving/moved, park/parking and clean/cleaning. A simulation of the rules above puts every group on one stem, and keeps sold/sell and cleaner/cleaning apart, as Postgres does. These pairs are the test table.
    - **Accepted over-highlights:** `news` marks `new`, and `buses` marks `bus` (Postgres stems them `news`/`new` and `buse`/`bus`). Each needs a result that already matched on another word.
 5. **Count cost: deferred, no change in this PR.** An `EXPLAIN` on `nusa-staging` (2026-09-19) shows `Function Scan on search_posts` under the sort and limit. `SET search_path` stops Postgres from inlining the functions, so every call returns all matches whatever the count does, and dropping `count(*) OVER ()` would only save one pass over rows already in memory.
-   - **The real fix:** move ordering, paging and a capped count into the functions. That means new signatures, a migration (`039` is reserved by the launch plan) and "100+" labels in the combobox and tabs.
+   - **The real fix:** move ordering, paging and a capped count into the functions. That means new signatures, a migration (`039` became the storage-policy fix and the launch plan's reserved migration moved to `040`) and "100+" labels in the combobox and tabs.
    - **When:** once monitoring shows search latency climbing, for example a p95 above 300 ms. At launch scale a search takes a few milliseconds.
 
 **Done when:** shared and web tests pass, `npm run ci:local` passes, `docs:check` passes, the "Matching" line in [search.md](../../product/features/search.md) says highlighting follows plurals and `-ing`/`-ed` forms, and the PR 3c tracker row says Merged.
@@ -12726,6 +12726,24 @@ The default ⭐ stays, as `<span role="img" aria-label="Default location">`. The
 - [ ] **Step 4: Run and watch them pass**, then `npm run lint:guards` and `npm run lint --workspace=apps/web`.
 - [ ] **Step 5: Commit** as `refactor(web): rebuild Manage Locations on Mantine fields and the shared dialogs`.
 
+### Task 6.19a: Mantine's CSS loads first in production *(added from the Task 6.16 review)*
+
+**Files:** `apps/web/src/pages/_app.page.tsx`; whatever the check below turns up.
+
+In production builds (`next build` / `next start`), the CSS chunk for `components/ui` loads before Mantine's core stylesheet. Mantine's single-class rules therefore beat our single-class module rules whenever the specificity is equal. The dev server loads them in the other order, so unit tests and dev-server checks don't see it. The committed baselines do:
+
+- **Tabs wrap.** The shared scrolling tabs' `flex-wrap: nowrap` loses, so tabs wrap on phones (search's "People" already sits on a second row in `visual-phone/search-results.png`).
+- **Badges lose their colour.** `TrustBadge`, `ScopeBadge` and `TagChip` lose their backgrounds; the feed's LOCAL and Housing badges render without tone.
+- **Cased text.** The theme's Badge `text-transform: none` is ignored.
+
+`_app.page.tsx` imports `Layout` and `mantine-theme` (which pulls in `mantine-components.module.css`) before `@mantine/core/styles.css`.
+
+- [ ] **Step 1: Reproduce in a production build.** Run `next build` and `next start` against the e2e mocks. At 375px on `/users/<id>`, `/profile` and `/search`, record the computed `flex-wrap` of the tab list and the Verified badge's background.
+- [ ] **Step 2: Try the low-risk fix first.** Move the `@mantine/*` stylesheet imports to the very top of `_app.page.tsx`, before any component import, as Mantine's docs require. Rebuild and re-check Step 1. The tabs should read `nowrap` and the badges should show their token backgrounds.
+- [ ] **Step 3: If the order still isn't deterministic,** switch to Mantine's layered stylesheets (`@mantine/core/styles.layer.css`, plus the `notifications` and `dropzone` `.layer.css` files), so unlayered module CSS always wins. First audit `globals.css`: its unlayered element selectors (headings, `a`, `button`) would start beating Mantine's component classes too.
+- [ ] **Step 4: Check the pages PR 6 doesn't own** at 375 and 1280 for regressions: feed, search, post detail, create post, events, marketplace. Every screenshot changes in Task 6.20's baseline run anyway, so list what to look for.
+- [ ] **Step 5: Commit** as `fix(web): load Mantine's CSS before the app's so module overrides win in production`.
+
 ### Task 6.20: E2E, screenshots, accessibility, docs and the PR
 
 **Files:** `apps/web/e2e/visual/pages.ts`, `apps/web/e2e/visual/a11y-baseline.json`, `docs/architecture/web-ui-system.md`.
@@ -12805,11 +12823,11 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Two more copies of the megabyte formula should use the shared `formatMegabytes`: mobile `CreatePostScreen.tsx` ~804 and shared `validation/post.ts` ~53 (found in PR 6's Task 6.12 review).
   - [ ] Mobile's `EditProfileScreen` (min-2 check ~240) and web signup's `validateFullName` should adopt the shared `fullNameSchema`. `users.full_name` also has no length limit in the database: add a `CHECK (char_length(full_name) <= 100)` in a new additive migration, which needs the user's go-ahead to apply (found in PR 6's Task 6.13 review).
   - [ ] Share the list states: the own profile's `ListPanel` and the public profile's `RowList` nearly duplicate each other (loading → error with retry → empty → rows). Extract one `components/ui` component taking `{ loading, error, onRetry, isEmpty, empty, children }` when the public profile adopts `useUserList` (found in PR 6's Task 6.16 review).
+  - [ ] One sign-out in `AuthContext`, with a `signingOut` flag that `Layout` treats like `loading` and renders its full-screen loader for. The steps are set the flag, `supabase.auth.signOut()`, `router.replace('/')`, then clear the flag. This replaces the "leave first, then sign out" order that `Layout.tsx` and `profile.page.tsx` each copy (Task 6.16). The member sees a spinner instead of their feed at `/` for the length of the request, and the feed no longer fires about 16 requests it then throws away (found in PR 6's Task 6.16 review).
   - [ ] Sign-out has three labels: "Logout" in the profile menu, "Sign out" in the Settings nav and "Sign Out" in `AccountMenu`. Pick one (found in PR 6's Task 6.16 review).
   - [ ] `SummaryRowMeta`'s separator dot starts the wrapped line on narrow rows ("· Food & Restaurants"), because the dot attaches to the following item. Keep the dot with the item before it, or hide a line-leading dot (found in PR 6's Task 6.16 review).
   - [ ] Extract `components/ui/DetailList` (`DetailList` + `DetailRow`) from the identical `dl > div > dt + dd` markup in the public profile's `AboutPanel` and `AccountDetails`. Add `white-space: pre-line` to `PublicProfile.module.css` `.aboutBio`, so visitors see a bio's line breaks as the member does (found in PR 6's Task 6.15 review).
   - [ ] Phone: web has no way to set or clear `users.phone`, so the own profile's Phone row always leads nowhere on web. Either show the row only when it is set, or add phone to web profile editing. Separately, mobile `EditProfileScreen.tsx:277` saves `phone: phone.trim() || undefined`, which the client drops, so a member can never clear their phone. This is the same class of bug Task 6.2 fixed for photos: write `null` (found in PR 6's Task 6.15 review).
-  - [ ] Mantine's global CSS loads after the app's own theme modules. `_app.page.tsx` imports `Layout` and `mantine-theme` (which pulls in `mantine-components.module.css`) before `@mantine/core/styles.css`, so Mantine wins any equal-specificity tie. For example, the theme's Badge `text-transform: none` is ignored and TrustBadge/ScopeBadge render uppercase. Move the `@mantine/*` style imports to the top of `_app.page.tsx`, as Mantine's docs require. This changes screenshots on most pages, so do it in its own PR or in PR 10's baseline run (found in PR 6's Task 6.10 review).
   - [ ] Search's result `Tabs` (`search.page.tsx:125`) wrap on phones like the public profile's did. Give them the same `tabList`/`tab` treatment the public profile got: nowrap plus scroll, `flex-shrink: 0`, an inset focus ring, a token underline, and an `onFocus` `scrollIntoView({ inline: 'nearest' })`, because Chromium leaves a partly clipped focused tab clipped. Better still, extract one shared scrolling-tabs wrapper for both pages (found in PR 6's Task 6.10 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
 
