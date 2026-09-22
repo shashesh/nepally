@@ -187,7 +187,7 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 4a Post components + feed | `feat/web-ui-feed` | 4a.1–4a.12 | Merged (PR #80) | 2026-09-20 | Linux baselines regenerated and reviewed before it was marked ready |
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | Merged (PR #83) | 2026-09-21 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
-| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a, 6.19b | In Progress | 2026-09-21 | branched from `master` at e685317 |
+| 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a, 6.19b | In Review (PR #85) | 2026-09-22 | branched from `master` at e685317 |
 | 7 Events | `feat/web-ui-events` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
