@@ -57,8 +57,10 @@
 
 /* ── Settings & more ─────────────────────── */
 .sectionTitle {
+  /* Gambarino only ships weight 400 — the global h2 rule (globals.css)
+     already sets it, so this only overrides size and spacing, same as
+     .profileName above and AccountDetails.module.css's .title. */
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
   margin-bottom: var(--space-4);
 }
 
