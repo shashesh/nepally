@@ -278,25 +278,9 @@ describe('ProfilePage', () => {
     });
   });
 
-  it('sends a member who logs out to /, not to the signed-out redirect at /login', async () => {
-    // Like AuthContext, signing out clears the user, which re-renders the page.
-    mockSignOut.mockImplementation(async () => {
-      profileMocks.useAuthMock.mockReturnValue({ user: null, signOut: mockSignOut, refreshUser: mockRefreshUser });
-    });
-    const { rerender } = render(<ProfilePage />);
-    await act(async () => {});
-
-    await chooseProfileMenuItem('Logout');
-    rerender(<ProfilePage />);
-    await act(async () => {});
-
-    expect(mockPush).toHaveBeenCalledWith('/');
-    expect(mockReplace).not.toHaveBeenCalled();
-  });
-
   it('leaves for / before signing out, so a remount under the signed-out shell has nothing to redirect', async () => {
     // Layout swaps to PublicShell once the user clears, which remounts the
-    // page with a fresh ref; only leaving first keeps /login out of the race.
+    // page; only leaving first keeps its /login redirect out of the race.
     await renderPage();
 
     await chooseProfileMenuItem('Logout');
@@ -586,11 +570,13 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Saved Housing Post')).toBeDefined();
   });
 
-  it('moves focus to the Saved panel when unsaving takes the focused menu away with its row', async () => {
+  it('moves focus to the Saved panel, without scrolling, when unsaving takes the focused menu away with its row', async () => {
     profileMocks.unsavePostMock.mockReturnValue(new Promise(() => {}));
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({ data: [savedPost] });
     await renderPage();
     await openTab('Saved Posts');
+    const panel = screen.getByRole('tabpanel', { name: 'Saved Posts' });
+    const panelFocus = vi.spyOn(panel, 'focus');
 
     fireEvent.click(screen.getByRole('button', { name: 'Post options' }));
     const item = await screen.findByRole('menuitem', { name: 'Unsave Post' });
@@ -601,7 +587,9 @@ describe('ProfilePage', () => {
 
     // Hidden at once, before the delete settles, and focus follows.
     expect(screen.queryByText('Saved Housing Post')).toBeNull();
-    expect(document.activeElement).toBe(screen.getByRole('tabpanel', { name: 'Saved Posts' }));
+    expect(document.activeElement).toBe(panel);
+    // The panel is often taller than the viewport; a plain focus() jumps the page.
+    expect(panelFocus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
   it('leaves focus where it is after an unsave when it was not lost', async () => {

@@ -112,11 +112,10 @@ export default function ProfilePage() {
     }
   }
 
-  // True from Logout on, so this instance never answers the cleared `user`
-  // with /login. handleSignOut's ordering covers the remount (see there).
-  const signingOut = useRef(false);
+  // Signing out leaves for / before the user clears (see handleSignOut), so
+  // this only ever catches a visitor who arrives signed out.
   useEffect(() => {
-    if (!user && !signingOut.current && typeof window !== 'undefined') {
+    if (!user && typeof window !== 'undefined') {
       router.replace('/login');
     }
   }, [user, router]);
@@ -131,7 +130,9 @@ export default function ProfilePage() {
     if (!refocusSavedPanel.current) return;
     refocusSavedPanel.current = false;
     const active = document.activeElement;
-    if (!active || active === document.body) savedPanelRef.current?.focus();
+    // preventScroll: the panel is often taller than the viewport, and a plain
+    // focus() would scroll its top into view, jumping the page.
+    if (!active || active === document.body) savedPanelRef.current?.focus({ preventScroll: true });
   }, [saved.items]);
 
   if (!user) {
@@ -143,7 +144,6 @@ export default function ProfilePage() {
   const canPost = (user.trust_level ?? TrustLevel.NEW) >= TrustLevel.VERIFIED;
 
   const handleSignOut = async (): Promise<void> => {
-    signingOut.current = true;
     try {
       // Leave first. Clearing the user swaps Layout to PublicShell, which
       // remounts this page, and a fresh instance's redirect would take the
@@ -151,7 +151,6 @@ export default function ProfilePage() {
       await router.push('/');
       await signOut();
     } catch (error: unknown) {
-      signingOut.current = false;
       notify.error(error instanceof Error ? error.message : 'Failed to log out. Please try again.');
     }
   };
