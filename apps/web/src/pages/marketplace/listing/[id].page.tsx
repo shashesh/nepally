@@ -20,7 +20,10 @@ import Avatar from '../../../components/Avatar';
 import { EmptyState, ErrorState, LoadingState, PhotoCarousel } from '../../../components/ui';
 import { themeSlug } from '../../../components/marketplace/categoryTheme';
 import { ListingActionsPanel } from '../../../components/marketplace/ListingActionsPanel';
-import { ListingBusinessDetails } from '../../../components/marketplace/ListingBusinessDetails';
+import {
+  ListingBusinessDetails,
+  hasBusinessDetails,
+} from '../../../components/marketplace/ListingBusinessDetails';
 import styles from './listingDetail.module.css';
 
 export default function ListingDetailPage() {
@@ -35,15 +38,19 @@ export default function ListingDetailPage() {
   if (!user) return null;
   // The Pages Router keeps this page mounted from one listing to the next, so
   // key the view by id: the photo on screen starts from the first one again.
-  return <ListingDetailView key={id ?? ''} id={id} viewer={user} />;
+  return (
+    <ListingDetailView key={id ?? ''} id={id} viewer={user} ready={router.isReady} />
+  );
 }
 
 interface ListingDetailViewProps {
   id: string | undefined;
   viewer: Pick<User, 'id'>;
+  /** False until the router has parsed the URL, so `id` is trustworthy. */
+  ready: boolean;
 }
 
-function ListingDetailView({ id, viewer }: ListingDetailViewProps) {
+function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
   const router = useRouter();
   const now = useNow();
   const detail = useListingDetail(id, viewer);
@@ -55,7 +62,7 @@ function ListingDetailView({ id, viewer }: ListingDetailViewProps) {
     router.push(`/messages?to=${listing.owner.id}`);
   }, [listing, id, router]);
 
-  if (detail.loading) {
+  if (!ready || detail.loading) {
     return (
       <div className={styles.container}>
         <LoadingState variant="detail" label="Loading listing…" />
@@ -110,17 +117,23 @@ function ListingDetailView({ id, viewer }: ListingDetailViewProps) {
         <title>{listing.title} - Marketplace - Nepally</title>
       </Head>
       <div className={styles.container} data-category={slug}>
-        <Breadcrumbs className={styles.breadcrumbs} separator="›">
-          <Anchor component={Link} href="/marketplace" className={styles.crumb}>
-            Marketplace
-          </Anchor>
-          {listing.category && (
-            <Anchor component={Link} href={`/marketplace/${listing.category.slug}`} className={styles.crumb}>
-              {listing.category.name}
+        <nav aria-label="Breadcrumb">
+          <Breadcrumbs className={styles.breadcrumbs} separator="›">
+            <Anchor component={Link} href="/marketplace" className={styles.crumb}>
+              Marketplace
             </Anchor>
-          )}
-          <span className={styles.crumbCurrent}>{listing.title}</span>
-        </Breadcrumbs>
+            {listing.category && (
+              <Anchor
+                component={Link}
+                href={`/marketplace/${listing.category.slug}`}
+                className={styles.crumb}
+              >
+                {listing.category.name}
+              </Anchor>
+            )}
+            <span className={styles.crumbCurrent}>{listing.title}</span>
+          </Breadcrumbs>
+        </nav>
 
         <div className={styles.layout}>
           <div className={styles.main}>
@@ -168,7 +181,7 @@ function ListingDetailView({ id, viewer }: ListingDetailViewProps) {
               <p className={styles.description}>{listing.description}</p>
             </section>
 
-            {listing.listing_type === 'business' && (
+            {listing.listing_type === 'business' && hasBusinessDetails(listing) && (
               <section className={styles.section} aria-labelledby="listing-business">
                 <h2 id="listing-business" className={styles.sectionTitle}>
                   Business Details

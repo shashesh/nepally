@@ -110,6 +110,24 @@ describe('ListingDetailPage', () => {
     mockGetUserSavedListingIds.mockResolvedValue({ data: [] });
   });
 
+  // Before the router parses the URL there is no id, and the page must not
+  // decide the listing is missing on that basis.
+  it('waits for the router before saying the listing is not found', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mocks.useRouter.mockReturnValue({
+      replace: mockReplace,
+      push: mockPush,
+      query: {},
+      isReady: false,
+    });
+
+    render(React.createElement(ListingDetailPage));
+
+    expect(screen.queryByText('Listing not found')).toBeNull();
+    expect(screen.getByRole('status').getAttribute('aria-busy')).toBe('true');
+    expect(mockGetListingById).not.toHaveBeenCalled();
+  });
+
   it('redirects to /login when not logged in', async () => {
     mocks.useAuth.mockReturnValue({ user: null });
     render(React.createElement(ListingDetailPage));

@@ -15,6 +15,21 @@ function capitalise(day: string): string {
   return day.charAt(0).toUpperCase() + day.slice(1);
 }
 
+/**
+ * Whether there is anything to show, so the page can skip the section rather
+ * than render a "Business Details" heading with nothing under it.
+ */
+export function hasBusinessDetails(listing: MarketplaceListing): boolean {
+  return Boolean(
+    listing.business_name ||
+      listing.address ||
+      listing.phone ||
+      listing.email ||
+      listing.website_url ||
+      BUSINESS_HOURS_DAYS.some((day) => listing.business_hours?.[day])
+  );
+}
+
 /** A business listing's contact details and opening hours, as a definition list. */
 export function ListingBusinessDetails({ listing }: ListingBusinessDetailsProps) {
   const rows: Row[] = [
