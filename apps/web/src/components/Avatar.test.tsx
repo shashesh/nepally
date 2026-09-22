@@ -11,6 +11,14 @@ describe('Avatar', () => {
     expect(img.getAttribute('src')).toBe('https://example.com/photo.jpg');
   });
 
+  it('is a circle at every size, not the theme xl radius', () => {
+    // The theme maps radius "xl" to 16px, which turns 64px and 80px avatars
+    // into rounded squares (and clashes with the public profile's round ring).
+    const { container } = render(<Avatar name="Ram Sharma" size="xlarge" />);
+    const root = container.querySelector('.mantine-Avatar-root') as HTMLElement;
+    expect(root.style.getPropertyValue('--avatar-radius')).toBe('var(--radius-full)');
+  });
+
   it('falls back to shared initials without a photo', () => {
     render(<Avatar name="Ram Bahadur Thapa" photoUrl={null} />);
     expect(screen.getByText('RT')).toBeDefined();

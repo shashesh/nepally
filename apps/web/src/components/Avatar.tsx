@@ -62,7 +62,7 @@ export default function Avatar({
         src={photoUrl ?? null}
         alt={decorative ? '' : `${name}'s avatar`}
         size={SIZE_MAP[size]}
-        radius="xl"
+        radius="var(--radius-full)"
         classNames={{ placeholder: toneClass }}
       >
         {getInitials(name)}
