@@ -82,6 +82,17 @@ describe('EventResponseControl', () => {
     expect(document.activeElement).toBe(going);
   });
 
+  it('keeps the pressed state visible while busy, so it never takes Mantine’s grey', () => {
+    const { interested, going } = renderControl('going', { busy: true });
+
+    // data-disabled would repaint both buttons flat grey and hide the choice
+    // the member just made; FollowButton is the same exception.
+    expect(going.getAttribute('data-disabled')).toBeNull();
+    expect(interested.getAttribute('data-disabled')).toBeNull();
+    expect(going.getAttribute('aria-pressed')).toBe('true');
+    expect(interested.getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('is not aria-disabled when idle', () => {
     const { interested, going } = renderControl(null);
     expect(interested.getAttribute('aria-disabled')).toBeNull();

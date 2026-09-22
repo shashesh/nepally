@@ -12921,7 +12921,8 @@ The e2e and visual suites run only in chunk 4. The e2e suite builds for producti
    - The cover is `alt=""`, because the title follows it.
    - Past cards drop `opacity: 0.6` for a "Past" label and a `--text-2` title (recon 9).
    - Cards lift with a `--border-solid` border on hover and focus-within, not a shadow (PR 6 decision 11).
-6. **Busy controls stay focusable** (`web-ui-system.md`). While a response saves, both buttons in the control take `aria-disabled` and `data-disabled` and ignore presses, and the pressed state moves at once. Message Organizer does the same with a `Loader`, like the public profile's Message button.
+6. **Busy controls stay focusable** (`web-ui-system.md`). While a response saves, both buttons in the control take `aria-disabled` and ignore presses, and the pressed state moves at once. Message Organizer does the same with a `Loader`, like the public profile's Message button.
+   - **Amended 2026-09-22, on the user's call.** This decision first asked for `data-disabled` as well, but Mantine paints a `data-disabled` button flat grey, which hid the very state the member had just chosen. The control now follows `FollowButton`, the documented exception: `aria-disabled` only, so the pressed button stays visibly pressed while the write lands. It keeps Mantine's pointer cursor while busy, which `globals.css` would otherwise suppress.
 7. **Event types colour from the tokens.** `EventTypeBadge` reads `--event-<type>-fg` / `-bg` through `data-type`, as create event's chips do through `data-value`. Its emoji becomes `aria-hidden`, so the badge reads "Cultural". Mobile keeps `EVENT_TYPE_COLORS`.
 8. **The filter chips are a `ToggleChipGroup`.**
    - Single mode already makes pressing the current chip a no-op, which suits a filter that always has one pick.

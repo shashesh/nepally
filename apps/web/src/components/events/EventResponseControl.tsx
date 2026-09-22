@@ -22,7 +22,10 @@ const OPTIONS: ReadonlyArray<{ status: RsvpStatus; label: string; Icon: typeof I
 
 /**
  * The Interested / Going toggle pair. Each button keeps one name and carries
- * the state in `aria-pressed`. While busy both stay focusable and inert.
+ * the state in `aria-pressed`. While busy both stay focusable and inert, with
+ * `aria-disabled` but no `data-disabled`: Mantine paints a `data-disabled`
+ * button flat grey, which would hide the pressed state the member just chose.
+ * `FollowButton` is the same exception, for the same reason.
  */
 export function EventResponseControl({
   value,
@@ -44,7 +47,6 @@ export function EventResponseControl({
             leftSection={<Icon size={size === 'sm' ? 14 : 16} aria-hidden="true" />}
             aria-pressed={pressed}
             aria-disabled={busy || undefined}
-            data-disabled={busy || undefined}
             onClick={busy ? undefined : () => onChange(pressed ? null : status)}
           >
             {optionLabel}
