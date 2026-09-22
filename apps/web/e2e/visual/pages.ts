@@ -96,6 +96,8 @@ export const VISUAL_PAGES: VisualPage[] = [
     ready: async (page) => {
       await heading(page, /^profile$/i);
       await page.getByRole('tab', { name: 'About' }).click();
+      // Park the pointer off the tab, or desktop captures its hover tint.
+      await page.mouse.move(0, 0);
       await heading(page, /about you/i);
     },
   },
