@@ -157,10 +157,10 @@ export async function getEventById(
       .single();
 
     if ((error as { code?: string } | null)?.code === 'PGRST116') {
-      return { error: new Error('Event not found') };
+      return { error: new Error('Event not found'), notFound: true };
     }
     if (error) throw error;
-    if (!data) return { error: new Error('Event not found') };
+    if (!data) return { error: new Error('Event not found'), notFound: true };
     return { data: data as Event };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch event') };
@@ -195,8 +195,8 @@ export async function getEventsByOrganizer(
 }
 
 /**
- * Get the full attendee list for an event (user info joined from event_rsvps).
- * Fetched on demand (not on page load).
+ * Get the people going to an event (user info joined from event_rsvps).
+ * Interested members are not attendees. Fetched on demand (not on page load).
  */
 export async function getEventAttendees(
   supabase: SupabaseClient,
@@ -219,6 +219,7 @@ export async function getEventAttendees(
         )
       `)
       .eq('event_id', eventId)
+      .eq('status', 'going')
       .order('created_at', { ascending: true });
 
     if (error) throw error;
@@ -501,25 +502,23 @@ export async function getUserEventResponses(
   }
 }
 
-/**
- * Check whether a user has RSVP'd to a specific event.
- */
-export async function hasUserRsvp(
+/** The member's response to one event, or null when they have none. */
+export async function getUserEventResponse(
   supabase: SupabaseClient,
   eventId: string,
   userId: string
-): Promise<{ data?: boolean; error?: Error }> {
+): Promise<{ data?: RsvpStatus | null; error?: Error }> {
   try {
     const { data, error } = await supabase
       .from('event_rsvps')
-      .select('id')
+      .select('status')
       .eq('event_id', eventId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
-    return { data: !!data };
+    if (error) throw error;
+    return { data: (data as { status: RsvpStatus } | null)?.status ?? null };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to check RSVP') };
+    return { error: error instanceof Error ? error : new Error('Failed to fetch event response') };
   }
 }

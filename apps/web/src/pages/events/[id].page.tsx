@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase';
 import {
   getEventById,
   getEventAttendees,
-  hasUserRsvp,
+  getUserEventResponse,
   getOrCreateConversation,
   rsvpToEvent,
   unrsvpFromEvent,
@@ -66,7 +66,7 @@ export default function EventDetailPage() {
     async (eventId: string, currentUserId: string) => {
       const [eventResult, rsvpStateResult] = await Promise.all([
         getEventById(supabase, eventId),
-        hasUserRsvp(supabase, eventId, currentUserId),
+        getUserEventResponse(supabase, eventId, currentUserId),
       ]);
 
       if (eventResult.data) {
@@ -74,7 +74,7 @@ export default function EventDetailPage() {
       }
 
       if (rsvpStateResult.data !== undefined) {
-        setIsGoing(rsvpStateResult.data);
+        setIsGoing(rsvpStateResult.data === 'going');
       }
     },
     []
@@ -91,8 +91,8 @@ export default function EventDetailPage() {
       } else if (result.data) {
         setEvent(result.data);
         if (userId) {
-          const rsvpStateResult = await hasUserRsvp(supabase, id, userId);
-          if (rsvpStateResult.data !== undefined) setIsGoing(rsvpStateResult.data);
+          const rsvpStateResult = await getUserEventResponse(supabase, id, userId);
+          if (rsvpStateResult.data !== undefined) setIsGoing(rsvpStateResult.data === 'going');
         }
       }
       setLoading(false);

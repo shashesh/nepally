@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getEventById } from '@nepally/shared';
+import { getEventById, getUserEventResponse, rsvpToEvent } from '@nepally/shared';
 import type { Event } from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
@@ -45,7 +45,7 @@ vi.mock('@nepally/shared', async () => {
     ...actual,
     getEventById: vi.fn(async () => ({ data: MOCK_EVENT })),
     getEventAttendees: vi.fn(async () => ({ data: [] })),
-    hasUserRsvp: vi.fn(async () => ({ data: false })),
+    getUserEventResponse: vi.fn(async () => ({ data: null })),
     getOrCreateConversation: vi.fn(async () => ({ data: { conversationId: 'conv-1', isNew: true } })),
     rsvpToEvent: vi.fn(async () => ({})),
     unrsvpFromEvent: vi.fn(async () => ({})),
@@ -92,6 +92,22 @@ describe('EventDetailPage', () => {
     });
   });
 
+  it('offers RSVP to an interested member, and RSVP marks them going', async () => {
+    vi.mocked(getUserEventResponse).mockResolvedValueOnce({ data: 'interested' });
+    render(React.createElement(EventDetailPage));
+    await waitFor(() => expect(screen.getByText('RSVP')).toBeDefined());
+    expect(screen.queryByText('Going ✓')).toBeNull();
+
+    fireEvent.click(screen.getByText('RSVP'));
+    await waitFor(() => expect(rsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2'));
+  });
+
+  it('shows Going ✓ to a member who is going', async () => {
+    vi.mocked(getUserEventResponse).mockResolvedValueOnce({ data: 'going' });
+    render(React.createElement(EventDetailPage));
+    await waitFor(() => expect(screen.getByText('Going ✓')).toBeDefined());
+  });
+
   it('shows cancelled banner for cancelled event', async () => {
     vi.mocked(getEventById).mockResolvedValueOnce({
       data: { ...MOCK_EVENT, status: 'cancelled' },
@@ -127,14 +143,14 @@ describe('EventDetailPage', () => {
   });
 
   it('toggles RSVP on button click and re-syncs from server', async () => {
-    const { getEventById, hasUserRsvp, rsvpToEvent } = await import('@nepally/shared');
+    const { getEventById, getUserEventResponse, rsvpToEvent } = await import('@nepally/shared');
     render(React.createElement(EventDetailPage));
     await waitFor(() => screen.getByText('RSVP'));
     fireEvent.click(screen.getByText('RSVP'));
     await waitFor(() => {
       expect(rsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
       expect(getEventById).toHaveBeenCalledTimes(2);
-      expect(hasUserRsvp).toHaveBeenCalledTimes(2);
+      expect(getUserEventResponse).toHaveBeenCalledTimes(2);
     });
   });
 

@@ -47,6 +47,8 @@ export interface EventRsvp {
 export interface EventResult {
   data?: Event;
   error?: Error;
+  /** Set when no such event exists, or it was removed; a failed request leaves it unset. */
+  notFound?: boolean;
 }
 
 export interface EventsResult {

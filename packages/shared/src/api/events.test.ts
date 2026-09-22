@@ -9,9 +9,9 @@ import {
   getEventsByMetro,
   getEventsByOrganizer,
   getUpcomingEventsByMetro,
+  getUserEventResponse,
   getUserEventResponses,
   getUserRsvps,
-  hasUserRsvp,
   removeEventResponse,
   rsvpToEvent,
   setEventResponse,
@@ -247,6 +247,35 @@ describe('getEventById', () => {
 
     const result = await getEventById(supabase, 'missing');
     expect(result.error?.message).toBe('Event not found');
+    expect(result.notFound).toBe(true);
+  });
+
+  it('sets notFound when no row comes back', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getEventById(supabase, 'missing');
+    expect(result.error?.message).toBe('Event not found');
+    expect(result.notFound).toBe(true);
+  });
+
+  it('leaves notFound unset when the request fails', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getEventById(supabase, 'event-1');
+    expect(result.error?.message).toBe('Failed to fetch');
+    expect(result.notFound).toBeUndefined();
   });
 });
 
@@ -543,29 +572,45 @@ describe('getUserRsvps', () => {
   });
 });
 
-describe('hasUserRsvp', () => {
-  it('returns true when RSVP exists', async () => {
-    const chain = {
+describe('getUserEventResponse', () => {
+  function responseChain(result: { data: unknown; error: unknown }) {
+    return {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: { id: 'rsvp-1' }, error: null }),
+      maybeSingle: vi.fn().mockResolvedValue(result),
     };
+  }
+
+  it('returns the status of the member’s row', async () => {
+    const chain = responseChain({ data: { status: 'interested' }, error: null });
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
-    const result = await hasUserRsvp(supabase, 'event-1', 'user-1');
-    expect(result.data).toBe(true);
+    const result = await getUserEventResponse(supabase, 'event-1', 'user-1');
+    expect(result).toEqual({ data: 'interested' });
+    expect(supabase.from).toHaveBeenCalledWith('event_rsvps');
+    expect(chain.select).toHaveBeenCalledWith('status');
+    expect(chain.eq).toHaveBeenCalledWith('event_id', 'event-1');
+    expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-1');
   });
 
-  it('returns false when RSVP does not exist (PGRST116)', async () => {
-    const chain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
-    };
+  it('returns null when the member has no response', async () => {
+    const chain = responseChain({ data: null, error: null });
     const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
 
-    const result = await hasUserRsvp(supabase, 'event-1', 'user-2');
-    expect(result.data).toBe(false);
+    const result = await getUserEventResponse(supabase, 'event-1', 'user-2');
+    expect(result).toEqual({ data: null });
+  });
+
+  it('passes a PostgREST error through', async () => {
+    const chain = responseChain({
+      data: null,
+      error: { code: '42501', message: 'Permission denied' },
+    });
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getUserEventResponse(supabase, 'event-1', 'user-1');
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.data).toBeUndefined();
   });
 });
 
@@ -583,6 +628,19 @@ describe('getEventAttendees', () => {
 
     const result = await getEventAttendees(supabase, 'event-1');
     expect(result.data).toHaveLength(1);
+  });
+
+  it('lists only the people going', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    await getEventAttendees(supabase, 'event-1');
+    expect(chain.eq).toHaveBeenCalledWith('event_id', 'event-1');
+    expect(chain.eq).toHaveBeenCalledWith('status', 'going');
   });
 
   it('returns empty array when no attendees', async () => {
@@ -751,22 +809,6 @@ describe('rsvpToEvent — additional paths', () => {
   });
 });
 
-describe('hasUserRsvp — additional paths', () => {
-  it('returns error for unexpected DB errors (non-PGRST116)', async () => {
-    const chain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({
-        data: null,
-        error: { code: '42501', message: 'Permission denied' },
-      }),
-    };
-    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
-
-    const result = await hasUserRsvp(supabase, 'event-1', 'user-1');
-    expect(result.error).toBeDefined();
-  });
-});
 
 describe('createEvent — additional paths', () => {
   it('normalizes whitespace-only photo_url to null in insert payload', async () => {

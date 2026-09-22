@@ -18,7 +18,7 @@ import type { RouteProp } from '@react-navigation/native';
 import {
   getEventById,
   getEventAttendees,
-  hasUserRsvp,
+  getUserEventResponse,
   rsvpToEvent,
   unrsvpFromEvent,
   cancelEvent,
@@ -84,7 +84,7 @@ export default function EventDetailScreen() {
 
     const [eventResult, rsvpStateResult] = await Promise.all([
       getEventById(supabase, eventId),
-      hasUserRsvp(supabase, eventId, userId),
+      getUserEventResponse(supabase, eventId, userId),
     ]);
 
     if (eventResult.data) {
@@ -92,7 +92,7 @@ export default function EventDetailScreen() {
     }
 
     if (rsvpStateResult.data !== undefined) {
-      setIsGoing(rsvpStateResult.data);
+      setIsGoing(rsvpStateResult.data === 'going');
     }
   }, [eventId, userId]);
 
@@ -107,10 +107,10 @@ export default function EventDetailScreen() {
         } else if (result.data) {
           setEvent(result.data);
           if (userId) {
-            const rsvpStateResult = await hasUserRsvp(supabase, eventId, userId);
+            const rsvpStateResult = await getUserEventResponse(supabase, eventId, userId);
             if (cancelled) return;
             if (rsvpStateResult.data !== undefined) {
-              setIsGoing(rsvpStateResult.data);
+              setIsGoing(rsvpStateResult.data === 'going');
             }
           }
         }
