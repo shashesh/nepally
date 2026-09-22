@@ -228,7 +228,7 @@ The migrations set no `file_size_limit` or `allowed_mime_types` on the buckets. 
 
 ### 2. Storage Policies
 
-Every policy on `storage.objects` is owner-only. A member can read, upload, overwrite and delete their own objects and nobody else's. Each policy tests `auth.role() = 'authenticated'` plus ownership:
+Every policy on `storage.objects` is owner-only. Through the Storage API (list, download, signed URLs, upload, overwrite, delete), a member can reach their own objects and nobody else's. Public URLs stay readable by anyone, because they never go through these policies. Each policy tests `auth.role() = 'authenticated'` plus ownership:
 
 - `avatars`: `name = auth.uid()::text || '.jpg'`. The INSERT policy also requires the object to sit at the bucket root.
 - `post-photos`, `event-photos`, `listing-photos`: the first folder of the path is the member's id, `(storage.foldername(name))[1] = auth.uid()::text`.
@@ -240,17 +240,23 @@ Every policy on `storage.objects` is owner-only. A member can read, upload, over
 | UPDATE | "Users can update own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015` |
 | DELETE | "Users can delete own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015` |
 
-The SELECT policies matter even though nobody downloads through RLS. Several storage operations read the row under RLS as well as writing it:
+The SELECT policies matter even though the apps never download through RLS. Several storage operations read the row under RLS as well as writing it:
 
 | Storage call | `storage.objects` permissions it needs |
 |---|---|
-| `upload()` of a new object | INSERT |
-| `upload()` with `upsert: true` over an existing object | INSERT, SELECT and UPDATE |
+| `upload()` (`upsert: false`) | INSERT |
+| `upload()` with `upsert: true` | INSERT + SELECT, plus UPDATE when the object already exists |
 | `remove()` | SELECT and DELETE |
-| `list()` | SELECT |
+| `list()`, `download()`, `createSignedUrl()` | SELECT |
+| `move()` | SELECT and UPDATE |
+| `copy()` | SELECT and INSERT |
 | `getPublicUrl()` and public URL reads | none |
 
-Without SELECT, `remove()` deletes nothing and still reports success. The storage API cannot see the row, so its DELETE matches zero rows, and the file stays reachable at its public URL. That was the state of every bucket from `027_security_warnings_hardening.sql` until `039`. Migration 027 dropped the broad "Anyone can view …" SELECT policies and nothing replaced them. Replacing an existing avatar is expected to have failed in that period too, because `uploadProfilePhoto` upserts.
+The upsert row applies even when the object doesn't exist yet. The storage API checks an upsert with `INSERT … ON CONFLICT … DO UPDATE … RETURNING *`, and with `RETURNING` Postgres checks the new row against the SELECT policies.
+
+Without SELECT, `remove()` deletes nothing and still reports success. The storage API cannot see the row, so its DELETE matches zero rows, and the file stays reachable at its public URL. Every avatar upload fails too, first-time ones included, because `uploadProfilePhoto` always upserts. That was the state of every bucket from `027_security_warnings_hardening.sql` until `039`: migration 027 dropped the broad "Anyone can view …" SELECT policies and nothing replaced them.
+
+**Checking it.** `npm run test:security:storage` (`scripts/security/storage-rls-smoke.ts`) exercises the calls the apps use against a live project, with two throwaway members. It checks first-time and repeat avatar upserts, a plain post photo upload, another member's `remove()` deleting nothing, anon `list()` of every bucket coming back empty, and the owner's `remove()` really deleting. Run it against staging after any migration that touches `storage.objects` policies. See [setup-and-testing.md](../guides/setup-and-testing.md#security-smoke-tests) for credentials.
 
 **Never add a broad `USING (bucket_id = '<bucket>')` SELECT policy.** That lets anyone, anon included, list every object in the bucket. It is what 027 removed, and Supabase's `public_bucket_allows_listing` advisor flags it. The owner-scoped SELECT policies from 039 do not trip that advisor.
 
@@ -670,7 +676,7 @@ SELECT * FROM posts WHERE author_id = 'user-uuid-here';
 1. Verify bucket exists
 2. Check file size limit
 3. Verify MIME type is allowed
-4. Check storage policies. Overwriting an existing object (`upsert: true`) needs SELECT and UPDATE policies as well as INSERT (see [Storage Policies](#2-storage-policies)).
+4. Check storage policies. Any upload with `upsert: true` needs a SELECT policy as well as INSERT, even for a new object, plus UPDATE when the object already exists (see [Storage Policies](#2-storage-policies)).
 
 ### Issue: A photo delete reports success but the file is still there
 
@@ -681,6 +687,8 @@ SELECT policyname, cmd FROM pg_policies
 WHERE schemaname = 'storage' AND tablename = 'objects'
 ORDER BY cmd, policyname;
 ```
+
+Then run `npm run test:security:storage` against the project to exercise the real Storage API calls.
 
 ### Issue: Edge Functions timing out
 

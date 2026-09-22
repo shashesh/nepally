@@ -1,6 +1,6 @@
 -- 039_storage_owner_select_policies.sql
 -- ADDITIVE / non-destructive. Lets a signed-in member SELECT their own objects
--- in each storage bucket, so photo deletes and avatar replacement work again.
+-- in each storage bucket, so photo deletes and avatar uploads work again.
 --
 --   Problem: 027 dropped the only SELECT policies on storage.objects ("Anyone
 --   can view avatars" / event photos / listing photos / post photos) to stop
@@ -18,10 +18,14 @@
 --       edited post, and uploads cleaned up after a failed submit).
 --       deleteListingPhotos has no caller yet, and event photos have no delete
 --       path. Those buckets get the same policy so a future delete works.
---     - upload() with upsert: true over an existing object: Supabase documents
---       overwriting as needing SELECT and UPDATE as well as INSERT.
---       uploadProfilePhoto upserts <uid>.jpg, so replacing an existing avatar
---       is expected to fail as well.
+--     - upload() with upsert: true, whether or not the object exists yet: the
+--       storage API's permission check runs INSERT ... ON CONFLICT DO UPDATE
+--       ... RETURNING *, and with RETURNING Postgres checks the new row
+--       against the SELECT policies. So an upsert needs INSERT + SELECT, plus
+--       UPDATE when the object already exists. uploadProfilePhoto always
+--       upserts <uid>.jpg, so every avatar upload failed, first-time ones
+--       included. Plain uploads (upsert: false) need INSERT only, so post,
+--       listing and event photo uploads were unaffected.
 --
 --   Fix: one SELECT policy per bucket. Each covers exactly the rows the
 --   member's existing UPDATE/DELETE policy on that bucket already covers:
@@ -42,9 +46,18 @@
 --   do not trip it.
 --
 -- Uses DROP POLICY IF EXISTS on the new names only, so re-running is harmless.
+-- One transaction, so the four policies land together or not at all. CREATE
+-- POLICY takes an ACCESS EXCLUSIVE lock on storage.objects, and every storage
+-- request queues behind a waiting lock. lock_timeout makes the migration fail
+-- fast instead if a long transaction already holds the table; re-run it later.
 --
 -- Rollback (forward-only): a new migration that drops these four policies.
---   That brings back the silent no-op deletes, so it is not recommended.
+--   That brings back the silent no-op deletes and the failing avatar uploads,
+--   so it is not recommended.
+
+BEGIN;
+
+SET LOCAL lock_timeout = '5s';
 
 -- avatars: <uid>.jpg at the bucket root (003_storage.sql)
 DROP POLICY IF EXISTS "Users can view own avatar" ON storage.objects;
@@ -85,3 +98,5 @@ CREATE POLICY "Users can view own listing photos"
     AND (select auth.role()) = 'authenticated'
     AND (storage.foldername(name))[1] = (select auth.uid())::text
   );
+
+COMMIT;
