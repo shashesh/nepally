@@ -12,7 +12,7 @@ import {
   TrustLevel,
   updateUserProfile,
 } from '@nepally/shared';
-import type { MarketplaceListing } from '@nepally/shared';
+import type { AboutYouFormValues, MarketplaceListing } from '@nepally/shared';
 import {
   ActionMenu,
   EmptyState,
@@ -25,7 +25,7 @@ import {
   scrollingTabsClassNames,
   type ActionMenuItem,
 } from '../components/ui';
-import { AboutYouSection, type AboutYouValues } from '../components/profile/AboutYouSection';
+import { AboutYouSection } from '../components/profile/AboutYouSection';
 import { AccountDetails } from '../components/profile/AccountDetails';
 import { ProfilePhotoControl } from '../components/profile/ProfilePhotoControl';
 import { PostSummaryRow } from '../components/posts/PostSummaryRow';
@@ -47,14 +47,6 @@ const TABS: { value: ProfileTab; label: string }[] = [
   { value: 'saved', label: 'Saved Posts' },
   { value: 'about', label: 'About' },
 ];
-
-/** The About You form's values before a user has loaded. */
-const EMPTY_ABOUT_YOU: AboutYouValues = {
-  hometown_district: null,
-  college: null,
-  years_in_us: null,
-  languages: [],
-};
 
 interface ListPanelProps<T> {
   list: ListResource<T>;
@@ -98,8 +90,11 @@ export default function ProfilePage() {
   const { user, signOut, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [photoBusy, setPhotoBusy] = useState(false);
-  const [aboutYou, setAboutYou] = useState<AboutYouValues>(
-    user ? getAboutYouFormValues(user) : EMPTY_ABOUT_YOU
+  // Lazy initializer: getAboutYouFormValues only needs to run once, not on
+  // every render. Every field of its Pick<User, …> parameter is optional, so
+  // `user ?? {}` already yields the empty form values while user is null.
+  const [aboutYou, setAboutYou] = useState<AboutYouFormValues>(() =>
+    getAboutYouFormValues(user ?? {})
   );
   const [aboutYouSaving, setAboutYouSaving] = useState(false);
   const userId = user?.id ?? null;
@@ -212,7 +207,7 @@ export default function ProfilePage() {
         notify.error(parsed.error.issues[0]?.message ?? 'Failed to save');
         return;
       }
-      const nextAboutYou: AboutYouValues = {
+      const nextAboutYou: AboutYouFormValues = {
         hometown_district: parsed.data.hometown_district ?? null,
         college: parsed.data.college ?? null,
         years_in_us: parsed.data.years_in_us ?? null,

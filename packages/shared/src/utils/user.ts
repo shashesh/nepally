@@ -84,20 +84,21 @@ export interface AboutYouFormValues {
 
 /**
  * Builds the About You form's values from a stored user record, dropping any
- * hometown district or language the form's controls don't offer.
+ * hometown district or language the form's district and language controls
+ * don't offer.
  *
  * Migration 028 only CHECKs `college` (length) and `years_in_us` (range) —
  * `hometown_district` and `languages` are unconstrained columns, so a direct
  * API write, an account older than the current NEPAL_DISTRICTS/
  * SUPPORTED_LANGUAGES lists, or any other out-of-band edit can leave a value
- * the NativeSelect/ToggleChipGroup don't offer. Left unfiltered, that value
- * would round-trip back through the form's own `safeParse` guard on save and
- * block every save in the section until the member happened to pick and
- * re-clear the field — a dance nothing in the UI hints at. Cleaning the
- * values here means the form only ever shows, and only ever saves, values it
- * actually offers; the page's `extendedProfileUpdateSchema.safeParse` on
- * save stays in place as a backstop the controls themselves can no longer
- * reach.
+ * those controls don't offer to pick. Left unfiltered, that value would
+ * round-trip back through `extendedProfileUpdateSchema`'s save-time
+ * validation and block every save in the section until the member happened
+ * to pick and re-clear the field — a dance nothing in the UI hints at.
+ * Cleaning the values here means the form only ever shows, and only ever
+ * saves, values it actually offers; `extendedProfileUpdateSchema.safeParse`
+ * on save stays in place as a backstop the controls themselves can no
+ * longer reach.
  */
 export function getAboutYouFormValues(
   user: Pick<User, 'hometown_district' | 'college' | 'years_in_us' | 'languages'>

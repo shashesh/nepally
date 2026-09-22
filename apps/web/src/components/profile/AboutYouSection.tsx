@@ -7,21 +7,15 @@ import {
   SUPPORTED_LANGUAGES,
   YEARS_IN_US_MAX,
   YEARS_IN_US_MIN,
+  type AboutYouFormValues,
   type LanguageCode,
 } from '@nepally/shared';
 import { ToggleChipGroup, type ToggleChipOption } from '../ui/ToggleChipGroup';
 import styles from './AboutYouSection.module.css';
 
-export interface AboutYouValues {
-  hometown_district: string | null;
-  college: string | null;
-  years_in_us: number | null;
-  languages: string[];
-}
-
 interface Props {
-  values: AboutYouValues;
-  onChange: (next: AboutYouValues) => void;
+  values: AboutYouFormValues;
+  onChange: (next: AboutYouFormValues) => void;
   disabled?: boolean;
 }
 

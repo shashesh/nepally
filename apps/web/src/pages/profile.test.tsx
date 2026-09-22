@@ -783,10 +783,12 @@ describe('ProfilePage', () => {
     await renderPage();
     await openTab('About');
 
-    // Looked up by name at every step, including while pending: the label
-    // stays "Save About You" throughout (a spinner carries the progress
-    // cue instead of the accessible name), so a stale lookup can't hide a
-    // regression back to Mantine's `loading` prop, which would rename it.
+    // Looked up by name at every step: the label stays "Save About You"
+    // whether idle or saving (a spinner carries the progress cue instead of
+    // the accessible name). In Mantine 8.3.18 the label stays in the DOM and
+    // in the accessibility tree even under `loading`, so this lookup alone
+    // wouldn't catch a regression back to that prop — the disabled/
+    // aria-disabled assertions below are what actually guard the fix.
     screen.getByRole('button', { name: 'Save About You' }).focus();
 
     fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));

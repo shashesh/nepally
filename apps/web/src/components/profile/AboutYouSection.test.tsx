@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import type { AboutYouFormValues } from '@nepally/shared';
 import { act, fireEvent, render, screen } from '../../test-utils';
-import { AboutYouSection, type AboutYouValues } from './AboutYouSection';
+import { AboutYouSection } from './AboutYouSection';
 
-const BASE_VALUES: AboutYouValues = {
+const BASE_VALUES: AboutYouFormValues = {
   hometown_district: 'Kathmandu',
   college: 'Pulchowk',
   years_in_us: 5,
@@ -15,11 +16,11 @@ function Harness({
   onChangeSpy,
   disabled,
 }: {
-  initial?: AboutYouValues;
-  onChangeSpy?: (next: AboutYouValues) => void;
+  initial?: AboutYouFormValues;
+  onChangeSpy?: (next: AboutYouFormValues) => void;
   disabled?: boolean;
 }) {
-  const [values, setValues] = useState<AboutYouValues>(initial);
+  const [values, setValues] = useState<AboutYouFormValues>(initial);
 
   return (
     <AboutYouSection
