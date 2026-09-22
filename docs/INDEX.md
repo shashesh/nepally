@@ -57,7 +57,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
 - [plans/active/2026-09-18-production-launch.md](plans/active/2026-09-18-production-launch.md) — 12-week production launch (public launch Dec 1, 2026): prod environment, store compliance, monitoring, support operations, six launch markets, week-by-week tracker
-- [plans/active/2026-09-14-web-ui-overhaul.md](plans/active/2026-09-14-web-ui-overhaul.md) — web UI overhaul: PRs 0–3b task by task (visual/a11y safety net, H1 tokens + Mantine theme, responsive shell, global search), PR 3c (search follow-ups) and PRs 4–10 scoped
+- [plans/active/2026-09-14-web-ui-overhaul.md](plans/active/2026-09-14-web-ui-overhaul.md) — web UI overhaul: PRs 0–7 task by task (safety net, tokens + Mantine theme, responsive shell, global search and its follow-ups, feed, post detail, create flows, profile, events), PRs 8–10 scoped
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 
