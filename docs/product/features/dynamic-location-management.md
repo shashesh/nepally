@@ -2,7 +2,7 @@
 
 **Status:** Planned
 **Phase:** 1 (Utility Core & Trust Foundation)
-**Last Updated:** 2026-02-16
+**Last Updated:** 2026-09-22
 **Platforms:** Mobile + Web
 
 ---
@@ -199,9 +199,12 @@ Constraints:
 **Behavior:**
 
 - During onboarding, the first location is auto-saved as "Home" with `is_default = true`
-- Users can add, rename, and delete saved locations
-- Deleting the default location promotes the next one to default
-- Cannot delete last remaining saved location (must always have at least 1)
+- Users can add, rename, and remove saved locations, and set any of them as the default
+- The default location can't be removed: set another one as the default first
+- Cannot remove the last remaining saved location (must always have at least 1)
+- Removing a location asks for confirmation first
+- A rename saves on Enter or when the field loses focus; on web, Escape cancels it. A name another saved location already uses (ignoring case) is refused
+- Adding a location searches by metro name or ZIP code. A ZIP with no metro shows "No metros match." rather than an error
 
 **Default names suggested:** Home, Work, School, Family, Custom
 
