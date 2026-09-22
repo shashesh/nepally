@@ -12812,7 +12812,9 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - No `<Link>` wraps a `<Button>`.
   - The CSS allowlist has lost all five stylesheets, and `RAW_ELEMENT_ALLOWLIST` has lost `profile.page.tsx`, `profile/locations.page.tsx`, `users/[id].page.tsx`, `AboutYouSection.tsx` and `FollowButton.tsx`. `profile/notifications.page.tsx` stays for PR 9.
   - The page line counts are near their targets.
-- [ ] **Step 4: Regenerate the baselines.** Push a commit whose message contains `[visual-baselines]`, download the `visual-baselines` artifact, review **every** changed PNG, and commit the screenshots and the a11y diff.
+- [x] **Step 4: Regenerate the baselines.** Push a commit whose message contains `[visual-baselines]`, download the `visual-baselines` artifact, review **every** changed PNG, and commit the screenshots and the a11y diff.
+  - **What we did instead:** we ran the baselines locally in Docker with `npm run test:visual:docker --workspace=apps/web -- --update --write-a11y-baseline`. It uses the CI job's image, `mcr.microsoft.com/playwright:v1.63.0-noble`, and it spends no Actions minutes. The result was 33 changed PNGs and 4 new ones (commit 25d56ce). The a11y diff only deletes the four `profile` / `public-profile` entries.
+  - **Side effects on pages PR 6 doesn't own:** some baseline changes there follow from Task 6.19a's CSS order and are routed to PR 7 and PR 10. They are event-detail's attendee button, post-detail's sizes, and the create-page labels.
 - [ ] **Step 5: Document the new pieces** in `docs/architecture/web-ui-system.md`, with their props: `SummaryRow` and `SummaryRowMeta` in the "UI primitives (`components/ui`)" section (including the rule that only `menu` sits above the link's overlay), then `PostSummaryRow`, `EventSummaryRow`, `ListingSummaryRow`, the `Avatar` line's new `toneKey` and `decorative` props, the shared `scrollingTabs` module (`scrollingTabsClassNames` and `scrollFocusedTabIntoView`), `PublicProfileHeader`, `ProfilePhotoControl`, `AccountDetails`, the three hooks and `lib/profilePhoto.ts`. Record that `ImageUploader` has three callers (decision 1). No feature doc covers the profile. `dynamic-location-management.md` says nothing about the dialogs, so it needs no change.
 - [ ] **Step 6: Run the full gate.** `npm run lint`, `npm run lint:guards`, `npm run type-check`, `npm run test`, `npm run test:e2e:web`, `npm run test:visual:web` and `npm run docs:check`.
 - [ ] **Step 7: Walk the keyboard** through all three pages: Tab, Shift+Tab, Enter, Space and Escape, the arrow keys in both tab lists and in the profile menu, the photo buttons, the name and bio dialogs, rename with Enter and Escape, and the remove dialog.
@@ -12826,6 +12828,7 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
 - **Tokens:** event-type colours become semantic tokens (`--event-<type>-fg/-bg`), added to `tokens.css` with contrast pairs.
 - **Also:** adopt `useInfiniteScroll` (events/index 110–125), `PageHeader` and `EmptyState`; replace `confirm()` in events/[id]; the filter search input uses a Mantine `TextInput`.
 - **Also:** on create event, the chip-group and date labels are 15px semibold, but the text-input labels keep Mantine's size. Pick one label style for the form (found in PR 6's Task 6.19a check).
+- **Also:** Task 6.19a's CSS order fix turned event detail's "12 people going" into a blue, underlined link-style button. That blue comes from the events page's own CSS and sits outside the palette, so move it onto tokens (found in PR 6's Task 6.20 baselines).
 - **Already built:** `EventSummaryRow` (PR 6, Task 6.4) renders an event as a compact row, for any list that does not need the full `EventCard`.
 - **Also:** add a shared `isEventPast(event, now)` to `packages/shared/src/logic` and replace the eight inline copies of `new Date(end_date ?? start_date) < now` (four in web, three in mobile, one in `EventSummaryRow`) — found in PR 6's Task 6.4 review.
 
@@ -12882,6 +12885,10 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Manage Locations row layout:
     - "Set as default"'s text starts 9px right of the label column, because of the button's padding. Its box is aligned but its text isn't.
     - The default row has no Remove button, so its pencil sits in the trash column, and the pencils don't line up across rows. Reserve the column (found in PR 6's Task 6.19 review).
+  - [ ] Task 6.19a's CSS order fix exposed module rules that production had never shown. Review the new baselines for each (found in PR 6's Task 6.20 baselines):
+    - **Post detail:** the action row spreads wider, the Help tag chip is taller, and "No comments yet" is larger. At 412px the top card got taller.
+    - **Create post, create event and create listing:** some section labels, such as "Tags (1-3 required)", "Photos" and "Start Date & Time", are now smaller and bold. Create post's "Please select at least 1 tag" is now red.
+  - [ ] PR 6's own profile page is 388 lines against its ~320 target, and the public profile is 351 against ~300. For the own profile, extract its `ListPanel` / `ListingsPanel`; the shared list-states item above covers them. For the public profile, extract its `AboutPanel` (found in PR 6's Task 6.20).
   - [ ] Feed card badges at 375 no longer sit together. Task 6.19a made the narrower mixed-case badges render in production, so `PostMeta`'s wrapping row now puts "Housing" beside the author name and leaves "Local" alone on the next line. Before, both sat below the name. Keep the badges together, for example as their own non-wrapping group (found in PR 6's Task 6.19a check).
   - [ ] Own profile widths:
     - `Profile.module.css` `.profilePage` still uses a raw `max-width: 600px`, while the public profile uses `--layout-content-width` (800px). Pick one width for both profile pages.
