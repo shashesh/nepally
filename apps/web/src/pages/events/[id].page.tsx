@@ -167,11 +167,13 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
       </Head>
       <div className={styles.container}>
         <nav aria-label="Breadcrumb" className={styles.breadcrumb}>
-          <Breadcrumbs>
-            <Anchor component={Link} href="/events">
+          <Breadcrumbs separator={<span aria-hidden="true">/</span>}>
+            <Anchor component={Link} href="/events" inherit>
               Events
             </Anchor>
-            <span aria-current="page">{event.title}</span>
+            <span aria-current="page" className={styles.breadcrumbCurrent}>
+              {event.title}
+            </span>
           </Breadcrumbs>
         </nav>
 

@@ -15,6 +15,14 @@
   font-size: var(--font-size-sm);
 }
 
+/* Breadcrumbs sets `white-space: nowrap` on every child it clones, which ran
+   a long title off the side of a phone with no way to scroll to the rest.
+   Two classes, so this wins in either stylesheet order. */
+.breadcrumb .breadcrumbCurrent {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* Main column plus a 320px aside, one column below 64em (1024px). */
 .layout {
   display: grid;
@@ -59,8 +67,8 @@
   padding: var(--space-6);
 }
 
-/* Mantine sets --alert-color inline and the message reads it, so the message
-   inherits the root's colour instead. */
+/* Mantine colours the light variant's message with --mantine-color-black, not
+   the root's colour, so the message class makes it inherit instead. */
 .cancelledAlert {
   border-color: var(--emergency-border);
   background: var(--emergency-bg);
