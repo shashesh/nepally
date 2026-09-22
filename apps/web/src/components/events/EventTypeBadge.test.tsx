@@ -14,38 +14,27 @@ vi.mock('@nepally/shared', () => ({
 
 import EventTypeBadge from './EventTypeBadge';
 
+/** The text assistive technology reads: everything outside aria-hidden. */
+function readableText(el: Element): string {
+  const clone = el.cloneNode(true) as Element;
+  clone.querySelectorAll('[aria-hidden="true"]').forEach((node) => node.remove());
+  return (clone.textContent ?? '').trim();
+}
+
+const TYPES = [
+  ['cultural', '🎭', 'Cultural'],
+  ['religious', '🕌', 'Religious'],
+  ['social', '🎉', 'Social'],
+  ['career', '💼', 'Career'],
+  ['other', '📌', 'Other'],
+] as const;
+
 describe('EventTypeBadge (web)', () => {
-  it('renders Cultural icon and label', () => {
-    render(React.createElement(EventTypeBadge, { type: 'cultural' }));
-    expect(screen.getByText('🎭 Cultural')).toBeDefined();
-  });
+  it.each(TYPES)('reads the %s badge as its label alone', (type, icon, label) => {
+    render(React.createElement(EventTypeBadge, { type }));
 
-  it('renders Religious icon and label', () => {
-    render(React.createElement(EventTypeBadge, { type: 'religious' }));
-    expect(screen.getByText('🕌 Religious')).toBeDefined();
-  });
-
-  it('renders Social icon and label', () => {
-    render(React.createElement(EventTypeBadge, { type: 'social' }));
-    expect(screen.getByText('🎉 Social')).toBeDefined();
-  });
-
-  it('renders Career icon and label', () => {
-    render(React.createElement(EventTypeBadge, { type: 'career' }));
-    expect(screen.getByText('💼 Career')).toBeDefined();
-  });
-
-  it('renders Other icon and label', () => {
-    render(React.createElement(EventTypeBadge, { type: 'other' }));
-    expect(screen.getByText('📌 Other')).toBeDefined();
-  });
-
-  it('does not crash for any valid event type', () => {
-    const types = ['cultural', 'religious', 'social', 'career', 'other'] as const;
-    for (const type of types) {
-      expect(() =>
-        render(React.createElement(EventTypeBadge, { type }))
-      ).not.toThrow();
-    }
+    const text = screen.getByText(label);
+    expect(readableText(text.parentElement!)).toBe(label);
+    expect(screen.getByText(icon).closest('[aria-hidden="true"]')).not.toBeNull();
   });
 });

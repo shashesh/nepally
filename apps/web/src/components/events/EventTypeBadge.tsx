@@ -5,23 +5,17 @@ import {
   EVENT_TYPE_LABELS,
   type EventType,
 } from '@nepally/shared';
+import styles from './EventTypeBadge.module.css';
 
 interface Props {
   type: EventType;
 }
 
-const TYPE_COLORS: Record<EventType, string> = {
-  cultural: 'orange',
-  religious: 'grape',
-  social: 'green',
-  career: 'blue',
-  other: 'gray',
-};
-
+/** Coloured from the `--event-<type>` tokens through `data-type`; reads as its label alone. */
 export default function EventTypeBadge({ type }: Props) {
   return (
-    <Badge variant="light" color={TYPE_COLORS[type]} size="sm" radius="xl">
-      {EVENT_TYPE_ICONS[type]} {EVENT_TYPE_LABELS[type]}
+    <Badge variant="default" size="sm" radius="xl" className={styles.badge} data-type={type}>
+      <span aria-hidden="true">{EVENT_TYPE_ICONS[type]}</span> <span>{EVENT_TYPE_LABELS[type]}</span>
     </Badge>
   );
 }
