@@ -1,396 +1,74 @@
+/*
+ * Profile — own profile page shell, card and the "Settings & more" nav.
+ * Semantic tokens only (scripts/guard-css-tokens.js). Spec:
+ * docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1.
+ *
+ * The top bar/menu are PageHeader and ActionMenu (components/ui); the trust
+ * pill is TrustBadge; the avatar + photo upload controls are
+ * ProfilePhotoControl (components/profile/); the tab list is Mantine Tabs
+ * styled via components/ui/scrollingTabs.module.css; post/saved rows are
+ * PostSummaryRow (components/posts/) and listing rows are
+ * ListingSummaryRow (components/marketplace/), both built on
+ * components/ui/SummaryRow; the About tab's account info is AccountDetails
+ * (components/profile/).
+ */
+
 .profilePage {
   max-width: 600px;
   margin: 0 auto;
 }
 
-.topBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-s);
-}
-
-.pageTitle {
-  font-size: var(--font-size-h2);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.02em;
-}
-
-.menuWrap {
-  position: relative;
-  z-index: 20;
-}
-
-.menuOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 15;
-}
-
-.hamburgerMenu {
-  position: absolute;
-  top: 42px;
-  right: 0;
-  min-width: 180px;
-  border: 1px solid var(--color-border-solid);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-  z-index: 30;
-  animation: dropdownIn 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes dropdownIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.hamburgerItem {
-  width: 100%;
-  text-align: left;
-  border: none;
-  background: transparent;
-  color: var(--color-text-primary);
-  padding: var(--space-s) var(--space-m);
-  cursor: pointer;
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-medium);
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.hamburgerItem:hover {
-  background: rgba(var(--color-primary-rgb), 0.07);
-  color: var(--color-primary);
-}
-
-.hamburgerItemDanger {
-  color: var(--color-error);
-}
-
-.hamburgerItemDanger:hover {
-  background: rgba(198, 40, 40, 0.06);
-  color: var(--color-error);
-}
-
 .profileCard {
-  background: var(--color-surface);
-  border: var(--ghost-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-l);
-  margin-bottom: var(--space-m);
-  box-shadow: var(--shadow-md);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
 .profileHeader {
   display: flex;
   align-items: center;
-  gap: var(--space-m);
-  margin-bottom: var(--space-l);
-}
-
-.menuTabs {
-  display: flex;
-  border-bottom: 1px solid rgba(var(--color-primary-rgb), 0.10);
-  margin-bottom: var(--space-s);
-}
-
-.menuTab {
-  flex: 1;
-  height: 44px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: color var(--transition-fast);
-}
-
-.menuTab:hover {
-  color: var(--color-text-primary);
-}
-
-.menuTabActive {
-  color: var(--color-text-primary);
-  border-bottom: 2px solid var(--color-primary);
-  font-weight: var(--font-weight-bold);
-}
-
-.tabContent {
-  padding-top: var(--space-xs);
-}
-
-.postList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
-}
-
-.listingThumbWrapper {
-  position: relative;
-  width: 100%;
-  height: 120px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-
-.listingThumb {
-  object-fit: cover;
-}
-
-.listingThumbPlaceholder {
-  width: 100%;
-  height: 80px;
-  border-radius: 8px;
-  background: #F5F5F5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  margin-bottom: 10px;
-}
-
-.postItem {
-  display: block;
-  border: var(--ghost-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-s);
-  text-decoration: none;
-  color: var(--color-text-primary);
-  background: var(--color-surface);
-  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
-}
-
-.postItem:hover {
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-.postItemTop {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-s);
-}
-
-.postItemTitle {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.01em;
-}
-
-.postItemDescription {
-  margin: var(--space-xs) 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-small);
-  line-height: 1.5;
-}
-
-.postItemMeta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-s);
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-caption);
-}
-
-/* ── Saved Post item with unsave menu ─────── */
-.savedPostItem {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-xs);
-  border: var(--ghost-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  transition: box-shadow var(--transition-normal);
-}
-
-.savedPostItem:hover {
-  background: var(--color-surface-low);
-  box-shadow: var(--shadow-sm);
-}
-
-.savedPostLink {
-  flex: 1;
-  padding: var(--space-s);
-  text-decoration: none;
-  color: var(--color-text-primary);
-  min-width: 0;
-}
-
-.savedPostMenu {
-  position: relative;
-  flex-shrink: 0;
-  padding: var(--space-xs) var(--space-xs) 0 0;
-}
-
-.savedPostMenuDropdown {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: 20;
-  min-width: 140px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-solid);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  animation: dropdownIn 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.savedPostMenuItem {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-s) var(--space-m);
-  font-size: var(--font-size-small);
-  color: var(--color-error);
-  transition: background var(--transition-fast);
-}
-
-.savedPostMenuItem:hover {
-  background: rgba(var(--color-error-rgb, 220, 38, 38), 0.06);
-}
-
-/* ── Avatar + Photo Upload ────────────────── */
-.avatarSection {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-  flex-shrink: 0;
-}
-
-.avatarWrapper {
-  position: relative;
-}
-
-.avatarOverlay {
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-full);
-  background: rgba(0, 0, 0, 0.38);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.2rem;
-}
-
-.hiddenInput {
-  display: none;
-}
-
-.photoActions {
-  display: flex;
-  gap: var(--space-xs);
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
 }
 
 .profileName {
-  font-size: var(--font-size-h2);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-xxs);
-  letter-spacing: -0.02em;
+  /* Gambarino only ships weight 400 — the global h2 rule (globals.css)
+     already sets it, so this only adds spacing below the name; the default
+     h2 size (--font-size-xl) already matches the public profile's name
+     heading (components/users/PublicProfileHeader.module.css .displayName). */
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-1);
 }
 
 .profileEmail {
-  font-size: var(--font-size-small);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+  margin-bottom: var(--space-2);
 }
 
-.trustBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-bold);
+/* The Tabs panel class (Mantine `classNames={{ panel: styles.tabContent }}`).
+   --space-4 top padding matches the public profile's panels, which get the
+   same 16px via Mantine's `pt="md"` (mantine-theme.ts spacing.md).  */
+.tabContent {
+  padding-top: var(--space-4);
 }
 
-.trustNew {
-  background: rgba(148, 163, 184, 0.15);
-  color: #64748B;
-}
-
-.trustVerified {
-  background: rgba(46, 125, 50, 0.10);
-  color: #2E7D32;
-}
-
-.trustContributor {
-  background: rgba(var(--color-primary-rgb), 0.10);
-  color: var(--color-primary);
-}
-
-/* ── Info Rows ───────────────────────────── */
-.infoSection {
-  margin-bottom: var(--space-m);
-}
-
+/* ── Settings & more ─────────────────────── */
 .sectionTitle {
-  font-size: var(--font-size-h3);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--space-s);
-  letter-spacing: -0.01em;
-}
-
-.infoRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-s) 0;
-  border-bottom: 1px solid rgba(var(--color-primary-rgb), 0.08);
-}
-
-.infoRow:last-child {
-  border-bottom: none;
-}
-
-.infoLabel {
-  font-size: var(--font-size-small);
-  color: var(--color-text-secondary);
-}
-
-.infoValue {
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-/* ── Listings Tab ────────────────────────── */
-.listingPrice {
-  color: #1565C0;
-  font-weight: 600;
-}
-
-.listingExpiry {
-  font-size: var(--font-size-caption);
-  color: #F57C00;
-  margin-top: var(--space-xs);
-}
-
-/* ── Actions ─────────────────────────────── */
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
+  margin-bottom: var(--space-4);
 }
 
 /* ── About You save row ──────────────────── */
 .saveAboutRow {
-  margin-top: 24px;
+  margin-top: var(--space-5);
   display: flex;
   justify-content: flex-start;
 }
 
-/* ── Settings & more ─────────────────────── */
 .settingsCard {
   margin-top: var(--space-5);
   padding: var(--card-padding);
@@ -420,3 +98,18 @@
   color: var(--danger);
 }
 
+/* ── Responsive ────────────────────────────────
+   Posts/Saved/Listings rows and AboutYouSection's chips render inside
+   profileCard's own padding — a card inside a card. At 375px that leaves
+   rows ~277px wide against the public profile's ~327px (no outer card
+   wraps its rows), so titles clip and language chips wrap onto extra rows.
+   Shrinking the card's padding and dropping its border on phones is the
+   smaller fix versus restructuring the page to move Tabs out of the card
+   (as the public profile does); it brings own-profile rows within a couple
+   of px of the public profile's at the same viewport. */
+@mixin smaller-than $mantine-breakpoint-sm {
+  .profileCard {
+    border: none;
+    padding: var(--space-2);
+  }
+}
