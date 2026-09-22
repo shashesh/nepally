@@ -1,0 +1,42 @@
+/* Event detail's attendance card. Semantic tokens only. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--card-padding);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+
+.title {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.count,
+.countButton {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.count {
+  color: var(--text-1);
+}
+
+/* Anchor as a button keeps the theme's link colour; left-aligned like text. */
+.countButton {
+  padding: 0;
+  text-align: left;
+}
+
+.blocked {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+}
