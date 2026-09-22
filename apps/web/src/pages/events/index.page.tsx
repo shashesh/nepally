@@ -1,332 +1,140 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Skeleton, Text } from '@mantine/core';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Button } from '@mantine/core';
+import { IconCalendar, IconPlus } from '@tabler/icons-react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { EVENT_TYPE_LABELS, TrustLevel, type Event, type EventType } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
-import { supabase } from '../../lib/supabase';
-import {
-  getEventsByMetro,
-  getUserEventResponses,
-  setEventResponse,
-  removeEventResponse,
-  EVENT_TYPE_LABELS,
-  TrustLevel,
-  type Event,
-  type EventType,
-  type RsvpStatus,
-  type UserEventResponses,
-} from '@nepally/shared';
+import { useEventFeed } from '../../hooks/useEventFeed';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import EventCard from '../../components/events/EventCard';
 import { EventFilterBar, type EventFilterBarValue } from '../../components/events/EventFilterBar';
+import { EmptyState, ErrorState, LoadingState, PageHeader } from '../../components/ui';
 import styles from './events.module.css';
 
 const DEFAULT_FILTERS: EventFilterBarValue = { type: 'all', query: '' };
-const EVENTS_PAGE_SIZE = 20;
+
+function matchesFilters(event: Event, filters: EventFilterBarValue): boolean {
+  const query = filters.query.toLowerCase().trim();
+  const matchesType = filters.type === 'all' || event.event_type === filters.type;
+  const matchesQuery =
+    !query ||
+    event.title.toLowerCase().includes(query) ||
+    event.location_name.toLowerCase().includes(query);
+  return matchesType && matchesQuery;
+}
+
+function getEmptyTitle(filters: EventFilterBarValue): string {
+  if (filters.query) return `No events matching "${filters.query}"`;
+  if (filters.type !== 'all') return `No ${EVENT_TYPE_LABELS[filters.type as EventType]} events`;
+  return 'No upcoming events';
+}
 
 export default function EventsPage() {
   const router = useRouter();
   const { user } = useAuth();
-
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<EventFilterBarValue>(DEFAULT_FILTERS);
   const [level0BannerVisible, setLevel0BannerVisible] = useState(true);
-  const [userResponses, setUserResponses] = useState<UserEventResponses>({});
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  // Bumped by the Retry button to re-run the first-page fetch effect.
-  const [reloadKey, setReloadKey] = useState(0);
-  const loadingMoreRef = useRef(false);
-  const loadSentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const userId = user?.id;
-  const metroId = user?.metro_area_id ?? '';
-  // Without a metro there is nothing to fetch, so the page is never "loading".
-  const isLoading = metroId !== '' && loading;
-  const trustLevel = user?.trust_level ?? 0;
-  const isLevel0 = trustLevel < TrustLevel.VERIFIED;
-  const canCreate = !isLevel0;
-  const canInteract = !isLevel0;
+  const userId = user?.id ?? null;
+  const metroId = user?.metro_area_id || null;
+  const isLevel0 = (user?.trust_level ?? 0) < TrustLevel.VERIFIED;
+
+  const feed = useEventFeed(metroId, userId);
+  const { hasMore, loading, loadingMore, loadMore } = feed;
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    loading: loading || loadingMore,
+    onLoadMore: loadMore,
+  });
 
   useEffect(() => {
-    if (!user) {
-      router.replace('/login');
-    }
+    if (!user) router.replace('/login');
   }, [user, router]);
 
-  useEffect(() => {
-    if (!metroId) return;
-    let cancelled = false;
-    (async () => {
-      const [eventsRes, responsesRes] = await Promise.all([
-        getEventsByMetro(supabase, metroId, EVENTS_PAGE_SIZE, 0),
-        userId ? getUserEventResponses(supabase, userId) : Promise.resolve({ data: {} as UserEventResponses, error: undefined }),
-      ]);
-      if (cancelled) return;
-      if (eventsRes.error) {
-        setError(eventsRes.error.message);
-        setHasMore(false);
-      } else {
-        setError(null);
-        setEvents(eventsRes.data ?? []);
-        setHasMore(Boolean(eventsRes.hasMore));
-      }
-      if (!responsesRes.error && responsesRes.data) {
-        setUserResponses(responsesRes.data);
-      }
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [metroId, userId, reloadKey]);
-
-  const handleRetry = () => {
-    setLoading(true);
-    setError(null);
-    setReloadKey((key) => key + 1);
-  };
-
-  const loadMoreEvents = useCallback(async () => {
-    if (loadingMoreRef.current) return;
-    if (!metroId || !hasMore || isLoading) return;
-
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    try {
-      const result = await getEventsByMetro(
-        supabase,
-        metroId,
-        EVENTS_PAGE_SIZE,
-        events.length
-      );
-      if (result.data) {
-        setEvents((prev) => {
-          const seen = new Set(prev.map((e) => e.id));
-          const next = [...prev];
-          for (const e of result.data!) {
-            if (!seen.has(e.id)) next.push(e);
-          }
-          return next;
-        });
-        setHasMore(Boolean(result.hasMore));
-      } else {
-        setHasMore(false);
-      }
-    } finally {
-      loadingMoreRef.current = false;
-      setLoadingMore(false);
-    }
-  }, [metroId, hasMore, isLoading, events.length]);
-
-  useEffect(() => {
-    const node = loadSentinelRef.current;
-    if (!node) return;
-    if (!hasMore || isLoading) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          loadMoreEvents();
-        }
-      },
-      { rootMargin: '400px 0px' }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [hasMore, isLoading, loadMoreEvents]);
-
-  const handleResponseChange = useCallback(
-    async (eventId: string, status: RsvpStatus | null) => {
-      if (!userId) return;
-
-      // Capture previous atomically inside the updater — removes userResponses from deps
-      // so this callback is stable and doesn't cause all EventCards to re-render on each RSVP.
-      let previous: RsvpStatus | null = null;
-      setUserResponses((prev) => {
-        previous = prev[eventId] ?? null;
-        const next = { ...prev };
-        if (status === null) {
-          delete next[eventId];
-        } else {
-          next[eventId] = status;
-        }
-        return next;
-      });
-
-      setEvents((prev) =>
-        prev.map((e) => {
-          if (e.id !== eventId) return e;
-          let { rsvp_count, interested_count } = e;
-          if (previous === 'going') rsvp_count = Math.max(0, rsvp_count - 1);
-          if (previous === 'interested') interested_count = Math.max(0, interested_count - 1);
-          if (status === 'going') rsvp_count += 1;
-          if (status === 'interested') interested_count += 1;
-          return { ...e, rsvp_count, interested_count };
-        })
-      );
-
-      // Persist to DB
-      const result = status === null
-        ? await removeEventResponse(supabase, eventId, userId)
-        : await setEventResponse(supabase, eventId, userId, status);
-
-      if (result.error) {
-        // Roll back on failure
-        setUserResponses((prev) => {
-          const next = { ...prev };
-          if (previous === null) {
-            delete next[eventId];
-          } else {
-            next[eventId] = previous;
-          }
-          return next;
-        });
-        setEvents((prev) =>
-          prev.map((e) => {
-            if (e.id !== eventId) return e;
-            let { rsvp_count, interested_count } = e;
-            if (status === 'going') rsvp_count = Math.max(0, rsvp_count - 1);
-            if (status === 'interested') interested_count = Math.max(0, interested_count - 1);
-            if (previous === 'going') rsvp_count += 1;
-            if (previous === 'interested') interested_count += 1;
-            return { ...e, rsvp_count, interested_count };
-          })
-        );
-      }
-    },
-    [userId]
-  );
-
-  const { upcoming, past } = useMemo(() => {
-    const now = new Date();
-    const q = filters.query.toLowerCase().trim();
-
-    const filtered = events.filter((e) => {
-      const matchesType = filters.type === 'all' || e.event_type === filters.type;
-      const matchesQuery =
-        !q ||
-        e.title.toLowerCase().includes(q) ||
-        e.location_name.toLowerCase().includes(q);
-      return matchesType && matchesQuery;
-    });
-
-    const upcoming: Event[] = [];
-    const past: Event[] = [];
-    for (const e of filtered) {
-      const endOrStart = e.end_date ? new Date(e.end_date) : new Date(e.start_date);
-      if (endOrStart >= now) upcoming.push(e);
-      else past.push(e);
-    }
-    return { upcoming, past };
-  }, [events, filters]);
-
-  const getEmptyTitle = () => {
-    if (filters.query) return `No events matching "${filters.query}"`;
-    if (filters.type !== 'all') return `No ${EVENT_TYPE_LABELS[filters.type as EventType]} events`;
-    return 'No upcoming events';
-  };
+  // The filters run over the pages loaded so far; the sentinel stays mounted
+  // while they show nothing, so paging continues until a match loads (decision 3).
+  const upcoming = useMemo(() => feed.upcoming.filter((e) => matchesFilters(e, filters)), [feed.upcoming, filters]);
+  const past = useMemo(() => feed.past.filter((e) => matchesFilters(e, filters)), [feed.past, filters]);
+  const isEmpty = upcoming.length === 0 && past.length === 0;
 
   if (!user) return null;
+
+  const renderSection = (id: string, title: string, events: Event[], isPast: boolean) => (
+    <section aria-labelledby={id} className={styles.section}>
+      <h2 id={id} className={styles.sectionTitle}>
+        {title}
+      </h2>
+      <ul className={styles.grid}>
+        {events.map((event) => (
+          <li key={event.id}>
+            <EventCard
+              event={event}
+              past={isPast}
+              response={feed.responses[event.id] ?? null}
+              canRespond={!isLevel0}
+              busy={feed.pending.has(event.id)}
+              onRespond={feed.respond}
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 
   return (
     <>
       <Head>
         <title>Events - Nepally</title>
       </Head>
-      <div className={styles.page}>
-        <div className={styles.container}>
-          {/* Header */}
-          <div className={styles.header}>
-            <h1 className={styles.title}>📅 Events</h1>
-            {canCreate && (
-              <Button component={Link} href="/events/create">
-                + Create Event
+      <div className={styles.container}>
+        <PageHeader
+          title="Events"
+          actions={
+            isLevel0 ? undefined : (
+              <Button component={Link} href="/events/create" leftSection={<IconPlus size={16} aria-hidden="true" />}>
+                Create event
               </Button>
+            )
+          }
+        />
+
+        {isLevel0 && level0BannerVisible && (
+          <Alert
+            className={styles.level0Banner}
+            withCloseButton
+            closeButtonLabel="Dismiss banner"
+            onClose={() => setLevel0BannerVisible(false)}
+          >
+            Verify your account to respond to events and create them.
+          </Alert>
+        )}
+
+        <EventFilterBar value={filters} onChange={setFilters} />
+
+        {loading ? (
+          <LoadingState variant="card" count={6} label="Loading events…" />
+        ) : feed.error ? (
+          <ErrorState title="Couldn't load events" message={feed.error} onRetry={feed.reload} />
+        ) : (
+          <>
+            {upcoming.length > 0 && renderSection('events-upcoming', 'Upcoming', upcoming, false)}
+            {past.length > 0 && renderSection('events-past', 'Past events', past, true)}
+            {isEmpty && !hasMore && !loadingMore && !feed.loadMoreError && (
+              <EmptyState icon={<IconCalendar size={40} />} title={getEmptyTitle(filters)} description="Check back soon!" />
             )}
-          </div>
-
-          {/* Level 0 banner */}
-          {isLevel0 && level0BannerVisible && (
-            <div className={styles.level0Banner}>
-              <span>Verify your account to RSVP and create events.</span>
-              <button
-                type="button"
-                className={styles.level0BannerClose}
-                onClick={() => setLevel0BannerVisible(false)}
-                aria-label="Dismiss banner"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
-          <EventFilterBar value={filters} onChange={setFilters} />
-
-          {/* Feed */}
-          <div className={styles.feed}>
-            {isLoading ? (
-              <>
-                <Skeleton height={280} radius="md" />
-                <Skeleton height={280} radius="md" />
-                <Skeleton height={280} radius="md" />
-                <Skeleton height={280} radius="md" />
-                <Skeleton height={280} radius="md" />
-                <Skeleton height={280} radius="md" />
-              </>
-            ) : error ? (
-              <div className={`${styles.emptyStateWrapper} ${styles.errorContainer}`}>
-                <Text c="red" size="sm">{error}</Text>
-                <Button mt="sm" onClick={handleRetry}>
-                  Retry
-                </Button>
-              </div>
-            ) : upcoming.length === 0 && past.length === 0 ? (
-              <div className={`${styles.emptyStateWrapper} ${styles.emptyState}`}>
-                <span className={styles.emptyIcon}>📅</span>
-                <h2 className={styles.emptyTitle}>{getEmptyTitle()}</h2>
-                <p className={styles.emptySubtitle}>Check back soon!</p>
-              </div>
-            ) : (
-              <>
-                {upcoming.map((e) => (
-                  <EventCard
-                    key={e.id}
-                    event={e}
-                    response={userResponses[e.id] ?? null}
-                    canRespond={canInteract}
-                    onRespond={handleResponseChange}
-                  />
-                ))}
-                {past.length > 0 && (
-                  <>
-                    <div className={styles.divider}>Past Events</div>
-                    {past.map((e) => (
-                      <EventCard
-                        key={e.id}
-                        event={e}
-                        past
-                        response={userResponses[e.id] ?? null}
-                        canRespond={canInteract}
-                        onRespond={handleResponseChange}
-                      />
-                    ))}
-                  </>
-                )}
-                {hasMore && (
-                  <div ref={loadSentinelRef} className={styles.loadSentinel} aria-hidden="true" />
-                )}
-                {loadingMore && (
-                  <div className={styles.footerLoader} data-testid="events-loading-more">
-                    <Skeleton height={120} radius="md" />
-                  </div>
-                )}
-              </>
+            {hasMore && <div ref={sentinelRef} className={styles.loadSentinel} aria-hidden="true" />}
+            {loadingMore && <LoadingState variant="card" count={1} label="Loading more events…" />}
+            {feed.loadMoreError && (
+              <ErrorState
+                title="Couldn't load more events"
+                message={feed.loadMoreError}
+                onRetry={feed.retryLoadMore}
+              />
             )}
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </>
   );

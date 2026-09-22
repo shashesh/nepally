@@ -377,14 +377,17 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
     await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify([]) });
   });
 
-  // Events (upcoming events widget on feed sidebar)
+  // Events (upcoming events widget on feed sidebar, and the events list). The
+  // list's past-events request filters on start_date=lt.<now>; it gets none,
+  // so every mock event stays under "Upcoming".
   await page.route('**/rest/v1/events**', async (route) => {
     const method = route.request().method();
     if (method === 'GET') {
+      const isPastRequest = route.request().url().includes('start_date=lt.');
       await route.fulfill({
         status: 200,
         headers: JSON_HEADERS,
-        body: JSON.stringify(MOCK_UPCOMING_EVENTS),
+        body: JSON.stringify(isPastRequest ? [] : MOCK_UPCOMING_EVENTS),
       });
     } else {
       await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify({}) });

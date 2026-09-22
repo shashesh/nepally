@@ -112,6 +112,13 @@ async function mockEventsEndpoints(
 ) {
   const events = options.events ?? MOCK_EVENTS;
   const eventDetail = options.eventDetail ?? MOCK_EVENTS[0];
+  // The list asks for each period separately; the past request filters on
+  // start_date=lt.<now>, so answer it with the past events and the rest with
+  // everything still upcoming.
+  const isPast = (event: (typeof MOCK_EVENTS)[0]) =>
+    new Date(event.end_date ?? event.start_date).getTime() < Date.now();
+  const pastEvents = events.filter(isPast);
+  const upcomingEvents = events.filter((event) => !isPast(event));
   const attendees = options.attendees ?? [];
 
   // Clear any previously registered handlers for these patterns so a second
@@ -129,10 +136,11 @@ async function mockEventsEndpoints(
     const method = route.request().method();
 
     if (method === 'GET') {
+      const list = route.request().url().includes('start_date=lt.') ? pastEvents : upcomingEvents;
       await route.fulfill({
         status: 200,
         headers: JSON_HEADERS,
-        body: JSON.stringify(isSingle ? eventDetail : events),
+        body: JSON.stringify(isSingle ? eventDetail : list),
       });
     } else if (method === 'POST') {
       const created = { ...eventDetail, id: 'event-e2e-new-001' };
@@ -202,7 +210,7 @@ test.describe('Events list page', () => {
 
   test('shows Create Event link for Level 1 user', async ({ page }) => {
     await page.goto('/events');
-    await expect(page.getByRole('link', { name: /\+ Create Event/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('link', { name: /create event/i })).toBeVisible({ timeout: 10_000 });
   });
 
   test('shows filter chips for all event types', async ({ page }) => {
@@ -237,7 +245,7 @@ test.describe('Events list page', () => {
 
   test('Past Events section appears for past events', async ({ page }) => {
     await page.goto('/events');
-    await expect(page.getByText('Past Events')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /past events/i })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('Past Cultural Festival')).toBeVisible();
   });
 

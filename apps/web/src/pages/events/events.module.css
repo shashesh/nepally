@@ -1,120 +1,55 @@
-.page {
-  min-height: 100vh;
-  background: #F5F5F5;
-}
+/*
+ * Events list. Semantic tokens only (scripts/guard-css-tokens.js); the page
+ * sits on the shell's --surface-0 and inside its padding. The empty, error
+ * and loading states, the page heading and the banner's close button come
+ * from the ui components, so only the layout lives here.
+ */
 
 .container {
-  max-width: 1120px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 24px 24px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.title {
-  font-size: 26px;
-  font-weight: 700;
-  color: #212121;
-  margin: 0;
-}
-
-.feed {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-@media (max-width: 860px) {
-  .feed {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 520px) {
-  .feed {
-    grid-template-columns: 1fr;
-  }
-}
-
-.divider {
-  grid-column: 1 / -1;
-  padding: 8px 0 4px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #9E9E9E;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-
-.emptyStateWrapper {
-  grid-column: 1 / -1;
-}
-
-.emptyState {
-  text-align: center;
-  padding: 64px 24px;
-  background: #fff;
-  border-radius: 12px;
-}
-
-.emptyIcon {
-  font-size: 48px;
-  display: block;
-  margin-bottom: 16px;
-}
-
-.emptyTitle {
-  font-size: 20px;
-  font-weight: 700;
-  color: #212121;
-  margin: 0 0 8px;
-}
-
-.emptySubtitle {
-  font-size: 15px;
-  color: #757575;
-  margin: 0;
-}
-
-.errorContainer {
-  text-align: center;
-  padding: 48px 24px;
 }
 
 .level0Banner {
-  background: #FFF3E0;
-  color: #E65100;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  margin-bottom: var(--space-4);
+  background: var(--accent-tint);
+  color: var(--text-1);
 }
 
-.level0BannerClose {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #E65100;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 2px 6px;
-  line-height: 1;
+.section + .section {
+  margin-top: var(--space-6);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--space-3);
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Three columns, then two below 54em (860px), then one below 32.5em (520px). */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 54em) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 32.5em) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .loadSentinel {
   width: 100%;
   height: 1px;
-}
-
-.footerLoader {
-  padding: 16px 0;
 }
