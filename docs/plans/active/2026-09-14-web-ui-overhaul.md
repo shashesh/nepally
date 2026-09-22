@@ -12607,10 +12607,16 @@ This moves profile 49–56 and 91–148 out of the page, with two small fixes:
 ```ts
 export interface AccountDetailsProps {
   user: Pick<User, 'bio' | 'email' | 'phone' | 'zip_code' | 'created_at' | 'posts_count' | 'helpful_votes_received'>;
+  /** Opens the bio editor (useProfileEditing().editBio). */
+  onEditBio?: () => void;
+  /** useProfileEditing().saving: the button stays focusable but inert. */
+  editBioBusy?: boolean;
 }
 ```
 
-This replaces profile 720–771. It renders the Bio, Account Info and Activity sections, each an `h2` over a `<dl>`, with today's text: "Not set", the long "Member Since" date, and "No bio set. Tap the menu → Edit Bio to add one."
+This replaces profile 720–771. It renders the Bio, Account Info and Activity sections, each under an `h2`. Account Info and Activity are `<dl>`s, and the bio is a paragraph that keeps its line breaks. It keeps today's "Not set" and the long "Member Since" date.
+
+*(Changed in review.)* The empty bio no longer reads "No bio set. Tap the menu → Edit Bio to add one.": that is touch wording, screen readers read the arrow aloud, and the menu is an unlabelled ⋯ icon. It now reads "No bio yet." with an "Add a bio" button when `onEditBio` is given, and an existing bio gets an "Edit bio" button.
 
 - [ ] **Step 1: Write the failing test.** The three headings. "Not set" for a missing phone and ZIP code. The formatted member-since date. The bio, and its fallback text when there is none.
 - [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/profile/AccountDetails.test.tsx`
@@ -12630,7 +12636,7 @@ This replaces profile 720–771. It renders the Bio, Account Info and Activity s
 | list state and load effect (49–56, 91–148) | `useOwnProfileContent(user?.id ?? null)` (Task 6.14) |
 | `handleUnsave` (385–393) | `const { error } = await unsave(postId)`, then `notify.error('Failed to unsave post.')` or `notify.success('Post unsaved.')`. The hook restores the post if the delete fails |
 | `renderPostList` / `renderSavedPostList` / `renderListingsList` (395–537) | `LoadingState`, `ErrorState` with `onRetry={list.reload}`, or `EmptyState` with today's sentences ("Start a post" and "Post a listing" as actions). Otherwise `PostSummaryRow`s, saved ones with `menu={<ActionMenu label="Post options" items={[{ key: 'unsave', label: 'Unsave Post', … }]} />}`, and `ListingSummaryRow owner={{ now }}` |
-| About's read-only sections (720–771) | `AccountDetails` |
+| About's read-only sections (720–771) | `AccountDetails` with `onEditBio={editBio}` and `editBioBusy={saving}` |
 | `notifications.show` in sign-out, About You save and unsave | `notify` |
 
 Deleted along the way: `menuOpen`, `unsaveMenuId` and its `mousedown` listener (150–157), `fileInputRef`, `photoStatus`, and `getErrorMessage`, which `lib/profilePhoto.ts` now owns. The "Settings & more" nav from PR 2 stays as it is.
@@ -12798,6 +12804,8 @@ The a11y diff must **delete** the four `profile` and `public-profile` entries an
   - [ ] Mobile should adopt the shared `setProfilePhoto` and `PROFILE_PHOTO_SIZE_PX` (`EditProfileScreen.tsx` 129–147 duplicates both) (found in PR 6's Task 6.11 review).
   - [ ] Two more copies of the megabyte formula should use the shared `formatMegabytes`: mobile `CreatePostScreen.tsx` ~804 and shared `validation/post.ts` ~53 (found in PR 6's Task 6.12 review).
   - [ ] Mobile's `EditProfileScreen` (min-2 check ~240) and web signup's `validateFullName` should adopt the shared `fullNameSchema`. `users.full_name` also has no length limit in the database: add a `CHECK (char_length(full_name) <= 100)` in a new additive migration, which needs the user's go-ahead to apply (found in PR 6's Task 6.13 review).
+  - [ ] Extract `components/ui/DetailList` (`DetailList` + `DetailRow`) from the identical `dl > div > dt + dd` markup in the public profile's `AboutPanel` and `AccountDetails`. Add `white-space: pre-line` to `PublicProfile.module.css` `.aboutBio`, so visitors see a bio's line breaks as the member does (found in PR 6's Task 6.15 review).
+  - [ ] Phone: web has no way to set or clear `users.phone`, so the own profile's Phone row always leads nowhere on web. Either show the row only when it is set, or add phone to web profile editing. Separately, mobile `EditProfileScreen.tsx:277` saves `phone: phone.trim() || undefined`, which the client drops, so a member can never clear their phone. This is the same class of bug Task 6.2 fixed for photos: write `null` (found in PR 6's Task 6.15 review).
   - [ ] Mantine's global CSS loads after the app's own theme modules. `_app.page.tsx` imports `Layout` and `mantine-theme` (which pulls in `mantine-components.module.css`) before `@mantine/core/styles.css`, so Mantine wins any equal-specificity tie. For example, the theme's Badge `text-transform: none` is ignored and TrustBadge/ScopeBadge render uppercase. Move the `@mantine/*` style imports to the top of `_app.page.tsx`, as Mantine's docs require. This changes screenshots on most pages, so do it in its own PR or in PR 10's baseline run (found in PR 6's Task 6.10 review).
   - [ ] Search's result `Tabs` (`search.page.tsx:125`) wrap on phones like the public profile's did. Give them the same `tabList`/`tab` treatment the public profile got: nowrap plus scroll, `flex-shrink: 0`, an inset focus ring, a token underline, and an `onFocus` `scrollIntoView({ inline: 'nearest' })`, because Chromium leaves a partly clipped focused tab clipped. Better still, extract one shared scrolling-tabs wrapper for both pages (found in PR 6's Task 6.10 review).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
