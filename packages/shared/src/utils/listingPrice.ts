@@ -27,5 +27,6 @@ export function formatListingPrice(price: string | number | null | undefined): s
   if (trimmed === '') return null;
   if (!NUMERIC_PRICE.test(trimmed)) return trimmed;
 
-  return formatDollars(Number(trimmed.replace(/[$,\s]/g, '')));
+  const parsed = Number(trimmed.replace(/[$,\s]/g, ''));
+  return Number.isFinite(parsed) ? formatDollars(parsed) : trimmed;
 }

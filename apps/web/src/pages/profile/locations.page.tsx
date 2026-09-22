@@ -76,13 +76,13 @@ export default function ManageLocationsPage() {
   // button once savedLocations (and so `showAdd`) have actually re-rendered.
   useEffect(() => {
     const pending = pendingAddFocusRef.current;
-    if (!pending) return;
+    if (!pending || showAdd) return;
     pendingAddFocusRef.current = null;
     if (!isFocusStranded()) return;
     const fallbackId = pending.newLocationId ?? savedLocations[0]?.id ?? null;
     const target = addButtonRef.current ?? (fallbackId ? renameButtonRefs.current[fallbackId] : null);
     target?.focus();
-  }, [savedLocations]);
+  }, [savedLocations, showAdd]);
 
   // Leaves for /login rather than redirecting during render (the pattern
   // profile.page.tsx uses): a router.replace call during render is a side

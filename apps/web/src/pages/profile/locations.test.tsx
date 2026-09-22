@@ -372,6 +372,49 @@ describe('ManageLocationsPage', () => {
     expect(screen.getByText('＋ Add a Location')).toBeDefined();
   });
 
+  it('returns focus to Add a Location after save when the form was still mounted during the refresh', async () => {
+    let resolveRefresh: (() => void) | undefined;
+    const refreshPromise = new Promise<void>((resolve) => {
+      resolveRefresh = () => resolve();
+    });
+    mockRefreshSavedLocations.mockReturnValue(refreshPromise);
+    locationsMocks.addSavedLocationMock.mockResolvedValue({ data: { id: 'loc-3' } });
+    const { rerender } = render(<ManageLocationsPage />);
+    await act(async () => {});
+    await openAddAndSelectMetro();
+
+    fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Family' } });
+    const saveButton = screen.getByRole('button', { name: 'Save Location' });
+    saveButton.focus();
+
+    const savePromise = act(async () => {
+      fireEvent.click(saveButton);
+    });
+
+    locationsMocks.useLocationMock.mockReturnValue({
+      savedLocations: [
+        ...mockSavedLocations,
+        {
+          id: 'loc-3',
+          label: 'Family',
+          metro_area_id: '41940',
+          is_default: false,
+          metro_area: { name: 'San Jose', state: 'CA' },
+        },
+      ],
+      refreshSavedLocations: mockRefreshSavedLocations,
+    });
+    await act(async () => {
+      rerender(<ManageLocationsPage />);
+    });
+
+    resolveRefresh?.();
+    await savePromise;
+
+    expect(screen.queryByLabelText('Name this location')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Add a Location/ }));
+  });
+
   it('shows error when saving a duplicate label, without calling addSavedLocation', async () => {
     await renderPage();
     await openAddAndSelectMetro();
@@ -402,6 +445,11 @@ describe('ManageLocationsPage', () => {
   });
 
   it('falls back to the new row\'s Rename button when the location cap hides the Add button', async () => {
+    let resolveRefresh: (() => void) | undefined;
+    const refreshPromise = new Promise<void>((resolve) => {
+      resolveRefresh = () => resolve();
+    });
+    mockRefreshSavedLocations.mockReturnValue(refreshPromise);
     const fourLocations = [
       mockSavedLocations[0],
       mockSavedLocations[1],
@@ -430,8 +478,10 @@ describe('ManageLocationsPage', () => {
     await openAddAndSelectMetro();
 
     fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Fifth' } });
-    await act(async () => {
-      fireEvent.click(screen.getByText('Save Location'));
+    const saveButton = screen.getByRole('button', { name: 'Save Location' });
+    saveButton.focus();
+    const savePromise = act(async () => {
+      fireEvent.click(saveButton);
     });
 
     // Simulates the refresh landing at the cap — the Add button no longer renders.
@@ -451,6 +501,8 @@ describe('ManageLocationsPage', () => {
     await act(async () => {
       rerender(<ManageLocationsPage />);
     });
+    resolveRefresh?.();
+    await savePromise;
 
     expect(screen.queryByText('＋ Add a Location')).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Rename Fifth' }));

@@ -65,4 +65,9 @@ describe('formatListingPrice', () => {
   it('returns null for NaN', () => {
     expect(formatListingPrice(NaN)).toBeNull();
   });
+
+  it('shows an overflowing numeric-looking string as typed', () => {
+    const overflowing = '1'.repeat(400);
+    expect(formatListingPrice(overflowing)).toBe(overflowing);
+  });
 });
