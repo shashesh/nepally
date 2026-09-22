@@ -165,18 +165,17 @@ async function expectUpload(
 const RLS_DENIAL_MESSAGE = /row-level security/i;
 
 /**
- * True only for an RLS denial specifically: a 403 (when the error exposes a
- * status at all — see StorageError in @supabase/storage-js) whose message
- * names the row-level security policy. A network failure, a bad content
- * type, or a missing bucket would also leave `upload()`'s `error` truthy, so
- * checking `!!error` alone can't tell an RLS rejection from a misconfigured
- * run.
+ * True only for an RLS denial specifically: an error whose message names the
+ * row-level security policy. A network failure, a bad content type, or a
+ * missing bucket would also leave `upload()`'s `error` truthy, so checking
+ * `!!error` alone can't tell an RLS rejection from a misconfigured run.
+ *
+ * The HTTP status isn't checked: depending on the storage-api version, an RLS
+ * denial arrives as HTTP 403, or as HTTP 400 with `statusCode: "403"` in the
+ * body, so `error.status` can read 400 for a genuine denial.
  */
-function isRlsDenied(error: { message: string; status?: number }): boolean {
-  if (!RLS_DENIAL_MESSAGE.test(error.message)) {
-    return false;
-  }
-  return error.status === undefined || error.status === 403;
+function isRlsDenied(error: { message: string }): boolean {
+  return RLS_DENIAL_MESSAGE.test(error.message);
 }
 
 /**
