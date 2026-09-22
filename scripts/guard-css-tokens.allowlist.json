@@ -3,7 +3,6 @@
   "apps/web/src/components/events/EventFilterBar.module.css",
   "apps/web/src/components/marketplace/FilterBar.module.css",
   "apps/web/src/components/marketplace/ListingStrip.module.css",
-  "apps/web/src/components/profile/AboutYouSection.module.css",
   "apps/web/src/pages/events/eventDetail.module.css",
   "apps/web/src/pages/events/events.module.css",
   "apps/web/src/pages/marketplace/listing/promote.module.css",

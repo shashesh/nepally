@@ -8,7 +8,6 @@ export const RAW_ELEMENT_ALLOWLIST = [
   "src/components/events/EventFilterBar.tsx",
   "src/components/marketplace/FilterBar.tsx",
   "src/components/marketplace/ListingStrip.tsx",
-  "src/components/profile/AboutYouSection.tsx",
   "src/pages/events/index.page.tsx",
   "src/pages/login.page.tsx",
   "src/pages/marketplace/listing/[id].page.tsx",
