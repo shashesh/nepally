@@ -1,5 +1,5 @@
 /*
- * Public Profile — page shell, tabs and the About panel.
+ * Public Profile — page shell, tab content area and the About panel.
  * Semantic tokens only (scripts/guard-css-tokens.js). Spec:
  * docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1.
  *
@@ -30,53 +30,10 @@
 
 /* ── Content area (tabs + panels) ─────────────── */
 
+/* The tab row's one-line scrolling treatment is shared with the own profile:
+   components/ui/scrollingTabs.module.css. */
 .content {
   margin: var(--space-4) var(--space-4) var(--space-7);
-}
-
-/* Keeps all four tabs (three with count badges) on one row down to phone
-   widths instead of Mantine's default wrap; matches the old tab rail's
-   horizontal scroll. Wired via <Tabs classNames={{ list: styles.tabList,
-   tab: styles.tab }}> — both classes merge onto Mantine's own elements.
-   Mantine draws the default-variant underline with a ::before positioned
-   inside this same scrolling element (Tabs.css .m_576c9d4::before), so it
-   scrolls away with the tabs; redraw it as an inset box-shadow on the list
-   itself instead (not part of the scrolled content, so it stays put) and
-   hide the native pseudo. --tabs-list-border-width is 2px for the default
-   variant — every Tabs.Tab reserves a transparent bottom border of that
-   same width, so this line sits flush under inactive tabs and the active
-   tab's own colored border replaces it exactly, with no thickness jump. */
-.tabList {
-  --tab-border-color: var(--border-subtle);
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-  box-shadow: inset 0 calc(-1 * var(--tabs-list-border-width, 2px)) 0 var(--tab-border-color);
-}
-
-.tabList::before {
-  display: none;
-}
-
-.tabList::-webkit-scrollbar {
-  display: none;
-}
-
-/* Without this, nowrap lets each tab (and the count Badge inside it, which
-   clips its own content) shrink below its label's width instead of the row
-   scrolling — the badge's number gets clipped to an empty circle first. */
-.tab {
-  flex-shrink: 0;
-}
-
-/* The global :focus-visible ring (globals.css) is a 2px outline at a 2px
-   offset plus a 6px halo; overflow-x: auto here forces overflow-y: auto too
-   (a scroll container can't leave one axis visible), which clips both at
-   every width. Draw the ring inside the tab, pulled in past the active
-   tab's 2px marigold underline so the ring doesn't cover it. */
-.tab:focus-visible {
-  outline-offset: -4px;
-  box-shadow: none;
 }
 
 /* ── About tab ─────────────────────────────────── */

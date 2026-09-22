@@ -98,8 +98,8 @@ test.describe('Marketplace full feature flow', () => {
   test('profile Listings tab shows user marketplace listings', async ({ page }) => {
     await page.goto('/profile');
 
-    await expect(page.getByRole('button', { name: /^listings$/i })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: /^listings$/i }).click();
+    await expect(page.getByRole('tab', { name: /^listings$/i })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('tab', { name: /^listings$/i }).click();
 
     await expect(page.getByText(MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title)).toBeVisible();
   });

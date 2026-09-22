@@ -5,7 +5,14 @@ import { useRouter } from 'next/router';
 import { Badge, Button, Tabs } from '@mantine/core';
 import { formatPublicName, getFirstName, getOrCreateConversation, TrustLevel } from '@nepally/shared';
 import type { Event, PublicUser } from '@nepally/shared';
-import { EmptyState, LoadingState, TrustBadge, notify } from '../../components/ui';
+import {
+  EmptyState,
+  LoadingState,
+  TrustBadge,
+  notify,
+  scrollFocusedTabIntoView,
+  scrollingTabsClassNames,
+} from '../../components/ui';
 import { PublicProfileHeader } from '../../components/users/PublicProfileHeader';
 import { PostSummaryRow } from '../../components/posts/PostSummaryRow';
 import { EventSummaryRow } from '../../components/events/EventSummaryRow';
@@ -242,7 +249,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
             if (value) setActiveTab(value as ProfileTab);
           }}
           keepMounted={false}
-          classNames={{ list: styles.tabList, tab: styles.tab }}
+          classNames={scrollingTabsClassNames}
         >
           <Tabs.List aria-label="Profile sections">
             {TABS.map(({ value, label }) => {
@@ -258,8 +265,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
                       </Badge>
                     ) : null
                   }
-                  // Chromium's focus scroll skips a tab that is only partly clipped by the scroller.
-                  onFocus={(event) => event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })}
+                  onFocus={scrollFocusedTabIntoView}
                 >
                   {label}
                 </Tabs.Tab>
