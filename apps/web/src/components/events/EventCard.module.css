@@ -134,13 +134,16 @@
 }
 
 /* Decorative, and after the link: Avatar's positioned root would otherwise
-   paint above the overlay and swallow clicks meant for the card. */
+   paint above the overlay and swallow clicks meant for the card.
+   The min-width keeps the name readable in a three-column card: when the
+   response control no longer fits beside it, the control wraps to its own
+   line instead of squeezing the name down to one letter. */
 .organizer {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   align-items: center;
   gap: var(--space-2);
-  min-width: 0;
+  min-width: 7rem;
   pointer-events: none;
 }
 

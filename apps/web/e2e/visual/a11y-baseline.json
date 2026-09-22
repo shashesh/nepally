@@ -1,20 +1,8 @@
 {
-  "visual-desktop:event-detail": [
-    "color-contrast"
-  ],
-  "visual-desktop:events": [
-    "color-contrast"
-  ],
   "visual-desktop:listing-detail": [
     "color-contrast"
   ],
   "visual-desktop:marketplace": [
-    "color-contrast"
-  ],
-  "visual-phone:event-detail": [
-    "color-contrast"
-  ],
-  "visual-phone:events": [
     "color-contrast"
   ],
   "visual-phone:listing-detail": [

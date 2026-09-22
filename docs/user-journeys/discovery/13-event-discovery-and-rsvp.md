@@ -496,7 +496,7 @@ All in `packages/shared/src/api/events.ts`:
 - `getEventById(supabase, eventId)` — single event with organizer join
 - `getEventAttendees(supabase, eventId)` — attendee list with user info
 - `getUserRsvps(supabase, userId)` → `string[]` — pre-hydrate RSVP state on feed load
-- `hasUserRsvp(supabase, eventId, userId)` → `boolean` — for detail screen
+- `getUserEventResponse(supabase, eventId, userId)` → `'going' | 'interested' | null` — for detail screen (replaced `hasUserRsvp`, which reported any response as going, 2026-09-22)
 - `rsvpToEvent(supabase, eventId, userId)` — insert into `event_rsvps`
 - `unrsvpFromEvent(supabase, eventId, userId)` — delete from `event_rsvps`
 

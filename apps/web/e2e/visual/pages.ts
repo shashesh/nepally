@@ -42,7 +42,12 @@ export const VISUAL_PAGES: VisualPage[] = [
     name: 'feed',
     path: '/feed',
     signedIn: true,
-    ready: (page) => expect(page.getByText(MOCK_POSTS[0].title).first()).toBeVisible(READY_TIMEOUT),
+    // The pulse strip loads after the posts, so waiting on the first post
+    // alone screenshots the feed with or without it, depending on timing.
+    ready: async (page) => {
+      await expect(page.getByText(MOCK_POSTS[0].title).first()).toBeVisible(READY_TIMEOUT);
+      await expect(page.getByRole('region', { name: 'Metro pulse' })).toBeVisible(READY_TIMEOUT);
+    },
   },
   {
     name: 'post-detail',
@@ -129,7 +134,6 @@ export const VISUAL_PAGES: VisualPage[] = [
     ready: (page) =>
       expect(page.getByText(formatPublicName(MOCK_USER_PROFILE.full_name)).first()).toBeVisible(READY_TIMEOUT),
   },
-  // The h1 is "📅 Events" (an emoji prefix), so match unanchored.
   { name: 'events', path: '/events', signedIn: true, ready: (page) => heading(page, /events/i) },
   {
     name: 'event-detail',

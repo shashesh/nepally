@@ -88,7 +88,7 @@ Build the shared data layer that all platforms consume.
   - `rsvpToEvent(supabase, eventId, userId)` — inserts into `event_rsvps`
   - `unrsvpFromEvent(supabase, eventId, userId)` — deletes from `event_rsvps`
   - `getUserRsvps(supabase, userId)` — returns all event IDs the user has RSVP'd to
-  - `hasUserRsvp(supabase, eventId, userId)` — returns boolean
+  - `getUserEventResponse(supabase, eventId, userId)` — returns the member's status (`going` | `interested`) or null (replaced `hasUserRsvp`, which reported any response as going, 2026-09-22)
   - All functions follow dependency-injection pattern (supabase client as first param)
   - Unit tests in `packages/shared/src/api/events.test.ts` with Supabase client mocked
   - All functions exported from `packages/shared/src/index.ts`
