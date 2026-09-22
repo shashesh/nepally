@@ -130,29 +130,14 @@ describe('useMetroSearch', () => {
     expect(mocks.logClientEventMock).not.toHaveBeenCalled();
   });
 
-  it('treats a PGRST116-coded ZIP error (PostgREST .single() on 0 rows) as no match', async () => {
-    mocks.isValidZipCodeMock.mockReturnValue(true);
-    const notFound = Object.assign(new Error('JSON object requested, multiple (or no) rows returned'), {
-      code: 'PGRST116',
-    });
-    mocks.getMetroByZipMock.mockResolvedValue({ error: notFound });
-    const { result } = renderHook(() => useMetroSearch('99999', 'user-1'));
-
-    await act(async () => {
-      vi.advanceTimersByTime(250);
-    });
-
-    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
-    expect(mocks.logClientEventMock).not.toHaveBeenCalled();
-  });
-
-  it('treats "Failed to fetch metro area" as no match too', async () => {
-    // What a real PGRST116 "no rows" response collapses into by the time it
-    // reaches here — getMetroByZip doesn't use .throwOnError(), so
-    // supabase-js's default mode never actually throws an Error/PostgrestError
-    // instance; getMetroByZip's own catch wraps the plain error object it
-    // re-throws into this generic message, losing `code`. Verified against a
-    // live PGRST116 response in the pw620 browser harness.
+  it('treats the generic "Failed to fetch metro area" as a real failure, not a match', async () => {
+    // getMetroByZip now uses .maybeSingle(), so a normal "no rows" ZIP no
+    // longer produces this message at all — it comes back as the clean
+    // ZIP_CODE_NOT_FOUND_MESSAGE above instead (a real Error this function
+    // throws itself). This generic message is now only reachable for a
+    // genuine PostgREST-level failure (e.g. permission denied, or the rarer
+    // "multiple rows" case maybeSingle still errors on), so it must show the
+    // failure text and log, not read as "No metros match."
     mocks.isValidZipCodeMock.mockReturnValue(true);
     mocks.getMetroByZipMock.mockResolvedValue({ error: new Error('Failed to fetch metro area') });
     const { result } = renderHook(() => useMetroSearch('99999', 'user-1'));
@@ -161,8 +146,10 @@ describe('useMetroSearch', () => {
       vi.advanceTimersByTime(250);
     });
 
-    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
-    expect(mocks.logClientEventMock).not.toHaveBeenCalled();
+    expect(result.current.statusMessage).toBe(SEARCH_FAILED_MESSAGE);
+    expect(mocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_location_search_failed' })
+    );
   });
 
   it('treats a genuine network/exception failure as a failure, not a match, and logs it', async () => {
