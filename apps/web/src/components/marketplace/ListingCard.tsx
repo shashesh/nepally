@@ -59,7 +59,8 @@ export function ListingCard({ listing, sponsored }: ListingCardProps) {
       </div>
 
       <div className={styles.body}>
-        <span className={styles.categoryChip} data-category={slug}>
+        {/* Coloured by the article's data-category, so the slug lives once. */}
+        <span className={styles.categoryChip}>
           <span aria-hidden="true">{listing.category?.emoji}</span>{' '}
           {listing.category?.name ?? 'Other'}
         </span>

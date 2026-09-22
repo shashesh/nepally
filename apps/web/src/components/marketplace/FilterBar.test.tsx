@@ -198,6 +198,28 @@ describe('FilterBar (web)', () => {
     expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'price_asc', query: 'momo' });
   });
 
+  it('cancels a pending debounce when the field is cleared', () => {
+    const onChange = vi.fn();
+    render(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: DEFAULT_VALUE,
+        onChange,
+      })
+    );
+
+    // Type, leaving a debounce in flight, then clear before it fires.
+    fireEvent.change(screen.getByLabelText('Search listings'), {
+      target: { value: 'momo' },
+    });
+    act(() => { fireEvent.click(screen.getByRole('button', { name: 'Clear search' })); });
+    act(() => { vi.advanceTimersByTime(300); });
+
+    // The abandoned "momo" must never arrive after the clear.
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'newest', query: '' });
+  });
+
   it('exposes the search field as a named searchbox', () => {
     render(
       React.createElement(FilterBar, {

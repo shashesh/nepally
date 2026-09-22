@@ -104,10 +104,12 @@
 }
 
 /* ── Category chip ──
-   Coloured from the `--category-<slug>` pairs through `data-category`, the
-   convention EventTypeBadge established with `data-type`. Only the five
-   categories that survived migration 016 have tokens; ListingCard maps any
-   other slug to `other` before it reaches the DOM. */
+   Coloured from the `--category-<slug>` pairs through the card's
+   `data-category`, the convention EventTypeBadge established with
+   `data-type`. The attribute sits on `.card` alone, so the slug appears once
+   in the markup. Only the five categories that survived migration 016 have
+   tokens; ListingCard maps any other slug to `other` before it reaches
+   the DOM. */
 .categoryChip {
   align-self: flex-start;
   padding: 2px var(--space-2);
@@ -116,27 +118,27 @@
   font-weight: var(--weight-medium);
 }
 
-.categoryChip[data-category='food-restaurants'] {
+.card[data-category='food-restaurants'] .categoryChip {
   color: var(--category-food-restaurants-fg);
   background: var(--category-food-restaurants-bg);
 }
 
-.categoryChip[data-category='immigration-legal'] {
+.card[data-category='immigration-legal'] .categoryChip {
   color: var(--category-immigration-legal-fg);
   background: var(--category-immigration-legal-bg);
 }
 
-.categoryChip[data-category='professional-services'] {
+.card[data-category='professional-services'] .categoryChip {
   color: var(--category-professional-services-fg);
   background: var(--category-professional-services-bg);
 }
 
-.categoryChip[data-category='remittance-finance'] {
+.card[data-category='remittance-finance'] .categoryChip {
   color: var(--category-remittance-finance-fg);
   background: var(--category-remittance-finance-bg);
 }
 
-.categoryChip[data-category='other'] {
+.card[data-category='other'] .categoryChip {
   color: var(--category-other-fg);
   background: var(--category-other-bg);
 }
