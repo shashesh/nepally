@@ -1,26 +1,31 @@
+/* ListingStrip — a horizontally scrolling row of ListingCards, used for the
+   featured, recent and trending sections on the marketplace index. */
+
 .strip {
-  margin-bottom: 28px;
+  margin-bottom: var(--space-7);
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 12px;
-  padding: 0 4px;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: 0 var(--space-1);
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-text-primary, #212121);
   margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-1);
 }
 
 .viewAllLink {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-primary, #1565C0);
+  flex-shrink: 0;
+  color: var(--accent-ink);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   text-decoration: none;
 }
 
@@ -34,13 +39,15 @@
 
 .scroller {
   display: flex;
-  gap: 14px;
+  gap: var(--space-3);
   overflow-x: auto;
+  padding: var(--space-1);
   scroll-snap-type: x mandatory;
-  scroll-padding: 0 4px;
-  padding: 4px;
-  -ms-overflow-style: none;
+  /* Keeps a focused card's ring clear of the scroll edge, the fix PR 7's
+     chunk 2 review asked for on the event filter chips. */
+  scroll-padding-inline: var(--space-3);
   scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .scroller::-webkit-scrollbar {
@@ -53,38 +60,22 @@
   scroll-snap-align: start;
 }
 
+/* The arrows are Mantine ActionIcons, so the theme gives them their border,
+   hover and focus ring; this only places them over the scroller. */
 .arrow {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: white;
-  border: 1px solid var(--color-border, #e0e0e0);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  font-size: 22px;
-  line-height: 1;
-  color: var(--color-text-primary, #212121);
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: background 0.15s;
-}
-
-.arrow:hover {
-  background: #f5f5f5;
+  transform: translateY(-50%);
+  box-shadow: var(--shadow-float);
 }
 
 .arrowLeft {
-  left: -8px;
+  left: calc(var(--space-2) * -1);
 }
 
 .arrowRight {
-  right: -8px;
+  right: calc(var(--space-2) * -1);
 }
 
 .showAllCard {
@@ -92,27 +83,29 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border: 2px dashed var(--color-border, #e0e0e0);
-  border-radius: 14px;
-  text-decoration: none;
-  color: var(--color-primary, #1565C0);
-  background: #fafafa;
-  transition: all 0.2s;
+  gap: var(--space-2);
   min-height: 360px;
+  border: 2px dashed var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-2);
+  color: var(--accent-ink);
+  text-decoration: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
 }
 
 .showAllCard:hover {
-  border-color: var(--color-primary, #1565C0);
-  background: #f5faff;
+  border-color: var(--border-solid);
+  background: var(--accent-tint);
 }
 
 .showAllArrow {
   font-size: 36px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .showAllText {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
 }

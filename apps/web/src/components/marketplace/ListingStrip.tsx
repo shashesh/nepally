@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { ActionIcon } from '@mantine/core';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import type { MarketplaceListing } from '@nepally/shared';
 import { ListingCard } from './ListingCard';
 import styles from './ListingStrip.module.css';
+
+/** One arrow press moves a little more than one card width (260px + gap). */
+const SCROLL_STEP_PX = 320;
 
 interface ListingStripProps {
   title: string;
@@ -60,14 +65,16 @@ export function ListingStrip({
       </div>
       <div className={styles.scrollerWrapper}>
         {canScrollLeft && (
-          <button
-            type="button"
+          <ActionIcon
+            variant="default"
+            radius="xl"
+            size="lg"
             className={`${styles.arrow} ${styles.arrowLeft}`}
-            onClick={() => handleScrollBy(-320)}
+            onClick={() => handleScrollBy(-SCROLL_STEP_PX)}
             aria-label={`Scroll ${title} left`}
           >
-            ‹
-          </button>
+            <IconChevronLeft size={18} aria-hidden="true" />
+          </ActionIcon>
         )}
         <div
           ref={scrollerRef}
@@ -91,14 +98,16 @@ export function ListingStrip({
           )}
         </div>
         {canScrollRight && (
-          <button
-            type="button"
+          <ActionIcon
+            variant="default"
+            radius="xl"
+            size="lg"
             className={`${styles.arrow} ${styles.arrowRight}`}
-            onClick={() => handleScrollBy(320)}
+            onClick={() => handleScrollBy(SCROLL_STEP_PX)}
             aria-label={`Scroll ${title} right`}
           >
-            ›
-          </button>
+            <IconChevronRight size={18} aria-hidden="true" />
+          </ActionIcon>
         )}
       </div>
     </section>
