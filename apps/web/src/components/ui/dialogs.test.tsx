@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { render, screen, fireEvent, waitFor } from '../../test-utils';
+import { render, screen, fireEvent, waitFor, act } from '../../test-utils';
 import { describe, expect, it } from 'vitest';
 import { useConfirm, usePrompt } from './dialogs';
 
-function ConfirmHarness() {
+interface ConfirmHarnessProps {
+  danger?: boolean;
+}
+
+function ConfirmHarness({ danger = true }: ConfirmHarnessProps) {
   const confirm = useConfirm();
   const [result, setResult] = useState('pending');
   return (
@@ -15,7 +19,7 @@ function ConfirmHarness() {
             title: 'Delete post?',
             message: 'This cannot be undone.',
             confirmLabel: 'Delete',
-            danger: true,
+            danger,
           });
           setResult(String(ok));
         }}
@@ -112,5 +116,47 @@ describe('usePrompt', () => {
       'button'
     );
     expect(screen.getByRole('button', { name: 'Save' }).getAttribute('type')).toBe('submit');
+  });
+});
+
+describe('dialog close button', () => {
+  it('names the close button "Close" on a confirm dialog', async () => {
+    render(<ConfirmHarness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open confirm' }));
+    await screen.findByText('This cannot be undone.');
+    expect(screen.getByRole('button', { name: 'Close' })).toBeDefined();
+  });
+
+  it('names the close button "Close" on a prompt dialog', async () => {
+    render(<PromptHarness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open prompt' }));
+    await screen.findByLabelText('Full name');
+    expect(screen.getByRole('button', { name: 'Close' })).toBeDefined();
+  });
+});
+
+describe('dialog initial focus', () => {
+  it('focuses Cancel first on a danger confirm, so Enter cannot confirm by accident', async () => {
+    render(<ConfirmHarness danger />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open confirm' }));
+    await screen.findByText('This cannot be undone.');
+    await act(async () => {});
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }));
+  });
+
+  it('keeps a non-destructive confirm on its current initial focus (the close button)', async () => {
+    render(<ConfirmHarness danger={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open confirm' }));
+    await screen.findByText('This cannot be undone.');
+    await act(async () => {});
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }));
+  });
+
+  it('keeps a prompt focused on its text field', async () => {
+    render(<PromptHarness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open prompt' }));
+    const input = await screen.findByLabelText('Full name');
+    await act(async () => {});
+    expect(document.activeElement).toBe(input);
   });
 });

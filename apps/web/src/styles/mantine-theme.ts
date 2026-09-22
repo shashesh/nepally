@@ -150,7 +150,10 @@ export const nepallyTheme = createTheme({
     Menu: { defaultProps: { shadow: 'md', radius: 'lg' }, classNames: { dropdown: classes.floating } },
     Popover: { defaultProps: { shadow: 'md', radius: 'lg' }, classNames: { dropdown: classes.floating } },
     Combobox: { classNames: { dropdown: classes.floating } },
-    Modal: { defaultProps: { radius: 'xl' }, classNames: { content: classes.modal } },
+    Modal: {
+      defaultProps: { radius: 'xl', closeButtonProps: { 'aria-label': 'Close' } },
+      classNames: { content: classes.modal },
+    },
     Input: { classNames: { input: classes.input } },
     Notification: { defaultProps: { radius: 'lg' } },
   },

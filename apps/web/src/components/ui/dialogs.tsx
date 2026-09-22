@@ -44,6 +44,10 @@ export function useConfirm(): (options: ConfirmOptions) => Promise<boolean> {
           children: <Text size="sm">{options.message}</Text>,
           labels: { confirm: options.confirmLabel ?? 'Confirm', cancel: options.cancelLabel ?? 'Cancel' },
           confirmProps: options.danger ? { color: 'red' } : undefined,
+          // Destructive confirms start focus on Cancel so Enter/Space can't
+          // trigger the default first-tabbable-element (the close button)
+          // and destroy something by accident.
+          cancelProps: options.danger ? { 'data-autofocus': true } : undefined,
           onConfirm: () => settle(true),
           onCancel: () => settle(false),
           onClose: () => settle(false),
