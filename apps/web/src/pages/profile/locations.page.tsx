@@ -155,11 +155,8 @@ export default function ManageLocationsPage() {
   }
 
   async function handleSetDefault(loc: SavedLocation) {
-    // Cleared first, same as handleDelete, before arming it for real: a
-    // stale arm from an earlier, still-settling refresh must never win.
     // That row's "Set as default" button (the one just clicked) disappears
     // once it becomes the default, so focus moves to its Rename button.
-    pendingFocusIdRef.current = null;
     pendingFocusIdRef.current = loc.id;
     const { error } = await setDefaultSavedLocation(supabase, userId, loc.id);
     if (error) {
@@ -241,7 +238,7 @@ export default function ManageLocationsPage() {
         )}
 
         {showAdd && (
-          <AddLocationForm usedLabels={usedLabels} userId={userId} onSave={handleSaveNew} onClose={handleCancelAdd} />
+          <AddLocationForm usedLabels={usedLabels} userId={userId} onSave={handleSaveNew} onCancel={handleCancelAdd} />
         )}
       </div>
     </>

@@ -102,8 +102,13 @@ describe('SavedLocationRow', () => {
   });
 
   it('gives each row\'s "Set as default" a distinct accessible name', () => {
+    // jsdom's accessible-name computation doesn't add a word-boundary space
+    // for VisuallyHidden's out-of-flow text the way a real browser does (see
+    // the pw620 browser check for the exact "Set as default for Work" a
+    // screen reader hears in Chromium) — match loosely here, since the point
+    // of this test is that the label makes each row's name unique.
     renderRow();
-    expect(screen.getByRole('button', { name: 'Set as default: Work' })).toBeDefined();
+    expect(screen.getByRole('button', { name: /^Set as default.*Work$/ })).toBeDefined();
   });
 
   it('enters edit mode on Rename click, focusing the field', () => {
@@ -196,17 +201,32 @@ describe('SavedLocationRow', () => {
   it('does not steal focus on blur toward another control when nothing changed', async () => {
     renderRow();
     fireEvent.click(screen.getByRole('button', { name: 'Rename Work' }));
-    const input = screen.getByLabelText('Rename location Work');
     const removeButton = screen.getByRole('button', { name: 'Remove Work' });
 
-    await act(async () => {
-      fireEvent.blur(input, { relatedTarget: removeButton });
-      removeButton.focus();
-    });
+    // A real focus move: jsdom fires the input's blur with relatedTarget set
+    // to removeButton as part of this, which is what handleBlur reads.
+    //
+    // document.activeElement alone can't tell a fixed closeRename from a
+    // broken one here: jsdom's own .focus() finishes setting removeButton
+    // active *after* dispatching blur, so even a closeRename that
+    // unconditionally calls the Rename button's .focus() during that blur
+    // still leaves activeElement on removeButton once this call returns —
+    // verified by temporarily reverting the `if (refocus)` guard, which left
+    // this assertion alone still green. The spy below is the real assertion:
+    // it catches the extra, wrongly-issued .focus() call itself, regardless
+    // of who a jsdom re-entrancy quirk lets win afterward.
+    const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
+    try {
+      await act(async () => {
+        removeButton.focus();
+      });
 
-    expect(onRename).not.toHaveBeenCalled();
-    // The old behaviour always refocused Rename on close; the fix must not.
-    expect(document.activeElement).not.toBe(screen.getByRole('button', { name: 'Rename Work' }));
+      expect(onRename).not.toHaveBeenCalled();
+      expect(focusSpy).toHaveBeenCalledTimes(1); // only this test's own call
+      expect(document.activeElement).toBe(removeButton);
+    } finally {
+      focusSpy.mockRestore();
+    }
   });
 
   it('does not steal focus back once the member has moved on while a save is in flight', async () => {

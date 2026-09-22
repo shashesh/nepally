@@ -19,11 +19,11 @@ export interface AddLocationFormProps {
    */
   onSave: (metro: MetroArea, label: string) => Promise<{ error?: Error | null }>;
   /** Cancel only. A successful save closes via the page re-rendering without this location's form. */
-  onClose: () => void;
+  onCancel: () => void;
 }
 
 /** The "Add a Location" card: metro/ZIP search, then naming the new location. */
-export function AddLocationForm({ usedLabels, userId, onSave, onClose }: AddLocationFormProps) {
+export function AddLocationForm({ usedLabels, userId, onSave, onCancel }: AddLocationFormProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMetro, setSelectedMetro] = useState<MetroArea | null>(null);
   const [newLabel, setNewLabel] = useState('');
@@ -64,7 +64,7 @@ export function AddLocationForm({ usedLabels, userId, onSave, onClose }: AddLoca
       return;
     }
 
-    // No onClose() here: the page's onSave already awaited its own refresh
+    // No onCancel() here: the page's onSave already awaited its own refresh
     // and will unmount this form on its next render (see the prop doc above).
   }
 
@@ -131,7 +131,7 @@ export function AddLocationForm({ usedLabels, userId, onSave, onClose }: AddLoca
             />
           </Stack>
           <div className={styles.actionsRow}>
-            <Button type="button" variant="default" onClick={onClose}>
+            <Button type="button" variant="default" onClick={onCancel}>
               Cancel
             </Button>
             <Button

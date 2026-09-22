@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 import {
   SEARCH_DEBOUNCE_MS,
-  SEARCH_MIN_QUERY_LENGTH,
   getMetroByZip,
   isValidZipCode,
   logClientEvent,
+  normalizeSearchInput,
   searchMetroAreas,
 } from '@nepally/shared';
 import type { MetroArea } from '@nepally/shared';
@@ -13,6 +13,35 @@ import { supabase } from '../lib/supabase';
 
 export const SEARCH_FAILED_MESSAGE = 'Something went wrong searching. Try again.';
 export const NO_MATCH_MESSAGE = 'No metros match.';
+
+// The shapes getMetroByZip returns for "this ZIP isn't in metro_area_zipcodes":
+// - 'ZIP code not found' / 'Metro area not found for ZIP code' are its own
+//   explicit throws for a falsy data/joined-row case.
+// - 'Failed to fetch metro area' is what a *real* PostgREST "no rows" error
+//   collapses into. getMetroByZip doesn't call .throwOnError(), so
+//   supabase-js's default mode never throws — it returns the parsed error
+//   body (a plain object, e.g. `{ code: 'PGRST116', message: '...' }`) as
+//   `error` on the query result. getMetroByZip's own `if (error) throw
+//   error` throws that plain object, and since it's never `instanceof
+//   Error`, its catch block wraps it into this generic message, losing
+//   `code` entirely (verified against a live PGRST116 response — see the
+//   pw620 browser harness). A genuine network/timeout failure throws a real
+//   Error/TypeError before reaching that wrap, so it keeps its own message
+//   and is unaffected by this — only PostgREST-level responses collapse
+//   here, and for this read-only single-row-by-ZIP lookup, "no matching
+//   row" is the only realistic one. Kept `code` checked too, for if
+//   metroArea.ts's wrapping is ever fixed to preserve it.
+const ZIP_NOT_FOUND_MESSAGES = new Set([
+  'ZIP code not found',
+  'Metro area not found for ZIP code',
+  'Failed to fetch metro area',
+]);
+
+function isZipNotFoundError(error: Error): boolean {
+  if (ZIP_NOT_FOUND_MESSAGES.has(error.message)) return true;
+  const code = (error as { code?: unknown }).code;
+  return code === 'PGRST116';
+}
 
 export interface MetroSearchState {
   /** The debounced, normalized query currently being searched (null when too short). */
@@ -39,13 +68,14 @@ const NO_RESULTS: SearchResults = { resultsQuery: null, results: [], statusMessa
 
 /**
  * Debounced metro/ZIP search for Manage Locations' add flow. A response for
- * anything but the latest request is dropped, an unknown ZIP is treated as
- * "no match" rather than a failure (matching onboarding and mobile), and a
- * genuine `searchMetroAreas` failure is logged and surfaced.
+ * anything but the latest request is dropped, a ZIP lookup that comes back
+ * not-found is treated as "no match" rather than a failure (matching
+ * onboarding and mobile), and a genuine failure — of either lookup — is
+ * logged and surfaced.
  */
 export function useMetroSearch(input: string, userId: string | null): MetroSearchState {
   const [debounced] = useDebouncedValue(input, SEARCH_DEBOUNCE_MS);
-  const query = debounced.length >= SEARCH_MIN_QUERY_LENGTH ? debounced : null;
+  const query = normalizeSearchInput(debounced);
 
   const [state, setState] = useState<SearchResults & { request: SearchRequest }>({
     ...NO_RESULTS,
@@ -68,7 +98,8 @@ export function useMetroSearch(input: string, userId: string | null): MetroSearc
 
     void (isZip ? getMetroByZip(supabase, requestQuery) : searchMetroAreas(supabase, requestQuery))
       .then((result) => {
-        if (result.error && !isZip) {
+        const notFound = isZip && result.error ? isZipNotFoundError(result.error) : false;
+        if (result.error && !notFound) {
           logClientEvent({
             event: 'profile_location_search_failed',
             context: { platform: 'web', userId },
@@ -82,10 +113,7 @@ export function useMetroSearch(input: string, userId: string | null): MetroSearc
               request,
               resultsQuery: requestQuery,
               results: [],
-              // An unknown ZIP is a normal "no match", not a failure — it's
-              // what getMetroByZip/searchMetroAreas return for any ZIP not
-              // in metro_area_zipcodes, same as onboarding and mobile treat it.
-              statusMessage: isZip ? NO_MATCH_MESSAGE : SEARCH_FAILED_MESSAGE,
+              statusMessage: notFound ? NO_MATCH_MESSAGE : SEARCH_FAILED_MESSAGE,
             };
           }
           const data = result.data ? (Array.isArray(result.data) ? result.data : [result.data]) : [];
@@ -98,10 +126,18 @@ export function useMetroSearch(input: string, userId: string | null): MetroSearc
         });
       })
       .catch((error: unknown) => {
-        logClientEvent({ event: 'profile_location_search_failed', context: { platform: 'web', userId }, error });
+        const notFound = isZip && error instanceof Error && isZipNotFoundError(error);
+        if (!notFound) {
+          logClientEvent({ event: 'profile_location_search_failed', context: { platform: 'web', userId }, error });
+        }
         setState((previous) =>
           previous.request === request
-            ? { request, resultsQuery: requestQuery, results: [], statusMessage: SEARCH_FAILED_MESSAGE }
+            ? {
+                request,
+                resultsQuery: requestQuery,
+                results: [],
+                statusMessage: notFound ? NO_MATCH_MESSAGE : SEARCH_FAILED_MESSAGE,
+              }
             : previous
         );
       });

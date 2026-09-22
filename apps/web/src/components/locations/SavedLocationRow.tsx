@@ -193,7 +193,7 @@ export function SavedLocationRow({
       {!location.is_default && (
         <Button variant="subtle" size="compact-sm" className={styles.setDefault} onClick={onSetDefault}>
           Set as default
-          <VisuallyHidden>: {location.label}</VisuallyHidden>
+          <VisuallyHidden> for {location.label}</VisuallyHidden>
         </Button>
       )}
     </div>

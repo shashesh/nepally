@@ -85,7 +85,25 @@ describe('useMetroSearch', () => {
     expect(result.current.results).toEqual([{ id: '19100', name: 'Dallas', state: 'TX' }]);
   });
 
-  it('treats an unknown ZIP as no match, not a failure', async () => {
+  it('normalizes the input before checking ZIP format (leading/trailing whitespace)', async () => {
+    // isValidZipCode only recognizes a clean 5-digit string; without
+    // normalizing first, ' 75001 ' would fail that check and be routed to
+    // searchMetroAreas instead of getMetroByZip.
+    mocks.isValidZipCodeMock.mockImplementation((value: string) => value === '75001');
+    mocks.getMetroByZipMock.mockResolvedValue({ data: { id: '19100', name: 'Dallas', state: 'TX' } });
+    const { result } = renderHook(() => useMetroSearch(' 75001 ', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(result.current.query).toBe('75001');
+    expect(mocks.isValidZipCodeMock).toHaveBeenCalledWith('75001');
+    expect(mocks.getMetroByZipMock).toHaveBeenCalledWith({}, '75001');
+    expect(mocks.searchMetroAreasMock).not.toHaveBeenCalled();
+  });
+
+  it('treats "ZIP code not found" as no match, not a failure', async () => {
     mocks.isValidZipCodeMock.mockReturnValue(true);
     mocks.getMetroByZipMock.mockResolvedValue({ error: new Error('ZIP code not found') });
     const { result } = renderHook(() => useMetroSearch('99999', 'user-1'));
@@ -97,6 +115,72 @@ describe('useMetroSearch', () => {
     expect(result.current.results).toEqual([]);
     expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
     expect(mocks.logClientEventMock).not.toHaveBeenCalled();
+  });
+
+  it('treats "Metro area not found for ZIP code" as no match, not a failure', async () => {
+    mocks.isValidZipCodeMock.mockReturnValue(true);
+    mocks.getMetroByZipMock.mockResolvedValue({ error: new Error('Metro area not found for ZIP code') });
+    const { result } = renderHook(() => useMetroSearch('99999', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
+    expect(mocks.logClientEventMock).not.toHaveBeenCalled();
+  });
+
+  it('treats a PGRST116-coded ZIP error (PostgREST .single() on 0 rows) as no match', async () => {
+    mocks.isValidZipCodeMock.mockReturnValue(true);
+    const notFound = Object.assign(new Error('JSON object requested, multiple (or no) rows returned'), {
+      code: 'PGRST116',
+    });
+    mocks.getMetroByZipMock.mockResolvedValue({ error: notFound });
+    const { result } = renderHook(() => useMetroSearch('99999', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
+    expect(mocks.logClientEventMock).not.toHaveBeenCalled();
+  });
+
+  it('treats "Failed to fetch metro area" as no match too', async () => {
+    // What a real PGRST116 "no rows" response collapses into by the time it
+    // reaches here — getMetroByZip doesn't use .throwOnError(), so
+    // supabase-js's default mode never actually throws an Error/PostgrestError
+    // instance; getMetroByZip's own catch wraps the plain error object it
+    // re-throws into this generic message, losing `code`. Verified against a
+    // live PGRST116 response in the pw620 browser harness.
+    mocks.isValidZipCodeMock.mockReturnValue(true);
+    mocks.getMetroByZipMock.mockResolvedValue({ error: new Error('Failed to fetch metro area') });
+    const { result } = renderHook(() => useMetroSearch('99999', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
+    expect(mocks.logClientEventMock).not.toHaveBeenCalled();
+  });
+
+  it('treats a genuine network/exception failure as a failure, not a match, and logs it', async () => {
+    // A real fetch-level failure throws an actual Error/TypeError before
+    // getMetroByZip's instanceof check ever runs, so it keeps its own
+    // message instead of collapsing into 'Failed to fetch metro area'.
+    mocks.isValidZipCodeMock.mockReturnValue(true);
+    mocks.getMetroByZipMock.mockResolvedValue({ error: new Error('NetworkError when attempting to fetch resource.') });
+    const { result } = renderHook(() => useMetroSearch('75001', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(result.current.statusMessage).toBe(SEARCH_FAILED_MESSAGE);
+    expect(mocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_location_search_failed' })
+    );
   });
 
   it('shows the failure message and logs a real search failure', async () => {

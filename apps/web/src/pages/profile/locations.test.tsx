@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act, within } from '../../test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const locationsMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
@@ -88,6 +88,13 @@ describe('ManageLocationsPage', () => {
     });
     locationsMocks.isValidZipCodeMock.mockReturnValue(false);
     mockRefreshSavedLocations.mockResolvedValue(undefined);
+  });
+
+  // Belt and suspenders alongside openAddAndSelectMetro's own try/finally: if
+  // a test throws while fake timers are active, they must not leak into
+  // whichever test runs next.
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('redirects to /login when user is not logged in', async () => {
@@ -321,11 +328,14 @@ describe('ManageLocationsPage', () => {
     // The search is debounced (useMetroSearch, SEARCH_DEBOUNCE_MS): fake
     // timers advance past that pause, matching useSearchSuggestions.test.tsx.
     vi.useFakeTimers();
-    fireEvent.change(searchInput, { target: { value: 'San Jo' } });
-    await act(async () => {
-      vi.advanceTimersByTime(250);
-    });
-    vi.useRealTimers();
+    try {
+      fireEvent.change(searchInput, { target: { value: 'San Jo' } });
+      await act(async () => {
+        vi.advanceTimersByTime(250);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
     fireEvent.click(screen.getByRole('button', { name: 'San Jose, CA' }));
     await screen.findByLabelText('Name this location');
   }

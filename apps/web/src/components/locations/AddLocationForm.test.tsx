@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '../../test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   searchMetroAreasMock: vi.fn(),
@@ -26,7 +26,7 @@ import { AddLocationForm } from './AddLocationForm';
 
 describe('AddLocationForm', () => {
   const onSave = vi.fn();
-  const onClose = vi.fn();
+  const onCancel = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -34,18 +34,28 @@ describe('AddLocationForm', () => {
     onSave.mockResolvedValue({});
   });
 
+  // Belt and suspenders alongside every inline vi.useRealTimers() below: if a
+  // test throws between vi.useFakeTimers() and its own restore, fake timers
+  // must not leak into whichever test runs next.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   function renderForm(usedLabels: string[] = ['home']) {
-    return render(<AddLocationForm usedLabels={usedLabels} userId="user-1" onSave={onSave} onClose={onClose} />);
+    return render(<AddLocationForm usedLabels={usedLabels} userId="user-1" onSave={onSave} onCancel={onCancel} />);
   }
 
   /** Types into the search field and advances past the 250ms debounce. */
   async function search(value: string) {
     vi.useFakeTimers();
-    fireEvent.change(screen.getByLabelText('Search by metro name or ZIP code'), { target: { value } });
-    await act(async () => {
-      vi.advanceTimersByTime(250);
-    });
-    vi.useRealTimers();
+    try {
+      fireEvent.change(screen.getByLabelText('Search by metro name or ZIP code'), { target: { value } });
+      await act(async () => {
+        vi.advanceTimersByTime(250);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   }
 
   it('shows the search field', () => {
@@ -93,15 +103,18 @@ describe('AddLocationForm', () => {
     renderForm();
     const input = screen.getByLabelText('Search by metro name or ZIP code');
     vi.useFakeTimers();
-    fireEvent.change(input, { target: { value: 'Bo' } });
-    await act(async () => {
-      vi.advanceTimersByTime(250);
-    });
-    fireEvent.change(input, { target: { value: 'Bos' } });
-    await act(async () => {
-      vi.advanceTimersByTime(250);
-    });
-    vi.useRealTimers();
+    try {
+      fireEvent.change(input, { target: { value: 'Bo' } });
+      await act(async () => {
+        vi.advanceTimersByTime(250);
+      });
+      fireEvent.change(input, { target: { value: 'Bos' } });
+      await act(async () => {
+        vi.advanceTimersByTime(250);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
 
     expect(screen.getByText('Boston, MA')).toBeDefined();
 
@@ -181,7 +194,7 @@ describe('AddLocationForm', () => {
     });
 
     expect(onSave).toHaveBeenCalledWith({ id: '41940', name: 'San Jose', state: 'CA' }, 'Family');
-    expect(onClose).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   it('submits on Enter in the name field', async () => {
@@ -208,14 +221,14 @@ describe('AddLocationForm', () => {
     });
 
     expect(screen.getByText("That name didn't save.")).toBeDefined();
-    expect(onClose).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
-  it('calls onClose without onSave when Cancel is clicked', async () => {
+  it('calls onCancel without onSave when Cancel is clicked', async () => {
     renderForm();
     await selectMetro();
     fireEvent.click(screen.getByText('Cancel'));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onSave).not.toHaveBeenCalled();
   });
 
