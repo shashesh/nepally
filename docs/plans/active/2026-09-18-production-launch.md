@@ -144,7 +144,20 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - The frozen files are safe on a fresh database.
   - Record the rehearsal in the same doc.
 - [ ] **Code:** Run `npm run seed:metro` against prod. The migrations do not seed `metro_areas` or `metro_area_zipcodes`. Check that the six markets exist and their ZIP counts roughly match staging (see [Launch markets](#launch-markets)).
-- [ ] **Code:** Migration `039`:
+- [ ] **Code:** Migration `039_storage_owner_select_policies`: owner-only SELECT policies on `storage.objects`. Without them every photo delete silently does nothing and every avatar upload fails, first-time ones included (see [supabase-setup.md](../../architecture/supabase-setup.md#2-storage-policies)). Apply to staging and run `npm run test:security:storage` there. Then apply to prod after `001`–`038`.
+- [ ] **Code:** One-off orphan reconciliation on staging, after 039. Every file "deleted" since 027 reached staging (tracker version `20260416023723`) is still in its bucket and still public at its URL. With the service role, compare each bucket against the rows that reference it:
+  - `post-photos` against `posts.photos`
+  - `listing-photos` against `marketplace_listings.photos`
+  - `event-photos` against `events.photo_url`
+  - `avatars` against `users.profile_photo`
+
+  An avatar whose removal silently failed will not show up as an orphan. Before the PR that added 039, removing an avatar never cleared `users.profile_photo`, so the old URL still points at the file.
+
+  Review the list, then delete the orphans through the Storage API: `remove()` with the service role. Never use SQL `DELETE` on `storage.objects`. Storage's `protect_objects_delete` trigger raises on it, and a SQL delete that got through would still leave the files in the storage backend.
+- [ ] **Code:** Make the shared storage deletes report partial failure. `deletePostPhotos`, `deleteListingPhotos` and `deleteProfilePhoto` check only `error` and ignore `data`, so a `remove()` that deleted nothing looked like success. Treat `data.length < paths.length` as an error, or at least a logged warning. That check would have caught the 027 regression.
+
+  Callers must also check the returned `{ error }` — today several don't, so a real delete failure is silently swallowed one layer up and the UI reports success while the file stays public at its URL. Known call sites: web `apps/web/src/pages/profile.page.tsx` photo removal (`deleteProfilePhoto`); mobile `apps/mobile/src/screens/profile/EditProfileScreen.tsx` photo removal; `apps/web/src/lib/postSubmit.ts`'s `deletePostPhotos` calls; and the shared `removeProfilePhoto` that the web UI overhaul's PR 6 adds, which deliberately ignores the file-delete error today.
+- [ ] **Code:** Migration `040`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.

@@ -232,6 +232,7 @@ export async function removeProfilePhoto(
   supabase: SupabaseClient,
   userId: string
 ): Promise<{ error?: Error }> {
+  // null, not undefined: JSON drops undefined keys, so the column would never clear.
   const { error } = await updateUserProfile(supabase, userId, { profile_photo: null });
   if (error) return { error };
 

@@ -26,6 +26,7 @@
     "test:security:users-privilege": "tsx scripts/security/users-privilege-smoke.ts",
     "test:security:users-pii": "tsx scripts/security/users-pii-smoke.ts",
     "test:security:emergency-post": "tsx scripts/security/emergency-post-smoke.ts",
+    "test:security:storage": "tsx scripts/security/storage-rls-smoke.ts",
     "ci:local": "node scripts/run-ci-local.js",
     "lint": "npm run lint --workspaces",
     "lint:guards": "node scripts/guard-no-catch-any.js && node scripts/guard-css-tokens.js && node apps/web/eslint/write-raw-element-allowlist.mjs --check",

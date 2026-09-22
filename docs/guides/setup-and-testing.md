@@ -689,7 +689,7 @@ npm run test:coverage
 
 ## Security Smoke Tests
 
-Three scripts assert RLS and privilege behaviour against a **live Supabase project**.
+These scripts assert RLS and privilege behaviour against a **live Supabase project**.
 They are deliberately not part of `npm test`: they need real service-role credentials
 and they talk to a real database, so they cannot run in the normal unit-test sweep or
 in CI without secrets.
@@ -699,14 +699,17 @@ in CI without secrets.
 | `npm run test:security:chat-rls` | Conversation RLS — a user cannot read or join a conversation they are not a participant in |
 | `npm run test:security:users-privilege` | Migration 034's guard trigger on privileged `users` columns (`trust_level`, `is_moderator`, `is_premium`) cannot be self-escalated |
 | `npm run test:security:emergency-post` | Emergency-tagged posts stay invisible until a moderator approves them (migration 035) |
+| `npm run test:security:users-pii` | `users` PII columns are not readable by anon or other members; the owner reads them through `get_my_profile()` (migration 036) |
+| `npm run test:security:storage` | Storage RLS is owner-only (migration 039): avatar upserts and plain uploads succeed, another member's `remove()` deletes nothing, anon cannot list any bucket, and the owner's `remove()` really deletes |
 
-**Credentials.** Copy `scripts/.env.example` to `scripts/.env` and fill in
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service-role key bypasses RLS by
-design — never commit `scripts/.env`, and never point these at production.
+**Credentials.** Every script reads `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
+`SUPABASE_SERVICE_ROLE_KEY` from the environment. The npm scripts do not load
+`scripts/.env`, so export all three in the shell first. The service-role key bypasses
+RLS by design — never commit it, and never point these at production.
 
 **When to run them.** After any migration that touches RLS policies on `users`,
-`conversations`, or `posts`. A migration can pass `npm run test` and still leave a
-table readable by the wrong user; only these scripts catch that.
+`conversations`, `posts`, or `storage.objects`. A migration can pass `npm run test`
+and still leave a table readable by the wrong user; only these scripts catch that.
 
 **Adding a new one.** Put it in `scripts/security/<area>-smoke.ts`, add a
 `test:security:<area>` script to the root `package.json`, and add a row to the table
