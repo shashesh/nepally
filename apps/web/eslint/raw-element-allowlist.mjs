@@ -15,7 +15,6 @@ export const RAW_ELEMENT_ALLOWLIST = [
   "src/pages/marketplace/my-listings.page.tsx",
   "src/pages/messages/[id].page.tsx",
   "src/pages/onboarding/zip.page.tsx",
-  "src/pages/profile/locations.page.tsx",
   "src/pages/profile/notifications.page.tsx",
   "src/pages/signup.page.tsx",
   "src/pages/verify-email.page.tsx"
