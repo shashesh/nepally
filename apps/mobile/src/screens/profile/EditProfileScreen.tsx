@@ -21,7 +21,7 @@ import { useMetroArea } from '../../hooks/useMetroArea';
 import {
   updateUserProfile,
   uploadProfilePhoto,
-  deleteProfilePhoto,
+  removeProfilePhoto,
   APP_CONFIG,
   BIO_MAX_LENGTH,
   bioSchema,
@@ -200,12 +200,8 @@ export function EditProfileScreen() {
     setPhotoStatus(null);
 
     try {
-      await deleteProfilePhoto(supabase, user.id);
-      // null, not undefined: JSON drops undefined keys, so the column would never clear.
-      const { error: profileError } = await updateUserProfile(supabase, user.id, {
-        profile_photo: null,
-      });
-      if (profileError) throw profileError;
+      const { error: removeError } = await removeProfilePhoto(supabase, user.id);
+      if (removeError) throw removeError;
 
       setLocalPhotoUri(null);
       await refreshUser();

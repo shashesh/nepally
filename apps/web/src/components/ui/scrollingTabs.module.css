@@ -1,0 +1,53 @@
+/*
+ * Scrolling tabs — a Mantine Tabs row that stays on one line and scrolls
+ * sideways on phones instead of wrapping or clipping. Semantic tokens only
+ * (scripts/guard-css-tokens.js). Spec: docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1.
+ *
+ * Wired through scrollingTabs.ts: <Tabs classNames={scrollingTabsClassNames}>
+ * merges both classes onto Mantine's own elements, and every Tabs.Tab takes
+ * onFocus={scrollFocusedTabIntoView}.
+ */
+
+/* Keeps every tab (count badges included) on one row down to phone widths
+   instead of Mantine's default wrap; matches the old tab rail's horizontal
+   scroll.
+   Mantine draws the default-variant underline with a ::before positioned
+   inside this same scrolling element (Tabs.css .m_576c9d4::before), so it
+   scrolls away with the tabs; redraw it as an inset box-shadow on the list
+   itself instead (not part of the scrolled content, so it stays put) and
+   hide the native pseudo. --tabs-list-border-width is 2px for the default
+   variant — every Tabs.Tab reserves a transparent bottom border of that
+   same width, so this line sits flush under inactive tabs and the active
+   tab's own colored border replaces it exactly, with no thickness jump. */
+.list {
+  --tab-border-color: var(--border-subtle);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  box-shadow: inset 0 calc(-1 * var(--tabs-list-border-width, 2px)) 0 var(--tab-border-color);
+}
+
+.list::before {
+  display: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+/* Without this, nowrap lets each tab (and any count Badge inside it, which
+   clips its own content) shrink below its label's width instead of the row
+   scrolling — a badge's number gets clipped to an empty circle first. */
+.tab {
+  flex-shrink: 0;
+}
+
+/* The global :focus-visible ring (globals.css) is a 2px outline at a 2px
+   offset plus a 6px halo; overflow-x: auto on .list forces overflow-y: auto
+   too (a scroll container can't leave one axis visible), which clips both
+   at every width. Draw the ring inside the tab, pulled in past the active
+   tab's 2px marigold underline so the ring doesn't cover it. */
+.tab:focus-visible {
+  outline-offset: -4px;
+  box-shadow: none;
+}

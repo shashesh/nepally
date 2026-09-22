@@ -47,16 +47,34 @@ test.describe('Profile page', () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 
+  test('a dialog opened from the profile menu takes focus and gives it back to the menu', async ({ page }) => {
+    await page.goto('/profile');
+
+    const trigger = page.getByRole('button', { name: 'Open profile menu' });
+    await trigger.click();
+    await page.getByRole('menuitem', { name: 'Edit Name' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Edit name' });
+    const field = dialog.getByRole('textbox', { name: 'Full name' });
+    await expect(field).toBeFocused();
+    await page.keyboard.type(' Jr');
+    await expect(field).toHaveValue(`${MOCK_USER_PROFILE.full_name} Jr`);
+
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
   test('Saved Posts tab is visible on the profile page', async ({ page }) => {
     await page.goto('/profile');
 
-    await expect(page.getByRole('button', { name: 'Saved Posts' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('tab', { name: 'Saved Posts' })).toBeVisible({ timeout: 10_000 });
   });
 
   test('switching to Saved Posts tab shows empty state when no posts saved', async ({ page }) => {
     await page.goto('/profile');
 
-    await page.getByRole('button', { name: 'Saved Posts' }).click();
+    await page.getByRole('tab', { name: 'Saved Posts' }).click();
 
     // The mock returns [] for saved_posts, so we should see an empty message
     await expect(page.getByText(/No saved posts yet\./i)).toBeVisible({ timeout: 10_000 });
@@ -65,9 +83,9 @@ test.describe('Profile page', () => {
   test('About tab is visible and can be activated', async ({ page }) => {
     await page.goto('/profile');
 
-    const aboutBtn = page.getByRole('button', { name: 'About' });
-    await expect(aboutBtn).toBeVisible({ timeout: 10_000 });
-    await aboutBtn.click();
+    const aboutTab = page.getByRole('tab', { name: 'About' });
+    await expect(aboutTab).toBeVisible({ timeout: 10_000 });
+    await aboutTab.click();
 
     // Posts tab content should no longer be visible
     await expect(page.getByText('You have not created any posts yet.')).not.toBeVisible();

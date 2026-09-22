@@ -1,5 +1,17 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+const { uploadProfilePhoto } = vi.hoisted(() => ({ uploadProfilePhoto: vi.fn() }));
+
+// Partial mock: setProfilePhoto's tests control uploadProfilePhoto directly
+// (including states — a missing url — the real storage chain can't easily
+// produce), while removeProfilePhoto's tests still exercise the real
+// deleteProfilePhoto against a mocked supabase client.
+vi.mock('./storage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./storage')>()),
+  uploadProfilePhoto,
+}));
+
 import {
   createUserProfile,
   getMyProfile,
@@ -7,7 +19,9 @@ import {
   markEmailVerified,
   markGoogleVerified,
   markUserVerified,
+  removeProfilePhoto,
   resendVerificationEmail,
+  setProfilePhoto,
   updateUserLocation,
   updateUserProfile,
 } from './users';
@@ -395,6 +409,133 @@ describe('users api', () => {
 
     expect(result.error).toBeDefined();
     expect(result.data).toBeUndefined();
+  });
+
+  describe('removeProfilePhoto', () => {
+    it('clears profile_photo on the row, then deletes <userId>.jpg from the avatars bucket', async () => {
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: null });
+      const { rpc } = mockOwnProfileRpc({ id: 'user-1', profile_photo: null });
+      const remove = vi.fn().mockResolvedValue({ data: [], error: null });
+      const storageFrom = vi.fn().mockReturnValue({ remove });
+      const supabase = {
+        from: vi.fn().mockReturnValue(query),
+        rpc,
+        storage: { from: storageFrom },
+      } as unknown as SupabaseClient;
+
+      const result = await removeProfilePhoto(supabase, 'user-1');
+
+      expect(result.error).toBeUndefined();
+      expect(query.update).toHaveBeenCalledWith(
+        expect.objectContaining({ profile_photo: null })
+      );
+      // 'avatars' is AVATARS_BUCKET in storage.ts (not exported).
+      expect(storageFrom).toHaveBeenCalledWith('avatars');
+      expect(remove).toHaveBeenCalledWith(['user-1.jpg']);
+    });
+
+    it('does not touch storage when clearing the column fails', async () => {
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: new Error('row-level security') });
+      const { rpc } = mockOwnProfileRpc({ id: 'user-1' });
+      const remove = vi.fn();
+      const storageFrom = vi.fn().mockReturnValue({ remove });
+      const supabase = {
+        from: vi.fn().mockReturnValue(query),
+        rpc,
+        storage: { from: storageFrom },
+      } as unknown as SupabaseClient;
+
+      const result = await removeProfilePhoto(supabase, 'user-1');
+
+      expect(result.error?.message).toBe('row-level security');
+      expect(remove).not.toHaveBeenCalled();
+    });
+
+    it('still succeeds when the storage delete fails, since the next upload overwrites the orphaned file', async () => {
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: null });
+      const { rpc } = mockOwnProfileRpc({ id: 'user-1', profile_photo: null });
+      const remove = vi.fn().mockResolvedValue({ data: null, error: new Error('storage unavailable') });
+      const storageFrom = vi.fn().mockReturnValue({ remove });
+      const supabase = {
+        from: vi.fn().mockReturnValue(query),
+        rpc,
+        storage: { from: storageFrom },
+      } as unknown as SupabaseClient;
+
+      const result = await removeProfilePhoto(supabase, 'user-1');
+
+      expect(result.error).toBeUndefined();
+      // Proves the failure path actually ran, not just that the mock was wired.
+      expect(remove).toHaveBeenCalledWith(['user-1.jpg']);
+    });
+  });
+
+  describe('setProfilePhoto', () => {
+    beforeEach(() => {
+      uploadProfilePhoto.mockReset();
+    });
+
+    it('uploads the bytes and writes the returned url onto the profile', async () => {
+      uploadProfilePhoto.mockResolvedValue({ url: 'https://cdn.example.com/avatars/user-1.jpg?t=1' });
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: null });
+      const { rpc } = mockOwnProfileRpc({
+        id: 'user-1',
+        profile_photo: 'https://cdn.example.com/avatars/user-1.jpg?t=1',
+      });
+      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+      const fileData = new ArrayBuffer(4);
+
+      const result = await setProfilePhoto(supabase, 'user-1', fileData);
+
+      expect(uploadProfilePhoto).toHaveBeenCalledWith(supabase, 'user-1', fileData);
+      expect(query.update).toHaveBeenCalledWith(
+        expect.objectContaining({ profile_photo: 'https://cdn.example.com/avatars/user-1.jpg?t=1' })
+      );
+      expect(result).toEqual({ url: 'https://cdn.example.com/avatars/user-1.jpg?t=1' });
+    });
+
+    it('returns the upload error without ever writing the profile row', async () => {
+      uploadProfilePhoto.mockResolvedValue({ error: new Error('Storage is full') });
+      const from = vi.fn();
+      const supabase = { from } as unknown as SupabaseClient;
+
+      const result = await setProfilePhoto(supabase, 'user-1', new ArrayBuffer(4));
+
+      expect(from).not.toHaveBeenCalled();
+      expect(result).toEqual({ error: new Error('Storage is full') });
+    });
+
+    it('treats a missing url as an error without writing the profile row', async () => {
+      uploadProfilePhoto.mockResolvedValue({});
+      const from = vi.fn();
+      const supabase = { from } as unknown as SupabaseClient;
+
+      const result = await setProfilePhoto(supabase, 'user-1', new ArrayBuffer(4));
+
+      expect(from).not.toHaveBeenCalled();
+      expect(result.error).toBeInstanceOf(Error);
+    });
+
+    it('returns the profile write error', async () => {
+      uploadProfilePhoto.mockResolvedValue({ url: 'https://cdn.example.com/avatars/user-1.jpg?t=1' });
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: new Error('row-level security') });
+      const { rpc } = mockOwnProfileRpc({ id: 'user-1' });
+      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+
+      const result = await setProfilePhoto(supabase, 'user-1', new ArrayBuffer(4));
+
+      expect(result).toEqual({ error: new Error('row-level security') });
+    });
   });
 
   describe('updateUserProfile — extended fields', () => {

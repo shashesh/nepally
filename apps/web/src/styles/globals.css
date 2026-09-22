@@ -76,7 +76,11 @@ select {
   font-family: inherit;
 }
 
-button:not(:disabled) {
+/* Busy buttons carry data-disabled but not native disabled, so focus stays
+   put. Mantine gives them `not-allowed` at one class of specificity, which
+   this rule outranks at (0,1,1), so it skips [data-disabled] too, like
+   .primaryButton in mantine-components.module.css. */
+button:not(:disabled, [data-disabled]) {
   cursor: pointer;
 }
 

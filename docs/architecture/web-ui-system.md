@@ -1,6 +1,6 @@
 # Web UI System
 
-**Last updated:** 2026-09-14
+**Last updated:** 2026-09-22
 **Applies to:** `apps/web` only. Design rationale: [../specs/2026-09-14-web-ui-overhaul-design.md](../specs/2026-09-14-web-ui-overhaul-design.md).
 
 The web app uses one design language, **H1 · Ink & Marigold**. It combines editorial type (Gambarino headings, Switzer body), warm paper neutrals and borders instead of shadows. Ink navy carries every action. Marigold is a sparing accent, and crimson is reserved for Emergency.
@@ -51,7 +51,9 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 - `cssVariablesResolver` points Mantine's body, text, dimmed and border variables at semantic tokens.
 - `focusClassName: 'nepally-focus'` gives Mantine components the global focus ring: a 2px ink outline plus a marigold halo.
 - Component overrides are plain objects, not `Component.extend`, so tests that mock individual Mantine components can still load the theme.
+- `Modal`'s `defaultProps` name its close button "Close", which `@mantine/modals` dialogs pick up too.
 - Use theme colour props (`c="ink.8"`), never `var(--mantine-color-…)` strings in TSX.
+- **Stylesheet import order is cascade order.** `_app.page.tsx` imports Mantine's sheets first (`core`, `notifications`, `dropzone`), then `globals.css`, then `mantine-theme` (which pulls in `mantine-components.module.css`), then the components. Next emits CSS in the order it meets it, and the production build keeps that order across its chunks, so each layer wins ties at equal specificity over the one before, and a component's module beats both Mantine and the theme. With Mantine's sheets below the component imports, production loaded the modules first and Mantine won every tie. The dev server loads them the other way round, so only a production build, and so the visual baselines, shows the difference. Add any new global sheet above the component imports.
 
 ## Shell and navigation
 
@@ -71,13 +73,33 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 
 ## UI primitives (`components/ui`)
 
-`EmptyState`, `LoadingState`, `ErrorState`, `PageHeader`, `TagChip`, `ScopeBadge`, `TrustBadge`, `ActionMenu`, and `useConfirm` / `usePrompt` (never `window.confirm`/`alert`/`prompt`). `hooks/useInfiniteScroll` handles paginated lists. `Avatar` uses shared `getInitials` and token tones.
+`EmptyState`, `LoadingState`, `ErrorState`, `PageHeader`, `TagChip`, `ScopeBadge`, `TrustBadge`, `ActionMenu`, and `useConfirm` / `usePrompt` (never `window.confirm`/`alert`/`prompt`). `hooks/useInfiniteScroll` handles paginated lists.
+
+Both dialogs name their close button "Close". A `danger: true` confirm opens with focus on Cancel: the APG alertdialog pattern puts initial focus on the least destructive action, and a named "Cancel" says what Enter will do more clearly than the icon-only close button, Mantine's default first focus, which also cancels. Other confirms keep Mantine's initial focus, and a prompt focuses its field. `usePrompt`'s `validate` keeps the dialog open with its message on the field.
+
+`Avatar` (`components/Avatar.tsx`) uses shared `getInitials` and token tones, and is always a circle (`--radius-full`), whatever the theme's radius scale. `toneKey` picks the tone and defaults to `name`: pass the full name when `name` is a masked public name, so a member keeps one colour everywhere. `decorative` renders `alt=""` and hides the initials from assistive tech, for when a heading beside the avatar already names the person.
 
 `notify.success(message)` and `notify.error(message)` are the only way to raise a toast; they wrap `@mantine/notifications` so colour and duration stay consistent.
 
+`SummaryRow` is the shell every summary row shares: a member's posts, events and listings. The title is the row's only link, and its `::after` stretches over the row. Rows lift with a `--border-solid` border on hover and focus-within, not a shadow.
+
+| Prop | Meaning |
+|---|---|
+| `href`, `title` | The link and its text |
+| `badge` | Beside the title, never shrinking: a `ScopeBadge` or a status chip |
+| `leading` | Before the text, e.g. a thumbnail. Clicking it opens the link |
+| `menu` | Beside the row, e.g. an `ActionMenu`. The only slot above the link's overlay |
+| `children` | The lines under the title, usually one or two `SummaryRowMeta` |
+
+Only `menu` sits above the overlay. Anything interactive in `badge`, `leading` or `children` is covered and can't be clicked, and anything positioned in `badge` or `children` paints above the overlay and leaves a dead spot, so keep those two unpositioned (a `VisuallyHidden` span is fine). `leading` comes before the link in document order, so positioned content there, such as a `next/image` with `fill`, still paints underneath.
+
+`SummaryRowMeta` is one line of items separated by a dot that screen readers skip. Each item must be its own element (`<span>`, `<time>`), because the dot attaches to an element, not to bare text. `variant` is `'meta'` (small and quiet, the default) or `'detail'` (body size).
+
+`scrollingTabs` keeps a Mantine `Tabs` row on one line and scrolls it sideways on phones instead of wrapping. Pass `classNames={scrollingTabsClassNames}` (spread it to add slots, as the profile does for `panel`) and give every `Tabs.Tab` `onFocus={scrollFocusedTabIntoView}`, because Chromium doesn't scroll a partly clipped tab into view when it takes focus. The module redraws the underline on the list so it stays put while the tabs scroll, stops tabs and their count badges shrinking, and insets the focus ring, which the scroller would otherwise clip. Both profile pages use it; search's result tabs don't yet.
+
 `PhotoCarousel` shows one photo at a time with wrap-around previous and next, announces "Photo 2 of 3", and keeps a 40px swipe threshold. `ImageLightbox` is the full-screen viewer over Mantine `Modal`, which owns the focus trap, Escape and scroll lock; it adds paging, seven zoom levels and controls that fade after 1.5s.
 
-`ImageUploader` is the only photo picker: drop or click to choose, thumbnails, remove, and optional reorder. Over @mantine/dropzone.
+`ImageUploader` is the multi-photo picker, with three callers: create post, create listing and create event. Drop or click to choose, thumbnails, remove, and optional reorder. Over @mantine/dropzone. The profile photo doesn't use it: that photo uploads as soon as it's picked and the avatar is its preview, so `ProfilePhotoControl` wraps Mantine `FileButton` instead.
 
 | Prop | Meaning |
 |---|---|
@@ -91,6 +113,22 @@ It owns every object URL it mints and revokes them on removal and unmount, so pa
 
 `ToggleChipGroup` is the labelled row of toggle chips behind post tags, event types and listing categories. The chips are buttons with `aria-pressed`, not checkboxes, so state is announced by the platform rather than baked into the name. `mode` is `'single'` or `'multiple'`; `max` disables the unpressed chips at the cap while leaving pressed ones releasable. Each chip carries `data-value`, which is how create event colours its five types from `--event-<type>-fg` / `-bg` without the component knowing any event vocabulary.
 
+### Busy controls stay focusable
+
+A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You, the public profile's Message button and `AddLocationForm`'s Save and Cancel all work this way.
+
+`FollowButton` is the one exception. While a follow or unfollow saves it sets only `aria-disabled`, not `data-disabled`, so the new state it shows at once ("Following" or "Follow") stays at full opacity instead of taking Mantine's grey disabled look.
+
+When an action removes the control that had focus, focus moves somewhere sensible after the next commit, but only if it was lost. It is never taken back from wherever the member has moved since. Each case does this by hand today:
+
+- **Unsaving a post** (`profile.page.tsx`) focuses the Saved tab panel, if focus is on `<body>`.
+- **Removing the photo** (`ProfilePhotoControl`) focuses Add Photo, if focus is on `<body>`.
+- **Manage Locations** records a pending target and focuses it once `savedLocations` refreshes, if `isFocusStranded()` says focus is on `<body>` or still inside the closing confirm dialog. The target is the neighbouring row's Rename after a remove, that row's Rename after Set as default, and Add a Location after an add (or the new row's Rename, when the cap hides that button).
+
+A shared `useFocusAfterUpdate` hook, built on `isFocusStranded`, is planned for PR 10 to replace all three.
+
+`ActionMenu` moves focus from the menu to its trigger before an item's action runs, and turns off Mantine's delayed `returnFocus`. A dialog the action opens therefore keeps focus while it's open and returns it to the trigger when it closes, instead of to the unmounted menu item, which would drop it to `<body>`. After a click outside, focus stays where the click put it (usually `<body>`) and isn't pulled back to the trigger. That's deliberate, so a click into a field is never overridden.
+
 ## Web-only helpers (`src/lib`)
 
 | Helper | Notes |
@@ -98,6 +136,9 @@ It owns every object URL it mints and revokes them on removal and unmount, so pa
 | `toPhotoUploadInputs(files, userId)` | `File[]` → the byte-carrying shape the shared storage API takes. The `File` API is DOM-only, which is why this is not in `packages/shared` |
 | `uploadPhotosInOrder(photos, userId, upload)` | Uploads the picked photos, then returns every photo's URL in display order. Concatenation is not enough: a member can drop a new photo in front of a saved one |
 | `resizeImage(file)` | Downscales to 1200px wide at JPEG quality 0.8, returning a `File`. Passed to `ImageUploader` as `transformFile` |
+| `cropToSquare(file, size?)` | In `resizeImage.ts`. Centre-crops to the largest square and scales it to at most `PROFILE_PHOTO_SIZE_PX`, never up, as a JPEG `File` |
+| `replaceProfilePhoto(supabase, userId, file)` | `lib/profilePhoto.ts`: `cropToSquare`, then the shared `setProfilePhoto`. Returns `{ error }` as a message; an image that won't decode is logged and reads "We couldn't process that image" |
+| `isFocusStranded()` | `lib/focus.ts`. True when focus is on `<body>` or still inside a closing modal (`[aria-modal="true"]`). Mantine returns focus on a timer and keeps a modal mounted through its exit transition, so an effect restoring focus must treat both as lost |
 | `submitNewPost` / `submitEditedPost` | Create post's two submit paths, as pure functions. They own the rollback rules: delete what was just uploaded when the write fails, delete what the member dropped only once it succeeds |
 
 ## Post and feed components
@@ -113,6 +154,33 @@ It owns every object URL it mints and revokes them on removal and unmount, so pa
 | `SponsoredRail` | `components/feed/` | The `<aside>` holding paid listings and the upcoming-events widget |
 | `UserMenuTrigger` | `components/users/` | An avatar that opens View profile / Chat through `ActionMenu` |
 | `DateTimeField` | `components/events/` | A date and a time behaving as one `YYYY-MM-DDTHH:mm` value. The time does nothing until a date is set. Takes both input ids from its caller, because the e2e suite drives them directly |
+
+## Profile components
+
+The own profile (`/profile`), the public profile (`/users/[id]`) and Manage Locations (`/profile/locations`) are built from these. The three summary rows sit on `SummaryRow`.
+
+| Component | Location | Notes |
+|---|---|---|
+| `PostSummaryRow` | `components/posts/` | `post` and an optional `menu`. `ScopeBadge`, a two-line excerpt, then relative time · likes · comments |
+| `EventSummaryRow` | `components/events/` | `event` and `now`, from `useNow()` so every row agrees on what is past. Date and place, then "n going" and Past or Cancelled |
+| `ListingSummaryRow` | `components/marketplace/` | `listing` and an optional `owner={{ now }}`. Thumbnail in `leading`, then price and category. The owner view adds the status chip (`--success` / `--warning` / `--danger`), view, save and contact counts, and the expiry notice; the public view shows the listing's age |
+| `PublicProfileHeader` | `components/users/` | `profileUser`, `metroName`, `helperScore`, `isOwnProfile`, `viewerId`, `messaging`, `onMessage`. A decorative avatar toned by the full name, the public name as the `h1`, `TrustBadge`, bio, follow counts, identity chips, and the Message or Edit profile button |
+| `FollowButton` | `components/users/` | `supabase`, `viewerId`, `targetUserId`, `onChange`. Renders nothing when signed out, on the viewer's own profile, or when the status fails to load, and remounts per viewer and target through a keyed inner `FollowToggle`. Optimistic, rolling back with a toast. Its label reads "Follow" / "Following" beside `aria-pressed`: a deliberate exception to letting the platform announce toggle state, following the social-app convention |
+| `ProfilePhotoControl` | `components/profile/` | `name`, `photoUrl`, `busy`, `onPick(file)`, `onRemove`. The avatar with Add/Change and Remove photo, over Mantine `FileButton`. It rejects an unsupported or oversized file itself (`MAX_PROFILE_PHOTO_SOURCE_BYTES`); the upload and its toasts are the caller's |
+| `AccountDetails` | `components/profile/` | `user`, `onEditBio`, `editBioBusy`. The About tab's Bio, Account Info and Activity sections |
+| `AboutYouSection` | `components/profile/` | Controlled `values` / `onChange` (the shared `AboutYouFormValues`) and `disabled`. Hometown district (`NativeSelect`), college, years in the US, and a `ToggleChipGroup` of languages |
+| `SavedLocationRow` | `components/locations/` | One saved location. It owns rename: Enter or blur saves, Escape cancels, and a duplicate name shows on the field. Actions are named per row ("Rename Work", "Remove Work", "Set as default for Work"), and `renameButtonRef` lets the page restore focus |
+| `AddLocationForm` | `components/locations/` | Metro or ZIP search through `useMetroSearch`, then "Name this location" with suggestion chips. `onSave` resolves once the page has refreshed its list; `onCancel` is only for Cancel |
+
+Their data and actions come from these hooks in `src/hooks`:
+
+| Hook | Notes |
+|---|---|
+| `usePublicProfile(id)` | Loads `/users/[id]`: the member, metro name, posts, events, listings and helper score, with a loading flag for the profile and for each list. Resets during render when `id` changes, so a caller that stays mounted never shows one member's data under another's URL |
+| `useUserList(userId, fetchList, fallbackError)` | One user-scoped list: `items`, `loading`, `error` and `reload`. `fetchList` must be a module-level function, because an inline closure refetches on every render. Resets per user and drops stale responses |
+| `useOwnProfileContent(userId)` | `/profile`'s posts, saved posts and listings, each a `useUserList`, plus `unsave(postId)`, which hides the post at once and restores it if the delete fails |
+| `useProfileEditing(user, refreshUser)` | `editName`, `editBio` and `changePassword` (a reset email) through `usePrompt` and `notify`. Name and bio are validated inside the dialog with the shared `fullNameSchema` and `bioSchema`. `saving` is true while a write runs |
+| `useMetroSearch(input, userId)` | Debounced metro-name or ZIP search for Manage Locations. Drops stale responses, treats an unknown ZIP as "No metros match." rather than a failure, and logs real failures. `statusMessage` feeds one always-mounted `role="status"` region |
 
 ## Guards
 

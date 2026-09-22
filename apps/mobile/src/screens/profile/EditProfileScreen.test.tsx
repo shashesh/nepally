@@ -43,7 +43,7 @@ jest.mock('../../hooks/useMetroArea', () => ({
 jest.mock('@nepally/shared', () => ({
   updateUserProfile: jest.fn().mockResolvedValue({ data: { id: 'user-1' }, error: null }),
   uploadProfilePhoto: jest.fn().mockResolvedValue({ data: null, error: null }),
-  deleteProfilePhoto: jest.fn().mockResolvedValue({ data: null, error: null }),
+  removeProfilePhoto: jest.fn().mockResolvedValue({ error: undefined }),
   APP_CONFIG: {
     minPasswordLength: 8,
     zipCodeLength: 5,
@@ -103,15 +103,17 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 import React from 'react';
-import { Alert, type AlertButton } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { EditProfileScreen } from './EditProfileScreen';
-import { deleteProfilePhoto, updateUserProfile } from '@nepally/shared';
+import { removeProfilePhoto, updateUserProfile } from '@nepally/shared';
 
 const mockedUpdateUserProfile =
   updateUserProfile as jest.MockedFunction<typeof updateUserProfile>;
-const mockedDeleteProfilePhoto =
-  deleteProfilePhoto as jest.MockedFunction<typeof deleteProfilePhoto>;
+const mockedRemoveProfilePhoto =
+  removeProfilePhoto as jest.MockedFunction<typeof removeProfilePhoto>;
+
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 const baseUser = {
   id: 'user-1',
@@ -135,34 +137,6 @@ describe('EditProfileScreen', () => {
   it('displays user full name', () => {
     const { getByDisplayValue } = render(<EditProfileScreen />);
     expect(getByDisplayValue('Test User')).toBeTruthy();
-  });
-
-  it('clears profile_photo with null when the photo is removed', async () => {
-    // undefined would be dropped from the JSON body and leave the old URL in place.
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
-    try {
-      mockUseAuth.mockReturnValue({
-        user: { ...baseUser, profile_photo: 'https://example.com/avatars/user-1.jpg' },
-        refreshUser: mockRefreshUser,
-      });
-
-      const { getByText } = render(<EditProfileScreen />);
-      fireEvent.press(getByText('Change Photo'));
-
-      const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2] as AlertButton[];
-      const removeButton = buttons.find((button) => button.text === 'Remove Photo');
-      expect(removeButton).toBeDefined();
-      await act(async () => {
-        await removeButton?.onPress?.();
-      });
-
-      expect(mockedDeleteProfilePhoto).toHaveBeenCalledWith(expect.anything(), 'user-1');
-      expect(mockedUpdateUserProfile).toHaveBeenCalledWith(expect.anything(), 'user-1', {
-        profile_photo: null,
-      });
-    } finally {
-      alertSpy.mockRestore();
-    }
   });
 
   it('renders the About You section with the initial values', () => {
@@ -212,5 +186,53 @@ describe('EditProfileScreen', () => {
         expect.objectContaining({ college: 'TU Kirtipur' })
       );
     });
+  });
+
+  it('removes the photo via removeProfilePhoto and shows "Photo removed"', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { ...baseUser, profile_photo: 'https://example.com/photo.jpg' },
+      refreshUser: mockRefreshUser,
+    });
+
+    const { getByText } = render(<EditProfileScreen />);
+    fireEvent.press(getByText('Change Photo'));
+
+    const alertArgs = (Alert.alert as jest.Mock).mock.calls[0];
+    const removeButton = alertArgs[2].find(
+      (btn: { text: string }) => btn.text === 'Remove Photo'
+    );
+    expect(removeButton).toBeDefined();
+
+    await act(async () => {
+      await removeButton.onPress();
+    });
+
+    expect(mockedRemoveProfilePhoto).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(mockRefreshUser).toHaveBeenCalled();
+    expect(getByText('Photo removed')).toBeTruthy();
+  });
+
+  it('shows the error and does not refresh the user when removeProfilePhoto fails', async () => {
+    mockedRemoveProfilePhoto.mockResolvedValueOnce({ error: new Error('RLS denied') });
+    mockUseAuth.mockReturnValue({
+      user: { ...baseUser, profile_photo: 'https://example.com/photo.jpg' },
+      refreshUser: mockRefreshUser,
+    });
+
+    const { getByText } = render(<EditProfileScreen />);
+    fireEvent.press(getByText('Change Photo'));
+
+    const alertArgs = (Alert.alert as jest.Mock).mock.calls[0];
+    const removeButton = alertArgs[2].find(
+      (btn: { text: string }) => btn.text === 'Remove Photo'
+    );
+    expect(removeButton).toBeDefined();
+
+    await act(async () => {
+      await removeButton.onPress();
+    });
+
+    expect(getByText('RLS denied')).toBeTruthy();
+    expect(mockRefreshUser).not.toHaveBeenCalled();
   });
 });

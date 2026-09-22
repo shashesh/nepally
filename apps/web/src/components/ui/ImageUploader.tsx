@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { ActionIcon, Text, VisuallyHidden } from '@mantine/core';
 import { Dropzone, type FileRejection } from '@mantine/dropzone';
 import { IconArrowLeft, IconArrowRight, IconPhotoPlus, IconX } from '@tabler/icons-react';
+import { formatMegabytes } from '@nepally/shared';
 import styles from './ImageUploader.module.css';
 
 /** What every caller accepts unless it narrows the list further. */
@@ -38,10 +39,6 @@ export function photoSrc(photo: UploaderPhoto): string {
 
 function photoKey(photo: UploaderPhoto): string {
   return photo.kind === 'stored' ? `stored-${photo.url}` : `picked-${photo.id}`;
-}
-
-function formatMegabytes(bytes: number): string {
-  return `${Math.round(bytes / (1024 * 1024))}MB`;
 }
 
 function newPickedId(): string {

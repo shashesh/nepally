@@ -1,0 +1,75 @@
+/*
+ * AccountDetails — Bio / Account Info / Activity sections of the profile
+ * page's About tab. Semantic tokens only (scripts/guard-css-tokens.js).
+ * Spec: docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1.
+ *
+ * Account Info / Activity share the public About panel's dt/dd row styling
+ * (apps/web/src/pages/users/[id].page.tsx AboutPanel,
+ * apps/web/src/styles/PublicProfile.module.css `about*` rules). Bio is
+ * prose rather than a label/value pair, so it renders as a paragraph under
+ * its own h2 instead of a dl row (see AccountDetails.tsx).
+ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.title {
+  /* Gambarino only ships weight 400 — the global h2 rule (globals.css)
+     already sets it, so this only overrides size and spacing. */
+  font-size: var(--font-size-lg);
+  margin: 0 0 var(--space-3);
+}
+
+.bio {
+  font-size: var(--font-size-base);
+  color: var(--text-2);
+  line-height: var(--leading-normal);
+  max-width: 48ch;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.bioEmpty {
+  font-size: var(--font-size-base);
+  color: var(--text-3);
+  margin: 0;
+}
+
+.bioButton {
+  margin-top: var(--space-2);
+}
+
+.list {
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  color: var(--text-3);
+  font-weight: var(--font-weight-medium);
+}
+
+.value {
+  font-size: var(--font-size-base);
+  color: var(--text-1);
+  font-weight: var(--font-weight-medium);
+  text-align: right;
+  overflow-wrap: anywhere;
+}

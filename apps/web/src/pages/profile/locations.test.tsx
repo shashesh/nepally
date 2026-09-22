@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../../test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, act, within } from '../../test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const locationsMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
@@ -13,8 +13,13 @@ const locationsMocks = vi.hoisted(() => ({
   searchMetroAreasMock: vi.fn(),
   getMetroByZipMock: vi.fn(),
   isValidZipCodeMock: vi.fn(),
+  logClientEventMock: vi.fn(),
+  notificationsShowMock: vi.fn(),
 }));
 
+vi.mock('@mantine/notifications', () => ({
+  notifications: { show: locationsMocks.notificationsShowMock },
+}));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: locationsMocks.useAuthMock }));
 vi.mock('../../hooks/useLocation', () => ({ useLocation: locationsMocks.useLocationMock }));
 vi.mock('next/router', () => ({ useRouter: locationsMocks.useRouterMock }));
@@ -30,6 +35,7 @@ vi.mock('@nepally/shared', async () => {
     searchMetroAreas: locationsMocks.searchMetroAreasMock,
     getMetroByZip: locationsMocks.getMetroByZipMock,
     isValidZipCode: locationsMocks.isValidZipCodeMock,
+    logClientEvent: locationsMocks.logClientEventMock,
     MAX_SAVED_LOCATIONS_PREMIUM: 5,
     SUGGESTED_LOCATION_LABELS: ['Home', 'Work', 'Family'],
   };
@@ -64,6 +70,11 @@ describe('ManageLocationsPage', () => {
   const mockReplace = vi.fn();
   const mockRefreshSavedLocations = vi.fn();
 
+  async function renderPage() {
+    render(<ManageLocationsPage />);
+    await act(async () => {});
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
     locationsMocks.useRouterMock.mockReturnValue({
@@ -76,12 +87,20 @@ describe('ManageLocationsPage', () => {
       refreshSavedLocations: mockRefreshSavedLocations,
     });
     locationsMocks.isValidZipCodeMock.mockReturnValue(false);
+    mockRefreshSavedLocations.mockResolvedValue(undefined);
   });
 
-  it('redirects to /login when user is not logged in', () => {
+  // Belt and suspenders alongside openAddAndSelectMetro's own try/finally: if
+  // a test throws while fake timers are active, they must not leak into
+  // whichever test runs next.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('redirects to /login when user is not logged in', async () => {
     locationsMocks.useAuthMock.mockReturnValue({ user: null });
     render(<ManageLocationsPage />);
-    expect(mockReplace).toHaveBeenCalledWith('/login');
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 
   it('renders the Manage Locations heading', () => {
@@ -102,19 +121,153 @@ describe('ManageLocationsPage', () => {
     expect(screen.getByText('New York, NY')).toBeDefined();
   });
 
-  it('shows star icon for the default location', () => {
-    render(<ManageLocationsPage />);
-    expect(screen.getByText('⭐')).toBeDefined();
+  it('names each row\'s actions with the location label', async () => {
+    await renderPage();
+    expect(screen.getByRole('button', { name: 'Rename Home' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Remove Work' })).toBeDefined();
   });
 
-  it('shows Set as default button for non-default locations', () => {
+  it('shows Add a Location button when below the location limit', () => {
     render(<ManageLocationsPage />);
-    expect(screen.getByText('Set as default')).toBeDefined();
+    expect(screen.getByText('＋ Add a Location')).toBeDefined();
   });
+
+  it('shows the add location form when the Add button is clicked', async () => {
+    render(<ManageLocationsPage />);
+    fireEvent.click(screen.getByText('＋ Add a Location'));
+    await waitFor(() => {
+      expect(screen.getByText('Add a Location')).toBeDefined();
+      expect(screen.getByLabelText('Search by metro name or ZIP code')).toBeDefined();
+    });
+  });
+
+  // ─── Rename: page calls the real API and refreshes ───────────
+
+  it('calls updateSavedLocation and refreshes on a successful rename', async () => {
+    locationsMocks.updateSavedLocationMock.mockResolvedValue({});
+    await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rename Work' }));
+    const input = screen.getByLabelText('Rename location Work');
+    fireEvent.change(input, { target: { value: 'Office' } });
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+
+    expect(locationsMocks.updateSavedLocationMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'loc-2',
+      { label: 'Office' }
+    );
+    expect(mockRefreshSavedLocations).toHaveBeenCalled();
+  });
+
+  it('logs and does not refresh when a rename fails', async () => {
+    locationsMocks.updateSavedLocationMock.mockResolvedValue({ error: new Error('offline') });
+    await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rename Work' }));
+    const input = screen.getByLabelText('Rename location Work');
+    fireEvent.change(input, { target: { value: 'Office' } });
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+
+    expect(locationsMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_location_rename_failed' })
+    );
+    expect(mockRefreshSavedLocations).not.toHaveBeenCalled();
+  });
+
+  // ─── Remove ─────────────────────────────────────────────────
+
+  it('confirms before removing a location, and does not delete when cancelled', async () => {
+    await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Work' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Remove this location?' });
+    expect(within(dialog).getByText(/"Work" will no longer appear/)).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    });
+
+    expect(locationsMocks.deleteSavedLocationMock).not.toHaveBeenCalled();
+  });
+
+  it('deletes the location once the removal is confirmed', async () => {
+    locationsMocks.deleteSavedLocationMock.mockResolvedValue({});
+    await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Work' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Remove this location?' });
+
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
+    });
+
+    expect(locationsMocks.deleteSavedLocationMock).toHaveBeenCalledWith(expect.anything(), 'loc-2');
+    expect(mockRefreshSavedLocations).toHaveBeenCalled();
+  });
+
+  it('toasts when removing a location fails', async () => {
+    locationsMocks.deleteSavedLocationMock.mockResolvedValue({ error: new Error('offline') });
+    await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Work' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Remove this location?' });
+
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
+    });
+
+    expect(locationsMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Couldn't remove this location", color: 'red' })
+    );
+  });
+
+  it('moves focus to the neighboring row\'s Rename button once the removal refresh lands', async () => {
+    const threeLocations = [
+      mockSavedLocations[0],
+      mockSavedLocations[1],
+      {
+        id: 'loc-3',
+        label: 'Family',
+        metro_area_id: '31080',
+        is_default: false,
+        metro_area: { name: 'Los Angeles', state: 'CA' },
+      },
+    ];
+    locationsMocks.useLocationMock.mockReturnValue({
+      savedLocations: threeLocations,
+      refreshSavedLocations: mockRefreshSavedLocations,
+    });
+    locationsMocks.deleteSavedLocationMock.mockResolvedValue({});
+    const { rerender } = render(<ManageLocationsPage />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Work' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Remove this location?' });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
+    });
+
+    // Simulates the LocationContext's own refresh landing with the shortened list.
+    locationsMocks.useLocationMock.mockReturnValue({
+      savedLocations: [threeLocations[0], threeLocations[2]],
+      refreshSavedLocations: mockRefreshSavedLocations,
+    });
+    await act(async () => {
+      rerender(<ManageLocationsPage />);
+    });
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Rename Family' }));
+  });
+
+  // ─── Set as default ───────────────────────────────────────────
 
   it('sets default location when Set as default is clicked', async () => {
     locationsMocks.setDefaultSavedLocationMock.mockResolvedValue({});
-    mockRefreshSavedLocations.mockResolvedValue(undefined);
     render(<ManageLocationsPage />);
     fireEvent.click(screen.getByText('Set as default'));
     await waitFor(() => {
@@ -127,63 +280,231 @@ describe('ManageLocationsPage', () => {
     });
   });
 
-  it('shows Add a Location button when below the location limit', () => {
-    render(<ManageLocationsPage />);
+  it('toasts when setting a default location fails', async () => {
+    locationsMocks.setDefaultSavedLocationMock.mockResolvedValue({ error: new Error('offline') });
+    await renderPage();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Set as default'));
+    });
+
+    expect(locationsMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Couldn't set this as your default location", color: 'red' })
+    );
+    expect(mockRefreshSavedLocations).not.toHaveBeenCalled();
+  });
+
+  it('moves focus to the row\'s own Rename button once the set-default refresh lands', async () => {
+    locationsMocks.setDefaultSavedLocationMock.mockResolvedValue({});
+    const { rerender } = render(<ManageLocationsPage />);
+    await act(async () => {});
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Set as default'));
+    });
+
+    locationsMocks.useLocationMock.mockReturnValue({
+      savedLocations: [
+        { ...mockSavedLocations[0], is_default: false },
+        { ...mockSavedLocations[1], is_default: true },
+      ],
+      refreshSavedLocations: mockRefreshSavedLocations,
+    });
+    await act(async () => {
+      rerender(<ManageLocationsPage />);
+    });
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Rename Work' }));
+  });
+
+  // ─── Add: page calls the real API, refreshes, and closes the form ──
+
+  async function openAddAndSelectMetro() {
+    fireEvent.click(screen.getByText('＋ Add a Location'));
+    locationsMocks.searchMetroAreasMock.mockResolvedValue({
+      data: [{ id: '41940', name: 'San Jose', state: 'CA' }],
+    });
+    const searchInput = await screen.findByLabelText('Search by metro name or ZIP code');
+    // The search is debounced (useMetroSearch, SEARCH_DEBOUNCE_MS): fake
+    // timers advance past that pause, matching useSearchSuggestions.test.tsx.
+    vi.useFakeTimers();
+    try {
+      fireEvent.change(searchInput, { target: { value: 'San Jo' } });
+      await act(async () => {
+        vi.advanceTimersByTime(250);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'San Jose, CA' }));
+    await screen.findByLabelText('Name this location');
+  }
+
+  it('closes the add form from its search step and returns focus to Add a Location', async () => {
+    await renderPage();
+    fireEvent.click(screen.getByText('＋ Add a Location'));
+    await screen.findByLabelText('Search by metro name or ZIP code');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByLabelText('Search by metro name or ZIP code')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Add a Location/ }));
+  });
+
+  it('saves a new location through addSavedLocation, refreshes, and closes the form', async () => {
+    locationsMocks.addSavedLocationMock.mockResolvedValue({ data: { id: 'loc-3' } });
+    await renderPage();
+    await openAddAndSelectMetro();
+
+    fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Family' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save Location'));
+    });
+
+    expect(locationsMocks.addSavedLocationMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      '41940',
+      'Family'
+    );
+    expect(mockRefreshSavedLocations).toHaveBeenCalled();
+    expect(screen.queryByLabelText('Name this location')).toBeNull();
     expect(screen.getByText('＋ Add a Location')).toBeDefined();
   });
 
-  it('shows the add location section when Add button is clicked', async () => {
-    render(<ManageLocationsPage />);
-    fireEvent.click(screen.getByText('＋ Add a Location'));
-    await waitFor(() => {
-      expect(screen.getByText('Add a Location')).toBeDefined();
-      expect(screen.getByTitle('Search by metro name or ZIP code')).toBeDefined();
+  it('returns focus to Add a Location after save when the form was still mounted during the refresh', async () => {
+    let resolveRefresh: (() => void) | undefined;
+    const refreshPromise = new Promise<void>((resolve) => {
+      resolveRefresh = () => resolve();
     });
+    mockRefreshSavedLocations.mockReturnValue(refreshPromise);
+    locationsMocks.addSavedLocationMock.mockResolvedValue({ data: { id: 'loc-3' } });
+    const { rerender } = render(<ManageLocationsPage />);
+    await act(async () => {});
+    await openAddAndSelectMetro();
+
+    fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Family' } });
+    const saveButton = screen.getByRole('button', { name: 'Save Location' });
+    saveButton.focus();
+
+    const savePromise = act(async () => {
+      fireEvent.click(saveButton);
+    });
+
+    locationsMocks.useLocationMock.mockReturnValue({
+      savedLocations: [
+        ...mockSavedLocations,
+        {
+          id: 'loc-3',
+          label: 'Family',
+          metro_area_id: '41940',
+          is_default: false,
+          metro_area: { name: 'San Jose', state: 'CA' },
+        },
+      ],
+      refreshSavedLocations: mockRefreshSavedLocations,
+    });
+    await act(async () => {
+      rerender(<ManageLocationsPage />);
+    });
+
+    resolveRefresh?.();
+    await savePromise;
+
+    expect(screen.queryByLabelText('Name this location')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Add a Location/ }));
   });
 
-  it('searches metro areas as user types', async () => {
-    locationsMocks.searchMetroAreasMock.mockResolvedValue({
-      data: [{ id: '41940', name: 'San Jose', state: 'CA' }],
-    });
-    render(<ManageLocationsPage />);
-    fireEvent.click(screen.getByText('＋ Add a Location'));
-    const searchInput = await screen.findByTitle('Search by metro name or ZIP code');
-    fireEvent.change(searchInput, { target: { value: 'San Jo' } });
-    await waitFor(() => {
-      expect(screen.getByText('San Jose, CA')).toBeDefined();
-    });
-  });
+  it('shows error when saving a duplicate label, without calling addSavedLocation', async () => {
+    await renderPage();
+    await openAddAndSelectMetro();
 
-  it('shows label input and suggestion chips after selecting a metro', async () => {
-    locationsMocks.searchMetroAreasMock.mockResolvedValue({
-      data: [{ id: '41940', name: 'San Jose', state: 'CA' }],
-    });
-    render(<ManageLocationsPage />);
-    fireEvent.click(screen.getByText('＋ Add a Location'));
-    const searchInput = await screen.findByTitle('Search by metro name or ZIP code');
-    fireEvent.change(searchInput, { target: { value: 'San Jo' } });
-    await waitFor(() => expect(screen.getByText('San Jose, CA')).toBeDefined());
-    fireEvent.click(screen.getByText('San Jose, CA'));
-    await waitFor(() => {
-      expect(screen.getByLabelText('Name this location')).toBeDefined();
-    });
-  });
-
-  it('shows error when saving a duplicate label', async () => {
-    locationsMocks.searchMetroAreasMock.mockResolvedValue({
-      data: [{ id: '41940', name: 'San Jose', state: 'CA' }],
-    });
-    render(<ManageLocationsPage />);
-    fireEvent.click(screen.getByText('＋ Add a Location'));
-    const searchInput = await screen.findByTitle('Search by metro name or ZIP code');
-    fireEvent.change(searchInput, { target: { value: 'San' } });
-    await waitFor(() => expect(screen.getByText('San Jose, CA')).toBeDefined());
-    fireEvent.click(screen.getByText('San Jose, CA'));
-    const labelInput = await screen.findByLabelText('Name this location');
-    fireEvent.change(labelInput, { target: { value: 'Home' } }); // 'Home' already exists
+    fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Home' } });
     fireEvent.click(screen.getByText('Save Location'));
+
     await waitFor(() => {
       expect(screen.getByText(/You already have a location named "Home"/)).toBeDefined();
     });
+    expect(locationsMocks.addSavedLocationMock).not.toHaveBeenCalled();
+  });
+
+  it('logs profile_location_add_failed when addSavedLocation fails', async () => {
+    locationsMocks.addSavedLocationMock.mockResolvedValue({ error: new Error('offline') });
+    await renderPage();
+    await openAddAndSelectMetro();
+
+    fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Family' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save Location'));
+    });
+
+    expect(locationsMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_location_add_failed' })
+    );
+    expect(mockRefreshSavedLocations).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the new row\'s Rename button when the location cap hides the Add button', async () => {
+    let resolveRefresh: (() => void) | undefined;
+    const refreshPromise = new Promise<void>((resolve) => {
+      resolveRefresh = () => resolve();
+    });
+    mockRefreshSavedLocations.mockReturnValue(refreshPromise);
+    const fourLocations = [
+      mockSavedLocations[0],
+      mockSavedLocations[1],
+      {
+        id: 'loc-3',
+        label: 'Family',
+        metro_area_id: '31080',
+        is_default: false,
+        metro_area: { name: 'Los Angeles', state: 'CA' },
+      },
+      {
+        id: 'loc-4',
+        label: 'School',
+        metro_area_id: '41940',
+        is_default: false,
+        metro_area: { name: 'San Jose', state: 'CA' },
+      },
+    ];
+    locationsMocks.useLocationMock.mockReturnValue({
+      savedLocations: fourLocations,
+      refreshSavedLocations: mockRefreshSavedLocations,
+    });
+    locationsMocks.addSavedLocationMock.mockResolvedValue({ data: { id: 'loc-5' } });
+    const { rerender } = render(<ManageLocationsPage />);
+    await act(async () => {});
+    await openAddAndSelectMetro();
+
+    fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Fifth' } });
+    const saveButton = screen.getByRole('button', { name: 'Save Location' });
+    saveButton.focus();
+    const savePromise = act(async () => {
+      fireEvent.click(saveButton);
+    });
+
+    // Simulates the refresh landing at the cap — the Add button no longer renders.
+    locationsMocks.useLocationMock.mockReturnValue({
+      savedLocations: [
+        ...fourLocations,
+        {
+          id: 'loc-5',
+          label: 'Fifth',
+          metro_area_id: '41940',
+          is_default: false,
+          metro_area: { name: 'San Jose', state: 'CA' },
+        },
+      ],
+      refreshSavedLocations: mockRefreshSavedLocations,
+    });
+    await act(async () => {
+      rerender(<ManageLocationsPage />);
+    });
+    resolveRefresh?.();
+    await savePromise;
+
+    expect(screen.queryByText('＋ Add a Location')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Rename Fifth' }));
   });
 });

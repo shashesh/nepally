@@ -10,8 +10,22 @@ interface AvatarProps {
   photoUrl?: string | null;
   trustLevel?: number;
   size?: AvatarSize;
+  radius?: string;
   /** Overlay a small check for Level 1+ members. */
   showVerifiedMark?: boolean;
+  /**
+   * Hashed to pick the placeholder tone. Defaults to `name`. Pass a stable
+   * identity key (e.g. a full name) when `name` itself varies by context
+   * (e.g. a masked public display name) so the same person keeps the same
+   * tone everywhere they're shown.
+   */
+  toneKey?: string;
+  /**
+   * True when a nearby heading or label already names the person, so the
+   * avatar is pure decoration: renders `alt=""` and hides the initials
+   * placeholder from assistive tech via `aria-hidden`.
+   */
+  decorative?: boolean;
 }
 
 const SIZE_MAP: Record<AvatarSize, number> = {
@@ -37,17 +51,20 @@ export default function Avatar({
   photoUrl,
   trustLevel = 0,
   size = 'medium',
+  radius = 'var(--radius-full)',
   showVerifiedMark = false,
+  toneKey,
+  decorative = false,
 }: AvatarProps) {
-  const toneClass = TONE_CLASSES[getAvatarToneIndex(name, TONE_CLASSES.length)];
+  const toneClass = TONE_CLASSES[getAvatarToneIndex(toneKey ?? name, TONE_CLASSES.length)];
 
   return (
-    <span className={styles.root}>
+    <span className={styles.root} aria-hidden={decorative || undefined}>
       <MantineAvatar
         src={photoUrl ?? null}
-        alt={`${name}'s avatar`}
+        alt={decorative ? '' : `${name}'s avatar`}
         size={SIZE_MAP[size]}
-        radius="xl"
+        radius={radius}
         classNames={{ placeholder: toneClass }}
       >
         {getInitials(name)}

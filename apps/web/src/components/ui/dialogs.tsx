@@ -44,6 +44,12 @@ export function useConfirm(): (options: ConfirmOptions) => Promise<boolean> {
           children: <Text size="sm">{options.message}</Text>,
           labels: { confirm: options.confirmLabel ?? 'Confirm', cancel: options.cancelLabel ?? 'Cancel' },
           confirmProps: options.danger ? { color: 'red' } : undefined,
+          // Destructive confirms start focus on Cancel. The APG alertdialog
+          // pattern puts initial focus on the least destructive action, and a
+          // named "Cancel" says what Enter will do more clearly than the
+          // icon-only close button, Mantine's default first focus (which
+          // also cancels).
+          cancelProps: options.danger ? { 'data-autofocus': true } : undefined,
           onConfirm: () => settle(true),
           onCancel: () => settle(false),
           onClose: () => settle(false),

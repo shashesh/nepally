@@ -4,6 +4,7 @@ import {
   MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE,
   MOCK_POST_OTHER_AUTHOR,
   MOCK_POSTS,
+  MOCK_SAVED_LOCATIONS,
   MOCK_UPCOMING_EVENTS,
   MOCK_USER_PROFILE,
 } from '../fixtures/mock-data';
@@ -85,6 +86,39 @@ export const VISUAL_PAGES: VisualPage[] = [
       expect(page.getByRole('main').getByText(MOCK_USER_PROFILE.full_name, { exact: true }).first()).toBeVisible(
         READY_TIMEOUT
       ),
+  },
+  {
+    name: 'profile-about',
+    path: '/profile',
+    signedIn: true,
+    // The `profile` shot covers the Posts tab; this one covers About You and
+    // the account details below it.
+    ready: async (page) => {
+      await heading(page, /^profile$/i);
+      await page.getByRole('tab', { name: 'About' }).click();
+      // Park the pointer off the tab, or desktop captures its hover tint.
+      await page.mouse.move(0, 0);
+      await heading(page, /about you/i);
+    },
+  },
+  {
+    name: 'manage-locations',
+    path: '/profile/locations',
+    signedIn: true,
+    // The default mock has no saved locations, which would screenshot an
+    // empty list.
+    setup: async (page) => {
+      await page.route('**/rest/v1/user_saved_locations**', async (route) => {
+        await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify(MOCK_SAVED_LOCATIONS) });
+      });
+    },
+    // The heading renders before the saved locations arrive, so wait for the
+    // last row as well.
+    ready: async (page) => {
+      await heading(page, /manage locations/i);
+      const lastLabel = MOCK_SAVED_LOCATIONS[MOCK_SAVED_LOCATIONS.length - 1].label;
+      await expect(page.getByRole('button', { name: `Rename ${lastLabel}` })).toBeVisible(READY_TIMEOUT);
+    },
   },
   {
     name: 'public-profile',

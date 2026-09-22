@@ -1,4 +1,4 @@
-import React, { type ReactElement, type ReactNode } from 'react';
+import React, { useRef, type ReactElement, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ActionIcon, Menu, type MenuProps } from '@mantine/core';
 import { IconDots } from '@tabler/icons-react';
@@ -23,25 +23,57 @@ export interface ActionMenuProps {
 }
 
 export function ActionMenu({ label, items, target, position = 'bottom-end' }: ActionMenuProps) {
+  const targetRef = useRef<HTMLElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Choosing an item moves focus from the menu to its trigger before the
+  // item's action runs, so a dialog the action opens remembers the trigger as
+  // the place to return focus to. Left on the chosen item, the dialog would
+  // return focus to an element that has since unmounted, dropping it to
+  // <body>. Mantine's own return to the trigger (`returnFocus`) is off: it
+  // fires 10ms after the menu closes, after that dialog has taken focus, and
+  // would pull focus back out of it. Focus already outside the menu is left
+  // alone. Escape still returns focus to the trigger, which Mantine does
+  // directly rather than through `returnFocus`. A click outside closes the
+  // menu and leaves focus where the click put it (usually <body>), so a click
+  // into a field is never overridden.
+  const moveFocusToTrigger = () => {
+    const active = document.activeElement;
+    if (!active || active === document.body || dropdownRef.current?.contains(active)) {
+      targetRef.current?.focus({ preventScroll: true });
+    }
+  };
+
+  const runItem = (item: ActionMenuItem) => {
+    moveFocusToTrigger();
+    item.onClick?.();
+  };
+
   return (
-    <Menu position={position} width={220} withinPortal>
-      <Menu.Target>
+    <Menu position={position} width={220} withinPortal returnFocus={false}>
+      <Menu.Target ref={targetRef}>
         {target ?? (
           <ActionIcon variant="subtle" color="gray" aria-label={label}>
             <IconDots size={18} aria-hidden="true" />
           </ActionIcon>
         )}
       </Menu.Target>
-      <Menu.Dropdown>
+      <Menu.Dropdown ref={dropdownRef}>
         {items.map((item) =>
           item.href && !item.disabled ? (
-            <Menu.Item key={item.key} component={Link} href={item.href} leftSection={item.icon}>
+            <Menu.Item
+              key={item.key}
+              component={Link}
+              href={item.href}
+              leftSection={item.icon}
+              onClick={moveFocusToTrigger}
+            >
               {item.label}
             </Menu.Item>
           ) : (
             <Menu.Item
               key={item.key}
-              onClick={item.onClick}
+              onClick={() => runItem(item)}
               leftSection={item.icon}
               color={item.danger ? 'red' : undefined}
               disabled={item.disabled}

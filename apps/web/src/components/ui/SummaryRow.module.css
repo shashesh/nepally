@@ -1,0 +1,102 @@
+.root {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+/* Compact surfaces get a border change on interaction; --shadow-float is
+   reserved for floating layers (menus, popovers, dropdowns). */
+.root:hover,
+.root:focus-within {
+  border-color: var(--border-solid);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* The row's only link, covering the row so the whole surface is clickable.
+   `.root`, not this link, is `::after`'s containing block (it is the
+   nearest positioned ancestor), so the overlay still reaches the full row
+   even though the link itself is clipped to one line. */
+.stretchedLink {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-1);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stretchedLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.stretchedLink:hover {
+  text-decoration: underline;
+}
+
+/* A pill-shaped badge's root (e.g. Mantine's Badge) clips overflow, so flex
+   would otherwise shrink it down to its ellipsis when the title is long. */
+.badge {
+  flex-shrink: 0;
+}
+
+/* A leading thumbnail or icon keeps its own size instead of being squeezed
+   by the text column. */
+.leading {
+  flex-shrink: 0;
+}
+
+/* Sits above the stretched link's overlay so it stays clickable. */
+.menu {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.line[data-variant='detail'] {
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+}
+
+.line[data-variant='meta'] {
+  color: var(--text-3);
+  font-size: var(--font-size-xs);
+}
+
+/* The alt text ('') keeps the dot itself out of the accessibility tree, so
+   screen readers hear "2h ago 3 likes", not "2h ago dot 3 likes". */
+.line > * + *::before {
+  content: '·';
+  content: '·' / '';
+  margin-right: var(--space-1);
+}

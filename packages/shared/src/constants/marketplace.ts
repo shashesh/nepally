@@ -2,6 +2,7 @@
  * Marketplace domain constants — categories, limits, and display config.
  * Single source of truth for both mobile and web platforms.
  */
+import type { ListingStatus } from '../types/marketplace';
 
 export interface MarketplaceCategoryConfig {
   slug: string;
@@ -36,6 +37,9 @@ export const MAX_LISTING_DESCRIPTION_LENGTH = 3000;
 /** Days before a listing is considered stale (deprioritized in search) */
 export const LISTING_SOFT_EXPIRY_DAYS = 90;
 
+/** How close to soft expiry an active listing gets before its owner is warned */
+export const LISTING_EXPIRY_WARNING_DAYS = 14;
+
 /** Max listings a single user can create */
 export const MAX_LISTINGS_PER_USER = 20;
 
@@ -63,6 +67,13 @@ export const LISTING_TYPE_LABELS: Record<string, string> = {
 export const ITEM_CONDITION_LABELS: Record<string, string> = {
   new: 'New',
   used: 'Used',
+};
+
+/** Listing status labels for display */
+export const LISTING_STATUS_LABELS: Record<ListingStatus, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  removed: 'Removed',
 };
 
 /** Days of the week for business hours form */

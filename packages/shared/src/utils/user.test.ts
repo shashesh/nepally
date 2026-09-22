@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { formatPublicName, getAvatarToneIndex, getInitials, getTrustLabel } from './user';
+import {
+  formatPublicName,
+  getAboutYouFormValues,
+  getAvatarToneIndex,
+  getFirstName,
+  getInitials,
+  getTrustLabel,
+} from './user';
 import { TrustLevel } from '../constants/trustLevels';
 
 describe('formatPublicName', () => {
@@ -25,6 +32,25 @@ describe('formatPublicName', () => {
 
   it('uppercases the last initial', () => {
     expect(formatPublicName('anjali sharma')).toBe('anjali S.');
+  });
+});
+
+describe('getFirstName', () => {
+  it('returns the first word of a multi-word name', () => {
+    expect(getFirstName('Bikal Shrestha')).toBe('Bikal');
+  });
+
+  it('returns the whole name when only one word is given', () => {
+    expect(getFirstName('Ramesh')).toBe('Ramesh');
+  });
+
+  it('returns empty string for a blank name', () => {
+    expect(getFirstName('')).toBe('');
+    expect(getFirstName('   ')).toBe('');
+  });
+
+  it('handles extra whitespace gracefully', () => {
+    expect(getFirstName('  Hari  Prasad  ')).toBe('Hari');
   });
 });
 
@@ -89,5 +115,56 @@ describe('getAvatarToneIndex', () => {
   it('spreads different names across tones', () => {
     const tones = new Set(['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'].map((name) => getAvatarToneIndex(name, 8)));
     expect(tones.size).toBeGreaterThan(1);
+  });
+});
+
+describe('getAboutYouFormValues', () => {
+  it('keeps a known district', () => {
+    expect(getAboutYouFormValues({ hometown_district: 'Kathmandu', college: null, years_in_us: null, languages: [] }))
+      .toMatchObject({ hometown_district: 'Kathmandu' });
+  });
+
+  it('drops an unknown district to null', () => {
+    expect(
+      getAboutYouFormValues({ hometown_district: 'Nawalparasi', college: null, years_in_us: null, languages: [] })
+    ).toMatchObject({ hometown_district: null });
+  });
+
+  it('treats a missing district the same as null', () => {
+    expect(getAboutYouFormValues({ hometown_district: undefined, college: null, years_in_us: null, languages: [] }))
+      .toMatchObject({ hometown_district: null });
+  });
+
+  it('drops unknown languages and keeps known ones in their stored order', () => {
+    expect(
+      getAboutYouFormValues({
+        hometown_district: null,
+        college: null,
+        years_in_us: null,
+        languages: ['sherpa', 'nepali', 'english'],
+      })
+    ).toMatchObject({ languages: ['nepali', 'english'] });
+  });
+
+  it('treats a missing languages array as empty', () => {
+    expect(getAboutYouFormValues({ hometown_district: null, college: null, years_in_us: null, languages: undefined }))
+      .toMatchObject({ languages: [] });
+  });
+
+  it('passes college and years_in_us through unchanged', () => {
+    expect(
+      getAboutYouFormValues({
+        hometown_district: null,
+        college: 'Pulchowk Campus',
+        years_in_us: 7,
+        languages: [],
+      })
+    ).toMatchObject({ college: 'Pulchowk Campus', years_in_us: 7 });
+  });
+
+  it('maps missing college and years_in_us to null', () => {
+    expect(
+      getAboutYouFormValues({ hometown_district: null, college: undefined, years_in_us: undefined, languages: [] })
+    ).toMatchObject({ college: null, years_in_us: null });
   });
 });

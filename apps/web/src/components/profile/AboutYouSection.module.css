@@ -1,29 +1,25 @@
-.section { margin-top: 32px; }
-.title { font-size: 18px; font-weight: 600; color: #111; margin: 0 0 4px; }
-.subtitle { font-size: 13px; color: #666; margin: 0 0 16px; }
-.label { display: block; font-size: 14px; color: #333; margin: 16px 0 6px; }
-.input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 15px;
-  background: #fff;
+/*
+ * AboutYouSection — profile page's About tab: hometown district, college,
+ * years in the US, and spoken languages. Semantic tokens only
+ * (scripts/guard-css-tokens.js). Spec: docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1.
+ */
+
+.section {
+  display: flex;
+  flex-direction: column;
 }
-.select { composes: input; }
-.chipGrid { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  padding: 6px 12px;
-  border-radius: 16px;
-  border: 1px solid #ccc;
-  background: #fff;
-  color: #333;
-  cursor: pointer;
-  font-size: 13px;
+
+.title {
+  /* Gambarino only ships weight 400 — the global h2 rule (globals.css)
+     already sets it, so this only overrides size and spacing. Matches
+     AccountDetails.module.css's title, which follows this section in the
+     About tab, so the four h2s line up. */
+  font-size: var(--font-size-lg);
+  margin: 0 0 var(--space-1);
 }
-.chipSelected {
-  background: #c8102e;
-  color: #fff;
-  border-color: #c8102e;
+
+.subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-3);
+  margin: 0 0 var(--space-4);
 }

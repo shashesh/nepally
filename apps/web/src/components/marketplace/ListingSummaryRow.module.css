@@ -1,0 +1,55 @@
+/* The thumbnail's own block: next/image with `fill` needs a positioned
+   ancestor, and this stays inside `leading`, so it paints under the
+   SummaryRow link's overlay (see SummaryRow.tsx). Its own block (not a bare
+   `<img>`) keeps it from adding baseline space under `.leading`. */
+.thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  font-size: var(--font-size-xl);
+}
+
+.thumbImage {
+  object-fit: cover;
+}
+
+/* Text-only chip so it stays unpositioned apart from the VisuallyHidden
+   "Status: " prefix inside it, which is clipped to nothing and so takes no
+   clicks either. A positioned element in `badge` would paint above the
+   link's overlay and swallow clicks (SummaryRow.tsx). */
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-chip);
+  background: var(--surface-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.statusChip[data-status='active'] {
+  color: var(--success);
+}
+
+.statusChip[data-status='inactive'] {
+  color: var(--warning);
+}
+
+.statusChip[data-status='removed'] {
+  color: var(--danger);
+}
+
+/* Not positioned — safe below the link's overlay, like `.statusChip`.
+   `data-tone` is the styling hook (the same attribute the tests assert on),
+   not the bare class. */
+.expiry[data-tone='warning'] {
+  color: var(--warning);
+  font-weight: var(--font-weight-medium);
+}

@@ -23,6 +23,7 @@ const TEXT_PAIRS: Array<[foreground: string, background: string]> = [
   ['--action-fg', '--action-bg'],
   ['--action-fg', '--action-bg-hover'],
   ['--accent-ink', '--accent-tint'],
+  ['--accent-ink', '--surface-1'],
   ['--trust-new-fg', '--trust-new-bg'],
   ['--trust-verified-fg', '--trust-verified-bg'],
   ['--trust-contributor-fg', '--trust-contributor-bg'],

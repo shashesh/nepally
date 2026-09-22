@@ -1,12 +1,70 @@
 import { describe, it, expect } from 'vitest';
-import { bioSchema, bioUpdateSchema, BIO_MAX_LENGTH } from './user';
 import {
+  bioSchema,
+  bioUpdateSchema,
+  BIO_MAX_LENGTH,
+  fullNameSchema,
+  FULL_NAME_MAX_LENGTH,
   hometownDistrictSchema,
   collegeSchema,
   yearsInUsSchema,
   languagesSchema,
   extendedProfileUpdateSchema,
 } from './user';
+
+describe('fullNameSchema', () => {
+  it('trims surrounding whitespace', () => {
+    expect(fullNameSchema.parse('  Sita Gurung  ')).toBe('Sita Gurung');
+  });
+
+  it('rejects a single-character name', () => {
+    expect(() => fullNameSchema.parse('A')).toThrow('Name must be at least 2 characters');
+  });
+
+  it('accepts a two-character name', () => {
+    expect(fullNameSchema.parse('Jo')).toBe('Jo');
+  });
+
+  it('accepts Devanagari characters', () => {
+    const input = 'सीता गुरुङ';
+    expect(fullNameSchema.parse(input)).toBe(input);
+  });
+
+  it("accepts apostrophes and hyphens (O'Brien-Rai)", () => {
+    expect(fullNameSchema.parse("O'Brien-Rai")).toBe("O'Brien-Rai");
+  });
+
+  it(`rejects strings longer than ${FULL_NAME_MAX_LENGTH} characters`, () => {
+    const input = 'a'.repeat(FULL_NAME_MAX_LENGTH + 1);
+    expect(() => fullNameSchema.parse(input)).toThrow(
+      `Name must be at most ${FULL_NAME_MAX_LENGTH} characters`
+    );
+  });
+
+  it(`accepts exactly ${FULL_NAME_MAX_LENGTH} characters`, () => {
+    const input = 'a'.repeat(FULL_NAME_MAX_LENGTH);
+    expect(fullNameSchema.parse(input)).toBe(input);
+  });
+
+  it('strips control characters', () => {
+    const input = 'Sita\u0000\u0007Gurung';
+    expect(fullNameSchema.parse(input)).toBe('SitaGurung');
+  });
+
+  it('removes a bidi override character (U+202E)', () => {
+    const input = 'Sita‮Gurung';
+    expect(fullNameSchema.parse(input)).toBe('SitaGurung');
+  });
+
+  it('collapses a run of tabs and spaces to a single space', () => {
+    expect(fullNameSchema.parse('Sita\t  Gurung')).toBe('Sita Gurung');
+  });
+
+  it('keeps a zero-width joiner (U+200D)', () => {
+    const input = 'Sita‍Gurung';
+    expect(fullNameSchema.parse(input)).toBe(input);
+  });
+});
 
 describe('bioSchema', () => {
   it('accepts a normal bio string', () => {
@@ -34,6 +92,11 @@ describe('bioSchema', () => {
   it('preserves newlines and tabs', () => {
     const input = 'line one\nline two\tindented';
     expect(bioSchema.parse(input)).toBe('line one\nline two\tindented');
+  });
+
+  it('keeps line breaks but removes a bidi override character (U+202E)', () => {
+    const input = 'line one‮\nline two';
+    expect(bioSchema.parse(input)).toBe('line one\nline two');
   });
 
   it('accepts emoji', () => {
@@ -113,10 +176,7 @@ describe('extended profile validation', () => {
   });
 
   it('accepts a list of supported language codes', () => {
-    expect(languagesSchema.parse(['nepali', 'english'])).toEqual([
-      'nepali',
-      'english',
-    ]);
+    expect(languagesSchema.parse(['nepali', 'english'])).toEqual(['nepali', 'english']);
   });
 
   it('rejects unsupported language codes', () => {
@@ -124,9 +184,7 @@ describe('extended profile validation', () => {
   });
 
   it('rejects duplicate language codes', () => {
-    expect(() => languagesSchema.parse(['nepali', 'nepali'])).toThrow(
-      /unique/i
-    );
+    expect(() => languagesSchema.parse(['nepali', 'nepali'])).toThrow(/unique/i);
   });
 
   it('extendedProfileUpdateSchema accepts a fully partial payload', () => {

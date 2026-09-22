@@ -8,8 +8,6 @@ export const RAW_ELEMENT_ALLOWLIST = [
   "src/components/events/EventFilterBar.tsx",
   "src/components/marketplace/FilterBar.tsx",
   "src/components/marketplace/ListingStrip.tsx",
-  "src/components/profile/AboutYouSection.tsx",
-  "src/components/users/FollowButton.tsx",
   "src/pages/events/index.page.tsx",
   "src/pages/login.page.tsx",
   "src/pages/marketplace/listing/[id].page.tsx",
@@ -17,10 +15,7 @@ export const RAW_ELEMENT_ALLOWLIST = [
   "src/pages/marketplace/my-listings.page.tsx",
   "src/pages/messages/[id].page.tsx",
   "src/pages/onboarding/zip.page.tsx",
-  "src/pages/profile.page.tsx",
-  "src/pages/profile/locations.page.tsx",
   "src/pages/profile/notifications.page.tsx",
   "src/pages/signup.page.tsx",
-  "src/pages/users/[id].page.tsx",
   "src/pages/verify-email.page.tsx"
 ];

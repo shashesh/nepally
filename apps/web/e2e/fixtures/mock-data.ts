@@ -1,4 +1,4 @@
-import type { User, Post, Tag, Event, MarketplaceCategory, MarketplaceListing } from '@nepally/shared';
+import type { User, Post, Tag, Event, MarketplaceCategory, MarketplaceListing, SavedLocation } from '@nepally/shared';
 
 /**
  * Instant that every relative fixture timestamp is measured from.
@@ -359,6 +359,50 @@ export const MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE: MarketplaceListing = {
 export const MOCK_MARKETPLACE_LISTINGS: MarketplaceListing[] = [
   MOCK_MARKETPLACE_LISTING_OWN_ACTIVE,
   MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE,
+];
+
+/**
+ * The signed-in member's saved locations, joined with their metro as
+ * getSavedLocations selects them: a default home and two others, so Manage
+ * Locations shows the default star, Remove and Set as default at once.
+ */
+export const MOCK_SAVED_LOCATIONS: SavedLocation[] = [
+  {
+    id: 'saved-loc-home-001',
+    user_id: MOCK_USER_ID,
+    metro_area_id: MOCK_METRO_ID,
+    label: 'Home',
+    zip_code: '10001',
+    is_default: true,
+    sort_order: 0,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    metro_area: { id: MOCK_METRO_ID, name: 'New York-Newark-Jersey City', state: 'NY' },
+  },
+  {
+    id: 'saved-loc-work-002',
+    user_id: MOCK_USER_ID,
+    metro_area_id: 'metro-dfw-002',
+    label: 'Work',
+    zip_code: null,
+    is_default: false,
+    sort_order: 1,
+    created_at: '2025-01-02T00:00:00Z',
+    updated_at: '2025-01-02T00:00:00Z',
+    metro_area: { id: 'metro-dfw-002', name: 'Dallas-Fort Worth-Arlington', state: 'TX' },
+  },
+  {
+    id: 'saved-loc-family-003',
+    user_id: MOCK_USER_ID,
+    metro_area_id: 'metro-sf-003',
+    label: 'Family',
+    zip_code: null,
+    is_default: false,
+    sort_order: 2,
+    created_at: '2025-01-03T00:00:00Z',
+    updated_at: '2025-01-03T00:00:00Z',
+    metro_area: { id: 'metro-sf-003', name: 'San Francisco-Oakland-Berkeley', state: 'CA' },
+  },
 ];
 
 /** Minimal fake Supabase JWT session structure */
