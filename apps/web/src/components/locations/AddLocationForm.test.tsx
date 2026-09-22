@@ -224,6 +224,13 @@ describe('AddLocationForm', () => {
     expect(onCancel).not.toHaveBeenCalled();
   });
 
+  it('offers Cancel while searching, before a metro is picked', () => {
+    renderForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it('calls onCancel without onSave when Cancel is clicked', async () => {
     renderForm();
     await selectMetro();

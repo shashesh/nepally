@@ -340,6 +340,17 @@ describe('ManageLocationsPage', () => {
     await screen.findByLabelText('Name this location');
   }
 
+  it('closes the add form from its search step and returns focus to Add a Location', async () => {
+    await renderPage();
+    fireEvent.click(screen.getByText('＋ Add a Location'));
+    await screen.findByLabelText('Search by metro name or ZIP code');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByLabelText('Search by metro name or ZIP code')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Add a Location/ }));
+  });
+
   it('saves a new location through addSavedLocation, refreshes, and closes the form', async () => {
     locationsMocks.addSavedLocationMock.mockResolvedValue({ data: { id: 'loc-3' } });
     await renderPage();

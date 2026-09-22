@@ -100,6 +100,13 @@ export function AddLocationForm({ usedLabels, userId, onSave, onCancel }: AddLoc
               {m.name}, {m.state}
             </UnstyledButton>
           ))}
+          {/* The page hides "Add a Location" while this form is open, so the
+              search step needs its own way back out. */}
+          <div className={styles.actionsRow}>
+            <Button type="button" variant="default" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
         </>
       ) : (
         <form onSubmit={handleSubmit}>
