@@ -1,0 +1,142 @@
+/* ListingCard — one card in the marketplace grid and in the strips.
+   Until PR 8a it borrowed the 837-line marketplace.module.css. */
+
+/* `.card` is the stretched link's containing block: nothing between it and
+   the link may be positioned, or the overlay would shrink to that box.
+   `height: 100%` fills the grid cell, so cards in a row end level. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+/* Compact surfaces change border on interaction; --shadow-float is reserved
+   for floating layers (PR 6 decision 11). */
+.card:hover,
+.card:focus-within {
+  border-color: var(--border-solid);
+}
+
+/* ── Cover ── It comes before the link, so even its positioned content
+   (the `fill` image, the sponsored badge) paints under the overlay. */
+.cover {
+  position: relative;
+  flex-shrink: 0;
+  height: 160px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.coverImage {
+  object-fit: cover;
+}
+
+.coverPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 44px;
+}
+
+.sponsored {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+}
+
+/* ── Body ── */
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+}
+
+/* The card's only link; its `::after` covers the whole card. */
+.stretchedLink {
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.stretchedLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.stretchedLink:hover {
+  text-decoration: underline;
+}
+
+.price {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: auto;
+  color: var(--text-3);
+  font-size: var(--text-xs);
+}
+
+.metaDot {
+  color: var(--text-3);
+}
+
+/* ── Category chip ──
+   Coloured from the `--category-<slug>` pairs through `data-category`, the
+   convention EventTypeBadge established with `data-type`. Only the five
+   categories that survived migration 016 have tokens; ListingCard maps any
+   other slug to `other` before it reaches the DOM. */
+.categoryChip {
+  align-self: flex-start;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.categoryChip[data-category='food-restaurants'] {
+  color: var(--category-food-restaurants-fg);
+  background: var(--category-food-restaurants-bg);
+}
+
+.categoryChip[data-category='immigration-legal'] {
+  color: var(--category-immigration-legal-fg);
+  background: var(--category-immigration-legal-bg);
+}
+
+.categoryChip[data-category='professional-services'] {
+  color: var(--category-professional-services-fg);
+  background: var(--category-professional-services-bg);
+}
+
+.categoryChip[data-category='remittance-finance'] {
+  color: var(--category-remittance-finance-fg);
+  background: var(--category-remittance-finance-bg);
+}
+
+.categoryChip[data-category='other'] {
+  color: var(--category-other-fg);
+  background: var(--category-other-bg);
+}

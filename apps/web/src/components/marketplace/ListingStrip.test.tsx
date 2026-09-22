@@ -14,7 +14,8 @@ vi.mock('next/image', () => ({
     React.createElement('img', { src, alt }),
 }));
 
-vi.mock('@nepally/shared', () => ({}));
+// No shared API is called here, and ListingCard reads MARKETPLACE_CATEGORIES
+// and isVerifiedSeller from the real module.
 
 vi.mock('./ListingStrip.module.css', () => ({
   default: new Proxy({}, { get: (_t, p) => `mock-${String(p)}` }),

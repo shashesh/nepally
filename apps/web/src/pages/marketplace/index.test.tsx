@@ -114,12 +114,12 @@ const MOCK_LISTING = {
   owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
-vi.mock('@nepally/shared', () => ({
+vi.mock('@nepally/shared', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   getListingsByMetro: mocks.getListingsByMetro,
   getFeaturedListings: mocks.getFeaturedListings,
   getTrendingListings: mocks.getTrendingListings,
   getStickyBusinessListings: mocks.getStickyBusinessListings,
-  TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
 }));
 
 // Must import AFTER vi.mock

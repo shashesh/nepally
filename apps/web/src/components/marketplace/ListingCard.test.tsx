@@ -14,12 +14,6 @@ vi.mock('next/image', () => ({
     React.createElement('img', { src, alt, className }),
 }));
 
-vi.mock('@nepally/shared', () => ({}));
-
-vi.mock('../../pages/marketplace/marketplace.module.css', () => ({
-  default: new Proxy({}, { get: (_target, prop) => `mock-${String(prop)}` }),
-}));
-
 // Must import after vi.mock
 import { ListingCard } from './ListingCard';
 
@@ -94,13 +88,18 @@ describe('ListingCard (web)', () => {
     expect(screen.getByText('42 views')).toBeDefined();
   });
 
-  it('renders verified star when owner trust_level >= 1', () => {
+  it('names a verified seller', () => {
     render(React.createElement(ListingCard, { listing: makeListing() }));
     expect(screen.getByText('Verified Seller')).toBeDefined();
-    expect(screen.getByText('★')).toBeDefined();
   });
 
-  it('hides verified star when owner trust_level < 1', () => {
+  it('hides the verified mark from assistive tech, keeping its label', () => {
+    const { container } = render(React.createElement(ListingCard, { listing: makeListing() }));
+    const star = container.querySelector('[data-testid="verified-mark"]');
+    expect(star?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('says nothing about verification for a new seller', () => {
     render(
       React.createElement(ListingCard, {
         listing: makeListing({
@@ -109,33 +108,73 @@ describe('ListingCard (web)', () => {
       })
     );
     expect(screen.queryByText('Verified Seller')).toBeNull();
-    expect(screen.queryByText('★')).toBeNull();
   });
 
-  it('renders Contact Seller CTA', () => {
+  it('drops the inert "Contact Seller" text', () => {
     render(React.createElement(ListingCard, { listing: makeListing() }));
-    expect(screen.getByText('Contact Seller')).toBeDefined();
+    expect(screen.queryByText('Contact Seller')).toBeNull();
   });
 
-  it('links to the correct listing detail page', () => {
+  it('carries one link, named by the title alone, to the listing', () => {
     render(React.createElement(ListingCard, { listing: makeListing() }));
-    const link = screen.getByRole('link');
-    expect(link.getAttribute('href')).toBe('/marketplace/listing/listing-1');
+    const links = screen.getAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute('href')).toBe('/marketplace/listing/listing-1');
+    expect(links[0].textContent).toBe('Himalayan Kitchen');
   });
 
-  it('shows gradient placeholder emoji when no photos', () => {
-    render(React.createElement(ListingCard, { listing: makeListing({ photos: [] }) }));
-    expect(screen.getByText('🍜')).toBeDefined();
+  it('puts the title link inside a heading', () => {
+    render(React.createElement(ListingCard, { listing: makeListing() }));
+    const heading = screen.getByRole('heading', { name: 'Himalayan Kitchen' });
+    expect(heading.querySelector('a')).not.toBeNull();
   });
 
-  it('renders image when photos are present', () => {
-    render(React.createElement(ListingCard, { listing: makeListing({ photos: ['https://example.com/photo.jpg'] }) }));
-    const img = screen.getByAltText('Himalayan Kitchen');
-    expect(img).toBeDefined();
+  it('themes itself from the category slug', () => {
+    const { container } = render(React.createElement(ListingCard, { listing: makeListing() }));
+    expect(container.querySelector('article')?.getAttribute('data-category')).toBe(
+      'food-restaurants'
+    );
+  });
+
+  it('falls back to the other theme for a category that no longer exists', () => {
+    const { container } = render(
+      React.createElement(ListingCard, {
+        listing: makeListing({ category: { ...MOCK_CATEGORY, slug: 'beauty-wellness' } }),
+      })
+    );
+    expect(container.querySelector('article')?.getAttribute('data-category')).toBe('other');
+  });
+
+  it('shows the category emoji on the cover when there are no photos', () => {
+    const { container } = render(
+      React.createElement(ListingCard, { listing: makeListing({ photos: [] }) })
+    );
+    const placeholder = container.querySelector('[data-testid="cover-placeholder"]');
+    expect(placeholder?.textContent).toBe('🍜');
+    expect(placeholder?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('renders a decorative cover image when photos are present', () => {
+    const { container } = render(
+      React.createElement(ListingCard, {
+        listing: makeListing({ photos: ['https://example.com/photo.jpg'] }),
+      })
+    );
+    const img = container.querySelector('img');
+    expect(img?.getAttribute('src')).toBe('https://example.com/photo.jpg');
+    // The title is already the link's name; repeating it as alt says it twice.
+    expect(img?.getAttribute('alt')).toBe('');
   });
 
   it('uses fallback emoji when category is null', () => {
-    render(React.createElement(ListingCard, { listing: makeListing({ category: null }) }));
-    expect(screen.getByText('📦')).toBeDefined();
+    const { container } = render(
+      React.createElement(ListingCard, { listing: makeListing({ category: null }) })
+    );
+    expect(container.querySelector('[data-testid="cover-placeholder"]')?.textContent).toBe('📦');
+  });
+
+  it('marks a sponsored listing', () => {
+    render(React.createElement(ListingCard, { listing: makeListing(), sponsored: true }));
+    expect(screen.getByText('Sponsored')).toBeDefined();
   });
 });
