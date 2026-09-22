@@ -3,6 +3,7 @@
   padding: var(--space-4);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
+  background: var(--surface-1);
 }
 
 .addSectionTitle {
@@ -21,7 +22,9 @@
 }
 
 .searchResult:hover {
-  background: var(--surface-0);
+  /* --surface-0 is the page background, which .addSection now shares (see
+     above) — indistinguishable there. --surface-2 stands out against both. */
+  background: var(--surface-2);
 }
 
 .selectedMetro {

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { ActionIcon, Button, TextInput } from '@mantine/core';
+import { ActionIcon, Button, TextInput, VisuallyHidden } from '@mantine/core';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 import type { SavedLocation } from '@nepally/shared';
 import { notify } from '../ui';
@@ -46,6 +46,7 @@ export function SavedLocationRow({
   const isEditingRef = useRef(false);
   const renameInFlightRef = useRef(false);
   const renameButtonElRef = useRef<HTMLButtonElement | null>(null);
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
 
   function setRenameButtonRef(el: HTMLButtonElement | null) {
     renameButtonElRef.current = el;
@@ -59,24 +60,29 @@ export function SavedLocationRow({
     setEditError(null);
   }
 
-  /** Closes the rename field (if still open) and returns focus to the Rename button. */
-  function cancelRename() {
+  /**
+   * Closes the rename field (if still open), and returns focus to the
+   * Rename button only when `refocus` is true. A blur that's actually the
+   * member tabbing (or clicking) to some other control must be left alone —
+   * see `commitRename`'s callers for how `refocus` is decided.
+   */
+  function closeRename(refocus: boolean) {
     isEditingRef.current = false;
     flushSync(() => {
       setIsEditing(false);
       setEditError(null);
     });
-    renameButtonElRef.current?.focus();
+    if (refocus) renameButtonElRef.current?.focus();
   }
 
-  async function commitRename() {
+  async function commitRename(refocus: boolean) {
     // Already cancelled (Escape) or committed by an earlier call — a blur
     // that fires after Enter or Escape must not save twice or save after cancel.
     if (!isEditingRef.current) return;
 
     const trimmed = editingLabel.trim();
     if (!trimmed || trimmed === location.label) {
-      cancelRename();
+      closeRename(refocus);
       return;
     }
 
@@ -98,17 +104,30 @@ export function SavedLocationRow({
       return;
     }
 
-    cancelRename();
+    // Focus may have moved on during the await (e.g. the member tabbed or
+    // clicked elsewhere while the save was in flight) — only reclaim it if
+    // it's stranded: still on <body>, or still on the input that's about to
+    // close. `refocus` as passed in by the caller is stale by now.
+    const active = document.activeElement;
+    const freshRefocus = !active || active === document.body || active === renameInputRef.current;
+    closeRename(freshRefocus);
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      void commitRename();
+      void commitRename(true);
     } else if (event.key === 'Escape') {
       event.preventDefault();
-      cancelRename();
+      closeRename(true);
     }
+  }
+
+  function handleBlur(event: React.FocusEvent<HTMLInputElement>) {
+    // relatedTarget is the element gaining focus; null means focus has
+    // nowhere defined to go (heading for <body>), which is the only time a
+    // blur should reclaim it for the Rename button.
+    void commitRename(event.relatedTarget === null);
   }
 
   const metroDisplay = location.metro_area
@@ -128,6 +147,7 @@ export function SavedLocationRow({
         <div className={styles.itemInfo}>
           {isEditing ? (
             <TextInput
+              ref={renameInputRef}
               size="sm"
               aria-label={`Rename location ${location.label}`}
               value={editingLabel}
@@ -135,7 +155,7 @@ export function SavedLocationRow({
                 setEditingLabel(e.currentTarget.value);
                 setEditError(null);
               }}
-              onBlur={() => void commitRename()}
+              onBlur={handleBlur}
               onKeyDown={handleKeyDown}
               error={editError ?? undefined}
               maxLength={30}
@@ -171,8 +191,9 @@ export function SavedLocationRow({
         </div>
       </div>
       {!location.is_default && (
-        <Button variant="subtle" size="compact-sm" onClick={onSetDefault}>
+        <Button variant="subtle" size="compact-sm" className={styles.setDefault} onClick={onSetDefault}>
           Set as default
+          <VisuallyHidden>: {location.label}</VisuallyHidden>
         </Button>
       )}
     </div>

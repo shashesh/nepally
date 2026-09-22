@@ -101,6 +101,11 @@ describe('SavedLocationRow', () => {
     expect(screen.queryByText('Set as default')).toBeNull();
   });
 
+  it('gives each row\'s "Set as default" a distinct accessible name', () => {
+    renderRow();
+    expect(screen.getByRole('button', { name: 'Set as default: Work' })).toBeDefined();
+  });
+
   it('enters edit mode on Rename click, focusing the field', () => {
     renderRow();
     fireEvent.click(screen.getByRole('button', { name: 'Rename Work' }));
@@ -184,5 +189,77 @@ describe('SavedLocationRow', () => {
     });
     expect(onRename).not.toHaveBeenCalled();
     expect(screen.queryByLabelText('Rename location Work')).toBeNull();
+  });
+
+  // ─── Focus race: a blur toward another control must not steal it back ────
+
+  it('does not steal focus on blur toward another control when nothing changed', async () => {
+    renderRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Rename Work' }));
+    const input = screen.getByLabelText('Rename location Work');
+    const removeButton = screen.getByRole('button', { name: 'Remove Work' });
+
+    await act(async () => {
+      fireEvent.blur(input, { relatedTarget: removeButton });
+      removeButton.focus();
+    });
+
+    expect(onRename).not.toHaveBeenCalled();
+    // The old behaviour always refocused Rename on close; the fix must not.
+    expect(document.activeElement).not.toBe(screen.getByRole('button', { name: 'Rename Work' }));
+  });
+
+  it('does not steal focus back once the member has moved on while a save is in flight', async () => {
+    let resolveRename: (value: { error?: Error | null }) => void = () => {};
+    onRename.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRename = resolve;
+      })
+    );
+    renderRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Rename Work' }));
+    const input = screen.getByLabelText('Rename location Work');
+    fireEvent.change(input, { target: { value: 'Office' } });
+    const removeButton = screen.getByRole('button', { name: 'Remove Work' });
+
+    await act(async () => {
+      fireEvent.blur(input, { relatedTarget: removeButton });
+      removeButton.focus();
+    });
+    expect(onRename).toHaveBeenCalledWith('Office');
+    expect(document.activeElement).toBe(removeButton);
+
+    await act(async () => {
+      resolveRename({});
+    });
+
+    // The save succeeded and closed the field, but focus was already on
+    // Remove by the time it resolved — it must be left alone.
+    expect(document.activeElement).toBe(removeButton);
+  });
+
+  it('does not double-save when a blur follows Enter before the request resolves', async () => {
+    let resolveRename: (value: { error?: Error | null }) => void = () => {};
+    onRename.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRename = resolve;
+      })
+    );
+    renderRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Rename Work' }));
+    const input = screen.getByLabelText('Rename location Work');
+    fireEvent.change(input, { target: { value: 'Office' } });
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+
+    expect(onRename).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveRename({});
+    });
+    expect(onRename).toHaveBeenCalledTimes(1);
   });
 });

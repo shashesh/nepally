@@ -37,3 +37,19 @@
   display: flex;
   gap: var(--space-2);
 }
+
+/* Touch targets: Mantine's default ActionIcon size (--ai-size-md, 28px) is
+   below the ~44px minimum recommended for touch on phones. Below the sm
+   breakpoint (48em — PHONE_MEDIA_QUERY in components/layout/breakpoints.ts;
+   media queries can't consume that JS constant, so the value is repeated
+   here), widen just the size variable Mantine's own CSS reads. */
+@media (max-width: 47.99em) {
+  .actions :global(.mantine-ActionIcon-root) {
+    --ai-size: 44px;
+  }
+}
+
+/* Lines up with the label column: the star column's width plus itemRow's gap. */
+.setDefault {
+  margin-left: calc(24px + var(--space-2));
+}

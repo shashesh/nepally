@@ -18,7 +18,12 @@ import type { SavedLocation, MetroArea } from '@nepally/shared';
 import { PageHeader, useConfirm, notify } from '../../components/ui';
 import { SavedLocationRow } from '../../components/locations/SavedLocationRow';
 import { AddLocationForm } from '../../components/locations/AddLocationForm';
+import { isFocusStranded } from '../../lib/focus';
 import styles from '../../styles/ManageLocations.module.css';
+
+interface PendingAddFocus {
+  newLocationId: string | null;
+}
 
 export default function ManageLocationsPage() {
   const router = useRouter();
@@ -37,25 +42,61 @@ export default function ManageLocationsPage() {
   // refreshes savedLocations from the LocationContext; the effect below only
   // acts once that refresh actually lands (a new savedLocations reference).
   const pendingFocusIdRef = useRef<string | null>(null);
+  // Same idea for a successful add — see the effect below for why it needs
+  // its own ref rather than reusing pendingFocusIdRef's.
+  const pendingAddFocusRef = useRef<PendingAddFocus | null>(null);
 
   // Removing or defaulting a location goes through the LocationContext's own
   // async refresh, so the focus target only exists once savedLocations has
-  // actually re-rendered with it — never steal focus if the member has
-  // already moved on to something else in the meantime. Runs unconditionally,
-  // above the !user early return, because hooks must run in the same order
-  // on every render.
+  // actually re-rendered with it. isFocusStranded (not just "activeElement is
+  // body") also covers focus still sitting inside a closing confirm modal:
+  // Mantine's useFocusReturn schedules its own restore with a 10ms
+  // setTimeout, and the modal itself stays mounted for its ~200ms exit
+  // transition, so a DELETE that resolves in under 10ms can otherwise unmount
+  // the row before either has run, leaving focus stranded once the modal
+  // finally closes. Never steal focus that's legitimately elsewhere. Runs
+  // unconditionally, above the !user early return, because hooks must run in
+  // the same order on every render.
   useEffect(() => {
     const id = pendingFocusIdRef.current;
     if (!id) return;
     pendingFocusIdRef.current = null;
-    const active = document.activeElement;
-    if (!active || active === document.body) {
+    if (isFocusStranded()) {
       renameButtonRefs.current[id]?.focus();
     }
   }, [savedLocations]);
 
+  // A successful add also goes through the same async refresh. Focus prefers
+  // the "＋ Add a Location" button — matching what closing the form used to
+  // do unconditionally — but that button doesn't render once the location
+  // cap is reached, which is exactly when this add just happened, so fall
+  // back to the newly created row's Rename button, or the first row's.
+  // Kept separate from the remove/set-default effect above: that one always
+  // has a specific row to target, but this one only knows to prefer the Add
+  // button once savedLocations (and so `showAdd`) have actually re-rendered.
+  useEffect(() => {
+    const pending = pendingAddFocusRef.current;
+    if (!pending) return;
+    pendingAddFocusRef.current = null;
+    if (!isFocusStranded()) return;
+    const fallbackId = pending.newLocationId ?? savedLocations[0]?.id ?? null;
+    const target = addButtonRef.current ?? (fallbackId ? renameButtonRefs.current[fallbackId] : null);
+    target?.focus();
+  }, [savedLocations]);
+
+  // Leaves for /login rather than redirecting during render (the pattern
+  // profile.page.tsx uses): a router.replace call during render is a side
+  // effect the React Compiler lint rules flag once purity checks reach it,
+  // and it also makes this component's first render non-deterministic for
+  // anything (tests, StrictMode double-invoke) that inspects render output
+  // before effects run.
+  useEffect(() => {
+    if (!user && typeof window !== 'undefined') {
+      router.replace('/login');
+    }
+  }, [user, router]);
+
   if (!user) {
-    router.replace('/login');
     return null;
   }
 
@@ -81,6 +122,11 @@ export default function ManageLocationsPage() {
   }
 
   async function handleDelete(loc: SavedLocation) {
+    // Cleared first: a slow *earlier* refresh (refreshSavedLocations swallows
+    // its own errors, so nothing else clears a stale arm) must not later pull
+    // focus out of whatever the member is doing now — including a dialog
+    // this very click is about to open.
+    pendingFocusIdRef.current = null;
     if (loc.is_default || savedLocations.length <= 1) return;
     const confirmed = await confirm({
       title: 'Remove this location?',
@@ -109,8 +155,11 @@ export default function ManageLocationsPage() {
   }
 
   async function handleSetDefault(loc: SavedLocation) {
+    // Cleared first, same as handleDelete, before arming it for real: a
+    // stale arm from an earlier, still-settling refresh must never win.
     // That row's "Set as default" button (the one just clicked) disappears
     // once it becomes the default, so focus moves to its Rename button.
+    pendingFocusIdRef.current = null;
     pendingFocusIdRef.current = loc.id;
     const { error } = await setDefaultSavedLocation(supabase, userId, loc.id);
     if (error) {
@@ -126,7 +175,7 @@ export default function ManageLocationsPage() {
     await refreshSavedLocations();
   }
 
-  function closeAdd() {
+  function handleCancelAdd() {
     flushSync(() => {
       setShowAdd(false);
     });
@@ -134,12 +183,22 @@ export default function ManageLocationsPage() {
   }
 
   async function handleSaveNew(metro: MetroArea, label: string): Promise<{ error?: Error | null }> {
-    const { error } = await addSavedLocation(supabase, userId, metro.id, label);
+    const { data, error } = await addSavedLocation(supabase, userId, metro.id, label);
     if (error) {
+      logClientEvent({
+        event: 'profile_location_add_failed',
+        context: { platform: 'web', userId },
+        error,
+      });
       return { error };
     }
+    pendingAddFocusRef.current = { newLocationId: data?.id ?? null };
+    // Awaited here (not left for AddLocationForm to close early): Save stays
+    // busy for this whole call, and the effect above needs savedLocations to
+    // have actually refreshed before it decides where the Add button and the
+    // new row stand.
     await refreshSavedLocations();
-    closeAdd();
+    setShowAdd(false);
     return {};
   }
 
@@ -181,7 +240,9 @@ export default function ManageLocationsPage() {
           </Button>
         )}
 
-        {showAdd && <AddLocationForm usedLabels={usedLabels} onSave={handleSaveNew} onClose={closeAdd} />}
+        {showAdd && (
+          <AddLocationForm usedLabels={usedLabels} userId={userId} onSave={handleSaveNew} onClose={handleCancelAdd} />
+        )}
       </div>
     </>
   );

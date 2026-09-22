@@ -1,0 +1,186 @@
+import { renderHook, act } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  searchMetroAreasMock: vi.fn(),
+  getMetroByZipMock: vi.fn(),
+  isValidZipCodeMock: vi.fn(),
+  logClientEventMock: vi.fn(),
+}));
+
+vi.mock('../lib/supabase', () => ({ supabase: {} }));
+vi.mock('@nepally/shared', async () => ({
+  ...(await vi.importActual<object>('@nepally/shared')),
+  searchMetroAreas: mocks.searchMetroAreasMock,
+  getMetroByZip: mocks.getMetroByZipMock,
+  isValidZipCode: mocks.isValidZipCodeMock,
+  logClientEvent: mocks.logClientEventMock,
+}));
+
+import { useMetroSearch, SEARCH_FAILED_MESSAGE, NO_MATCH_MESSAGE } from './useMetroSearch';
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
+
+describe('useMetroSearch', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    mocks.searchMetroAreasMock.mockReset();
+    mocks.getMetroByZipMock.mockReset();
+    mocks.logClientEventMock.mockReset();
+    mocks.isValidZipCodeMock.mockReset();
+    mocks.isValidZipCodeMock.mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('waits 250ms after typing before searching', async () => {
+    mocks.searchMetroAreasMock.mockResolvedValue({ data: [{ id: '1', name: 'San Jose', state: 'CA' }] });
+    const { result, rerender } = renderHook(({ input }) => useMetroSearch(input, 'user-1'), {
+      initialProps: { input: '' },
+    });
+
+    rerender({ input: 'san' });
+    expect(mocks.searchMetroAreasMock).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(249);
+    });
+    expect(mocks.searchMetroAreasMock).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(mocks.searchMetroAreasMock).toHaveBeenCalledWith({}, 'san');
+    expect(result.current.results).toEqual([{ id: '1', name: 'San Jose', state: 'CA' }]);
+    expect(result.current.statusMessage).toBe('');
+  });
+
+  it('does not search below two characters', async () => {
+    const { result } = renderHook(() => useMetroSearch('s', 'user-1'));
+    await act(async () => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(mocks.searchMetroAreasMock).not.toHaveBeenCalled();
+    expect(result.current.results).toEqual([]);
+    expect(result.current.statusMessage).toBe('');
+  });
+
+  it('looks up by ZIP code, not by name, for a valid ZIP', async () => {
+    mocks.isValidZipCodeMock.mockReturnValue(true);
+    mocks.getMetroByZipMock.mockResolvedValue({ data: { id: '19100', name: 'Dallas', state: 'TX' } });
+    const { result } = renderHook(() => useMetroSearch('75001', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(mocks.getMetroByZipMock).toHaveBeenCalledWith({}, '75001');
+    expect(mocks.searchMetroAreasMock).not.toHaveBeenCalled();
+    expect(result.current.results).toEqual([{ id: '19100', name: 'Dallas', state: 'TX' }]);
+  });
+
+  it('treats an unknown ZIP as no match, not a failure', async () => {
+    mocks.isValidZipCodeMock.mockReturnValue(true);
+    mocks.getMetroByZipMock.mockResolvedValue({ error: new Error('ZIP code not found') });
+    const { result } = renderHook(() => useMetroSearch('99999', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(result.current.results).toEqual([]);
+    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
+    expect(mocks.logClientEventMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the failure message and logs a real search failure', async () => {
+    mocks.searchMetroAreasMock.mockResolvedValue({ error: new Error('network down') });
+    const { result } = renderHook(() => useMetroSearch('boston', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(result.current.statusMessage).toBe(SEARCH_FAILED_MESSAGE);
+    expect(mocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_location_search_failed', context: { platform: 'web', userId: 'user-1' } })
+    );
+  });
+
+  it('shows "No metros match." for a query with no results', async () => {
+    mocks.searchMetroAreasMock.mockResolvedValue({ data: [] });
+    const { result } = renderHook(() => useMetroSearch('zzz', 'user-1'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
+  });
+
+  it('ignores a slow response that arrives after a newer one', async () => {
+    const slow = deferred<{ data: { id: string; name: string; state: string }[] }>();
+    const fast = deferred<{ data: { id: string; name: string; state: string }[] }>();
+    mocks.searchMetroAreasMock.mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise);
+
+    const { result, rerender } = renderHook(({ input }) => useMetroSearch(input, 'user-1'), {
+      initialProps: { input: 'bo' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+    rerender({ input: 'bos' });
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    await act(async () => {
+      fast.resolve({ data: [{ id: 'bos', name: 'Boston', state: 'MA' }] });
+    });
+    await act(async () => {
+      slow.resolve({ data: [{ id: 'bal', name: 'Baltimore', state: 'MD' }] });
+    });
+
+    expect(result.current.results).toEqual([{ id: 'bos', name: 'Boston', state: 'MA' }]);
+  });
+
+  it('keeps the previous message on screen while the next query is debouncing/loading', async () => {
+    mocks.searchMetroAreasMock.mockResolvedValueOnce({ data: [] });
+    const { result, rerender } = renderHook(({ input }) => useMetroSearch(input, 'user-1'), {
+      initialProps: { input: 'zzz' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
+
+    // A new keystroke starts debouncing again; the old message must not
+    // disappear (and the field must not flash empty) until it resolves.
+    rerender({ input: 'zzzz' });
+    expect(result.current.statusMessage).toBe(NO_MATCH_MESSAGE);
+  });
+
+  it('clears everything once the query becomes too short again', async () => {
+    mocks.searchMetroAreasMock.mockResolvedValueOnce({ data: [{ id: '1', name: 'San Jose', state: 'CA' }] });
+    const { result, rerender } = renderHook(({ input }) => useMetroSearch(input, 'user-1'), {
+      initialProps: { input: 'san' },
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(result.current.results.length).toBe(1);
+
+    rerender({ input: 's' });
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(result.current.results).toEqual([]);
+    expect(result.current.statusMessage).toBe('');
+  });
+});
