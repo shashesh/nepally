@@ -12625,14 +12625,14 @@ This replaces profile 720–771. It renders the Bio, Account Info and Activity s
 
 ### Task 6.16: The profile page on the new pieces
 
-**Files:** `pages/profile.page.tsx`, `profile.test.tsx`, `e2e/tests/06-profile.spec.ts`, `e2e/tests/11-marketplace.spec.ts`.
+**Files:** `pages/profile.page.tsx`, `profile.test.tsx`, `e2e/tests/06-profile.spec.ts`, `e2e/tests/11-marketplace.spec.ts`, `apps/web/eslint/raw-element-allowlist.mjs` (the page leaves it here, as `users/[id]` did in 6.9), and the shared scrolling-tabs module (see the Tabs row), which `pages/users/[id].page.tsx` and `PublicProfile.module.css` switch to.
 
 | Today | Becomes |
 |---|---|
 | Top bar, hamburger, overlay (545–602) | `PageHeader title="Profile"`, whose `actions` hold `<ActionMenu label="Open profile menu">`. Its items are Edit Name, Edit Bio and Change Password from `useProfileEditing`, each with `disabled: saving`, then Logout (`danger`) |
 | Avatar, file input, photo buttons, status line (606–652) | `ProfilePhotoControl`. `onPick` calls `replaceProfilePhoto`, and `onRemove` calls the shared `removeProfilePhoto` (Task 6.2). Both then refresh and toast "Photo updated" / "Photo removed", or the error (decision 2) |
 | `trustBadge` span and `trustClass` (163–171, 657–661) | `TrustBadge` |
-| four tab `<button>`s (664–693) | Mantine `Tabs` with `keepMounted={false}` and `Tabs.List aria-label="Profile sections"`: "Posts", "Listings", "Saved Posts", "About" |
+| four tab `<button>`s (664–693) | Mantine `Tabs` with `keepMounted={false}` and `Tabs.List aria-label="Profile sections"`: "Posts", "Listings", "Saved Posts", "About". They use the same scrolling treatment as the public profile's tabs (Task 6.10), moved into a shared `components/ui/scrollingTabs.module.css` plus a `scrollFocusedTabIntoView` handler. That module now has two callers, and search adopts it in PR 10 |
 | list state and load effect (49–56, 91–148) | `useOwnProfileContent(user?.id ?? null)` (Task 6.14) |
 | `handleUnsave` (385–393) | `const { error } = await unsave(postId)`, then `notify.error('Failed to unsave post.')` or `notify.success('Post unsaved.')`. The hook restores the post if the delete fails |
 | `renderPostList` / `renderSavedPostList` / `renderListingsList` (395–537) | `LoadingState`, `ErrorState` with `onRetry={list.reload}`, or `EmptyState` with today's sentences ("Start a post" and "Post a listing" as actions). Otherwise `PostSummaryRow`s, saved ones with `menu={<ActionMenu label="Post options" items={[{ key: 'unsave', label: 'Unsave Post', … }]} />}`, and `ListingSummaryRow owner={{ now }}` |
