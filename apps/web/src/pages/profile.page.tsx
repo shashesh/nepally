@@ -4,7 +4,7 @@ import { IconChevronRight } from '@tabler/icons-react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { removeProfilePhoto, TrustLevel, updateUserProfile } from '@nepally/shared';
+import { logClientEvent, removeProfilePhoto, TrustLevel, updateUserProfile } from '@nepally/shared';
 import type { MarketplaceListing } from '@nepally/shared';
 import {
   ActionMenu,
@@ -112,24 +112,27 @@ export default function ProfilePage() {
     }
   }
 
-  // False once the page unmounts, so a photo change that finishes after the
-  // member has navigated away doesn't set state here. Its toast still shows:
-  // it reports on the member's own photo, wherever they are now. Set true in
-  // the effect body, not just its cleanup, so it's correct under StrictMode's
-  // double mount too.
-  const mounted = useRef(false);
+  // True from Logout on, so this instance never answers the cleared `user`
+  // with /login. handleSignOut's ordering covers the remount (see there).
+  const signingOut = useRef(false);
   useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user && typeof window !== 'undefined') {
+    if (!user && !signingOut.current && typeof window !== 'undefined') {
       router.replace('/login');
     }
   }, [user, router]);
+
+  // Unsaving hides the row at once, taking with it the menu trigger Mantine
+  // would return focus to, so the browser drops focus to <body>. Move it to
+  // the Saved panel instead, but only if it was lost: never steal it from
+  // wherever the member has moved since (as ProfilePhotoControl does).
+  const savedPanelRef = useRef<HTMLDivElement>(null);
+  const refocusSavedPanel = useRef(false);
+  useEffect(() => {
+    if (!refocusSavedPanel.current) return;
+    refocusSavedPanel.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) savedPanelRef.current?.focus();
+  }, [saved.items]);
 
   if (!user) {
     return null;
@@ -140,10 +143,15 @@ export default function ProfilePage() {
   const canPost = (user.trust_level ?? TrustLevel.NEW) >= TrustLevel.VERIFIED;
 
   const handleSignOut = async (): Promise<void> => {
+    signingOut.current = true;
     try {
+      // Leave first. Clearing the user swaps Layout to PublicShell, which
+      // remounts this page, and a fresh instance's redirect would take the
+      // member to /login instead of /. On /, Home just shows the landing page.
+      await router.push('/');
       await signOut();
-      router.push('/');
     } catch (error: unknown) {
+      signingOut.current = false;
       notify.error(error instanceof Error ? error.message : 'Failed to log out. Please try again.');
     }
   };
@@ -159,8 +167,11 @@ export default function ProfilePage() {
       }
       await refreshUser();
       notify.success(successMessage);
+    } catch (error: unknown) {
+      logClientEvent({ event: 'profile_photo_change_failed', context: { platform: 'web', userId: user.id }, error });
+      notify.error('Failed to update photo');
     } finally {
-      if (mounted.current) setPhotoBusy(false);
+      setPhotoBusy(false);
     }
   };
 
@@ -175,22 +186,30 @@ export default function ProfilePage() {
 
   const handleSaveAboutYou = async (): Promise<void> => {
     setAboutYouSaving(true);
-    const { error } = await updateUserProfile(supabase, user.id, {
-      hometown_district: aboutYou.hometown_district,
-      college: aboutYou.college,
-      years_in_us: aboutYou.years_in_us,
-      languages: aboutYou.languages,
-    });
-    if (error) {
-      notify.error(error.message || 'Failed to save');
-    } else {
+    try {
+      const { error } = await updateUserProfile(supabase, user.id, {
+        hometown_district: aboutYou.hometown_district,
+        college: aboutYou.college,
+        years_in_us: aboutYou.years_in_us,
+        languages: aboutYou.languages,
+      });
+      if (error) {
+        notify.error(error.message || 'Failed to save');
+        return;
+      }
       await refreshUser();
       notify.success('Saved');
+    } catch (error: unknown) {
+      logClientEvent({ event: 'profile_about_you_save_failed', context: { platform: 'web', userId: user.id }, error });
+      notify.error('Failed to save');
+    } finally {
+      setAboutYouSaving(false);
     }
-    setAboutYouSaving(false);
   };
 
   const handleUnsave = async (postId: string): Promise<void> => {
+    // The row unmounts on the next render; the effect above catches the focus.
+    refocusSavedPanel.current = true;
     const { error } = await unsave(postId);
     if (error) {
       notify.error('Failed to unsave post.');
@@ -224,7 +243,7 @@ export default function ProfilePage() {
               onRemove={handlePhotoRemove}
             />
             <div>
-              <div className={styles.profileName}>{user.full_name}</div>
+              <h2 className={styles.profileName}>{user.full_name}</h2>
               <div className={styles.profileEmail}>{user.email}</div>
               <TrustBadge level={user.trust_level} />
             </div>
@@ -267,7 +286,7 @@ export default function ProfilePage() {
               <ListingsPanel list={listings} />
             </Tabs.Panel>
 
-            <Tabs.Panel value="saved" tabIndex={0}>
+            <Tabs.Panel value="saved" tabIndex={0} ref={savedPanelRef}>
               <ListPanel
                 list={saved}
                 loadingLabel="Loading saved posts…"

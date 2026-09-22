@@ -18,6 +18,7 @@ const profileMocks = vi.hoisted(() => ({
   resetPasswordForEmailMock: vi.fn(),
   signOutMock: vi.fn(),
   notificationsShowMock: vi.fn(),
+  logClientEventMock: vi.fn(),
 }));
 
 vi.mock('@mantine/notifications', () => ({
@@ -45,6 +46,7 @@ vi.mock('@nepally/shared', async () => {
     formatRelativeTime: profileMocks.formatRelativeTimeMock,
     updateUserProfile: profileMocks.updateUserProfileMock,
     removeProfilePhoto: profileMocks.removeProfilePhotoMock,
+    logClientEvent: profileMocks.logClientEventMock,
   };
 });
 vi.mock('../components/Avatar', () => ({
@@ -126,6 +128,9 @@ describe('ProfilePage', () => {
     vi.clearAllMocks();
     profileMocks.useRouterMock.mockReturnValue({ push: mockPush, replace: mockReplace });
     mockSignedIn();
+    // clearAllMocks keeps implementations, so reset the ones tests override.
+    mockPush.mockResolvedValue(true);
+    mockSignOut.mockResolvedValue(undefined);
     mockRefreshUser.mockResolvedValue(undefined);
     profileMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({ data: [] });
@@ -162,12 +167,13 @@ describe('ProfilePage', () => {
     });
   });
 
-  it('has one h1, the "Profile" page title', async () => {
+  it('has one h1, the "Profile" page title, and heads the card with the member name', async () => {
     await renderPage();
 
     const headings = screen.getAllByRole('heading', { level: 1 });
     expect(headings).toHaveLength(1);
     expect(headings[0].textContent).toBe('Profile');
+    expect(screen.getByRole('heading', { level: 2, name: 'Bikal Shrestha' })).toBeDefined();
   });
 
   it('shows Posts tab as active by default', async () => {
@@ -178,14 +184,17 @@ describe('ProfilePage', () => {
 
   it('names the tab list "Profile sections" and scrolls a focused tab fully into view', async () => {
     const scrollIntoViewSpy = vi.spyOn(HTMLElement.prototype, 'scrollIntoView');
-    await renderPage();
+    try {
+      await renderPage();
 
-    const tabs = within(screen.getByRole('tablist', { name: 'Profile sections' })).getAllByRole('tab');
-    expect(tabs.map((tab) => tab.textContent)).toEqual(['Posts', 'Listings', 'Saved Posts', 'About']);
+      const tabs = within(screen.getByRole('tablist', { name: 'Profile sections' })).getAllByRole('tab');
+      expect(tabs.map((tab) => tab.textContent)).toEqual(['Posts', 'Listings', 'Saved Posts', 'About']);
 
-    tabs[3].focus();
-    expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
-    scrollIntoViewSpy.mockRestore();
+      tabs[3].focus();
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
+    } finally {
+      scrollIntoViewSpy.mockRestore();
+    }
   });
 
   it('shows empty posts message when user has no posts', async () => {
@@ -242,7 +251,7 @@ describe('ProfilePage', () => {
     render(<ProfilePage />);
     await waitFor(() => expect(screen.getByRole('tab', { name: 'About' })).toBeDefined());
     fireEvent.click(screen.getByRole('tab', { name: 'About' }));
-    // About tab should render some content; just check no posts content
+    expect(screen.getByRole('region', { name: 'Account Info' })).toBeDefined();
     expect(screen.queryByText('You have not created any posts yet.')).toBeNull();
   });
 
@@ -269,6 +278,34 @@ describe('ProfilePage', () => {
     });
   });
 
+  it('sends a member who logs out to /, not to the signed-out redirect at /login', async () => {
+    // Like AuthContext, signing out clears the user, which re-renders the page.
+    mockSignOut.mockImplementation(async () => {
+      profileMocks.useAuthMock.mockReturnValue({ user: null, signOut: mockSignOut, refreshUser: mockRefreshUser });
+    });
+    const { rerender } = render(<ProfilePage />);
+    await act(async () => {});
+
+    await chooseProfileMenuItem('Logout');
+    rerender(<ProfilePage />);
+    await act(async () => {});
+
+    expect(mockPush).toHaveBeenCalledWith('/');
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('leaves for / before signing out, so a remount under the signed-out shell has nothing to redirect', async () => {
+    // Layout swaps to PublicShell once the user clears, which remounts the
+    // page with a fresh ref; only leaving first keeps /login out of the race.
+    await renderPage();
+
+    await chooseProfileMenuItem('Logout');
+
+    expect(mockPush).toHaveBeenCalledWith('/');
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockPush.mock.invocationCallOrder[0]).toBeLessThan(mockSignOut.mock.invocationCallOrder[0]);
+  });
+
   it('toasts the error when logging out fails', async () => {
     mockSignOut.mockRejectedValue(new Error('Network down'));
     await renderPage();
@@ -278,7 +315,6 @@ describe('ProfilePage', () => {
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'Network down', color: 'red' })
     );
-    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('opens the "Edit name" dialog from the profile menu', async () => {
@@ -350,6 +386,21 @@ describe('ProfilePage', () => {
       expect.objectContaining({ message, color: 'red' })
     );
     expect(mockRefreshUser).not.toHaveBeenCalled();
+  });
+
+  it('logs and toasts "Failed to update photo" when a photo change throws, then clears busy', async () => {
+    profileMocks.replaceProfilePhotoMock.mockRejectedValue(new Error('boom'));
+    await renderPage();
+
+    await pickPhoto(new File(['x'], 'me.png', { type: 'image/png' }));
+
+    expect(profileMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_photo_change_failed', context: { platform: 'web', userId: 'user-1' } })
+    );
+    expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Failed to update photo', color: 'red' })
+    );
+    expect(screen.getByRole('button', { name: 'Add Photo' }).getAttribute('aria-disabled')).toBeNull();
   });
 
   it('marks the photo control busy while an upload runs', async () => {
@@ -535,6 +586,41 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Saved Housing Post')).toBeDefined();
   });
 
+  it('moves focus to the Saved panel when unsaving takes the focused menu away with its row', async () => {
+    profileMocks.unsavePostMock.mockReturnValue(new Promise(() => {}));
+    profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({ data: [savedPost] });
+    await renderPage();
+    await openTab('Saved Posts');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Post options' }));
+    const item = await screen.findByRole('menuitem', { name: 'Unsave Post' });
+    item.focus();
+    await act(async () => {
+      fireEvent.click(item);
+    });
+
+    // Hidden at once, before the delete settles, and focus follows.
+    expect(screen.queryByText('Saved Housing Post')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('tabpanel', { name: 'Saved Posts' }));
+  });
+
+  it('leaves focus where it is after an unsave when it was not lost', async () => {
+    profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({ data: [savedPost] });
+    await renderPage();
+    await openTab('Saved Posts');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Post options' }));
+    const item = await screen.findByRole('menuitem', { name: 'Unsave Post' });
+    const savedTab = screen.getByRole('tab', { name: 'Saved Posts' });
+    savedTab.focus();
+    await act(async () => {
+      fireEvent.click(item);
+    });
+
+    expect(screen.queryByText('Saved Housing Post')).toBeNull();
+    expect(document.activeElement).toBe(savedTab);
+  });
+
   it('shows error when saved posts fail to load', async () => {
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
       error: new Error('Saved posts DB error'),
@@ -601,6 +687,24 @@ describe('ProfilePage', () => {
         expect.objectContaining({ hometown_district: 'Pokhara' })
       );
     });
+  });
+
+  it('logs and toasts "Failed to save" when saving About You throws, and re-enables Save', async () => {
+    profileMocks.updateUserProfileMock.mockRejectedValue(new Error('offline'));
+    await renderPage();
+    await openTab('About');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
+    });
+
+    expect(profileMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_about_you_save_failed', context: { platform: 'web', userId: 'user-1' } })
+    );
+    expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Failed to save', color: 'red' })
+    );
+    expect((screen.getByRole('button', { name: 'Save About You' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('shows the account details on the About tab and edits the bio from there', async () => {
