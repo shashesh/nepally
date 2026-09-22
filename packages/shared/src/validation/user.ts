@@ -53,8 +53,6 @@ export const fullNameSchema = z
       .max(FULL_NAME_MAX_LENGTH, `Name must be at most ${FULL_NAME_MAX_LENGTH} characters`)
   );
 
-export type FullNameInput = z.infer<typeof fullNameSchema>;
-
 /**
  * Short self-description shown on the public profile.
  * - trimmed, then C0 control characters, bidi/invisible formatting

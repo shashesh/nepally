@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Button } from '@mantine/core';
+import { Button, Loader } from '@mantine/core';
 import {
   formatPublicName,
   getFirstName,
@@ -68,8 +68,10 @@ export function PublicProfileHeader({
   const firstName = getFirstName(profileUser.full_name);
   const memberSinceYear = new Date(profileUser.created_at).getFullYear();
 
-  const baseMessageLabel = viewerId ? `Message ${publicName}` : 'Sign in to message';
-  const messageLabel = messaging ? 'Opening conversation…' : baseMessageLabel;
+  // The label stays put while the conversation opens (the busy-control
+  // pattern): a changing label would change the button's accessible name
+  // under the member's focus. The Loader carries the progress cue instead.
+  const messageLabel = viewerId ? `Message ${publicName}` : 'Sign in to message';
 
   const chips = buildIdentityChips(profileUser);
   const showNewMemberHint = profileUser.trust_level === 0 && !isOwnProfile;
@@ -174,6 +176,8 @@ export function PublicProfileHeader({
                 radius="var(--radius-full)"
                 className={styles.ctaButton}
                 aria-disabled={messaging || undefined}
+                data-disabled={messaging || undefined}
+                leftSection={messaging ? <Loader size="xs" aria-hidden /> : undefined}
                 onClick={messaging ? undefined : onMessage}
               >
                 {messageLabel}

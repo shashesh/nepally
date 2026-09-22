@@ -138,7 +138,16 @@ export function AddLocationForm({ usedLabels, userId, onSave, onCancel }: AddLoc
             />
           </Stack>
           <div className={styles.actionsRow}>
-            <Button type="button" variant="default" onClick={onCancel}>
+            {/* Inert while saving (decision 8, like Save): closing mid-save
+                would leave the save to finish, and re-arm the page's
+                add-focus effect, behind a form that has already gone. */}
+            <Button
+              type="button"
+              variant="default"
+              aria-disabled={saving || undefined}
+              data-disabled={saving || undefined}
+              onClick={saving ? undefined : onCancel}
+            >
               Cancel
             </Button>
             <Button

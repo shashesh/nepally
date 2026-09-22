@@ -147,23 +147,33 @@ describe('PublicProfileHeader', () => {
     expect(screen.getByRole('button', { name: /Sign in to message/i })).toBeDefined();
   });
 
-  it('shows "Opening conversation…" while busy, without a signed-out label', () => {
-    renderHeader({ viewerId: null, isOwnProfile: false, messaging: true });
-    expect(screen.getByRole('button', { name: /Opening conversation/i })).toBeDefined();
-    expect(screen.queryByRole('button', { name: /Sign in to message/i })).toBeNull();
+  it('keeps the "Message …" name while busy, with a loader instead of a new label', () => {
+    renderHeader({ viewerId: 'viewer-1', isOwnProfile: false, messaging: true });
+    const button = screen.getByRole('button', { name: 'Message Bikal S.' });
+    expect(button.querySelector('.mantine-Loader-root')).not.toBeNull();
+    expect(screen.queryByText(/Opening conversation/i)).toBeNull();
   });
 
-  it('keeps the message button focusable while busy (aria-disabled, not native disabled)', () => {
+  it('shows no loader when not busy', () => {
+    renderHeader({ viewerId: 'viewer-1', isOwnProfile: false, messaging: false });
+    const button = screen.getByRole('button', { name: 'Message Bikal S.' });
+    expect(button.querySelector('.mantine-Loader-root')).toBeNull();
+    expect(button.hasAttribute('aria-disabled')).toBe(false);
+    expect(button.hasAttribute('data-disabled')).toBe(false);
+  });
+
+  it('keeps the message button focusable while busy (aria-disabled and data-disabled, not native disabled)', () => {
     renderHeader({ viewerId: 'viewer-1', isOwnProfile: false, messaging: true });
-    const button = screen.getByRole('button', { name: /Opening conversation/i });
+    const button = screen.getByRole('button', { name: 'Message Bikal S.' });
     expect(button.hasAttribute('disabled')).toBe(false);
     expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.hasAttribute('data-disabled')).toBe(true);
   });
 
   it('does not call onMessage when clicked while busy', () => {
     const onMessage = vi.fn();
     renderHeader({ viewerId: 'viewer-1', isOwnProfile: false, messaging: true, onMessage });
-    fireEvent.click(screen.getByRole('button', { name: /Opening conversation/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Message Bikal S.' }));
     expect(onMessage).not.toHaveBeenCalled();
   });
 

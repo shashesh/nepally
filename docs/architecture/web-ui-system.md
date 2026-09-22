@@ -75,7 +75,7 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 
 `EmptyState`, `LoadingState`, `ErrorState`, `PageHeader`, `TagChip`, `ScopeBadge`, `TrustBadge`, `ActionMenu`, and `useConfirm` / `usePrompt` (never `window.confirm`/`alert`/`prompt`). `hooks/useInfiniteScroll` handles paginated lists.
 
-Both dialogs name their close button "Close". A `danger: true` confirm opens with focus on Cancel, so Enter or Space can't fire the destructive button by accident. Other confirms keep Mantine's initial focus, and a prompt focuses its field. `usePrompt`'s `validate` keeps the dialog open with its message on the field.
+Both dialogs name their close button "Close". A `danger: true` confirm opens with focus on Cancel: the APG alertdialog pattern puts initial focus on the least destructive action, and a named "Cancel" says what Enter will do more clearly than the icon-only close button, Mantine's default first focus, which also cancels. Other confirms keep Mantine's initial focus, and a prompt focuses its field. `usePrompt`'s `validate` keeps the dialog open with its message on the field.
 
 `Avatar` (`components/Avatar.tsx`) uses shared `getInitials` and token tones, and is always a circle (`--radius-full`), whatever the theme's radius scale. `toneKey` picks the tone and defaults to `name`: pass the full name when `name` is a masked public name, so a member keeps one colour everywhere. `decorative` renders `alt=""` and hides the initials from assistive tech, for when a heading beside the avatar already names the person.
 
@@ -115,11 +115,19 @@ It owns every object URL it mints and revokes them on removal and unmount, so pa
 
 ### Busy controls stay focusable
 
-A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `FollowButton`, `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You and `AddLocationForm` all work this way.
+A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You, the public profile's Message button and `AddLocationForm`'s Save and Cancel all work this way.
 
-When an action removes the control that had focus (unsaving a post, removing a photo or a location), the page moves focus to a neighbour after the next commit, but only if `isFocusStranded()` says focus has nowhere useful to be. It never takes focus back from wherever the member has moved since.
+`FollowButton` is the one exception. While a follow or unfollow saves it sets only `aria-disabled`, not `data-disabled`, so the new state it shows at once ("Following" or "Follow") stays at full opacity instead of taking Mantine's grey disabled look.
 
-`ActionMenu` moves focus from the menu to its trigger before an item's action runs, and turns off Mantine's delayed `returnFocus`. A dialog the action opens therefore keeps focus while it's open and returns it to the trigger when it closes, instead of to the unmounted menu item, which would drop it to `<body>`.
+When an action removes the control that had focus, focus moves somewhere sensible after the next commit, but only if it was lost. It is never taken back from wherever the member has moved since. Each case does this by hand today:
+
+- **Unsaving a post** (`profile.page.tsx`) focuses the Saved tab panel, if focus is on `<body>`.
+- **Removing the photo** (`ProfilePhotoControl`) focuses Add Photo, if focus is on `<body>`.
+- **Manage Locations** records a pending target and focuses it once `savedLocations` refreshes, if `isFocusStranded()` says focus is on `<body>` or still inside the closing confirm dialog. The target is the neighbouring row's Rename after a remove, that row's Rename after Set as default, and Add a Location after an add (or the new row's Rename, when the cap hides that button).
+
+A shared `useFocusAfterUpdate` hook, built on `isFocusStranded`, is planned for PR 10 to replace all three.
+
+`ActionMenu` moves focus from the menu to its trigger before an item's action runs, and turns off Mantine's delayed `returnFocus`. A dialog the action opens therefore keeps focus while it's open and returns it to the trigger when it closes, instead of to the unmounted menu item, which would drop it to `<body>`. After a click outside, focus stays where the click put it (usually `<body>`) and isn't pulled back to the trigger. That's deliberate, so a click into a field is never overridden.
 
 ## Web-only helpers (`src/lib`)
 

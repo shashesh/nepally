@@ -270,4 +270,34 @@ describe('AddLocationForm', () => {
       resolveSave({});
     });
   });
+
+  it('keeps Cancel focusable but inert while onSave is in flight', async () => {
+    let resolveSave: (value: { error?: Error | null }) => void = () => {};
+    onSave.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSave = resolve;
+      })
+    );
+    renderForm();
+    await selectMetro();
+    fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Family' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Location' }));
+    await act(async () => {});
+
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement;
+    expect(cancelButton.disabled).toBe(false);
+    expect(cancelButton.getAttribute('aria-disabled')).toBe('true');
+    expect(cancelButton.hasAttribute('data-disabled')).toBe(true);
+    fireEvent.click(cancelButton);
+    expect(onCancel).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveSave({ error: new Error('Network down') });
+    });
+
+    // Once the save settles (here, failing), Cancel works again.
+    expect(cancelButton.hasAttribute('aria-disabled')).toBe(false);
+    fireEvent.click(cancelButton);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
 });

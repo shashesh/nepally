@@ -358,16 +358,18 @@ describe('PublicProfilePage', () => {
     });
   });
 
-  it('swaps CTA label to "Opening conversation…" while messaging', async () => {
+  it('keeps the Message label and marks the CTA busy while the conversation opens', async () => {
     profilePageMocks.getOrCreateConversationMock.mockReturnValue(new Promise(() => {}));
     render(<PublicProfilePage />);
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Message Bikal S\./i })).toBeDefined()
-    );
-    fireEvent.click(screen.getByRole('button', { name: /Message Bikal S\./i }));
-    await waitFor(() => {
-      expect(screen.getByText(/Opening conversation/i)).toBeDefined();
-    });
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('button', { name: 'Message Bikal S.' }));
+    await act(async () => {});
+
+    const button = screen.getByRole('button', { name: 'Message Bikal S.' });
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.hasAttribute('data-disabled')).toBe(true);
+    expect(screen.queryByText(/Opening conversation/i)).toBeNull();
   });
 
   it('reports a failed conversation start and stays on the profile', async () => {
@@ -405,20 +407,19 @@ describe('PublicProfilePage', () => {
       );
     });
 
-    it('shows the next member’s own Message label, not "Opening conversation…"', async () => {
+    it('shows the next member’s Message button idle, not busy', async () => {
       profilePageMocks.getOrCreateConversationMock.mockReturnValue(new Promise(() => {}));
       const { rerender } = render(<PublicProfilePage />);
       await act(async () => {});
 
       fireEvent.click(screen.getByRole('button', { name: 'Message Bikal S.' }));
-      expect(screen.getByRole('button', { name: 'Opening conversation…' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Message Bikal S.' }).getAttribute('aria-disabled')).toBe('true');
 
       showMember('another-user');
       rerender(<PublicProfilePage />);
       await act(async () => {});
 
-      expect(screen.getByRole('button', { name: 'Message Sita G.' })).toBeDefined();
-      expect(screen.queryByText('Opening conversation…')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Message Sita G.' }).hasAttribute('aria-disabled')).toBe(false);
     });
 
     it('does not open the previous member’s conversation when it arrives late', async () => {

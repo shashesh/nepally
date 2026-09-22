@@ -34,11 +34,13 @@ export function ActionMenu({ label, items, target, position = 'bottom-end' }: Ac
   // fires 10ms after the menu closes, after that dialog has taken focus, and
   // would pull focus back out of it. Focus already outside the menu is left
   // alone. Escape still returns focus to the trigger, which Mantine does
-  // directly rather than through `returnFocus`.
+  // directly rather than through `returnFocus`. A click outside closes the
+  // menu and leaves focus where the click put it (usually <body>), so a click
+  // into a field is never overridden.
   const moveFocusToTrigger = () => {
     const active = document.activeElement;
     if (!active || active === document.body || dropdownRef.current?.contains(active)) {
-      targetRef.current?.focus();
+      targetRef.current?.focus({ preventScroll: true });
     }
   };
 

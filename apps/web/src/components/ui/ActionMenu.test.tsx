@@ -124,6 +124,28 @@ describe('ActionMenu focus', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it('leaves focus alone when it has already moved outside the menu', async () => {
+    let focusedDuringAction: Element | null = null;
+    const onClick = () => {
+      focusedDuringAction = document.activeElement;
+    };
+    render(
+      <>
+        <input aria-label="Elsewhere" />
+        <ActionMenu label="Post options" items={[{ key: 'edit', label: 'Edit', onClick }]} />
+      </>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Post options' }));
+    const item = await screen.findByRole('menuitem', { name: 'Edit' });
+    const elsewhere = screen.getByRole('textbox', { name: 'Elsewhere' });
+    elsewhere.focus();
+
+    fireEvent.click(item);
+
+    expect(focusedDuringAction).toBe(elsewhere);
+    expect(document.activeElement).toBe(elsewhere);
+  });
+
   it('moves focus to its trigger when a link item is chosen', async () => {
     render(<ActionMenu label="Post options" items={[{ key: 'profile', label: 'View profile', href: '/users/u1' }]} />);
     const trigger = screen.getByRole('button', { name: 'Post options' });
