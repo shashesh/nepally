@@ -444,6 +444,7 @@ describe('getListingById', () => {
 
     const result = await getListingById(supabase, 'missing');
     expect(result.error?.message).toBe('Listing not found');
+    expect(result.notFound).toBe(true);
   });
 
   it('returns error on supabase failure', async () => {
@@ -457,6 +458,8 @@ describe('getListingById', () => {
 
     const result = await getListingById(supabase, 'listing-1');
     expect(result.error).toBeDefined();
+    // A failure is not a missing row: the detail page must tell them apart.
+    expect(result.notFound).toBeUndefined();
   });
 
   it('returns "Listing not found" when data is null without error', async () => {
@@ -470,6 +473,7 @@ describe('getListingById', () => {
 
     const result = await getListingById(supabase, 'listing-1');
     expect(result.error?.message).toBe('Listing not found');
+    expect(result.notFound).toBe(true);
   });
 });
 

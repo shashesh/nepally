@@ -250,10 +250,10 @@ export async function getListingById(
       .single();
 
     if ((error as { code?: string } | null)?.code === 'PGRST116') {
-      return { error: new Error('Listing not found') };
+      return { error: new Error('Listing not found'), notFound: true };
     }
     if (error) throw error;
-    if (!data) return { error: new Error('Listing not found') };
+    if (!data) return { error: new Error('Listing not found'), notFound: true };
     return { data: data as MarketplaceListing };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch listing') };
