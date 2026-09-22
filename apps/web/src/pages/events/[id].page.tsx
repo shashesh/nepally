@@ -367,13 +367,15 @@ export default function EventDetailPage() {
       </div>
 
       {/* Attendees modal */}
-      {attendeesOpen && (
-        <AttendeeList
-          attendees={attendees}
-          loading={attendeesLoading}
-          onClose={() => setAttendeesOpen(false)}
-        />
-      )}
+      <AttendeeList
+        opened={attendeesOpen}
+        attendees={attendees}
+        loading={attendeesLoading}
+        error={null}
+        onRetry={handleShowAttendees}
+        onClose={() => setAttendeesOpen(false)}
+      />
+
     </>
   );
 }
