@@ -362,6 +362,23 @@ describe('getEventById', () => {
     expect(result.notFound).toBe(true);
   });
 
+  it('sets notFound for an id that is not a UUID (22P02)', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: '22P02', message: 'invalid input syntax for type uuid: "abc"' },
+      }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getEventById(supabase, 'abc');
+    expect(result.error?.message).toBe('Event not found');
+    expect(result.notFound).toBe(true);
+  });
+
   it('leaves notFound unset when the request fails', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
