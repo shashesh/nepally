@@ -338,8 +338,9 @@ export default function ProfilePage() {
 
     try {
       await deleteProfilePhoto(supabase, user!.id);
+      // null, not undefined: JSON drops undefined keys, so the column would never clear.
       const { error: profileError } = await updateUserProfile(supabase, user!.id, {
-        profile_photo: undefined,
+        profile_photo: null,
       });
       if (profileError) throw profileError;
 

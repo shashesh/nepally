@@ -211,6 +211,26 @@ describe('ProfilePage', () => {
     });
   });
 
+  it('clears profile_photo with null when the photo is removed', async () => {
+    // undefined would be dropped from the JSON body and leave the old URL in place.
+    profileMocks.useAuthMock.mockReturnValue({
+      user: { ...mockUser, profile_photo: 'https://example.com/avatars/user-1.jpg' },
+      signOut: mockSignOut,
+      refreshUser: mockRefreshUser,
+    });
+    profileMocks.deleteProfilePhotoMock.mockResolvedValue({});
+    profileMocks.updateUserProfileMock.mockResolvedValue({ data: { id: 'user-1' } });
+    render(<ProfilePage />);
+
+    fireEvent.click(await screen.findByText('Remove'));
+
+    await waitFor(() => expect(screen.getByText('Photo removed')).toBeDefined());
+    expect(profileMocks.deleteProfilePhotoMock).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(profileMocks.updateUserProfileMock).toHaveBeenCalledWith(expect.anything(), 'user-1', {
+      profile_photo: null,
+    });
+  });
+
   it('shows posts loading state', () => {
     profileMocks.getPostsByAuthorIdMock.mockReturnValue(new Promise(() => {}));
     profileMocks.getSavedPostsByUserIdMock.mockReturnValue(new Promise(() => {}));
