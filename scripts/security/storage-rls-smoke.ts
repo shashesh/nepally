@@ -229,11 +229,10 @@ async function main(): Promise<void> {
       );
     }
 
-    // 4b. B cannot write into A's files either. A's failed remove() above is
-    // blocked by the DELETE policy regardless of what SELECT allows, so on its
-    // own it would not reveal an over-broad avatars SELECT predicate; these
-    // upload attempts need SELECT for their INSERT/UPDATE ... RETURNING checks,
-    // so a rejection here is a direct check on B's SELECT scope too.
+    // 4b. B cannot write into A's files either: the INSERT and UPDATE policies
+    // reject an upload into A's post-photos folder and an upsert over A's
+    // avatar, and A's avatar survives. These don't test SELECT scope (the
+    // write policies reject them on their own); step 5's listings do that.
     const otherPostPhoto: StoredFile = {
       bucket: 'post-photos',
       path: `${owner.id}/storage-smoke-other-${randomToken(6)}.jpg`,
