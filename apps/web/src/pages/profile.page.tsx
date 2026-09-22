@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Button, Stack, Tabs, UnstyledButton } from '@mantine/core';
+import { Button, Loader, Stack, Tabs, UnstyledButton } from '@mantine/core';
 import { IconChevronRight } from '@tabler/icons-react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {
   extendedProfileUpdateSchema,
+  getAboutYouFormValues,
   logClientEvent,
   removeProfilePhoto,
   TrustLevel,
@@ -46,6 +47,14 @@ const TABS: { value: ProfileTab; label: string }[] = [
   { value: 'saved', label: 'Saved Posts' },
   { value: 'about', label: 'About' },
 ];
+
+/** The About You form's values before a user has loaded. */
+const EMPTY_ABOUT_YOU: AboutYouValues = {
+  hometown_district: null,
+  college: null,
+  years_in_us: null,
+  languages: [],
+};
 
 interface ListPanelProps<T> {
   list: ListResource<T>;
@@ -89,12 +98,9 @@ export default function ProfilePage() {
   const { user, signOut, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [photoBusy, setPhotoBusy] = useState(false);
-  const [aboutYou, setAboutYou] = useState<AboutYouValues>({
-    hometown_district: user?.hometown_district ?? null,
-    college: user?.college ?? null,
-    years_in_us: user?.years_in_us ?? null,
-    languages: user?.languages ?? [],
-  });
+  const [aboutYou, setAboutYou] = useState<AboutYouValues>(
+    user ? getAboutYouFormValues(user) : EMPTY_ABOUT_YOU
+  );
   const [aboutYouSaving, setAboutYouSaving] = useState(false);
   const userId = user?.id ?? null;
   const { posts, saved, listings, unsave } = useOwnProfileContent(userId);
@@ -109,12 +115,7 @@ export default function ProfilePage() {
   if (userId !== aboutYouUserId) {
     setAboutYouUserId(userId);
     if (user) {
-      setAboutYou({
-        hometown_district: user.hometown_district ?? null,
-        college: user.college ?? null,
-        years_in_us: user.years_in_us ?? null,
-        languages: user.languages ?? [],
-      });
+      setAboutYou(getAboutYouFormValues(user));
     }
   }
 
@@ -344,15 +345,19 @@ export default function ProfilePage() {
                         `disabled`, which drops focus to <body> on Enter and
                         keeps it there. aria-disabled/data-disabled match
                         AccountDetails' bio button and ProfilePhotoControl.
-                        aria-label keeps the accessible name stable while the
-                        visible text switches to "Saving…". */}
+                        The visible label stays "Save About You" — an
+                        aria-label would be redundant while idle, and while
+                        saving it would leave "Saving…" out of the accessible
+                        name (WCAG 2.5.3 label-in-name), so the spinner
+                        carries the progress cue instead. The "Saved" toast
+                        (role="alert") announces completion. */}
                     <Button
                       onClick={aboutYouSaving ? undefined : handleSaveAboutYou}
                       aria-disabled={aboutYouSaving || undefined}
                       data-disabled={aboutYouSaving || undefined}
-                      aria-label="Save About You"
+                      leftSection={aboutYouSaving ? <Loader size="xs" aria-hidden /> : undefined}
                     >
-                      {aboutYouSaving ? 'Saving…' : 'Save About You'}
+                      Save About You
                     </Button>
                   </div>
                 </div>

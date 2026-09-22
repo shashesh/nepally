@@ -736,8 +736,28 @@ describe('ProfilePage', () => {
     );
   });
 
-  it('shows the schema error and skips the save for a district outside NEPAL_DISTRICTS', async () => {
-    mockSignedIn({ hometown_district: 'Neverland' });
+  it('shows "— Select —" for a saved district outside NEPAL_DISTRICTS and saves it as null', async () => {
+    profileMocks.updateUserProfileMock.mockResolvedValue({ data: { id: 'user-1' } });
+    mockSignedIn({ hometown_district: 'Nawalparasi' });
+    await renderPage();
+    await openTab('About');
+
+    expect((screen.getByLabelText('Hometown district') as HTMLSelectElement).value).toBe('');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
+    });
+
+    expect(profileMocks.updateUserProfileMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      expect.objectContaining({ hometown_district: null })
+    );
+  });
+
+  it('drops a saved language outside SUPPORTED_LANGUAGES and saves without it', async () => {
+    profileMocks.updateUserProfileMock.mockResolvedValue({ data: { id: 'user-1' } });
+    mockSignedIn({ languages: ['nepali', 'sherpa'] });
     await renderPage();
     await openTab('About');
 
@@ -745,10 +765,11 @@ describe('ProfilePage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
     });
 
-    expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Select a valid Nepal district', color: 'red' })
+    expect(profileMocks.updateUserProfileMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      expect.objectContaining({ languages: ['nepali'] })
     );
-    expect(profileMocks.updateUserProfileMock).not.toHaveBeenCalled();
   });
 
   it('keeps focus on Save while a save is pending and ignores a second click', async () => {
@@ -762,15 +783,25 @@ describe('ProfilePage', () => {
     await renderPage();
     await openTab('About');
 
-    const saveButton = screen.getByRole('button', { name: 'Save About You' });
-    saveButton.focus();
+    // Looked up by name at every step, including while pending: the label
+    // stays "Save About You" throughout (a spinner carries the progress
+    // cue instead of the accessible name), so a stale lookup can't hide a
+    // regression back to Mantine's `loading` prop, which would rename it.
+    screen.getByRole('button', { name: 'Save About You' }).focus();
 
-    fireEvent.click(saveButton);
+    fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
     await act(async () => {});
 
-    expect(document.activeElement).toBe(saveButton);
+    const pendingSaveButton = screen.getByRole('button', { name: 'Save About You' });
+    expect(document.activeElement).toBe(pendingSaveButton);
+    // `loading` (not just `disabled`) would set the native attribute, which
+    // both drops focus to <body> on Enter in a real browser and makes React
+    // ignore a click outright — either would make the assertions above and
+    // below pass even with the bug back, so this must hold too.
+    expect(pendingSaveButton.hasAttribute('disabled')).toBe(false);
+    expect(pendingSaveButton.getAttribute('aria-disabled')).toBe('true');
 
-    fireEvent.click(saveButton);
+    fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
     await act(async () => {});
 
     expect(profileMocks.updateUserProfileMock).toHaveBeenCalledTimes(1);
