@@ -16,13 +16,17 @@ test.describe('Marketplace full feature flow', () => {
     await page.goto('/marketplace');
 
     await expect(page.getByRole('heading', { name: /^marketplace$/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('textbox', { name: /^category$/i })).toBeVisible();
+    // A NativeSelect, so a combobox rather than Mantine Select's textbox
+    // (implementation decision 26).
+    await expect(page.getByRole('combobox', { name: /^category$/i })).toBeVisible();
     await expect(page.getByRole('region', { name: /recently added/i })).toBeVisible();
     await expect(
       page.getByRole('region', { name: /recently added/i }).getByText(MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title)
     ).toBeVisible();
-    await expect(page.getByRole('button', { name: /create listing/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /my listings/i })).toBeVisible();
+    // They navigate, so they are links now: <Button component={Link}> rather
+    // than a <Button> wrapped in a <Link> (recon 8).
+    await expect(page.getByRole('link', { name: /create listing/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /my listings/i })).toBeVisible();
   });
 
   test('search from marketplace home navigates to search results route', async ({ page }) => {
@@ -50,11 +54,14 @@ test.describe('Marketplace full feature flow', () => {
 
     await expect(page.getByRole('heading', { name: MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE.title })).toBeVisible({ timeout: 10_000 });
 
+    // The toggle keeps one name; aria-pressed carries the state, so pressing
+    // it flips the attribute rather than renaming the button.
     const saveButton = page.getByRole('button', { name: /save listing/i });
     await expect(saveButton).toBeVisible();
+    await expect(saveButton).toHaveAttribute('aria-pressed', 'false');
     await saveButton.click();
 
-    await expect(page.getByRole('button', { name: /saved/i })).toBeVisible();
+    await expect(saveButton).toHaveAttribute('aria-pressed', 'true');
 
     await page.getByRole('button', { name: /contact seller/i }).click();
     await expect(page).toHaveURL(/\/messages\?to=marketplace-other-user-0001/);

@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Button } from '@mantine/core';
+import { Button, Loader } from '@mantine/core';
 import { IconBookmark, IconBookmarkFilled } from '@tabler/icons-react';
 import type { MarketplaceListing } from '@nepally/shared';
 import styles from './ListingActionsPanel.module.css';
@@ -46,14 +46,24 @@ export function ListingActionsPanel({
           {/* One stable name, with aria-pressed carrying the state: renaming
               the button to "Saved" while also setting aria-pressed is the
               contradiction APG warns about. The bookmark fills in, so the
-              state is still visible without the name moving. */}
+              state is still visible without the name moving.
+
+              While the write is in flight it takes aria-disabled and
+              data-disabled, never Mantine's `loading`, which sets native
+              `disabled` and so drops focus to <body> from the very control
+              the member just pressed. */}
           <Button
             variant={isSaved ? 'filled' : 'outline'}
-            onClick={onToggleSave}
-            loading={saving}
+            onClick={() => {
+              if (!saving) onToggleSave();
+            }}
+            aria-disabled={saving || undefined}
+            data-disabled={saving || undefined}
             aria-pressed={isSaved}
             leftSection={
-              isSaved ? (
+              saving ? (
+                <Loader size={16} />
+              ) : isSaved ? (
                 <IconBookmarkFilled size={16} aria-hidden="true" />
               ) : (
                 <IconBookmark size={16} aria-hidden="true" />

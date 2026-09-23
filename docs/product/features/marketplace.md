@@ -87,11 +87,15 @@ All in `apps/mobile/src/screens/marketplace/`:
 
 All in `apps/web/src/pages/marketplace/`:
 
-- **index.page.tsx** — Marketplace home with category grid, search, recent listings
+- **index.page.tsx** — Marketplace home: the Featured, Recently Added and Trending strips, plus the grid
 - **[category].page.tsx** — Category filtered view, supports search mode
 - **listing/[id].page.tsx** — Full listing detail page
 - **create.page.tsx** — Create/edit listing form
 - **my-listings.page.tsx** — My listings management page
+
+Both browse routes are thin wrappers over one `MarketplaceBrowse` component, so `/marketplace?category=<slug>` and `/marketplace/<slug>` show the same thing; only the heading, the back link and where a filter change navigates differ. The grid names the active category rather than always reading "All Listings". See [web-ui-system.md](../../architecture/web-ui-system.md) for the components and hooks behind it.
+
+Category colour comes from the `--category-<slug>` design tokens, for the five categories that exist; the web CSS carried themed blocks for all twelve until the UI overhaul.
 
 ### Profile Integration
 

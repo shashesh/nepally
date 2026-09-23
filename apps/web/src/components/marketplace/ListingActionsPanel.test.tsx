@@ -88,6 +88,27 @@ describe('ListingActionsPanel', () => {
       ).toBe('true');
     });
 
+    // web-ui-system.md: a control that is busy because the member just used it
+    // keeps focus, so it never takes native `disabled` or Mantine's `loading`.
+    it('stays focusable while the save is in flight', () => {
+      const onToggleSave = vi.fn();
+      renderPanel({ saving: true, onToggleSave });
+
+      const button = screen.getByRole('button', { name: 'Save listing' }) as HTMLButtonElement;
+      button.focus();
+      expect(document.activeElement).toBe(button);
+      expect(button.disabled).toBe(false);
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('ignores a press while the save is in flight', () => {
+      const onToggleSave = vi.fn();
+      renderPanel({ saving: true, onToggleSave });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save listing' }));
+      expect(onToggleSave).not.toHaveBeenCalled();
+    });
+
     it('shows no owner controls', () => {
       renderPanel();
       expect(screen.queryByRole('link', { name: 'Edit Listing' })).toBeNull();
