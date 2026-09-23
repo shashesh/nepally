@@ -2,45 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('@nepally/shared', () => ({}));
-
-vi.mock('./FilterBar.module.css', () => ({
-  default: new Proxy({}, { get: (_t, p) => `mock-${String(p)}` }),
-}));
-
-vi.mock('@mantine/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    Select: ({
-      value,
-      onChange,
-      disabled,
-      'aria-label': ariaLabel,
-      data,
-    }: {
-      value: string;
-      onChange: (v: string | null) => void;
-      disabled?: boolean;
-      'aria-label'?: string;
-      data: { value: string; label: string }[];
-    }) =>
-      React.createElement(
-        'select',
-        {
-          'aria-label': ariaLabel,
-          value,
-          disabled,
-          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
-        },
-        data.map((opt) =>
-          React.createElement('option', { key: opt.value, value: opt.value }, opt.label)
-        )
-      ),
-  };
-});
-
-// Must import after vi.mock
+// Nothing is mocked here: the selects are Mantine NativeSelect, so they are
+// real <select> elements, and the search field is a real Mantine TextInput.
 import { FilterBar, type FilterBarValue } from './FilterBar';
 
 const MOCK_CATEGORIES = [
@@ -233,5 +196,66 @@ describe('FilterBar (web)', () => {
 
     act(() => { vi.advanceTimersByTime(300); });
     expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'price_asc', query: 'momo' });
+  });
+
+  it('cancels a pending debounce when the field is cleared', () => {
+    const onChange = vi.fn();
+    render(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: DEFAULT_VALUE,
+        onChange,
+      })
+    );
+
+    // Type, leaving a debounce in flight, then clear before it fires.
+    fireEvent.change(screen.getByLabelText('Search listings'), {
+      target: { value: 'momo' },
+    });
+    act(() => { fireEvent.click(screen.getByRole('button', { name: 'Clear search' })); });
+    act(() => { vi.advanceTimersByTime(300); });
+
+    // The abandoned "momo" must never arrive after the clear.
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'newest', query: '' });
+  });
+
+  it('exposes the search field as a named searchbox', () => {
+    render(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: DEFAULT_VALUE,
+        onChange: vi.fn(),
+      })
+    );
+    expect(screen.getByRole('searchbox', { name: 'Search listings' })).toBeDefined();
+  });
+
+  it('offers no clear button while the search field is empty', () => {
+    render(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: DEFAULT_VALUE,
+        onChange: vi.fn(),
+      })
+    );
+    expect(screen.queryByRole('button', { name: 'Clear search' })).toBeNull();
+  });
+
+  it('clears the search field and reports it', () => {
+    const onChange = vi.fn();
+    render(
+      React.createElement(FilterBar, {
+        categories: MOCK_CATEGORIES,
+        value: { ...DEFAULT_VALUE, query: 'momo' },
+        onChange,
+      })
+    );
+
+    const clear = screen.getByRole('button', { name: 'Clear search' });
+    act(() => { fireEvent.click(clear); });
+
+    expect((screen.getByLabelText('Search listings') as HTMLInputElement).value).toBe('');
+    expect(onChange).toHaveBeenCalledWith({ category: '', sort: 'newest', query: '' });
   });
 });

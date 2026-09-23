@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Select } from '@mantine/core';
+import { CloseButton, NativeSelect, TextInput } from '@mantine/core';
+import { IconSearch } from '@tabler/icons-react';
 import type { ListingSortBy, MarketplaceCategory } from '@nepally/shared';
 import styles from './FilterBar.module.css';
 
@@ -70,6 +71,12 @@ export function FilterBar({
     }
   };
 
+  const handleSearchClear = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSearchText('');
+    onChange({ ...latestValueRef.current, query: '' });
+  };
+
   const categoryOptions = [
     { value: '', label: 'All Categories' },
     ...categories.map((cat) => ({
@@ -80,41 +87,44 @@ export function FilterBar({
 
   return (
     <div className={styles.filterBar}>
-      <div className={styles.selectWrapper}>
-        <Select
-          aria-label="Category"
-          data={categoryOptions}
-          value={value.category}
-          onChange={(v) => onChange({ ...value, category: v ?? '' })}
-          disabled={Boolean(lockedCategory)}
-          allowDeselect={false}
-          placeholder="All Categories"
-          comboboxProps={{ withinPortal: true }}
-        />
-      </div>
-      <div className={styles.selectWrapper}>
-        <Select
-          aria-label="Sort"
-          data={SORT_OPTIONS}
-          value={value.sort}
-          onChange={(v) => onChange({ ...value, sort: (v as ListingSortBy) ?? 'newest' })}
-          allowDeselect={false}
-          comboboxProps={{ withinPortal: true }}
-        />
-      </div>
-      <div className={styles.searchWrapper}>
-        <span className={styles.searchIcon} aria-hidden="true">🔍</span>
-        <input
-          type="text"
-          role="searchbox"
-          aria-label="Search listings"
-          className={styles.searchInput}
-          placeholder="Search Marketplace"
-          value={searchText}
-          onChange={handleSearchInput}
-          onKeyDown={handleSearchKeyDown}
-        />
-      </div>
+      {/* NativeSelect, not Select: these are short, fixed lists that need no
+          search, and a real <select> gives the native picker on phones. */}
+      <NativeSelect
+        aria-label="Category"
+        className={styles.select}
+        data={categoryOptions}
+        value={value.category}
+        onChange={(e) => onChange({ ...value, category: e.currentTarget.value })}
+        disabled={Boolean(lockedCategory)}
+      />
+      <NativeSelect
+        aria-label="Sort"
+        className={styles.select}
+        data={SORT_OPTIONS}
+        value={value.sort}
+        onChange={(e) =>
+          onChange({ ...value, sort: e.currentTarget.value as ListingSortBy })
+        }
+      />
+      {/* type="text", not "search": Chromium would add its own clear button
+          beside ours. */}
+      <TextInput
+        type="text"
+        role="searchbox"
+        aria-label="Search listings"
+        className={styles.search}
+        placeholder="Search Marketplace"
+        value={searchText}
+        onChange={handleSearchInput}
+        onKeyDown={handleSearchKeyDown}
+        leftSection={<IconSearch size={16} aria-hidden="true" />}
+        rightSection={
+          searchText ? (
+            <CloseButton aria-label="Clear search" onClick={handleSearchClear} />
+          ) : null
+        }
+        rightSectionPointerEvents="auto"
+      />
     </div>
   );
 }

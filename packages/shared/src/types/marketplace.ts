@@ -93,6 +93,12 @@ export interface SavedListing {
 export interface ListingResult {
   data?: MarketplaceListing;
   error?: Error;
+  /**
+   * The row genuinely is not there, as opposed to the read having failed.
+   * Without it a network error and a deleted listing look identical, and the
+   * detail page shows "Listing not found" for both. Mirrors EventResult.
+   */
+  notFound?: boolean;
 }
 
 export interface ListingsResult {

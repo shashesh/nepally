@@ -172,6 +172,11 @@ The spec is updated in the same commit as this plan.
    - **The prop is gone.** `UserMenuTrigger`'s "View profile" is a real link to `/users/:id`, so the callback that pushed that route has nothing left to do. `PostCardProps` is the other twelve props plus `metroLabel`.
    - **The page keeps using its inline card until 4a.9.** Task 4a.7 said to wire the new component into `feed.page.tsx`, but swapping it in changes what 40 feed tests query — tag case, menus rendered in a portal, the scope badge's text. Doing that here would leave the suite red across two commits, so the extraction and its own tests land first and the page adopts them in 4a.9, where the feed tests are rewritten anyway.
 
+26. **The marketplace filters use `NativeSelect`, not `Select` (PR 8a, Task 8a.3).** The task text said the `Select`s stay as they are. They did not, and the chunk 1 review was right to flag the deviation.
+   - **Why the swap.** Category and Sort are short, fixed lists with no search. A real `<select>` gives the OS picker on phones, needs no portal, and cannot be driven in tests without mocking Mantine's `Select` away — which is recon finding 12, the thing this PR exists to stop doing. Task 6.17 had already moved About You's fields to `NativeSelect` for the same reasons, so this follows a precedent rather than setting one.
+   - **What changes visually.** The closed field keeps Mantine's input chrome, so the filter row looks the same at rest; the open list becomes the browser's own rather than Mantine's dropdown. No screenshot in `pages.ts` captures an open dropdown, so chunk 4's baselines should not move because of this.
+   - **Not taken:** keeping `Select` and leaving the test mocks in place. That would have held the one place in the area where a control is only ever exercised through a fake.
+
 ## Live tracker
 
 One task is `In Progress` at a time. Update this table when a PR starts and when it merges.
@@ -188,8 +193,9 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 4b Post detail | `feat/web-ui-post-detail` | 4b.1–4b.8 | Merged (PR #81) | 2026-09-20 | six Copilot review rounds; baselines regenerated from eb849d7 (run 35527351030) |
 | 5 Create flows | `feat/web-ui-create-flows` | 5.1–5.14 | Merged (PR #83) | 2026-09-21 | branched from `master` at 4f6b96d; baselines regenerated from d522812 |
 | 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a, 6.19b | Merged (PR #85) | 2026-09-22 | branched from `master` at e685317; baselines regenerated locally in Docker (25d56ce) |
-| 7 Events | `feat/web-ui-events` | 7.1–7.15, in four chunks | In Review (PR #86) | 2026-09-22 | branched from `master` at 3386a5d. **Chunk 1** (7.1–7.5, b9e4eb3..294c80e) done 2026-09-22: gate green (shared 660, web 1402, mobile 636 tests); review found no CRITICAL or HIGH. Routed from its review: (1) **for the user to decide:** `EventResponseControl`'s `data-disabled` gives both buttons Mantine's grey disabled look while a response saves, hiding the pressed state decision 6 says moves at once — the reason `FollowButton` sets only `aria-disabled`; (2) `getMetroEventsPage`'s comment should cite the `CHECK` in `006_events.sql`, not `createEventSchema`; (3) no test asserts `EventTypeBadge`'s `data-type`; (4) `getUserEventResponse` swaps a PostgREST error for a generic message, as the rest of `api/events.ts` does; (5) a malformed id returns `22P02`, so `notFound` stays unset — Task 7.11 should weigh that; (6) Task 7.15's docs pass also drops `hasUserRsvp` from `events-feature-breakdown.md:91` and `13-event-discovery-and-rsvp.md:499`; (7) a double blank line in `api/events.test.ts`. **Chunk 2** (7.6–7.10, e4e1fb9..30f1c6e) done 2026-09-22: gate green (shared 660, web 1428 tests); `events/index.page.tsx` 333 → 141 lines. Review: two HIGH fixed in 30f1c6e (the organizer avatar was a dead spot above the stretched link's overlay; the title clamp clipped the link's focus ring), plus ragged card heights, a regression from the `li` becoming the grid item. Routed from its review: (1) `useEventFeed.test.ts`'s "drops a page that lands after the reload" leans on the previous test's mock for its chained past call, so it fails alone — add `mockResolvedValueOnce(page([]))` and reset mocks in `beforeEach`; (2) the pages test's fake `IntersectionObserver` fires disconnected observers too, so it can't catch a sentinel unmounted while a filter shows nothing; (3) untested hook branches: the chained past page failing on first load, and the reset when metro or viewer changes; (4) `hasMore` stays true after a failed first load (no visible effect; add `&& error === null`); (5) a `loadMore` in flight when the metro becomes null still lands — bump the generation before the early return; (6) "Couldn't load more events" reads oddly when a metro's first past page fails and nothing is on screen; (7) a mid-row chip focused on a phone sits flush against the scroll edge and clips its ring — add `scroll-padding-inline`; (8) `EventCard.test.tsx` queries `time` with `querySelector` where `getByRole('time')` works; (9) the page tests check sections by `closest('section')`, not `getByRole('region')` and list items; (10) Task 7.15's list already covers the stale `pages.ts` comment and `ToggleChipGroup`'s new props in `web-ui-system.md`. **Chunk 3** (7.11–7.14, c917f93..616d3b4) done 2026-09-22: gate green (shared 661, web 1464 tests); `events/[id].page.tsx` 379 → 277 lines, against a ~230 target, the difference being the id-keyed view wrapper and the `blockedBy` helper. Review: one HIGH fixed in 616d3b4 (Mantine's `Breadcrumbs` nowrap clipped a long title on phones), with the two other breadcrumb nits on the same lines. Routed from its review: (1) `AttendeeList` rows pass `full_name` to a non-decorative `Avatar`, so screen readers hear the surname the row masks — PR 10, with the test id; (2) `useEventDetail` can't clear `responding` in its render-time reset, which only the page's id key makes safe — narrow the comment or clear it in the effect; (3) the load effect has no `.catch`, harmless while every shared API catches its own errors; (4) the sidebar card chrome is defined three times, a candidate for one primitive in PR 10; (5) the attendee list is cached per open, so the dialog can show 12 while the count reads 13 (pre-existing); (6) "This event has passed." appears in both the alert and the attendance card, which reads as helpful rather than redundant, but a cancelled event shows no line at all, and chunk 4's e2e must scope that string to a role. **Chunk 4** (7.15, 8407421) done 2026-09-22: smoke pass, e2e (102), baselines regenerated in Docker and the visual suite green, full gate green (shared 661, web 1464, mobile 636), docs updated, draft PR #86 open with Copilot requested. The a11y diff only deletes the four `events` / `event-detail` entries. Twelve screenshots changed and were reviewed; reviewing them caught a three-column card squeezing the organizer name to one letter, fixed by wrapping the response control to its own line. The feed's visual ready check waited only for its first post, so the Metro Pulse strip was in the shot or not depending on timing; it now waits for the strip. The keyboard walk ran in Chromium against the production build and passed every case in Step 7 |
-| 8 Marketplace | `feat/web-ui-marketplace` | breakdown at PR start | Not Started | 2026-09-14 | |
+| 7 Events | `feat/web-ui-events` | 7.1–7.15, in four chunks | Merged (PR #86) | 2026-09-22 | branched from `master` at 3386a5d. **Chunk 1** (7.1–7.5, b9e4eb3..294c80e) done 2026-09-22: gate green (shared 660, web 1402, mobile 636 tests); review found no CRITICAL or HIGH. Routed from its review: (1) **for the user to decide:** `EventResponseControl`'s `data-disabled` gives both buttons Mantine's grey disabled look while a response saves, hiding the pressed state decision 6 says moves at once — the reason `FollowButton` sets only `aria-disabled`; (2) `getMetroEventsPage`'s comment should cite the `CHECK` in `006_events.sql`, not `createEventSchema`; (3) no test asserts `EventTypeBadge`'s `data-type`; (4) `getUserEventResponse` swaps a PostgREST error for a generic message, as the rest of `api/events.ts` does; (5) a malformed id returns `22P02`, so `notFound` stays unset — Task 7.11 should weigh that; (6) Task 7.15's docs pass also drops `hasUserRsvp` from `events-feature-breakdown.md:91` and `13-event-discovery-and-rsvp.md:499`; (7) a double blank line in `api/events.test.ts`. **Chunk 2** (7.6–7.10, e4e1fb9..30f1c6e) done 2026-09-22: gate green (shared 660, web 1428 tests); `events/index.page.tsx` 333 → 141 lines. Review: two HIGH fixed in 30f1c6e (the organizer avatar was a dead spot above the stretched link's overlay; the title clamp clipped the link's focus ring), plus ragged card heights, a regression from the `li` becoming the grid item. Routed from its review: (1) `useEventFeed.test.ts`'s "drops a page that lands after the reload" leans on the previous test's mock for its chained past call, so it fails alone — add `mockResolvedValueOnce(page([]))` and reset mocks in `beforeEach`; (2) the pages test's fake `IntersectionObserver` fires disconnected observers too, so it can't catch a sentinel unmounted while a filter shows nothing; (3) untested hook branches: the chained past page failing on first load, and the reset when metro or viewer changes; (4) `hasMore` stays true after a failed first load (no visible effect; add `&& error === null`); (5) a `loadMore` in flight when the metro becomes null still lands — bump the generation before the early return; (6) "Couldn't load more events" reads oddly when a metro's first past page fails and nothing is on screen; (7) a mid-row chip focused on a phone sits flush against the scroll edge and clips its ring — add `scroll-padding-inline`; (8) `EventCard.test.tsx` queries `time` with `querySelector` where `getByRole('time')` works; (9) the page tests check sections by `closest('section')`, not `getByRole('region')` and list items; (10) Task 7.15's list already covers the stale `pages.ts` comment and `ToggleChipGroup`'s new props in `web-ui-system.md`. **Chunk 3** (7.11–7.14, c917f93..616d3b4) done 2026-09-22: gate green (shared 661, web 1464 tests); `events/[id].page.tsx` 379 → 277 lines, against a ~230 target, the difference being the id-keyed view wrapper and the `blockedBy` helper. Review: one HIGH fixed in 616d3b4 (Mantine's `Breadcrumbs` nowrap clipped a long title on phones), with the two other breadcrumb nits on the same lines. Routed from its review: (1) `AttendeeList` rows pass `full_name` to a non-decorative `Avatar`, so screen readers hear the surname the row masks — PR 10, with the test id; (2) `useEventDetail` can't clear `responding` in its render-time reset, which only the page's id key makes safe — narrow the comment or clear it in the effect; (3) the load effect has no `.catch`, harmless while every shared API catches its own errors; (4) the sidebar card chrome is defined three times, a candidate for one primitive in PR 10; (5) the attendee list is cached per open, so the dialog can show 12 while the count reads 13 (pre-existing); (6) "This event has passed." appears in both the alert and the attendance card, which reads as helpful rather than redundant, but a cancelled event shows no line at all, and chunk 4's e2e must scope that string to a role. **Chunk 4** (7.15, 8407421) done 2026-09-22: smoke pass, e2e (102), baselines regenerated in Docker and the visual suite green, full gate green (shared 661, web 1464, mobile 636), docs updated, draft PR #86 open with Copilot requested. The a11y diff only deletes the four `events` / `event-detail` entries. Twelve screenshots changed and were reviewed; reviewing them caught a three-column card squeezing the organizer name to one letter, fixed by wrapping the response control to its own line. The feed's visual ready check waited only for its first post, so the Metro Pulse strip was in the shot or not depending on timing; it now waits for the strip. The keyboard walk ran in Chromium against the production build and passed every case in Step 7 |
+| 8a Marketplace: browse + listing detail | `feat/web-ui-marketplace` | 8a.1–8a.12, in four chunks | In Progress | 2026-09-22 | rebased onto `master` at `f995deb` after PR #87 merged. Owns both visual pages, so it takes `a11y-baseline.json` to `{}`. **Chunk 1** (8a.1–8a.4, cf331d8..4e90113) done 2026-09-22: gate green (shared 666, web 1492 tests); `marketplace.module.css` 837 → 713 lines and 159 → 136 guard violations; `FilterBar` and `ListingStrip` off both allowlists, so the raw-element list is down to 9 files. Review found no CRITICAL. Two HIGH: (1) `Select` → `NativeSelect` was a real deviation from the task text and is now implementation decision 26; (2) "the twelve dead `.categoryTheme*` blocks should be deleted" is **wrong** — `listing/[id].page.tsx` 26–38 keeps its own copy of the map and applies it at 150, so they belong to Task 8a.10. Fixed in the review commit: the pending-debounce-then-clear path had no test, and `data-category` sat on both the article and the chip. Routed from its review: (1) the tests use `data-testid` for the decorative star and cover placeholder, and read the article's `data-category` — PR 7's own review asked for exactly that kind of `data-type` assertion, so this stays, but PR 10 should settle whether the "role, label or text" rule carves out styling hooks explicitly; (2) mobile's two `isVerifiedSeller` copies cannot be touched here (global constraint: web only), so they go to PR 10 with the other mobile parity items. **Chunk 2** (8a.5–8a.8, 30be668..84780a9) done 2026-09-22: gate green (shared 666, web 1546 tests). `index.page.tsx` 330 → 77 lines and `[category].page.tsx` 177 → 79, over one 193-line `MarketplaceBrowse`; `marketplace.module.css` 713 → 524 lines and 136 → 108 guard violations, with 21 dead class blocks deleted. Review found no CRITICAL or HIGH. Fixed in the review commit: **twelve references to tokens that do not exist**, shipped in chunk 1 and repeated here — `--weight-*` for `--font-weight-*`, `--text-sm`/`--text-lg` for `--font-size-*` (`--text-1/2/3` are colours), `--radius-pill` for `--radius-full` — each silently falling back to the inherited value; the hardcoded `'search'` in `[category].page.tsx` now uses `SEARCH_SLUG`; the leftover `ListingStrip` mock in the category test; and the sponsored strip had no view-level test. Routed to PR 10: the missing undefined-custom-property guard, the paging offset that counts unique rather than consumed rows, and the empty-state copy for a member with no metro. **Chunk 3** (8a.9–8a.11, 543fe61..d8ae4c4) done 2026-09-22: gate green (shared 666, web 1565 tests). `listing/[id].page.tsx` 330 → 216 lines; `marketplace.module.css` 524 → 190 lines and 108 → 32 guard violations, the twelve `.categoryTheme*` blocks finally gone; the page comes off the raw-element allowlist, down to 8 files. `ListingResult` gains `notFound`, mirroring `EventResult`, so a failed read stops reading as "Listing not found." Review found no CRITICAL; two HIGH, both fixed in the review commit: the two extracted components shipped with no tests of their own, and the save button had lost its visible saved state (it now keeps one stable name with `aria-pressed`, and the bookmark icon fills in, rather than renaming itself). Also fixed there: dropping `router.isReady` made a hard reload flash "Listing not found" before the id arrived; Mantine's `Breadcrumbs` renders a plain `div`, so the `nav` landmark came back; a business listing with no details rendered an empty "Business Details" heading; and `.badge` still referenced `--category-bg` / `--category-color` after their defining blocks were deleted. Routed to PR 10: event detail's identical breadcrumb-landmark gap, `PhotoCarousel` having no `priority` hint, and the actions panel rendering twice. **Chunk 4** (8a.12) done 2026-09-22: e2e 107, visual 39, full gate green (shared 666, web 1584, mobile 636). **`a11y-baseline.json` is now `{}`** and the diff only deletes lines, so the app has no known serious or critical violation on any screenshotted page. Four screenshots changed, all reviewed: `marketplace` and `listing-detail` at both widths. Seven others changed on the first run and were restored — re-running the suite against the originals passed, so they were rendering noise, not real diffs. **The keyboard walk found a real bug:** pressing Save dropped focus to `<body>`, because the panel used Mantine's `loading`, which sets native `disabled` — the exact thing "Busy controls stay focusable" forbids. The old page did it too, so it was carried over rather than introduced. It now takes `aria-disabled` / `data-disabled` with a `Loader` in `leftSection`. The walk is kept as `13-marketplace-keyboard.spec.ts` rather than run once, since its 375px checks are the regression guard for recon 9. Routed to PR 10: listing detail shows the category and condition twice, once as a badge and once as a highlight chip, which `getListingHighlights` has always done. **Copilot review** (5 rounds, 15 inline comments) answered 2026-09-23. Four were real and are fixed in `fix(web): address Copilot's review`: (1) `getListingsByMetro` derives `hasMore` from the raw window *before* dropping rows of another category, so a full window can arrive filtered to nothing — the browse view called that empty and unmounted the sentinel, stranding a category that does have listings, and the hook offset by `grid.length`, which never advanced and re-requested the same window; the offset now counts the API window and the empty state waits for `hasMore` to go false; (2) a load-more in flight when the metro cleared still landed, because the effect returned before bumping the generation — the same fault PR 7 found in `useEventFeed`; (3) `/marketplace/search` showed an h1 "Search: momo" over a region named "All Listings"; it now reads "Results"; (4) `getListingById` missed `22P02`, so a mistyped UUID gave a retryable error rather than not-found, where `getEventById` handles both. Two were already fixed in earlier chunk reviews (the undefined token names, and `loading` on the save button). One was **rejected**: it claimed `ListingBusinessDetails` could not type-check because a `Row[]` annotation took nullable members, but the `as Row[]` cast applies to the `.filter(Boolean)` result, not the literal, and `type-check` passes. The remaining six were on the plan text itself, written before the implementation diverged from it; the task interfaces now match what shipped |
+| 8b Marketplace: seller flow | `feat/web-ui-marketplace-seller` | breakdown at PR start | Not Started | 2026-09-22 | my-listings, promote wizard, `promote.module.css`. No visual pages, so no baseline run. Stacks on 8a for `marketplace.module.css` |
 | 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
 | 10 Static pages + cleanup | `feat/web-ui-cleanup` | breakdown at PR start | Not Started | 2026-09-14 | |
 
@@ -13610,18 +13616,382 @@ The a11y diff must **delete** the four `events` and `event-detail` entries and a
   - The cancel and delete dialogs, which should open on their Cancel button.
 - [x] **Step 8: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`, then run `gh pr edit <number> --add-reviewer @copilot`. Update the Live tracker row to `In Review (PR #NN)`.
 
-## PR 8 — Marketplace (`feat/web-ui-marketplace`)
+## PR 8 — split into 8a and 8b (2026-09-22)
 
-- **Pages:** `pages/marketplace/index.page.tsx`, `[category].page.tsx`, `listing/[id].page.tsx`, `my-listings.page.tsx`, `listing/promote/[id].page.tsx`, `listing/promote/success.page.tsx`.
-- **Components:** `components/marketplace/{ListingCard, ListingStrip, FilterBar}`.
-- **CSS:** `pages/marketplace/marketplace.module.css` (112 hex), `pages/marketplace/listing/promote.module.css` (97 hex; `outline: none` at 596; local `--tier-*` vars become tokens), `ListingStrip.module.css`, `FilterBar.module.css`.
-- **Accessibility:** fix `<Link>` wrapping `<Button>` (index 226/229/310, listing/[id] 136/139, my-listings 90/101).
-- **Layout:** the marketplace index overflows at 375, where the document is 442px wide. This predates PR 6 (found in PR 6's Task 6.19a check).
-- **Also:**
-  - Replace native dialogs (my-listings, listing actions).
-  - Adopt `useInfiniteScroll` (index 178–193), the carousel (listing/[id] ~166–195) and `LoadingState`.
-  - Convert the Mantine component mocks in the 7 marketplace tests to role-based assertions against real Mantine.
-- **Already built:** `ListingSummaryRow` with its owner view, and the shared `isListingExpiringSoon`, `getListingExpiryNotice` and `LISTING_STATUS_LABELS` (PR 6, Tasks 6.1 and 6.5). my-listings (118, 158) should adopt them rather than keep its own `<= 14` check and its "Expires in 0 days" copy. Mobile's `MyListingsScreen.tsx` (`STATUS_CONFIG` 36–40, expiry 136 and 181) and `ProfileScreen.tsx` (323) have the same duplicates and should move to the shared helpers too.
+The area comes to about 3,900 lines of source across six pages, four components and four stylesheets — PR 4's threshold for "too much for one review". It is now two PRs, on the seam between what a visitor browses and what a seller manages:
+
+- **8a — browse + listing detail.** `index`, `[category]`, `listing/[id]`, and the three components. It owns both of the area's visual pages, so it carries the whole screenshot and accessibility cost and takes `a11y-baseline.json` to `{}`.
+- **8b — the seller flow.** `my-listings`, the promote wizard, and `promote.module.css`. Neither page is in `pages.ts`, so **8b runs no baseline job at all**.
+
+`marketplace.module.css` serves both halves, so it comes off the allowlist in 8b, not 8a (the `createListing.module.css` pattern from PR 5). 8b stacks on 8a for that file.
+
+**The promotion success page is split between them.** Its stranding bug — every poll failing left a member who had already paid with no link, no error and no retry — was found during this recon and fixed on its own branch as PR #87, so the behaviour fix reached `master` without waiting for the migration. **PR #87 owns the behaviour; 8b owns the visual migration.** Neither is 8a's.
+
+## PR 8 recon
+
+Run on `master` at `aef9fca` (the "Starting an area PR" commands), 2026-09-22.
+
+| File | Lines | CSS guard | `confirm(`/`alert(` | Raw elements |
+|---|---|---|---|---|
+| `pages/marketplace/index.page.tsx` | 330 | — | 0 | 0 |
+| `pages/marketplace/[category].page.tsx` | 177 | — | 0 | 0 |
+| `pages/marketplace/listing/[id].page.tsx` | 330 | — | 0 | 2 |
+| `pages/marketplace/my-listings.page.tsx` | 216 | — | 2 | 6 |
+| `pages/marketplace/listing/promote/[id].page.tsx` | 410 | — | 0 | 7 |
+| `pages/marketplace/listing/promote/success.page.tsx` | 110 | — | 0 | 0 |
+| `pages/marketplace/marketplace.module.css` | 837 | **159** | — | — |
+| `pages/marketplace/listing/promote.module.css` | 841 | **107** | — | — |
+| `components/marketplace/ListingStrip.tsx` / `.module.css` | 106 / 118 | 19 | 0 | 2 |
+| `components/marketplace/FilterBar.tsx` / `.module.css` | 120 / 59 | 9 | 0 | 1 |
+| `components/marketplace/ListingCard.tsx` | 79 | — (borrows the page module) | 0 | 0 |
+
+`createListing.module.css` (PR 5) and `ListingSummaryRow.module.css` (PR 6) are already token-clean, so the CSS work is four allowlisted files, not six. `a11y-baseline.json` holds exactly four entries, all in this area — `color-contrast` on `marketplace` and `listing-detail` at both widths — so **8a empties it**, which the plan had pencilled in for PR 10.
+
+**What the recon changed** (the area read on 2026-09-22):
+
+1. **A failed fetch leaves the previous metro's listings frozen on screen, looking loaded.** `index.page.tsx` 142–152 only assigns inside `if (res.data)`, so on error `setFeatured` / `setRecent` / `setTrending` are never called, nothing is cleared, and `setLoadedQueryKey(queryKey)` still fires — `loading` flips false with stale rows in place. `[category].page.tsx` 86 is worse: `if (result.data) setListings(result.data)` has no `else`, so a failed category switch shows the **previous category's** listings under the new heading. Neither page has an `ErrorState`.
+2. **Load-more failures are silent.** `index.page.tsx` 163–188 only does `setHasMore(false)` on error, so paging stops in a way no member can tell from reaching the end.
+3. **The index hand-rolls its own `IntersectionObserver`** (190–205) instead of the shared `useInfiniteScroll`, which events already adopted.
+4. **Seven of the twelve marketplace categories no longer exist.** Migration 016 consolidated them to five (`food-restaurants`, `immigration-legal`, `professional-services`, `remittance-finance`, `other`), but `marketplace.module.css` 354–412 still carries twelve `.categoryTheme*` blocks and `ListingCard.tsx` 7–20 still maps twelve slugs. The dead seven are the densest cluster of colour literals in the file.
+5. **The whole listing card is one giant `<Link>`** (`ListingCard.tsx` 35–77), so its accessible name runs category, title, price, "Verified Seller", view count and "Contact Seller" together — and "Contact Seller" reads as a control but is inert decoration.
+6. **Listing detail keeps the previous listing when the route id changes, and has no cancel guard.** `listing/[id].page.tsx` 53–79 never resets `listing`, `loading` or `photoIndex`, so a shorter new listing leaves `listing.photos[photoIndex]` undefined and `Image` gets a bad `src`. Its errors also render as "Listing not found." This is the same pair PR 6 fixed on the public profile and PR 7 on event detail.
+7. **The photo gallery reinvents `PhotoCarousel`** (165–200) with raw buttons, no swipe and an unannounced `{n}/{total}`.
+8. **`<Link>` wrapping `<Button>` in five places:** `index.page.tsx` 237–239 and 240–242 and 321–323, and `listing/[id].page.tsx` 136–141. (The plan's cited my-listings 90/101 has drifted; it is now 100–102 and 111–113, and belongs to 8b.)
+9. **The 375px overflow is the header row.** `.header` (`marketplace.module.css` 8–13) is `display: flex; justify-content: space-between` with **no `flex-wrap`**, holding the `h1` and two Mantine `Button`s whose labels are `white-space: nowrap`. Nothing can shrink below min-content, so the row forces the document to 442px.
+10. **About 17 rule blocks are dead**, including a `searchContainer` / `searchInput` / `searchIcon` set superseded by `FilterBar.module.css`, a `categoryGrid` cluster from a removed home grid, and a `listingCard` / `listingPhoto` / `listingTitle` / `listingPrice` set superseded by `ListingCard`'s own classes.
+11. **Duplication.** `readQueryParam` / `parseSort` are defined twice and have drifted in signature (`index.page.tsx` 29–45 against `[category].page.tsx` 23–39). `isVerifiedSeller` — `(listing.owner?.trust_level ?? 0) >= 1` — exists three times: web `ListingCard.tsx` 31, mobile `ListingCard.tsx` 23 and mobile `ListingGridCard.tsx` 37.
+12. **Every marketplace test mocks Mantine.** `Select`, `Button` and `Skeleton` are replaced with bare elements in all seven files, so real Mantine is never exercised — and `listing/[id].test.tsx` 28–35 collapses Mantine's `loading` prop to native `disabled`, which masks the "busy controls stay focusable" rule the design system requires.
+
+**8b's findings**, recorded here so its breakdown does not have to re-read the area: my-listings never checks `result.error` on any of its four mutations and re-fetches the whole list instead of updating a row, so a failed deactivate silently re-renders unchanged; `getListingsByOwner` defaults to `limit: 50` and returns no `hasMore`, so an owner with 51+ listings loses the tail; its `next/image fill` thumbnail (123–128) has no positioned ancestor, because neither `.myListingCard` nor `.myListingThumb` sets `position: relative`; it re-implements `isListingExpiringSoon` inline (117–118) and prints "Expires in 1 days"; and `promote.module.css` is **two stylesheets concatenated** — 128 class declarations, with `.payButton` and `.continueButton` each declared six times, `.tierCard` and `.stepperButton` five, `.dot` four — so most of its 841 lines never renders and it should be rewritten from what actually applies rather than migrated rule by rule. The promote wizard's tier cards are `div role="button"` with no `aria-checked` and no radiogroup, and no client-side ownership check runs before a member completes all three steps for someone else's listing (the 403 only comes from the edge function).
+
+---
+
+# PR 8a — Marketplace: browse + listing detail
+
+**Branch:** `feat/web-ui-marketplace`, created from `master` at `aef9fca`.
+
+| File | Change | Why |
+|---|---|---|
+| `apps/web/src/styles/tokens.css` (+ its contrast test) | Modify | `--category-<slug>-fg` / `-bg` for the five live categories |
+| `packages/shared/src/logic/marketplace/seller.ts` (+ test) | Create | `isVerifiedSeller`, today copied three times. **Web adopts it here; mobile's two copies stay** — this PR must not touch `apps/mobile/` — and are on PR 10's list |
+| `apps/web/src/lib/marketplaceQuery.ts` (+ test) | Create | One `readQueryParam` / `parseSort` / `parseView`, today two drifted copies |
+| `apps/web/src/components/marketplace/ListingCard.module.css` | Create | The card stops borrowing the 837-line page module |
+| `apps/web/src/components/marketplace/{ListingCard,FilterBar,ListingStrip}.tsx` + tests | Modify | Stretched link, Mantine fields, real Mantine in tests |
+| `apps/web/src/hooks/useMarketplaceFeed.ts` (+ test) | Create | Paging, filters and the three states, as `useEventFeed` does |
+| `apps/web/src/components/marketplace/MarketplaceBrowse.tsx` (+ test) | Create | One browse view behind both routes |
+| `apps/web/src/hooks/useListingDetail.ts` (+ test) | Create | Id reset, cancel guard, real error state |
+| `apps/web/src/components/marketplace/{ListingActionsPanel,ListingBusinessDetails}.tsx` + tests | Create | Extracted from the 330-line detail page |
+| `apps/web/src/pages/marketplace/browse.module.css` | Create | Token-clean; the browse classes leave `marketplace.module.css` |
+| `apps/web/src/pages/marketplace/listingDetail.module.css` | Create | Token-clean; the detail classes leave `marketplace.module.css` |
+| `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs` | Modify | `FilterBar` and `ListingStrip` come off both |
+
+**How this PR runs.** Four chunks, as PR 7 ran. Inside a chunk each task writes its failing test, runs only that task's tests, implements, re-runs and commits, with no review between tasks. At each chunk boundary: `type-check`, `lint`, `lint:guards`, the full unit suite of every workspace touched (web Vitest must run from a `C:\…` cwd), then one code-review agent over the chunk's whole diff, CRITICAL and HIGH fixed in one `fix(web): address chunk N review` commit, everything else routed to PR 10's list or the tracker — **never to new tasks**. e2e and visual run only in chunk 4.
+
+| Chunk | Tasks | Ends with |
+|---|---|---|
+| 1. Tokens and leaf components | 8a.1–8a.4 | Category tokens, the shared seller helper, and all three components migrated and off both allowlists |
+| 2. Browse | 8a.5–8a.8 | Both browse routes on one hook and one view, stylesheet included |
+| 3. Listing detail | 8a.9–8a.11 | The detail page fully migrated, stylesheet included |
+| 4. Finish | 8a.12 | e2e, baselines, `a11y-baseline.json` to `{}`, docs and the draft PR |
+
+**Decisions this breakdown locks in:**
+
+1. **Both category routes stay, over one implementation** (recon 11). `/marketplace?category=slug` and `/marketplace/<slug>` are both live — the detail page's category chip and `[category]`'s own search switch use the second — so deleting either would break existing links. Both routes render `MarketplaceBrowse` over `useMarketplaceFeed`; only the thin page wrapper differs. The index's heading stops always reading "All Listings" and names the active category.
+2. **Category colour becomes tokens, for the five live categories only** (recon 4). `tokens.css` gains `--category-<slug>-fg` / `-bg` mirroring `--event-<type>-*`, selected by a `data-category` attribute as `EventTypeBadge` does, and covered by Task 1.1's contrast test. The seven dead slugs and their twelve CSS blocks go. `MARKETPLACE_CATEGORIES[].color` stays put as mobile's source; web stops reading it.
+3. **Error, empty and stale are three separate states** (recon 1 and 2). Every fetch path clears its rows on failure and renders `ErrorState` with a retry. `hasMore` goes false on error *and* records the error, so load-more failures are visible.
+4. **`marketplace.module.css` stays on the allowlist through 8a.** my-listings is 8b's page, and the guard fails on an allowlisted file that is already clean, so the entry can only be removed once the last consumer is migrated.
+5. **`ListingCard` keeps its single-target link but stops wrapping the card.** It moves to the stretched-link pattern `PostCard` and `EventCard` use: the title is the only link, everything else sits beside the overlay, and the inert "Contact Seller" text is dropped rather than promoted to a control (recon 5).
+
+## PR 8a — Task breakdown
+
+Same conventions as PRs 4a–7: test first, one commit per task, tests query by role, label or text, semantic tokens only, Mantine components rather than raw elements outside `components/ui/`, and no new dependencies.
+
+### Task 8a.1: Category tokens and the shared seller helper
+
+**Files:** `apps/web/src/styles/tokens.css` and `apps/web/src/styles/tokens.contrast.test.ts`; create `packages/shared/src/logic/marketplace/seller.ts` and `seller.test.ts`; export both from `packages/shared/src/logic/marketplace/index.ts`.
+
+**Interface:**
+
+```ts
+/** A seller is "verified" at TrustLevel.VERIFIED or above. Three copies exist today. */
+export function isVerifiedSeller(
+  listing: Pick<MarketplaceListing, 'owner'>
+): boolean;
+```
+
+`tokens.css` gains ten tokens, one pair per live category, in the same block as `--event-<type>-*`:
+
+```text
+--category-food-restaurants-fg / -bg
+--category-immigration-legal-fg / -bg
+--category-professional-services-fg / -bg
+--category-remittance-finance-fg / -bg
+--category-other-fg / -bg
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `isVerifiedSeller` is true at `trust_level` 1 and 2, false at 0, and false when `owner` is absent.
+  - Extend `tokens.contrast.test.ts` so every `--category-*-fg` clears 4.5:1 on its `-bg` **and** on `--surface-0`, the way the event pairs are checked.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/logic/marketplace/seller.test.ts` and `npm run test --workspace=apps/web -- src/styles/tokens.contrast.test.ts`
+- [ ] **Step 3: Implement.** Pick each pair inside sRGB; the four chromas that shrank in planning decision 4 are the precedent if a hue will not fit.
+- [ ] **Step 4: Run both and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(shared): add isVerifiedSeller and marketplace category tokens`.
+
+### Task 8a.2: `ListingCard` on the stretched link, its own stylesheet and the tokens
+
+**Files:** `components/marketplace/ListingCard.tsx` and `.test.tsx`; create `ListingCard.module.css`.
+
+**Interface:** unchanged — `{ listing: MarketplaceListing; sponsored?: boolean }`.
+
+The card becomes an `<article data-category={slug}>`: the photo or an `aria-hidden` placeholder; the "Sponsored" badge; an `h3` holding the only link, whose `::after` covers the card; then price, category chip, the verified mark and the view count beside the overlay. `CATEGORY_THEME_CLASS_BY_SLUG` and its twelve entries are deleted, and the card reads `--category-<slug>-fg` / `-bg` through `data-category`, falling back to `other` for an unknown slug. The inert "Contact Seller" text is removed (decision 5). The decorative emoji and the verified star both get `aria-hidden`.
+
+- [ ] **Step 1: Rewrite the tests.** Keep title, price, category, photo and sponsored coverage, then add:
+  - The only link is named by the title alone and points to `/marketplace/listing/<id>`.
+  - An unknown category slug still renders, with `data-category="other"`.
+  - A verified seller's mark is `aria-hidden`, and the card's accessible name does not contain "Verified".
+  - No element with the text "Contact Seller" remains.
+  - The `.module.css` Proxy mock is deleted along with the raw elements it propped up.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/marketplace/ListingCard.test.tsx`
+- [ ] **Step 3: Implement**, moving `featuredCard`, `cardImage`, `cardBody`, `cardCategoryChip`, `cardTitle`, `cardPrice`, `cardMetaLine`, `verifiedStar`, `metaDot` and `sponsoredBadge` out of `marketplace.module.css` into the new token-clean `ListingCard.module.css`. Delete the twelve `.categoryTheme*` blocks from the page module.
+- [ ] **Step 4: Run the card suite and `npm run lint:guards`.**
+- [ ] **Step 5: Commit** as `refactor(web): rebuild ListingCard on a stretched link and category tokens`.
+
+### Task 8a.3: `FilterBar` onto Mantine fields
+
+**Files:** `components/marketplace/FilterBar.tsx`, `.module.css` and `.test.tsx`; `scripts/guard-css-tokens.allowlist.json`; `apps/web/eslint/raw-element-allowlist.mjs`.
+
+The raw `<input role="searchbox">` (107–116) and its emoji `searchIcon` become a Mantine `TextInput` with `leftSection={<IconSearch aria-hidden />}` and a `CloseButton` in `rightSection` that clears the field — the treatment `EventFilterBar` already established, which this control has never had. Both `Select`s become `NativeSelect` (implementation decision 26, taken during the chunk and recorded there). `outline: none` at `.module.css` 38 goes, and the field takes the theme focus ring.
+
+- [ ] **Step 1: Rewrite the tests** against real Mantine, deleting the `Select` and `.module.css` mocks:
+  - The search field is found by `getByRole('searchbox', { name: /search listings/i })`.
+  - Typing and pressing Enter calls `onChange` with the query.
+  - The clear button appears only when the field has text, clears it, and is named.
+  - The sort `Select` is reachable by its accessible name and reports a change.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/marketplace/FilterBar.test.tsx`
+- [ ] **Step 3: Implement.** In the same commit remove `FilterBar.module.css` from the CSS allowlist and `src/components/marketplace/FilterBar.tsx` from `RAW_ELEMENT_ALLOWLIST`.
+- [ ] **Step 4: Run the suite, then `npm run lint:guards`.**
+- [ ] **Step 5: Commit** as `refactor(web): rebuild FilterBar on Mantine fields and tokens`.
+
+### Task 8a.4: `ListingStrip` arrows onto Mantine
+
+**Files:** `components/marketplace/ListingStrip.tsx`, `.module.css` and `.test.tsx`; both allowlists.
+
+The two raw arrow `<button>`s (63–71, 94–102) become Mantine `ActionIcon`s keeping their `Scroll <title> left` / `right` names and their `handleScrollBy(±320)` behaviour, so they pick up the theme focus ring that `.arrow` never defined. The module moves onto semantic tokens.
+
+- [ ] **Step 1: Extend the tests.**
+  - Both arrows are found by role and name, and clicking each scrolls by the expected offset.
+  - Each arrow is focusable and shows a focus ring class-free assertion — query by role, then assert `document.activeElement`.
+  - Keep the existing "Show All" gating coverage.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/marketplace/ListingStrip.test.tsx`
+- [ ] **Step 3: Implement**, and remove `ListingStrip.module.css` and `src/components/marketplace/ListingStrip.tsx` from the two allowlists.
+- [ ] **Step 4: Run the suite, then `npm run lint:guards`.**
+- [ ] **Step 5: Commit** as `refactor(web): move ListingStrip arrows onto Mantine and tokens`.
+
+**Chunk 1 gate.** `type-check`, `lint`, `lint:guards`, then `npm run test --workspace=packages/shared` and `--workspace=apps/web`. Review the diff `<chunk start>..HEAD`, fix CRITICAL and HIGH in one commit, route the rest, push, and record the chunk in the tracker.
+
+### Task 8a.5: `parseMarketplaceQuery`
+
+**Files:** create `apps/web/src/lib/marketplaceQuery.ts` and `marketplaceQuery.test.ts`.
+
+One home for the parsing that `index.page.tsx` 29–48 and `[category].page.tsx` 23–39 both own and have drifted on. It stays in `apps/web/src/lib` rather than `packages/shared`, because its input is a Next router query.
+
+```ts
+/** Defined and exported here; it was a page-local type on the index before. */
+export type DiscoveryView = 'featured' | 'trending' | null;
+
+export interface MarketplaceQuery {
+  view: DiscoveryView;
+  category: string;
+  q: string;
+  sort: ListingSortBy;
+}
+
+export function parseMarketplaceQuery(query: ParsedUrlQuery): MarketplaceQuery;
+```
+
+- [ ] **Step 1: Write the failing test.** A repeated param takes its first value; an unknown `sort` falls back to `newest`; an unknown `view` falls back to `null`; a missing param is `''`; and both the array and the undefined forms are accepted, which is exactly where the two copies disagreed.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/lib/marketplaceQuery.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `refactor(web): extract parseMarketplaceQuery`.
+
+### Task 8a.6: `useMarketplaceFeed`
+
+**Files:** create `apps/web/src/hooks/useMarketplaceFeed.ts` and `useMarketplaceFeed.test.ts`.
+
+Modelled on `useEventFeed`. It owns the home sections, the filtered grid, paging through `useInfiniteScroll`, and the three states decision 3 separates.
+
+```ts
+export interface MarketplaceFeedState {
+  featured: MarketplaceListing[];
+  recent: MarketplaceListing[];
+  trending: MarketplaceListing[];
+  sponsored: MarketplaceListing[];
+  grid: MarketplaceListing[];
+  loading: boolean;
+  /** Non-null when the current query failed. Rows are cleared, never stale. */
+  error: string | null;
+  loadingMore: boolean;
+  /** Non-null when a load-more failed, so the footer can say so and retry. */
+  loadMoreError: string | null;
+  hasMore: boolean;
+  loadMore: () => void;
+  /** Clears loadMoreError and asks for the page again, as useEventFeed does. */
+  retryLoadMore: () => void;
+  reload: () => void;
+}
+
+export function useMarketplaceFeed(
+  metroId: string | null,
+  query: MarketplaceQuery
+): MarketplaceFeedState;
+```
+
+- [ ] **Step 1: Write the failing test.**
+  - A failed home-sections load clears every section and sets `error` — the stale-rows bug in recon 1.
+  - A failed filtered load clears `grid` and sets `error`.
+  - A failed load-more sets `loadMoreError`, leaves the loaded rows alone, and a retry clears it.
+  - `hasMore` is false after a failed first load.
+  - Changing metro or query resets rows and refetches.
+  - A page that lands after a query change is dropped (the generation guard PR 7 needed).
+  - Each test sets its own mocks in `beforeEach`, so no test leans on a previous one's queue — the exact fault PR 7's chunk 2 review found in `useEventFeed.test.ts`.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useMarketplaceFeed.test.ts`
+- [ ] **Step 3: Implement**, replacing the hand-rolled `IntersectionObserver` with `useInfiniteScroll` (recon 3).
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useMarketplaceFeed`.
+
+### Task 8a.7: `MarketplaceBrowse`, and both routes on it
+
+**Files:** create `components/marketplace/MarketplaceBrowse.tsx` and `.test.tsx`; rewrite `pages/marketplace/index.page.tsx` and `[category].page.tsx`; rewrite `index.test.tsx` and `[category].test.tsx`.
+
+One view behind both routes (decision 1). It renders `FilterBar`, the four strips when unfiltered — Sponsored, Featured, Recently Added and Trending, with Sponsored hidden when it is empty — the category's own Featured strip when one is active, the grid, and `LoadingState` / `EmptyState` / `ErrorState`. A test asserts the Sponsored strip renders and is named, so following this breakdown cannot silently drop it. The pages become thin: each parses its query, resolves its metro, and renders the view with the right heading. `<Link><Button></Link>` at index 237–242 and 321–323 becomes `<Button component={Link} href=…>`.
+
+- [ ] **Step 1: Write the failing tests.** For the view:
+  - A failed load shows an error with a retry, and **not** the empty state — recon 1, asserted by text, not by class.
+  - An empty result shows the empty state.
+  - The heading names the active category when one is set, and "All Listings" only when none is.
+  - No `<button>` is nested inside an `<a>`: assert `container.querySelector('a button')` is null.
+  - Sections are found by `getByRole('region', { name })` and their cards by list item, not by `closest('section')` — the fault PR 7's chunk 2 review recorded.
+
+  For each page: it renders the view for its route, and `/marketplace/<slug>` and `/marketplace?category=<slug>` produce the same heading and the same grid.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/marketplace/MarketplaceBrowse.test.tsx src/pages/marketplace/index.test.tsx src/pages/marketplace/[category].test.tsx`
+- [ ] **Step 3: Implement.** Delete the Mantine mocks from both page tests (recon 12).
+- [ ] **Step 4: Run the three suites.**
+- [ ] **Step 5: Commit** as `refactor(web): put both marketplace browse routes on one view`.
+
+### Task 8a.8: `browse.module.css`
+
+**Files:** create `pages/marketplace/browse.module.css`; `pages/marketplace/marketplace.module.css`.
+
+The browse classes — `container`, `header`, `headerActions`, `title`, `sectionTitle`, `listingGrid`, `loadSentinel`, `footerLoader`, `emptyState` and its icon and text, and `backLink` — move into a token-clean file of their own, with their own copies of the names `marketplace.module.css` shares with my-listings. **`.header` gains `flex-wrap: wrap` and a `--space-3` row gap**, which is recon 9's 375px overflow. The ~17 dead blocks in recon 10 are deleted in this commit. `marketplace.module.css` keeps only what my-listings and `listing/[id]` still use and stays on the allowlist (decision 4).
+
+- [ ] **Step 1: Write the failing test.** Extend the guard's own test so `browse.module.css` is asserted clean, and confirm `findViolations` reports 0 for it.
+- [ ] **Step 2: Run and watch it fail.**
+- [ ] **Step 3: Implement.** Check each moved class still has a consumer before copying it; do not carry a dead rule into a new file.
+- [ ] **Step 4: Run `npm run lint:guards`** and the two page suites.
+- [ ] **Step 5: Commit** as `refactor(web): move the marketplace browse styles onto semantic tokens`.
+
+**Chunk 2 gate.** As chunk 1. Record the before and after line counts of both page files in the tracker.
+
+### Task 8a.9: `useListingDetail`
+
+**Files:** create `apps/web/src/hooks/useListingDetail.ts` and `useListingDetail.test.ts`.
+
+**This needs a shared change first.** `getListingById` maps both a missing row and a malformed id to a plain `Error`, so a hook alone cannot tell either from a network failure. `ListingResult` gains `notFound`, set for `PGRST116` and `22P02` — a mistyped UUID no retry would fix — which is the convention `EventResult` already uses.
+
+```ts
+export interface ListingDetailState {
+  listing: MarketplaceListing | null;
+  loading: boolean;
+  error: string | null;
+  /** Distinct from `error`: the row genuinely is not there. */
+  notFound: boolean;
+  isSaved: boolean;
+  saving: boolean;
+  toggleSave: () => void;
+  reload: () => void;
+}
+
+export function useListingDetail(
+  id: string | undefined,
+  viewer: Pick<User, 'id'> | null
+): ListingDetailState;
+```
+
+- [ ] **Step 1: Write the failing test.**
+  - A failed load sets `error` and leaves `notFound` false — recon 6, where a network failure reads as "Listing not found."
+  - A genuinely missing row sets `notFound`.
+  - A response for a previous id never lands after the id changed (the cancel guard the page has never had).
+  - A failed `getUserSavedListingIds` does not silently leave `isSaved` wrong.
+  - As in 8a.6, every test sets its own mocks in `beforeEach`.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useListingDetail.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useListingDetail`.
+
+### Task 8a.10: Listing detail on the new pieces
+
+**Files:** `pages/marketplace/listing/[id].page.tsx` and `[id].test.tsx`; create `components/marketplace/ListingActionsPanel.tsx`, `ListingBusinessDetails.tsx` and their tests.
+
+The page keys its view by id, as event detail does, so `photoIndex` cannot survive a route change (recon 6). The hand-rolled gallery is replaced outright by `PhotoCarousel` (recon 7). The breadcrumb becomes Mantine `Breadcrumbs`. `<Link><Button></Link>` at 136–141 becomes `<Button component={Link}>`. The owner row uses the shared `Avatar`. `sidebarContent`, defined once and rendered at two breakpoints, becomes `ListingActionsPanel` so the two render sites cannot drift. Heading order is repaired: the `h3`s at 245 and 302 become `h2`s under the page `h1`. Target about 170 lines.
+
+- [ ] **Step 1: Rewrite the tests.**
+  - The gallery is `PhotoCarousel`: "Photo 2 of 3" is announced, and prev/next are real buttons outside any link.
+  - A load failure shows an error with a retry, distinct from the not-found copy.
+  - Changing the route id clears the previous listing's photo.
+  - No `<button>` inside an `<a>`.
+  - Headings descend `h1 → h2` with no skip.
+  - Delete the `Button` mock at 28–35, which was hiding Mantine's `loading` semantics (recon 12).
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/pages/marketplace/listing/[id].test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run the detail and component suites.**
+- [ ] **Step 5: Commit** as `refactor(web): rebuild listing detail on the design system`.
+
+### Task 8a.11: `listingDetail.module.css`
+
+**Files:** create `pages/marketplace/listingDetail.module.css`; `pages/marketplace/marketplace.module.css`.
+
+The detail classes — `detailContainerWide`, `breadcrumb*`, `twoColumnGrid`, `mainColumn`, `detailSection`, `detailTitle`, `highlightsStrip`, `highlightChip`, `inlinePriceCard`, `sidebar`, `sidebarPrice`, `detailRow` and friends, `businessHourRow`, `ownerRow*` — move into a token-clean file. The `rgba(0,0,0,…)` and `white` literals in the gallery block go with the gallery itself, which `PhotoCarousel` now owns. `detailContainer` and `detailPrice`, superseded by their `Wide` and `sidebar` variants, are deleted.
+
+- [ ] **Step 1: Write the failing test.** Assert `findViolations` reports 0 for the new file.
+- [ ] **Step 2: Run and watch it fail.**
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run `npm run lint:guards`** and the detail suite.
+- [ ] **Step 5: Commit** as `refactor(web): move listing detail styles onto semantic tokens`.
+
+**Chunk 3 gate.** As chunk 1. Record the detail page's before and after line counts.
+
+### Task 8a.12: E2E, screenshots, accessibility, docs and the PR
+
+**Files:** `apps/web/e2e/tests/11-marketplace.spec.ts`; `apps/web/e2e/visual/pages.ts` if a ready check needs it; `apps/web/e2e/visual/__screenshots__/**`; `apps/web/e2e/visual/a11y-baseline.json`; `docs/architecture/web-ui-system.md`; `docs/product/features/marketplace.md`.
+
+- [ ] **Step 1: Update the e2e selectors** in `11-marketplace.spec.ts` for the new roles and names, and check `01-unauthenticated.spec.ts`, which also visits the marketplace.
+- [ ] **Step 2: Check the visual ready functions.** `marketplace` waits on its `h1`; make it wait on the first card too, so a strip is not half-rendered in the shot — the timing fault PR 7 hit on the feed.
+- [ ] **Step 3: Run the e2e suite.** `npm run test:e2e:web`
+- [ ] **Step 4: Regenerate the baselines in Docker** — `npm run test:visual:docker --workspace=apps/web -- --update` — then **review every changed PNG**, at both widths. Four screenshots are expected to change: `marketplace` and `listing-detail`, desktop and phone.
+- [ ] **Step 5: Rewrite the accessibility baseline.** `--write-a11y-baseline` should leave `a11y-baseline.json` as `{}`. **The diff must only delete lines.** If any entry survives, the contrast it names is still failing and belongs in this PR, not PR 10.
+- [ ] **Step 6: Update the docs.** Add `MarketplaceBrowse`, `ListingActionsPanel` and `ListingBusinessDetails` to `web-ui-system.md`, along with the category tokens and the `data-category` convention. In `marketplace.md`, correct anything the browse rewrite changed; note that the 12-category theming is now 5, matching migration 016.
+- [ ] **Step 7: Run the full gate.** `npm run lint`, `lint:guards`, `type-check`, `test`, `test:e2e:web`, `test:visual:web` and `docs:check`.
+- [ ] **Step 8: Walk the keyboard.**
+  - Tab through the grid: each card is one link stop, with no trapped controls.
+  - The filter bar: the search field, Enter, the clear button, then the sort `Select` with arrow keys and Escape.
+  - The strips' arrows, which must show a focus ring.
+  - The detail page's carousel with arrow keys, and its breadcrumb.
+  - The header at 375px, which must wrap rather than overflow.
+- [ ] **Step 9: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`, then `gh pr edit <number> --add-reviewer @copilot`. Update the tracker row to `In Review (PR #NN)`.
+
+---
+
+## PR 8b — Marketplace: seller flow (`feat/web-ui-marketplace-seller`)
+
+Breakdown at PR start, from the recon above. Branch from `master` once 8a merges.
+
+- **Pages:** `pages/marketplace/my-listings.page.tsx`, `listing/promote/[id].page.tsx`, `listing/promote/success.page.tsx`.
+- **CSS:** `listing/promote.module.css` (rewrite, not migrate — 128 declarations with six-fold duplicates), and the last of `marketplace.module.css`, **which comes off the allowlist here**.
+- **Correctness:** the four unchecked mutation results; `getListingsByOwner`'s silent 50-row ceiling; the thumbnail's missing positioned ancestor; the inline expiry check and its "Expires in 1 days" copy, which `isListingExpiringSoon` and `getListingExpiryNotice` already solve.
+- **Accessibility:** the six raw action `<button>`s collapse into one `ActionMenu` passed to `ListingSummaryRow` through a new `menu` prop; the two native `confirm()`s become `useConfirm`, delete with `danger: true`; the promote wizard's seven raw elements become Mantine, with `NumberInput` absorbing the stepper pair; the tier cards become a real single-select group with `aria-checked`; the wizard gains an `h1`.
+- **Also:** an owner guard before the promote wizard runs, so a member is not walked through three steps only to be refused by the edge function.
+- **Mobile parity, routed to PR 10:** `MyListingsScreen` has the same inline expiry check and its own `STATUS_CONFIG`.
 
 ## PR 9 — Messages, notifications, moderation (`feat/web-ui-messaging`)
 
@@ -13681,6 +14051,14 @@ The a11y diff must **delete** the four `events` and `event-detail` entries and a
   - [ ] Extract `components/ui/DetailList` (`DetailList` + `DetailRow`) from the identical `dl > div > dt + dd` markup in the public profile's `AboutPanel` and `AccountDetails`. Add `white-space: pre-line` to `PublicProfile.module.css` `.aboutBio`, so visitors see a bio's line breaks as the member does (found in PR 6's Task 6.15 review).
   - [ ] Phone: web has no way to set or clear `users.phone`, so the own profile's Phone row always leads nowhere on web. Either show the row only when it is set, or add phone to web profile editing. Separately, mobile `EditProfileScreen.tsx:277` saves `phone: phone.trim() || undefined`, which the client drops, so a member can never clear their phone. This is the same class of bug Task 6.2 fixed for photos: write `null` (found in PR 6's Task 6.15 review).
   - [ ] Search's result `Tabs` (`search.page.tsx:125`) wrap on phones like the public profile's did. Give them the same `tabList`/`tab` treatment the public profile got: nowrap plus scroll, `flex-shrink: 0`, an inset focus ring, a token underline, and an `onFocus` `scrollIntoView({ inline: 'nearest' })`, because Chromium leaves a partly clipped focused tab clipped. Adopt `scrollingTabsClassNames` and `scrollFocusedTabIntoView` from `components/ui/scrollingTabs`, which PR 6 extracted for both profile pages (found in PR 6's Task 6.10 review).
+  - [ ] **Guard undefined custom properties.** `guard-css-tokens.js` checks for colour literals and legacy token names, but nothing checks that a `var(--x)` resolves. PR 8a's chunk 1 shipped twelve references to tokens that do not exist — `--weight-semibold` for `--font-weight-semibold`, `--text-sm` and `--text-lg` for `--font-size-*` (where `--text-1/2/3` are *colours*), and `--radius-pill` for `--radius-full` — and every one silently fell back to the inherited value. A check comparing each `var()` in a module against `tokens.css` plus `legacy-aliases.css` would have caught all of them; a sweep of the whole app at that time found only four others, all pre-existing (`--tier-color`, `--color-background-subtle`, `--color-surface-muted`, and Mantine's own `--tabs-list-border-width`) (found in PR 8a's chunk 2 review).
+  - [ ] **Both detail pages lose their breadcrumb landmark to Mantine.** `Breadcrumbs` renders a plain `div`, so event detail (PR 7) dropped the `<nav aria-label="Breadcrumb">` the old markup had. PR 8a wrapped listing detail's back in a `nav`; event detail still needs the same (found in PR 8a's chunk 3 review).
+  - [ ] `PhotoCarousel` has no `priority` / `fetchpriority` prop, so every page that adopted it lost the hero image's LCP hint — listing detail and post detail both had `priority` before. Add an `eager` prop and pass it where the carousel is above the fold (found in PR 8a's chunk 3 review).
+  - [ ] Listing detail shows the category and the item condition twice — once as a badge under the title, once as a chip in the highlights strip — because `getListingHighlights` returns chips for both. Pre-existing; decide which row owns them (found in PR 8a's chunk 4 screenshot review).
+  - [ ] Listing detail renders `ListingActionsPanel` twice, with CSS showing one per breakpoint. `display: none` keeps the hidden copy out of the a11y tree and tab order, so it is correct, but it doubles the interactive DOM and forces the page tests onto `getAllByText`. One render placed by CSS `order` would be better (found in PR 8a's chunk 3 review).
+  - [ ] A member with no metro area sees "No listings in your area yet", which reads as though their metro is empty rather than unset. Before PR 8a they saw a skeleton forever, so this is an improvement, but the copy should distinguish the two (found in PR 8a's chunk 2 review).
+  - [ ] Mobile's `ListingCard.tsx:23` and `ListingGridCard.tsx:37` still inline `(listing.owner?.trust_level ?? 0) >= 1`. PR 8a added the shared `isVerifiedSeller` and adopted it on web, but could not touch `apps/mobile/` (found in PR 8a's chunk 1 review).
+  - [ ] Settle whether the "query by role, label or text" rule carves out styling hooks. `EventTypeBadge`'s `data-type` and `ListingCard`'s `data-category` are the contract between a component and its stylesheet, and PR 7's review asked for the former to be asserted, but the written rule forbids `data-*` queries outright (found in PR 8a's chunk 1 review).
   - [ ] Mobile `EventsScreen` onto `getMetroEventsPage`. Until then mobile's list still pages every event by start date ascending, so a metro whose events are mostly past opens on the oldest of them (PR 7 recon 3).
   - [ ] Mobile's `EventCard` K formatter onto the shared `formatCount`, and mobile event detail onto Interested / Going, for parity with web (PR 7 decision 10).
   - [ ] `AttendeeList` rows pass `full_name` to a non-decorative `Avatar`, so the alt text reads "Bikal Shrestha's avatar" beside the masked "Bikal S." Pass the public name with `toneKey={full_name}`, or `decorative`, and update the `avatar-<name>` test id. This is the same class of leak as the Avatar item above (found in PR 7's chunk 3 review).

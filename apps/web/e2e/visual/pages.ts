@@ -147,13 +147,29 @@ export const VISUAL_PAGES: VisualPage[] = [
     },
     ready: (page) => expect(page.getByText(MOCK_UPCOMING_EVENTS[0].title).first()).toBeVisible(READY_TIMEOUT),
   },
-  { name: 'marketplace', path: '/marketplace', signedIn: true, ready: (page) => heading(page, /^marketplace$/i) },
+  {
+    name: 'marketplace',
+    path: '/marketplace',
+    signedIn: true,
+    // The h1 renders before any data, so waiting on it alone caught the page
+    // with its strips half-drawn — the timing fault PR 7 hit on the feed.
+    ready: async (page) => {
+      await heading(page, /^marketplace$/i);
+      await expect(
+        page.getByRole('region', { name: /recently added/i }).getByRole('link').first()
+      ).toBeVisible(READY_TIMEOUT);
+    },
+  },
   {
     name: 'listing-detail',
     path: `/marketplace/listing/${MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE.id}`,
     signedIn: true,
+    // The title is its h1 now, and the actions panel lands with it. Matched as
+    // a string, not a RegExp: the title contains a '+'.
     ready: (page) =>
-      expect(page.getByText(MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE.title).first()).toBeVisible(READY_TIMEOUT),
+      expect(
+        page.getByRole('heading', { level: 1, name: MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE.title })
+      ).toBeVisible(READY_TIMEOUT),
   },
   { name: 'messages', path: '/messages', signedIn: true, ready: (page) => heading(page, /messages/i) },
   { name: 'notifications', path: '/notifications', signedIn: true, ready: (page) => heading(page, /notifications/i) },

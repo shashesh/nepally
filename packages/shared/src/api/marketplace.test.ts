@@ -417,6 +417,22 @@ describe('getTrendingListings', () => {
 // ─── getListingById ─────────────────────────────────────────────────────────
 
 describe('getListingById', () => {
+  it('treats a malformed id as not found, since no retry would fix it', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: '22P02', message: 'invalid input syntax for type uuid: "abc"' },
+      }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getListingById(supabase, 'abc');
+    expect(result.notFound).toBe(true);
+  });
+
   it('returns a single listing', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
@@ -444,6 +460,7 @@ describe('getListingById', () => {
 
     const result = await getListingById(supabase, 'missing');
     expect(result.error?.message).toBe('Listing not found');
+    expect(result.notFound).toBe(true);
   });
 
   it('returns error on supabase failure', async () => {
@@ -457,6 +474,8 @@ describe('getListingById', () => {
 
     const result = await getListingById(supabase, 'listing-1');
     expect(result.error).toBeDefined();
+    // A failure is not a missing row: the detail page must tell them apart.
+    expect(result.notFound).toBeUndefined();
   });
 
   it('returns "Listing not found" when data is null without error', async () => {
@@ -470,6 +489,7 @@ describe('getListingById', () => {
 
     const result = await getListingById(supabase, 'listing-1');
     expect(result.error?.message).toBe('Listing not found');
+    expect(result.notFound).toBe(true);
   });
 });
 

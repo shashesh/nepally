@@ -1,0 +1,196 @@
+/* Listing detail. The container carries `data-category`, which colours the
+   category badge from the `--category-<slug>` tokens — the same convention
+   ListingCard uses, replacing the twelve hand-written .categoryTheme* classes
+   that set --category-color / --category-bg from hex literals. */
+
+.container {
+  max-width: var(--layout-content-width-wide);
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+.breadcrumbs {
+  /* Mantine's Breadcrumbs sets nowrap, which clipped long titles on phones
+     (the fix PR 7 made for event detail). */
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.crumb {
+  color: var(--text-2);
+}
+
+.crumbCurrent {
+  color: var(--text-3);
+  overflow-wrap: anywhere;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--layout-aside-width);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-1);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.container[data-category='food-restaurants'] .categoryBadge {
+  color: var(--category-food-restaurants-fg);
+  background: var(--category-food-restaurants-bg);
+}
+
+.container[data-category='immigration-legal'] .categoryBadge {
+  color: var(--category-immigration-legal-fg);
+  background: var(--category-immigration-legal-bg);
+}
+
+.container[data-category='professional-services'] .categoryBadge {
+  color: var(--category-professional-services-fg);
+  background: var(--category-professional-services-bg);
+}
+
+.container[data-category='remittance-finance'] .categoryBadge {
+  color: var(--category-remittance-finance-fg);
+  background: var(--category-remittance-finance-bg);
+}
+
+.container[data-category='other'] .categoryBadge {
+  color: var(--category-other-fg);
+  background: var(--category-other-bg);
+}
+
+.highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--text-2);
+}
+
+.highlight[data-open] {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.description {
+  margin: 0;
+  color: var(--text-1);
+  line-height: var(--leading-relaxed);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.owner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ownerName {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-1);
+}
+
+.ownerMeta {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+}
+
+.stats {
+  display: flex;
+  gap: var(--space-4);
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--font-size-sm);
+}
+
+/* ── The actions render twice, and CSS shows one at a time ──
+   Inline under the title on narrow screens, in the aside on wide ones. */
+.sidebar {
+  display: flex;
+  position: sticky;
+  top: calc(var(--layout-topbar-height) + var(--space-4));
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+
+.inlineActions {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (max-width: $mantine-breakpoint-md) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .inlineActions {
+    display: flex;
+  }
+}
+
+@media (max-width: $mantine-breakpoint-sm) {
+  .container {
+    padding: var(--space-4) var(--space-3);
+  }
+}

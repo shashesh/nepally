@@ -1,0 +1,54 @@
+/* Marketplace browse — shared by /marketplace and /marketplace/[category],
+   which both render MarketplaceBrowse.
+
+   The page header is the shared PageHeader, whose row and actions both wrap.
+   The old hand-rolled .header did not, and its two nowrap Mantine buttons
+   could not shrink, which is what pushed the document to 442px at a 375px
+   viewport (recon 9). */
+
+.container {
+  max-width: var(--layout-content-width-wide);
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+.gridSection {
+  margin-top: var(--space-6);
+}
+
+.sectionTitle {
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-1);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: $mantine-breakpoint-lg) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: $mantine-breakpoint-sm) {
+  .container {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.loadSentinel {
+  width: 100%;
+  height: 1px;
+}

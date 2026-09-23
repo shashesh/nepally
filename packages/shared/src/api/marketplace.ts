@@ -249,11 +249,14 @@ export async function getListingById(
       .neq('status', 'removed')
       .single();
 
-    if ((error as { code?: string } | null)?.code === 'PGRST116') {
-      return { error: new Error('Listing not found') };
+    // PGRST116: no row. 22P02: the id isn't a UUID, as in a mistyped link,
+    // which no retry would fix. Matches getEventById.
+    const code = (error as { code?: string } | null)?.code;
+    if (code === 'PGRST116' || code === '22P02') {
+      return { error: new Error('Listing not found'), notFound: true };
     }
     if (error) throw error;
-    if (!data) return { error: new Error('Listing not found') };
+    if (!data) return { error: new Error('Listing not found'), notFound: true };
     return { data: data as MarketplaceListing };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch listing') };

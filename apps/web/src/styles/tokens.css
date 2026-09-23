@@ -91,6 +91,23 @@
   --event-other-fg: oklch(38% 0 0);
   --event-other-bg: oklch(97% 0 0);
 
+  /* ── Marketplace categories (fg / bg pairs) ───────────────
+     Five, not twelve: migration 016 consolidated the original set, but the
+     web CSS carried twelve themed blocks until PR 8a. Hues come from
+     MARKETPLACE_CATEGORIES[].color in packages/shared, which mobile still
+     styles from; every foreground is darkened from that brand colour so it
+     clears AA on its own tint, on --surface-0 and on --surface-1. */
+  --category-food-restaurants-fg: oklch(53% 0.168 39);
+  --category-food-restaurants-bg: oklch(95% 0.022 39);
+  --category-immigration-legal-fg: oklch(55% 0.200 321);
+  --category-immigration-legal-bg: oklch(96% 0.024 321);
+  --category-professional-services-fg: oklch(52% 0.139 249);
+  --category-professional-services-bg: oklch(95% 0.022 249);
+  --category-remittance-finance-fg: oklch(53% 0.119 64);
+  --category-remittance-finance-bg: oklch(96% 0.024 64);
+  --category-other-fg: oklch(53% 0 0);
+  --category-other-bg: oklch(97% 0 0);
+
   /* ── Topic dots (decorative; always paired with a label) ─ */
   --tag-housing: oklch(55% 0.12 155);
   --tag-jobs: oklch(52% 0.11 255);
@@ -172,6 +189,10 @@
   /* ── Layout ───────────────────────────────────────────── */
   --layout-max-width: 1200px;
   --layout-content-width: 800px;
+  /* Wider than reading width, for pages whose content is a multi-column grid
+     rather than a column of text. The marketplace's three-up grid is the
+     first; listing detail's two-column layout is the second. */
+  --layout-content-width-wide: 960px;
   --layout-aside-width: 300px;
   --layout-rail-width: 240px;
   --layout-rail-compact-width: 72px;

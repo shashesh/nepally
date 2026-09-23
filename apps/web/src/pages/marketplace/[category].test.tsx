@@ -28,39 +28,7 @@ vi.mock('next/image', () => ({
   default: (props: Record<string, unknown>) =>
     React.createElement('img', { src: props.src as string, alt: props.alt as string }),
 }));
-vi.mock('@mantine/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    Skeleton: ({ height }: MockSkeletonProps) =>
-      React.createElement('div', { 'data-testid': 'skeleton', 'data-height': height }),
-    Select: ({
-      value,
-      onChange,
-      disabled,
-      'aria-label': ariaLabel,
-      data,
-    }: {
-      value: string;
-      onChange: (v: string | null) => void;
-      disabled?: boolean;
-      'aria-label'?: string;
-      data: { value: string; label: string }[];
-    }) =>
-      React.createElement(
-        'select',
-        {
-          'aria-label': ariaLabel,
-          value,
-          disabled,
-          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
-        },
-        data.map((opt) =>
-          React.createElement('option', { key: opt.value, value: opt.value }, opt.label)
-        )
-      ),
-  };
-});
+// Real Mantine throughout: the page's controls are exercised as rendered.
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
 const MOCK_CATEGORY = {
@@ -106,7 +74,8 @@ const MOCK_LISTING = {
   owner: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, profile_photo: null },
 };
 
-vi.mock('@nepally/shared', () => ({
+vi.mock('@nepally/shared', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   getListingsByMetro: mocks.getListingsByMetro,
   getFeaturedListings: mocks.getFeaturedListings,
   MARKETPLACE_CATEGORIES: [
@@ -115,14 +84,6 @@ vi.mock('@nepally/shared', () => ({
   ],
 }));
 
-vi.mock('../../components/marketplace/ListingStrip', () => ({
-  ListingStrip: ({ title, listings }: { title: string; listings: { id: string }[] }) =>
-    React.createElement(
-      'div',
-      { 'data-testid': `strip-${title.toLowerCase()}` },
-      `strip:${title}:${listings.length}`
-    ),
-}));
 
 import MarketplaceCategoryPage from './[category].page';
 
@@ -226,6 +187,28 @@ describe('MarketplaceCategoryPage', () => {
     expect(select.disabled).toBe(false);
   });
 
+  it('names the results region for a search, not "All Listings"', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'search', q: 'momo' }));
+    render(React.createElement(MarketplaceCategoryPage));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Search: momo/ })).toBeDefined();
+    });
+    expect(screen.getByRole('region', { name: 'Results' })).toBeDefined();
+    expect(screen.queryByRole('region', { name: 'All Listings' })).toBeNull();
+  });
+
+  it('still names the results region "All Listings" inside a category', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    render(React.createElement(MarketplaceCategoryPage));
+
+    await waitFor(() => {
+      expect(screen.getByRole('region', { name: 'All Listings' })).toBeDefined();
+    });
+  });
+
   it('passes sort param from query to getListingsByMetro', async () => {
     mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
     mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants', sort: 'price_asc' }));
@@ -262,7 +245,7 @@ describe('MarketplaceCategoryPage', () => {
     mocks.getFeaturedListings.mockResolvedValue({ data: [MOCK_LISTING] });
     render(React.createElement(MarketplaceCategoryPage));
     await waitFor(() => {
-      expect(screen.getByText('strip:Featured:1')).toBeDefined();
+      expect(screen.getByRole('region', { name: /Featured/ })).toBeDefined();
     });
     expect(mocks.getFeaturedListings).toHaveBeenCalledWith(
       expect.anything(),
@@ -279,7 +262,7 @@ describe('MarketplaceCategoryPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /Search: momo/ })).toBeDefined();
     });
-    expect(screen.queryByText(/strip:Featured/)).toBeNull();
+    expect(screen.queryByRole('region', { name: /Featured/ })).toBeNull();
     expect(mocks.getFeaturedListings).not.toHaveBeenCalled();
   });
 
@@ -291,18 +274,18 @@ describe('MarketplaceCategoryPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
     });
-    expect(screen.queryByText(/strip:Featured/)).toBeNull();
+    expect(screen.queryByRole('region', { name: /Featured/ })).toBeNull();
   });
 
   it('shows skeletons until the listings have loaded', async () => {
     mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
     mocks.useRouter.mockReturnValue(buildRouter());
     render(React.createElement(MarketplaceCategoryPage));
-    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('loading-row').length).toBeGreaterThan(0);
     await waitFor(() => {
       expect(screen.getByText('Himalayan Kitchen')).toBeDefined();
     });
-    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+    expect(screen.queryAllByTestId('loading-row')).toHaveLength(0);
   });
 
   it('waits for the router to be ready before fetching', async () => {
@@ -310,7 +293,7 @@ describe('MarketplaceCategoryPage', () => {
     mocks.useRouter.mockReturnValue({ ...buildRouter({}), isReady: false });
     const { rerender } = render(React.createElement(MarketplaceCategoryPage));
     expect(mocks.getListingsByMetro).not.toHaveBeenCalled();
-    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('loading-row').length).toBeGreaterThan(0);
 
     mocks.useRouter.mockReturnValue(buildRouter());
     rerender(React.createElement(MarketplaceCategoryPage));
@@ -336,13 +319,13 @@ describe('MarketplaceCategoryPage', () => {
     );
     mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants', sort: 'price_asc' }));
     rerender(React.createElement(MarketplaceCategoryPage));
-    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('loading-row').length).toBeGreaterThan(0);
     expect(screen.queryByText('Himalayan Kitchen')).toBeNull();
 
     await act(async () => {
       resolveSorted({ data: [{ ...MOCK_LISTING, id: 'listing-2', title: 'Cheapest Momo' }] });
     });
     expect(screen.getByText('Cheapest Momo')).toBeDefined();
-    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0);
+    expect(screen.queryAllByTestId('loading-row')).toHaveLength(0);
   });
 });

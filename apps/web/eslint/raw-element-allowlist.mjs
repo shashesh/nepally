@@ -4,10 +4,7 @@
  * Regenerate: node apps/web/eslint/write-raw-element-allowlist.mjs
  */
 export const RAW_ELEMENT_ALLOWLIST = [
-  "src/components/marketplace/FilterBar.tsx",
-  "src/components/marketplace/ListingStrip.tsx",
   "src/pages/login.page.tsx",
-  "src/pages/marketplace/listing/[id].page.tsx",
   "src/pages/marketplace/listing/promote/[id].page.tsx",
   "src/pages/marketplace/my-listings.page.tsx",
   "src/pages/messages/[id].page.tsx",

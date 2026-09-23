@@ -14,15 +14,8 @@ vi.mock('next/image', () => ({
     React.createElement('img', { src, alt }),
 }));
 
-vi.mock('@nepally/shared', () => ({}));
-
-vi.mock('./ListingStrip.module.css', () => ({
-  default: new Proxy({}, { get: (_t, p) => `mock-${String(p)}` }),
-}));
-
-vi.mock('../../pages/marketplace/marketplace.module.css', () => ({
-  default: new Proxy({}, { get: (_t, p) => `mock-${String(p)}` }),
-}));
+// No shared API is called here, and ListingCard reads MARKETPLACE_CATEGORIES
+// and isVerifiedSeller from the real module.
 
 import { ListingStrip } from './ListingStrip';
 
@@ -199,6 +192,57 @@ describe('ListingStrip (web)', () => {
       const btn = screen.getByLabelText('Scroll Featured right');
       fireEvent.click(btn);
       expect(scrollBy).toHaveBeenCalledWith({ left: 320, behavior: 'smooth' });
+    } finally {
+      if (origScrollWidth) Object.defineProperty(HTMLElement.prototype, 'scrollWidth', origScrollWidth);
+      if (origClient) Object.defineProperty(HTMLElement.prototype, 'clientWidth', origClient);
+    }
+  });
+
+  it('exposes the scroll arrow as a button that can take focus', () => {
+    const listings = Array.from({ length: 10 }, (_, i) => makeListing(`l-${i}`));
+    const origScrollWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth');
+    const origClient = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, get: () => 2000 });
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 500 });
+
+    try {
+      render(
+        React.createElement(ListingStrip, {
+          title: 'Featured',
+          listings,
+          showAllHref: '/marketplace?view=featured',
+        })
+      );
+
+      const arrow = screen.getByRole('button', { name: 'Scroll Featured right' });
+      act(() => {
+        (arrow as HTMLButtonElement).focus();
+      });
+      expect(document.activeElement).toBe(arrow);
+    } finally {
+      if (origScrollWidth) Object.defineProperty(HTMLElement.prototype, 'scrollWidth', origScrollWidth);
+      if (origClient) Object.defineProperty(HTMLElement.prototype, 'clientWidth', origClient);
+    }
+  });
+
+  it('hides the arrow glyphs from assistive tech, which reads the label', () => {
+    const listings = Array.from({ length: 10 }, (_, i) => makeListing(`l-${i}`));
+    const origScrollWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth');
+    const origClient = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, get: () => 2000 });
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 500 });
+
+    try {
+      render(
+        React.createElement(ListingStrip, {
+          title: 'Featured',
+          listings,
+          showAllHref: '/marketplace?view=featured',
+        })
+      );
+
+      const arrow = screen.getByRole('button', { name: 'Scroll Featured right' });
+      expect(arrow.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     } finally {
       if (origScrollWidth) Object.defineProperty(HTMLElement.prototype, 'scrollWidth', origScrollWidth);
       if (origClient) Object.defineProperty(HTMLElement.prototype, 'clientWidth', origClient);

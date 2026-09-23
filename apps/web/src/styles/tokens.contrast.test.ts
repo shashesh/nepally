@@ -41,6 +41,20 @@ for (const type of ['cultural', 'religious', 'social', 'career', 'other']) {
   TEXT_PAIRS.push([`--event-${type}-fg`, `--event-${type}-bg`]);
 }
 
+// The five live marketplace categories. Migration 016 consolidated the
+// original twelve, so only these have tokens (PR 8a decision 2).
+for (const category of [
+  'food-restaurants',
+  'immigration-legal',
+  'professional-services',
+  'remittance-finance',
+  'other',
+]) {
+  TEXT_PAIRS.push([`--category-${category}-fg`, `--category-${category}-bg`]);
+  // A category chip also sits directly on a card, not only on its own tint.
+  TEXT_PAIRS.push([`--category-${category}-fg`, '--surface-0']);
+}
+
 describe('design token contrast (WCAG AA)', () => {
   it.each(TEXT_PAIRS)('%s on %s is at least 4.5:1', (foreground, background) => {
     const ratio = wcagContrast(resolveToken(tokens, foreground), resolveToken(tokens, background));

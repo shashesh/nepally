@@ -26,14 +26,19 @@ The web app uses one design language, **H1 · Ink & Marigold**. It combines edit
   - Trust tiers: `--trust-{new,verified,contributor}-{fg,bg}`
   - Status: `--emergency-{fg,bg,border}`, `--success`, `--warning`, `--danger`
   - Topic dots: `--tag-<slug>`
+  - Event types: `--event-<type>-{fg,bg}`, selected through a `data-type` attribute
+  - Marketplace categories: `--category-<slug>-{fg,bg}`, selected through a `data-category` attribute. Five only — migration 016 consolidated the original twelve, and `components/marketplace/categoryTheme.ts` maps anything retired to `other` before it reaches the DOM
 - **Type:** `--font-display`, `--font-body`, `--font-size-{xs,sm,base,lg,xl,display}`, `--font-weight-{regular,medium,semibold,bold}`, `--leading-*`, `--tracking-*`.
 - **Space:** `--space-1…9` = 4, 8, 12, 16, 24, 32, 48, 64, 96px.
 - **Radius:** `--radius-{chip,tag,control,card,overlay,full}`.
+- **Layout widths:** `--layout-content-width` (800px) for a column of text; `--layout-content-width-wide` (960px) for a page whose content is a multi-column grid, such as the marketplace.
 - **Elevation:** borders by default. Only floating layers get `--shadow-float` (menus, popovers, dropdowns) or `--shadow-modal`.
 - **Motion:** `--duration-fast`, `--duration-base`, `--ease-out`. Non-essential motion is disabled under `prefers-reduced-motion`.
 - **Breakpoints:** in CSS Modules use `$mantine-breakpoint-sm` (48em), `-md` (62em) and `-lg` (75em), never pixel literals.
 
 ### Adding or changing a token
+
+**Check the name against `tokens.css` before using it.** Nothing catches a `var(--x)` that resolves to nothing: the guard checks for colour literals and legacy names, not for whether a property exists, so a misspelling silently falls back to the inherited value. PR 8a shipped twelve of them — `--weight-semibold` for `--font-weight-semibold`, `--text-sm` for `--font-size-sm` (`--text-1/2/3` are *colours*), `--radius-pill` for `--radius-full`.
 
 1. Edit `tokens.css` and keep every colour inside sRGB.
 2. If it is used for text, add its pair to `tokens.contrast.test.ts`.
@@ -148,6 +153,21 @@ A shared `useFocusAfterUpdate` hook, built on `isFocusStranded`, is planned for 
 
 `ActionMenu` moves focus from the menu to its trigger before an item's action runs, and turns off Mantine's delayed `returnFocus`. A dialog the action opens therefore keeps focus while it's open and returns it to the trigger when it closes, instead of to the unmounted menu item, which would drop it to `<body>`. After a click outside, focus stays where the click put it (usually `<body>`) and isn't pulled back to the trigger. That's deliberate, so a click into a field is never overridden.
 
+## Marketplace components
+
+The marketplace (`/marketplace`, `/marketplace/[category]`, `/marketplace/listing/[id]`) is built from these, alongside `ListingSummaryRow` in the profile section below.
+
+| Component | Notes |
+|---|---|
+| `MarketplaceBrowse` | The whole browse experience, behind both routes. `metroId`, `query`, `title`, `actions`, `backHref`, `backLabel`, `lockedCategory`, `onFilterChange`, `gridHeading`, `emptyAction`, `ready`. The two routes differ only in heading, back link and where a filter change navigates, so neither owns a grid of its own |
+| `ListingCard` | One card in the grid and the strips. An `<article>` whose only link is the title, stretched over the card by `::after`; `data-category` colours the chip from the category tokens |
+| `ListingStrip` | A horizontally scrolling row of cards, with Mantine `ActionIcon` arrows and `scroll-padding-inline` so a focused card's ring clears the edge |
+| `FilterBar` | Category and sort as Mantine `NativeSelect` (short fixed lists, native pickers on phones), plus a `TextInput` with a search icon and a `CloseButton` that clears it |
+| `ListingActionsPanel` | Price plus what the viewer can do. Rendered twice by listing detail — inline on narrow screens, in the aside on wide ones — with CSS showing one at a time |
+| `ListingBusinessDetails` | A business listing's contact details and hours as a `<dl>`. `hasBusinessDetails(listing)` says whether there is anything to show, so the page can skip the heading |
+
+Their data comes from two hooks: `useMarketplaceFeed(metroId, query)` for the strips, grid and paging, and `useListingDetail(id, viewer)` for one listing. Both keep loading, empty and failed apart — a failed read clears its rows rather than leaving the previous metro's on screen, and a failed page says so instead of looking like the end of the list.
+
 ## Web-only helpers (`src/lib`)
 
 | Helper | Notes |
@@ -158,6 +178,7 @@ A shared `useFocusAfterUpdate` hook, built on `isFocusStranded`, is planned for 
 | `cropToSquare(file, size?)` | In `resizeImage.ts`. Centre-crops to the largest square and scales it to at most `PROFILE_PHOTO_SIZE_PX`, never up, as a JPEG `File` |
 | `replaceProfilePhoto(supabase, userId, file)` | `lib/profilePhoto.ts`: `cropToSquare`, then the shared `setProfilePhoto`. Returns `{ error }` as a message; an image that won't decode is logged and reads "We couldn't process that image" |
 | `isFocusStranded()` | `lib/focus.ts`. True when focus is on `<body>` or still inside a closing modal (`[aria-modal="true"]`). Mantine returns focus on a timer and keeps a modal mounted through its exit transition, so an effect restoring focus must treat both as lost |
+| `parseMarketplaceQuery(query)` | `lib/marketplaceQuery.ts`. One reading of the marketplace's URL state for both routes, which both expose the slug as `query.category`. Also `isFilteredQuery` and `SEARCH_SLUG`, the pseudo-category `/marketplace/search` uses |
 | `submitNewPost` / `submitEditedPost` | Create post's two submit paths, as pure functions. They own the rollback rules: delete what was just uploaded when the write fails, delete what the member dropped only once it succeeds |
 
 ## Post and feed components

@@ -8,3 +8,4 @@ export {
   isListingExpiringSoon,
 } from './listingAge';
 export { injectSponsoredIntoGrid } from './sponsoredInjection';
+export { isVerifiedSeller } from './seller';

@@ -1,0 +1,10 @@
+/* ListingActionsPanel — price plus the viewer's actions. The detail page's
+   stylesheet lays out the two places this renders; this file only styles the
+   price, since the buttons are Mantine's. */
+
+.price {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-1);
+}
