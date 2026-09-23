@@ -6,7 +6,9 @@ import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import type { ChatMessage } from '../types/chat';
 
 /**
- * Get messages for a conversation in chronological order
+ * The newest `limit` messages of a conversation, oldest first. Ordering
+ * ascending before the limit would return the oldest messages instead, and a
+ * long conversation would never show its latest ones.
  */
 export async function getMessages(
   supabase: SupabaseClient,
@@ -18,11 +20,11 @@ export async function getMessages(
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
-      .order('timestamp', { ascending: true })
+      .order('timestamp', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    return { data: (data || []) as ChatMessage[] };
+    return { data: ((data || []) as ChatMessage[]).slice().reverse() };
   } catch (error) {
     return {
       error: error instanceof Error

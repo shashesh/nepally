@@ -3,31 +3,50 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getMessages, getTotalUnreadCount, sendMessage } from './messages';
 
 describe('messages api', () => {
-  it('fetches messages for a conversation', async () => {
+  function messagesQuery(result: { data: unknown; error: unknown }) {
     const query = {
       select: vi.fn(),
       eq: vi.fn(),
       order: vi.fn(),
       limit: vi.fn(),
     };
-
     query.select.mockReturnValue(query);
     query.eq.mockReturnValue(query);
     query.order.mockReturnValue(query);
-    query.limit.mockResolvedValue({
-      data: [{ id: 'm1', conversation_id: 'c1', text: 'Hello' }],
+    query.limit.mockResolvedValue(result);
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+    return { query, supabase };
+  }
+
+  it("asks for the conversation's newest messages", async () => {
+    const { query, supabase } = messagesQuery({ data: [], error: null });
+
+    await getMessages(supabase, 'c1', 25);
+
+    expect(query.eq).toHaveBeenCalledWith('conversation_id', 'c1');
+    expect(query.order).toHaveBeenCalledWith('timestamp', { ascending: false });
+    expect(query.limit).toHaveBeenCalledWith(25);
+  });
+
+  it('returns the newest messages oldest first', async () => {
+    const { supabase } = messagesQuery({
+      data: [{ id: 'm3' }, { id: 'm2' }, { id: 'm1' }],
       error: null,
     });
 
-    const supabase = {
-      from: vi.fn().mockReturnValue(query),
-    } as unknown as SupabaseClient;
-
-    const result = await getMessages(supabase, 'c1', 25);
+    const result = await getMessages(supabase, 'c1', 3);
 
     expect(result.error).toBeUndefined();
-    expect(result.data).toHaveLength(1);
-    expect(query.order).toHaveBeenCalledWith('timestamp', { ascending: true });
+    expect(result.data?.map((message) => message.id)).toEqual(['m1', 'm2', 'm3']);
+  });
+
+  it('returns the error when the query fails', async () => {
+    const { supabase } = messagesQuery({ data: null, error: new Error('boom') });
+
+    const result = await getMessages(supabase, 'c1');
+
+    expect(result.data).toBeUndefined();
+    expect(result.error?.message).toBe('boom');
   });
 
   it('sums unread counts across participants', async () => {
