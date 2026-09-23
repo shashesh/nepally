@@ -155,7 +155,7 @@ A shared `useFocusAfterUpdate` hook, built on `isFocusStranded`, is planned for 
 
 ## Marketplace components
 
-The marketplace (`/marketplace`, `/marketplace/[category]`, `/marketplace/listing/[id]`) is built from these, alongside `ListingSummaryRow` in the profile section below.
+The marketplace (`/marketplace`, `/marketplace/[category]`, `/marketplace/listing/[id]`, `/marketplace/my-listings` and the promote wizard) is built from these, alongside `ListingSummaryRow` in the profile section below.
 
 | Component | Notes |
 |---|---|
@@ -165,8 +165,14 @@ The marketplace (`/marketplace`, `/marketplace/[category]`, `/marketplace/listin
 | `FilterBar` | Category and sort as Mantine `NativeSelect` (short fixed lists, native pickers on phones), plus a `TextInput` with a search icon and a `CloseButton` that clears it |
 | `ListingActionsPanel` | Price plus what the viewer can do. Rendered twice by listing detail — inline on narrow screens, in the aside on wide ones — with CSS showing one at a time |
 | `ListingBusinessDetails` | A business listing's contact details and hours as a `<dl>`. `hasBusinessDetails(listing)` says whether there is anything to show, so the page can skip the heading |
+| `MyListingActions` | An owner's actions on one listing, as one `ActionMenu` named "Actions for <title>", passed to `ListingSummaryRow`'s `menu`. Edit and Promote are links; Deactivate and Delete ask through `useConfirm` (Delete as `danger`); every action reports its outcome with `notify`. `pending` disables the items while an action runs |
+| `PromoteSteps` | `components/marketplace/promote/`. The wizard's progress as an `<ol aria-label="Progress">` with `aria-current="step"` and a visually hidden "completed" — not Mantine's `Stepper`, whose steps are buttons a member could click past |
+| `PromotionTierPicker` | One Mantine `Radio.Card` per tier in a named `radiogroup`. Adds a roving tab stop (the checked card, or the first) and names each card by the tier alone, with price and description as its description. A card is a button, so its content is spans |
+| `PromotionDurationStep` | A `NumberInput` given `role="spinbutton"` and its value range, over a cost summary. It keeps a draft while the member types, so an emptied field is not clamped straight back to 1 |
+| `PromotionReview` | What is being bought, and Pay. Pay stays focusable while busy (see below) |
+| `SummaryList` | The two steps' figures as a `<dl>`, so each value is read with its label |
 
-Their data comes from two hooks: `useMarketplaceFeed(metroId, query)` for the strips, grid and paging, and `useListingDetail(id, viewer)` for one listing. Both keep loading, empty and failed apart — a failed read clears its rows rather than leaving the previous metro's on screen, and a failed page says so instead of looking like the end of the list.
+Their data comes from four hooks: `useMarketplaceFeed(metroId, query)` for the strips, grid and paging, `useListingDetail(id, viewer)` for one listing, `useMyListings(userId)` for an owner's listings and their actions, and `usePromoteWizard(listingId, viewer)` for the wizard and checkout. Both keep loading, empty and failed apart — a failed read clears its rows rather than leaving the previous metro's on screen, and a failed page says so instead of looking like the end of the list.
 
 ## Web-only helpers (`src/lib`)
 
@@ -203,7 +209,7 @@ The own profile (`/profile`), the public profile (`/users/[id]`) and Manage Loca
 |---|---|---|
 | `PostSummaryRow` | `components/posts/` | `post` and an optional `menu`. `ScopeBadge`, a two-line excerpt, then relative time · likes · comments |
 | `EventSummaryRow` | `components/events/` | `event` and `now`, from `useNow()` so every row agrees on what is past. Date and place, then "n going" and Past or Cancelled |
-| `ListingSummaryRow` | `components/marketplace/` | `listing` and an optional `owner={{ now }}`. Thumbnail in `leading`, then price and category. The owner view adds the status chip (`--success` / `--warning` / `--danger`), view, save and contact counts, and the expiry notice; the public view shows the listing's age |
+| `ListingSummaryRow` | `components/marketplace/` | `listing`, an optional `owner={{ now }}` and an optional `menu`. Thumbnail in `leading`, then price and category. The owner view adds the status chip (`--success` / `--warning` / `--danger`), view, save and contact counts, and the expiry notice; the public view shows the listing's age |
 | `PublicProfileHeader` | `components/users/` | `profileUser`, `metroName`, `helperScore`, `isOwnProfile`, `viewerId`, `messaging`, `onMessage`. A decorative avatar toned by the full name, the public name as the `h1`, `TrustBadge`, bio, follow counts, identity chips, and the Message or Edit profile button |
 | `FollowButton` | `components/users/` | `supabase`, `viewerId`, `targetUserId`, `onChange`. Renders nothing when signed out, on the viewer's own profile, or when the status fails to load, and remounts per viewer and target through a keyed inner `FollowToggle`. Optimistic, rolling back with a toast. Its label reads "Follow" / "Following" beside `aria-pressed`: a deliberate exception to letting the platform announce toggle state, following the social-app convention |
 | `ProfilePhotoControl` | `components/profile/` | `name`, `photoUrl`, `busy`, `onPick(file)`, `onRemove`. The avatar with Add/Change and Remove photo, over Mantine `FileButton`. It rejects an unsupported or oversized file itself (`MAX_PROFILE_PHOTO_SOURCE_BYTES`); the upload and its toasts are the caller's |
