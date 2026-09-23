@@ -61,7 +61,8 @@ export function PromotionDurationStep({ tier, days, onDaysChange, totalCents, en
         role="spinbutton"
         aria-valuemin={MIN_PROMOTION_DAYS}
         aria-valuemax={MAX_PROMOTION_DAYS}
-        aria-valuenow={days}
+        // From the draft, not `days`: an emptied field has no current value.
+        aria-valuenow={typeof draft === 'number' ? draft : undefined}
       />
       <SummaryList
         rows={[

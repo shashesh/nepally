@@ -56,6 +56,15 @@ describe('PromotionDurationStep', () => {
     expect(input.getAttribute('aria-valuenow')).toBe('3');
   });
 
+  it('reports no current value while the field is empty', () => {
+    render(<PromotionDurationStep tier={FEATURED} days={7} onDaysChange={vi.fn()} totalCents={1393} endDate={END} />);
+    const input = screen.getByRole('spinbutton', { name: 'Duration in days' });
+
+    fireEvent.change(input, { target: { value: '' } });
+
+    expect(input.hasAttribute('aria-valuenow')).toBe(false);
+  });
+
   it('puts the last duration back when the field is left empty', () => {
     const onDaysChange = vi.fn();
     render(<PromotionDurationStep tier={FEATURED} days={7} onDaysChange={onDaysChange} totalCents={1393} endDate={END} />);
