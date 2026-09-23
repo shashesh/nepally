@@ -66,6 +66,12 @@ const leaveForCheckout = (url: string) => window.location.assign(url);
  * still leaving for Stripe let a second click open a second checkout session
  * and a second pending promotion (PR 8b inventory 6). A ref, not state, guards
  * against two clicks landing in the same frame.
+ *
+ * Pay reads the listing again before checkout. The blocker is worked out when
+ * the wizard opens, and the edge function does not check status, so a listing
+ * deactivated or deleted in another tab meanwhile would otherwise still be
+ * charged for. A listing that now has a blocker hands the page back to its
+ * refusal screen.
  */
 export function usePromoteWizard(
   listingId: string | undefined,
@@ -141,6 +147,19 @@ export function usePromoteWizard(
     setPayError(null);
     let leaving = false;
     try {
+      const fresh = await getListingById(supabase, listingId);
+      if (fresh.notFound) {
+        setListing(null);
+        setNotFound(true);
+        return;
+      }
+      if (!fresh.data) {
+        setPayError("Couldn't check this listing. Please try again.");
+        return;
+      }
+      setListing(fresh.data);
+      if (viewerId && getPromotionBlocker(fresh.data, { id: viewerId, trust_level: viewerTrust })) return;
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -175,7 +194,7 @@ export function usePromoteWizard(
         setPaying(false);
       }
     }
-  }, [tier, listingId, days, redirect]);
+  }, [tier, listingId, days, redirect, viewerId, viewerTrust]);
 
   return {
     listing,

@@ -143,6 +143,49 @@ describe('usePromoteWizard', () => {
     expect(result.current.paying).toBe(false);
   });
 
+  it('rechecks the listing at Pay, and refuses one deactivated since the wizard opened', async () => {
+    const { result } = await loaded();
+    act(() => result.current.setTier(FEATURED));
+    mockGetListing.mockResolvedValue({ data: { ...LISTING, status: 'inactive' } });
+
+    await act(async () => {
+      await result.current.pay();
+    });
+
+    expect(mockCheckout).not.toHaveBeenCalled();
+    expect(result.current.blocker).toBe('inactive');
+    expect(result.current.paying).toBe(false);
+  });
+
+  it('does not start checkout when the recheck fails', async () => {
+    const { result } = await loaded();
+    act(() => result.current.setTier(FEATURED));
+    mockGetListing.mockResolvedValue({ error: new Error('network down') });
+
+    await act(async () => {
+      await result.current.pay();
+    });
+
+    expect(mockCheckout).not.toHaveBeenCalled();
+    expect(result.current.payError).toBe("Couldn't check this listing. Please try again.");
+    expect(result.current.listing).toEqual(LISTING);
+    expect(result.current.paying).toBe(false);
+  });
+
+  it('shows not found when the listing was deleted since the wizard opened', async () => {
+    const { result } = await loaded();
+    act(() => result.current.setTier(FEATURED));
+    mockGetListing.mockResolvedValue({ error: new Error('Listing not found'), notFound: true });
+
+    await act(async () => {
+      await result.current.pay();
+    });
+
+    expect(mockCheckout).not.toHaveBeenCalled();
+    expect(result.current.notFound).toBe(true);
+    expect(result.current.listing).toBeNull();
+  });
+
   it('says something went wrong when checkout returns no URL', async () => {
     mockCheckout.mockResolvedValue({ data: { promotionId: 'p1' } });
     const redirect = vi.fn();
