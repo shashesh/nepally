@@ -537,6 +537,52 @@ describe('getListingsByOwner', () => {
     const result = await getListingsByOwner(supabase, 'user-1');
     expect(result.data).toEqual([]);
   });
+
+  it('reports hasMore when the page is full, and asks for the window it was given', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [MOCK_LISTING, MOCK_LISTING], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getListingsByOwner(supabase, 'user-1', 2, 40);
+
+    expect(chain.range).toHaveBeenCalledWith(40, 41);
+    expect(result.hasMore).toBe(true);
+  });
+
+  it('reports no more when the page is short', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [MOCK_LISTING], error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getListingsByOwner(supabase, 'user-1', 2);
+
+    expect(result.hasMore).toBe(false);
+  });
+
+  it('carries no hasMore on failure', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getListingsByOwner(supabase, 'user-1');
+
+    expect(result.hasMore).toBeUndefined();
+  });
 });
 
 // ─── createListing ──────────────────────────────────────────────────────────
