@@ -13,11 +13,11 @@ export interface PromotionViewer {
  * Why this viewer can't promote this listing, or null when they can.
  *
  * Checked in order, so a stranger's listing is refused as not theirs before
- * its status or the viewer's trust level is mentioned. The checkout edge
- * function stays the authority on ownership and trust level; this lets the
- * wizard refuse before the member works through three steps. It also refuses
- * an inactive listing, which the edge function does not: a promotion on a
- * listing nobody can see would be paid for and reach no one.
+ * its status or the viewer's trust level is mentioned — the same order the
+ * checkout edge function checks in. The edge function stays the authority;
+ * this lets the wizard refuse before the member works through three steps.
+ * An inactive listing is refused because a promotion on a listing nobody can
+ * see would be paid for and reach no one.
  */
 export function getPromotionBlocker(
   listing: Pick<MarketplaceListing, 'owner_id' | 'status'>,

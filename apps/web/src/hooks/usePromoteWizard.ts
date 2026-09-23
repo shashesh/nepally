@@ -68,10 +68,10 @@ const leaveForCheckout = (url: string) => window.location.assign(url);
  * against two clicks landing in the same frame.
  *
  * Pay reads the listing again before checkout. The blocker is worked out when
- * the wizard opens, and the edge function does not check status, so a listing
- * deactivated or deleted in another tab meanwhile would otherwise still be
- * charged for. A listing that now has a blocker hands the page back to its
- * refusal screen.
+ * the wizard opens, so a listing deactivated or deleted in another tab
+ * meanwhile would reach checkout, where the edge function refuses it with a
+ * bare error. Reading first hands the page back to its refusal screen instead,
+ * with the reason.
  */
 export function usePromoteWizard(
   listingId: string | undefined,
