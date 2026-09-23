@@ -7,6 +7,7 @@ import { useMediaQuery } from '@mantine/hooks';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from '../hooks/useLocation';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { useStartConversation } from '../hooks/useStartConversation';
 import { supabase } from '../lib/supabase';
 import {
   getPostsByMetroArea,
@@ -15,7 +16,6 @@ import {
   getUserSavedPostIds,
   savePost,
   unsavePost,
-  getOrCreateConversation,
   createReport,
   getUpcomingEventsByMetro,
   getSponsoredFeedListings,
@@ -55,6 +55,7 @@ interface FeedPageProps {
 export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { start: startConversation } = useStartConversation();
   const isPhone = useMediaQuery(PHONE_MEDIA_QUERY);
   const { activeLocation } = useLocation();
   const confirm = useConfirm();
@@ -413,18 +414,8 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
     setFeedReloadToken((token) => token + 1);
   }
 
-  async function handleAvatarChat(authorId: string, authorName: string) {
-    if (!user) return;
-    const result = await getOrCreateConversation(
-      supabase,
-      user.id,
-      user.full_name,
-      authorId,
-      authorName
-    );
-    if (result.data) {
-      router.push(`/messages/${result.data.conversationId}`);
-    }
+  function handleAvatarChat(authorId: string, authorName: string) {
+    void startConversation({ id: authorId, name: authorName });
   }
 
   async function handleSharePost(post: Post) {

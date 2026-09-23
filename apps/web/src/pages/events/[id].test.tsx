@@ -264,7 +264,7 @@ describe('EventDetailPage', () => {
 
       expect(mockPush).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: "Couldn't start a conversation. Try again." })
+        expect.objectContaining({ message: "Couldn't start a conversation. Please try again." })
       );
     });
   });

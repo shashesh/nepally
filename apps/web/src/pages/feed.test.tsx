@@ -666,6 +666,22 @@ describe('FeedPage', () => {
     expect(screen.getByRole('menuitem', { name: 'Chat' })).toBeDefined();
   });
 
+  it('Chat reports a conversation that cannot be started', async () => {
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    feedMocks.getOrCreateConversationMock.mockResolvedValue({ error: new Error('rls') });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal Shrestha' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Chat' }));
+
+    await waitFor(() =>
+      expect(feedMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Couldn't start a conversation. Please try again." })
+      )
+    );
+  });
+
   it('View profile links to the public profile', async () => {
     feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
     render(<FeedPage />);

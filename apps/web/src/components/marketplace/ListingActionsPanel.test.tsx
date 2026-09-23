@@ -30,6 +30,7 @@ function renderPanel(props: Partial<React.ComponentProps<typeof ListingActionsPa
       isOwner={false}
       isSaved={false}
       saving={false}
+      contacting={false}
       onContact={vi.fn()}
       onToggleSave={vi.fn()}
       {...props}
@@ -57,6 +58,20 @@ describe('ListingActionsPanel', () => {
       expect(onContact).toHaveBeenCalled();
     });
 
+    it('keeps Contact Seller focusable and ignores presses while the conversation opens', () => {
+      const onContact = vi.fn();
+      renderPanel({ contacting: true, onContact });
+
+      const button = screen.getByRole('button', { name: 'Contact Seller' }) as HTMLButtonElement;
+      button.focus();
+      expect(document.activeElement).toBe(button);
+      expect(button.disabled).toBe(false);
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+
+      fireEvent.click(button);
+      expect(onContact).not.toHaveBeenCalled();
+    });
+
     it('offers a save toggle that reports a press', () => {
       const onToggleSave = vi.fn();
       renderPanel({ onToggleSave });
@@ -78,6 +93,7 @@ describe('ListingActionsPanel', () => {
           isOwner={false}
           isSaved
           saving={false}
+          contacting={false}
           onContact={vi.fn()}
           onToggleSave={vi.fn()}
         />

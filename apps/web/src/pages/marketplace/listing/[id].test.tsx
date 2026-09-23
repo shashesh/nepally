@@ -1,7 +1,13 @@
 import React from 'react';
-import { render, screen, waitFor } from '../../../test-utils';
+import { fireEvent, render, screen, waitFor } from '../../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getListingById, getUserSavedListingIds, incrementListingViews } from '@nepally/shared';
+import {
+  getListingById,
+  getOrCreateConversation,
+  getUserSavedListingIds,
+  incrementListingContacts,
+  incrementListingViews,
+} from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -77,6 +83,7 @@ vi.mock('@nepally/shared', async () => {
     getUserSavedListingIds: vi.fn(async () => ({ data: [] })),
     incrementListingViews: vi.fn(async () => {}),
     incrementListingContacts: vi.fn(async () => {}),
+    getOrCreateConversation: vi.fn(async () => ({ data: { conversationId: 'conv-1' } })),
     LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
     ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
     BUSINESS_HOURS_DAYS: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
@@ -225,6 +232,23 @@ describe('ListingDetailPage', () => {
       expect(screen.getAllByText('Contact Seller').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('Save listing').length).toBeGreaterThanOrEqual(1);
     });
+  });
+
+  // The button used to push /messages?to=<owner>, which nothing read, so the
+  // member landed on their inbox with no conversation.
+  it('Contact Seller opens a conversation with the seller', async () => {
+    mocks.useAuth.mockReturnValue({
+      user: { id: 'u1', full_name: 'Bikal Shrestha', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    render(React.createElement(ListingDetailPage));
+    const [contact] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+
+    fireEvent.click(contact);
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/messages/conv-1'));
+    expect(incrementListingContacts).toHaveBeenCalledWith({}, 'listing-1');
+    expect(getOrCreateConversation).toHaveBeenCalledWith({}, 'u1', 'Bikal Shrestha', 'user-2', 'Asha Kumar');
+    expect(mockPush).not.toHaveBeenCalledWith(expect.stringContaining('?to='));
   });
 
   it('shows Edit button when user is the owner', async () => {

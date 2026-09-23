@@ -1,15 +1,14 @@
-import React, { useEffect, useRef, useState, type ReactNode } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Badge, Button, Tabs } from '@mantine/core';
-import { formatPublicName, getFirstName, getOrCreateConversation, TrustLevel } from '@nepally/shared';
+import { formatPublicName, getFirstName, TrustLevel } from '@nepally/shared';
 import type { Event, PublicUser } from '@nepally/shared';
 import {
   EmptyState,
   LoadingState,
   TrustBadge,
-  notify,
   scrollFocusedTabIntoView,
   scrollingTabsClassNames,
 } from '../../components/ui';
@@ -20,7 +19,7 @@ import { ListingSummaryRow } from '../../components/marketplace/ListingSummaryRo
 import { useAuth } from '../../hooks/useAuth';
 import { useNow } from '../../hooks/useNow';
 import { usePublicProfile } from '../../hooks/usePublicProfile';
-import { supabase } from '../../lib/supabase';
+import { useStartConversation } from '../../hooks/useStartConversation';
 import styles from '../../styles/PublicProfile.module.css';
 
 type ProfileTab = 'posts' | 'events' | 'listings' | 'about';
@@ -149,49 +148,14 @@ export default function PublicProfilePage() {
 }
 
 function PublicProfileView({ memberId }: { memberId: string | undefined }) {
-  const router = useRouter();
   const { user: currentUser } = useAuth();
   const profile = usePublicProfile(memberId);
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
-  const [messagingLoading, setMessagingLoading] = useState(false);
-
-  // False once this visit's view unmounts, so a conversation request that
-  // finishes afterwards neither navigates nor toasts on the next member's page.
-  // Set true in the effect body, not just its cleanup, so it's correct under
-  // StrictMode's double mount too.
-  const mounted = useRef(false);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  // The view is keyed by member, so a conversation that finishes opening
+  // after the visitor has moved on lands on an unmounted hook and is dropped.
+  const { start: startConversation, starting: messaging } = useStartConversation();
 
   const { profileUser, posts, events, listings } = profile;
-
-  async function handleMessage(): Promise<void> {
-    if (!currentUser || !profileUser) {
-      router.push('/login');
-      return;
-    }
-
-    setMessagingLoading(true);
-    const result = await getOrCreateConversation(
-      supabase,
-      currentUser.id,
-      currentUser.full_name,
-      profileUser.id,
-      profileUser.full_name
-    );
-    if (!mounted.current) return;
-    setMessagingLoading(false);
-
-    if (result.data) {
-      router.push(`/messages/${result.data.conversationId}`);
-    } else {
-      notify.error('Failed to start conversation. Please try again.');
-    }
-  }
 
   if (profile.loading) {
     return (
@@ -238,8 +202,8 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
         helperScore={profile.helperScore}
         isOwnProfile={isOwnProfile}
         viewerId={currentUser?.id ?? null}
-        messaging={messagingLoading}
-        onMessage={handleMessage}
+        messaging={messaging}
+        onMessage={() => void startConversation({ id: profileUser.id, name: profileUser.full_name })}
       />
 
       <div className={styles.content}>

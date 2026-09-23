@@ -1233,6 +1233,36 @@ describe('PostDetailPage', () => {
     });
   });
 
+  it('reports a chat that cannot be started', async () => {
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.getOrCreateConversationMock.mockResolvedValue({ error: new Error('rls') });
+    postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+      {
+        parent: {
+          id: 'comment-1',
+          content: 'Interested!',
+          author_id: 'comment-user-1',
+          created_at: '2026-02-24T11:00:00Z',
+          author: { full_name: 'Comment User', profile_photo: null, trust_level: 1 },
+        },
+        replies: [],
+      },
+    ]);
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getAllByText('Comment User').length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Comment User' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Chat' }));
+
+    await waitFor(() =>
+      expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Couldn't start a conversation. Please try again." })
+      )
+    );
+    expect(mockPush).not.toHaveBeenCalledWith(expect.stringMatching(/^\/messages\//));
+  });
+
   it('opens the author menu from the avatar', async () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
 
