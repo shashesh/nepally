@@ -177,6 +177,58 @@ describe('useMyListings', () => {
     expect(mockGetByOwner).toHaveBeenLastCalledWith({}, 'user-1', MY_LISTINGS_PAGE_SIZE, 1);
   });
 
+  it('holds paging while a delete is in flight, then pages from after it', async () => {
+    mockGetByOwner.mockResolvedValueOnce(page(['a', 'b'], true)).mockResolvedValueOnce(page(['c']));
+    let finishDelete: (value: { error?: Error }) => void = () => {};
+    mockDelete.mockReturnValue(new Promise((resolve) => (finishDelete = resolve)));
+    const { result } = renderHook(() => useMyListings('user-1', fixedNow));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let deleting: Promise<boolean> = Promise.resolve(true);
+    act(() => {
+      deleting = result.current.runAction('b', 'delete');
+    });
+    // The row is still on screen, so an offset read now would count it.
+    expect(result.current.hasMore).toBe(false);
+    act(() => result.current.loadMore());
+    expect(mockGetByOwner).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishDelete({});
+      await deleting;
+    });
+    expect(result.current.hasMore).toBe(true);
+    act(() => result.current.loadMore());
+
+    await waitFor(() => expect(result.current.listings.map((l) => l.id)).toEqual(['a', 'c']));
+    expect(mockGetByOwner).toHaveBeenLastCalledWith({}, 'user-1', MY_LISTINGS_PAGE_SIZE, 1);
+  });
+
+  it('waits for a page already in flight before deleting', async () => {
+    let finishPage: (value: unknown) => void = () => {};
+    mockGetByOwner
+      .mockResolvedValueOnce(page(['a', 'b'], true))
+      .mockReturnValueOnce(new Promise((resolve) => (finishPage = resolve)));
+    const { result } = renderHook(() => useMyListings('user-1', fixedNow));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.loadMore());
+    let deleting: Promise<boolean> = Promise.resolve(true);
+    act(() => {
+      deleting = result.current.runAction('a', 'delete');
+    });
+    await act(async () => {});
+    expect(mockDelete).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishPage(page(['c']));
+      await deleting;
+    });
+
+    expect(mockDelete).toHaveBeenCalledWith({}, 'a');
+    expect(result.current.listings.map((l) => l.id)).toEqual(['b', 'c']);
+  });
+
   it('leaves the row untouched when an action fails', async () => {
     mockGetByOwner.mockResolvedValue(page(['a']));
     mockDeactivate.mockResolvedValue({ error: new Error('Listing not found or not allowed') });

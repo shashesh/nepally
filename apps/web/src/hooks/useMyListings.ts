@@ -75,6 +75,9 @@ const systemNow = () => new Date();
  * The next page starts at `listings.length`. A deleted listing leaves the
  * screen and the server's results alike, so counting rows on screen keeps the
  * two in step — offsetting by rows fetched would skip one listing per delete.
+ * That only holds when a delete and a page never overlap, so they are
+ * serialized: a delete waits for a page already in flight, and no page is
+ * requested (`hasMore` reads false) until a pending delete has landed.
  */
 export function useMyListings(userId: string | null, now: () => Date = systemNow): MyListingsState {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
@@ -84,12 +87,16 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [deleting, setDeleting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   // Bumped by each load; a page requested under an older one is dropped.
   const generationRef = useRef(0);
   const loadingMoreRef = useRef(false);
   const pendingRef = useRef(new Set<string>());
+  const deletesInFlightRef = useRef(0);
+  // The page request in flight, so a delete can wait for it to land.
+  const pageRequestRef = useRef<Promise<void> | null>(null);
 
   // A different member starts from nothing (react.dev: adjusting state when a prop changes).
   const [loadedUserId, setLoadedUserId] = useState(userId);
@@ -137,12 +144,13 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
 
   const offset = listings.length;
   const requestNextPage = useCallback(() => {
-    if (!userId || loadingMoreRef.current) return;
+    if (!userId || loadingMoreRef.current || deletesInFlightRef.current > 0) return;
 
     loadingMoreRef.current = true;
     setLoadingMore(true);
     const generation = generationRef.current;
-    void getListingsByOwner(supabase, userId, MY_LISTINGS_PAGE_SIZE, offset).then((result) => {
+    const request = getListingsByOwner(supabase, userId, MY_LISTINGS_PAGE_SIZE, offset).then((result) => {
+      pageRequestRef.current = null;
       if (generation !== generationRef.current) return;
       loadingMoreRef.current = false;
       setLoadingMore(false);
@@ -153,6 +161,7 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
       setListings((rows) => appendPage(rows, result.data ?? []));
       setHasMore(Boolean(result.hasMore));
     });
+    pageRequestRef.current = request;
   }, [userId, offset]);
 
   const loadMore = useCallback(() => {
@@ -175,21 +184,35 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
     async (id: string, action: ListingAction): Promise<boolean> => {
       if (pendingRef.current.has(id)) return false;
 
+      const isDelete = action === 'delete';
       setPending(id, true);
-      const generation = generationRef.current;
-      const result = await ACTIONS[action](supabase, id);
-      setPending(id, false);
-      // The list was reloaded or the member changed; there is no row to patch.
-      if (generation !== generationRef.current) return !result.error;
-      if (result.error) return false;
-
-      if (action === 'delete') {
-        setListings((rows) => rows.filter((l) => l.id !== id));
-      } else {
-        const patch = patchFor(action, now());
-        setListings((rows) => rows.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+      if (isDelete) {
+        deletesInFlightRef.current += 1;
+        setDeleting(true);
       }
-      return true;
+      try {
+        const generation = generationRef.current;
+        // A page requested before this delete counted the row at its old offset.
+        if (isDelete && pageRequestRef.current) await pageRequestRef.current;
+        const result = await ACTIONS[action](supabase, id);
+        // The list was reloaded or the member changed; there is no row to patch.
+        if (generation !== generationRef.current) return !result.error;
+        if (result.error) return false;
+
+        if (isDelete) {
+          setListings((rows) => rows.filter((l) => l.id !== id));
+        } else {
+          const patch = patchFor(action, now());
+          setListings((rows) => rows.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+        }
+        return true;
+      } finally {
+        setPending(id, false);
+        if (isDelete) {
+          deletesInFlightRef.current -= 1;
+          setDeleting(deletesInFlightRef.current > 0);
+        }
+      }
     },
     [now, setPending]
   );
@@ -201,7 +224,7 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
     error,
     loadingMore,
     loadMoreError,
-    hasMore: hasUser && !loading && hasMore && loadMoreError === null,
+    hasMore: hasUser && !loading && !deleting && hasMore && loadMoreError === null,
     loadMore,
     retryLoadMore,
     reload,

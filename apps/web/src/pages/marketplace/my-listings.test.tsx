@@ -33,6 +33,7 @@ vi.mock('@nepally/shared', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getListingsByOwner: vi.fn(),
   deactivateListing: vi.fn(async () => ({})),
+  deleteListing: vi.fn(async () => ({})),
 }));
 
 /** jsdom has no IntersectionObserver, and the paging sentinel attaches one. */
@@ -142,6 +143,34 @@ describe('MyListingsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByRole('link', { name: 'My Restaurant' })).toBeDefined();
+  });
+
+  async function deleteFromMenu(title: string) {
+    fireEvent.click(await screen.findByRole('button', { name: `Actions for ${title}` }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Delete this listing?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+  }
+
+  it('moves focus to the next listing once one is deleted', async () => {
+    mockGetListingsByOwner.mockResolvedValue({
+      data: [makeListing(), makeListing({ id: 'listing-2', title: 'Dal Bhat Nights' })],
+      hasMore: false,
+    });
+    render(<MyListingsPage />);
+
+    await deleteFromMenu('My Restaurant');
+
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'My Restaurant' })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Dal Bhat Nights' })));
+  });
+
+  it('moves focus to Create listing once the last listing is deleted', async () => {
+    render(<MyListingsPage />);
+
+    await deleteFromMenu('My Restaurant');
+
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Create listing' })));
   });
 
   it('runs a row action from its menu and updates the row in place', async () => {
