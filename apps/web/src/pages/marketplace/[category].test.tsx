@@ -187,6 +187,28 @@ describe('MarketplaceCategoryPage', () => {
     expect(select.disabled).toBe(false);
   });
 
+  it('names the results region for a search, not "All Listings"', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter({ category: 'search', q: 'momo' }));
+    render(React.createElement(MarketplaceCategoryPage));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Search: momo/ })).toBeDefined();
+    });
+    expect(screen.getByRole('region', { name: 'Results' })).toBeDefined();
+    expect(screen.queryByRole('region', { name: 'All Listings' })).toBeNull();
+  });
+
+  it('still names the results region "All Listings" inside a category', async () => {
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mocks.useRouter.mockReturnValue(buildRouter());
+    render(React.createElement(MarketplaceCategoryPage));
+
+    await waitFor(() => {
+      expect(screen.getByRole('region', { name: 'All Listings' })).toBeDefined();
+    });
+  });
+
   it('passes sort param from query to getListingsByMetro', async () => {
     mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
     mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants', sort: 'price_asc' }));

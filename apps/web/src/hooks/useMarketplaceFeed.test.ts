@@ -204,6 +204,69 @@ describe('useMarketplaceFeed', () => {
     expect(result.current.grid.map((l) => l.id)).toEqual(['fresh']);
   });
 
+  // The raw page is filtered client-side for a category slug, so the next
+  // offset must count the rows the API consumed, not the rows on screen.
+  it('pages by the API window, not by how many rows survived filtering', async () => {
+    mockGetListings.mockResolvedValueOnce(page(['g1', 'g2'], true));
+    const { result } = renderHook(() => useMarketplaceFeed('metro-1', FILTERED));
+    await waitFor(() => expect(result.current.hasMore).toBe(true));
+
+    mockGetListings.mockResolvedValueOnce(page(['g3'], false));
+    act(() => { result.current.loadMore(); });
+    await waitFor(() => expect(result.current.grid).toHaveLength(3));
+
+    // Two rows are on screen, but the API consumed a full window of 20.
+    expect(mockGetListings).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'metro-1',
+      expect.objectContaining({ offset: 20 })
+    );
+  });
+
+  it('keeps asking for the next window when a page filters down to nothing', async () => {
+    // A full raw window whose rows all belong to another category.
+    mockGetListings.mockResolvedValueOnce(page([], true));
+    const { result } = renderHook(() => useMarketplaceFeed('metro-1', FILTERED));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // Nothing is on screen, but there is more to fetch.
+    expect(result.current.grid).toHaveLength(0);
+    expect(result.current.hasMore).toBe(true);
+
+    mockGetListings.mockResolvedValueOnce(page(['g9'], false));
+    act(() => { result.current.loadMore(); });
+
+    await waitFor(() => expect(result.current.grid.map((l) => l.id)).toEqual(['g9']));
+    expect(mockGetListings).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'metro-1',
+      expect.objectContaining({ offset: 20 })
+    );
+  });
+
+  // PR 7 found the same fault in useEventFeed.
+  it('drops a page in flight when the metro is cleared', async () => {
+    mockGetListings.mockResolvedValueOnce(page(['g1'], true));
+    const { result, rerender } = renderHook(
+      ({ metro }) => useMarketplaceFeed(metro, FILTERED),
+      { initialProps: { metro: 'metro-1' as string | null } }
+    );
+    await waitFor(() => expect(result.current.hasMore).toBe(true));
+
+    let landLate: ((value: unknown) => void) | undefined;
+    mockGetListings.mockImplementationOnce(
+      () => new Promise((resolve) => { landLate = resolve; })
+    );
+    act(() => { result.current.loadMore(); });
+
+    rerender({ metro: null });
+    await act(async () => {
+      landLate?.(page(['stale-1', 'stale-2']));
+    });
+
+    expect(result.current.grid).toHaveLength(0);
+  });
+
   it('asks for nothing until a metro is known', async () => {
     const { result } = renderHook(() => useMarketplaceFeed(null, UNFILTERED));
 

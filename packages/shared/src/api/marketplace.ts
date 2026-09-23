@@ -249,7 +249,10 @@ export async function getListingById(
       .neq('status', 'removed')
       .single();
 
-    if ((error as { code?: string } | null)?.code === 'PGRST116') {
+    // PGRST116: no row. 22P02: the id isn't a UUID, as in a mistyped link,
+    // which no retry would fix. Matches getEventById.
+    const code = (error as { code?: string } | null)?.code;
+    if (code === 'PGRST116' || code === '22P02') {
       return { error: new Error('Listing not found'), notFound: true };
     }
     if (error) throw error;

@@ -90,6 +90,14 @@ export function useMarketplaceFeed(
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  /**
+   * Where the next page starts, counted in rows the API consumed rather than
+   * rows on screen. `getListingsByMetro` derives `hasMore` from the raw window
+   * before it drops rows whose category did not match, so a full window can
+   * arrive filtered down to nothing. Offsetting by `grid.length` would then
+   * re-request the same window forever.
+   */
+  const [offset, setOffset] = useState(0);
 
   // Bumped by each load; a page requested under an older one is dropped.
   const generationRef = useRef(0);
@@ -115,12 +123,16 @@ export function useMarketplaceFeed(
     setLoadingMore(false);
     setLoadMoreError(null);
     setHasMore(false);
+    setOffset(0);
   }
 
   useEffect(() => {
-    if (!metroId) return;
+    // Bump first, even with no metro: a load-more already in flight would
+    // otherwise still match the current generation and land its rows from the
+    // metro the member has just left (PR 7 hit this in useEventFeed).
     const generation = ++generationRef.current;
     loadingMoreRef.current = false;
+    if (!metroId) return;
     let cancelled = false;
 
     (async () => {
@@ -169,6 +181,7 @@ export function useMarketplaceFeed(
         sponsored: (sponsoredResult.data ?? []).map((s) => s.listing),
       });
       setGrid(gridResult.data ?? []);
+      setOffset(GRID_LIMIT);
       setHasMore(Boolean(gridResult.hasMore));
       setError(null);
       setLoadMoreError(null);
@@ -188,6 +201,7 @@ export function useMarketplaceFeed(
     setLoadingMore(false);
     setLoadMoreError(null);
     setHasMore(false);
+    setOffset(0);
     setReloadKey((key) => key + 1);
   }, []);
 
@@ -198,7 +212,7 @@ export function useMarketplaceFeed(
     setLoadingMore(true);
     const generation = generationRef.current;
     const current: MarketplaceQuery = { view, category, q: searchText, sort, isSearch };
-    void fetchGridPage(metroId, current, grid.length).then((result) => {
+    void fetchGridPage(metroId, current, offset).then((result) => {
       if (generation !== generationRef.current) return;
       loadingMoreRef.current = false;
       setLoadingMore(false);
@@ -209,9 +223,12 @@ export function useMarketplaceFeed(
         return;
       }
       setGrid((rows) => appendPage(rows, result.data ?? []));
+      // `hasMore` means the raw window was full, so exactly GRID_LIMIT rows
+      // were consumed however many of them survived filtering.
+      setOffset((current) => current + GRID_LIMIT);
       setHasMore(Boolean(result.hasMore));
     });
-  }, [metroId, view, category, searchText, sort, isSearch, grid.length]);
+  }, [metroId, view, category, searchText, sort, isSearch, offset]);
 
   const loadMore = useCallback(() => {
     if (loadMoreError || loading || !hasMore) return;

@@ -70,8 +70,10 @@ export default function MarketplaceCategoryPage() {
         backHref="/marketplace"
         backLabel="Back to Marketplace"
         lockedCategory={query.isSearch ? undefined : query.category}
-        // The h1 already names the category, so the grid gets a plain name.
-        gridHeading="All Listings"
+        // The h1 already names the category or the search, so the grid gets a
+        // plain name rather than repeating it — but "All Listings" would
+        // contradict an active search, which is not all of them.
+        gridHeading={query.isSearch ? 'Results' : 'All Listings'}
         onFilterChange={handleFilterChange}
       />
     </>

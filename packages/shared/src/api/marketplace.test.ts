@@ -417,6 +417,22 @@ describe('getTrendingListings', () => {
 // ─── getListingById ─────────────────────────────────────────────────────────
 
 describe('getListingById', () => {
+  it('treats a malformed id as not found, since no retry would fix it', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: '22P02', message: 'invalid input syntax for type uuid: "abc"' },
+      }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(chain) } as unknown as SupabaseClient;
+
+    const result = await getListingById(supabase, 'abc');
+    expect(result.notFound).toBe(true);
+  });
+
   it('returns a single listing', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),

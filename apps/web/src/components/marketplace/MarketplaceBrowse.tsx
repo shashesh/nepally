@@ -96,6 +96,16 @@ export function MarketplaceBrowse({
   const filtered = isFilteredQuery(query);
   const heading = gridHeading ?? defaultGridHeading(query);
 
+  /**
+   * Nothing on screen is only "empty" once there is nothing left to fetch.
+   * `getListingsByMetro` derives `hasMore` from the raw window, before it drops
+   * rows whose category did not match, so a full window can arrive filtered
+   * down to nothing while later windows still hold matches. Calling that empty
+   * would unmount the sentinel and strand a category that does have listings.
+   */
+  const isEmpty =
+    feed.grid.length === 0 && !feed.hasMore && !feed.loadingMore && !feed.loadMoreError;
+
   const filterValue: FilterBarValue = useMemo(
     () => ({ category: query.category, sort: query.sort, query: query.q }),
     [query.category, query.sort, query.q]
@@ -157,15 +167,23 @@ export function MarketplaceBrowse({
             message={feed.error}
             onRetry={feed.reload}
           />
-        ) : feed.grid.length > 0 ? (
+        ) : isEmpty ? (
+          <EmptyState
+            icon={<IconBuildingStore size={40} />}
+            title={emptyTitle(query, filtered)}
+            action={filtered ? undefined : emptyAction}
+          />
+        ) : (
           <>
-            <ul className={styles.grid}>
-              {feed.grid.map((listing) => (
-                <li key={listing.id}>
-                  <ListingCard listing={listing} />
-                </li>
-              ))}
-            </ul>
+            {feed.grid.length > 0 && (
+              <ul className={styles.grid}>
+                {feed.grid.map((listing) => (
+                  <li key={listing.id}>
+                    <ListingCard listing={listing} />
+                  </li>
+                ))}
+              </ul>
+            )}
             {feed.hasMore && (
               <div ref={sentinelRef} className={styles.loadSentinel} aria-hidden="true" />
             )}
@@ -180,12 +198,6 @@ export function MarketplaceBrowse({
               />
             )}
           </>
-        ) : (
-          <EmptyState
-            icon={<IconBuildingStore size={40} />}
-            title={emptyTitle(query, filtered)}
-            action={filtered ? undefined : emptyAction}
-          />
         )}
       </section>
     </div>

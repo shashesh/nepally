@@ -30,6 +30,18 @@ vi.mock('../../hooks/useCachedCategories', () => ({
 
 import { MarketplaceBrowse } from './MarketplaceBrowse';
 
+/** jsdom has no IntersectionObserver, and the sentinel attaches one. */
+class FakeIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+(window as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+  FakeIntersectionObserver;
+
 function listing(id: string, title = `Listing ${id}`): MarketplaceListing {
   return {
     id,
@@ -111,6 +123,34 @@ describe('MarketplaceBrowse', () => {
   it('shows the empty state when the load succeeded with nothing in it', () => {
     renderBrowse();
     expect(screen.getByText(/No listings/i)).toBeDefined();
+  });
+
+  // getListingsByMetro derives hasMore from the raw window, before it drops
+  // rows of another category, so a full window can arrive filtered to nothing.
+  // Calling that empty would strand a category that does have listings.
+  it('keeps paging when a window filtered down to nothing but more remain', () => {
+    const loadMore = vi.fn();
+    mocks.useMarketplaceFeed.mockReturnValue(feed({ grid: [], hasMore: true, loadMore }));
+
+    renderBrowse({ query: parseMarketplaceQuery({ category: 'food-restaurants' }) });
+
+    expect(screen.queryByText(/No listings/i)).toBeNull();
+  });
+
+  it('still says a category is empty once there is nothing more to fetch', () => {
+    mocks.useMarketplaceFeed.mockReturnValue(feed({ grid: [], hasMore: false }));
+
+    renderBrowse({ query: parseMarketplaceQuery({ category: 'food-restaurants' }) });
+
+    expect(screen.getByText('No listings in this category yet')).toBeDefined();
+  });
+
+  it('does not call a still-loading page empty', () => {
+    mocks.useMarketplaceFeed.mockReturnValue(feed({ grid: [], loadingMore: true }));
+
+    renderBrowse();
+
+    expect(screen.queryByText(/No listings/i)).toBeNull();
   });
 
   it('reports a failed page with its own retry', () => {
