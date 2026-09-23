@@ -195,8 +195,9 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 6 Profile + public profile | `feat/web-ui-profile` | 6.1–6.20, 6.5a, 6.19a, 6.19b | Merged (PR #85) | 2026-09-22 | branched from `master` at e685317; baselines regenerated locally in Docker (25d56ce) |
 | 7 Events | `feat/web-ui-events` | 7.1–7.15, in four chunks | Merged (PR #86) | 2026-09-22 | branched from `master` at 3386a5d. **Chunk 1** (7.1–7.5, b9e4eb3..294c80e) done 2026-09-22: gate green (shared 660, web 1402, mobile 636 tests); review found no CRITICAL or HIGH. Routed from its review: (1) **for the user to decide:** `EventResponseControl`'s `data-disabled` gives both buttons Mantine's grey disabled look while a response saves, hiding the pressed state decision 6 says moves at once — the reason `FollowButton` sets only `aria-disabled`; (2) `getMetroEventsPage`'s comment should cite the `CHECK` in `006_events.sql`, not `createEventSchema`; (3) no test asserts `EventTypeBadge`'s `data-type`; (4) `getUserEventResponse` swaps a PostgREST error for a generic message, as the rest of `api/events.ts` does; (5) a malformed id returns `22P02`, so `notFound` stays unset — Task 7.11 should weigh that; (6) Task 7.15's docs pass also drops `hasUserRsvp` from `events-feature-breakdown.md:91` and `13-event-discovery-and-rsvp.md:499`; (7) a double blank line in `api/events.test.ts`. **Chunk 2** (7.6–7.10, e4e1fb9..30f1c6e) done 2026-09-22: gate green (shared 660, web 1428 tests); `events/index.page.tsx` 333 → 141 lines. Review: two HIGH fixed in 30f1c6e (the organizer avatar was a dead spot above the stretched link's overlay; the title clamp clipped the link's focus ring), plus ragged card heights, a regression from the `li` becoming the grid item. Routed from its review: (1) `useEventFeed.test.ts`'s "drops a page that lands after the reload" leans on the previous test's mock for its chained past call, so it fails alone — add `mockResolvedValueOnce(page([]))` and reset mocks in `beforeEach`; (2) the pages test's fake `IntersectionObserver` fires disconnected observers too, so it can't catch a sentinel unmounted while a filter shows nothing; (3) untested hook branches: the chained past page failing on first load, and the reset when metro or viewer changes; (4) `hasMore` stays true after a failed first load (no visible effect; add `&& error === null`); (5) a `loadMore` in flight when the metro becomes null still lands — bump the generation before the early return; (6) "Couldn't load more events" reads oddly when a metro's first past page fails and nothing is on screen; (7) a mid-row chip focused on a phone sits flush against the scroll edge and clips its ring — add `scroll-padding-inline`; (8) `EventCard.test.tsx` queries `time` with `querySelector` where `getByRole('time')` works; (9) the page tests check sections by `closest('section')`, not `getByRole('region')` and list items; (10) Task 7.15's list already covers the stale `pages.ts` comment and `ToggleChipGroup`'s new props in `web-ui-system.md`. **Chunk 3** (7.11–7.14, c917f93..616d3b4) done 2026-09-22: gate green (shared 661, web 1464 tests); `events/[id].page.tsx` 379 → 277 lines, against a ~230 target, the difference being the id-keyed view wrapper and the `blockedBy` helper. Review: one HIGH fixed in 616d3b4 (Mantine's `Breadcrumbs` nowrap clipped a long title on phones), with the two other breadcrumb nits on the same lines. Routed from its review: (1) `AttendeeList` rows pass `full_name` to a non-decorative `Avatar`, so screen readers hear the surname the row masks — PR 10, with the test id; (2) `useEventDetail` can't clear `responding` in its render-time reset, which only the page's id key makes safe — narrow the comment or clear it in the effect; (3) the load effect has no `.catch`, harmless while every shared API catches its own errors; (4) the sidebar card chrome is defined three times, a candidate for one primitive in PR 10; (5) the attendee list is cached per open, so the dialog can show 12 while the count reads 13 (pre-existing); (6) "This event has passed." appears in both the alert and the attendance card, which reads as helpful rather than redundant, but a cancelled event shows no line at all, and chunk 4's e2e must scope that string to a role. **Chunk 4** (7.15, 8407421) done 2026-09-22: smoke pass, e2e (102), baselines regenerated in Docker and the visual suite green, full gate green (shared 661, web 1464, mobile 636), docs updated, draft PR #86 open with Copilot requested. The a11y diff only deletes the four `events` / `event-detail` entries. Twelve screenshots changed and were reviewed; reviewing them caught a three-column card squeezing the organizer name to one letter, fixed by wrapping the response control to its own line. The feed's visual ready check waited only for its first post, so the Metro Pulse strip was in the shot or not depending on timing; it now waits for the strip. The keyboard walk ran in Chromium against the production build and passed every case in Step 7 |
 | 8a Marketplace: browse + listing detail | `feat/web-ui-marketplace` | 8a.1–8a.12, in four chunks | Merged (PR #88) | 2026-09-23 | rebased onto `master` at `f995deb` after PR #87 merged. Owns both visual pages, so it takes `a11y-baseline.json` to `{}`. **Chunk 1** (8a.1–8a.4, cf331d8..4e90113) done 2026-09-22: gate green (shared 666, web 1492 tests); `marketplace.module.css` 837 → 713 lines and 159 → 136 guard violations; `FilterBar` and `ListingStrip` off both allowlists, so the raw-element list is down to 9 files. Review found no CRITICAL. Two HIGH: (1) `Select` → `NativeSelect` was a real deviation from the task text and is now implementation decision 26; (2) "the twelve dead `.categoryTheme*` blocks should be deleted" is **wrong** — `listing/[id].page.tsx` 26–38 keeps its own copy of the map and applies it at 150, so they belong to Task 8a.10. Fixed in the review commit: the pending-debounce-then-clear path had no test, and `data-category` sat on both the article and the chip. Routed from its review: (1) the tests use `data-testid` for the decorative star and cover placeholder, and read the article's `data-category` — PR 7's own review asked for exactly that kind of `data-type` assertion, so this stays, but PR 10 should settle whether the "role, label or text" rule carves out styling hooks explicitly; (2) mobile's two `isVerifiedSeller` copies cannot be touched here (global constraint: web only), so they go to PR 10 with the other mobile parity items. **Chunk 2** (8a.5–8a.8, 30be668..84780a9) done 2026-09-22: gate green (shared 666, web 1546 tests). `index.page.tsx` 330 → 77 lines and `[category].page.tsx` 177 → 79, over one 193-line `MarketplaceBrowse`; `marketplace.module.css` 713 → 524 lines and 136 → 108 guard violations, with 21 dead class blocks deleted. Review found no CRITICAL or HIGH. Fixed in the review commit: **twelve references to tokens that do not exist**, shipped in chunk 1 and repeated here — `--weight-*` for `--font-weight-*`, `--text-sm`/`--text-lg` for `--font-size-*` (`--text-1/2/3` are colours), `--radius-pill` for `--radius-full` — each silently falling back to the inherited value; the hardcoded `'search'` in `[category].page.tsx` now uses `SEARCH_SLUG`; the leftover `ListingStrip` mock in the category test; and the sponsored strip had no view-level test. Routed to PR 10: the missing undefined-custom-property guard, the paging offset that counts unique rather than consumed rows, and the empty-state copy for a member with no metro. **Chunk 3** (8a.9–8a.11, 543fe61..d8ae4c4) done 2026-09-22: gate green (shared 666, web 1565 tests). `listing/[id].page.tsx` 330 → 216 lines; `marketplace.module.css` 524 → 190 lines and 108 → 32 guard violations, the twelve `.categoryTheme*` blocks finally gone; the page comes off the raw-element allowlist, down to 8 files. `ListingResult` gains `notFound`, mirroring `EventResult`, so a failed read stops reading as "Listing not found." Review found no CRITICAL; two HIGH, both fixed in the review commit: the two extracted components shipped with no tests of their own, and the save button had lost its visible saved state (it now keeps one stable name with `aria-pressed`, and the bookmark icon fills in, rather than renaming itself). Also fixed there: dropping `router.isReady` made a hard reload flash "Listing not found" before the id arrived; Mantine's `Breadcrumbs` renders a plain `div`, so the `nav` landmark came back; a business listing with no details rendered an empty "Business Details" heading; and `.badge` still referenced `--category-bg` / `--category-color` after their defining blocks were deleted. Routed to PR 10: event detail's identical breadcrumb-landmark gap, `PhotoCarousel` having no `priority` hint, and the actions panel rendering twice. **Chunk 4** (8a.12) done 2026-09-22: e2e 107, visual 39, full gate green (shared 666, web 1584, mobile 636). **`a11y-baseline.json` is now `{}`** and the diff only deletes lines, so the app has no known serious or critical violation on any screenshotted page. Four screenshots changed, all reviewed: `marketplace` and `listing-detail` at both widths. Seven others changed on the first run and were restored — re-running the suite against the originals passed, so they were rendering noise, not real diffs. **The keyboard walk found a real bug:** pressing Save dropped focus to `<body>`, because the panel used Mantine's `loading`, which sets native `disabled` — the exact thing "Busy controls stay focusable" forbids. The old page did it too, so it was carried over rather than introduced. It now takes `aria-disabled` / `data-disabled` with a `Loader` in `leftSection`. The walk is kept as `13-marketplace-keyboard.spec.ts` rather than run once, since its 375px checks are the regression guard for recon 9. Routed to PR 10: listing detail shows the category and condition twice, once as a badge and once as a highlight chip, which `getListingHighlights` has always done. **Copilot review** (5 rounds, 15 inline comments) answered 2026-09-23. Four were real and are fixed in `fix(web): address Copilot's review`: (1) `getListingsByMetro` derives `hasMore` from the raw window *before* dropping rows of another category, so a full window can arrive filtered to nothing — the browse view called that empty and unmounted the sentinel, stranding a category that does have listings, and the hook offset by `grid.length`, which never advanced and re-requested the same window; the offset now counts the API window and the empty state waits for `hasMore` to go false; (2) a load-more in flight when the metro cleared still landed, because the effect returned before bumping the generation — the same fault PR 7 found in `useEventFeed`; (3) `/marketplace/search` showed an h1 "Search: momo" over a region named "All Listings"; it now reads "Results"; (4) `getListingById` missed `22P02`, so a mistyped UUID gave a retryable error rather than not-found, where `getEventById` handles both. Two were already fixed in earlier chunk reviews (the undefined token names, and `loading` on the save button). One was **rejected**: it claimed `ListingBusinessDetails` could not type-check because a `Row[]` annotation took nullable members, but the `as Row[]` cast applies to the `.filter(Boolean)` result, not the literal, and `type-check` passes. The remaining six were on the plan text itself, written before the implementation diverged from it; the task interfaces now match what shipped |
-| 8b Marketplace: seller flow | `feat/web-ui-marketplace-seller` | 8b.1–8b.12, in three chunks | In Review (PR #89) | 2026-09-23 | branched from `master` at f632e79. No visual pages, so no baseline run; `a11y-baseline.json` stays `{}`. `marketplace.module.css` is deleted in chunk 1 (my-listings is its last consumer). **Chunk 1** (8b.1–8b.5, fd1c478..ff4d273) done 2026-09-23: gate green (shared 670, web 1610 tests); `my-listings.page.tsx` 216 → 104 lines before the review fix; `marketplace.module.css` (193 lines, 32 guard violations) deleted, and the page off the raw-element allowlist, down to 7 files. One deviation from decision 2: the next page's offset is `listings.length`, which equals "rows fetched minus rows deleted" because deactivated rows stay on screen and deleted ones leave both the screen and the server's results. Review found no CRITICAL. Two HIGH, both fixed in 90eabce: (1) that equivalence failed when a delete and a page load overlapped — the page's offset counted a row the delete then removed, so one listing never appeared — so a delete now waits for a page in flight and no page is requested while a delete is pending; (2) deleting a row unmounted the menu trigger the confirm dialog returns focus to, dropping focus to `<body>`, so focus now moves to the neighbouring row's link, or to Create listing, when `isFocusStranded()`. Nothing routed. **Chunk 2** (8b.6–8b.11, 2f6d18f..345a7ec) done 2026-09-23: gate green (shared 677, web 1650 tests). `listing/promote/[id].page.tsx` 410 → 173 lines; `promote.module.css` 841 → 99 lines and 107 → 0 guard violations. Both pages off both allowlists: the raw-element list is down to 6 files and the CSS guard allowlist holds only PR 10's four stylesheets. Deviations: a small `SummaryList` shared by the duration and review steps; `promote.module.css` came off the CSS allowlist in 8b.10 rather than 8b.11, because the guard fails on an allowlisted file that is already clean — the rewrite kept the success page's class names on tokens so it stayed styled between commits; a checkout response with no URL now reports an error rather than doing nothing; Continue waits with `aria-disabled`, not native `disabled`; and step markers use the action ink pair, since `--accent` is never text. Review found no CRITICAL, HIGH or MEDIUM. Fixed in the review commit: clearing the duration field snapped it straight back to 1 (found while triaging the review, not by it), so deleting "7" and typing "3" gave "13"; and the missing test for a checkout with no URL. Routed to PR 10: `tokens.contrast.test.ts` has no `--accent-ink` / `--success` on `--surface-sunken` pair, used by the tier icons and the success icon (both `aria-hidden` beside text that carries the same meaning). **Chunk 3** (8b.12, a71f26e..addf5f5) done 2026-09-23: e2e 111, visual 39 with no screenshot diffs (neither page is in `pages.ts`), and `a11y-baseline.json` still `{}`; full gate green (shared 677, web 1653, mobile 636). The my-listings e2e now drives the row menu and confirm dialogs and checks focus survives a delete, and a new e2e walks the wizard to review by keyboard. The keyboard walk is kept in `13-marketplace-keyboard.spec.ts`, as 8a's was: a row menu opens on Enter, moves on arrows and returns focus to its trigger on Escape, and neither page overflows at 375px on any step. Screenshots of both pages at 1280 and 375 were reviewed by eye, with nothing to fix: at 375 the third step's label truncates to "Review …" (its full text stays in the DOM). The mobile Jest run needed `--cacheDirectory` pointed at a writable folder, because the default system-temp transform cache failed to write in this environment — not a code issue. **Copilot review** (round 1, 2 inline comments) answered 2026-09-23; both were real and are fixed: (1) the wizard worked out its blocker only when it opened, and the edge function does not check status, so a listing deactivated in another tab could still be paid for — Pay now re-reads the listing first (bef9022); (2) a load-more from before a reload could clear the in-flight page ref for a newer request, releasing a delete early — a request now clears the ref only while it still holds it (3b1229f). The durable fix for (1) followed at the user's go-ahead: `create-promotion-checkout` now refuses a listing that is not active with a 409, after the ownership check (8307a28), deployed to `nusa-staging` as version 6 on 2026-09-23. The deployed v5 source was diffed against the repo first and matched, and v6 was read back and matched the commit; a smoke call without auth returned the function's own 401. The 409 path itself was not exercised live, since that needs a member's session and an inactive listing. Found while doing it and fixed at the user's go-ahead (b2abda2, deployed as version 7 the same way, read back and smoke-tested): the web checkout's `cancel_url` pointed at `/marketplace/listing/<id>/promote`, a route that does not exist, so cancelling on Stripe's page landed on a 404; it now returns to the wizard at `/marketplace/listing/promote/<id>`. **Copilot round 2** (2 inline comments) answered 2026-09-23, both real and fixed: (1) a delete that waited for a page in flight checked the generation only after sending the mutation, so a reload or account switch during the wait still sent it — it now checks right after the wait and sends nothing (f3ef86b); (2) the duration's `aria-valuenow` reported the last committed value while the field was empty — it now follows the draft and is omitted when empty (4bfa303). Round 3 (on the edge function commit) raised one comment, **rejected**: it asked for the status check to be atomic with the `listing_promotions` insert, but that insert only creates a `pending` row — payment happens minutes later on Stripe's page and `stripe-webhook` activates the row after — and only the owner can change a listing's status (RLS), so a lock around the insert protects nothing that matters. **Open for the user:** what a paid promotion should do when its listing is inactive at payment time or is deactivated mid-run (a webhook check before activation, a refund, a pause) — a billing decision, not this PR's |
-| 9 Messages, notifications, moderation | `feat/web-ui-messaging` | breakdown at PR start | Not Started | 2026-09-14 | |
+| 8b Marketplace: seller flow | `feat/web-ui-marketplace-seller` | 8b.1–8b.12, in three chunks | Merged (PR #89) | 2026-09-23 | branched from `master` at f632e79. No visual pages, so no baseline run; `a11y-baseline.json` stays `{}`. `marketplace.module.css` is deleted in chunk 1 (my-listings is its last consumer). **Chunk 1** (8b.1–8b.5, fd1c478..ff4d273) done 2026-09-23: gate green (shared 670, web 1610 tests); `my-listings.page.tsx` 216 → 104 lines before the review fix; `marketplace.module.css` (193 lines, 32 guard violations) deleted, and the page off the raw-element allowlist, down to 7 files. One deviation from decision 2: the next page's offset is `listings.length`, which equals "rows fetched minus rows deleted" because deactivated rows stay on screen and deleted ones leave both the screen and the server's results. Review found no CRITICAL. Two HIGH, both fixed in 90eabce: (1) that equivalence failed when a delete and a page load overlapped — the page's offset counted a row the delete then removed, so one listing never appeared — so a delete now waits for a page in flight and no page is requested while a delete is pending; (2) deleting a row unmounted the menu trigger the confirm dialog returns focus to, dropping focus to `<body>`, so focus now moves to the neighbouring row's link, or to Create listing, when `isFocusStranded()`. Nothing routed. **Chunk 2** (8b.6–8b.11, 2f6d18f..345a7ec) done 2026-09-23: gate green (shared 677, web 1650 tests). `listing/promote/[id].page.tsx` 410 → 173 lines; `promote.module.css` 841 → 99 lines and 107 → 0 guard violations. Both pages off both allowlists: the raw-element list is down to 6 files and the CSS guard allowlist holds only PR 10's four stylesheets. Deviations: a small `SummaryList` shared by the duration and review steps; `promote.module.css` came off the CSS allowlist in 8b.10 rather than 8b.11, because the guard fails on an allowlisted file that is already clean — the rewrite kept the success page's class names on tokens so it stayed styled between commits; a checkout response with no URL now reports an error rather than doing nothing; Continue waits with `aria-disabled`, not native `disabled`; and step markers use the action ink pair, since `--accent` is never text. Review found no CRITICAL, HIGH or MEDIUM. Fixed in the review commit: clearing the duration field snapped it straight back to 1 (found while triaging the review, not by it), so deleting "7" and typing "3" gave "13"; and the missing test for a checkout with no URL. Routed to PR 10: `tokens.contrast.test.ts` has no `--accent-ink` / `--success` on `--surface-sunken` pair, used by the tier icons and the success icon (both `aria-hidden` beside text that carries the same meaning). **Chunk 3** (8b.12, a71f26e..addf5f5) done 2026-09-23: e2e 111, visual 39 with no screenshot diffs (neither page is in `pages.ts`), and `a11y-baseline.json` still `{}`; full gate green (shared 677, web 1653, mobile 636). The my-listings e2e now drives the row menu and confirm dialogs and checks focus survives a delete, and a new e2e walks the wizard to review by keyboard. The keyboard walk is kept in `13-marketplace-keyboard.spec.ts`, as 8a's was: a row menu opens on Enter, moves on arrows and returns focus to its trigger on Escape, and neither page overflows at 375px on any step. Screenshots of both pages at 1280 and 375 were reviewed by eye, with nothing to fix: at 375 the third step's label truncates to "Review …" (its full text stays in the DOM). The mobile Jest run needed `--cacheDirectory` pointed at a writable folder, because the default system-temp transform cache failed to write in this environment — not a code issue. **Copilot review** (round 1, 2 inline comments) answered 2026-09-23; both were real and are fixed: (1) the wizard worked out its blocker only when it opened, and the edge function does not check status, so a listing deactivated in another tab could still be paid for — Pay now re-reads the listing first (bef9022); (2) a load-more from before a reload could clear the in-flight page ref for a newer request, releasing a delete early — a request now clears the ref only while it still holds it (3b1229f). The durable fix for (1) followed at the user's go-ahead: `create-promotion-checkout` now refuses a listing that is not active with a 409, after the ownership check (8307a28), deployed to `nusa-staging` as version 6 on 2026-09-23. The deployed v5 source was diffed against the repo first and matched, and v6 was read back and matched the commit; a smoke call without auth returned the function's own 401. The 409 path itself was not exercised live, since that needs a member's session and an inactive listing. Found while doing it and fixed at the user's go-ahead (b2abda2, deployed as version 7 the same way, read back and smoke-tested): the web checkout's `cancel_url` pointed at `/marketplace/listing/<id>/promote`, a route that does not exist, so cancelling on Stripe's page landed on a 404; it now returns to the wizard at `/marketplace/listing/promote/<id>`. **Copilot round 2** (2 inline comments) answered 2026-09-23, both real and fixed: (1) a delete that waited for a page in flight checked the generation only after sending the mutation, so a reload or account switch during the wait still sent it — it now checks right after the wait and sends nothing (f3ef86b); (2) the duration's `aria-valuenow` reported the last committed value while the field was empty — it now follows the draft and is omitted when empty (4bfa303). Round 3 (on the edge function commit) raised one comment, **rejected**: it asked for the status check to be atomic with the `listing_promotions` insert, but that insert only creates a `pending` row — payment happens minutes later on Stripe's page and `stripe-webhook` activates the row after — and only the owner can change a listing's status (RLS), so a lock around the insert protects nothing that matters. **Open for the user:** what a paid promotion should do when its listing is inactive at payment time or is deactivated mid-run (a webhook check before activation, a refund, a pause) — a billing decision, not this PR's |
+| 9a Messages | `feat/web-ui-messaging` | 9a.1–9a.12, in three chunks | In Progress | 2026-09-23 | branched from `master` at e59513a. PR 9 split into 9a and 9b at recon (see "PR 9 — split into 9a and 9b"). Owns the `messages` visual page |
+| 9b Notifications, preferences, moderation | `feat/web-ui-notifications` | breakdown at PR start | Not Started | 2026-09-23 | branches from `master` after 9a merges; scope is PR 9 recon items 16–27. Owns the `notifications` visual page |
 | 10 Static pages + cleanup | `feat/web-ui-cleanup` | breakdown at PR start | Not Started | 2026-09-14 | |
 
 ---
@@ -14367,11 +14368,399 @@ Behaviour stays exactly as PR #87 left it — the polling, the retry and the fou
 
 ## PR 9 — Messages, notifications, moderation (`feat/web-ui-messaging`)
 
+The scope as written before the recon:
+
 - **Pages:** `pages/messages/index.page.tsx`, `pages/messages/[id].page.tsx`, `pages/notifications.page.tsx`, `pages/profile/notifications.page.tsx`, `pages/moderation.page.tsx`.
 - **CSS:** `styles/Messages.module.css`, `Notifications.module.css`, `NotificationPreferences.module.css`, `Moderation.module.css`.
 - **Messages:** the avatar menus use `UserMenuTrigger`, replacing the manual `mousedown` listeners at messages/index 49 and messages/[id] 100.
 - **Notifications:** adopt `NotificationItem` on the page, removing its `timeAgo` copy and the `<li onClick>` at ~252. Keep "Load more" or switch to `useInfiniteScroll`, and record which in the breakdown.
 - **Also:** replace native dialogs in both messages pages and moderation. The moderation queue uses `EmptyState`, `LoadingState` and `ActionMenu`.
+
+## PR 9 — split into 9a and 9b (2026-09-23)
+
+The area is five pages (1,349 lines) and four stylesheets (837 lines, 188 guard violations), and the recon below found more real bugs than any area since PR 4. It is now two PRs, on the seam between chat and everything else:
+
+- **9a — messages.** Both messages pages, `Messages.module.css`, the shared `getMessages` fix, and one `useStartConversation` hook adopted by the five pages that start a chat — which is how listing detail's dead "Contact seller" gets fixed. Owns the `messages` visual page.
+- **9b — notifications, preferences and moderation.** Three pages and three stylesheets. Owns the `notifications` visual page. Its breakdown is written when it starts, from the recon kept below.
+
+They share no files, so 9b branches from `master` after 9a merges.
+
+## PR 9 recon
+
+Run on `feat/web-ui-messaging` at `e59513a` (the "Starting an area PR" commands), 2026-09-23.
+
+| File | Lines | CSS guard | `confirm(`/`alert(` | Raw elements |
+|---|---|---|---|---|
+| `pages/messages/index.page.tsx` | 153 | — | 1 (108) | 0 |
+| `pages/messages/[id].page.tsx` | 336 | — | 1 (221) | 1 (315) |
+| `pages/notifications.page.tsx` | 302 | — | 0 | 0 |
+| `pages/profile/notifications.page.tsx` | 203 | — | 0 | 2 (117, 157) |
+| `pages/moderation.page.tsx` | 355 | — | 1 (156) | 0 |
+| `styles/Messages.module.css` | 293 | **74** | — | — |
+| `styles/Notifications.module.css` | 214 | **45** | — | — |
+| `styles/NotificationPreferences.module.css` | 164 | **31** | — | — |
+| `styles/Moderation.module.css` | 166 | **38** | — | — |
+
+`a11y-baseline.json` is already `{}`. `pages.ts` screenshots `messages` and `notifications` (list pages only), so each half re-baselines one page at both widths.
+
+**Messages (9a):**
+
+1. **A thread shows its oldest 100 messages, not its newest.** `getMessages` orders by `timestamp` ascending and then applies `limit`, so the 101st message and everything after it never appears. Mobile calls it with the default 50, so on mobile the cut is at 50.
+2. **"Contact seller" is a dead end.** Listing detail (`listing/[id].page.tsx:62`) pushes `/messages?to=<owner id>`, and nothing reads `to`: the member lands on their inbox with no new conversation. `11-marketplace.spec.ts:67` asserts that URL, so the test pins the bug.
+3. **Five pages start a chat, five ways.** Feed (`feed.page.tsx:416`), post detail (`posts/[id].page.tsx:317`), event detail (`events/[id].page.tsx:90`), public profile (`users/[id].page.tsx:172`) and listing detail each call `getOrCreateConversation` by hand. Feed and post detail drop a failure silently. Event detail and the public profile report it, with two different sentences. Only those two guard a double click.
+4. **"View Profile" says profiles don't exist.** Both avatar menus `alert()` "User profiles will be available in a future update." Public profiles shipped in PR 6, and `ConversationWithParticipant` already carries `other_user_id`, so `UserMenuTrigger`'s View profile link works as-is.
+5. **A failed load looks like an empty inbox.** `getConversations` returning `{ error }` stops the spinner and shows "No messages yet".
+6. **A failed send says nothing.** `handleSend` only acts on success; on failure the text stays and the button re-enables, with no message.
+7. **A conversation the viewer isn't in still opens.** A mistyped id, or one with a member they have blocked (which `getConversations` filters out), renders the header "Conversation", "No messages yet. Say hello!" and a working composer. Sending then fails on RLS, silently (6).
+8. **`--nav-height` does not exist.** `.threadPage`'s `height: calc(100vh - var(--nav-height) - …)` is invalid, so the height falls back to `auto`: the list never scrolls on its own, the composer is not pinned, and `scrollIntoView` scrolls the window. This is the undefined-custom-property class PR 10's guard is for.
+9. **Every message avatar opens the header's menu.** The in-thread avatars call the same `handleAvatarPress`, so clicking one toggles a dropdown in the header, and each message group adds a tab stop labelled "User options".
+10. **The thread has no `h1`.** The name is a `span`. The composer is a raw `<input>` with only a placeholder for a label. Send is an "↑" glyph. Read receipts read aloud as "check mark check mark". Incoming messages are not announced.
+11. **An unread count is a bare number.** The list's `Badge` reads "3" with nothing saying what it counts.
+12. **Chat shows full names.** `conversation_participants.name` holds the full name given when the conversation began, and both pages print it, where every other web surface shows `formatPublicName` ("Bikal S.").
+13. **The thread's effect depends on the `user` object**, not `user.id`, so any `AuthContext` refresh (a profile save, a token refresh that re-reads the row) reloads the messages and re-subscribes.
+14. **The day-label logic exists four times:** `[id].page.tsx:126`, `notifications.page.tsx:30`, and mobile's `MessageThreadScreen.tsx:291` and `NotificationsScreen.tsx:48`.
+15. **The thread loads the whole inbox to find one participant.** `getConversations` is five queries. It stays: the same call answers "is the viewer in this conversation, and not blocked" (7), which a single-row read would have to repeat.
+
+**Notifications, preferences and moderation (9b):**
+
+16. **Preferences can overwrite real settings with defaults.** When `getUserSettings` fails, the page shows `DEFAULT_SETTINGS`, and Save writes them over whatever the member had.
+17. **None of the preference switches has a name.** Each `Switch` sits beside a `span` with no `label` or `aria-label` joining them. The two radio groups are raw `<input type="radio">`s with no group label.
+18. **Save drops focus.** It uses Mantine's `loading`, and "✓ Saved" swaps the label for three seconds on a `setTimeout` that is never cleared.
+19. **The notifications page accepts chat notifications from realtime.** Its INSERT handler keeps `type: 'message'` rows, which `getNotifications` and `getUnreadNotificationCount` exclude, so one appears, bumps the count, and vanishes on reload. `useNotificationsFeed` already guards this for the bell.
+20. **Paging drifts.** "Load more" asks for `page * 20`, but realtime inserts push rows down (duplicates) and deletes pull them up (a skipped row). 8b's rule applies: the offset is the rows on screen.
+21. **Mark read, mark all read, delete and load more all fail silently.** Delete logs to the console; the others don't check their result. Deleting an unread notification doesn't lower the count.
+22. **The row is an `<li onClick>`** with a nested `CloseButton` labelled "Dismiss notification". `NotificationItem` (PR 2) replaces both and says "Delete notification".
+23. **The bell goes stale on `/notifications`.** `Layout` turns the bell's polling off there, and nothing reloads it when polling comes back on, so after "Mark all as read" the bell keeps its old count for up to 30 seconds after leaving.
+24. **The moderation queue reads a failed load as an empty one.** It shows a toast, then "No posts waiting for review." and "No open reports." A failed `getPostsByIds` turns every reported post into "Post no longer available".
+25. **Moderation busy states drop focus.** Approve uses `loading`, and every other button gets native `disabled` while any action runs. The acted-on card then unmounts, so focus needs the 8b treatment.
+26. **Remove and Remove post have no confirmation**; only Ban does, through `window.confirm`.
+27. **Headings carry emoji.** "🔔 Notifications", "⚙️ Notification Preferences" and the "🛡️ Emergency Alerts" group heading all put the emoji into the accessible name, and the unread `Badge` sits inside the `h1`.
+
+## PR 9a — Messages (`feat/web-ui-messaging`)
+
+**Branch:** `feat/web-ui-messaging`, created from `master` at `e59513a` (PR #89 merged).
+
+| File | Change | Why |
+|---|---|---|
+| `packages/shared/src/api/messages.ts` (+ test) | Modify | `getMessages` returns the newest `limit` (recon 1) |
+| `packages/shared/src/utils/date.ts` (+ test) | Modify | `formatDayLabel`, one day label for web and mobile (recon 14) |
+| `packages/shared/src/logic/chat.ts` (+ test, + `logic/index.ts`) | Create | `buildThreadDays`: day groups and sender runs |
+| `apps/web/src/hooks/useStartConversation.ts` (+ test) | Create | One way to start a chat (recon 2, 3) |
+| `apps/web/src/pages/{feed,posts/[id],events/[id],users/[id],marketplace/listing/[id]}.page.tsx` (+ tests) | Modify | Adopt the hook |
+| `apps/web/src/components/users/UserMenuTrigger.tsx` (+ test) | Modify | An optional `toneKey`, passed to `Avatar` |
+| `apps/web/src/hooks/useConversations.ts` (+ test) | Create | The inbox's load, error and reload |
+| `apps/web/src/hooks/useMessageThread.ts` (+ test) | Create | Thread load, not-found, realtime and send |
+| `apps/web/src/components/messages/{ConversationRow,ThreadHeader,MessageLog,MessageComposer}.tsx` + tests + `.module.css` | Create | Extracted from the two pages |
+| `apps/web/src/pages/messages/{index,[id]}.page.tsx` (+ tests), `messages.module.css` | Rewrite / create | The pages over the hooks and components |
+| `apps/web/src/styles/Messages.module.css` | Delete | Both consumers move off it |
+| `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs` | Modify | `Messages.module.css` off the first, `messages/[id]` off the second |
+
+**How this PR runs.** Three chunks, as PR 8b ran. Inside a chunk each task writes its failing test, runs only that task's tests, implements, re-runs and commits, with no review between tasks. At each chunk boundary: `type-check`, `lint`, `lint:guards`, the full unit suite of every workspace touched (web Vitest must run from a `C:\…` cwd), then one code-review agent over the chunk's whole diff, CRITICAL and HIGH fixed in one `fix(web): address chunk N review` commit, everything else routed to PR 10's list or the tracker — **never to new tasks**. e2e and the `messages` baseline run only in chunk 3.
+
+| Chunk | Tasks | Ends with |
+|---|---|---|
+| 1. Shared + hooks | 9a.1–9a.6 | `getMessages` fixed, the shared helpers, `useStartConversation` adopted by five pages, `useConversations` and `useMessageThread` |
+| 2. Pages | 9a.7–9a.11 | Both pages rebuilt, `Messages.module.css` deleted, `messages/[id]` off the raw-element allowlist |
+| 3. Finish | 9a.12 | e2e, the `messages` re-baseline, keyboard walk, docs and the draft PR |
+
+**Decisions this breakdown locks in:**
+
+1. **`getMessages(supabase, id, limit)` returns the newest `limit` messages, oldest first**: `order('timestamp', { ascending: false }).limit(limit)`, then reversed. Web asks for 100, mobile keeps its 50. Loading earlier messages is not in scope; a thread longer than 100 shows its latest 100, which is what a member opening a chat wants.
+2. **One `useStartConversation()` hook**, returning `{ start(partner), starting }`. It sends a signed-out viewer to `/login`, ignores the viewer's own id and a second press while one is in flight, pushes `/messages/<id>` on success, and on failure says "Couldn't start a conversation. Please try again." with `notify.error`. A result that lands after unmount is dropped. Callers that render a button show `starting` with `aria-disabled` and a `Loader` (the busy-controls rule). Listing detail keeps its `incrementListingContacts` call before `start`, and `?to=` goes away.
+3. **Chat shows public names** (recon 12): `formatPublicName(other_user_name)` in the list, the header, the `h1` and the composer's label. `UserMenuTrigger` gains an optional `toneKey`, and chat passes the full name there, so a member's avatar keeps the colour it has on posts.
+4. **One avatar menu per thread**, in the header: `UserMenuTrigger` with View profile only (no Chat item — you are in it). The avatars beside message groups become `decorative` and are not buttons (recon 9). The list row keeps its own `UserMenuTrigger`; the rest of the row is the link to the thread.
+5. **The window scrolls; the composer is sticky** (recon 8). No fixed-height thread: the composer is `position: sticky` at `bottom: 0`, lifted above the phone tab bar by `calc(var(--layout-tabbar-height) + env(safe-area-inset-bottom))` below `$mantine-breakpoint-sm`. That needs no knowledge of the shell's heights beyond one token. The log scrolls to its end on first load, and on a new message when the viewer sent it or was already within 120px of the bottom — a member reading back is not yanked down by an incoming message.
+6. **The messages are a `role="log"` region** named `Messages with {name}`, so new ones are announced politely. Each day is a `section` with an `h2` day label ("Today", "Yesterday", "Mar 5", "Mar 5, 2025"). Read receipts are icons with a visually hidden "Sent" or "Read".
+7. **The composer is a `TextInput`** labelled `Message {name}` (visually hidden) in a `form`; Enter sends. Send is an `ActionIcon` with `IconSend`, named "Send message": native `disabled` while the field is blank (a state the member didn't just cause by pressing it), `aria-disabled` while sending. After a send succeeds the text clears and focus returns to the field, so the button's switch to disabled never strands focus. After a failure the text stays and `notify.error` says "Couldn't send your message. Please try again."
+8. **A conversation the viewer can't see renders `EmptyState`** "Conversation not found" / "It may have been removed, or you may not have access to it." with a link back to Messages, and no composer (recon 7). `notFound` means `getConversations` succeeded without this id; a failed `getConversations` is an error with a retry, not a not-found.
+9. **The inbox is not paged.** `getConversations` has no `limit`/`offset`, and a member's conversation count is small, so there is no `useInfiniteScroll` here. This is the one definition-of-done item 9a does not meet, on purpose.
+10. **The unread count is part of the row's name**: the badge shows the number, and a visually hidden " unread" follows it, so the link reads "Bikal S. … 3 unread".
+
+## PR 9a — Task breakdown
+
+### Task 9a.1: `getMessages` returns the newest messages
+
+**Files:** modify `packages/shared/src/api/messages.ts` (8–30) and `messages.test.ts`.
+
+```ts
+/** The newest `limit` messages of a conversation, oldest first. */
+export async function getMessages(
+  supabase: SupabaseClient,
+  conversationId: string,
+  limit: number = 50
+): Promise<{ data?: ChatMessage[]; error?: Error }>;
+```
+
+- [ ] **Step 1: Write the failing test.** The query calls `order('timestamp', { ascending: false })` then `limit(limit)`; rows returned newest-first (`[m3, m2, m1]`) come back as `[m1, m2, m3]`; an error returns `{ error }`.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=packages/shared -- src/api/messages.test.ts`
+- [ ] **Step 3: Implement.** `return { data: ((data || []) as ChatMessage[]).slice().reverse() };`
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `fix(shared): load a conversation's newest messages`.
+
+### Task 9a.2: `formatDayLabel` and `buildThreadDays`
+
+**Files:** modify `packages/shared/src/utils/date.ts` and `date.test.ts`; create `packages/shared/src/logic/chat.ts` and `chat.test.ts`; export from `logic/index.ts`.
+
+```ts
+// utils/date.ts — local calendar days.
+/** "Today", "Yesterday", "Mar 5" this year, "Mar 5, 2025" otherwise. */
+export function formatDayLabel(date: Date, now: Date = new Date()): string;
+
+// logic/chat.ts
+export interface ThreadMessage {
+  message: ChatMessage;
+  isOwn: boolean;
+  /** Last message of a run from one sender within the day; the received run shows its avatar here. */
+  endsRun: boolean;
+}
+export interface ThreadDay {
+  /** `toDateString()` of the day, stable as a React key. */
+  key: string;
+  /** Timestamp of the day's first message, for formatDayLabel. */
+  timestamp: string;
+  messages: ThreadMessage[];
+}
+export function buildThreadDays(messages: ChatMessage[], viewerId: string): ThreadDay[];
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `formatDayLabel`: the same day → "Today"; the day before → "Yesterday", including across a month boundary (`now` = 1 March, date = 28 February); earlier this year → "Mar 5"; last year → "Mar 5, 2025". Build dates with `new Date(y, m, d, h)` so the test is timezone-safe.
+  - `buildThreadDays`: `[]` → `[]`; three messages on two days → two days, in order; `isOwn` follows `viewerId`; within a day, A A B A marks `endsRun` on the 2nd, 3rd and 4th; a run that crosses midnight ends at the day boundary.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/utils/date.test.ts src/logic/chat.test.ts`
+- [ ] **Step 3: Implement.** Compare `new Date(y, m, d)` midnights for the day label; `toLocaleDateString('en-US', { month: 'short', day: 'numeric' })`, adding `year: 'numeric'` when the year differs from `now`'s. `buildThreadDays` is one pass that starts a new day when `toDateString()` changes and sets `endsRun` when the next message is on another day, from another sender, or absent.
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(shared): add formatDayLabel and buildThreadDays`.
+
+### Task 9a.3: `useStartConversation`
+
+**Files:** create `apps/web/src/hooks/useStartConversation.ts` and `useStartConversation.test.ts`.
+
+```ts
+export interface ConversationPartner {
+  id: string;
+  /** Full name; stored on the conversation as the participant's name. */
+  name: string;
+}
+
+export interface StartConversation {
+  start: (partner: ConversationPartner) => Promise<void>;
+  starting: boolean;
+}
+
+export function useStartConversation(): StartConversation;
+```
+
+It reads the viewer from `useAuth()` and the router from `useRouter()`.
+
+- [ ] **Step 1: Write the failing test** (mock `useAuth`, `next/router`, `getOrCreateConversation`, and `notify`).
+  - Success calls `getOrCreateConversation(supabase, viewer.id, viewer.full_name, partner.id, partner.name)` and pushes `/messages/<conversationId>`.
+  - `{ error }` calls `notify.error("Couldn't start a conversation. Please try again.")` and does not navigate.
+  - With no viewer it pushes `/login` and makes no call.
+  - The viewer's own id makes no call and no navigation.
+  - A second `start` while the first is pending makes no second call; `starting` is true between them and false after.
+  - A result that lands after unmount neither navigates nor toasts.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useStartConversation.test.ts`
+- [ ] **Step 3: Implement** with a `startingRef` for the double-press guard (state alone lags a render) and a `mountedRef` for the unmount guard.
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useStartConversation`.
+
+### Task 9a.4: Adopt `useStartConversation` on the five pages
+
+**Files:** modify `feed.page.tsx`, `posts/[id].page.tsx`, `events/[id].page.tsx`, `users/[id].page.tsx`, `marketplace/listing/[id].page.tsx`, and each page's test.
+
+- [ ] **Step 1: Update the tests first.**
+  - Listing detail: Contact seller calls `incrementListingContacts`, then `getOrCreateConversation` with the owner, then pushes `/messages/<id>`; it never pushes a URL containing `?to=` (recon 2).
+  - Feed and post detail: a failed `getOrCreateConversation` now shows the toast (they were silent).
+  - Event detail and the public profile: the failure toast is the hook's sentence. Their existing busy-button tests keep passing, now driven by `starting`.
+- [ ] **Step 2: Run and watch the changed cases fail.** `npm run test --workspace=apps/web -- src/pages/feed.test.tsx src/pages/posts src/pages/events src/pages/users src/pages/marketplace/listing`
+- [ ] **Step 3: Implement.** Delete each page's handler body in favour of `start({ id, name })`. Keep what is page-specific: post detail's `viewActiveRef` check goes (the hook's unmount guard covers it); event detail's `messaging` state and the public profile's `messagingLoading` become `starting`; listing detail awaits `incrementListingContacts` first. Drop `getOrCreateConversation` from each page's imports.
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): start every chat through useStartConversation`.
+
+### Task 9a.5: `UserMenuTrigger` takes a `toneKey`, and `useConversations`
+
+**Files:** modify `apps/web/src/components/users/UserMenuTrigger.tsx` and its test; create `apps/web/src/hooks/useConversations.ts` and `useConversations.test.ts`.
+
+```ts
+// UserMenuTrigger: one new optional prop, passed straight to Avatar.
+toneKey?: string;
+
+// useConversations
+export interface ConversationsState {
+  conversations: ConversationWithParticipant[];
+  loading: boolean;
+  /** The load failed. The list is empty, never stale. */
+  error: string | null;
+  reload: () => void;
+}
+export function useConversations(userId: string | null): ConversationsState;
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `UserMenuTrigger` with `toneKey` passes it to `Avatar` (mock `Avatar` and assert the prop).
+  - `useConversations`: success fills the list; `{ error }` sets `error` to "Couldn't load your messages." and leaves the list empty (recon 5); `reload` clears the error, sets `loading` and asks again; a changed `userId` resets, and a response for the previous user is dropped; a null `userId` makes no call.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/users/UserMenuTrigger.test.tsx src/hooks/useConversations.test.ts`
+- [ ] **Step 3: Implement** `useConversations` modelled on `useUserList`: a reload key in state, a `cancelled` flag in the effect, and state reset during render when `userId` changes.
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useConversations and UserMenuTrigger's toneKey`.
+
+### Task 9a.6: `useMessageThread`
+
+**Files:** create `apps/web/src/hooks/useMessageThread.ts` and `useMessageThread.test.ts`.
+
+```ts
+export interface MessageThreadState {
+  messages: ChatMessage[];
+  /** From getConversations; null until found. */
+  partner: ConversationWithParticipant | null;
+  loading: boolean;
+  error: string | null;
+  /** getConversations succeeded and this id is not among them (decision 8). */
+  notFound: boolean;
+  reload: () => void;
+  /** Resolves false on failure, leaving the messages as they were. */
+  send: (text: string) => Promise<boolean>;
+}
+
+export const THREAD_MESSAGE_LIMIT = 100;
+
+export function useMessageThread(conversationId: string | null, userId: string | null): MessageThreadState;
+```
+
+- [ ] **Step 1: Write the failing test.** Each test sets its mocks in `beforeEach`, and `subscribeToMessages` is mocked to capture its two callbacks.
+  - Load calls `getMessages(supabase, id, 100)` and `getConversations(supabase, userId)` together; `partner` is the matching row; only then does it call `markAsRead(supabase, id, userId)` and subscribe.
+  - `getMessages` failing sets `error` "Couldn't load this conversation."; `getConversations` failing does the same, not `notFound`.
+  - `getConversations` succeeding without the id sets `notFound`, does not subscribe, and does not call `markAsRead`.
+  - An INSERT from the partner appends the message and calls `markAsRead`; one from the viewer appends without it; a duplicate id is ignored; an UPDATE replaces by id.
+  - `send('  hi  ')` calls `sendMessage` with `'hi'` and appends the result, resolving true; `{ error }` resolves false and leaves `messages` unchanged; blank text resolves false with no call.
+  - The effect keys on `userId`, not the user object: re-rendering with the same id does not reload or re-subscribe (recon 13). Unmount and a changed id call `removeChannel`.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useMessageThread.test.ts`
+- [ ] **Step 3: Implement.** A generation ref drops late results after the id changes; reload bumps a key; the subscription is only made after the partner is found.
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useMessageThread`.
+
+### Task 9a.7: `ConversationRow`
+
+**Files:** create `apps/web/src/components/messages/ConversationRow.tsx`, `ConversationRow.module.css`, `ConversationRow.test.tsx`.
+
+```ts
+export interface ConversationRowProps {
+  conversation: ConversationWithParticipant;
+}
+```
+
+A `li`-ready row: `UserMenuTrigger` (public name, `toneKey` the full name, no `onChat`), then a `Link` to `/messages/<id>` holding the public name, the relative time (`formatRelativeTime`, omitted when `last_message_time` is null), the last message (or "No messages yet") and, when `unread_count > 0`, a `Badge` with the count plus a `VisuallyHidden` " unread". An unread row's preview is `--text-1` and semibold; a read one `--text-2`.
+
+- [ ] **Step 1: Write the failing test** with real Mantine in the test-utils provider.
+  - The link is named with the public name ("Bikal S.", not "Bikal Shrestha") and points at `/messages/<id>`.
+  - Opening "Options for Bikal S." shows a View profile item linking to `/users/<other_user_id>`, and no Chat item.
+  - `unread_count: 3` puts "3 unread" in the link's name; `0` renders no badge.
+  - A null `last_message` shows "No messages yet".
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/messages/ConversationRow.test.tsx`
+- [ ] **Step 3: Implement**, with the CSS on semantic tokens only (the guard runs on new files).
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add ConversationRow`.
+
+### Task 9a.8: Rebuild the messages list
+
+**Files:** rewrite `apps/web/src/pages/messages/index.page.tsx` and `index.test.tsx`; create `apps/web/src/pages/messages/messages.module.css`.
+
+The page is `PageHeader` "Messages", then one of: `LoadingState` (label "Loading conversations…"); `ErrorState` with `useConversations().error` and Try again → `reload`; `EmptyState` "No messages yet" / "Start a conversation from a member's profile, a post or a listing." with `IconMessageCircle`; or a `ul` of `ConversationRow`s. The login redirect stays.
+
+- [ ] **Step 1: Rewrite the test** over a mocked `useConversations`: each of the four states renders; Try again calls `reload`; no `alert` is reachable (the row menu is `ConversationRow`'s, tested there); a signed-out visitor is sent to `/login`.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/pages/messages/index.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): rebuild the messages list`.
+
+### Task 9a.9: `MessageLog`
+
+**Files:** create `apps/web/src/components/messages/MessageLog.tsx`, `MessageLog.module.css`, `MessageLog.test.tsx`.
+
+```ts
+export interface MessageLogProps {
+  messages: ChatMessage[];
+  viewerId: string;
+  partner: ConversationWithParticipant;
+}
+```
+
+A `div role="log"` named `Messages with {public name}` over `buildThreadDays`. Each day is a `section` with an `h2` from `formatDayLabel`. Each message is a bubble with its text (`white-space: pre-wrap`), `formatRelativeTime`, and, on the viewer's own, `IconCheck` / `IconChecks` (`aria-hidden`) followed by a `VisuallyHidden` "Sent" or "Read". A received run's last message has a `decorative` `Avatar` beside it; the others keep an empty slot of the same width, so bubbles line up. The scroll rule (decision 5) lives here: an end sentinel scrolled into view with `block: 'end'` on first render with messages, and on a new last message when it is the viewer's own or the window was within 120px of the bottom before it arrived.
+
+- [ ] **Step 1: Write the failing test.**
+  - The log is `getByRole('log', { name: 'Messages with Bikal S.' })`.
+  - Two days render two `h2`s, "Today" and "Yesterday" (fake the clock with `vi.setSystemTime`).
+  - An own read message's text includes "Read"; an unread own one "Sent"; a received one neither.
+  - No element in the log has role `button` (the avatars are decorative, decision 4).
+  - `scrollIntoView` (stubbed on `Element.prototype`) runs once on first render; again after a rerender that appends an own message; not after one that appends a received message while `window.scrollY` puts the end more than 120px away.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/messages/MessageLog.test.tsx`
+- [ ] **Step 3: Implement.** Measure "near the bottom" from `document.documentElement` (`scrollHeight - scrollY - innerHeight`) in a layout effect before the new message paints, keyed on the last message's id.
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add MessageLog`.
+
+### Task 9a.10: `ThreadHeader` and `MessageComposer`
+
+**Files:** create `apps/web/src/components/messages/ThreadHeader.tsx`, `MessageComposer.tsx`, a shared `thread.module.css`, and a test for each.
+
+```ts
+export interface ThreadHeaderProps {
+  partner: ConversationWithParticipant;
+}
+
+export interface MessageComposerProps {
+  /** Public name, for the field's label. */
+  partnerName: string;
+  onSend: (text: string) => Promise<boolean>;
+}
+```
+
+`ThreadHeader` is a back link "Messages" (`IconArrowLeft`) to `/messages`, then `UserMenuTrigger` (size `small`, public name, `toneKey` the full name, no `onChat`), then an `h1` with the public name. `MessageComposer` is decision 7: it owns its draft and `sending` state, trims nothing itself (the hook does), and refocuses its field after a successful send. The composer's wrapper is the sticky element (decision 5).
+
+- [ ] **Step 1: Write the failing tests.**
+  - Header: the `h1` is the public name; the back link goes to `/messages`; the menu offers View profile linking to `/users/<id>`.
+  - Composer: the field is `getByRole('textbox', { name: 'Message Bikal S.' })`; Send is disabled while the field is blank or only spaces; typing and pressing Enter calls `onSend` with the text; while it is pending Send has `aria-disabled="true"` and is not `disabled`; resolving true clears the field and focuses it; resolving false keeps the text and shows "Couldn't send your message. Please try again."; a second Enter while pending makes no second call.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/messages/ThreadHeader.test.tsx src/components/messages/MessageComposer.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): add ThreadHeader and MessageComposer`.
+
+### Task 9a.11: Rebuild the thread and delete `Messages.module.css`
+
+**Files:** rewrite `apps/web/src/pages/messages/[id].page.tsx` and `[id].test.tsx`; delete `apps/web/src/styles/Messages.module.css`; modify `scripts/guard-css-tokens.allowlist.json` and `apps/web/eslint/raw-element-allowlist.mjs`.
+
+The page reads `router.query.id` once `router.isReady` (a hard reload must not flash not-found, the 8a lesson), then renders from `useMessageThread`: `LoadingState variant="detail"`; `ErrorState` with retry; decision 8's `EmptyState`; or `ThreadHeader`, then `MessageLog` or, with no messages, a `Text` "No messages yet. Say hello!", then `MessageComposer`. The `<title>` is `{public name} - Messages - Nepally` once the partner is known.
+
+- [ ] **Step 1: Rewrite the test** over a mocked `useMessageThread`: each state renders; not-found shows no textbox; the composer's `onSend` is the hook's `send`; no `alert` anywhere; the h1 is the public name.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- "src/pages/messages/[id].test.tsx"`
+- [ ] **Step 3: Implement.** Then delete `Messages.module.css`, take it off the CSS allowlist and `src/pages/messages/[id].page.tsx` off the raw-element allowlist (regenerate with `node apps/web/eslint/write-raw-element-allowlist.mjs` and check the diff only deletes that line).
+- [ ] **Step 4: Run the page tests, then `npm run lint:guards` and `npm run lint --workspace=apps/web`.** All pass; the raw-element list is down to 5 files and the CSS allowlist to 7.
+- [ ] **Step 5: Commit** as `feat(web): rebuild the message thread`.
+
+### Task 9a.12: E2E, baselines, keyboard, docs and the PR
+
+**Files:** `apps/web/e2e/tests/11-marketplace.spec.ts`, a new `apps/web/e2e/tests/14-messages.spec.ts`, `apps/web/e2e/helpers/supabase-mock.ts` if its conversation routes need rows; `docs/architecture/web-ui-system.md`; `docs/product/features/in-app-chat.md`.
+
+- [ ] **Step 1: Fix the pinned dead end.** `11-marketplace.spec.ts:67` asserts `/messages/<conversation id>` instead of `?to=`. Serve the `conversation_participants` / `conversations` rows `getOrCreateConversation` reads from the mock if it doesn't already.
+- [ ] **Step 2: Add `14-messages.spec.ts`.** The inbox lists a conversation by public name with its unread count; opening it shows the `h1`, the log and the composer; typing and pressing Enter shows the sent message and clears the field; the header's menu has View profile; a mistyped id shows "Conversation not found" and no textbox. At 375px, sending leaves the composer visible above the tab bar.
+- [ ] **Step 3: Run the e2e suite.** `npm run test:e2e:web`
+- [ ] **Step 4: Re-baseline `messages`** in Docker (`npm run test:visual:docker --workspace=apps/web -- --update`), review both PNGs, and restore any other page that changed without cause, as 8a did. `a11y-baseline.json` stays `{}`.
+- [ ] **Step 5: Update the docs.** Add `useStartConversation`, `ConversationRow`, `ThreadHeader`, `MessageLog` and `MessageComposer` to `web-ui-system.md`, and list the composer's Send among the busy-controls cases. In `in-app-chat.md`, record public names in chat, not-found, the failure messages, the newest-100 window, and that every "Message"/"Chat"/"Contact seller" entry point now opens the thread.
+- [ ] **Step 6: Run the full gate.** `npm run lint`, `lint:guards`, `type-check`, `test`, `test:e2e:web`, `test:visual:web` and `docs:check`.
+- [ ] **Step 7: Walk the keyboard.**
+  - Inbox: Tab reaches each row's avatar menu, then its link; Enter opens the menu, arrows move, Escape returns focus to the avatar.
+  - Thread: Tab goes back link → avatar menu → composer → Send, with no stop inside the log; Enter in the field sends and focus stays in the field; with the field blank, Send is skipped.
+  - At 375px: nothing overflows, and a long unbroken message wraps inside its bubble.
+- [ ] **Step 8: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`, then `gh pr edit <number> --add-reviewer @copilot`. Update the tracker row to `In Review (PR #NN)`.
+
+**Routed to PR 10 at planning time:** mobile's two day-label copies (`MessageThreadScreen.tsx:291`, `NotificationsScreen.tsx:48`) onto `formatDayLabel`, and mobile's chat onto public names (recon 12, 14) — `apps/mobile/` is out of this overhaul's scope.
+
+## PR 9b — Notifications, preferences, moderation (`feat/web-ui-notifications`)
+
+Branches from `master` after 9a merges. Recon items 16–27 are its scope; the breakdown is written when it starts. What the recon settles already:
+
+- **Notifications:** a `useNotificationsPage` hook owns the list, the count and the realtime INSERTs — dropping `type: 'message'` as the bell does (19) — and pages with `useInfiniteScroll` at an offset equal to the rows on screen (20). "Load more" goes. Rows are `NotificationItem`; every mutation checks its result and says so with `notify.error` (21, 22). Day labels come from `formatDayLabel` (9a.2). `useNotificationsFeed` reloads when polling turns back on (23). `PageHeader` "Notifications", with the unread count as its description rather than inside the `h1` (27).
+- **Preferences:** a failed `getUserSettings` shows `ErrorState` with retry and no Save (16); every switch gets a `label`, the two radio groups become `Radio.Group`s with a `label` (17); Save follows the busy-controls rule and reports with `notify.success` (18).
+- **Moderation:** a `useModerationQueue` hook with a real error state (24); `PendingPostCard` and `ReportCard` extracted; Remove and Ban confirm through `useConfirm` with `danger: true` (26); busy buttons stay focusable, and focus moves to the next card when an acted-on card leaves (25). Which report actions sit behind an `ActionMenu` is settled in its breakdown.
 
 ## PR 10 — Static pages + cleanup (`feat/web-ui-cleanup`)
 
