@@ -1,5 +1,6 @@
 /**
- * The marketplace's keyboard and layout guarantees, from PR 8a's keyboard walk.
+ * The marketplace's keyboard and layout guarantees, from the keyboard walks of
+ * PR 8a (browse and detail) and PR 8b (my listings and the promote wizard).
  * Kept rather than run once: the walk caught the save button dropping focus to
  * <body> while its write was in flight, and the 375px checks are the regression
  * guard for the header overflow recon 9 found.
@@ -7,7 +8,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { injectAuthSession } from '../fixtures/auth';
 import { mockSupabaseLoggedIn } from '../helpers/supabase-mock';
-import { MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE } from '../fixtures/mock-data';
+import {
+  MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE,
+  MOCK_MARKETPLACE_LISTING_OWN_ACTIVE,
+} from '../fixtures/mock-data';
 
 async function activeDescription(page: Page) {
   return page.evaluate(() => {
@@ -124,5 +128,54 @@ test.describe('Marketplace keyboard and layout', () => {
       viewport: window.innerWidth,
     }));
     expect(docWidth).toBeLessThanOrEqual(viewport);
+  });
+
+  test('my listings: a row menu opens from the keyboard and Escape returns to it', async ({ page }) => {
+    await page.goto('/marketplace/my-listings');
+    const trigger = page.getByRole('button', { name: `Actions for ${MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title}` });
+    await expect(trigger).toBeVisible({ timeout: 10_000 });
+
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.keyboard.press('ArrowDown');
+    expect((await activeDescription(page))?.role).toBe('menuitem');
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
+  test('my listings at 375px does not overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto('/marketplace/my-listings');
+    await expect(page.getByRole('link', { name: MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    const { docWidth, viewport } = await page.evaluate(() => ({
+      docWidth: document.documentElement.scrollWidth,
+      viewport: window.innerWidth,
+    }));
+    expect(docWidth).toBeLessThanOrEqual(viewport);
+  });
+
+  test('promote wizard at 375px does not overflow, on any step', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto(`/marketplace/listing/promote/${MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.id}`);
+    await expect(page.getByRole('radiogroup', { name: 'Promotion type' })).toBeVisible({ timeout: 10_000 });
+
+    const overflow = () =>
+      page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(await overflow()).toBeLessThanOrEqual(0);
+
+    await page.getByRole('radio', { name: 'Sticky Business' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByRole('heading', { level: 2, name: 'Set duration' })).toBeVisible();
+    expect(await overflow()).toBeLessThanOrEqual(0);
+
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByRole('heading', { level: 2, name: 'Review and pay' })).toBeVisible();
+    expect(await overflow()).toBeLessThanOrEqual(0);
   });
 });
