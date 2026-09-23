@@ -1,0 +1,89 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--card-padding);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  text-align: start;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--border-solid);
+}
+
+/* Mantine sets data-checked on the card itself; it is the component's own
+   styling hook, not something the tests query. */
+.card[data-checked] {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  color: var(--accent-ink);
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-1);
+}
+
+.price {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--accent-ink);
+}
+
+.description {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+}
+
+.benefits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+}
+
+.benefitIcon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--success);
+}
