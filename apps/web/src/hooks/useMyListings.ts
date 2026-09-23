@@ -149,8 +149,11 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
     loadingMoreRef.current = true;
     setLoadingMore(true);
     const generation = generationRef.current;
-    const request = getListingsByOwner(supabase, userId, MY_LISTINGS_PAGE_SIZE, offset).then((result) => {
-      pageRequestRef.current = null;
+    const request: Promise<void> = getListingsByOwner(supabase, userId, MY_LISTINGS_PAGE_SIZE, offset).then((result) => {
+      // Only this request's own slot: a page from before a reload can land
+      // after a newer one started, and clearing that would let a delete stop
+      // waiting for the page it must not overlap.
+      if (pageRequestRef.current === request) pageRequestRef.current = null;
       if (generation !== generationRef.current) return;
       loadingMoreRef.current = false;
       setLoadingMore(false);

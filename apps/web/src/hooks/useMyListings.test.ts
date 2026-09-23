@@ -229,6 +229,41 @@ describe('useMyListings', () => {
     expect(result.current.listings.map((l) => l.id)).toEqual(['b', 'c']);
   });
 
+  it('still waits for the current page when a page from before a reload lands late', async () => {
+    let finishStale: (value: unknown) => void = () => {};
+    let finishCurrent: (value: unknown) => void = () => {};
+    mockGetByOwner
+      .mockResolvedValueOnce(page(['a', 'b'], true))
+      .mockReturnValueOnce(new Promise((resolve) => (finishStale = resolve)))
+      .mockResolvedValueOnce(page(['a', 'b'], true))
+      .mockReturnValueOnce(new Promise((resolve) => (finishCurrent = resolve)));
+    const { result } = renderHook(() => useMyListings('user-1', fixedNow));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.loadMore());
+    act(() => result.current.reload());
+    await waitFor(() => expect(result.current.hasMore).toBe(true));
+    act(() => result.current.loadMore());
+
+    // The page from before the reload lands; the current one is still in flight.
+    await act(async () => {
+      finishStale(page(['stale']));
+    });
+    let deleting: Promise<boolean> = Promise.resolve(true);
+    act(() => {
+      deleting = result.current.runAction('a', 'delete');
+    });
+    await act(async () => {});
+    expect(mockDelete).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishCurrent(page(['c']));
+      await deleting;
+    });
+    expect(mockDelete).toHaveBeenCalledWith({}, 'a');
+    expect(result.current.listings.map((l) => l.id)).toEqual(['b', 'c']);
+  });
+
   it('leaves the row untouched when an action fails', async () => {
     mockGetByOwner.mockResolvedValue(page(['a']));
     mockDeactivate.mockResolvedValue({ error: new Error('Listing not found or not allowed') });
