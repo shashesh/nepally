@@ -196,7 +196,12 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
       try {
         const generation = generationRef.current;
         // A page requested before this delete counted the row at its old offset.
-        if (isDelete && pageRequestRef.current) await pageRequestRef.current;
+        if (isDelete && pageRequestRef.current) {
+          await pageRequestRef.current;
+          // The list was reloaded or the member changed while this waited:
+          // the row it confirmed against is gone, so send nothing.
+          if (generation !== generationRef.current) return false;
+        }
         const result = await ACTIONS[action](supabase, id);
         // The list was reloaded or the member changed; there is no row to patch.
         if (generation !== generationRef.current) return !result.error;

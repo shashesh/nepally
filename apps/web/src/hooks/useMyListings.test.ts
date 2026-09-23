@@ -264,6 +264,33 @@ describe('useMyListings', () => {
     expect(result.current.listings.map((l) => l.id)).toEqual(['b', 'c']);
   });
 
+  it('does not send a delete whose list was reloaded while it waited for a page', async () => {
+    let finishPage: (value: unknown) => void = () => {};
+    mockGetByOwner
+      .mockResolvedValueOnce(page(['a', 'b'], true))
+      .mockReturnValueOnce(new Promise((resolve) => (finishPage = resolve)))
+      .mockResolvedValueOnce(page(['a', 'b']));
+    const { result } = renderHook(() => useMyListings('user-1', fixedNow));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.loadMore());
+    let deleting: Promise<boolean> = Promise.resolve(true);
+    act(() => {
+      deleting = result.current.runAction('a', 'delete');
+    });
+    act(() => result.current.reload());
+
+    let ok = true;
+    await act(async () => {
+      finishPage(page(['c']));
+      ok = await deleting;
+    });
+
+    expect(ok).toBe(false);
+    expect(mockDelete).not.toHaveBeenCalled();
+    await waitFor(() => expect(result.current.listings.map((l) => l.id)).toEqual(['a', 'b']));
+  });
+
   it('leaves the row untouched when an action fails', async () => {
     mockGetByOwner.mockResolvedValue(page(['a']));
     mockDeactivate.mockResolvedValue({ error: new Error('Listing not found or not allowed') });
