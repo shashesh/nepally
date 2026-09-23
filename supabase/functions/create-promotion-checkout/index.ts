@@ -105,7 +105,7 @@ serve(async (req) => {
     // 3. Verify user owns the listing
     const { data: listing, error: listingError } = await supabaseAdmin
       .from('marketplace_listings')
-      .select('id, owner_id, title, views_count')
+      .select('id, owner_id, title, views_count, status')
       .eq('id', listing_id)
       .single();
 
@@ -120,6 +120,16 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'You can only promote your own listings' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 403,
+      });
+    }
+
+    // An inactive or removed listing is hidden from every feed, so a
+    // promotion on it would be paid for and reach no one. Checked after
+    // ownership, in the same order as the shared getPromotionBlocker.
+    if (listing.status !== 'active') {
+      return new Response(JSON.stringify({ error: 'Only active listings can be promoted' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 409,
       });
     }
 
