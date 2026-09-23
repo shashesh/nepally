@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NumberInput } from '@mantine/core';
 import {
   formatCurrency,
@@ -24,14 +24,35 @@ export interface PromotionDurationStepProps {
  * its own controls step it by pointer, Arrow Up/Down by keyboard. Mantine
  * renders a plain textbox, so the spin-button role and value range are added
  * here for screen readers.
+ *
+ * The field keeps its own draft. Passing every change straight up would clamp
+ * an emptied field back to 1 at once, so a member who deletes "7" to type "3"
+ * would get "13". Only whole numbers reach `onDaysChange`; a field left empty
+ * gets the last duration back on blur.
  */
 export function PromotionDurationStep({ tier, days, onDaysChange, totalCents, endDate }: PromotionDurationStepProps) {
+  const [draft, setDraft] = useState<number | string>(days);
+  // Follow a duration changed from outside the field (react.dev: adjusting state when a prop changes).
+  const [shownDays, setShownDays] = useState(days);
+  if (days !== shownDays) {
+    setShownDays(days);
+    setDraft(days);
+  }
+
+  const handleChange = (value: number | string) => {
+    setDraft(value);
+    if (typeof value === 'number') onDaysChange(value);
+  };
+
   return (
     <div className={styles.step}>
       <NumberInput
         label="Duration in days"
-        value={days}
-        onChange={onDaysChange}
+        value={draft}
+        onChange={handleChange}
+        onBlur={() => {
+          if (typeof draft !== 'number') setDraft(days);
+        }}
         min={MIN_PROMOTION_DAYS}
         max={MAX_PROMOTION_DAYS}
         clampBehavior="strict"

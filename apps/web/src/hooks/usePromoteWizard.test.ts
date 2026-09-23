@@ -143,6 +143,21 @@ describe('usePromoteWizard', () => {
     expect(result.current.paying).toBe(false);
   });
 
+  it('says something went wrong when checkout returns no URL', async () => {
+    mockCheckout.mockResolvedValue({ data: { promotionId: 'p1' } });
+    const redirect = vi.fn();
+    const { result } = await loaded(OWNER, redirect);
+    act(() => result.current.setTier(FEATURED));
+
+    await act(async () => {
+      await result.current.pay();
+    });
+
+    expect(result.current.payError).toBe('Something went wrong. Please try again.');
+    expect(result.current.paying).toBe(false);
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
   it('says something went wrong when checkout throws', async () => {
     mockCheckout.mockRejectedValue(new Error('boom'));
     const { result } = await loaded();

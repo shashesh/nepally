@@ -32,6 +32,42 @@ describe('PromotionDurationStep', () => {
     expect(onDaysChange).toHaveBeenLastCalledWith(12);
   });
 
+  it('lets the member clear the field and type a new number', () => {
+    function Clamped() {
+      const [days, setDays] = React.useState(7);
+      return (
+        <PromotionDurationStep
+          tier={FEATURED}
+          days={days}
+          onDaysChange={(value) => setDays(Math.max(1, Number(value) || 1))}
+          totalCents={days * FEATURED.daily_cost_cents}
+          endDate={END}
+        />
+      );
+    }
+    render(<Clamped />);
+    const input = screen.getByRole('spinbutton', { name: 'Duration in days' }) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: '' } });
+    expect(input.value).toBe('');
+    fireEvent.change(input, { target: { value: '3' } });
+
+    expect(input.value).toBe('3');
+    expect(input.getAttribute('aria-valuenow')).toBe('3');
+  });
+
+  it('puts the last duration back when the field is left empty', () => {
+    const onDaysChange = vi.fn();
+    render(<PromotionDurationStep tier={FEATURED} days={7} onDaysChange={onDaysChange} totalCents={1393} endDate={END} />);
+    const input = screen.getByRole('spinbutton', { name: 'Duration in days' }) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+
+    expect(input.value).toBe('7');
+    expect(onDaysChange).not.toHaveBeenCalled();
+  });
+
   it('steps the duration with Arrow Up', () => {
     const onDaysChange = vi.fn();
     render(<PromotionDurationStep tier={FEATURED} days={7} onDaysChange={onDaysChange} totalCents={1393} endDate={END} />);
