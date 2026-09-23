@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCount, formatCurrency, addDays } from './date';
+import { formatCount, formatCurrency, addDays, formatDayLabel } from './date';
 
 describe('formatCount', () => {
   it('returns the number as-is below 1000', () => {
@@ -78,5 +78,30 @@ describe('addDays', () => {
     const result = addDays(base, 5);
     expect(result.getUTCMonth()).toBe(4); // May (0-indexed)
     expect(result.getUTCDate()).toBe(3);
+  });
+});
+
+describe('formatDayLabel', () => {
+  const now = new Date(2026, 8, 23, 15, 30);
+
+  it('says Today for any time on the same calendar day', () => {
+    expect(formatDayLabel(new Date(2026, 8, 23, 0, 5), now)).toBe('Today');
+    expect(formatDayLabel(new Date(2026, 8, 23, 23, 55), now)).toBe('Today');
+  });
+
+  it('says Yesterday for the previous calendar day', () => {
+    expect(formatDayLabel(new Date(2026, 8, 22, 23, 59), now)).toBe('Yesterday');
+  });
+
+  it('says Yesterday across a month boundary', () => {
+    expect(formatDayLabel(new Date(2026, 1, 28, 12), new Date(2026, 2, 1, 9))).toBe('Yesterday');
+  });
+
+  it('gives month and day for earlier dates this year', () => {
+    expect(formatDayLabel(new Date(2026, 2, 5, 12), now)).toBe('Mar 5');
+  });
+
+  it('adds the year for dates in another year', () => {
+    expect(formatDayLabel(new Date(2025, 2, 5, 12), now)).toBe('Mar 5, 2025');
   });
 });

@@ -52,3 +52,24 @@ export function addDays(date: Date, days: number): Date {
   result.setDate(result.getDate() + days);
   return result;
 }
+
+function startOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+/**
+ * A heading for one calendar day in local time: "Today", "Yesterday",
+ * "Mar 5" earlier this year, "Mar 5, 2025" in another year.
+ */
+export function formatDayLabel(date: Date, now: Date = new Date()): string {
+  const today = startOfDay(now);
+  const day = startOfDay(date);
+  if (day === today) return 'Today';
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime();
+  if (day === yesterday) return 'Yesterday';
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+  });
+}
