@@ -77,6 +77,19 @@ describe('ListingSummaryRow', () => {
     expect(screen.getAllByRole('link')).toHaveLength(1);
   });
 
+  it('puts a menu beside the row, outside its link', () => {
+    render(<ListingSummaryRow listing={baseListing} menu={<button type="button">Row menu</button>} />);
+
+    const menu = screen.getByRole('button', { name: 'Row menu' });
+    expect(screen.getByRole('link', { name: 'Toyota Camry 2015' }).contains(menu)).toBe(false);
+  });
+
+  it('renders no menu when none is passed', () => {
+    render(<ListingSummaryRow listing={baseListing} owner={{ now }} />);
+
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
   it('shows a numeric price as dollars', () => {
     render(<ListingSummaryRow listing={{ ...baseListing, price: '80' }} />);
 
