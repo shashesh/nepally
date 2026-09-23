@@ -6,7 +6,6 @@
 export const RAW_ELEMENT_ALLOWLIST = [
   "src/pages/login.page.tsx",
   "src/pages/marketplace/listing/promote/[id].page.tsx",
-  "src/pages/marketplace/my-listings.page.tsx",
   "src/pages/messages/[id].page.tsx",
   "src/pages/onboarding/zip.page.tsx",
   "src/pages/profile/notifications.page.tsx",

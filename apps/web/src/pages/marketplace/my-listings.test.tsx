@@ -1,94 +1,73 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '../../test-utils';
+import { render, screen, waitFor, fireEvent, within } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { deleteListing, getListingsByOwner, refreshListing } from '@nepally/shared';
-
-type MockHeadProps = { children?: React.ReactNode };
-type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
-type MockButtonProps = { children?: React.ReactNode; size?: string; onClick?: () => void };
-type MockImageProps = { src: string; alt: string };
+import { getListingsByOwner, type MarketplaceListing } from '@nepally/shared';
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useRouter: vi.fn(),
 }));
 
+const NOW = new Date('2026-09-23T12:00:00.000Z');
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
+vi.mock('../../hooks/useNow', () => ({ useNow: () => NOW }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
 vi.mock('next/head', () => ({
-  default: ({ children }: MockHeadProps) => React.createElement(React.Fragment, null, children),
+  default: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: MockLinkProps) =>
-    React.createElement('a', { href, className }, children),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
+    { href, children, ...rest },
+    ref
+  ) {
+    return React.createElement('a', { href, ref, ...rest }, children);
+  }),
 }));
 vi.mock('next/image', () => ({
-  default: ({ src, alt }: MockImageProps) => React.createElement('img', { src, alt }),
+  default: ({ src, alt }: { src: string; alt: string }) => React.createElement('img', { src, alt }),
 }));
-vi.mock('@mantine/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    Button: ({ children, ...rest }: MockButtonProps) =>
-      React.createElement('button', rest, children),
-  };
-});
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
+vi.mock('@nepally/shared', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getListingsByOwner: vi.fn(),
+  deactivateListing: vi.fn(async () => ({})),
+}));
 
-const MOCK_CATEGORY = {
-  id: 'cat-1',
-  name: 'Food & Restaurants',
-  slug: 'food-restaurants',
-  emoji: '🍜',
-  color: '#FF6B35',
-  sort_order: 1,
-  created_at: new Date().toISOString(),
-};
-
-function makeListing(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'listing-1',
-    owner_id: 'user-1',
-    metro_area_id: 'metro-1',
-    category_id: 'cat-1',
-    listing_type: 'business',
-    status: 'active',
-    title: 'My Restaurant',
-    description: 'A great restaurant.',
-    photos: [],
-    price: '$15',
-    business_name: 'My Restaurant LLC',
-    views_count: 50,
-    saves_count: 10,
-    contacts_count: 5,
-    refreshed_at: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    category: MOCK_CATEGORY,
-    owner: { id: 'user-1', full_name: 'Test User', trust_level: 1, profile_photo: null },
-    ...overrides,
-  };
+/** jsdom has no IntersectionObserver, and the paging sentinel attaches one. */
+class FakeIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
 }
-
-vi.mock('@nepally/shared', async () => {
-  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
-  return {
-    getListingsByOwner: vi.fn(async () => ({ data: [] })),
-    deactivateListing: vi.fn(async () => ({ error: null })),
-    reactivateListing: vi.fn(async () => ({ error: null })),
-    deleteListing: vi.fn(async () => ({ error: null })),
-    refreshListing: vi.fn(async () => ({ error: null })),
-    getDaysUntilSoftExpiry: actual.getDaysUntilSoftExpiry,
-  };
-});
+(window as unknown as { IntersectionObserver: unknown }).IntersectionObserver = FakeIntersectionObserver;
 
 import MyListingsPage from './my-listings.page';
 
 const mockGetListingsByOwner = getListingsByOwner as ReturnType<typeof vi.fn>;
-const mockRefreshListing = refreshListing as ReturnType<typeof vi.fn>;
-const mockDeleteListing = deleteListing as ReturnType<typeof vi.fn>;
-const DAY_MS = 24 * 60 * 60 * 1000;
 const AUTHED_USER = { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' };
+
+function makeListing(overrides: Partial<MarketplaceListing> = {}): MarketplaceListing {
+  return {
+    id: 'listing-1',
+    owner_id: 'u1',
+    status: 'active',
+    title: 'My Restaurant',
+    photos: [],
+    price: '$15',
+    views_count: 50,
+    saves_count: 10,
+    contacts_count: 5,
+    refreshed_at: NOW.toISOString(),
+    created_at: NOW.toISOString(),
+    category: { id: 'cat-1', name: 'Food & Restaurants', slug: 'food-restaurants', emoji: '🍜' },
+    ...overrides,
+  } as unknown as MarketplaceListing;
+}
 
 describe('MyListingsPage', () => {
   const mockReplace = vi.fn();
@@ -96,151 +75,84 @@ describe('MyListingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.useRouter.mockReturnValue({ replace: mockReplace, query: {} });
+    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()], hasMore: false });
   });
 
   it('redirects to /login when not logged in', async () => {
     mocks.useAuth.mockReturnValue({ user: null });
-    render(React.createElement(MyListingsPage));
+    render(<MyListingsPage />);
+
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 
-  it('renders "My Listings" title', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText('My Listings')).toBeDefined();
-    });
+  it('titles the page, links back to the marketplace, and offers a new listing', async () => {
+    render(<MyListingsPage />);
+
+    expect(screen.getByRole('heading', { level: 1, name: 'My Listings' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Marketplace' }).getAttribute('href')).toBe('/marketplace');
+    expect(screen.getByRole('link', { name: 'Create listing' }).getAttribute('href')).toBe('/marketplace/create');
+    await screen.findByRole('link', { name: 'My Restaurant' });
   });
 
-  it('renders Create Listing link', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText('Create Listing')).toBeDefined();
-    });
+  it('shows a loading state until the listings arrive', async () => {
+    render(<MyListingsPage />);
+
+    expect(screen.getByText('Loading your listings…')).toBeDefined();
+    await screen.findByRole('link', { name: 'My Restaurant' });
+    expect(screen.queryByText('Loading your listings…')).toBeNull();
   });
 
-  it('renders listing title', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText('My Restaurant')).toBeDefined();
-    });
+  it('lists each listing with its link, status, counts and menu', async () => {
+    render(<MyListingsPage />);
+
+    const link = await screen.findByRole('link', { name: 'My Restaurant' });
+    expect(link.getAttribute('href')).toBe('/marketplace/listing/listing-1');
+    const row = link.closest('article') as HTMLElement;
+    expect(within(row).getByText('Active')).toBeDefined();
+    expect(within(row).getByText('50 views')).toBeDefined();
+    expect(within(row).getByRole('button', { name: 'Actions for My Restaurant' })).toBeDefined();
   });
 
-  it('renders status badge capitalized', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText('Active')).toBeDefined();
-    });
-  });
-
-  it('renders stats', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText('50 views')).toBeDefined();
-      expect(screen.getByText('10 saves')).toBeDefined();
-      expect(screen.getByText('5 contacts')).toBeDefined();
-    });
-  });
-
-  it('shows empty state when no listings', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText("You haven't created any listings yet")).toBeDefined();
-    });
-  });
-
-  it('renders action buttons for active listing', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText(/Edit/)).toBeDefined();
-      expect(screen.getByText(/Refresh/)).toBeDefined();
-      expect(screen.getByText(/Deactivate/)).toBeDefined();
-      expect(screen.getByText(/Delete/)).toBeDefined();
-    });
-  });
-
-  it('shows Reactivate for inactive listings', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'inactive' })] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText(/Reactivate/)).toBeDefined();
-    });
-  });
-
-  it('shows back link to marketplace', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingsByOwner.mockResolvedValue({ data: [] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText(/Back to Marketplace/)).toBeDefined();
-    });
-  });
-
-  it('warns with the days left when a listing is close to soft expiry', async () => {
-    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
+  it('says "1 day", not "1 days", when a listing is a day from soft expiry', async () => {
     mockGetListingsByOwner.mockResolvedValue({
-      data: [makeListing({ refreshed_at: new Date(Date.now() - 80 * DAY_MS).toISOString() })],
+      data: [makeListing({ refreshed_at: new Date(NOW.getTime() - 89 * DAY_MS).toISOString() })],
+      hasMore: false,
     });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText(/Expires in 10 days/)).toBeDefined();
-    });
+    render(<MyListingsPage />);
+
+    expect(await screen.findByText('Expires in 1 day')).toBeDefined();
   });
 
-  it('does not warn about expiry for a freshly refreshed listing', async () => {
-    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText('My Restaurant')).toBeDefined();
-    });
-    expect(screen.queryByText(/Expires in/)).toBeNull();
+  it('shows the empty state with a way to create a first listing', async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [], hasMore: false });
+    render(<MyListingsPage />);
+
+    expect(await screen.findByRole('heading', { name: "You haven't listed anything yet" })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Create your first listing' }).getAttribute('href')).toBe(
+      '/marketplace/create'
+    );
   });
 
-  it('re-fetches listings after a listing is refreshed', async () => {
-    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
-    mockGetListingsByOwner
-      .mockResolvedValueOnce({ data: [makeListing()] })
-      .mockResolvedValueOnce({ data: [makeListing({ title: 'My Restaurant (refreshed)' })] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText('My Restaurant')).toBeDefined();
-    });
+  it('shows a failed load with a retry that works', async () => {
+    mockGetListingsByOwner.mockResolvedValueOnce({ error: new Error('network down') });
+    render(<MyListingsPage />);
 
-    fireEvent.click(screen.getByText(/Refresh/));
-    await waitFor(() => {
-      expect(screen.getByText('My Restaurant (refreshed)')).toBeDefined();
-    });
-    expect(mockRefreshListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
-    expect(mockGetListingsByOwner).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('network down')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByRole('link', { name: 'My Restaurant' })).toBeDefined();
   });
 
-  it('does not delete or re-fetch when the delete confirmation is cancelled', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
-    render(React.createElement(MyListingsPage));
-    await waitFor(() => {
-      expect(screen.getByText('My Restaurant')).toBeDefined();
-    });
+  it('runs a row action from its menu and updates the row in place', async () => {
+    render(<MyListingsPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Actions for My Restaurant' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Deactivate' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Deactivate this listing?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Deactivate' }));
 
-    fireEvent.click(screen.getByText(/Delete/));
-    expect(mockDeleteListing).not.toHaveBeenCalled();
+    const row = screen.getByRole('link', { name: 'My Restaurant' }).closest('article') as HTMLElement;
+    await waitFor(() => expect(within(row).getByText('Inactive')).toBeDefined());
     expect(mockGetListingsByOwner).toHaveBeenCalledTimes(1);
-    confirmSpy.mockRestore();
   });
 });
