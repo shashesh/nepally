@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import Image from 'next/image';
 import { VisuallyHidden } from '@mantine/core';
 import {
@@ -20,6 +20,8 @@ export interface ListingSummaryRowProps {
    * every row agrees on what's stale, and tests can fix it.
    */
   owner?: { now: Date };
+  /** Beside the row, above the link's overlay — passed straight to SummaryRow's `menu`. */
+  menu?: ReactNode;
 }
 
 /**
@@ -30,7 +32,7 @@ export interface ListingSummaryRowProps {
  * sits in `badge` (beside the link, outside it) — the public view passes no
  * badge at all.
  */
-export function ListingSummaryRow({ listing, owner }: ListingSummaryRowProps) {
+export function ListingSummaryRow({ listing, owner, menu }: ListingSummaryRowProps) {
   const price = formatListingPrice(listing.price);
   const categoryName = listing.category?.name ?? 'Marketplace';
   const photo = listing.photos?.[0];
@@ -40,6 +42,7 @@ export function ListingSummaryRow({ listing, owner }: ListingSummaryRowProps) {
     <SummaryRow
       href={`/marketplace/listing/${listing.id}`}
       title={listing.title}
+      menu={menu}
       leading={
         <div className={styles.thumb}>
           {photo ? (

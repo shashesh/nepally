@@ -4,7 +4,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getPromotionById, type ListingPromotion } from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
-type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -17,8 +16,12 @@ vi.mock('next/head', () => ({
   default: ({ children }: MockHeadProps) => React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: MockLinkProps) =>
-    React.createElement('a', { href, className }, children),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
+    { href, children, ...rest },
+    ref
+  ) {
+    return React.createElement('a', { href, ref, ...rest }, children);
+  }),
 }));
 vi.mock('../../../../lib/supabase', () => ({ supabase: {} }));
 
@@ -173,6 +176,14 @@ describe('PromoteSuccessPage', () => {
 
     expect(screen.queryByRole('link', { name: /view listing/i })).toBeNull();
     expect(screen.getByRole('heading', { name: /processing payment/i })).toBeDefined();
+  });
+
+  it('shows a labelled loader while the payment is processing', async () => {
+    render(React.createElement(PromoteSuccessPage));
+
+    expect(screen.getByRole('heading', { name: /processing payment/i })).toBeDefined();
+    expect(screen.getByLabelText('Processing payment')).toBeDefined();
+    expect(screen.queryByText('Processing...')).toBeNull();
   });
 
   it('redirects to login when signed out', async () => {

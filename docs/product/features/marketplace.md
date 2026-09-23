@@ -97,6 +97,10 @@ Both browse routes are thin wrappers over one `MarketplaceBrowse` component, so 
 
 Category colour comes from the `--category-<slug>` design tokens, for the five categories that exist; the web CSS carried themed blocks for all twelve until the UI overhaul.
 
+**My Listings (web).** Each listing's actions sit in one menu: Edit, Promote and Refresh (active listings), Deactivate or Reactivate, and Delete. Deactivate and Delete ask first. An action updates only its own row and says whether it worked; a failure leaves the row as it was. The list pages 20 at a time as the member scrolls, so an owner with more than 50 listings sees them all.
+
+**Promoting a listing (web).** `/marketplace/listing/promote/<id>` runs three steps — type, duration, review and pay — then hands off to Stripe Checkout. Before the first step it refuses, with the reason, a listing the member does not own, an inactive listing, and a member below Trust Level 1. The `create-promotion-checkout` edge function is the authority on all three: it refuses another member's listing (403), a listing that is not active (409) and a member below Level 1 (403). The wizard checks first so a member is not walked through three steps to be refused, and checks the listing again when the member presses Pay, so one deactivated or deleted in another tab meanwhile gets the refusal screen rather than a bare checkout error. Pay stays busy once checkout has a URL, so a second click cannot open a second checkout session. `/marketplace/listing/promote/success` then polls the promotion until it goes active.
+
 ### Profile Integration
 
 Both mobile and web profile pages include a "Listings" tab showing the user's marketplace listings alongside their posts and saved posts.
@@ -119,7 +123,7 @@ All business logic in `packages/shared/`:
 | `getCategories` | Fetch all categories sorted by sort_order |
 | `getListingsByMetro` | Active listings for metro area (with filters) |
 | `getListingById` | Single listing with owner/category joins |
-| `getListingsByOwner` | Owner's listings for My Listings / profile |
+| `getListingsByOwner` | Owner's listings for My Listings / profile. Returns `hasMore` for paging |
 | `createListing` | Create new listing |
 | `updateListing` | Update listing fields |
 | `deactivateListing` | Set status = inactive |

@@ -85,21 +85,55 @@ test.describe('Marketplace full feature flow', () => {
   });
 
   test('my listings supports deactivate, reactivate, and delete actions', async ({ page }) => {
+    const title = MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title;
     await page.goto('/marketplace/my-listings');
 
-    await expect(page.getByRole('heading', { name: /my listings/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title)).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /my listings/i })).toBeVisible({ timeout: 10_000 });
+    const row = page.getByRole('article').filter({ has: page.getByRole('link', { name: title }) });
+    await expect(row).toBeVisible();
+    const menu = page.getByRole('button', { name: `Actions for ${title}` });
 
-    page.once('dialog', (dialog) => dialog.accept());
-    await page.getByRole('button', { name: /deactivate/i }).click();
-    await expect(page.getByRole('button', { name: /reactivate/i })).toBeVisible();
+    // Each row's actions live in one menu; Deactivate and Delete ask in a dialog.
+    await menu.click();
+    await page.getByRole('menuitem', { name: 'Deactivate' }).click();
+    const deactivate = page.getByRole('dialog', { name: 'Deactivate this listing?' });
+    await deactivate.getByRole('button', { name: 'Deactivate' }).click();
+    await expect(row.getByText('Status: Inactive')).toBeVisible();
 
-    await page.getByRole('button', { name: /reactivate/i }).click();
-    await expect(page.getByRole('button', { name: /deactivate/i })).toBeVisible();
+    await menu.click();
+    await page.getByRole('menuitem', { name: 'Reactivate' }).click();
+    await expect(row.getByText('Status: Active')).toBeVisible();
 
-    page.once('dialog', (dialog) => dialog.accept());
-    await page.getByRole('button', { name: /delete/i }).click();
-    await expect(page.getByText(MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.title)).toHaveCount(0);
+    await menu.click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    const remove = page.getByRole('dialog', { name: 'Delete this listing?' });
+    await expect(remove.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await remove.getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByRole('link', { name: title })).toHaveCount(0);
+    // The deleted row's menu trigger is gone; focus must not be.
+    await expect(page.locator('body')).not.toBeFocused();
+  });
+
+  test('promote wizard reaches review by keyboard', async ({ page }) => {
+    await page.goto(`/marketplace/listing/promote/${MOCK_MARKETPLACE_LISTING_OWN_ACTIVE.id}`);
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Promote listing' })).toBeVisible({ timeout: 10_000 });
+    const featured = page.getByRole('radio', { name: 'Featured Listing' });
+    await featured.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByRole('radio', { name: 'Sponsored Feed' })).toBeChecked();
+
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByRole('heading', { level: 2, name: 'Set duration' })).toBeFocused();
+    const days = page.getByRole('spinbutton', { name: 'Duration in days' });
+    await days.focus();
+    await page.keyboard.press('ArrowUp');
+    await expect(days).toHaveValue('8');
+
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByRole('heading', { level: 2, name: 'Review and pay' })).toBeFocused();
+    // Stop here: Pay leaves for Stripe.
+    await expect(page.getByRole('button', { name: 'Pay $23.92' })).toBeVisible();
   });
 
   test('profile Listings tab shows user marketplace listings', async ({ page }) => {

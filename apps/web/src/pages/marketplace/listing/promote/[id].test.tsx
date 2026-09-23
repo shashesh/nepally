@@ -1,16 +1,7 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '../../../../test-utils';
+import { render, screen, waitFor, fireEvent, within } from '../../../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getListingById, createPromotionCheckout } from '@nepally/shared';
-
-type MockHeadProps = { children?: React.ReactNode };
-type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
-type MockButtonProps = {
-  children?: React.ReactNode;
-  variant?: string;
-  onClick?: () => void;
-  size?: string;
-};
+import { getListingById, TrustLevel, type MarketplaceListing } from '@nepally/shared';
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -20,189 +11,155 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
 vi.mock('next/head', () => ({
-  default: ({ children }: MockHeadProps) => React.createElement(React.Fragment, null, children),
+  default: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: MockLinkProps) =>
-    React.createElement('a', { href, className }, children),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
+    { href, children, ...rest },
+    ref
+  ) {
+    return React.createElement('a', { href, ref, ...rest }, children);
+  }),
 }));
-vi.mock('@mantine/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    Button: ({ children, onClick, variant, size }: MockButtonProps) =>
-      React.createElement('button', { onClick }, children),
-  };
-});
 vi.mock('../../../../lib/supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn().mockResolvedValue({
-        data: { session: { access_token: 'test-token' } },
-      }),
-    },
-  },
+  supabase: { auth: { getSession: vi.fn(async () => ({ data: { session: { access_token: 'token' } } })) } },
 }));
-
-const MOCK_LISTING = {
-  id: 'listing-1',
-  owner_id: 'user-1',
-  metro_area_id: 'metro-1',
-  category_id: 'cat-1',
-  listing_type: 'business' as const,
-  status: 'active' as const,
-  title: 'My Restaurant',
-  description: 'A great restaurant.',
-  photos: [],
-  price: '$15',
-  business_name: 'My Restaurant LLC',
-  address: null,
-  phone: null,
-  email: null,
-  website_url: null,
-  item_condition: null,
-  business_hours: null,
-  is_global: false,
-  is_featured: false,
-  trending_score: 10,
-  views_count: 5,
-  saves_count: 2,
-  contacts_count: 1,
-  refreshed_at: new Date().toISOString(),
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
-
-vi.mock('@nepally/shared', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    getListingById: vi.fn(async () => ({ data: MOCK_LISTING })),
-    createPromotionCheckout: vi.fn(async () => ({ data: { checkoutUrl: 'https://checkout.stripe.com/test' } })),
-    getPromotionById: vi.fn(async () => ({ data: null })),
-  };
-});
+vi.mock('@nepally/shared', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getListingById: vi.fn(),
+  createPromotionCheckout: vi.fn(),
+}));
 
 import PromoteListingPage from './[id].page';
 
-const mockGetListingById = getListingById as ReturnType<typeof vi.fn>;
+const mockGetListing = getListingById as ReturnType<typeof vi.fn>;
+const OWNER = { id: 'user-1', trust_level: TrustLevel.VERIFIED };
+const LISTING = {
+  id: 'listing-1',
+  owner_id: 'user-1',
+  status: 'active',
+  title: 'My Restaurant',
+  price: '$15',
+} as MarketplaceListing;
+
+async function openWizard() {
+  render(<PromoteListingPage />);
+  return screen.findByRole('radiogroup', { name: 'Promotion type' });
+}
+
+function continueButton() {
+  return screen.getByRole('button', { name: 'Continue' });
+}
 
 describe('PromoteListingPage', () => {
   const mockReplace = vi.fn();
-  const mockPush = vi.fn();
-  const mockBack = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.useRouter.mockReturnValue({
-      replace: mockReplace,
-      push: mockPush,
-      back: mockBack,
-      query: { id: 'listing-1' },
-      isReady: true,
-    });
-    mocks.useAuth.mockReturnValue({
-      user: { id: 'user-1', trust_level: 1, metro_area_id: 'metro-1' },
-    });
-    mockGetListingById.mockResolvedValue({ data: MOCK_LISTING });
+    mocks.useRouter.mockReturnValue({ replace: mockReplace, query: { id: 'listing-1' }, isReady: true });
+    mocks.useAuth.mockReturnValue({ user: OWNER });
+    mockGetListing.mockResolvedValue({ data: LISTING });
   });
 
   it('redirects to /login when not logged in', async () => {
     mocks.useAuth.mockReturnValue({ user: null });
-    render(React.createElement(PromoteListingPage));
+    render(<PromoteListingPage />);
+
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 
-  it('renders step 1 with tier cards', async () => {
-    render(React.createElement(PromoteListingPage));
-    await waitFor(() => {
-      expect(screen.getByText('Choose Promotion Type')).toBeDefined();
-    });
+  it('titles the page and links back to My Listings', async () => {
+    await openWizard();
 
-    expect(screen.getByText('Featured Listing')).toBeDefined();
-    expect(screen.getByText('Sponsored Feed')).toBeDefined();
-    expect(screen.getByText('Sticky Business')).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'Promote listing' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'My Listings' }).getAttribute('href')).toBe('/marketplace/my-listings');
+    expect(screen.getByRole('list', { name: 'Progress' })).toBeDefined();
   });
 
-  it('continue button is disabled until a tier is selected', async () => {
-    render(React.createElement(PromoteListingPage));
-    await waitFor(() => {
-      expect(screen.getByText('Choose Promotion Type')).toBeDefined();
-    });
+  it('shows a failed read with a retry that works', async () => {
+    mockGetListing.mockResolvedValueOnce({ error: new Error('network down') });
+    render(<PromoteListingPage />);
 
-    const continueBtn = screen.getByText('Continue');
-    expect(continueBtn.closest('button')?.disabled).toBe(true);
+    expect(await screen.findByText('network down')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByRole('radiogroup', { name: 'Promotion type' })).toBeDefined();
   });
 
-  it('selecting a tier enables continue button', async () => {
-    render(React.createElement(PromoteListingPage));
-    await waitFor(() => {
-      expect(screen.getByText('Featured Listing')).toBeDefined();
-    });
+  it('says when the listing is gone', async () => {
+    mockGetListing.mockResolvedValue({ error: new Error('Listing not found'), notFound: true });
+    render(<PromoteListingPage />);
 
-    fireEvent.click(screen.getByText('Featured Listing'));
-
-    const continueBtn = screen.getByText('Continue');
-    expect(continueBtn.closest('button')?.disabled).toBe(false);
+    expect(await screen.findByRole('heading', { name: 'Listing not found' })).toBeDefined();
+    expect(screen.queryByRole('radiogroup')).toBeNull();
   });
 
-  it('navigates to step 2 after continue', async () => {
-    render(React.createElement(PromoteListingPage));
-    await waitFor(() => {
-      expect(screen.getByText('Featured Listing')).toBeDefined();
-    });
+  it.each([
+    ['another member’s listing', { ...LISTING, owner_id: 'someone-else' }, OWNER, 'You can only promote your own listings'],
+    ['an inactive listing', { ...LISTING, status: 'inactive' }, OWNER, 'Reactivate this listing to promote it'],
+    ['an unverified member', LISTING, { id: 'user-1', trust_level: TrustLevel.NEW }, 'Verify your account to promote listings'],
+  ])('refuses %s before the first step', async (_case, listing, viewer, title) => {
+    mockGetListing.mockResolvedValue({ data: listing });
+    mocks.useAuth.mockReturnValue({ user: viewer });
+    render(<PromoteListingPage />);
 
-    fireEvent.click(screen.getByText('Featured Listing'));
-    fireEvent.click(screen.getByText('Continue'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Set Duration')).toBeDefined();
-    });
+    expect(await screen.findByRole('heading', { name: title })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Go to My Listings' }).getAttribute('href')).toBe('/marketplace/my-listings');
+    expect(screen.queryByRole('radiogroup')).toBeNull();
   });
 
-  it('navigates to step 3 (review) from step 2', async () => {
-    render(React.createElement(PromoteListingPage));
-    await waitFor(() => {
-      expect(screen.getByText('Featured Listing')).toBeDefined();
-    });
+  it('holds Continue until a tier is chosen, without taking it out of the tab order', async () => {
+    await openWizard();
 
-    // Step 1 -> 2
-    fireEvent.click(screen.getByText('Featured Listing'));
-    const allContinueBtns1 = screen.getAllByText('Continue');
-    fireEvent.click(allContinueBtns1[allContinueBtns1.length - 1]);
+    expect(continueButton().getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(continueButton());
+    expect(screen.getByRole('radiogroup', { name: 'Promotion type' })).toBeDefined();
 
-    await waitFor(() => {
-      expect(screen.getByText('Set Duration')).toBeDefined();
-    });
-
-    // Step 2 -> 3
-    const allContinueBtns2 = screen.getAllByText('Continue');
-    fireEvent.click(allContinueBtns2[allContinueBtns2.length - 1]);
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Review & Pay' })).toBeDefined();
-    });
-
-    expect(screen.getByText('My Restaurant')).toBeDefined();
+    fireEvent.click(screen.getByRole('radio', { name: 'Featured Listing' }));
+    expect(continueButton().getAttribute('aria-disabled')).toBeNull();
   });
 
-  it('shows verify banner for Level 0 users on step 3', async () => {
-    mocks.useAuth.mockReturnValue({
-      user: { id: 'user-1', trust_level: 0, metro_area_id: 'metro-1' },
-    });
+  it('moves focus to the next step’s heading', async () => {
+    await openWizard();
+    fireEvent.click(screen.getByRole('radio', { name: 'Featured Listing' }));
 
-    render(React.createElement(PromoteListingPage));
-    await waitFor(() => {
-      expect(screen.getByText('Featured Listing')).toBeDefined();
-    });
+    fireEvent.click(continueButton());
 
-    fireEvent.click(screen.getByText('Featured Listing'));
-    fireEvent.click(screen.getByText('Continue'));
-    await waitFor(() => expect(screen.getByText('Set Duration')).toBeDefined());
-    fireEvent.click(screen.getByText('Continue'));
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Set duration' });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+    expect(screen.getByRole('spinbutton', { name: 'Duration in days' })).toBeDefined();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByText(/Verify your account to promote listings/)).toBeDefined();
-    });
+  it('goes back to step 1 with the tier still chosen', async () => {
+    await openWizard();
+    fireEvent.click(screen.getByRole('radio', { name: 'Sponsored Feed' }));
+    fireEvent.click(continueButton());
+    await screen.findByRole('heading', { level: 2, name: 'Set duration' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Choose a promotion type' });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+    expect(screen.getByRole('radio', { name: 'Sponsored Feed' }).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('offers a way out of the wizard from step 1', async () => {
+    await openWizard();
+
+    expect(screen.getByRole('link', { name: 'Back' }).getAttribute('href')).toBe('/marketplace/my-listings');
+  });
+
+  it('reaches the review with the listing and the Pay button', async () => {
+    await openWizard();
+    fireEvent.click(screen.getByRole('radio', { name: 'Featured Listing' }));
+    fireEvent.click(continueButton());
+    await screen.findByRole('heading', { level: 2, name: 'Set duration' });
+    fireEvent.click(continueButton());
+
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Review and pay' });
+    const main = heading.parentElement as HTMLElement;
+    expect(within(main).getByText('My Restaurant')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Pay $13.93' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull();
   });
 });

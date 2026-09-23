@@ -1,42 +1,22 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Button } from '@mantine/core';
+import { IconBuildingStore } from '@tabler/icons-react';
 import Head from 'next/head';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { useNow } from '../../hooks/useNow';
-import { supabase } from '../../lib/supabase';
-import {
-  getListingsByOwner,
-  deactivateListing,
-  reactivateListing,
-  deleteListing,
-  refreshListing,
-  getDaysUntilSoftExpiry,
-  type MarketplaceListing,
-} from '@nepally/shared';
-import styles from './marketplace.module.css';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
+import { useMyListings, type ListingAction } from '../../hooks/useMyListings';
+import { isFocusStranded } from '../../lib/focus';
+import { EmptyState, ErrorState, LoadingState, PageHeader } from '../../components/ui';
+import { ListingSummaryRow } from '../../components/marketplace/ListingSummaryRow';
+import { MyListingActions } from '../../components/marketplace/MyListingActions';
+import styles from './myListings.module.css';
 
 export default function MyListingsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const userId = user?.id;
-
-  const [listings, setListings] = useState<MarketplaceListing[]>([]);
-  const [loading, setLoading] = useState(true);
-  // Bumping this re-runs the fetch effect after a listing is changed.
-  const [reloadKey, setReloadKey] = useState(0);
-  const now = useNow();
-
-  const getStatusClass = (status: string): string => {
-    const statusClassMap: Record<string, string> = {
-      active: styles.statusActive,
-      inactive: styles.statusInactive,
-      removed: styles.statusRemoved,
-    };
-    return statusClassMap[status] || styles.statusActive;
-  };
 
   useEffect(() => {
     if (!user) {
@@ -44,171 +24,125 @@ export default function MyListingsPage() {
     }
   }, [user, router]);
 
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    getListingsByOwner(supabase, userId).then((result) => {
-      if (cancelled) return;
-      if (result.data) setListings(result.data);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, reloadKey]);
-
-  const reloadListings = useCallback(() => {
-    setReloadKey((key) => key + 1);
-  }, []);
-
-  const handleDeactivate = useCallback(async (id: string) => {
-    if (!confirm('Deactivate this listing? It will be hidden from the marketplace.')) return;
-    await deactivateListing(supabase, id);
-    reloadListings();
-  }, [reloadListings]);
-
-  const handleReactivate = useCallback(async (id: string) => {
-    await reactivateListing(supabase, id);
-    reloadListings();
-  }, [reloadListings]);
-
-  const handleDelete = useCallback(async (id: string) => {
-    if (!confirm('Delete this listing permanently?')) return;
-    await deleteListing(supabase, id);
-    reloadListings();
-  }, [reloadListings]);
-
-  const handleRefresh = useCallback(async (id: string) => {
-    await refreshListing(supabase, id);
-    reloadListings();
-  }, [reloadListings]);
-
   if (!user) return null;
+  return <MyListingsView userId={user.id} />;
+}
+
+/** Where focus goes once a deleted row has left the list: a neighbour's link, else Create listing. */
+interface PendingFocus {
+  deletedId: string;
+  targetId: string | null;
+}
+
+function MyListingsView({ userId }: { userId: string }) {
+  const now = useNow();
+  const list = useMyListings(userId);
+  const { listings, runAction } = list;
+  const rowRefs = useRef(new Map<string, HTMLLIElement>());
+  const createRef = useRef<HTMLAnchorElement>(null);
+  const pendingFocusRef = useRef<PendingFocus | null>(null);
+
+  // Deleting a row unmounts the menu trigger the confirm dialog would return
+  // focus to, dropping it to <body>. Armed before the call (the row can be
+  // gone before the await returns), and acted on only once that row has
+  // actually left the list. isFocusStranded also covers focus still inside
+  // the closing dialog; focus the member has moved elsewhere is left alone.
+  const runRowAction = useCallback(
+    async (id: string, action: ListingAction) => {
+      if (action === 'delete') {
+        const index = listings.findIndex((l) => l.id === id);
+        const neighbour = listings[index + 1] ?? listings[index - 1] ?? null;
+        pendingFocusRef.current = { deletedId: id, targetId: neighbour?.id ?? null };
+      }
+      const ok = await runAction(id, action);
+      if (!ok && pendingFocusRef.current?.deletedId === id) pendingFocusRef.current = null;
+      return ok;
+    },
+    [listings, runAction]
+  );
+
+  useEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (!pending || listings.some((l) => l.id === pending.deletedId)) return;
+    pendingFocusRef.current = null;
+    if (!isFocusStranded()) return;
+    const row = pending.targetId ? rowRefs.current.get(pending.targetId) : undefined;
+    (row?.querySelector('a') ?? createRef.current)?.focus();
+  }, [listings]);
+
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore: list.hasMore,
+    loading: list.loading || list.loadingMore,
+    onLoadMore: list.loadMore,
+  });
 
   return (
     <>
       <Head>
         <title>My Listings - Marketplace - Nepally</title>
       </Head>
-      <div className={styles.container}>
-        <Link href="/marketplace" className={styles.backLink}>
-          ← Back to Marketplace
-        </Link>
+      <div className={styles.page}>
+        <PageHeader
+          title="My Listings"
+          backHref="/marketplace"
+          backLabel="Marketplace"
+          actions={
+            <Button component={Link} href="/marketplace/create" ref={createRef}>
+              Create listing
+            </Button>
+          }
+        />
 
-        <div className={styles.header}>
-          <h1 className={styles.title}>My Listings</h1>
-          <Link href="/marketplace/create">
-            <Button size="sm">Create Listing</Button>
-          </Link>
-        </div>
-
-        {loading ? (
-          <p>Loading...</p>
+        {list.loading ? (
+          <LoadingState label="Loading your listings…" />
+        ) : list.error ? (
+          <ErrorState title="Couldn't load your listings" message={list.error} onRetry={list.reload} />
         ) : listings.length === 0 ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>🏪</div>
-            <div className={styles.emptyText}>You haven&apos;t created any listings yet</div>
-            <Link href="/marketplace/create">
-              <Button>Create your first listing</Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={<IconBuildingStore size={40} />}
+            title="You haven't listed anything yet"
+            description="Sell something, offer a service or promote your business to members near you."
+            action={
+              <Button component={Link} href="/marketplace/create">
+                Create your first listing
+              </Button>
+            }
+          />
         ) : (
-          listings.map((listing) => {
-            const daysUntilExpiry = getDaysUntilSoftExpiry(listing.refreshed_at, now);
-            const isExpiringSoon = daysUntilExpiry <= 14 && listing.status === 'active';
-
-            return (
-              <div key={listing.id} className={styles.myListingCard}>
-                {listing.photos.length > 0 ? (
-                  <Image
-                    src={listing.photos[0]}
-                    alt={listing.title}
-                    className={styles.myListingThumb}
-                    fill
+          <>
+            <ul className={styles.list}>
+              {listings.map((listing) => (
+                <li
+                  key={listing.id}
+                  ref={(node) => {
+                    if (node) rowRefs.current.set(listing.id, node);
+                    else rowRefs.current.delete(listing.id);
+                  }}
+                >
+                  <ListingSummaryRow
+                    listing={listing}
+                    owner={{ now }}
+                    menu={
+                      <MyListingActions
+                        listing={listing}
+                        pending={list.pendingIds.has(listing.id)}
+                        onAction={runRowAction}
+                      />
+                    }
                   />
-                ) : (
-                  <div className={styles.myListingThumbPlaceholder}>
-                    {listing.category?.emoji ?? '📦'}
-                  </div>
-                )}
-                <div className={styles.myListingHeader}>
-                  <Link href={`/marketplace/listing/${listing.id}`}>
-                    <strong>{listing.title}</strong>
-                  </Link>
-                  <span
-                    className={`${styles.badge} ${getStatusClass(listing.status)}`}
-                  >
-                    {listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}
-                  </span>
-                </div>
-
-                <div className={styles.listingMeta}>
-                  <span>{listing.category?.emoji} {listing.category?.name}</span>
-                  {listing.price && <span className={styles.priceText}>{listing.price}</span>}
-                </div>
-
-                <div className={styles.listingStats}>
-                  <span>{listing.views_count} views</span>
-                  <span>{listing.saves_count} saves</span>
-                  <span>{listing.contacts_count} contacts</span>
-                </div>
-
-                {isExpiringSoon && (
-                  <div className={styles.expiryWarning}>
-                    ⏰ Expires in {daysUntilExpiry} days — refresh to stay visible
-                  </div>
-                )}
-
-                <div className={styles.myListingActions}>
-                  <Link href={`/marketplace/create?edit=${listing.id}`}>
-                    <button className={`${styles.actionLink} ${styles.actionEdit}`}>
-                      ✏️ Edit
-                    </button>
-                  </Link>
-
-                  {listing.status === 'active' && (
-                    <Link href={`/marketplace/listing/promote/${listing.id}`}>
-                      <button className={`${styles.actionLink} ${styles.actionEdit}`}>
-                        🚀 Promote
-                      </button>
-                    </Link>
-                  )}
-
-                  {listing.status === 'active' && (
-                    <button
-                      className={`${styles.actionLink} ${styles.actionRefresh}`}
-                      onClick={() => handleRefresh(listing.id)}
-                    >
-                      🔄 Refresh
-                    </button>
-                  )}
-
-                  {listing.status === 'active' ? (
-                    <button
-                      className={`${styles.actionLink} ${styles.actionDeactivate}`}
-                      onClick={() => handleDeactivate(listing.id)}
-                    >
-                      ⏸️ Deactivate
-                    </button>
-                  ) : listing.status === 'inactive' ? (
-                    <button
-                      className={`${styles.actionLink} ${styles.actionReactivate}`}
-                      onClick={() => handleReactivate(listing.id)}
-                    >
-                      ▶️ Reactivate
-                    </button>
-                  ) : null}
-
-                  <button
-                    className={`${styles.actionLink} ${styles.actionDelete}`}
-                    onClick={() => handleDelete(listing.id)}
-                  >
-                    🗑️ Delete
-                  </button>
-                </div>
-              </div>
-            );
-          })
+                </li>
+              ))}
+            </ul>
+            {list.hasMore && <div ref={sentinelRef} className={styles.loadSentinel} aria-hidden="true" />}
+            {list.loadingMore && <LoadingState count={1} label="Loading more listings…" />}
+            {list.loadMoreError && (
+              <ErrorState
+                title="Couldn't load more listings"
+                message={list.loadMoreError}
+                onRetry={list.retryLoadMore}
+              />
+            )}
+          </>
         )}
       </div>
     </>

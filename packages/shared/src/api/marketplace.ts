@@ -317,7 +317,8 @@ export async function getListingsByOwner(
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return { data: (data || []) as MarketplaceListing[] };
+    const rows = (data || []) as MarketplaceListing[];
+    return { data: rows, hasMore: rows.length === limit };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to fetch owner listings') };
   }
