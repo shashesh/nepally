@@ -1,0 +1,67 @@
+/* The promote wizard's summary cards: SummaryList's <dl>, the listing
+   preview and the pay area. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--card-padding);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.row[data-total] {
+  margin-top: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.label {
+  color: var(--text-2);
+}
+
+.row[data-total] .label {
+  color: var(--text-1);
+}
+
+.value {
+  margin: 0;
+  color: var(--text-1);
+  font-weight: var(--font-weight-medium);
+  text-align: end;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--card-padding);
+  border-radius: var(--radius-card);
+  background: var(--surface-sunken);
+}
+
+.previewTitle {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-1);
+}
+
+.previewPrice {
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+}
