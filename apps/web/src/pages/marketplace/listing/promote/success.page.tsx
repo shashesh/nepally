@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Button } from '@mantine/core';
+import { Button, Loader } from '@mantine/core';
+import { IconCircleCheck, IconHourglass } from '@tabler/icons-react';
 import { useAuth } from '../../../../hooks/useAuth';
 import { supabase } from '../../../../lib/supabase';
 import { getPromotionById, type ListingPromotion } from '@nepally/shared';
@@ -111,7 +112,9 @@ function PromoteSuccessView({ promotionId, ready }: PromoteSuccessViewProps) {
       </Head>
       <div className={styles.container}>
         <div className={styles.confirmationContent}>
-          <div className={styles.successIcon}>{active ? '✅' : '⏳'}</div>
+          <div className={styles.successIcon} data-state={active ? 'active' : 'pending'} aria-hidden="true">
+            {active ? <IconCircleCheck size={36} /> : <IconHourglass size={36} />}
+          </div>
           <h1 className={styles.confirmationHeading}>
             {active
               ? 'Boost Active!'
@@ -137,29 +140,28 @@ function PromoteSuccessView({ promotionId, ready }: PromoteSuccessViewProps) {
           )}
 
           {!active && !timedOut && (
-            <div className={styles.loader}>Processing...</div>
+            <div className={styles.loader}>
+              <Loader aria-label="Processing payment" />
+            </div>
           )}
 
-          {unconfirmed && (
-            <Button variant="outline" size="sm" onClick={retry}>
-              Try again
-            </Button>
-          )}
-
-          {(active || timedOut) && promotion && (
-            <Link
-              href={`/marketplace/listing/${promotion.listing_id}`}
-              className={styles.viewListingLink}
-            >
-              View Listing
-            </Link>
-          )}
-
-          {unconfirmed && (
-            <Link href="/marketplace/my-listings" className={styles.viewListingLink}>
-              Go to My Listings
-            </Link>
-          )}
+          <div className={styles.confirmationActions}>
+            {unconfirmed && (
+              <Button variant="default" onClick={retry}>
+                Try again
+              </Button>
+            )}
+            {(active || timedOut) && promotion && (
+              <Button component={Link} href={`/marketplace/listing/${promotion.listing_id}`}>
+                View Listing
+              </Button>
+            )}
+            {unconfirmed && (
+              <Button component={Link} href="/marketplace/my-listings">
+                Go to My Listings
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </>
