@@ -242,7 +242,9 @@ serve(async (req) => {
         ],
         metadata,
         success_url: `${siteUrl}/marketplace/listing/promote/success?promotion_id=${promotion.id}`,
-        cancel_url: `${siteUrl}/marketplace/listing/${listing_id}/promote?cancelled=true`,
+        // The web wizard's route, so cancelling on Stripe's page returns the
+        // member to the wizard rather than to a page that does not exist.
+        cancel_url: `${siteUrl}/marketplace/listing/promote/${listing_id}?cancelled=true`,
       });
 
       // Store checkout session ID on promotion row
