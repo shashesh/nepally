@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getMessages, getTotalUnreadCount, sendMessage } from './messages';
+import { getMessages, getTotalUnreadCount, sendMessage, subscribeToMessages } from './messages';
 
 describe('messages api', () => {
   function messagesQuery(result: { data: unknown; error: unknown }) {
@@ -117,5 +117,20 @@ describe('messages api', () => {
     expect(messagesQuery.insert).toHaveBeenCalled();
     expect(conversationsQuery.update).toHaveBeenCalled();
     expect(fromMock).not.toHaveBeenCalledWith('conversation_participants');
+  });
+
+  it('subscribes on a fresh topic each time, so resubscribing never joins a channel still leaving', () => {
+    const channel = { on: vi.fn(), subscribe: vi.fn() };
+    channel.on.mockReturnValue(channel);
+    channel.subscribe.mockReturnValue(channel);
+    const supabase = { channel: vi.fn().mockReturnValue(channel) } as unknown as SupabaseClient;
+
+    subscribeToMessages(supabase, 'c1', vi.fn());
+    subscribeToMessages(supabase, 'c1', vi.fn());
+
+    const [first, second] = (supabase.channel as ReturnType<typeof vi.fn>).mock.calls.map(([topic]) => topic as string);
+    expect(first.startsWith('messages:c1:')).toBe(true);
+    expect(second.startsWith('messages:c1:')).toBe(true);
+    expect(first).not.toBe(second);
   });
 });

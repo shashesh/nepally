@@ -4,6 +4,7 @@
  */
 import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import type { ChatMessage } from '../types/chat';
+import { uniqueChannelTopic } from '../utils/realtime';
 
 /**
  * The newest `limit` messages of a conversation, oldest first. Ordering
@@ -129,7 +130,7 @@ export function subscribeToMessages(
   onMessageUpdate?: (message: ChatMessage) => void
 ): RealtimeChannel {
   const channel = supabase
-    .channel(`messages:${conversationId}`)
+    .channel(uniqueChannelTopic(`messages:${conversationId}`))
     .on(
       'postgres_changes',
       {
