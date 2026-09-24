@@ -67,7 +67,7 @@ Every step's result is checked, so the page always ends in one of three places:
 
 - **Signed in.** The member goes on to the feed or onboarding.
 - **Link expired.** No session arrived within 10 seconds: "This verification link may have expired or already been used.", with Sign up and Log in. A slow profile write once the session has arrived doesn't count against the 10 seconds, and a session that arrives after the page shows this is still finished: the page goes back to "Signing you in…" and carries on.
-- **Failed.** A step failed: "Couldn't finish signing you in" and "We couldn't finish setting up your account. Please try again.", with Try again. The session is kept, so Try again reloads the page and runs the steps again. The failure is logged as `auth_callback_failed`, with the step that failed.
+- **Failed.** A step failed, including reading the session itself or reloading the member afterwards: "Couldn't finish signing you in" and "We couldn't finish setting up your account. Please try again.", with Try again. The session is kept, so Try again reloads the page and runs the steps again. The failure is logged as `auth_callback_failed`, with the step that failed.
 
 ## Choosing a metro (`/onboarding/zip`)
 

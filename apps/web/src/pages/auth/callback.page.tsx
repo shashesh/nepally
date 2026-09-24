@@ -109,10 +109,21 @@ export default function AuthCallbackPage() {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) void run(session);
     });
 
+    // A failed session read is a failure now, not an expired link in 10 seconds.
+    // The timer goes too, or it would overwrite the failed state; an auth event
+    // that still delivers a session runs as usual.
+    function failSessionRead(error: unknown) {
+      if (!mounted || started) return;
+      clearTimeout(timeout);
+      logClientEvent({ event: 'auth_callback_failed', context: { step: 'get_session' }, error });
+      setState({ kind: 'failed', message: FINISH_SIGN_IN_FAILED });
+    }
+
     // An OAuth redirect (Google) may have exchanged the code before this mounted.
-    void supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (session) void run(session);
-    });
+      else if (error) failSessionRead(error);
+    }, failSessionRead);
 
     return () => {
       mounted = false;

@@ -136,6 +136,30 @@ describe('AuthCallbackPage', () => {
     );
   });
 
+  it.each([
+    ['returns an error', () => callbackMocks.getSessionMock.mockResolvedValue({ data: { session: null }, error: new Error('storage') })],
+    ['rejects', () => callbackMocks.getSessionMock.mockRejectedValue(new Error('storage'))],
+  ])('shows the failed state at once, and not expired later, when getSession %s', async (_case, arrange) => {
+    arrange();
+    render(<AuthCallbackPage />);
+    await act(async () => {});
+    expect(screen.getByRole('heading', { level: 1, name: "Couldn't finish signing you in" })).toBeDefined();
+    expect(callbackMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'auth_callback_failed', context: expect.objectContaining({ step: 'get_session' }) })
+    );
+    advance(11_000);
+    expect(screen.queryByRole('heading', { level: 1, name: 'Link expired' })).toBeNull();
+  });
+
+  it('still finishes a session the auth event delivers after getSession failed', async () => {
+    callbackMocks.getSessionMock.mockResolvedValue({ data: { session: null }, error: new Error('storage') });
+    render(<AuthCallbackPage />);
+    await act(async () => {});
+    await fireAuthEvent('SIGNED_IN');
+    expect(callbackMocks.finishSignInMock).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/feed');
+  });
+
   it('does not reload the member when finishSignIn fails', async () => {
     callbackMocks.finishSignInMock.mockResolvedValue({ error: 'nope' });
     render(<AuthCallbackPage />);
