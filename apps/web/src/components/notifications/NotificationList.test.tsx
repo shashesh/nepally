@@ -106,6 +106,28 @@ describe('NotificationList', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: /Title c/ }));
   });
 
+  it('follows the row after the deleted one when a new notification arrives meanwhile', async () => {
+    let finish!: (ok: boolean) => void;
+    const onDelete = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finish = resolve;
+        })
+    );
+    const { rerenderList } = renderList({ onDelete });
+    const arrived = notification('y', new Date(2026, 8, 24, 14));
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete notification' })[1]);
+    rerenderList({ onDelete, notifications: [arrived, TODAY_A, TODAY_B, YESTERDAY] });
+    await act(async () => {
+      finish(true);
+    });
+    (document.activeElement as HTMLElement | null)?.blur();
+    rerenderList({ onDelete, notifications: [arrived, TODAY_A, YESTERDAY] });
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Title c/ }));
+  });
+
   it('moves focus to the row before when the last row goes', async () => {
     const { rerenderList } = renderList();
 
