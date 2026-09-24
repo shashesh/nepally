@@ -38,6 +38,8 @@ const mockPosts = [{ id: 'post-1', title: 'Roommate needed' }];
 const mockEvents = [{ id: 'event-1', title: 'Nepali Networking Night' }];
 const mockListings = [{ id: 'listing-1', title: 'IKEA desk, like new' }];
 
+const LIST_KEYS = ['posts', 'events', 'listings'] as const;
+
 function helperScoreData(userId: string, helperScore: number) {
   return { userId, helperScore, helpfulComments: 0, likesReceivedOnOwnPosts: 0 };
 }
@@ -55,31 +57,30 @@ describe('usePublicProfile', () => {
     });
   });
 
-  it('starts with loading true and empty state', () => {
+  it('starts loading, with no member', () => {
     mocks.getUserById.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    expect(result.current.loading).toBe(true);
+    expect(result.current.status).toBe('loading');
     expect(result.current.profileUser).toBeNull();
-    expect(result.current.error).toBeNull();
   });
 
   it('loads the profile, metro name, the three lists, and the helper score', async () => {
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(result.current.profileUser).toEqual(mockProfileUser);
-    expect(result.current.error).toBeNull();
 
     await waitFor(() => expect(result.current.metroName).toBe('Dallas-Fort Worth, TX'));
-    await waitFor(() => expect(result.current.posts).toEqual(mockPosts));
-    await waitFor(() => expect(result.current.events).toEqual(mockEvents));
-    await waitFor(() => expect(result.current.listings).toEqual(mockListings));
+    await waitFor(() => expect(result.current.posts.items).toEqual(mockPosts));
+    await waitFor(() => expect(result.current.events.items).toEqual(mockEvents));
+    await waitFor(() => expect(result.current.listings.items).toEqual(mockListings));
     await waitFor(() => expect(result.current.helperScore).toBe(42));
 
-    expect(result.current.postsLoading).toBe(false);
-    expect(result.current.eventsLoading).toBe(false);
-    expect(result.current.listingsLoading).toBe(false);
+    for (const key of LIST_KEYS) {
+      expect(result.current[key].loading).toBe(false);
+      expect(result.current[key].error).toBeNull();
+    }
 
     expect(mocks.getUserById).toHaveBeenCalledWith(expect.anything(), 'profile-user');
     expect(mocks.getPostsByAuthorId).toHaveBeenCalledWith(expect.anything(), 'profile-user', 30);
@@ -93,26 +94,45 @@ describe('usePublicProfile', () => {
     expect(mocks.getMetroAreaById).toHaveBeenCalledWith(expect.anything(), '19100');
   });
 
-  it('sets the error message and stops loading when getUserById returns an error', async () => {
-    mocks.getUserById.mockResolvedValue({ error: new Error('not found'), data: null });
+  // ─── The member lookup: not-found vs a failure ─────────────────────────────
+
+  it('is not-found when the lookup returns no row', async () => {
+    mocks.getUserById.mockResolvedValue({ data: null });
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.error).toBe(
-      'We couldn’t find this member. They may have deleted their account.'
-    );
+    await waitFor(() => expect(result.current.status).toBe('not-found'));
     expect(result.current.profileUser).toBeNull();
     expect(mocks.getMetroAreaById).not.toHaveBeenCalled();
   });
 
-  it('sets the error message when data is null (no data treated as error)', async () => {
-    mocks.getUserById.mockResolvedValue({ data: null });
+  it.each(['PGRST116', '22P02'])('is not-found when the lookup fails with code %s', async (code) => {
+    mocks.getUserById.mockResolvedValue({ error: Object.assign(new Error('no row'), { code }) });
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.error).toBe(
-      'We couldn’t find this member. They may have deleted their account.'
-    );
+    await waitFor(() => expect(result.current.status).toBe('not-found'));
+    expect(result.current.profileUser).toBeNull();
+  });
+
+  it('is error, not not-found, when the lookup fails for any other reason', async () => {
+    mocks.getUserById.mockResolvedValue({ error: new Error('Failed to fetch') });
+    const { result } = renderHook(() => usePublicProfile('profile-user'));
+
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.profileUser).toBeNull();
+    expect(mocks.getMetroAreaById).not.toHaveBeenCalled();
+  });
+
+  it('retries the member lookup on reload after an error', async () => {
+    mocks.getUserById.mockResolvedValueOnce({ error: new Error('Failed to fetch') });
+    const { result } = renderHook(() => usePublicProfile('profile-user'));
+    await waitFor(() => expect(result.current.status).toBe('error'));
+
+    act(() => result.current.reload());
+
+    expect(result.current.status).toBe('loading');
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.profileUser).toEqual(mockProfileUser);
+    expect(mocks.getUserById).toHaveBeenCalledTimes(2);
   });
 
   it('leaves metroName null and never calls getMetroAreaById when the member has no metro_area_id', async () => {
@@ -121,22 +141,22 @@ describe('usePublicProfile', () => {
     });
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
     // Give any (incorrect) metro lookup a chance to resolve before asserting.
-    await waitFor(() => expect(result.current.posts).toEqual(mockPosts));
+    await waitFor(() => expect(result.current.posts.items).toEqual(mockPosts));
     expect(result.current.metroName).toBeNull();
     expect(mocks.getMetroAreaById).not.toHaveBeenCalled();
   });
 
-  it('leaves metroName null without setting error when the metro lookup fails', async () => {
+  it('leaves metroName null and stays ready when the metro lookup fails', async () => {
     mocks.getMetroAreaById.mockResolvedValue({ error: new Error('metro lookup failed') });
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
     await waitFor(() => expect(mocks.getMetroAreaById).toHaveBeenCalled());
     await act(async () => {});
     expect(result.current.metroName).toBeNull();
-    expect(result.current.error).toBeNull();
+    expect(result.current.status).toBe('ready');
   });
 
   it('requests nothing when id is undefined', () => {
@@ -171,14 +191,14 @@ describe('usePublicProfile', () => {
 
     rerender({ id: 'user-b' });
 
-    await waitFor(() => expect(result.current.posts).toEqual(mockPostsB));
+    await waitFor(() => expect(result.current.posts.items).toEqual(mockPostsB));
 
     // A's request finally resolves after B's has already landed; it must be dropped.
     await act(async () => {
       resolveAPosts({ data: mockPosts });
     });
 
-    expect(result.current.posts).toEqual(mockPostsB);
+    expect(result.current.posts.items).toEqual(mockPostsB);
   });
 
   it('going from a member with a metro to one without clears metroName and shows the new helper score', async () => {
@@ -206,78 +226,85 @@ describe('usePublicProfile', () => {
     expect(result.current.metroName).toBeNull();
   });
 
-  it('clears a not-found error when the next member loads', async () => {
+  it('clears a not-found status when the next member loads', async () => {
     mocks.getUserById.mockImplementation((_client: unknown, requestedId: string) =>
-      Promise.resolve(
-        requestedId === 'user-a'
-          ? { error: new Error('not found') }
-          : { data: { ...mockProfileUser, id: 'user-b' } }
-      )
+      Promise.resolve(requestedId === 'user-a' ? { data: null } : { data: { ...mockProfileUser, id: 'user-b' } })
     );
 
     const { result, rerender } = renderHook(({ id }: { id: string }) => usePublicProfile(id), {
       initialProps: { id: 'user-a' },
     });
 
-    await waitFor(() => expect(result.current.error).not.toBeNull());
+    await waitFor(() => expect(result.current.status).toBe('not-found'));
 
     rerender({ id: 'user-b' });
 
-    expect(result.current.error).toBeNull();
+    expect(result.current.status).toBe('loading');
 
     await waitFor(() => expect(result.current.profileUser?.id).toBe('user-b'));
-    expect(result.current.error).toBeNull();
+    expect(result.current.status).toBe('ready');
   });
 
-  it('has empty posts and loading true on the first render after id changes', async () => {
+  it('has empty lists and is loading on the first render after id changes', async () => {
     const { result, rerender } = renderHook(({ id }: { id: string }) => usePublicProfile(id), {
       initialProps: { id: 'user-a' },
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.posts).toEqual(mockPosts);
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await waitFor(() => expect(result.current.posts.items).toEqual(mockPosts));
 
     rerender({ id: 'user-b' });
 
     expect(result.current.profileUser).toBeNull();
-    expect(result.current.posts).toEqual([]);
-    expect(result.current.events).toEqual([]);
-    expect(result.current.listings).toEqual([]);
     expect(result.current.helperScore).toBeNull();
-    expect(result.current.loading).toBe(true);
-    expect(result.current.postsLoading).toBe(true);
-    expect(result.current.eventsLoading).toBe(true);
-    expect(result.current.listingsLoading).toBe(true);
+    expect(result.current.status).toBe('loading');
+    for (const key of LIST_KEYS) {
+      expect(result.current[key].items).toEqual([]);
+      expect(result.current[key].loading).toBe(true);
+    }
   });
 
-  it('keeps the list loading flags true while their requests are pending', () => {
+  it('keeps the lists loading while their requests are pending', () => {
     mocks.getPostsByAuthorId.mockReturnValue(new Promise(() => {}));
     mocks.getEventsByOrganizer.mockReturnValue(new Promise(() => {}));
     mocks.getActiveListingsBySeller.mockReturnValue(new Promise(() => {}));
 
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    expect(result.current.postsLoading).toBe(true);
-    expect(result.current.eventsLoading).toBe(true);
-    expect(result.current.listingsLoading).toBe(true);
+    for (const key of LIST_KEYS) {
+      expect(result.current[key].loading).toBe(true);
+    }
   });
 
-  it('falls back to an empty list on a failed list request and to 0 on a failed helper score', async () => {
-    mocks.getPostsByAuthorId.mockResolvedValue({ error: new Error('boom') });
-    mocks.getEventsByOrganizer.mockResolvedValue({ error: new Error('boom') });
-    mocks.getActiveListingsBySeller.mockResolvedValue({ error: new Error('boom') });
-    mocks.getHelperScore.mockResolvedValue({ error: new Error('boom') });
+  // ─── A failed list is an error, not an empty list ──────────────────────────
 
+  it.each([
+    ['posts', () => mocks.getPostsByAuthorId],
+    ['events', () => mocks.getEventsByOrganizer],
+    ['listings', () => mocks.getActiveListingsBySeller],
+  ] as const)('gives a failed %s request its own error, and reload refetches it', async (key, fetcher) => {
+    fetcher().mockResolvedValueOnce({ error: new Error('boom') });
     const { result } = renderHook(() => usePublicProfile('profile-user'));
 
-    await waitFor(() => {
-      expect(result.current.postsLoading).toBe(false);
-      expect(result.current.eventsLoading).toBe(false);
-      expect(result.current.listingsLoading).toBe(false);
-    });
-    expect(result.current.posts).toEqual([]);
-    expect(result.current.events).toEqual([]);
-    expect(result.current.listings).toEqual([]);
+    await waitFor(() => expect(result.current[key].error).not.toBeNull());
+    expect(result.current[key].loading).toBe(false);
+    expect(result.current[key].items).toEqual([]);
+    for (const other of LIST_KEYS.filter((name) => name !== key)) {
+      await waitFor(() => expect(result.current[other].items).toHaveLength(1));
+      expect(result.current[other].error).toBeNull();
+    }
+
+    act(() => result.current[key].reload());
+
+    await waitFor(() => expect(result.current[key].items).toHaveLength(1));
+    expect(result.current[key].error).toBeNull();
+    expect(fetcher()).toHaveBeenCalledTimes(2);
+  });
+
+  it('falls back to 0 on a failed helper score', async () => {
+    mocks.getHelperScore.mockResolvedValue({ error: new Error('boom') });
+    const { result } = renderHook(() => usePublicProfile('profile-user'));
+
     await waitFor(() => expect(result.current.helperScore).toBe(0));
   });
 });
