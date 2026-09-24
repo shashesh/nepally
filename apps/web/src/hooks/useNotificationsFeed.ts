@@ -64,6 +64,15 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
   // also drops it.
   const latestRequestRef = useRef(0);
 
+  // The items on screen, for the realtime handler: a row a load already
+  // brought in is neither prepended nor counted again. A load writes it as
+  // its answer lands, not after the render, so an INSERT for the same row
+  // arriving in between is not counted on top of the loaded count.
+  const itemsRef = useRef<Notification[]>([]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
   // Every load — first, polling back on, announcement, focus, poll — goes through this.
   const load = useCallback(() => {
     // Advance even with no member, so a request for the one who just signed
@@ -74,7 +83,10 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
     void fetchBellFeed(userId).then((feed) => {
       if (request !== latestRequestRef.current) return;
       setUnreadCount(feed.unreadCount);
-      if (feed.items) setItems(feed.items);
+      if (feed.items) {
+        itemsRef.current = feed.items;
+        setItems(feed.items);
+      }
     });
   }, [userId]);
 
@@ -111,13 +123,6 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [userId, pollingEnabled, load]);
-
-  // The items on screen, for the realtime handler: a row a load already
-  // brought in is neither prepended nor counted again.
-  const itemsRef = useRef<Notification[]>([]);
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
 
   useEffect(() => {
     // /notifications owns its own subscription, so staying out avoids a second

@@ -149,6 +149,26 @@ describe('useNotificationsFeed', () => {
     expect(result.current.unreadCount).toBe(1);
   });
 
+  it('does not count an INSERT that a load brought in just before it, ahead of the next render', async () => {
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    const insert = mocks.subscriptions.find((sub) => sub.filter.table === 'notifications');
+    const row = { ...base, id: 'n-2', title: 'New' };
+    mocks.getNotifications.mockResolvedValue({ data: [row, base] });
+    mocks.getUnreadNotificationCount.mockResolvedValue({ count: 2 });
+
+    await act(async () => {
+      announceNotificationsChanged();
+      // Let the load's answer land (setItems queued), then deliver the INSERT
+      // before React commits that answer.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      insert?.callback({ new: row });
+    });
+
+    expect(result.current.items.map((item) => item.id)).toEqual(['n-2', 'n-1']);
+    expect(result.current.unreadCount).toBe(2);
+  });
+
   it('does not prepend or count a row the first load already shows', async () => {
     const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
     await waitFor(() => expect(result.current.items).toHaveLength(1));
