@@ -441,6 +441,43 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
 }
 
 /**
+ * Answers an Auth endpoint with a GoTrue error carrying `code`, as the real
+ * server does. auth-js reads `code` from the body only when the response
+ * declares API version 2024-01-01 or later, and the browser hides that header
+ * from a cross-origin caller unless the response exposes it — without both
+ * the error arrives with no code and the page shows its fallback sentence.
+ */
+export async function mockAuthError(
+  page: Page,
+  urlPattern: string,
+  {
+    status,
+    code,
+    message,
+    gate,
+  }: {
+    status: number;
+    code: string;
+    message: string;
+    /** Held until this settles, so a spec can look at the page mid-request. */
+    gate?: Promise<void>;
+  },
+): Promise<void> {
+  await page.route(urlPattern, async (route) => {
+    await gate;
+    await route.fulfill({
+      status,
+      headers: {
+        ...JSON_HEADERS,
+        'x-supabase-api-version': '2024-01-01',
+        'access-control-expose-headers': 'x-supabase-api-version',
+      },
+      body: JSON.stringify({ code, message }),
+    });
+  });
+}
+
+/**
  * Intercepts the Supabase sign-in endpoint to simulate a successful email login.
  */
 export async function mockSignIn(page: Page, email = MOCK_USER_EMAIL): Promise<void> {

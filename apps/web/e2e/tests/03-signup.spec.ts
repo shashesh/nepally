@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mockSignUp, mockSupabaseLoggedIn } from '../helpers/supabase-mock';
+import { mockAuthError, mockSignUp, mockSupabaseLoggedIn } from '../helpers/supabase-mock';
 import { MOCK_USER_EMAIL } from '../fixtures/mock-data';
 
 test.describe('Signup flow', () => {
@@ -17,7 +17,7 @@ test.describe('Signup flow', () => {
     });
 
     await page.goto('/signup');
-    await page.getByLabel('Full Name').fill('Test User');
+    await page.getByLabel('Full name').fill('Test User');
     await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
@@ -27,7 +27,7 @@ test.describe('Signup flow', () => {
 
   test('invalid full name shows error', async ({ page }) => {
     await page.goto('/signup');
-    await page.getByLabel('Full Name').fill('A'); // too short / invalid
+    await page.getByLabel('Full name').fill('A'); // too short / invalid
     await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
@@ -38,7 +38,7 @@ test.describe('Signup flow', () => {
 
   test('invalid email shows error', async ({ page }) => {
     await page.goto('/signup');
-    await page.getByLabel('Full Name').fill('Test User');
+    await page.getByLabel('Full name').fill('Test User');
     await page.getByLabel('Email').fill('');
     await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
@@ -46,27 +46,36 @@ test.describe('Signup flow', () => {
     await expect(page.getByText(/valid email address/i)).toBeVisible();
   });
 
-  test('weak password shows inline errors', async ({ page }) => {
+  test('weak password lists its unmet rules on the field after submit', async ({ page }) => {
     await page.goto('/signup');
-    await page.getByLabel('Password', { exact: true }).fill('weak');
-    // Password errors appear inline as user types
-    await expect(page.getByRole('list')).toBeVisible();
+    const password = page.getByLabel('Password', { exact: true });
+    await password.fill('weak');
+    // Nothing shows before the first submit.
+    await expect(password).not.toHaveAttribute('aria-invalid', 'true');
+
+    await page.getByRole('button', { name: /create account/i }).click();
+
+    await expect(password).toHaveAttribute('aria-invalid', 'true');
+    await expect(password).toHaveAccessibleDescription(/Password must be at least 8 characters/);
+    await expect(password).toHaveAccessibleDescription(/Password must contain at least one uppercase letter/);
+    await expect(password).toHaveAccessibleDescription(/Password must contain at least one number/);
+
+    await password.fill('Password123');
+    await expect(password).not.toHaveAccessibleDescription(/Password must/);
   });
 
   test('already existing email redirects to login with info message', async ({ page }) => {
     test.slow();
 
-    await page.route('**/auth/v1/signup**', async (route) => {
-      await route.fulfill({
-        status: 422,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: 'user_already_exists', message: 'User already registered' }),
-      });
+    await mockAuthError(page, '**/auth/v1/signup**', {
+      status: 422,
+      code: 'user_already_exists',
+      message: 'User already registered',
     });
 
     await page.goto('/signup');
-    await expect(page.getByLabel('Full Name')).toBeVisible({ timeout: 15_000 });
-    await page.getByLabel('Full Name').fill('Test User');
+    await expect(page.getByLabel('Full name')).toBeVisible({ timeout: 15_000 });
+    await page.getByLabel('Full name').fill('Test User');
     await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill('Password123!');
     await page.getByRole('button', { name: /create account/i }).click();
