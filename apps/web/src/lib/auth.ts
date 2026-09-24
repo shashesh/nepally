@@ -43,6 +43,17 @@ export async function signUpWithEmail(
     if (error) throw error;
     if (!data.user) throw new Error('No user data returned');
 
+    // With email confirmation on, Supabase answers a taken address with an
+    // obfuscated user that has no identities instead of an error, so the
+    // response can't reveal which emails are registered.
+    if (data.user.identities?.length === 0) {
+      return {
+        error: Object.assign(new Error('User already registered'), {
+          code: 'user_already_exists',
+        }),
+      };
+    }
+
     // Profile creation is deferred to /auth/callback after email confirmation.
     // session is null at this point when email confirmation is enabled.
 
@@ -50,6 +61,19 @@ export async function signUpWithEmail(
   } catch (error) {
     return {
       error: error instanceof Error ? error : new Error('Email signup failed'),
+    };
+  }
+}
+
+/** Resends the sign-up confirmation email. */
+export async function resendSignupEmail(email: string): Promise<{ error?: Error }> {
+  try {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) throw error;
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error('Resending the email failed'),
     };
   }
 }

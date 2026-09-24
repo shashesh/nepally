@@ -5,6 +5,7 @@ const authMocks = vi.hoisted(() => ({
   signInWithPasswordMock: vi.fn(),
   signOutMock: vi.fn(),
   signInWithOAuthMock: vi.fn(),
+  resendMock: vi.fn(),
   createUserProfileMock: vi.fn(),
 }));
 
@@ -15,6 +16,7 @@ vi.mock('./supabase', () => ({
       signInWithPassword: authMocks.signInWithPasswordMock,
       signOut: authMocks.signOutMock,
       signInWithOAuth: authMocks.signInWithOAuthMock,
+      resend: authMocks.resendMock,
     },
   },
 }));
@@ -27,7 +29,14 @@ vi.mock('@nepally/shared', async () => {
   };
 });
 
-import { signUpWithEmail, signInWithEmail, signOut, signInWithGoogle } from './auth';
+import { isExistingAccountError } from '@nepally/shared';
+import {
+  signUpWithEmail,
+  signInWithEmail,
+  signOut,
+  signInWithGoogle,
+  resendSignupEmail,
+} from './auth';
 
 describe('signUpWithEmail', () => {
   beforeEach(() => {
@@ -72,6 +81,42 @@ describe('signUpWithEmail', () => {
     expect(result.error?.message).toBe('Signup failed');
   });
 
+  it('returns the user when it has an identity', async () => {
+    authMocks.signUpMock.mockResolvedValue({
+      data: {
+        user: { id: 'new-user-1', email: 'test@example.com', identities: [{ id: 'identity-1' }] },
+      },
+      error: null,
+    });
+
+    const result = await signUpWithEmail('test@example.com', 'password123', 'Test User');
+
+    expect(result).toEqual({ user: { id: 'new-user-1', email: 'test@example.com' } });
+  });
+
+  it('reports an existing account when Supabase returns a user with no identities', async () => {
+    authMocks.signUpMock.mockResolvedValue({
+      data: { user: { id: 'obfuscated-1', email: 'taken@example.com', identities: [] } },
+      error: null,
+    });
+
+    const result = await signUpWithEmail('taken@example.com', 'password123', 'Test User');
+
+    expect(result.user).toBeUndefined();
+    expect(isExistingAccountError(result.error)).toBe(true);
+  });
+
+  it('returns a Supabase error unchanged, keeping its code', async () => {
+    const supabaseError = Object.assign(new Error('User already registered'), {
+      code: 'user_already_exists',
+    });
+    authMocks.signUpMock.mockResolvedValue({ data: { user: null }, error: supabaseError });
+
+    const result = await signUpWithEmail('taken@example.com', 'password123', 'Test User');
+
+    expect(result.error).toBe(supabaseError);
+  });
+
   it('returns error when no user data returned', async () => {
     authMocks.signUpMock.mockResolvedValue({
       data: { user: null },
@@ -81,6 +126,40 @@ describe('signUpWithEmail', () => {
     const result = await signUpWithEmail('test@example.com', 'pass', 'Test User');
 
     expect(result.error?.message).toBe('No user data returned');
+  });
+});
+
+describe('resendSignupEmail', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('asks Supabase to resend the sign-up email', async () => {
+    authMocks.resendMock.mockResolvedValue({ data: {}, error: null });
+
+    const result = await resendSignupEmail('new@example.com');
+
+    expect(authMocks.resendMock).toHaveBeenCalledWith({ type: 'signup', email: 'new@example.com' });
+    expect(result).toEqual({});
+  });
+
+  it('returns the error when the resend fails', async () => {
+    const supabaseError = Object.assign(new Error('Email rate limit exceeded'), {
+      code: 'over_email_send_rate_limit',
+    });
+    authMocks.resendMock.mockResolvedValue({ data: {}, error: supabaseError });
+
+    const result = await resendSignupEmail('new@example.com');
+
+    expect(result.error).toBe(supabaseError);
+  });
+
+  it('returns an error when the resend throws', async () => {
+    authMocks.resendMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = await resendSignupEmail('new@example.com');
+
+    expect(result.error).toBeInstanceOf(Error);
   });
 });
 
