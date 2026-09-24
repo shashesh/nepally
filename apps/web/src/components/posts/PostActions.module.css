@@ -7,16 +7,20 @@
   border-top: 1px solid var(--border-subtle);
 }
 
+/* No gap: each stat's own padding (the buttons' hit area) spaces their
+   content apart. The text-only stats take the same padding so the feed's
+   row spaces like post detail's. */
 .stats {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: 0;
 }
 
 .stat {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   color: var(--text-2);
   font-size: var(--font-size-sm);
 }

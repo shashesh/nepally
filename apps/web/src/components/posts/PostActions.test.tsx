@@ -65,10 +65,17 @@ describe('PostActions', () => {
     render(<PostActions likeCount={0} commentCount={0} onSave={onSave} onShare={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
     expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps one name for save and carries the state in aria-pressed', () => {
+    const { unmount } = render(
+      <PostActions likeCount={0} commentCount={0} saved={false} onSave={vi.fn()} onShare={vi.fn()} />
+    );
+    expect(screen.getByRole('button', { name: 'Save post' }).getAttribute('aria-pressed')).toBe('false');
     unmount();
 
-    render(<PostActions likeCount={0} commentCount={0} saved onSave={onSave} onShare={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+    render(<PostActions likeCount={0} commentCount={0} saved onSave={vi.fn()} onShare={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Save post' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it('shows the details cue only for the feed card', () => {

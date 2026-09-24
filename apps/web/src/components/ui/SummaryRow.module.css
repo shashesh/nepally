@@ -94,9 +94,11 @@
 }
 
 /* The alt text ('') keeps the dot itself out of the accessibility tree, so
-   screen readers hear "2h ago 3 likes", not "2h ago dot 3 likes". */
-.line > * + *::before {
+   screen readers hear "2h ago 3 likes", not "2h ago dot 3 likes". The dot
+   trails the item before it, so a wrapped line ends with it rather than
+   starting with it. */
+.line > *:not(:last-child)::after {
   content: '·';
   content: '·' / '';
-  margin-right: var(--space-1);
+  margin-left: var(--space-1);
 }

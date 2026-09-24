@@ -82,7 +82,7 @@ export function PostActions({
             className={styles.statButton}
             onClick={onSave}
             aria-pressed={saved}
-            aria-label={saved ? 'Unsave post' : 'Save post'}
+            aria-label="Save post"
           >
             {saved ? <IconBookmarkFilled size={20} aria-hidden="true" /> : <IconBookmark size={20} aria-hidden="true" />}
           </UnstyledButton>

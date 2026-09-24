@@ -665,8 +665,8 @@ describe('PostDetailPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
     fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
-    fireEvent.click(screen.getByRole('button', { name: 'Unsave post' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Save post', pressed: true }));
 
     expect(postDetailMocks.savePostMock).toHaveBeenCalledTimes(1);
     expect(postDetailMocks.unsavePostMock).not.toHaveBeenCalled();
@@ -774,7 +774,7 @@ describe('PostDetailPage', () => {
         settleSaved({ data: [] });
       });
 
-      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined();
     });
   });
 
@@ -835,7 +835,7 @@ describe('PostDetailPage', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
       fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
-      await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined());
 
       await act(async () => {
         settleSaved({ data: ['post-1'] });
@@ -844,7 +844,7 @@ describe('PostDetailPage', () => {
         settleSave({ error: new Error('duplicate key value violates unique constraint') });
       });
 
-      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined();
     });
   });
 
@@ -891,13 +891,13 @@ describe('PostDetailPage', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
       fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
-      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post', pressed: false })).toBeDefined());
 
       await act(async () => {
         settleSaved({ data: ['post-1'] });
       });
 
-      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined();
     });
   });
 
@@ -1139,9 +1139,9 @@ describe('PostDetailPage', () => {
     postDetailMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Unsave post' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save post', pressed: true }));
 
     await waitFor(() => {
       expect(postDetailMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');
