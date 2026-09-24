@@ -177,6 +177,32 @@ describe('useNotificationsFeed', () => {
     expect(result.current.items.map((item) => item.id)).toEqual(['n-new']);
   });
 
+  // Layout keeps the bell mounted through sign-out; a request for the member
+  // who left must not land, nor show to whoever signs in next.
+  it('drops a signed-out member’s feed and shows the next member none of it', async () => {
+    let resolveFirst!: (value: { count: number }) => void;
+    mocks.getUnreadNotificationCount.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFirst = resolve;
+      })
+    );
+    mocks.getNotifications.mockResolvedValueOnce({ data: [{ ...base, id: 'n-old' }] });
+    const { result, rerender } = renderHook(
+      ({ userId }: { userId: string | null }) => useNotificationsFeed({ userId, pollingEnabled: true }),
+      { initialProps: { userId: 'user-1' as string | null } }
+    );
+
+    rerender({ userId: null });
+    await act(async () => {
+      resolveFirst({ count: 9 });
+    });
+
+    mocks.getUnreadNotificationCount.mockReturnValueOnce(new Promise(() => {}));
+    rerender({ userId: 'user-2' });
+    expect(result.current.unreadCount).toBe(0);
+    expect(result.current.items).toEqual([]);
+  });
+
   // Leaving /notifications turns polling back on and resubscribes at once;
   // a reused topic would join the channel that is still leaving.
   it('subscribes on a fresh topic each time polling turns back on', () => {

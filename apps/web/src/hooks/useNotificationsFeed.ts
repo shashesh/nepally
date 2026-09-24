@@ -48,6 +48,16 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<Notification[]>([]);
 
+  // A different member (or none) starts from an empty feed, so whoever signs
+  // in next never sees the previous member's count or items while their own
+  // first load is in flight (react.dev: adjusting state when a prop changes).
+  const [feedUserId, setFeedUserId] = useState(userId);
+  if (userId !== feedUserId) {
+    setFeedUserId(userId);
+    setUnreadCount(0);
+    setItems([]);
+  }
+
   // Loads overlap (a poll, then an announcement from /notifications), and
   // their answers can land in either order: only the latest one applies. A
   // previous user's answer is older than the new user's first load, so this
@@ -56,9 +66,11 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
 
   // Every load — first, polling back on, announcement, focus, poll — goes through this.
   const load = useCallback(() => {
-    if (!userId) return;
+    // Advance even with no member, so a request for the one who just signed
+    // out is dropped when it lands.
     latestRequestRef.current += 1;
     const request = latestRequestRef.current;
+    if (!userId) return;
     void fetchBellFeed(userId).then((feed) => {
       if (request !== latestRequestRef.current) return;
       setUnreadCount(feed.unreadCount);
