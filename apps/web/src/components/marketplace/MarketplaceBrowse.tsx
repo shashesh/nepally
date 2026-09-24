@@ -1,5 +1,7 @@
 import React, { type ReactNode, useMemo } from 'react';
-import { IconBuildingStore } from '@tabler/icons-react';
+import Link from 'next/link';
+import { Button } from '@mantine/core';
+import { IconBuildingStore, IconMapPin } from '@tabler/icons-react';
 import { MARKETPLACE_CATEGORIES } from '@nepally/shared';
 import { useCachedCategories } from '../../hooks/useCachedCategories';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
@@ -111,9 +113,32 @@ export function MarketplaceBrowse({
     [query.category, query.sort, query.q]
   );
 
+  const header = <PageHeader title={title} actions={actions} backHref={backHref} backLabel={backLabel} />;
+
+  // Without a metro the feed never loads (useMarketplaceFeed waits for one),
+  // so the skeleton would stay forever: ask for the area instead.
+  if (metroId === null) {
+    return (
+      <div className={styles.container}>
+        {header}
+        <EmptyState
+          icon={<IconMapPin size={40} />}
+          title="Choose your area to see listings"
+          titleOrder={2}
+          description="Add your ZIP code and we'll show listings near you."
+          action={
+            <Button component={Link} href="/onboarding/zip">
+              Set your area
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
-      <PageHeader title={title} actions={actions} backHref={backHref} backLabel={backLabel} />
+      {header}
 
       <FilterBar
         categories={categories}

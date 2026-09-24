@@ -246,6 +246,20 @@ describe('MarketplaceBrowse', () => {
     ).toBe('/marketplace');
   });
 
+  // recon 2: without a metro the feed never loads, so the skeleton stayed forever.
+  it('asks a member with no area to set one, instead of loading forever', () => {
+    mocks.useMarketplaceFeed.mockReturnValue(feed({ loading: true }));
+    renderBrowse({ metroId: null });
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Marketplace' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 2, name: 'Choose your area to see listings' })).toBeDefined();
+    expect(screen.getByText("Add your ZIP code and we'll show listings near you.")).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Set your area' }).getAttribute('href')).toBe('/onboarding/zip');
+    expect(screen.queryAllByRole('status').some((el) => el.getAttribute('aria-busy') === 'true')).toBe(false);
+    expect(screen.queryByText('Loading listings…')).toBeNull();
+    expect(screen.queryByText(/No listings/i)).toBeNull();
+  });
+
   it('shows a busy loading state before the first results land', () => {
     mocks.useMarketplaceFeed.mockReturnValue(feed({ loading: true }));
     renderBrowse();
