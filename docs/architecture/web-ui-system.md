@@ -192,6 +192,8 @@ The inbox (`/messages`) and a thread (`/messages/[id]`) are built from these, in
 | `useConversations(userId)` | The inbox, over `useUserList`: a failed load is an error with a retry, never an empty inbox. Not paged — `getConversations` returns every conversation |
 | `useMessageThread(conversationId, userId)` | The newest 100 messages, the partner, realtime and `send`. Subscribes before loading and merges what arrives meanwhile; a conversation missing from the viewer's list (never theirs, or with a member they blocked) is `notFound`, and the channel is left. Keyed on the two ids, not the user object |
 
+Every realtime channel takes its topic from shared `uniqueChannelTopic(base)`. realtime-js hands back a still-leaving channel for a matching topic, and that channel's `subscribe()` does nothing, so resubscribing to a fixed topic straight after removing it — React StrictMode's dev remount, or A → B → A — gets no events.
+
 ## Web-only helpers (`src/lib`)
 
 | Helper | Notes |
@@ -201,6 +203,7 @@ The inbox (`/messages`) and a thread (`/messages/[id]`) are built from these, in
 | `resizeImage(file)` | Downscales to 1200px wide at JPEG quality 0.8, returning a `File`. Passed to `ImageUploader` as `transformFile` |
 | `cropToSquare(file, size?)` | In `resizeImage.ts`. Centre-crops to the largest square and scales it to at most `PROFILE_PHOTO_SIZE_PX`, never up, as a JPEG `File` |
 | `replaceProfilePhoto(supabase, userId, file)` | `lib/profilePhoto.ts`: `cropToSquare`, then the shared `setProfilePhoto`. Returns `{ error }` as a message; an image that won't decode is logged and reads "We couldn't process that image" |
+| `announceMessagesRead()` | `lib/unreadMessages.ts`. A thread calls it once `markAsRead` has run, and `useUnreadMessageCount` refreshes on it, so the top bar's badge clears at once instead of waiting on realtime or its 30s poll |
 | `isFocusStranded()` | `lib/focus.ts`. True when focus is on `<body>` or still inside a closing modal (`[aria-modal="true"]`). Mantine returns focus on a timer and keeps a modal mounted through its exit transition, so an effect restoring focus must treat both as lost |
 | `parseMarketplaceQuery(query)` | `lib/marketplaceQuery.ts`. One reading of the marketplace's URL state for both routes, which both expose the slug as `query.category`. Also `isFilteredQuery` and `SEARCH_SLUG`, the pseudo-category `/marketplace/search` uses |
 | `submitNewPost` / `submitEditedPost` | Create post's two submit paths, as pure functions. They own the rollback rules: delete what was just uploaded when the write fails, delete what the member dropped only once it succeeds |
