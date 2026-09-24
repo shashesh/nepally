@@ -1,189 +1,224 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import Head from 'next/head';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Button, Center, Loader } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Text, Title } from '@mantine/core';
+import { IconShieldLock } from '@tabler/icons-react';
+import type { Post, ReportWithUsers } from '@nepally/shared';
 import { useAuth } from '../hooks/useAuth';
-import { supabase } from '../lib/supabase';
-import {
-  getPendingPosts,
-  listReports,
-  resolveReport,
-  setPostModerationStatus,
-  setUserBanStatus,
-  getPostsByIds,
-  formatPublicName,
-  formatRelativeTime,
-} from '@nepally/shared';
-import type {
-  Post,
-  ReportWithUsers,
-  ResolveReportInput,
-  ModerationPostStatus,
-} from '@nepally/shared';
-import styles from '../styles/Moderation.module.css';
+import { useModerationQueue, type ModerationResult } from '../hooks/useModerationQueue';
+import { useNow } from '../hooks/useNow';
+import { isFocusStranded } from '../lib/focus';
+import { EmptyState, ErrorState, LoadingState, PageHeader, useConfirm } from '../components/ui';
+import { notify } from '../components/ui/notify';
+import { PendingPostCard } from '../components/moderation/PendingPostCard';
+import { ReportCard } from '../components/moderation/ReportCard';
+import styles from './moderation.module.css';
 
-const DESCRIPTION_PREVIEW_CHARS = 280;
+type Section = 'pending' | 'reports';
 
-function authorName(post: Post | undefined): string {
-  return post?.author?.full_name ? formatPublicName(post.author.full_name) : 'Unknown author';
+/** A card acted on, so focus can follow once it has left its section. */
+interface PendingFocus {
+  section: Section;
+  cardId: string;
+  index: number;
 }
 
-function preview(text: string): string {
-  return text.length > DESCRIPTION_PREVIEW_CHARS
-    ? `${text.slice(0, DESCRIPTION_PREVIEW_CHARS)}…`
-    : text;
-}
-
-function showError(error: Error): void {
-  notifications.show({ message: error.message, color: 'red' });
-}
+const DESCRIPTION = 'Review Emergency submissions and community reports.';
 
 export default function ModerationPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const isModerator = Boolean(user?.is_moderator);
-
-  const [pendingPosts, setPendingPosts] = useState<Post[]>([]);
-  const [reports, setReports] = useState<ReportWithUsers[]>([]);
-  const [reportedPosts, setReportedPosts] = useState<Record<string, Post>>({});
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  // One moderation action at a time: every button is disabled while any
-  // request is in flight, so two actions cannot race on the same rows.
-  const anyBusy = busyId !== null;
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/login');
-    }
+    if (!authLoading && !user) router.replace('/login');
   }, [authLoading, user, router]);
 
-  useEffect(() => {
-    if (!isModerator) return;
-    let cancelled = false;
-
-    (async () => {
-      const [postsResult, reportsResult] = await Promise.all([
-        getPendingPosts(supabase),
-        listReports(supabase, { status: 'pending' }),
-      ]);
-      if (cancelled) return;
-
-      const loadError = postsResult.error ?? reportsResult.error;
-      if (loadError) showError(loadError);
-
-      const nextReports = reportsResult.data ?? [];
-      setPendingPosts(postsResult.data ?? []);
-      setReports(nextReports);
-
-      // Reported posts are fetched in one batched query so the queue can show
-      // the title and author (and offer "Ban author") without leaving the page.
-      const postIds = Array.from(
-        new Set(nextReports.filter((r) => r.target_type === 'post').map((r) => r.target_id))
-      );
-      const { data: fetchedPosts } = await getPostsByIds(supabase, postIds);
-      if (cancelled) return;
-      setReportedPosts(Object.fromEntries((fetchedPosts ?? []).map((post) => [post.id, post])));
-
-      setLoading(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isModerator]);
-
-  async function decidePost(post: Post, status: ModerationPostStatus): Promise<void> {
-    setBusyId(post.id);
-    const { error } = await setPostModerationStatus(supabase, post.id, status);
-    setBusyId(null);
-
-    if (error) {
-      showError(error);
-      return;
-    }
-
-    setPendingPosts((prev) => prev.filter((p) => p.id !== post.id));
-    notifications.show({
-      message: status === 'active' ? 'Post approved and published.' : 'Post removed.',
-    });
-  }
-
-  /** Resolves the report and drops it from the queue. Returns false on error. */
-  async function closeReport(report: ReportWithUsers, input: ResolveReportInput): Promise<boolean> {
-    const { error } = await resolveReport(supabase, report.id, input);
-    if (error) {
-      showError(error);
-      return false;
-    }
-    setReports((prev) => prev.filter((r) => r.id !== report.id));
-    return true;
-  }
-
-  async function dismissReport(report: ReportWithUsers): Promise<void> {
-    if (!user) return;
-    setBusyId(report.id);
-    const ok = await closeReport(report, { status: 'dismissed', reviewed_by: user.id, action: 'none' });
-    setBusyId(null);
-    if (ok) notifications.show({ message: 'Report dismissed.' });
-  }
-
-  async function removeReportedPost(report: ReportWithUsers): Promise<void> {
-    if (!user) return;
-    setBusyId(report.id);
-
-    const { error } = await setPostModerationStatus(supabase, report.target_id, 'removed');
-    if (error) {
-      showError(error);
-      setBusyId(null);
-      return;
-    }
-
-    // The same post can also be sitting in the pending-posts queue (e.g. a
-    // reported Emergency submission); drop it there too so its card doesn't
-    // linger until the next full reload.
-    setPendingPosts((prev) => prev.filter((p) => p.id !== report.target_id));
-
-    const ok = await closeReport(report, { status: 'actioned', reviewed_by: user.id, action: 'removed' });
-    setBusyId(null);
-    if (ok) notifications.show({ message: 'Post removed and report closed.' });
-  }
-
-  async function banUser(report: ReportWithUsers, targetUserId: string, label: string): Promise<void> {
-    if (!user) return;
-    const confirmed = window.confirm(
-      `Ban ${label}? Their posts will be removed and they will no longer be able to post.`
-    );
-    if (!confirmed) return;
-
-    setBusyId(report.id);
-
-    const { error } = await setUserBanStatus(supabase, targetUserId, true, report.reason);
-    if (error) {
-      showError(error);
-      setBusyId(null);
-      return;
-    }
-
-    const ok = await closeReport(report, { status: 'actioned', reviewed_by: user.id, action: 'banned' });
-    setBusyId(null);
-    if (ok) notifications.show({ message: `${label} has been banned.` });
-  }
-
   if (authLoading || !user) return null;
+  return <ModerationView moderatorId={user.is_moderator ? user.id : null} />;
+}
 
-  if (!isModerator) {
-    return (
-      <>
-        <Head>
-          <title>Moderation - Nepally</title>
-        </Head>
-        <div className={styles.shell}>
-          <h1 className={styles.title}>Moderation</h1>
-          <p className={styles.notice}>Moderator access is required to view this page.</p>
+interface QueueSectionProps {
+  headingId: string;
+  title: string;
+  count: string;
+  emptyText: string;
+  isEmpty: boolean;
+  headingRef: RefObject<HTMLHeadingElement | null>;
+  listRef: RefObject<HTMLDivElement | null>;
+  children: ReactNode;
+}
+
+function QueueSection({ headingId, title, count, emptyText, isEmpty, headingRef, listRef, children }: QueueSectionProps) {
+  return (
+    <section className={styles.section} aria-labelledby={headingId}>
+      <div className={styles.sectionHeader}>
+        {/* tabIndex -1: focus lands here when the section's last card leaves. */}
+        <Title order={2} id={headingId} ref={headingRef} tabIndex={-1} className={styles.sectionTitle}>
+          {title}
+        </Title>
+        <Text className={styles.count}>{count}</Text>
+      </div>
+      {isEmpty ? (
+        <Text className={styles.empty}>{emptyText}</Text>
+      ) : (
+        <div ref={listRef} className={styles.cards}>
+          {children}
         </div>
+      )}
+    </section>
+  );
+}
+
+function ModerationView({ moderatorId }: { moderatorId: string | null }) {
+  const queue = useModerationQueue(moderatorId);
+  const confirm = useConfirm();
+  const now = useNow();
+
+  const pendingHeadingRef = useRef<HTMLHeadingElement>(null);
+  const reportsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const pendingListRef = useRef<HTMLDivElement>(null);
+  const reportsListRef = useRef<HTMLDivElement>(null);
+  const pendingFocusRef = useRef<PendingFocus | null>(null);
+
+  const { pendingPosts, reports } = queue;
+
+  // Once the acted-on card has left, and only if focus went with it, focus
+  // the card that took its place, then the one before, then the heading.
+  useEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (!pending) return;
+    const ids = pending.section === 'pending' ? pendingPosts.map((p) => p.id) : reports.map((r) => r.id);
+    if (ids.includes(pending.cardId)) return;
+    pendingFocusRef.current = null;
+    if (!isFocusStranded()) return;
+
+    const list = pending.section === 'pending' ? pendingListRef.current : reportsListRef.current;
+    const cards = list?.querySelectorAll<HTMLElement>('article') ?? [];
+    const heading = pending.section === 'pending' ? pendingHeadingRef.current : reportsHeadingRef.current;
+    const target = cards.length > 0 ? cards[Math.min(pending.index, cards.length - 1)] : heading;
+    target?.focus();
+  }, [pendingPosts, reports]);
+
+  const run = async (focus: PendingFocus, action: () => Promise<ModerationResult>, success: string) => {
+    pendingFocusRef.current = focus;
+    const result = await action();
+    if (result.ok) {
+      notify.success(success);
+    } else {
+      pendingFocusRef.current = null;
+      notify.error(result.message);
+    }
+  };
+
+  const confirmRemoval = (title: string) =>
+    confirm({
+      title: 'Remove this post?',
+      message: `“${title}” will be taken down and won't appear in any feed.`,
+      confirmLabel: 'Remove post',
+      danger: true,
+    });
+
+  const handleApprove = (post: Post, index: number) =>
+    run({ section: 'pending', cardId: post.id, index }, () => queue.approvePost(post), 'Post approved and published.');
+
+  const handleRemove = async (post: Post, index: number) => {
+    if (!(await confirmRemoval(post.title))) return;
+    await run({ section: 'pending', cardId: post.id, index }, () => queue.removePost(post), 'Post removed.');
+  };
+
+  const handleDismiss = (report: ReportWithUsers, index: number) =>
+    run({ section: 'reports', cardId: report.id, index }, () => queue.dismissReport(report), 'Report dismissed.');
+
+  const handleRemovePost = async (report: ReportWithUsers, index: number) => {
+    const title = queue.reportedPosts[report.target_id]?.title ?? 'This post';
+    if (!(await confirmRemoval(title))) return;
+    await run(
+      { section: 'reports', cardId: report.id, index },
+      () => queue.removeReportedPost(report),
+      'Post removed and report closed.'
+    );
+  };
+
+  const handleBan = async (report: ReportWithUsers, index: number, targetUserId: string, name: string) => {
+    const confirmed = await confirm({
+      title: `Ban ${name}?`,
+      message: 'Their posts will be removed and they will no longer be able to post.',
+      confirmLabel: 'Ban',
+      danger: true,
+    });
+    if (!confirmed) return;
+    const label = name.charAt(0).toUpperCase() + name.slice(1);
+    await run(
+      { section: 'reports', cardId: report.id, index },
+      () => queue.banUser(report, targetUserId),
+      `${label} has been banned.`
+    );
+  };
+
+  const locked = queue.busy !== null;
+  const busyActionFor = (id: string) => (queue.busy?.id === id ? queue.busy.action : null);
+
+  let body: ReactNode;
+  if (!moderatorId) {
+    body = (
+      <EmptyState
+        icon={<IconShieldLock size={40} />}
+        title="Moderator access required"
+        description="You need moderator access to view this page."
+      />
+    );
+  } else if (queue.loading) {
+    body = <LoadingState label="Loading the moderation queue…" />;
+  } else if (queue.error) {
+    body = <ErrorState message={queue.error} onRetry={queue.reload} />;
+  } else {
+    body = (
+      <>
+        <QueueSection
+          headingId="pending-posts-heading"
+          title="Pending posts"
+          count={`${pendingPosts.length} waiting`}
+          emptyText="No posts waiting for review."
+          isEmpty={pendingPosts.length === 0}
+          headingRef={pendingHeadingRef}
+          listRef={pendingListRef}
+        >
+          {pendingPosts.map((post, index) => (
+            <PendingPostCard
+              key={post.id}
+              post={post}
+              now={now}
+              locked={locked}
+              busyAction={busyActionFor(post.id)}
+              onApprove={() => void handleApprove(post, index)}
+              onRemove={() => void handleRemove(post, index)}
+            />
+          ))}
+        </QueueSection>
+
+        <QueueSection
+          headingId="open-reports-heading"
+          title="Open reports"
+          count={`${reports.length} open`}
+          emptyText="No open reports."
+          isEmpty={reports.length === 0}
+          headingRef={reportsHeadingRef}
+          listRef={reportsListRef}
+        >
+          {reports.map((report, index) => (
+            <ReportCard
+              key={report.id}
+              report={report}
+              post={report.target_type === 'post' ? queue.reportedPosts[report.target_id] : undefined}
+              now={now}
+              locked={locked}
+              busyAction={busyActionFor(report.id)}
+              onDismiss={() => void handleDismiss(report, index)}
+              onRemovePost={() => void handleRemovePost(report, index)}
+              onBan={(targetUserId, name) => void handleBan(report, index, targetUserId, name)}
+            />
+          ))}
+        </QueueSection>
       </>
     );
   }
@@ -193,162 +228,9 @@ export default function ModerationPage() {
       <Head>
         <title>Moderation - Nepally</title>
       </Head>
-      <div className={styles.shell}>
-        <header className={styles.header}>
-          <h1 className={styles.title}>Moderation</h1>
-          <p className={styles.subtitle}>Review Emergency submissions and community reports.</p>
-        </header>
-
-        {loading ? (
-          <Center>
-            <Loader size="sm" />
-          </Center>
-        ) : (
-          <>
-            <section className={styles.section} aria-labelledby="pending-posts-heading">
-              <div className={styles.sectionHeader}>
-                <h2 id="pending-posts-heading" className={styles.sectionTitle}>
-                  Pending posts
-                </h2>
-                <span className={styles.count}>{pendingPosts.length}</span>
-              </div>
-
-              {pendingPosts.length === 0 ? (
-                <p className={styles.empty}>No posts waiting for review.</p>
-              ) : (
-                pendingPosts.map((post) => (
-                  <article key={post.id} className={`${styles.card} ${styles.cardPending}`}>
-                    <h3 className={styles.cardTitle}>
-                      <Link href={`/posts/${post.id}`} className={styles.cardTitleLink}>
-                        {post.title}
-                      </Link>
-                    </h3>
-                    <p className={styles.meta}>
-                      {`by ${authorName(post)} · ${post.location_city}, ${post.location_state} · ${formatRelativeTime(new Date(post.created_at))}`}
-                    </p>
-                    <p className={styles.body}>{preview(post.description)}</p>
-                    {post.tags && post.tags.length > 0 ? (
-                      <div className={styles.tagRow}>
-                        {post.tags.map((tag) => (
-                          <span key={tag.id} className={styles.tag}>
-                            {tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div className={styles.actions}>
-                      <Button
-                        size="xs"
-                        onClick={() => decidePost(post, 'active')}
-                        loading={busyId === post.id}
-                        disabled={anyBusy}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        color="red"
-                        onClick={() => decidePost(post, 'removed')}
-                        disabled={anyBusy}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </article>
-                ))
-              )}
-            </section>
-
-            <section className={styles.section} aria-labelledby="open-reports-heading">
-              <div className={styles.sectionHeader}>
-                <h2 id="open-reports-heading" className={styles.sectionTitle}>
-                  Open reports
-                </h2>
-                <span className={styles.count}>{reports.length}</span>
-              </div>
-
-              {reports.length === 0 ? (
-                <p className={styles.empty}>No open reports.</p>
-              ) : (
-                reports.map((report) => {
-                  const reporter = report.reported_by_user?.full_name
-                    ? formatPublicName(report.reported_by_user.full_name)
-                    : 'a member';
-                  const targetPost =
-                    report.target_type === 'post' ? reportedPosts[report.target_id] : undefined;
-
-                  return (
-                    <article key={report.id} className={`${styles.card} ${styles.cardReport}`}>
-                      <span className={styles.reason}>{report.reason}</span>
-                      {report.description ? <p className={styles.body}>{report.description}</p> : null}
-
-                      {report.target_type === 'post' && (
-                        <>
-                          <p className={styles.cardTitle}>{targetPost?.title ?? 'Post no longer available'}</p>
-                          <Link href={`/posts/${report.target_id}`} className={styles.targetLink}>
-                            View post
-                          </Link>
-                        </>
-                      )}
-                      {report.target_type === 'user' && (
-                        <Link href={`/users/${report.target_id}`} className={styles.targetLink}>
-                          View user
-                        </Link>
-                      )}
-                      {report.target_type === 'message' && (
-                        <p className={styles.meta}>
-                          Chat message report. Message content is private; follow up with the reporter.
-                        </p>
-                      )}
-
-                      <p className={styles.meta}>
-                        {`Reported by ${reporter} · ${formatRelativeTime(new Date(report.created_at))}`}
-                      </p>
-
-                      <div className={styles.actions}>
-                        <Button size="xs" variant="default" onClick={() => dismissReport(report)} disabled={anyBusy}>
-                          Dismiss
-                        </Button>
-                        {report.target_type === 'post' && (
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            color="red"
-                            onClick={() => removeReportedPost(report)}
-                            disabled={anyBusy}
-                          >
-                            Remove post
-                          </Button>
-                        )}
-                        {report.target_type === 'post' && targetPost?.author_id && (
-                          <Button
-                            size="xs"
-                            color="red"
-                            onClick={() => banUser(report, targetPost.author_id, authorName(targetPost))}
-                            disabled={anyBusy}
-                          >
-                            Ban author
-                          </Button>
-                        )}
-                        {report.target_type === 'user' && (
-                          <Button
-                            size="xs"
-                            color="red"
-                            onClick={() => banUser(report, report.target_id, 'this user')}
-                            disabled={anyBusy}
-                          >
-                            Ban user
-                          </Button>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })
-              )}
-            </section>
-          </>
-        )}
+      <div className={styles.page}>
+        <PageHeader title="Moderation" description={moderatorId ? DESCRIPTION : undefined} />
+        {body}
       </div>
     </>
   );
