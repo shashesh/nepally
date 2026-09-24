@@ -190,6 +190,7 @@ export function PublicProfileHeader({
                 radius="var(--radius-full)"
                 className={styles.ctaButton}
                 aria-disabled={messaging || undefined}
+                aria-busy={messaging || undefined}
                 data-disabled={messaging || undefined}
                 leftSection={messaging ? <Loader size="xs" aria-hidden /> : undefined}
                 onClick={messaging ? undefined : onMessage}

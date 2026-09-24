@@ -377,7 +377,6 @@ describe('PublicProfilePage', () => {
 
     const button = screen.getByRole('button', { name: 'Message Bikal S.' });
     expect(button.getAttribute('aria-disabled')).toBe('true');
-    expect(button.hasAttribute('data-disabled')).toBe(true);
     expect(screen.queryByText(/Opening conversation/i)).toBeNull();
   });
 

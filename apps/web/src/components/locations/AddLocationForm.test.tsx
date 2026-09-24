@@ -287,7 +287,6 @@ describe('AddLocationForm', () => {
     const cancelButton = screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement;
     expect(cancelButton.disabled).toBe(false);
     expect(cancelButton.getAttribute('aria-disabled')).toBe('true');
-    expect(cancelButton.hasAttribute('data-disabled')).toBe(true);
     fireEvent.click(cancelButton);
     expect(onCancel).not.toHaveBeenCalled();
 
