@@ -62,8 +62,8 @@ describe('Layout', () => {
   it('renders the public shell for visitors', () => {
     mocks.useAuth.mockReturnValue({ user: null, loading: false, signOut: mocks.signOut });
     render(<Layout>Page content</Layout>);
-    expect(screen.getByRole('link', { name: 'Log In' }).getAttribute('href')).toBe('/login');
-    expect(screen.getByRole('link', { name: 'Sign Up' }).getAttribute('href')).toBe('/signup');
+    expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
+    expect(screen.getByRole('link', { name: 'Sign up' }).getAttribute('href')).toBe('/signup');
     expect(screen.getByRole('link', { name: 'Privacy Policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('main').textContent).toContain('Page content');
     expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();

@@ -4,7 +4,7 @@ import { Button, Group } from '@mantine/core';
 import { FOOTER_LINKS } from './navItems';
 import styles from './PublicShell.module.css';
 
-/** Shell for signed-out visitors: brand, Log In / Sign Up, legal footer. */
+/** Shell for signed-out visitors: brand, Log in / Sign up, legal footer. */
 export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.root}>
@@ -16,10 +16,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
           </Link>
           <Group gap="xs">
             <Button variant="default" component={Link} href="/login">
-              Log In
+              Log in
             </Button>
             <Button component={Link} href="/signup">
-              Sign Up
+              Sign up
             </Button>
           </Group>
         </div>

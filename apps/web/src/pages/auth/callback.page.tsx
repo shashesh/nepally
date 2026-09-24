@@ -1,124 +1,155 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Button, Group, Loader, Text } from '@mantine/core';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { createUserProfile, markEmailVerified, markGoogleVerified, getMyProfile } from '@nepally/shared';
-import styles from '../../styles/Auth.module.css';
+import { logClientEvent } from '@nepally/shared';
+import { FINISH_SIGN_IN_FAILED, finishSignIn } from '../../lib/authCallback';
+import { useAuth } from '../../hooks/useAuth';
+import { AuthCard } from '../../components/auth/AuthCard';
 
-type CallbackState = 'verifying' | 'error';
+type CallbackState = { kind: 'working' } | { kind: 'expired' } | { kind: 'failed'; message: string };
 
-const VERIFICATION_TIMEOUT_MS = 10000;
+/** How long to wait for Supabase to hand over a session before calling the link expired. */
+const SESSION_TIMEOUT_MS = 10_000;
+
+function ExpiredCard() {
+  return (
+    <>
+      <Head>
+        <title>Link expired - Nepally</title>
+      </Head>
+      <AuthCard
+        title="Link expired"
+        description="This verification link may have expired or already been used."
+      >
+        <Text ta="center">
+          <Link href="/signup">Sign up</Link> or <Link href="/login">Log in</Link>
+        </Text>
+      </AuthCard>
+    </>
+  );
+}
+
+function FailedCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <>
+      <Head>
+        <title>Sign-in failed - Nepally</title>
+      </Head>
+      <AuthCard title="Couldn't finish signing you in" description={message}>
+        <Button fullWidth onClick={onRetry}>
+          Try again
+        </Button>
+      </AuthCard>
+    </>
+  );
+}
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const [state, setState] = useState<CallbackState>('verifying');
+  const { refreshUser } = useAuth();
+  const [state, setState] = useState<CallbackState>({ kind: 'working' });
 
   useEffect(() => {
-    let settled = false;
+    // Stops a second concurrent run: SIGNED_IN and getSession can both deliver the session.
+    let started = false;
+    let mounted = true;
 
-    async function handleVerifiedSession(session: Session) {
-      if (settled) return;
-      settled = true;
+    const timeout = setTimeout(() => {
+      if (!started) setState({ kind: 'expired' });
+    }, SESSION_TIMEOUT_MS);
 
-      const { user } = session;
-      const email = user.email ?? '';
-      const fullName = (user.user_metadata?.full_name as string | undefined) ?? '';
-      const provider = user.app_metadata?.provider;
-
-      // Check if profile already exists (e.g. returning user via magic link)
-      const { data: existingProfile } = await getMyProfile(supabase);
-
-      if (!existingProfile) {
-        await createUserProfile(supabase, user.id, email, fullName);
+    async function run(session: Session) {
+      if (started) return;
+      started = true;
+      // A slow profile write must not flip a working page to expired.
+      clearTimeout(timeout);
+      // A session that lands after the deadline is still finished: Supabase has
+      // stored it, and dropping it would leave a member with no profile row.
+      setState({ kind: 'working' });
+      const result = await finishSignIn(supabase, session);
+      if (!mounted) return;
+      if ('error' in result) {
+        setState({ kind: 'failed', message: result.error });
+        return;
       }
-
-      // Mark the appropriate verification based on the auth provider
-      if (provider === 'google') {
-        await markGoogleVerified(supabase, user.id);
-      } else {
-        await markEmailVerified(supabase, user.id);
+      // AuthContext read the profile when the session arrived, before finishSignIn
+      // created it, so a new member is still null there; onboarding would send them
+      // to /login. Setting the user swaps Layout's shell, which remounts this page:
+      // this run then stops at `mounted`, and the new one repeats the (idempotent)
+      // steps and navigates. A refresh that throws or loads no profile would leave
+      // the member as nobody, so it fails rather than navigating.
+      let refreshed: Awaited<ReturnType<typeof refreshUser>> = null;
+      let refreshError: unknown = null;
+      try {
+        refreshed = await refreshUser();
+      } catch (error) {
+        refreshError = error;
       }
-
-      // Route based on onboarding state
-      const { data: profile } = await getMyProfile(supabase);
-      if (profile?.metro_area_id) {
-        router.push('/feed');
-      } else {
-        router.push('/onboarding/zip');
+      if (!mounted) return;
+      if (!refreshed) {
+        logClientEvent({
+          event: 'auth_callback_failed',
+          context: { step: 'refresh_user', provider: session.user.app_metadata?.provider },
+          error: refreshError ?? new Error('No profile after sign-in'),
+        });
+        setState({ kind: 'failed', message: FINISH_SIGN_IN_FAILED });
+        return;
       }
+      void router.push(result.destination);
     }
 
-    // Listen for auth state changes (e.g. email magic-link token in URL hash).
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-          await handleVerifiedSession(session);
-        }
-      }
-    );
-
-    // Also check for an existing session immediately — OAuth redirects
-    // (Google) may have already exchanged the code before this component mounts.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        handleVerifiedSession(session);
-      }
+    // The email link's token arrives as an auth event.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) void run(session);
     });
 
-    // Fallback: if nothing resolves within the timeout, show an error.
-    const timeout = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        setState('error');
-      }
-    }, VERIFICATION_TIMEOUT_MS);
+    // A failed session read is a failure now, not an expired link in 10 seconds.
+    // The timer goes too, or it would overwrite the failed state; an auth event
+    // that still delivers a session runs as usual.
+    function failSessionRead(error: unknown) {
+      if (!mounted || started) return;
+      clearTimeout(timeout);
+      logClientEvent({ event: 'auth_callback_failed', context: { step: 'get_session' }, error });
+      setState({ kind: 'failed', message: FINISH_SIGN_IN_FAILED });
+    }
+
+    // An OAuth redirect (Google) may have exchanged the code before this mounted.
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (session) void run(session);
+      else if (error) failSessionRead(error);
+    }, failSessionRead);
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, [router]);
+    // Subscribe once. Next hands out a fresh router object on router-driven renders,
+    // and re-running would reset `started` and could finish sign-in twice. Its push
+    // delegates to the router singleton, so the first render's object stays usable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
+  }, []);
 
-  if (state === 'error') {
-    return (
-      <>
-        <Head>
-          <title>Verification Failed - Nepally</title>
-        </Head>
-        <div className={styles.authPage}>
-          <div className={styles.authCard}>
-            <h1 className={styles.authTitle}>Link Expired</h1>
-            <p className={styles.authSubtitle}>
-              This verification link may have expired or already been used.
-            </p>
-            <p className={styles.switchText}>
-              <Link href="/signup" className={styles.switchLink}>
-                Back to Sign Up
-              </Link>
-              {' or '}
-              <Link href="/login" className={styles.switchLink}>
-                Sign In
-              </Link>
-            </p>
-          </div>
-        </div>
-      </>
-    );
-  }
+  if (state.kind === 'expired') return <ExpiredCard />;
+  // The session persists, so a reload runs finishSignIn again.
+  if (state.kind === 'failed') return <FailedCard message={state.message} onRetry={() => router.reload()} />;
 
   return (
     <>
       <Head>
-        <title>Verifying Email - Nepally</title>
+        <title>Signing in - Nepally</title>
       </Head>
-      <div className={styles.authPage}>
-        <div className={styles.authCard}>
-          <h1 className={styles.authTitle}>Verifying your email...</h1>
-          <p className={styles.authSubtitle}>Please wait a moment.</p>
-        </div>
-      </div>
+      <AuthCard title="Signing you in…">
+        <Group justify="center">
+          <Loader aria-hidden="true" />
+        </Group>
+      </AuthCard>
     </>
   );
 }

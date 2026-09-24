@@ -4,6 +4,8 @@ test.describe('Unauthenticated access', () => {
   test('visiting / shows landing page', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: /welcome to nepally/i })).toBeVisible();
+    await expect(page.locator('main').getByRole('link', { name: 'Sign up' })).toHaveAttribute('href', '/signup');
+    await expect(page.locator('main').getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
   });
 
   test('visiting /feed redirects to /login', async ({ page }) => {
@@ -36,14 +38,14 @@ test.describe('Unauthenticated access', () => {
     await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Log in' })).toBeVisible();
     await expect(page.locator('main').getByRole('link', { name: /^sign up$/i })).toBeVisible();
   });
 
   test('signup page renders correctly', async ({ page }) => {
     await page.goto('/signup');
     await expect(page.getByRole('heading', { name: /join nepally/i })).toBeVisible();
-    await expect(page.getByLabel('Full Name')).toBeVisible();
+    await expect(page.getByLabel('Full name')).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /create account/i })).toBeVisible();
@@ -57,7 +59,7 @@ test.describe('Unauthenticated access', () => {
 
   test('signup page has link to login', async ({ page }) => {
     await page.goto('/signup');
-    await page.getByRole('link', { name: /sign in/i }).click();
+    await page.locator('main').getByRole('link', { name: 'Log in' }).click();
     await expect(page).toHaveURL(/\/login/);
   });
 });

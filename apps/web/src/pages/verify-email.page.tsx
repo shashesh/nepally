@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { supabase } from '../lib/supabase';
-import styles from '../styles/Auth.module.css';
+import { Alert, Button, Group, Loader, Text } from '@mantine/core';
+import { getAuthErrorMessage, logClientEvent } from '@nepally/shared';
+import { resendSignupEmail } from '../lib/auth';
+import { useCountdown } from '../hooks/useCountdown';
+import { AuthCard } from '../components/auth/AuthCard';
 
 const RESEND_COOLDOWN_SECONDS = 60;
+
+type ResendResult = { sent: true } | { sent: false; message: string };
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split('@');
@@ -16,102 +21,92 @@ function maskEmail(email: string): string {
 export default function VerifyEmailPage() {
   const router = useRouter();
   const email = typeof router.query.email === 'string' ? router.query.email : '';
+  const { remaining, restart } = useCountdown(RESEND_COOLDOWN_SECONDS);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<ResendResult | null>(null);
 
-  const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN_SECONDS);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendError, setResendError] = useState('');
-  const [resendSuccess, setResendSuccess] = useState(false);
-
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    startCooldown();
-    return () => {
-      if (cooldownRef.current) clearInterval(cooldownRef.current);
-    };
-  }, []);
-
-  function startCooldown() {
-    setResendCooldown(RESEND_COOLDOWN_SECONDS);
-    cooldownRef.current = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(cooldownRef.current!);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }
+  // Busy and cooling down both keep Resend focusable (busy-controls rule).
+  const locked = sending || remaining > 0;
 
   async function handleResend() {
-    if (resendCooldown > 0 || !email) return;
-
-    setResendLoading(true);
-    setResendError('');
-    setResendSuccess(false);
-
-    try {
-      const { error } = await supabase.auth.resend({ type: 'signup', email });
-      if (error) throw error;
-      setResendSuccess(true);
-      startCooldown();
-    } catch (err: unknown) {
-      setResendError(
-        err instanceof Error ? err.message : 'Failed to resend. Please try again.'
-      );
-    } finally {
-      setResendLoading(false);
+    if (locked || !email) return;
+    setSending(true);
+    setResult(null);
+    const { error } = await resendSignupEmail(email);
+    setSending(false);
+    if (error) {
+      logClientEvent({ event: 'auth_resend_failed', context: { platform: 'web' }, error });
+      setResult({ sent: false, message: getAuthErrorMessage(error, 'resend') });
+      return;
     }
+    setResult({ sent: true });
+    restart();
   }
 
-  const resendLabel = resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Email';
+  // Pages Router: the query is empty until isReady, which would render the no-email
+  // copy and then pop the resend row in a tick later.
+  if (!router.isReady) return null;
 
   return (
     <>
       <Head>
-        <title>Verify Your Email - Nepally</title>
+        <title>Verify your email - Nepally</title>
       </Head>
-      <div className={styles.authPage}>
-        <div className={styles.authCard}>
-          <h1 className={styles.authTitle}>Check Your Email</h1>
-          <p className={styles.authSubtitle}>
-            We sent a verification link to
-          </p>
-          <span className={styles.emailHighlight}>
-            {email ? maskEmail(email) : 'your email address'}
-          </span>
-          <p className={styles.authSubtitle}>
-            Click the link in your email to verify your account and continue.
-          </p>
-
-          {resendError && (
-            <div className={styles.error}>{resendError}</div>
-          )}
-          {resendSuccess && (
-            <div className={styles.success}>Email resent! Check your inbox.</div>
-          )}
-
-          <div className={styles.resendRow}>
-            <span>Didn&apos;t get it?</span>
-            <button
-              type="button"
-              className={styles.resendBtn}
+      <AuthCard
+        title="Check your email"
+        description={
+          <>
+            We sent a verification link to{' '}
+            {email ? <strong>{maskEmail(email)}</strong> : 'your email address'}. Open it to verify
+            your account and continue.
+          </>
+        }
+        // Sign-up answers a taken address exactly like a new one (so it can't
+        // reveal who is registered), which also lands such a member here.
+        footer={
+          <>
+            Already have an account? <Link href="/login">Log in</Link>. If you signed up with Google, use
+            Continue with Google there.
+          </>
+        }
+      >
+        {email && (
+          <Group gap="xs" justify="center">
+            <Text size="sm" c="dimmed">
+              Didn&apos;t get it?
+            </Text>
+            <Button
+              variant="subtle"
+              size="compact-sm"
+              aria-disabled={locked || undefined}
+              data-disabled={locked || undefined}
+              aria-busy={sending || undefined}
+              leftSection={
+                sending ? <Loader size={14} color="currentColor" aria-hidden="true" /> : undefined
+              }
               onClick={handleResend}
-              disabled={resendCooldown > 0 || resendLoading}
             >
-              {resendLoading ? 'Sending...' : resendLabel}
-            </button>
-          </div>
+              Resend email
+            </Button>
+            {remaining > 0 && (
+              <Text size="sm" c="dimmed">
+                {`You can resend in ${remaining}s`}
+              </Text>
+            )}
+          </Group>
+        )}
 
-          <p className={styles.switchText}>
-            Already verified?{' '}
-            <Link href="/login" className={styles.switchLink}>
-              Sign In
-            </Link>
-          </p>
-        </div>
-      </div>
+        {result?.sent && (
+          <Alert color="green" variant="light">
+            Email sent. Check your inbox.
+          </Alert>
+        )}
+        {result && !result.sent && (
+          <Alert color="red" variant="light">
+            {result.message}
+          </Alert>
+        )}
+      </AuthCard>
     </>
   );
 }

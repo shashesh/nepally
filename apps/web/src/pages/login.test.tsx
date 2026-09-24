@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '../test-utils';
+import { render, screen, fireEvent, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const loginMocks = vi.hoisted(() => ({
@@ -7,7 +7,7 @@ const loginMocks = vi.hoisted(() => ({
   useRouterMock: vi.fn(),
   signInWithEmailMock: vi.fn(),
   signInWithGoogleMock: vi.fn(),
-  validateEmailMock: vi.fn(),
+  logClientEventMock: vi.fn(),
 }));
 
 vi.mock('../hooks/useAuth', () => ({
@@ -27,7 +27,7 @@ vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
-    validateEmail: loginMocks.validateEmailMock,
+    logClientEvent: loginMocks.logClientEventMock,
   };
 });
 
@@ -41,6 +41,35 @@ vi.mock('next/link', () => ({
 }));
 
 import LoginPage from './login.page';
+
+/** The text of every element an element's aria-describedby points at. */
+function descriptionOf(element: HTMLElement): string {
+  return (element.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent ?? '')
+    .join(' ');
+}
+
+function emailField() {
+  return screen.getByLabelText('Email');
+}
+
+function passwordField() {
+  return screen.getByLabelText('Password');
+}
+
+function logInButton() {
+  return screen.getByRole('button', { name: 'Log in' });
+}
+
+async function submitWith(email: string, password: string) {
+  fireEvent.change(emailField(), { target: { value: email } });
+  fireEvent.change(passwordField(), { target: { value: password } });
+  await act(async () => {
+    fireEvent.click(logInButton());
+  });
+}
 
 describe('LoginPage', () => {
   const mockPush = vi.fn();
@@ -59,161 +88,165 @@ describe('LoginPage', () => {
       user: null,
       refreshUser: mockRefreshUser,
     });
-    loginMocks.validateEmailMock.mockReturnValue(true);
     loginMocks.signInWithGoogleMock.mockResolvedValue({});
   });
 
   it('renders the login form', () => {
     render(<LoginPage />);
-    expect(screen.getByText('Welcome Back')).toBeDefined();
-    expect(screen.getByLabelText('Email')).toBeDefined();
-    expect(screen.getByLabelText('Password')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Sign In' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeDefined();
+    expect(screen.getByText('Log in to your Nepally account')).toBeDefined();
+    expect(emailField()).toBeDefined();
+    expect(passwordField()).toBeDefined();
+    expect(logInButton()).toBeDefined();
   });
 
-  it('renders link to Sign Up page', () => {
+  it('links to the Sign up page', () => {
     render(<LoginPage />);
-    const signUpLink = screen.getByText('Sign Up');
-    expect(signUpLink.closest('a')?.getAttribute('href')).toBe('/signup');
+    expect(screen.getByRole('link', { name: 'Sign up' }).getAttribute('href')).toBe('/signup');
   });
 
-  it('redirects to /feed when user is already logged in', () => {
+  it('redirects a signed-in user to /feed from an effect and renders nothing', async () => {
     loginMocks.useAuthMock.mockReturnValue({
       user: { id: 'user-1' },
       refreshUser: mockRefreshUser,
     });
     render(<LoginPage />);
+    await act(async () => {});
+    expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith('/feed');
+    expect(screen.queryByRole('heading')).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('shows validation error when email is invalid', async () => {
-    loginMocks.validateEmailMock.mockReturnValue(false);
+  it('shows no field errors before the first submit', () => {
     render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'not-an-email' },
+    expect(emailField().getAttribute('aria-invalid')).not.toBe('true');
+    expect(passwordField().getAttribute('aria-invalid')).not.toBe('true');
+  });
+
+  it('flags a blank email on submit and focuses it', async () => {
+    render(<LoginPage />);
+    await act(async () => {
+      fireEvent.click(logInButton());
     });
-    fireEvent.change(screen.getByLabelText('Password'), {
-      target: { value: 'somepassword' },
-    });
-    fireEvent.submit(screen.getByRole('button', { name: 'Sign In' }));
-    await waitFor(() => {
-      expect(screen.getByText('Please enter a valid email address.')).toBeDefined();
-    });
+    expect(emailField().getAttribute('aria-invalid')).toBe('true');
+    expect(descriptionOf(emailField())).toContain('Enter a valid email address.');
+    expect(document.activeElement).toBe(emailField());
     expect(loginMocks.signInWithEmailMock).not.toHaveBeenCalled();
   });
 
-  it('shows error when password field is empty', async () => {
+  it('clears the email error as soon as the email becomes valid', async () => {
     render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'test@example.com' },
+    await act(async () => {
+      fireEvent.click(logInButton());
     });
-    // Leave password empty
-    fireEvent.submit(screen.getByRole('button', { name: 'Sign In' }));
-    await waitFor(() => {
-      expect(screen.getByText('Please enter your password.')).toBeDefined();
-    });
+    fireEvent.change(emailField(), { target: { value: 'test@example.com' } });
+    expect(emailField().getAttribute('aria-invalid')).not.toBe('true');
+    expect(screen.queryByText('Enter a valid email address.')).toBeNull();
+  });
+
+  it('flags an empty password on submit and focuses it', async () => {
+    render(<LoginPage />);
+    await submitWith('test@example.com', '');
+    expect(passwordField().getAttribute('aria-invalid')).toBe('true');
+    expect(descriptionOf(passwordField())).toContain('Enter your password.');
+    expect(document.activeElement).toBe(passwordField());
     expect(loginMocks.signInWithEmailMock).not.toHaveBeenCalled();
   });
 
-  it('shows API error message when sign in fails', async () => {
+  it('shows a sentence for invalid credentials, never the raw message', async () => {
     loginMocks.signInWithEmailMock.mockResolvedValue({
-      error: new Error('Invalid login credentials'),
+      error: Object.assign(new Error('Invalid login credentials'), { code: 'invalid_credentials' }),
     });
     render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'test@example.com' },
-    });
-    fireEvent.change(screen.getByLabelText('Password'), {
-      target: { value: 'wrongpassword' },
-    });
-    fireEvent.submit(screen.getByRole('button', { name: 'Sign In' }));
-    await waitFor(() => {
-      expect(screen.getByText('Invalid login credentials')).toBeDefined();
-    });
+    await submitWith('test@example.com', 'wrongpassword');
+    expect(screen.getByRole('alert').textContent).toContain(
+      "That email and password don't match. Check them and try again."
+    );
+    expect(screen.queryByText('Invalid login credentials')).toBeNull();
+    expect(loginMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'auth_log_in_failed' })
+    );
   });
 
-  it('redirects to /feed on successful sign in', async () => {
+  it('falls back to the log-in sentence for an unknown error', async () => {
+    loginMocks.signInWithEmailMock.mockResolvedValue({ error: new Error('boom') });
+    render(<LoginPage />);
+    await submitWith('test@example.com', 'password');
+    expect(screen.getByRole('alert').textContent).toContain("Couldn't log you in. Please try again.");
+  });
+
+  it('refreshes the user and goes to /feed on success', async () => {
     loginMocks.signInWithEmailMock.mockResolvedValue({
       user: { id: 'user-1', email: 'test@example.com' },
     });
     mockRefreshUser.mockResolvedValue(undefined);
     render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'test@example.com' },
-    });
-    fireEvent.change(screen.getByLabelText('Password'), {
-      target: { value: 'correctpassword' },
-    });
-    fireEvent.submit(screen.getByRole('button', { name: 'Sign In' }));
-    await waitFor(() => {
-      expect(mockRefreshUser).toHaveBeenCalled();
-      expect(mockPush).toHaveBeenCalledWith('/feed');
-    });
+    await submitWith('test@example.com', 'correctpassword');
+    expect(loginMocks.signInWithEmailMock).toHaveBeenCalledWith('test@example.com', 'correctpassword');
+    expect(mockRefreshUser).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/feed');
   });
 
   it('toggles password field type when visibility button is clicked', async () => {
     render(<LoginPage />);
-    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('password');
+    expect(passwordField().getAttribute('type')).toBe('password');
     await act(async () => {
       fireEvent.mouseDown(screen.getByLabelText('Toggle password visibility'));
     });
-    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('text');
+    expect(passwordField().getAttribute('type')).toBe('text');
     await act(async () => {
       fireEvent.mouseDown(screen.getByLabelText('Toggle password visibility'));
     });
-    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('password');
+    expect(passwordField().getAttribute('type')).toBe('password');
   });
 
-  it('disables submit button while signing in', async () => {
-    // Never settles: this test only asserts the pending state. A mock that
-    // resolves on a real timer outlives the test — cleanup unmounts the page,
-    // then the success path resumes and calls the shared mockPush inside
-    // whichever test is running by then. No timer, nothing to resume.
+  it('keeps Log in focusable and aria-disabled while signing in, and ignores a second press', async () => {
+    // Never settles: this test only asserts the pending state.
     loginMocks.signInWithEmailMock.mockImplementation(() => new Promise(() => {}));
     render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'test@example.com' },
+    await submitWith('test@example.com', 'password');
+    const button = logInButton();
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect((button as HTMLButtonElement).disabled).toBe(false);
+    await act(async () => {
+      fireEvent.click(button);
     });
-    fireEvent.change(screen.getByLabelText('Password'), {
-      target: { value: 'password' },
-    });
-    fireEvent.submit(screen.getByRole('button', { name: 'Sign In' }));
-    await waitFor(() => {
-      const btn = screen.getByRole('button', { name: 'Sign In' });
-      // Mantine renders `loading` as a disabled native <button>; assert that
-      // user-observable state rather than Mantine's data-loading attribute.
-      expect(btn.hasAttribute('disabled')).toBe(true);
-    });
+    expect(loginMocks.signInWithEmailMock).toHaveBeenCalledTimes(1);
   });
 
-  it('renders Google sign-in button without phone option', () => {
+  it('renders the Google button without a phone option', () => {
     render(<LoginPage />);
-    expect(screen.getByText('Continue with Google')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeDefined();
     expect(screen.queryByText('Continue with Phone')).toBeNull();
   });
 
-  it('calls signInWithGoogle when Google button is clicked', async () => {
+  it('calls signInWithGoogle when the Google button is pressed', async () => {
     render(<LoginPage />);
-    fireEvent.click(screen.getByText('Continue with Google'));
-    await waitFor(() => {
-      expect(loginMocks.signInWithGoogleMock).toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     });
+    expect(loginMocks.signInWithGoogleMock).toHaveBeenCalled();
   });
 
-  it('shows error when Google sign-in fails', async () => {
+  it('shows the Google sentence when Google sign-in fails', async () => {
     loginMocks.signInWithGoogleMock.mockResolvedValue({
       error: new Error('Provider not enabled'),
     });
     render(<LoginPage />);
-    fireEvent.click(screen.getByText('Continue with Google'));
-    await waitFor(() => {
-      expect(screen.getByText('Provider not enabled')).toBeDefined();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     });
+    expect(screen.getByRole('alert').textContent).toContain(
+      "Couldn't continue with Google. Please try again."
+    );
+    expect(screen.queryByText('Provider not enabled')).toBeNull();
   });
 
-  it('shows email divider text', () => {
+  it('shows the email divider text', () => {
     render(<LoginPage />);
-    expect(screen.getByText('or sign in with email')).toBeDefined();
+    expect(screen.getByText('or log in with email')).toBeDefined();
   });
 
   it('shows info message when redirected with reason=existing-account', () => {
@@ -225,7 +258,7 @@ describe('LoginPage', () => {
     });
     render(<LoginPage />);
     expect(screen.getByText(/account with this email already exists/i)).toBeDefined();
-    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('test@example.com');
+    expect((emailField() as HTMLInputElement).value).toBe('test@example.com');
   });
 
   it('pre-fills the email from the query once the router becomes ready', () => {
@@ -236,7 +269,7 @@ describe('LoginPage', () => {
       isReady: false,
     });
     const { rerender } = render(<LoginPage />);
-    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('');
+    expect((emailField() as HTMLInputElement).value).toBe('');
     expect(screen.queryByText(/account with this email already exists/i)).toBeNull();
 
     loginMocks.useRouterMock.mockReturnValue({
@@ -246,7 +279,7 @@ describe('LoginPage', () => {
       isReady: true,
     });
     rerender(<LoginPage />);
-    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('ready@example.com');
+    expect((emailField() as HTMLInputElement).value).toBe('ready@example.com');
     expect(screen.getByText(/account with this email already exists/i)).toBeDefined();
   });
 
@@ -258,9 +291,8 @@ describe('LoginPage', () => {
       isReady: true,
     });
     const { rerender } = render(<LoginPage />);
-    const emailInput = screen.getByLabelText('Email') as HTMLInputElement;
-    fireEvent.change(emailInput, { target: { value: 'typed@example.com' } });
+    fireEvent.change(emailField(), { target: { value: 'typed@example.com' } });
     rerender(<LoginPage />);
-    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('typed@example.com');
+    expect((emailField() as HTMLInputElement).value).toBe('typed@example.com');
   });
 });

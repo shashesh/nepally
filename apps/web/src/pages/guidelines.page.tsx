@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { SUPPORT_EMAIL } from '@nepally/shared';
 import LegalDocument from '../components/legal/LegalDocument';
-import styles from '../styles/Legal.module.css';
+import { Callout } from '../components/legal/Callout';
 
 export default function GuidelinesPage() {
   return (
@@ -41,13 +41,13 @@ export default function GuidelinesPage() {
         <li>Take personal arrangements to direct messages once you have connected.</li>
       </ul>
 
-      <div className={styles.callout}>
+      <Callout>
         <p>
           The Emergency tag is for real emergencies where the community can help: someone is missing, stranded, in
           the hospital far from family, or has lost their home. Call 911 first for anything life-threatening.
           Emergency posts are reviewed by a moderator before they go live, and misusing the tag will get an account banned.
         </p>
-      </div>
+      </Callout>
 
       <h2>No harassment or hate</h2>
       <ul>

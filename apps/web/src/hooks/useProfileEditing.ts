@@ -36,7 +36,7 @@ export interface ProfileEditing {
  */
 export function useProfileEditing(
   user: Pick<User, 'id' | 'email' | 'full_name' | 'bio'> | null,
-  refreshUser: () => Promise<void>
+  refreshUser: () => Promise<unknown>
 ): ProfileEditing {
   const prompt = usePrompt();
   const [saving, setSaving] = useState(false);

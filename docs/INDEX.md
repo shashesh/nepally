@@ -35,7 +35,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 - [architecture/database-schema.md](architecture/database-schema.md) — tables, RLS policies, migration numbering
 - [architecture/supabase-setup.md](architecture/supabase-setup.md) — project config, auth providers, storage
 - [architecture/migration-workflow.md](architecture/migration-workflow.md) — how migrations are authored/applied (manual/MCP, numeric prefixes); 2026-06-07 tracker realignment + before-snapshot
-- [architecture/web-ui-system.md](architecture/web-ui-system.md) — web design tokens, fonts, Mantine theme, guards and allowlists
+- [architecture/web-ui-system.md](architecture/web-ui-system.md) — web design tokens, fonts, Mantine theme, components and hooks, guards
 
 ## Product
 
@@ -54,12 +54,13 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 - [product/features/dynamic-location-management.md](product/features/dynamic-location-management.md) — location switcher feature spec
 - [product/features/post-likes-and-comments.md](product/features/post-likes-and-comments.md) — post engagement feature spec
 - [product/features/search.md](product/features/search.md) — global search: suggestions, results page, metro scope
+- [product/features/sign-up-and-log-in.md](product/features/sign-up-and-log-in.md) — sign-up, log-in, email verification, the auth callback and ZIP onboarding: error sentences, existing accounts (web today)
 
 ## Plans (in-flight only — finished plans move to `archive/plans/`)
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
 - [plans/active/2026-09-18-production-launch.md](plans/active/2026-09-18-production-launch.md) — 12-week production launch (public launch Dec 1, 2026): prod environment, store compliance, monitoring, support operations, six launch markets, week-by-week tracker
-- [plans/active/2026-09-14-web-ui-overhaul.md](plans/active/2026-09-14-web-ui-overhaul.md) — web UI overhaul: PRs 0–9a task by task (safety net, tokens + Mantine theme, responsive shell, global search and its follow-ups, feed, post detail, create flows, profile, events, marketplace, messages), PRs 9b and 10 scoped
+- [plans/active/2026-09-14-web-ui-overhaul.md](plans/active/2026-09-14-web-ui-overhaul.md) — web UI overhaul: PRs 0–10a task by task (safety net, tokens + Mantine theme, responsive shell, global search and its follow-ups, feed, post detail, create flows, profile, events, marketplace, messages, notifications and moderation, auth and static pages), PRs 10b and 10c scoped
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 
@@ -85,7 +86,7 @@ Index and category breakdown: [user-journeys/README.md](user-journeys/README.md)
 
 Each folder holds a markdown spec plus an HTML preview.
 
-- [wireframes/00-design-system-foundation/00-design-system-foundation.md](wireframes/00-design-system-foundation/00-design-system-foundation.md) — colors, spacing, typography, component primitives
+- [wireframes/00-design-system-foundation/00-design-system-foundation.md](wireframes/00-design-system-foundation/00-design-system-foundation.md) — colors, spacing, typography, component primitives (superseded on web by architecture/web-ui-system.md)
 - [wireframes/01-welcome-screen/01-welcome-screen.md](wireframes/01-welcome-screen/01-welcome-screen.md) — first-run welcome
 - [wireframes/02-signup-method-selection/02-signup-method-selection.md](wireframes/02-signup-method-selection/02-signup-method-selection.md) — email vs Google sign-up
 - [wireframes/03-zip-code-entry/03-zip-code-entry.md](wireframes/03-zip-code-entry/03-zip-code-entry.md) — ZIP entry for metro mapping

@@ -1,6 +1,6 @@
 # Web UI System
 
-**Last updated:** 2026-09-22
+**Last updated:** 2026-09-24
 **Applies to:** `apps/web` only. Design rationale: [../specs/2026-09-14-web-ui-overhaul-design.md](../specs/2026-09-14-web-ui-overhaul-design.md).
 
 The web app uses one design language, **H1 · Ink & Marigold**. It combines editorial type (Gambarino headings, Switzer body), warm paper neutrals and borders instead of shadows. Ink navy carries every action. Marigold is a sparing accent, and crimson is reserved for Emergency.
@@ -10,7 +10,6 @@ The web app uses one design language, **H1 · Ink & Marigold**. It combines edit
 | File | Role |
 |---|---|
 | `apps/web/src/styles/tokens.css` | Source of truth: primitive and semantic tokens |
-| `apps/web/src/styles/legacy-aliases.css` | Temporary: old variable names → tokens (removed at the end of the overhaul) |
 | `apps/web/src/styles/globals.css` | Reset, base elements, focus ring, reduced motion |
 | `apps/web/src/styles/mantine-theme.ts` | Mantine theme mirroring the tokens, plus the variant and CSS-variable resolvers |
 | `apps/web/src/styles/mantine-components.module.css` | Theme-level class hooks for Mantine components |
@@ -140,7 +139,7 @@ The events list (`/events`) and event detail (`/events/[id]`) are built from the
 
 ### Busy controls stay focusable
 
-A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You, the public profile's Message button, event detail's Message Organizer, listing detail's Contact Seller, the message thread's Send, `AddLocationForm`'s Save and Cancel, notification preferences' Save, the notifications page's Mark all as read and the moderation queue's actions all work this way.
+A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You, the public profile's Message button, event detail's Message Organizer, listing detail's Contact Seller, the message thread's Send, `AddLocationForm`'s Save and Cancel, notification preferences' Save, the notifications page's Mark all as read, the moderation queue's actions, `GoogleButton`, the auth pages' submit buttons (Log in, Create account, and onboarding's Find my area, Detect my location and Confirm and continue) and verify-email's Resend all work this way. Resend is also `aria-disabled` through its 60-second cooldown, which shows beside it as plain text rather than a live region, so it isn't announced every second.
 
 Two controls are the exception, both for the same reason: they show the member's new state at once, and `data-disabled` would repaint it in Mantine's grey. While a follow or unfollow saves, `FollowButton` sets only `aria-disabled`, so "Following" or "Follow" stays at full opacity. `EventResponseControl` does the same, so the Interested or Going button the member just pressed stays visibly pressed until the write lands.
 
@@ -216,6 +215,26 @@ The preferences page's switches render their description outside Mantine's `<lab
 | `useModerationQueue(moderatorId)` | Pending posts, open reports and the reported posts, failing as a whole. Actions run one at a time and resolve to `{ ok }` or a sentence to show |
 | `useNotificationsFeed({ userId, pollingEnabled })` | The bell. Reloads when polling turns back on and on `announceNotificationsChanged()`, and applies only the latest of overlapping loads |
 
+## Auth, landing and legal components
+
+Login, signup, verify-email, onboarding, the auth callback, the landing page and the four legal pages are built from these. What the flows do is in [../product/features/sign-up-and-log-in.md](../product/features/sign-up-and-log-in.md).
+
+| Component | Location | Notes |
+|---|---|---|
+| `AuthCard` | `components/auth/` | `title`, `description`, `titleRef`, `children`, `footer`. The centred card every auth page sits in, at most 420px wide (built from space tokens). Its `h1` has `tabIndex={-1}` so a step change can focus it through `titleRef`, and it drops the focus ring only for pointer focus (`:focus:not(:focus-visible)`). The footer holds the cross-links. Links in the body and footer are underlined, because colour alone doesn't mark a link inside running text (axe's `link-in-text-block`) |
+| `GoogleButton` | `components/auth/` | `onClick`, `busy`. "Continue with Google" with an `aria-hidden` Google icon. It follows the busy-controls rule, and stays busy once the hand-off to Google starts, since the page is navigating away |
+| `LandingPage` | `components/landing/` | The signed-out `/`: the hero with Sign up and Log in, "What you'll find" over five items that are not links (Housing, Jobs, Help, Events, Marketplace), and a line linking the Community Guidelines |
+| `LegalDocument` | `components/legal/` | `title`, `description`, `intro`, `children`. The shell of the four legal pages: the `h1`, the last-updated date, the intro, the body, and a "Policies and help" `nav` linking the other three pages. Its styles live in the private `legal.module.css` |
+| `Callout` | `components/legal/` | A `div` with `role="note"` for a warning inside the prose |
+| `Faq`, `FaqItem` | `components/legal/` | A group of questions, and one question as native `<details>` / `<summary>`, which opens with Enter or Space and announces its state without any script |
+
+| Hook or helper | Notes |
+|---|---|
+| `useRedirectWhen(condition, href)` | `hooks/`. Calls `router.replace(href)` in an effect while `condition` holds, once per `href`, and returns `condition` so the page renders `null` meanwhile. Pages never redirect during render |
+| `useCountdown(seconds)` | `hooks/`. `{ remaining, restart }`, counting down once a second from mount. `remaining` is derived from an end time, so a throttled background tab still reads right. Verify-email's resend cooldown uses it |
+| `finishSignIn(supabase, session)` | `lib/authCallback.ts`. The callback's steps: create the profile if it's missing, mark the member verified by provider, then route by metro. It resolves to `{ destination }` or `{ error }` and checks every step's result, so the page always ends |
+| `resendSignupEmail(email)` | `lib/auth.ts`. Resends the sign-up confirmation through shared `resendVerificationEmail` |
+
 ## Web-only helpers (`src/lib`)
 
 | Helper | Notes |
@@ -274,23 +293,29 @@ Their data and actions come from these hooks in `src/hooks`:
 
 ## Guards
 
-| Guard | Command | Allowlist |
+Neither guard has an allowlist: every file passes, or the command fails.
+
+| Guard | Command | Scope |
 |---|---|---|
-| Colour literals, named colours, primitives and legacy variables in CSS Modules | `npm run lint:guards` | `scripts/guard-css-tokens.allowlist.json` (regenerate: `node scripts/guard-css-tokens.js --write-allowlist`) |
-| Raw `<button>/<input>/<select>/<textarea>` outside `components/ui/` | `npm run lint` | `apps/web/eslint/raw-element-allowlist.mjs` (regenerate: `node apps/web/eslint/write-raw-element-allowlist.mjs`) |
-| Stale entries in the raw-element allowlist | `npm run lint:guards` | — (`node apps/web/eslint/write-raw-element-allowlist.mjs --check`) |
+| CSS Modules use semantic tokens (`scripts/guard-css-tokens.js`) | `npm run lint:guards` | Every `.module.css` under `apps/web/src` |
+| No raw `<button>`, `<input>`, `<select>` or `<textarea>` (`react/forbid-elements` in `apps/web/eslint.config.mjs`) | `npm run lint` | Every `.tsx` under `apps/web/src` except `components/ui/**`, which wraps raw elements for everyone else, and `*.test.tsx` |
 
-The CSS guard rejects hex, `rgb()`/`hsl()`/`oklch()`/`oklab()` in any case, named colours such as `white` in value position, direct primitive references such as `var(--ink-900)`, and the legacy design-system variables.
+The CSS guard fails on:
 
-Allowlists only shrink, and both are enforced. The CSS guard fails if an allowlisted file is already clean. The raw-element allowlist is applied through ESLint `ignores`, which skips a file silently, so `--check` fails on entries that no longer render a raw element — otherwise a migrated file left in the list would go on hiding new raw elements.
+- hex, and `rgb()`/`hsl()`/`oklch()`/`oklab()` in any case;
+- named colours such as `white` in value position;
+- direct primitive references such as `var(--ink-900)`;
+- the legacy design-system variables (`--color-*`, `--space-m` and the rest), with a message naming the rule;
+- **an undefined custom property.** Every `var(--x)` must be defined in `tokens.css`, declared in the same file (`--x:`), or start with `--mantine-`. A fallback, as in `var(--x, 4px)`, doesn't excuse an undefined name, because a fallback is exactly how a typo hides. Variables a Mantine component sets on its own root are allowed only through the guard's `MANTINE_COMPONENT_PROPERTIES` list, each entry with a comment naming the component. Today it holds one, `--tabs-list-border-width` (Tabs, read by `scrollingTabs.module.css`). Add one only after checking that Mantine sets it.
 
-The raw-element allowlist stores plain file paths. `apps/web/eslint.config.mjs` passes each one through `escapeGlobLiteral` (`apps/web/eslint/escape-glob.mjs`, tested by `npm run guards:test`) before adding it to ESLint `ignores`, because Next.js dynamic routes such as `pages/users/[id].page.tsx` would otherwise be read as glob character classes and not ignored.
+The guard reads `var(` one line at a time and case-sensitively, so a `var(` split across lines escapes it. Keep each `var()` on one line.
+
+`npm run guards:test` runs the guards' own tests.
 
 ## Testing
 
 - `tokens.contrast.test.ts` checks WCAG AA for every text/background token pair.
 - `mantine-theme.test.ts` checks the theme against the tokens.
-- `legacy-aliases.test.ts` checks every old variable still resolves.
 - Component tests render through `apps/web/src/test-utils.tsx`, which wraps `MantineProvider` (real theme, `env="test"`) and `ModalsProvider`. `env="test"` is Mantine's documented test-runner switch: it collapses transitions to their final state, renders portal content inline, and skips floating-ui's detached-reference check, which misfires in jsdom and would otherwise hide popovers and menus from role queries. Cover transition, portal and positioning behaviour in Playwright, not unit tests.
 - Visual regression and axe scans are described in [../guides/setup-and-testing.md](../guides/setup-and-testing.md) under "Visual regression and accessibility tests (web)".
 

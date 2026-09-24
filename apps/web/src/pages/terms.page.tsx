@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { SUPPORT_EMAIL } from '@nepally/shared';
 import LegalDocument from '../components/legal/LegalDocument';
-import styles from '../styles/Legal.module.css';
+import { Callout } from '../components/legal/Callout';
 
 export default function TermsPage() {
   return (
@@ -18,12 +18,12 @@ export default function TermsPage() {
         </p>
       }
     >
-      <div className={styles.callout}>
+      <Callout>
         <p>
           Nepally is a community notice board, not an emergency service. It is not a replacement for 911. If someone
           is in danger or needs urgent medical help, call 911 or your local emergency number first.
         </p>
-      </div>
+      </Callout>
 
       <h2>1. Who can use Nepally</h2>
       <p>

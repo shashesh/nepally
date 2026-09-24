@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mockSignIn, mockSupabaseLoggedIn } from '../helpers/supabase-mock';
+import { mockAuthError, mockSignIn, mockSupabaseLoggedIn } from '../helpers/supabase-mock';
 import { MOCK_USER_EMAIL } from '../fixtures/mock-data';
 
 test.describe('Login flow', () => {
@@ -10,7 +10,7 @@ test.describe('Login flow', () => {
     await page.goto('/login');
     await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill('Password123!');
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.getByRole('button', { name: 'Log in' }).click();
 
     await expect(page).toHaveURL(/\/feed/, { timeout: 10_000 });
   });
@@ -19,7 +19,7 @@ test.describe('Login flow', () => {
     await page.goto('/login');
     await page.getByLabel('Email').fill('');
     await page.getByLabel('Password', { exact: true }).fill('somepassword');
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.getByRole('button', { name: 'Log in' }).click();
 
     await expect(page.getByText(/valid email address/i)).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
@@ -29,46 +29,56 @@ test.describe('Login flow', () => {
     await page.goto('/login');
     await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
     // leave password empty
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.getByRole('button', { name: 'Log in' }).click();
 
     await expect(page.getByText(/enter your password/i)).toBeVisible();
   });
 
-  test('wrong credentials shows API error message', async ({ page }) => {
-    await page.route('**/auth/v1/token?grant_type=password**', async (route) => {
-      await route.fulfill({
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'invalid_grant', error_description: 'Invalid login credentials' }),
-      });
+  test('wrong credentials show a sentence, never the raw Supabase text', async ({ page }) => {
+    await mockAuthError(page, '**/auth/v1/token?grant_type=password**', {
+      status: 400,
+      code: 'invalid_credentials',
+      message: 'Invalid login credentials',
     });
 
     await page.goto('/login');
     await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill('WrongPassword1!');
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.getByRole('button', { name: 'Log in' }).click();
 
-    await expect(page.getByText(/invalid login credentials/i)).toBeVisible();
+    await expect(page.locator('main').getByRole('alert')).toHaveText("That email and password don't match. Check them and try again.");
+    await expect(page.getByText(/invalid login credentials/i)).toHaveCount(0);
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('loading state shown during submission', async ({ page }) => {
-    // Slow down the auth endpoint
-    await page.route('**/auth/v1/token?grant_type=password**', async (route) => {
-      await new Promise((r) => setTimeout(r, 500));
-      await route.fulfill({
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'invalid_grant', error_description: 'Invalid login credentials' }),
-      });
+  test('Log in stays focusable and busy while signing in', async ({ page }) => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await mockAuthError(page, '**/auth/v1/token?grant_type=password**', {
+      status: 400,
+      code: 'invalid_credentials',
+      message: 'Invalid login credentials',
+      gate,
     });
 
     await page.goto('/login');
     await page.getByLabel('Email').fill(MOCK_USER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill('Password123!');
-    const submitButton = page.getByRole('button', { name: /sign in/i });
-    await submitButton.click();
+    const submitButton = page.getByRole('button', { name: 'Log in' });
+    await submitButton.focus();
+    await page.keyboard.press('Enter');
 
-    await expect(submitButton).toBeDisabled();
+    await expect(submitButton).toHaveAttribute('aria-busy', 'true');
+    await expect(submitButton).toHaveAttribute('aria-disabled', 'true');
+    // aria-disabled, never the native attribute, which would drop focus.
+    await expect(submitButton).not.toHaveAttribute('disabled');
+    await expect(submitButton).toBeFocused();
+
+    release();
+    await expect(page.locator('main').getByRole('alert')).toBeVisible();
+    await expect(submitButton).not.toHaveAttribute('aria-busy', 'true');
+    await expect(submitButton).toBeFocused();
   });
 });

@@ -1,0 +1,53 @@
+.card {
+  /* A form column, narrower than any layout width: 4 × --space-9 + --space-6 + --space-1 = 420px. */
+  --auth-card-max-width: calc(var(--space-9) * 4 + var(--space-6) + var(--space-1));
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: var(--auth-card-max-width);
+  margin-inline: auto;
+  padding: var(--card-padding);
+  background: var(--surface-1);
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  font-size: var(--font-size-xl);
+}
+
+/* Focused by script when a step changes; it is not a control, so no ring unless the browser decides the focus came from the keyboard. */
+.title:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.description {
+  color: var(--text-2);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.footer {
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+/* A link inside running text needs more than its colour to stand out (WCAG 1.4.1; axe's link-in-text-block). */
+.body a,
+.footer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
