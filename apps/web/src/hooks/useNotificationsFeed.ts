@@ -112,10 +112,21 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
     };
   }, [userId, pollingEnabled, load]);
 
+  // The items on screen, for the realtime handler: a row a load already
+  // brought in is neither prepended nor counted again.
+  const itemsRef = useRef<Notification[]>([]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
   useEffect(() => {
     // /notifications owns its own subscription, so staying out avoids a second
     // channel for the same INSERTs and a badge that page does not control.
     if (!userId || !pollingEnabled) return;
+    // Ids this channel has delivered. Updated at once, unlike itemsRef, which
+    // only catches up after a render: a redelivered event (a reconnect, two
+    // events in one flush) must not be counted twice.
+    const delivered = new Set<string>();
     const channel = supabase
       .channel(uniqueChannelTopic(`notifications:${userId}`))
       .on(
@@ -125,9 +136,15 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
           const notification = payload.new as Notification;
           // getNotifications and getUnreadNotificationCount both exclude chat
           // notifications, so one accepted here would disappear on reload.
-          if (notification.type === 'message') return;
-          setUnreadCount((count) => count + 1);
-          setItems((previous) => [notification, ...previous].slice(0, BELL_LIMIT));
+          if (notification.type === 'message' || delivered.has(notification.id)) return;
+          delivered.add(notification.id);
+          if (itemsRef.current.some((item) => item.id === notification.id)) return;
+          if (!notification.read) setUnreadCount((count) => count + 1);
+          setItems((previous) =>
+            previous.some((item) => item.id === notification.id)
+              ? previous
+              : [notification, ...previous].slice(0, BELL_LIMIT)
+          );
         }
       )
       .subscribe();

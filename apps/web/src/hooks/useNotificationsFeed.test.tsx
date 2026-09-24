@@ -127,6 +127,37 @@ describe('useNotificationsFeed', () => {
     expect(result.current.unreadCount).toBe(1);
   });
 
+  it('shows and counts a redelivered INSERT once', async () => {
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    const insert = mocks.subscriptions.find((sub) => sub.filter.table === 'notifications');
+    const row = { ...base, id: 'n-2', title: 'New' };
+    act(() => {
+      insert?.callback({ new: row });
+      insert?.callback({ new: row });
+    });
+    expect(result.current.items.map((item) => item.id)).toEqual(['n-2', 'n-1']);
+    expect(result.current.unreadCount).toBe(2);
+  });
+
+  it('adds a read INSERT without raising the count', async () => {
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    const insert = mocks.subscriptions.find((sub) => sub.filter.table === 'notifications');
+    act(() => insert?.callback({ new: { ...base, id: 'n-2', read: true } }));
+    expect(result.current.items.map((item) => item.id)).toEqual(['n-2', 'n-1']);
+    expect(result.current.unreadCount).toBe(1);
+  });
+
+  it('does not prepend or count a row the first load already shows', async () => {
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    const insert = mocks.subscriptions.find((sub) => sub.filter.table === 'notifications');
+    act(() => insert?.callback({ new: base }));
+    expect(result.current.items.map((item) => item.id)).toEqual(['n-1']);
+    expect(result.current.unreadCount).toBe(1);
+  });
+
   it('keeps the item unread when marking read fails', async () => {
     const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
     await waitFor(() => expect(result.current.items).toHaveLength(1));

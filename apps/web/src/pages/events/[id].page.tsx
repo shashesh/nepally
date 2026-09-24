@@ -81,9 +81,11 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
     setAttendeesLoading(false);
   }, [event]);
 
+  // Reloads on every open, so the list agrees with the count beside it (which
+  // moves as the viewer responds). The last list stays up while it loads.
   const handleShowAttendees = () => {
     setAttendeesOpen(true);
-    if (attendees === null && !attendeesLoading) void loadAttendees();
+    if (!attendeesLoading) void loadAttendees();
   };
 
   const handleMessage = () => {
@@ -265,7 +267,7 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
       <AttendeeList
         opened={attendeesOpen}
         attendees={attendees ?? []}
-        loading={attendeesLoading}
+        loading={attendeesLoading && attendees === null}
         error={attendeesError}
         onRetry={() => void loadAttendees()}
         onClose={() => setAttendeesOpen(false)}
