@@ -1,17 +1,26 @@
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabase';
-import { getMyProfile } from '@nepally/shared';
+import { getMyProfile, logClientEvent } from '@nepally/shared';
 import type { User } from '@nepally/shared';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { requestWebPushPermission } from '../lib/webPush';
+
+const SIGN_OUT_FAILED = "Couldn't log you out. Please try again.";
 
 interface AuthContextType {
   user: User | null;
   supabaseUser: SupabaseUser | null;
   loading: boolean;
-  signOut: () => Promise<void>;
+  /**
+   * Signs out, clears the member and replaces the route with /. Resolves with
+   * `error` (a sentence to show) when it failed and the member is still signed in.
+   */
+  signOut: () => Promise<{ error?: string }>;
+  /** True while signOut runs; Layout shows its loader so no page sees the user clear. */
+  signingOut: boolean;
   /** Re-reads the member's profile; resolves with it, or null when none loaded. */
   refreshUser: () => Promise<User | null>;
 }
@@ -20,14 +29,17 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   supabaseUser: null,
   loading: true,
-  signOut: async () => {},
+  signOut: async () => ({}),
+  signingOut: false,
   refreshUser: async () => null,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
   const pushRegistrationAttemptedUserIdRef = useRef<string | null>(null);
 
   // Own row (email, phone, zip_code, moderation flags) is only readable through
@@ -139,15 +151,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function handleSignOut() {
+  // Layout shows its loader while signingOut, which unmounts the page before
+  // the user clears, so a protected page's `!user → /login` redirect never
+  // races the replace to /.
+  async function handleSignOut(): Promise<{ error?: string }> {
+    setSigningOut(true);
     try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setSupabaseUser(null);
-      pushRegistrationAttemptedUserIdRef.current = null;
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
     } catch (error) {
-      console.error('Failed to sign out:', error);
+      logClientEvent({ event: 'auth_sign_out_failed', context: { platform: 'web' }, error });
+      setSigningOut(false);
+      return { error: SIGN_OUT_FAILED };
     }
+    setUser(null);
+    setSupabaseUser(null);
+    pushRegistrationAttemptedUserIdRef.current = null;
+    try {
+      await router.replace('/');
+    } finally {
+      setSigningOut(false);
+    }
+    return {};
   }
 
   return (
@@ -157,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         supabaseUser,
         loading,
         signOut: handleSignOut,
+        signingOut,
         refreshUser,
       }}
     >

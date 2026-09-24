@@ -9,7 +9,10 @@ const mocks = vi.hoisted(() => ({
   useNotificationsFeed: vi.fn(),
   signOut: vi.fn(),
   push: vi.fn(),
+  notificationsShow: vi.fn(),
 }));
+
+vi.mock('@mantine/notifications', () => ({ notifications: { show: mocks.notificationsShow } }));
 
 vi.mock('../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
@@ -135,38 +138,38 @@ describe('Layout', () => {
       expect(feed.markRead).toHaveBeenCalledWith(notification);
     });
 
-    it('signs out and returns home', async () => {
-      mocks.signOut.mockResolvedValue(undefined);
-      render(<Layout>Content</Layout>);
+    async function chooseLogOut() {
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Open account menu' }));
       });
+      const item = await screen.findByRole('menuitem', { name: 'Log out' });
       await act(async () => {
-        fireEvent.click(await screen.findByRole('menuitem', { name: 'Sign Out' }));
+        fireEvent.click(item);
       });
-      await waitFor(() => {
-        expect(mocks.signOut).toHaveBeenCalled();
-        expect(mocks.push).toHaveBeenCalledWith('/');
-      });
-    });
+    }
 
-    it('leaves for / before signing out, so the remounted page has no signed-out redirect to race', async () => {
-      // Clearing the user swaps AppShell for PublicShell, which remounts the
-      // page; a protected page's `!user → /login` effect would then win.
-      mocks.push.mockResolvedValue(true);
-      mocks.signOut.mockResolvedValue(undefined);
+    it('logs out from the account menu', async () => {
+      mocks.signOut.mockResolvedValue({});
       render(<Layout>Content</Layout>);
-      await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Open account menu' }));
-      });
-      const signOutItem = await screen.findByRole('menuitem', { name: 'Sign Out' });
-      await act(async () => {
-        fireEvent.click(signOutItem);
-      });
-
-      expect(mocks.push).toHaveBeenCalledWith('/');
+      await chooseLogOut();
       expect(mocks.signOut).toHaveBeenCalledTimes(1);
-      expect(mocks.push.mock.invocationCallOrder[0]).toBeLessThan(mocks.signOut.mock.invocationCallOrder[0]);
+      expect(mocks.notificationsShow).not.toHaveBeenCalled();
     });
+
+    it('shows the failure sentence when logging out fails', async () => {
+      mocks.signOut.mockResolvedValue({ error: "Couldn't log you out. Please try again." });
+      render(<Layout>Content</Layout>);
+      await chooseLogOut();
+      expect(mocks.notificationsShow).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Couldn't log you out. Please try again.", color: 'red' })
+      );
+    });
+  });
+
+  it('shows only the loader while signing out, so no page reacts to the user clearing', () => {
+    mocks.useAuth.mockReturnValue({ user: member, loading: false, signingOut: true, signOut: mocks.signOut });
+    render(<Layout>Content</Layout>);
+    expect(screen.queryByText('Content')).toBeNull();
+    expect(screen.queryByRole('navigation')).toBeNull();
   });
 });

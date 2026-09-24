@@ -73,8 +73,9 @@ export default function ProfilePage() {
     }
   }
 
-  // Signing out leaves for / before the user clears (see handleSignOut), so
-  // this only ever catches a visitor who arrives signed out.
+  // Signing out never reaches this: Layout swaps in its loader while
+  // AuthContext signs out, unmounting this page before the user clears. So
+  // it only ever catches a visitor who arrives signed out.
   useEffect(() => {
     if (!user && typeof window !== 'undefined') {
       router.replace('/login');
@@ -97,15 +98,8 @@ export default function ProfilePage() {
   const canPost = (user.trust_level ?? TrustLevel.NEW) >= TrustLevel.VERIFIED;
 
   const handleSignOut = async (): Promise<void> => {
-    try {
-      // Leave first. Clearing the user swaps Layout to PublicShell, which
-      // remounts this page, and a fresh instance's redirect would take the
-      // member to /login instead of /. On /, Home just shows the landing page.
-      await router.push('/');
-      await signOut();
-    } catch (error: unknown) {
-      notify.error(error instanceof Error ? error.message : 'Failed to log out. Please try again.');
-    }
+    const { error } = await signOut();
+    if (error) notify.error(error);
   };
 
   /** Runs one photo change: busy while it and the follow-up refresh run, then a toast. */
@@ -200,7 +194,7 @@ export default function ProfilePage() {
     { key: 'edit-name', label: 'Edit Name', onClick: editName, disabled: saving },
     { key: 'edit-bio', label: 'Edit Bio', onClick: editBio, disabled: saving },
     { key: 'change-password', label: 'Change Password', onClick: changePassword, disabled: saving },
-    { key: 'logout', label: 'Logout', onClick: handleSignOut, danger: true },
+    { key: 'logout', label: 'Log out', onClick: handleSignOut, danger: true },
   ];
 
   return (
@@ -302,7 +296,7 @@ export default function ProfilePage() {
             ))}
             <li>
               <UnstyledButton className={`${styles.settingsLink} ${styles.settingsDanger}`} onClick={handleSignOut}>
-                Sign out
+                Log out
               </UnstyledButton>
             </li>
           </ul>

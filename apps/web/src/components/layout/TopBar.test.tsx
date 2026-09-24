@@ -64,7 +64,7 @@ describe('TopBar', () => {
     expect(screen.getByRole('textbox', { name: 'Search Nepally' })).toBeDefined();
   });
 
-  it('signs out from the account menu', async () => {
+  it('logs out from the account menu', async () => {
     const props = renderTopBar();
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Open account menu' }));
@@ -72,7 +72,7 @@ describe('TopBar', () => {
     expect(await screen.findByRole('menuitem', { name: 'View Profile' })).toBeDefined();
     expect(screen.getByRole('menuitem', { name: 'Manage Locations' })).toBeDefined();
     await act(async () => {
-      fireEvent.click(screen.getByRole('menuitem', { name: 'Sign Out' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
     });
     await waitFor(() => expect(props.onSignOut).toHaveBeenCalled());
   });

@@ -130,7 +130,7 @@ describe('ProfilePage', () => {
     mockSignedIn();
     // clearAllMocks keeps implementations, so reset the ones tests override.
     mockPush.mockResolvedValue(true);
-    mockSignOut.mockResolvedValue(undefined);
+    mockSignOut.mockResolvedValue({});
     mockRefreshUser.mockResolvedValue(undefined);
     profileMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({ data: [] });
@@ -259,45 +259,41 @@ describe('ProfilePage', () => {
     render(<ProfilePage />);
     await waitFor(() => expect(screen.getByLabelText('Open profile menu')).toBeDefined());
     fireEvent.click(screen.getByLabelText('Open profile menu'));
-    expect(await screen.findByRole('menuitem', { name: 'Logout' })).toBeDefined();
+    expect(await screen.findByRole('menuitem', { name: 'Log out' })).toBeDefined();
     expect(screen.getByRole('menuitem', { name: 'Change Password' })).toBeDefined();
     // Close by clicking the trigger again
     fireEvent.click(screen.getByLabelText('Open profile menu'));
-    await waitFor(() => expect(screen.queryByRole('menuitem', { name: 'Logout' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('menuitem', { name: 'Log out' })).toBeNull());
   });
 
-  it('calls signOut and redirects to / on Logout', async () => {
-    mockSignOut.mockResolvedValue(undefined);
-    render(<ProfilePage />);
-    await waitFor(() => expect(screen.getByLabelText('Open profile menu')).toBeDefined());
-    fireEvent.click(screen.getByLabelText('Open profile menu'));
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Logout' }));
-    await waitFor(() => {
-      expect(mockSignOut).toHaveBeenCalled();
-      expect(mockPush).toHaveBeenCalledWith('/');
-    });
-  });
-
-  it('leaves for / before signing out, so a remount under the signed-out shell has nothing to redirect', async () => {
-    // Layout swaps to PublicShell once the user clears, which remounts the
-    // page; only leaving first keeps its /login redirect out of the race.
+  it('logs out from the profile menu', async () => {
     await renderPage();
 
-    await chooseProfileMenuItem('Logout');
+    await chooseProfileMenuItem('Log out');
 
-    expect(mockPush).toHaveBeenCalledWith('/');
     expect(mockSignOut).toHaveBeenCalledTimes(1);
-    expect(mockPush.mock.invocationCallOrder[0]).toBeLessThan(mockSignOut.mock.invocationCallOrder[0]);
+    expect(profileMocks.notificationsShowMock).not.toHaveBeenCalled();
   });
 
-  it('toasts the error when logging out fails', async () => {
-    mockSignOut.mockRejectedValue(new Error('Network down'));
+  it('logs out from the Settings list', async () => {
     await renderPage();
 
-    await chooseProfileMenuItem('Logout');
+    const settings = screen.getByRole('navigation', { name: 'Settings & more' });
+    await act(async () => {
+      fireEvent.click(within(settings).getByRole('button', { name: 'Log out' }));
+    });
+
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('toasts the failure sentence when logging out fails', async () => {
+    mockSignOut.mockResolvedValue({ error: "Couldn't log you out. Please try again." });
+    await renderPage();
+
+    await chooseProfileMenuItem('Log out');
 
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Network down', color: 'red' })
+      expect.objectContaining({ message: "Couldn't log you out. Please try again.", color: 'red' })
     );
   });
 
@@ -320,7 +316,7 @@ describe('ProfilePage', () => {
     for (const name of ['Edit Name', 'Edit Bio', 'Change Password']) {
       expect(((await screen.findByRole('menuitem', { name })) as HTMLButtonElement).disabled).toBe(true);
     }
-    expect((screen.getByRole('menuitem', { name: 'Logout' }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole('menuitem', { name: 'Log out' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   // ─── Profile photo ───────────────────────────────────────
