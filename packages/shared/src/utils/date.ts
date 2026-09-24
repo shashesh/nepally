@@ -2,8 +2,11 @@
  * Date utility functions
  */
 
-export function formatRelativeTime(date: Date): string {
-  const now = new Date();
+/**
+ * "just now", "5m ago", "3h ago", "2d ago", "1w ago", else the date. Pass
+ * `now` from a ticking clock (web's useNow) so a label on an open page ages.
+ */
+export function formatRelativeTime(date: Date, now: Date = new Date()): string {
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getMessages, getTotalUnreadCount, sendMessage, subscribeToMessages } from './messages';
+import { getMessages, getTotalUnreadCount, markAsRead, sendMessage, subscribeToMessages } from './messages';
 
 describe('messages api', () => {
   function messagesQuery(result: { data: unknown; error: unknown }) {
@@ -132,5 +132,50 @@ describe('messages api', () => {
     expect(first.startsWith('messages:c1:')).toBe(true);
     expect(second.startsWith('messages:c1:')).toBe(true);
     expect(first).not.toBe(second);
+  });
+
+  function markAsReadClient(results: { messages: unknown; participants: unknown }) {
+    const chain = (result: unknown) => {
+      const query = { update: vi.fn(), eq: vi.fn(), neq: vi.fn(), then: undefined as unknown };
+      query.update.mockReturnValue(query);
+      query.neq.mockReturnValue(query);
+      // The last filter in each chain resolves the request.
+      let eqCalls = 0;
+      query.eq.mockImplementation(() => {
+        eqCalls += 1;
+        return eqCalls >= 2 ? Promise.resolve(result) : query;
+      });
+      return query;
+    };
+    const messagesQuery = chain(results.messages);
+    const participantsQuery = chain(results.participants);
+    const supabase = {
+      from: vi.fn((table: string) => (table === 'messages' ? messagesQuery : participantsQuery)),
+    } as unknown as SupabaseClient;
+    return supabase;
+  }
+
+  it('marks a conversation read without an error when both updates succeed', async () => {
+    const supabase = markAsReadClient({ messages: { error: null }, participants: { error: null } });
+
+    const result = await markAsRead(supabase, 'c1', 'u1');
+
+    expect(result.error).toBeUndefined();
+  });
+
+  it("reports a failed message update rather than claiming it's read", async () => {
+    const supabase = markAsReadClient({ messages: { error: { message: 'rls' } }, participants: { error: null } });
+
+    const result = await markAsRead(supabase, 'c1', 'u1');
+
+    expect(result.error).toBeInstanceOf(Error);
+  });
+
+  it('reports a failed unread-count reset', async () => {
+    const supabase = markAsReadClient({ messages: { error: null }, participants: { error: { message: 'rls' } } });
+
+    const result = await markAsRead(supabase, 'c1', 'u1');
+
+    expect(result.error).toBeInstanceOf(Error);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCount, formatCurrency, addDays, formatDayLabel } from './date';
+import { formatCount, formatCurrency, addDays, formatDayLabel, formatRelativeTime } from './date';
 
 describe('formatCount', () => {
   it('returns the number as-is below 1000', () => {
@@ -103,5 +103,15 @@ describe('formatDayLabel', () => {
 
   it('adds the year for dates in another year', () => {
     expect(formatDayLabel(new Date(2025, 2, 5, 12), now)).toBe('Mar 5, 2025');
+  });
+});
+
+describe('formatRelativeTime', () => {
+  it('measures from the now it is given, so a caller on a ticking clock stays current', () => {
+    const sent = new Date(2026, 8, 23, 12, 0);
+
+    expect(formatRelativeTime(sent, new Date(2026, 8, 23, 12, 0, 30))).toBe('just now');
+    expect(formatRelativeTime(sent, new Date(2026, 8, 23, 12, 5))).toBe('5m ago');
+    expect(formatRelativeTime(sent, new Date(2026, 8, 23, 15, 0))).toBe('3h ago');
   });
 });

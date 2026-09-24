@@ -94,20 +94,25 @@ export async function markAsRead(
   try {
     const now = new Date().toISOString();
 
-    // Mark messages as read
-    await supabase
+    // Mark messages as read. supabase-js reports a failed update in `error`
+    // rather than throwing, so each result is checked.
+    const { error: messagesError } = await supabase
       .from('messages')
       .update({ read: true, read_at: now })
       .eq('conversation_id', conversationId)
       .neq('sender_id', userId)
       .eq('read', false);
 
+    if (messagesError) throw messagesError;
+
     // Reset unread_count
-    await supabase
+    const { error: participantError } = await supabase
       .from('conversation_participants')
       .update({ unread_count: 0 })
       .eq('conversation_id', conversationId)
       .eq('user_id', userId);
+
+    if (participantError) throw participantError;
 
     return {};
   } catch (error) {
