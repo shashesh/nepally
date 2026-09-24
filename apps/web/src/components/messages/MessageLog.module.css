@@ -1,0 +1,84 @@
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dayLabel {
+  align-self: center;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  color: var(--text-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.row[data-own] {
+  justify-content: flex-end;
+}
+
+/* Every received message keeps the slot, so bubbles in a run line up
+   whether or not their avatar is shown. */
+.avatarSlot {
+  flex-shrink: 0;
+  width: 32px;
+}
+
+.bubble {
+  max-width: min(75%, 32rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-1);
+}
+
+.row[data-own] .bubble {
+  background: var(--action-bg);
+  border-color: var(--action-bg);
+  color: var(--action-fg);
+}
+
+.text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  color: var(--text-3);
+  font-size: var(--font-size-xs);
+}
+
+.row[data-own] .meta {
+  color: inherit;
+}
+
+.receipt {
+  display: inline-flex;
+}
+
+.end {
+  height: 0;
+}
