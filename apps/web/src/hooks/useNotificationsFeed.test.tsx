@@ -37,6 +37,7 @@ vi.mock('@nepally/shared', async () => ({
 }));
 
 import { useNotificationsFeed } from './useNotificationsFeed';
+import { supabase } from '../lib/supabase';
 
 const base: Notification = {
   id: 'n-1',
@@ -173,6 +174,23 @@ describe('useNotificationsFeed', () => {
     });
     expect(result.current.unreadCount).toBe(3);
     expect(result.current.items.map((item) => item.id)).toEqual(['n-new']);
+  });
+
+  // Leaving /notifications turns polling back on and resubscribes at once;
+  // a reused topic would join the channel that is still leaving.
+  it('subscribes on a fresh topic each time polling turns back on', () => {
+    const { rerender } = renderHook(({ pollingEnabled }) => useNotificationsFeed({ userId: 'user-1', pollingEnabled }), {
+      initialProps: { pollingEnabled: true },
+    });
+    rerender({ pollingEnabled: false });
+    rerender({ pollingEnabled: true });
+
+    const topics = vi
+      .mocked(supabase.channel)
+      .mock.calls.map(([topic]) => topic as string)
+      .filter((topic) => topic.startsWith('notifications:user-1:'));
+    expect(topics).toHaveLength(2);
+    expect(new Set(topics).size).toBe(2);
   });
 
   it('does not subscribe to realtime when the notifications page owns it', async () => {

@@ -28,6 +28,8 @@ vi.mock('@nepally/shared', async () => ({
 }));
 
 import { useUnreadMessageCount } from './useUnreadMessageCount';
+import { supabase } from '../lib/supabase';
+import { announceMessagesRead } from '../lib/unreadMessages';
 
 function messageInsert() {
   return mocks.subscriptions.find((sub) => sub.filter.table === 'messages' && sub.filter.event === 'INSERT');
@@ -90,6 +92,51 @@ describe('useUnreadMessageCount', () => {
       resolveFirst({ count: 9 });
     });
     expect(result.current).toBe(5);
+  });
+
+  it('keeps the newest count when two refreshes land out of order', async () => {
+    let resolveOlder!: (value: { count: number }) => void;
+    const { result } = renderHook(() => useUnreadMessageCount('user-1'));
+    await waitFor(() => expect(result.current).toBe(2));
+
+    // A message arrives (refresh 1, slow), then the thread marks it read
+    // (refresh 2, fast). The slow, older answer must not win.
+    mocks.getTotalUnreadCount
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOlder = resolve;
+        })
+      )
+      .mockResolvedValueOnce({ count: 0 });
+    act(() => messageInsert()?.callback({ new: { sender_id: 'user-2' } }));
+    act(() => announceMessagesRead());
+    await waitFor(() => expect(result.current).toBe(0));
+
+    await act(async () => {
+      resolveOlder({ count: 3 });
+    });
+    expect(result.current).toBe(0);
+  });
+
+  it('refreshes at once when a thread says it marked messages read', async () => {
+    mocks.getTotalUnreadCount.mockResolvedValueOnce({ count: 4 }).mockResolvedValue({ count: 0 });
+    const { result } = renderHook(() => useUnreadMessageCount('user-1'));
+    await waitFor(() => expect(result.current).toBe(4));
+
+    act(() => announceMessagesRead());
+
+    await waitFor(() => expect(result.current).toBe(0));
+  });
+
+  it('subscribes on fresh topics, so a remount never reuses a channel still leaving', () => {
+    const { unmount } = renderHook(() => useUnreadMessageCount('user-1'));
+    unmount();
+    renderHook(() => useUnreadMessageCount('user-1'));
+
+    const topics = vi.mocked(supabase.channel).mock.calls.map(([topic]) => topic as string);
+    const unread = topics.filter((topic) => topic.startsWith('chat-unread:user-1:'));
+    expect(unread).toHaveLength(2);
+    expect(new Set(unread).size).toBe(2);
   });
 
   it('returns 0 and does nothing without a user', () => {

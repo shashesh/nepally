@@ -3,6 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { getConversations, getMessages, markAsRead, sendMessage, subscribeToMessages } from '@nepally/shared';
 import type { ChatMessage, ConversationWithParticipant } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
+import { announceMessagesRead } from '../lib/unreadMessages';
 
 export const THREAD_MESSAGE_LIMIT = 100;
 
@@ -79,6 +80,13 @@ export function useMessageThread(conversationId: string | null, userId: string |
     const id = conversationId;
     const viewerId = userId;
 
+    // The badge learns straight away rather than waiting on realtime, even
+    // if the viewer has already left: the count changed either way.
+    async function markThreadRead(): Promise<void> {
+      await markAsRead(supabase, id, viewerId);
+      announceMessagesRead();
+    }
+
     // `removeChannel` is a round trip, and events already in flight for this
     // channel can still arrive while it leaves: drop them.
     const channel: RealtimeChannel = subscribeToMessages(
@@ -87,7 +95,7 @@ export function useMessageThread(conversationId: string | null, userId: string |
       (incoming) => {
         if (cancelled || incoming.conversation_id !== id) return;
         setState((previous) => ({ ...previous, messages: withMessage(previous.messages, incoming) }));
-        if (incoming.sender_id !== viewerId) void markAsRead(supabase, id, viewerId);
+        if (incoming.sender_id !== viewerId) void markThreadRead();
       },
       (updated) => {
         if (cancelled || updated.conversation_id !== id) return;
@@ -126,7 +134,7 @@ export function useMessageThread(conversationId: string | null, userId: string |
         error: null,
         notFound: false,
       }));
-      void markAsRead(supabase, id, viewerId);
+      void markThreadRead();
     }
 
     void load();

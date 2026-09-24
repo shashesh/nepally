@@ -9,7 +9,10 @@ const mocks = vi.hoisted(() => ({
   sendMessage: vi.fn(),
   subscribeToMessages: vi.fn(),
   removeChannel: vi.fn(),
+  announceMessagesRead: vi.fn(),
 }));
+
+vi.mock('../lib/unreadMessages', () => ({ announceMessagesRead: mocks.announceMessagesRead }));
 
 vi.mock('../lib/supabase', () => ({ supabase: { removeChannel: mocks.removeChannel } }));
 vi.mock('@nepally/shared', async (importOriginal) => ({
@@ -166,6 +169,12 @@ describe('useMessageThread', () => {
       expect(result.current.messages.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
     });
 
+    it('tells the unread badge once the thread is marked read', async () => {
+      await renderLoaded();
+
+      await waitFor(() => expect(mocks.announceMessagesRead).toHaveBeenCalledTimes(1));
+    });
+
     it('marks the thread read only once the viewer is known to be in it', async () => {
       const conversations = deferred<{ data: ConversationWithParticipant[] }>();
       mocks.getConversations.mockReturnValue(conversations.promise);
@@ -219,11 +228,13 @@ describe('useMessageThread', () => {
     it("appends the partner's new message and marks it read", async () => {
       const { result } = await renderLoaded();
       mocks.markAsRead.mockClear();
+      mocks.announceMessagesRead.mockClear();
 
-      act(() => subscription!.onInsert(message('m3', PARTNER_ID)));
+      await act(async () => subscription!.onInsert(message('m3', PARTNER_ID)));
 
       expect(result.current.messages.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
       expect(mocks.markAsRead).toHaveBeenCalledWith(expect.anything(), 'conv-1', VIEWER);
+      expect(mocks.announceMessagesRead).toHaveBeenCalledTimes(1);
     });
 
     it("appends the viewer's own message without marking anything read", async () => {

@@ -5,6 +5,7 @@ import {
   getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
+  uniqueChannelTopic,
 } from '@nepally/shared';
 import type { Notification } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
@@ -91,7 +92,7 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
     // channel for the same INSERTs and a badge that page does not control.
     if (!userId || !pollingEnabled) return;
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(uniqueChannelTopic(`notifications:${userId}`))
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
