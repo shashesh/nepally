@@ -47,6 +47,8 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 - [product/features/events.md](product/features/events.md) — events feature spec
 - [product/features/events-feature-breakdown.md](product/features/events-feature-breakdown.md) — events feature sub-breakdown
 - [product/features/in-app-chat.md](product/features/in-app-chat.md) — in-app chat feature spec
+- [product/features/notifications.md](product/features/notifications.md) — notifications: bell, page, paging, preferences (web today)
+- [product/features/moderation.md](product/features/moderation.md) — moderator queue: pending posts, reports, confirmations, bans (web today)
 - [product/features/marketplace.md](product/features/marketplace.md) — marketplace Phase 1 spec
 - [product/features/marketplace-future-features.md](product/features/marketplace-future-features.md) — marketplace Phase 2+ backlog
 - [product/features/dynamic-location-management.md](product/features/dynamic-location-management.md) — location switcher feature spec
