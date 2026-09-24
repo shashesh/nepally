@@ -45,6 +45,8 @@ vi.mock('next/head', () => ({
     React.createElement(React.Fragment, null, children),
 }));
 
+const RLS_TEXT = 'new row violates row-level security policy';
+
 const mockTags = [
   { id: 'tag-1', slug: 'housing', name: 'Housing', requires_moderation: false },
   { id: 'tag-2', slug: 'jobs', name: 'Jobs', requires_moderation: false },
@@ -232,8 +234,8 @@ describe('CreatePostPage', () => {
     expect(createMocks.notificationsShowMock).not.toHaveBeenCalled();
   });
 
-  it('shows error when post creation fails', async () => {
-    createMocks.createPostMock.mockResolvedValue({ error: new Error('Server error'), data: null });
+  it('shows our copy, never the raw error, when post creation fails', async () => {
+    createMocks.createPostMock.mockResolvedValue({ error: new Error(RLS_TEXT), data: null });
     render(<CreatePostPage />);
     await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
 
@@ -249,8 +251,9 @@ describe('CreatePostPage', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Post' }));
     await waitFor(() => {
-      expect(screen.getByText('Server error')).toBeDefined();
+      expect(screen.getByText("Couldn't create your post. Please try again.")).toBeDefined();
     });
+    expect(screen.queryByText(/row-level security/)).toBeNull();
   });
 
   it('shows location the post will be published to', async () => {
@@ -331,6 +334,48 @@ describe('CreatePostPage', () => {
     expect(screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled')).toBe(false);
     expect(createMocks.getPostByIdMock).toHaveBeenCalledTimes(1);
     expect(createMocks.getPostByIdMock).toHaveBeenCalledWith(expect.anything(), 'post-existing');
+  });
+
+  it('shows our copy, never the raw error, when the post to edit fails to load', async () => {
+    createMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { edit: 'post-existing' },
+    });
+    createMocks.getPostByIdMock.mockResolvedValue({ data: null, error: new Error(RLS_TEXT) });
+    render(<CreatePostPage />);
+
+    await waitFor(() => expect(screen.getByText("Couldn't load this post.")).toBeDefined());
+    expect(screen.queryByText(/row-level security/)).toBeNull();
+  });
+
+  it('shows our copy, never the raw error, when saving an edited post fails', async () => {
+    createMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { edit: 'post-existing' },
+    });
+    createMocks.getPostByIdMock.mockResolvedValue({
+      data: {
+        id: 'post-existing',
+        author_id: 'user-1',
+        title: 'Existing post',
+        description: 'Existing body text',
+        tags: [mockTags[0]],
+        is_global: false,
+        photos: [],
+      },
+    });
+    createMocks.updatePostMock.mockResolvedValue({ error: new Error(RLS_TEXT) });
+    render(<CreatePostPage />);
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Post title, required') as HTMLInputElement).value).toBe('Existing post');
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.getByText("Couldn't update your post. Please try again.")).toBeDefined());
+    expect(screen.queryByText(/row-level security/)).toBeNull();
   });
 
   it('refuses to edit a post owned by someone else', async () => {

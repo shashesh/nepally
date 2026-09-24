@@ -62,6 +62,8 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
+const RLS_TEXT = 'new row violates row-level security policy';
+
 const mockUser = {
   id: 'user-1',
   full_name: 'Bikal Shrestha',
@@ -368,7 +370,7 @@ describe('ProfilePage', () => {
     expect(mockRefreshUser).not.toHaveBeenCalled();
   });
 
-  it('logs and toasts "Failed to update photo" when a photo change throws, then clears busy', async () => {
+  it('logs and toasts our copy when a photo change throws, then clears busy', async () => {
     profileMocks.replaceProfilePhotoMock.mockRejectedValue(new Error('boom'));
     await renderPage();
 
@@ -378,7 +380,7 @@ describe('ProfilePage', () => {
       expect.objectContaining({ event: 'profile_photo_change_failed', context: { platform: 'web', userId: 'user-1' } })
     );
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Failed to update photo', color: 'red' })
+      expect.objectContaining({ message: "Couldn't update your photo. Please try again.", color: 'red' })
     );
     expect(screen.getByRole('button', { name: 'Add Photo' }).getAttribute('aria-disabled')).toBeNull();
   });
@@ -409,8 +411,9 @@ describe('ProfilePage', () => {
     );
   });
 
-  it('toasts the error when removing the photo fails, without refreshing', async () => {
-    profileMocks.removeProfilePhotoMock.mockResolvedValue({ error: new Error('Storage offline') });
+  it('toasts our copy, never the raw error, when removing the photo fails, without refreshing', async () => {
+    const error = new Error(RLS_TEXT);
+    profileMocks.removeProfilePhotoMock.mockResolvedValue({ error });
     mockSignedIn({ profile_photo: 'https://example.com/photo.jpg' });
     await renderPage();
 
@@ -419,7 +422,11 @@ describe('ProfilePage', () => {
     });
 
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Storage offline', color: 'red' })
+      expect.objectContaining({ message: "Couldn't remove your photo. Please try again.", color: 'red' })
+    );
+    expect(JSON.stringify(profileMocks.notificationsShowMock.mock.calls)).not.toContain('row-level security');
+    expect(profileMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_photo_remove_failed', error })
     );
     expect(mockRefreshUser).not.toHaveBeenCalled();
   });
@@ -673,7 +680,26 @@ describe('ProfilePage', () => {
     });
   });
 
-  it('logs and toasts "Failed to save" when saving About You throws, and re-enables Save', async () => {
+  it('toasts our copy, never the raw error, and logs it when saving About You fails', async () => {
+    const error = new Error(RLS_TEXT);
+    profileMocks.updateUserProfileMock.mockResolvedValue({ error });
+    await renderPage();
+    await openTab('About');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
+    });
+
+    expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Couldn't save About You. Please try again.", color: 'red' })
+    );
+    expect(JSON.stringify(profileMocks.notificationsShowMock.mock.calls)).not.toContain('row-level security');
+    expect(profileMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_about_you_save_failed', error })
+    );
+  });
+
+  it('logs and toasts our copy when saving About You throws, and re-enables Save', async () => {
     profileMocks.updateUserProfileMock.mockRejectedValue(new Error('offline'));
     await renderPage();
     await openTab('About');
@@ -686,7 +712,7 @@ describe('ProfilePage', () => {
       expect.objectContaining({ event: 'profile_about_you_save_failed', context: { platform: 'web', userId: 'user-1' } })
     );
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Failed to save', color: 'red' })
+      expect.objectContaining({ message: "Couldn't save About You. Please try again.", color: 'red' })
     );
     expect((screen.getByRole('button', { name: 'Save About You' }) as HTMLButtonElement).disabled).toBe(false);
   });

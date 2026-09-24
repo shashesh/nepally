@@ -3,23 +3,30 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { UploaderPhoto } from '../components/ui';
 import { submitEditedPost, submitNewPost } from './postSubmit';
 
-const { createPost, updatePost, uploadPostPhotos, deletePostPhotos, getPostPhotoPathFromUrl } = vi.hoisted(
-  () => ({
+const { createPost, updatePost, uploadPostPhotos, deletePostPhotos, getPostPhotoPathFromUrl, logClientEvent } =
+  vi.hoisted(() => ({
     createPost: vi.fn(),
     updatePost: vi.fn(),
     uploadPostPhotos: vi.fn(),
     deletePostPhotos: vi.fn(),
     getPostPhotoPathFromUrl: vi.fn(),
-  })
-);
+    logClientEvent: vi.fn(),
+  }));
 
-vi.mock('@nepally/shared', () => ({
+vi.mock('@nepally/shared', async () => ({
+  ...(await vi.importActual<object>('@nepally/shared')),
   createPost,
   updatePost,
   uploadPostPhotos,
   deletePostPhotos,
   getPostPhotoPathFromUrl,
+  logClientEvent,
 }));
+
+const RLS_TEXT = 'new row violates row-level security policy';
+const UPLOAD_FAILED = "Couldn't upload your photos. Please try again.";
+const CREATE_FAILED = "Couldn't create your post. Please try again.";
+const UPDATE_FAILED = "Couldn't update your post. Please try again.";
 
 const supabase = {} as SupabaseClient;
 
@@ -94,23 +101,29 @@ describe('submitNewPost', () => {
     );
   });
 
-  it('reports an upload failure without creating anything', async () => {
-    uploadPostPhotos.mockResolvedValue({ error: new Error('Storage is full') });
+  it('reports an upload failure in our copy without creating anything', async () => {
+    const error = new Error(RLS_TEXT);
+    uploadPostPhotos.mockResolvedValue({ error });
 
     const result = await submitNewPost(supabase, { ...NEW_POST, photos: [pickedPhoto('one.png')] });
 
     expect(createPost).not.toHaveBeenCalled();
-    expect(result).toEqual({ ok: false, message: 'Storage is full' });
+    expect(result).toEqual({ ok: false, message: UPLOAD_FAILED });
+    expect(logClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'post_photos_upload_failed', error })
+    );
   });
 
   it('deletes the photos it just uploaded when the post itself fails', async () => {
     uploadPostPhotos.mockResolvedValue({ urls: ['u/one'], paths: ['p/one'] });
-    createPost.mockResolvedValue({ error: new Error('Rejected') });
+    const error = new Error(RLS_TEXT);
+    createPost.mockResolvedValue({ error });
 
     const result = await submitNewPost(supabase, { ...NEW_POST, photos: [pickedPhoto('one.png')] });
 
     expect(deletePostPhotos).toHaveBeenCalledWith(supabase, ['p/one']);
-    expect(result).toEqual({ ok: false, message: 'Rejected' });
+    expect(result).toEqual({ ok: false, message: CREATE_FAILED });
+    expect(logClientEvent).toHaveBeenCalledWith(expect.objectContaining({ event: 'post_create_failed', error }));
   });
 
   it('says when a post went to a moderator instead of the feed', async () => {
@@ -157,7 +170,8 @@ describe('submitEditedPost', () => {
   });
 
   it('keeps a dropped photo when the update fails', async () => {
-    updatePost.mockResolvedValue({ error: new Error('Rejected') });
+    const error = new Error(RLS_TEXT);
+    updatePost.mockResolvedValue({ error });
 
     const result = await submitEditedPost(supabase, {
       ...EDITED_POST,
@@ -166,7 +180,17 @@ describe('submitEditedPost', () => {
     });
 
     expect(deletePostPhotos).not.toHaveBeenCalled();
-    expect(result).toEqual({ ok: false, message: 'Rejected' });
+    expect(result).toEqual({ ok: false, message: UPDATE_FAILED });
+    expect(logClientEvent).toHaveBeenCalledWith(expect.objectContaining({ event: 'post_update_failed', error }));
+  });
+
+  it('reports an upload failure in our copy without updating anything', async () => {
+    uploadPostPhotos.mockResolvedValue({ error: new Error(RLS_TEXT) });
+
+    const result = await submitEditedPost(supabase, { ...EDITED_POST, photos: [pickedPhoto('new.png')] });
+
+    expect(updatePost).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, message: UPLOAD_FAILED });
   });
 
   it('rolls back the photos it uploaded when the update fails', async () => {

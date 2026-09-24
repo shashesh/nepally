@@ -22,7 +22,10 @@ vi.mock('next/link', () => ({
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
-vi.mock('@nepally/shared', () => {
+const RLS_TEXT = 'new row violates row-level security policy';
+
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
   // The page picks the update schema in edit mode; both validate the same
   // fields, so one stub serves as both.
   const eventSchema = {
@@ -56,6 +59,9 @@ vi.mock('@nepally/shared', () => {
   };
 
   return {
+    isConnectionError: actual.isConnectionError,
+    CONNECTION_ERROR_MESSAGE: actual.CONNECTION_ERROR_MESSAGE,
+    logClientEvent: vi.fn(),
     createEvent: vi.fn(async () => ({ data: { id: 'new-event' } })),
     updateEvent: vi.fn(async () => ({ data: { id: 'edit-event' } })),
     getEventById: vi.fn(async () => ({ data: null })),
@@ -78,6 +84,20 @@ vi.mock('@nepally/shared', () => {
 });
 
 import CreateEventPage from './create.page';
+
+const EDITED_EVENT = {
+  id: 'event-1',
+  title: 'Existing event',
+  description: 'A description that is long enough',
+  event_type: 'cultural',
+  start_date: new Date(Date.now() + 86_400_000).toISOString(),
+  end_date: null,
+  location_name: 'Some Venue',
+  location_address: '',
+  photo_url: 'https://cdn.example.com/event.jpg',
+  rsvp_visibility: 'public',
+  is_global: false,
+};
 
 describe('CreateEventPage', () => {
   const mockReplace = vi.fn();
@@ -289,16 +309,20 @@ describe('CreateEventPage', () => {
         target: { value: future.toISOString().slice(0, 10) },
       });
       const { createEvent } = await import('@nepally/shared');
-      vi.mocked(createEvent).mockResolvedValue({ error: new Error('Event rejected') } as never);
+      vi.mocked(createEvent).mockResolvedValueOnce({ error: new Error(RLS_TEXT) } as never);
 
       fireEvent.click(screen.getByRole('button', { name: /Create Event/ }));
 
       await waitFor(() => expect(screen.getByRole('alert')).toBeDefined());
-      expect(screen.getByText('Event rejected')).toBeDefined();
+      // Our copy, never the raw server text.
+      expect(screen.getByText("Couldn't create the event. Please try again.")).toBeDefined();
+      expect(screen.queryByText(/row-level security/)).toBeNull();
 
       fireEvent.click(screen.getByRole('button', { name: 'Dismiss error' }));
 
-      await waitFor(() => expect(screen.queryByText('Event rejected')).toBeNull());
+      await waitFor(() =>
+        expect(screen.queryByText("Couldn't create the event. Please try again.")).toBeNull()
+      );
     });
   });
 
@@ -368,6 +392,40 @@ describe('CreateEventPage', () => {
 
       expect(screen.getByText('1/1 photos')).toBeDefined();
       expect(screen.getByRole('button', { name: 'Remove photo 1' })).toBeDefined();
+    });
+
+    it('shows our copy, never the raw error, when saving an edited event fails', async () => {
+      mocks.useRouter.mockReturnValue({ query: { edit: 'event-1' }, replace: mockReplace, push: mockPush });
+      const { getEventById, updateEvent } = await import('@nepally/shared');
+      vi.mocked(getEventById).mockResolvedValue({ data: EDITED_EVENT } as never);
+      vi.mocked(updateEvent).mockResolvedValueOnce({ error: new Error(RLS_TEXT) } as never);
+      render(React.createElement(CreateEventPage));
+      await waitFor(() => expect(screen.getByText('1/1 photos')).toBeDefined());
+
+      fireEvent.click(screen.getByRole('button', { name: /Save Changes/ }));
+
+      expect(await screen.findByText("Couldn't update the event. Please try again.")).toBeDefined();
+      expect(screen.queryByText(/row-level security/)).toBeNull();
+    });
+
+    it('shows our copy, never the raw error, when the event photo fails to upload', async () => {
+      mocks.useRouter.mockReturnValue({ query: { edit: 'event-1' }, replace: mockReplace, push: mockPush });
+      const { getEventById, updateEvent, uploadEventPhoto } = await import('@nepally/shared');
+      vi.mocked(getEventById).mockResolvedValue({ data: EDITED_EVENT } as never);
+      vi.mocked(uploadEventPhoto).mockResolvedValueOnce({ error: new Error(RLS_TEXT) } as never);
+      render(React.createElement(CreateEventPage));
+      await waitFor(() => expect(screen.getByText('1/1 photos')).toBeDefined());
+
+      const file = new File(['x'], 'replacement.png', { type: 'image/png' });
+      Object.defineProperty(file, 'size', { value: 1024 });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Replace event photo'), { target: { files: [file] } });
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Save Changes/ }));
+
+      expect(await screen.findByText("Couldn't upload the event photo. Please try again.")).toBeDefined();
+      expect(screen.queryByText(/row-level security/)).toBeNull();
+      expect(updateEvent).not.toHaveBeenCalled();
     });
 
     it('keeps the stored photo when an edit does not touch it', async () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getCategories, createListing } from '@nepally/shared';
+import { getCategories, createListing, getListingById, updateListing } from '@nepally/shared';
 
 type MockHeadProps = { children?: React.ReactNode };
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -68,26 +68,36 @@ const MOCK_CATEGORIES = [
 
 const mockSafeParse = vi.fn();
 
-vi.mock('@nepally/shared', () => ({
-  getCategories: vi.fn(async () => ({ data: [] })),
-  getListingById: vi.fn(async () => ({ data: null })),
-  createListing: vi.fn(async () => ({ data: { id: 'new-1' } })),
-  updateListing: vi.fn(async () => ({ data: { id: 'edit-1' } })),
-  uploadListingPhotos: vi.fn(async () => ({ urls: [] })),
-  createListingSchema: {
-    safeParse: (...args: unknown[]) => mockSafeParse(...args),
-  },
-  LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
-  ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
-  MAX_PHOTOS_PER_LISTING: 5,
-  MAX_LISTING_PHOTO_BYTES: 2 * 1024 * 1024,
-  ALLOWED_LISTING_PHOTO_MIME_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
-}));
+const RLS_TEXT = 'new row violates row-level security policy';
+
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
+  return {
+    isConnectionError: actual.isConnectionError,
+    CONNECTION_ERROR_MESSAGE: actual.CONNECTION_ERROR_MESSAGE,
+    logClientEvent: vi.fn(),
+    getCategories: vi.fn(async () => ({ data: [] })),
+    getListingById: vi.fn(async () => ({ data: null })),
+    createListing: vi.fn(async () => ({ data: { id: 'new-1' } })),
+    updateListing: vi.fn(async () => ({ data: { id: 'edit-1' } })),
+    uploadListingPhotos: vi.fn(async () => ({ urls: [] })),
+    createListingSchema: {
+      safeParse: (...args: unknown[]) => mockSafeParse(...args),
+    },
+    LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
+    ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
+    MAX_PHOTOS_PER_LISTING: 5,
+    MAX_LISTING_PHOTO_BYTES: 2 * 1024 * 1024,
+    ALLOWED_LISTING_PHOTO_MIME_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
+  };
+});
 
 import CreateListingPage from './create.page';
 
 const mockGetCategories = getCategories as ReturnType<typeof vi.fn>;
 const mockCreateListing = createListing as ReturnType<typeof vi.fn>;
+const mockGetListingById = getListingById as ReturnType<typeof vi.fn>;
+const mockUpdateListing = updateListing as ReturnType<typeof vi.fn>;
 const mockUploadPhotosInOrder = mocks.uploadPhotosInOrder;
 
 describe('CreateListingPage', () => {
@@ -232,34 +242,67 @@ describe('CreateListingPage', () => {
       fireEvent.click(screen.getAllByText('Create Listing')[1]);
     }
 
-    it('reports a failed photo upload instead of swallowing it', async () => {
+    function expectNoRawText() {
+      expect(JSON.stringify(mocks.notificationsShow.mock.calls)).not.toContain('row-level security');
+    }
+
+    it('reports a failed photo upload in our copy instead of swallowing it', async () => {
       mocks.useAuth.mockReturnValue({ user: signedIn });
       mockSafeParse.mockReturnValue({ success: true, data: {} });
-      mockUploadPhotosInOrder.mockResolvedValue({ error: new Error('Storage is full') });
+      mockUploadPhotosInOrder.mockResolvedValue({ error: new Error(RLS_TEXT) });
 
       await submit();
 
       await waitFor(() =>
         expect(mocks.notificationsShow).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Storage is full', color: 'red' })
+          expect.objectContaining({ message: "Couldn't upload your photos. Please try again.", color: 'red' })
         )
       );
+      expectNoRawText();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it('reports a failed create instead of swallowing it', async () => {
+    it('reports a failed create in our copy instead of swallowing it', async () => {
       mocks.useAuth.mockReturnValue({ user: signedIn });
       mockSafeParse.mockReturnValue({ success: true, data: {} });
       mockUploadPhotosInOrder.mockResolvedValue({ urls: [], paths: [] });
-      mockCreateListing.mockResolvedValue({ error: new Error('Listing rejected') });
+      mockCreateListing.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
 
       await submit();
 
       await waitFor(() =>
         expect(mocks.notificationsShow).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Listing rejected', color: 'red' })
+          expect.objectContaining({ message: "Couldn't create your listing. Please try again.", color: 'red' })
         )
       );
+      expectNoRawText();
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('reports a failed update in our copy instead of swallowing it', async () => {
+      mocks.useAuth.mockReturnValue({ user: signedIn });
+      mocks.useRouter.mockReturnValue({ replace: mockReplace, push: mockPush, query: { edit: 'listing-1' } });
+      mockGetListingById.mockResolvedValueOnce({
+        data: {
+          id: 'listing-1',
+          listing_type: 'individual',
+          title: 'Rice cooker',
+          description: 'Barely used rice cooker',
+          category_id: 'cat-1',
+          photos: [],
+        },
+      });
+      mockUpdateListing.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+
+      render(React.createElement(CreateListingPage));
+      fireEvent.click(await screen.findByText('Update Listing'));
+
+      await waitFor(() =>
+        expect(mocks.notificationsShow).toHaveBeenCalledWith(
+          expect.objectContaining({ message: "Couldn't update your listing. Please try again.", color: 'red' })
+        )
+      );
+      expectNoRawText();
       expect(mockPush).not.toHaveBeenCalled();
     });
 

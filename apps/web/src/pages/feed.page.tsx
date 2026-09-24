@@ -9,6 +9,7 @@ import { useLocation } from '../hooks/useLocation';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useStartConversation } from '../hooks/useStartConversation';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
 import {
   getPostsByMetroArea,
   deletePost,
@@ -169,7 +170,13 @@ export function FeedPage({ routeBasePath = '/feed' }: FeedPageProps) {
       });
 
       if (result.error) {
-        return { error: result.error.message || 'Failed to submit report. Please try again.' };
+        return {
+          error: userMessage(result.error, "Couldn't submit your report. Please try again.", 'post_report_failed', {
+            platform: 'web',
+            surface: 'feed',
+            postId: reportModalPostId,
+          }),
+        };
       }
 
       notify.success('Thanks. Your report has been submitted for review.');

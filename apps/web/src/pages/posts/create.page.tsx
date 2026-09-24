@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
 import { submitEditedPost, submitNewPost } from '../../lib/postSubmit';
+import { userMessage } from '../../lib/userMessage';
 import {
   ImageUploader,
   ToggleChipGroup,
@@ -180,7 +181,14 @@ export default function CreatePostPage() {
       .then((result) => {
         if (cancelled) return;
         if (!result.data) {
-          setError(result.error?.message || 'Unable to load post for editing.');
+          setError(
+            result.error
+              ? userMessage(result.error, "Couldn't load this post.", 'post_edit_load_failed', {
+                  platform: 'web',
+                  postId: editPostId,
+                })
+              : 'Unable to load post for editing.'
+          );
           return;
         }
 

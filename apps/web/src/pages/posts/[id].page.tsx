@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { useStartConversation } from '../../hooks/useStartConversation';
 import { supabase } from '../../lib/supabase';
+import { userMessage } from '../../lib/userMessage';
 import {
   getPostById,
   deletePost,
@@ -21,7 +22,6 @@ import {
   createReport,
   buildSingleLevelCommentThreads,
   formatRelativeTime,
-  logClientEvent,
 } from '@nepally/shared';
 import type { Post, PostComment } from '@nepally/shared';
 import Avatar from '../../components/Avatar';
@@ -298,16 +298,13 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
     if (!viewActiveRef.current) return;
 
     if (result.error) {
-      logClientEvent({
-        event: 'comment_delete_failed',
-        context: {
+      notify.error(
+        userMessage(result.error, "Couldn't delete the comment. Please try again.", 'comment_delete_failed', {
           platform: 'web',
           commentId,
           userId: user?.id ?? null,
-        },
-        error: result.error,
-      });
-      notify.error(result.error.message || 'Failed to delete comment. Please try again.');
+        })
+      );
       return;
     }
 
@@ -340,7 +337,13 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
       if (!viewActiveRef.current) return {};
 
       if (result.error) {
-        return { error: result.error.message || 'Failed to submit report. Please try again.' };
+        return {
+          error: userMessage(result.error, "Couldn't submit your report. Please try again.", 'post_report_failed', {
+            platform: 'web',
+            surface: 'post_detail',
+            postId: post.id,
+          }),
+        };
       }
 
       notify.success('Thanks. Your report has been submitted for review.');

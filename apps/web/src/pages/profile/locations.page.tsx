@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useFocusAfterUpdate } from '../../hooks/useFocusAfterUpdate';
 import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
+import { userMessage } from '../../lib/userMessage';
 import {
   updateSavedLocation,
   deleteSavedLocation,
@@ -142,15 +143,15 @@ export default function ManageLocationsPage() {
     addButtonRef.current?.focus();
   }
 
-  async function handleSaveNew(metro: MetroArea, label: string): Promise<{ error?: Error | null }> {
+  async function handleSaveNew(metro: MetroArea, label: string): Promise<{ error?: string | null }> {
     const { data, error } = await addSavedLocation(supabase, userId, metro.id, label);
     if (error) {
-      logClientEvent({
-        event: 'profile_location_add_failed',
-        context: { platform: 'web', userId },
-        error,
-      });
-      return { error };
+      return {
+        error: userMessage(error, "Couldn't add this location. Please try again.", 'profile_location_add_failed', {
+          platform: 'web',
+          userId,
+        }),
+      };
     }
     // Awaited here (not left for AddLocationForm to close early): Save stays
     // busy for this whole call.

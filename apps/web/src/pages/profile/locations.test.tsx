@@ -447,8 +447,9 @@ describe('ManageLocationsPage', () => {
     expect(locationsMocks.addSavedLocationMock).not.toHaveBeenCalled();
   });
 
-  it('logs profile_location_add_failed when addSavedLocation fails', async () => {
-    locationsMocks.addSavedLocationMock.mockResolvedValue({ error: new Error('offline') });
+  it('shows our copy, never the raw error, and logs profile_location_add_failed when addSavedLocation fails', async () => {
+    const error = new Error('new row violates row-level security policy');
+    locationsMocks.addSavedLocationMock.mockResolvedValue({ error });
     await renderPage();
     await openAddAndSelectMetro();
 
@@ -458,8 +459,10 @@ describe('ManageLocationsPage', () => {
     });
 
     expect(locationsMocks.logClientEventMock).toHaveBeenCalledWith(
-      expect.objectContaining({ event: 'profile_location_add_failed' })
+      expect.objectContaining({ event: 'profile_location_add_failed', error })
     );
+    expect(screen.getByText("Couldn't add this location. Please try again.")).toBeDefined();
+    expect(screen.queryByText(/row-level security/)).toBeNull();
     expect(mockRefreshSavedLocations).not.toHaveBeenCalled();
   });
 

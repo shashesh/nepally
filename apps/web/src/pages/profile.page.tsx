@@ -7,7 +7,6 @@ import { useRouter } from 'next/router';
 import {
   extendedProfileUpdateSchema,
   getAboutYouFormValues,
-  logClientEvent,
   removeProfilePhoto,
   TrustLevel,
   updateUserProfile,
@@ -32,10 +31,13 @@ import { useFocusAfterUpdate } from '../hooks/useFocusAfterUpdate';
 import { useOwnProfileContent } from '../hooks/useOwnProfileContent';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { replaceProfilePhoto } from '../lib/profilePhoto';
+import { userMessage } from '../lib/userMessage';
 import { supabase } from '../lib/supabase';
 import styles from '../styles/Profile.module.css';
 
 type ProfileTab = 'posts' | 'listings' | 'saved' | 'about';
+
+const ABOUT_YOU_SAVE_FAILED = "Couldn't save About You. Please try again.";
 
 const TABS: { value: ProfileTab; label: string }[] = [
   { value: 'posts', label: 'Posts' },
@@ -114,8 +116,12 @@ export default function ProfilePage() {
       await refreshUser();
       notify.success(successMessage);
     } catch (error: unknown) {
-      logClientEvent({ event: 'profile_photo_change_failed', context: { platform: 'web', userId: user.id }, error });
-      notify.error('Failed to update photo');
+      notify.error(
+        userMessage(error, "Couldn't update your photo. Please try again.", 'profile_photo_change_failed', {
+          platform: 'web',
+          userId: user.id,
+        })
+      );
     } finally {
       setPhotoBusy(false);
     }
@@ -127,7 +133,12 @@ export default function ProfilePage() {
   const handlePhotoRemove = (): Promise<void> =>
     changePhoto(async () => {
       const { error } = await removeProfilePhoto(supabase, user.id);
-      return error ? error.message || 'Failed to remove photo' : null;
+      return error
+        ? userMessage(error, "Couldn't remove your photo. Please try again.", 'profile_photo_remove_failed', {
+            platform: 'web',
+            userId: user.id,
+          })
+        : null;
     }, 'Photo removed');
 
   const handleSaveAboutYou = async (): Promise<void> => {
@@ -135,6 +146,7 @@ export default function ProfilePage() {
     // aboutYouSaving is true, but a caller invoking this directly (or a
     // handler still attached mid-render) must not queue a second save.
     if (aboutYouSaving) return;
+    const aboutYouContext = { platform: 'web', userId: user.id };
     setAboutYouSaving(true);
     try {
       // Validate and normalize before it ever reaches the network: trims
@@ -160,7 +172,7 @@ export default function ProfilePage() {
       };
       const { error } = await updateUserProfile(supabase, user.id, nextAboutYou);
       if (error) {
-        notify.error(error.message || 'Failed to save');
+        notify.error(userMessage(error, ABOUT_YOU_SAVE_FAILED, 'profile_about_you_save_failed', aboutYouContext));
         return;
       }
       // The user object only re-seeds aboutYou when userId changes (see the
@@ -170,8 +182,7 @@ export default function ProfilePage() {
       await refreshUser();
       notify.success('Saved');
     } catch (error: unknown) {
-      logClientEvent({ event: 'profile_about_you_save_failed', context: { platform: 'web', userId: user.id }, error });
-      notify.error('Failed to save');
+      notify.error(userMessage(error, ABOUT_YOU_SAVE_FAILED, 'profile_about_you_save_failed', aboutYouContext));
     } finally {
       setAboutYouSaving(false);
     }

@@ -16,6 +16,13 @@ import {
 } from '@nepally/shared';
 import type { UploaderPhoto } from '../components/ui';
 import { uploadPhotosInOrder } from './photoUploads';
+import { userMessage } from './userMessage';
+
+const UPLOAD_FAILED = "Couldn't upload your photos. Please try again.";
+const CREATE_FAILED = "Couldn't create your post. Please try again.";
+const UPDATE_FAILED = "Couldn't update your post. Please try again.";
+const CREATE_THREW = 'Could not create post. Please check your connection and try again.';
+const UPDATE_THREW = 'Could not update post. Please check your connection and try again.';
 
 export interface SubmitResult {
   ok: boolean;
@@ -57,6 +64,7 @@ export async function submitNewPost(
   supabase: SupabaseClient,
   params: NewPostParams
 ): Promise<SubmitResult> {
+  const context = { platform: 'web', userId: params.userId };
   let uploadedPaths: string[] = [];
 
   try {
@@ -64,7 +72,7 @@ export async function submitNewPost(
       uploadPostPhotos(supabase, inputs)
     );
     if ('error' in uploaded) {
-      return { ok: false, message: uploaded.error.message };
+      return { ok: false, message: userMessage(uploaded.error, UPLOAD_FAILED, 'post_photos_upload_failed', context) };
     }
     uploadedPaths = uploaded.paths;
 
@@ -85,12 +93,12 @@ export async function submitNewPost(
       if (uploadedPaths.length > 0) {
         await deletePostPhotos(supabase, uploadedPaths);
       }
-      return { ok: false, message: result.error.message };
+      return { ok: false, message: userMessage(result.error, CREATE_FAILED, 'post_create_failed', context) };
     }
 
     return { ok: true, pendingModeration: params.requiresModeration };
-  } catch {
-    return { ok: false, message: 'Could not create post. Please check your connection and try again.' };
+  } catch (error: unknown) {
+    return { ok: false, message: userMessage(error, CREATE_THREW, 'post_create_failed', context) };
   }
 }
 
@@ -98,6 +106,7 @@ export async function submitEditedPost(
   supabase: SupabaseClient,
   params: EditedPostParams
 ): Promise<SubmitResult> {
+  const context = { platform: 'web', userId: params.userId, postId: params.postId };
   let uploadedPaths: string[] = [];
 
   try {
@@ -105,7 +114,7 @@ export async function submitEditedPost(
       uploadPostPhotos(supabase, inputs)
     );
     if ('error' in uploaded) {
-      return { ok: false, message: uploaded.error.message };
+      return { ok: false, message: userMessage(uploaded.error, UPLOAD_FAILED, 'post_photos_upload_failed', context) };
     }
     uploadedPaths = uploaded.paths;
 
@@ -122,7 +131,7 @@ export async function submitEditedPost(
       if (uploadedPaths.length > 0) {
         await deletePostPhotos(supabase, uploadedPaths);
       }
-      return { ok: false, message: result.error.message };
+      return { ok: false, message: userMessage(result.error, UPDATE_FAILED, 'post_update_failed', context) };
     }
 
     // Only now is it safe to let go of the photos the member removed.
@@ -139,7 +148,7 @@ export async function submitEditedPost(
     }
 
     return { ok: true };
-  } catch {
-    return { ok: false, message: 'Could not update post. Please check your connection and try again.' };
+  } catch (error: unknown) {
+    return { ok: false, message: userMessage(error, UPDATE_THREW, 'post_update_failed', context) };
   }
 }

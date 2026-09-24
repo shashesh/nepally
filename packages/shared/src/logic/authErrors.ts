@@ -16,7 +16,8 @@ export interface AuthErrorLike {
 
 const RATE_LIMITED = 'Too many attempts. Please wait a minute and try again.';
 
-const CONNECTION_FAILED = "Couldn't reach Nepally. Check your connection and try again.";
+/** The sentence for a request that never got a real answer: offline, timed out or a 5xx. */
+export const CONNECTION_ERROR_MESSAGE = "Couldn't reach Nepally. Check your connection and try again.";
 
 const MESSAGES_BY_CODE: ReadonlyMap<string, string> = new Map([
   ['invalid_credentials', "That email and password don't match. Check them and try again."],
@@ -45,15 +46,19 @@ function readAuthError(error: unknown): AuthErrorLike {
   };
 }
 
+/** True for a network failure or a server error: the member can retry, and nothing they sent was wrong. */
+export function isConnectionError(error: unknown): boolean {
+  const { name, status } = readAuthError(error);
+  // auth-js wraps 5xx and network failures as AuthRetryableFetchError; the status covers them without it.
+  return name === 'AuthRetryableFetchError' || status === 0 || (status !== undefined && status >= 500);
+}
+
 /** A sentence for the member (decision 2). Never the raw message. */
 export function getAuthErrorMessage(error: unknown, action: AuthAction): string {
-  const { name, code, status } = readAuthError(error);
+  const { code } = readAuthError(error);
   const byCode = code === undefined ? undefined : MESSAGES_BY_CODE.get(code);
   if (byCode) return byCode;
-  // auth-js wraps 5xx and network failures as AuthRetryableFetchError; the status covers them without it.
-  if (name === 'AuthRetryableFetchError' || status === 0 || (status !== undefined && status >= 500)) {
-    return CONNECTION_FAILED;
-  }
+  if (isConnectionError(error)) return CONNECTION_ERROR_MESSAGE;
   return FALLBACKS[action];
 }
 
