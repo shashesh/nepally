@@ -33,6 +33,14 @@ describe('getAuthErrorMessage', () => {
     );
   });
 
+  it('treats a server error status alone as a connection failure', () => {
+    // auth-js already wraps 5xx as AuthRetryableFetchError; the status alone must not depend on that name.
+    expect(getAuthErrorMessage({ status: 503 }, 'log-in')).toBe(
+      "Couldn't reach Nepally. Check your connection and try again."
+    );
+    expect(getAuthErrorMessage({ status: 499 }, 'log-in')).toBe("Couldn't log you in. Please try again.");
+  });
+
   it('treats a status of 0 alone as a network failure', () => {
     expect(getAuthErrorMessage({ status: 0 }, 'log-in')).toBe(
       "Couldn't reach Nepally. Check your connection and try again."

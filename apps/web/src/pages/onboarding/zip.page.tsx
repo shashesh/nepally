@@ -125,7 +125,8 @@ function ConfirmStep({ titleRef, metro, alert, completing, onChangeZip, onConfir
       )}
 
       <Group gap="sm" grow>
-        <Button variant="default" onClick={onChangeZip}>
+        {/* Locked while Confirm saves: its save still lands and pushes /feed. */}
+        <Button variant="default" onClick={onChangeZip} {...busyButtonProps(completing, false)}>
           Change ZIP
         </Button>
         <Button onClick={onConfirm} {...busyButtonProps(completing, completing)}>
@@ -249,7 +250,9 @@ export default function ZipCodePage() {
           metro={metro}
           alert={alert}
           completing={completing}
-          onChangeZip={() => showStep(null)}
+          onChangeZip={() => {
+            if (!completing) showStep(null);
+          }}
           onConfirm={handleConfirm}
         />
       ) : (

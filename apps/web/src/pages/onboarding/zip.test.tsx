@@ -217,6 +217,22 @@ describe('ZipCodePage', () => {
     expect(zipMocks.updateUserLocationMock).toHaveBeenCalledTimes(1);
   });
 
+  it('locks Change ZIP while Confirm saves', async () => {
+    zipMocks.updateUserLocationMock.mockImplementation(() => new Promise(() => {}));
+    render(<ZipCodePage />);
+    await reachConfirmStep();
+    await act(async () => {
+      fireEvent.click(confirmButton());
+    });
+    const changeZip = screen.getByRole('button', { name: 'Change ZIP' });
+    expect(changeZip.getAttribute('aria-disabled')).toBe('true');
+    expect((changeZip as HTMLButtonElement).disabled).toBe(false);
+    await act(async () => {
+      fireEvent.click(changeZip);
+    });
+    expect(screen.getByRole('heading', { level: 1, name: 'Confirm your area' })).toBeDefined();
+  });
+
   it('shows an alert when saving the location fails', async () => {
     zipMocks.updateUserLocationMock.mockResolvedValue({ error: new Error('DB error') });
     render(<ZipCodePage />);

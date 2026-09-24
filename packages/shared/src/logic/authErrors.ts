@@ -50,7 +50,10 @@ export function getAuthErrorMessage(error: unknown, action: AuthAction): string 
   const { name, code, status } = readAuthError(error);
   const byCode = code === undefined ? undefined : MESSAGES_BY_CODE.get(code);
   if (byCode) return byCode;
-  if (name === 'AuthRetryableFetchError' || status === 0) return CONNECTION_FAILED;
+  // auth-js wraps 5xx and network failures as AuthRetryableFetchError; the status covers them without it.
+  if (name === 'AuthRetryableFetchError' || status === 0 || (status !== undefined && status >= 500)) {
+    return CONNECTION_FAILED;
+  }
   return FALLBACKS[action];
 }
 

@@ -64,6 +64,9 @@ export default function AuthCallbackPage() {
       started = true;
       // A slow profile write must not flip a working page to expired.
       clearTimeout(timeout);
+      // A session that lands after the deadline is still finished: Supabase has
+      // stored it, and dropping it would leave a member with no profile row.
+      setState({ kind: 'working' });
       const result = await finishSignIn(supabase, session);
       if (!mounted) return;
       if ('error' in result) {

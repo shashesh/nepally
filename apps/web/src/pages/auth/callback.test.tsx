@@ -149,6 +149,24 @@ describe('AuthCallbackPage', () => {
     expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
   });
 
+  it('finishes a session that arrives after the expired state, showing the working state again', async () => {
+    // Supabase has stored the session by then; dropping it would leave a
+    // signed-in member with no profile row and no verification.
+    let resolveFinish: (value: { destination: '/feed' }) => void = () => {};
+    callbackMocks.finishSignInMock.mockImplementation(
+      () => new Promise((resolve) => { resolveFinish = resolve; })
+    );
+    render(<AuthCallbackPage />);
+    advance(11_000);
+    expect(screen.getByRole('heading', { level: 1, name: 'Link expired' })).toBeDefined();
+    await fireAuthEvent('SIGNED_IN');
+    expect(screen.getByRole('heading', { level: 1, name: 'Signing you in…' })).toBeDefined();
+    await act(async () => {
+      resolveFinish({ destination: '/feed' });
+    });
+    expect(mockPush).toHaveBeenCalledWith('/feed');
+  });
+
   it('keeps one subscription when the router object changes identity', async () => {
     // Next hands out a fresh public router object on router-driven renders.
     const { rerender } = render(<AuthCallbackPage />);

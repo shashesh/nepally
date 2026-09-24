@@ -66,7 +66,7 @@ Both the email link and Google land here. The page shows "Signing you in…" whi
 Every step's result is checked, so the page always ends in one of three places:
 
 - **Signed in.** The member goes on to the feed or onboarding.
-- **Link expired.** No session arrived within 10 seconds: "This verification link may have expired or already been used.", with Sign up and Log in. A slow profile write once the session has arrived doesn't count against the 10 seconds.
+- **Link expired.** No session arrived within 10 seconds: "This verification link may have expired or already been used.", with Sign up and Log in. A slow profile write once the session has arrived doesn't count against the 10 seconds, and a session that arrives after the page shows this is still finished: the page goes back to "Signing you in…" and carries on.
 - **Failed.** A step failed: "Couldn't finish signing you in" and "We couldn't finish setting up your account. Please try again.", with Try again. The session is kept, so Try again reloads the page and runs the steps again. The failure is logged as `auth_callback_failed`, with the step that failed.
 
 ## Choosing a metro (`/onboarding/zip`)
@@ -74,7 +74,7 @@ Every step's result is checked, so the page always ends in one of three places:
 A visitor who isn't signed in is sent to log-in, and a member who already has a metro is sent to the feed.
 
 1. **"Where are you?"** The ZIP code field (five digits) and Find my area, or Detect my location, which uses the browser's location. Find my area is always enabled. A short ZIP shows "Please enter a valid 5-digit ZIP code." on the field, and an unknown one shows "ZIP code not found. Please double-check and try again." there. If detection fails, an alert says "Couldn't detect your location. Please enter your ZIP code instead."
-2. **"Confirm your area"** shows the metro found, with Change ZIP and Confirm and continue. Each step change moves focus to the new step's heading.
+2. **"Confirm your area"** shows the metro found, with Change ZIP and Confirm and continue; both are locked while the location saves. Each step change moves focus to the new step's heading.
 
 Confirming saves the ZIP and metro on the profile, adds the metro as the member's default saved location, labelled Home, and goes to `/feed`. If the profile save fails, the page says "Failed to save location. Please try again." and stays put. If only the Home entry fails, the member continues anyway: their metro is already saved, and Manage Locations can add Home later. That failure is logged as `onboarding_home_location_failed`.
 
