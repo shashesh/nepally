@@ -36,8 +36,7 @@ const BIDI_AND_INVISIBLE_CHARS =
  *   either boundary
  * - deliberately has no letters-only pattern: OAuth names, Devanagari and
  *   other non-Latin scripts, and punctuation like "O'Brien-Rai" are all
- *   valid names (unlike `validateFullName` in utils/validators.ts, which
- *   this schema is intended to replace)
+ *   valid names
  */
 export const fullNameSchema = z
   .string()
