@@ -84,6 +84,24 @@ describe('SavedLocationRow', () => {
     expect(screen.queryByRole('button', { name: 'Remove Work' })).toBeNull();
   });
 
+  it('keeps Remove’s slot as a hidden spacer when canRemove is false, so the pencils line up', () => {
+    renderRow({ canRemove: false });
+
+    // The pencil is followed by a placeholder assistive tech never meets.
+    const spacer = screen.getByRole('button', { name: 'Rename Work' }).nextElementSibling;
+    expect(spacer).not.toBeNull();
+    expect(spacer?.getAttribute('aria-hidden')).toBe('true');
+    expect(spacer?.textContent).toBe('');
+  });
+
+  it('puts Remove in that slot when it can remove', () => {
+    renderRow();
+
+    expect(screen.getByRole('button', { name: 'Rename Work' }).nextElementSibling).toBe(
+      screen.getByRole('button', { name: 'Remove Work' })
+    );
+  });
+
   it('calls onRemove when Remove is clicked', () => {
     renderRow();
     fireEvent.click(screen.getByRole('button', { name: 'Remove Work' }));

@@ -13,8 +13,10 @@
  * (components/profile/).
  */
 
+/* The public profile's width (PublicProfile.module.css .container), so the
+   two profile pages match. */
 .profilePage {
-  max-width: 600px;
+  max-width: var(--layout-content-width);
   margin: 0 auto;
 }
 
@@ -22,7 +24,7 @@
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
-  padding: var(--space-6);
+  padding: var(--card-padding);
   margin-bottom: var(--space-5);
 }
 
