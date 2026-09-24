@@ -1,6 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { checkFiles, findViolations } = require('./guard-css-tokens');
+const {
+  MANTINE_COMPONENT_PROPERTIES,
+  checkFiles,
+  findUndefinedProperties,
+  findViolations,
+  readTokenNames,
+} = require('./guard-css-tokens');
 
 test('flags hex, rgb, hsl and oklch colour literals', () => {
   const css = [
@@ -114,4 +120,51 @@ test('checkFiles reports every offending file, with no allowlist to skip one', (
     'apps/web/src/styles/Old.module.css:1 legacy token: var(--color-',
     'apps/web/src/d.module.css:1 named colour: white',
   ]);
+});
+
+test('readTokenNames collects every custom property tokens.css declares', () => {
+  const css = ':root {\n  --text-1: #111;\n  --space-4: 1rem;\n}\n[data-theme="dark"] { --text-1: #eee; }';
+  assert.deepEqual([...readTokenNames(css)].sort(), ['--space-4', '--text-1']);
+});
+
+test('flags a var() whose name is not a token', () => {
+  const tokens = new Set(['--text-1', '--font-weight-semibold']);
+  const css = ['.a { color: var(--text-1); }', '.b { font-weight: var(--weight-semibold); }'].join('\n');
+  assert.deepEqual(findUndefinedProperties(css, tokens), [
+    { line: 2, kind: 'undefined property', text: '--weight-semibold' },
+  ]);
+});
+
+test('a fallback does not excuse an undefined name', () => {
+  assert.deepEqual(
+    findUndefinedProperties('.a { font-size: var(--text-sm, 14px); }', new Set()).map((violation) => violation.text),
+    ['--text-sm']
+  );
+});
+
+test('allows Mantine variables and properties the same file defines', () => {
+  const css = [
+    '.a { --tier-color: var(--accent); }',
+    '.b { color: var(--tier-color); outline-color: var(--mantine-color-ink-8); }',
+  ].join('\n');
+  assert.deepEqual(findUndefinedProperties(css, new Set(['--accent'])), []);
+});
+
+test('allows the listed Mantine component properties', () => {
+  for (const name of MANTINE_COMPONENT_PROPERTIES) {
+    assert.deepEqual(findUndefinedProperties(`.a { width: var(${name}); }`, new Set()), [], name);
+  }
+});
+
+test('leaves legacy names to the legacy-token rule, and keeps line numbers past comments', () => {
+  const css = '/* var(--nope)\n */\n.a { color: var(--color-primary); background: var(--nope); }';
+  assert.deepEqual(findUndefinedProperties(css, new Set()), [{ line: 3, kind: 'undefined property', text: '--nope' }]);
+});
+
+test('checkFiles reports undefined properties when given the token names', () => {
+  const errors = checkFiles(
+    [{ path: 'apps/web/src/e.module.css', content: '.e { color: var(--text-9); }' }],
+    new Set(['--text-1'])
+  );
+  assert.deepEqual(errors, ['apps/web/src/e.module.css:1 undefined property: --text-9']);
 });
