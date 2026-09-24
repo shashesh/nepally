@@ -11,6 +11,7 @@ import {
   makeFakeSession,
   MOCK_USER_ID,
   MOCK_USER_EMAIL,
+  MOCK_NEW_CONVERSATION_ID,
 } from '../fixtures/mock-data';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -374,6 +375,21 @@ export async function mockSupabaseLoggedIn(page: Page): Promise<void> {
 
   // Message unread counts (Layout top bar)
   await page.route('**/rest/v1/conversation_participants**', async (route) => {
+    await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify([]) });
+  });
+
+  // Starting a chat: with no participations, getOrCreateConversation creates
+  // a conversation and reads the new row back. 14-messages.spec.ts mocks a
+  // populated inbox on top of this.
+  await page.route('**/rest/v1/conversations**', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 201,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ id: MOCK_NEW_CONVERSATION_ID, last_message: null, last_message_time: null }),
+      });
+      return;
+    }
     await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify([]) });
   });
 

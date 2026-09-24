@@ -42,7 +42,7 @@ test.describe('Phone navigation', () => {
 
   test('the tab bar stays visible on empty-state and detail routes', async ({ page }) => {
     await page.goto('/messages');
-    await expect(page.getByRole('heading', { name: /messages/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { level: 1, name: 'Messages' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
 
     await page.goto('/notifications');

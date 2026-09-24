@@ -4,6 +4,7 @@ import { mockSupabaseLoggedIn } from '../helpers/supabase-mock';
 import {
   MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE,
   MOCK_MARKETPLACE_LISTING_OWN_ACTIVE,
+  MOCK_NEW_CONVERSATION_ID,
 } from '../fixtures/mock-data';
 
 test.describe('Marketplace full feature flow', () => {
@@ -63,8 +64,10 @@ test.describe('Marketplace full feature flow', () => {
 
     await expect(saveButton).toHaveAttribute('aria-pressed', 'true');
 
+    // Opens the conversation itself. It used to push /messages?to=<owner>,
+    // which nothing read, so the member landed on their inbox.
     await page.getByRole('button', { name: /contact seller/i }).click();
-    await expect(page).toHaveURL(/\/messages\?to=marketplace-other-user-0001/);
+    await expect(page).toHaveURL(new RegExp(`/messages/${MOCK_NEW_CONVERSATION_ID}$`));
   });
 
   test('create listing flow submits and returns to marketplace', async ({ page }) => {
