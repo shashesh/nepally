@@ -4,6 +4,5 @@
   "apps/web/src/styles/Home.module.css",
   "apps/web/src/styles/Legal.module.css",
   "apps/web/src/styles/Moderation.module.css",
-  "apps/web/src/styles/NotificationPreferences.module.css",
-  "apps/web/src/styles/Notifications.module.css"
+  "apps/web/src/styles/NotificationPreferences.module.css"
 ]
