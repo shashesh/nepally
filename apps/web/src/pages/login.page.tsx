@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Alert, Button, Divider, Loader, PasswordInput, Stack, TextInput } from '@mantine/core';
 import { getAuthErrorMessage, logClientEvent, validateEmail } from '@nepally/shared';
-import { signInWithEmail, signInWithGoogle } from '../lib/auth';
+import { signInWithEmail } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
+import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { useRedirectWhen } from '../hooks/useRedirectWhen';
 import { AuthCard } from '../components/auth/AuthCard';
 import { GoogleButton } from '../components/auth/GoogleButton';
@@ -38,7 +39,7 @@ export default function LoginPage() {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState('');
   const [signingIn, setSigningIn] = useState(false);
-  const [googleBusy, setGoogleBusy] = useState(false);
+  const google = useGoogleSignIn(setServerError);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -55,18 +56,6 @@ export default function LoginPage() {
 
   // Nothing shows before the first submit; after it, errors follow every change.
   const errors = submitted ? validateLogin(email, password) : {};
-
-  async function handleGoogle() {
-    setServerError('');
-    setGoogleBusy(true);
-    const result = await signInWithGoogle();
-    // On success the browser is already navigating to Google, so stay busy.
-    if (result.error) {
-      setGoogleBusy(false);
-      logClientEvent({ event: 'auth_google_failed', context: { platform: 'web' }, error: result.error });
-      setServerError(getAuthErrorMessage(result.error, 'google'));
-    }
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -122,7 +111,7 @@ export default function LoginPage() {
           </Alert>
         )}
 
-        <GoogleButton onClick={handleGoogle} busy={googleBusy} />
+        <GoogleButton onClick={google.start} busy={google.busy} />
 
         <Divider label="or log in with email" labelPosition="center" />
 
