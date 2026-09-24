@@ -36,9 +36,10 @@
   gap: var(--space-1);
 }
 
+/* Matches Radio.Group's description beside it. */
 .switchDescription {
   color: var(--text-2);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 .actions {
