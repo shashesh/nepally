@@ -32,7 +32,7 @@ A signed-in member gets the feed at `/`. A visitor gets the landing page:
 - **Password.** Before submit, the field's hint gives the rule: "At least 8 characters, with an uppercase letter, a lowercase letter and a number". After a submit, each unmet rule shows on the field, one per line, until it is met.
 - **Validation** works as on log-in: nothing before the first submit, then errors on their fields, with focus on the first.
 - **Success** goes to `/verify-email?email=…`.
-- **An address that already has an account** goes to log-in with the reason above. Supabase reports this two ways, and both are handled. With email confirmation off it returns an error. With it on, it returns a user with no identities, so a stranger can't use sign-up to find out which addresses are registered. Without this, the member would wait for an email that never comes.
+- **An address that already has an account** looks exactly like a new one. With email confirmation on, Supabase answers a taken address with a look-alike success (a user with no identities) and sends no email, so that sign-up can't be used to find out who is registered, and the page keeps it that way: the member lands on verify-email, whose footer says "Already have an account? Log in. If you signed up with Google, use Continue with Google there." Only when email confirmation is off does Supabase return an explicit error; that goes to log-in with the reason above, since it reveals nothing Supabase hasn't already said.
 
 ## Error sentences
 
@@ -51,7 +51,7 @@ The sentences live in shared `getAuthErrorMessage`, so mobile can show the same 
 
 ## Verify your email (`/verify-email`)
 
-- **"Check your email"**, with the address masked ("b\*\*\*l@example.com"), and "Already verified? Log in".
+- **"Check your email"**, with the address masked ("b\*\*\*l@example.com"), and "Already have an account? Log in. If you signed up with Google, use Continue with Google there."
 - **Resend email** can be pressed 60 seconds after arriving, with "You can resend in 42s" beside it. It stays focusable during the wait and while sending. Success shows "Email sent. Check your inbox." and starts the wait again. A failure shows its sentence from the table.
 - **Without an address in the link**, the page says "We sent a verification link to your email address." and offers no resend, only Log in.
 

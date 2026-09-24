@@ -44,16 +44,10 @@ export async function signUpWithEmail(
     if (error) throw error;
     if (!data.user) throw new Error('No user data returned');
 
-    // With email confirmation on, Supabase answers a taken address with an
-    // obfuscated user that has no identities instead of an error, so the
-    // response can't reveal which emails are registered.
-    if (data.user.identities?.length === 0) {
-      return {
-        error: Object.assign(new Error('User already registered'), {
-          code: 'user_already_exists',
-        }),
-      };
-    }
+    // With email confirmation on, Supabase answers a taken address with a
+    // look-alike user (no identities) and sends no email, so sign-up can't be
+    // used to find out who is registered. This keeps it that way: a taken
+    // address goes to verify-email like a new one, which offers Log in.
 
     // Profile creation is deferred to /auth/callback after email confirmation.
     // session is null at this point when email confirmation is enabled.

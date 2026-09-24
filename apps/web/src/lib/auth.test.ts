@@ -29,7 +29,6 @@ vi.mock('@nepally/shared', async () => {
   };
 });
 
-import { isExistingAccountError } from '@nepally/shared';
 import {
   signUpWithEmail,
   signInWithEmail,
@@ -94,7 +93,9 @@ describe('signUpWithEmail', () => {
     expect(result).toEqual({ user: { id: 'new-user-1', email: 'test@example.com' } });
   });
 
-  it('reports an existing account when Supabase returns a user with no identities', async () => {
+  it('treats a user with no identities as a success, so a taken address looks like a new one', async () => {
+    // Supabase's look-alike answer for a taken address; revealing it would let
+    // sign-up be used to find out who is registered.
     authMocks.signUpMock.mockResolvedValue({
       data: { user: { id: 'obfuscated-1', email: 'taken@example.com', identities: [] } },
       error: null,
@@ -102,8 +103,7 @@ describe('signUpWithEmail', () => {
 
     const result = await signUpWithEmail('taken@example.com', 'password123', 'Test User');
 
-    expect(result.user).toBeUndefined();
-    expect(isExistingAccountError(result.error)).toBe(true);
+    expect(result).toEqual({ user: { id: 'obfuscated-1', email: 'taken@example.com' } });
   });
 
   it('returns a Supabase error unchanged, keeping its code', async () => {

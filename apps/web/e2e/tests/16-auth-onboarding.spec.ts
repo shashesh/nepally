@@ -185,9 +185,10 @@ test.describe('Log in and sign up by keyboard', () => {
     await expect(submit).toBeFocused();
   });
 
-  test('a taken address that Supabase hides goes to login with the reason', async ({ page }) => {
+  test('a taken address that Supabase hides looks like a new one, and verify-email offers Log in', async ({ page }) => {
     // With email confirmation on, Supabase answers a taken address with a user
-    // that has no identities instead of an error (recon 3).
+    // that has no identities instead of an error. Signup treats it as a success,
+    // so sign-up can't be used to find out who is registered.
     await page.route('**/auth/v1/signup**', async (route) => {
       await route.fulfill({
         status: 200,
@@ -213,9 +214,11 @@ test.describe('Log in and sign up by keyboard', () => {
     await main.getByLabel('Password', { exact: true }).fill('Password123');
     await main.getByRole('button', { name: 'Create account' }).click();
 
-    await expect(page).toHaveURL(/\/login\?reason=existing-account&email=/);
-    await expect(page.getByText(/account with this email already exists/i)).toBeVisible();
-    await expect(page.locator('main').getByLabel('Email')).toHaveValue(MOCK_USER_EMAIL);
+    await expect(page).toHaveURL(/\/verify-email\?email=/);
+    const verify = page.locator('main');
+    await expect(verify.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
+    await expect(verify.getByText(/Already have an account\?/)).toBeVisible();
+    await expect(verify.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
   });
 });
 

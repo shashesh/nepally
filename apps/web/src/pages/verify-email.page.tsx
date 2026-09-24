@@ -61,9 +61,12 @@ export default function VerifyEmailPage() {
             your account and continue.
           </>
         }
+        // Sign-up answers a taken address exactly like a new one (so it can't
+        // reveal who is registered), which also lands such a member here.
         footer={
           <>
-            Already verified? <Link href="/login">Log in</Link>
+            Already have an account? <Link href="/login">Log in</Link>. If you signed up with Google, use
+            Continue with Google there.
           </>
         }
       >

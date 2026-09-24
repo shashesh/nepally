@@ -76,7 +76,8 @@ describe('VerifyEmailPage', () => {
 
   it('links to Log in', () => {
     render(<VerifyEmailPage />);
-    expect(screen.getByText(/Already verified\?/)).toBeDefined();
+    expect(screen.getByText(/Already have an account\?/)).toBeDefined();
+    expect(screen.getByText(/If you signed up with Google, use Continue with Google there\./)).toBeDefined();
     expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
   });
 
