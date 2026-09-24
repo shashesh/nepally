@@ -105,18 +105,6 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
   const highlights = getListingHighlights(listing, now);
   const slug = themeSlug(listing.category?.slug);
 
-  const actions = (
-    <ListingActionsPanel
-      listing={listing}
-      isOwner={isOwner}
-      isSaved={detail.isSaved}
-      saving={detail.saving}
-      contacting={contacting}
-      onContact={handleContact}
-      onToggleSave={detail.toggleSave}
-    />
-  );
-
   return (
     <>
       <Head>
@@ -143,8 +131,11 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
           </Breadcrumbs>
         </nav>
 
+        {/* One actions panel. The grid places it beside both blocks from md
+            up (sticky) and between them below, so it is reached once in tab
+            order at every width. */}
         <div className={styles.layout}>
-          <div className={styles.main}>
+          <div className={styles.top}>
             {listing.photos.length > 0 && (
               <PhotoCarousel photos={listing.photos} alt={listing.title} priority />
             )}
@@ -183,11 +174,25 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
                   ))}
                 </ul>
               )}
-
-              <div className={styles.inlineActions}>{actions}</div>
-
-              <p className={styles.description}>{listing.description}</p>
             </section>
+          </div>
+
+          <aside className={styles.sidebar} aria-label="Listing actions">
+            <ListingActionsPanel
+              listing={listing}
+              isOwner={isOwner}
+              isSaved={detail.isSaved}
+              saving={detail.saving}
+              contacting={contacting}
+              onContact={handleContact}
+              onToggleSave={detail.toggleSave}
+            />
+          </aside>
+
+          <div className={styles.rest}>
+            <div className={styles.section}>
+              <p className={styles.description}>{listing.description}</p>
+            </div>
 
             {listing.listing_type === 'business' && hasBusinessDetails(listing) && (
               <section className={styles.section} aria-labelledby="listing-business">
@@ -226,10 +231,6 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
               <span>{listing.saves_count} saves</span>
             </p>
           </div>
-
-          <aside className={styles.sidebar} aria-label="Listing actions">
-            {actions}
-          </aside>
         </div>
       </div>
     </>

@@ -26,18 +26,35 @@
   overflow-wrap: anywhere;
 }
 
+/* One actions panel, placed by the grid: beside the top block and the rest
+   from md up, between them below. `auto 1fr` rows keep a tall aside from
+   opening a gap under the top block. */
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--layout-aside-width);
-  gap: var(--space-6);
-  align-items: start;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'top aside'
+    'rest aside';
+  column-gap: var(--space-6);
+  row-gap: var(--space-5);
 }
 
-.main {
+.top,
+.rest {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
   min-width: 0;
+}
+
+.top {
+  grid-area: top;
+}
+
+.rest {
+  grid-area: rest;
+  align-self: start;
 }
 
 .section {
@@ -155,9 +172,9 @@
   font-size: var(--font-size-sm);
 }
 
-/* ── The actions render twice, and CSS shows one at a time ──
-   Inline under the title on narrow screens, in the aside on wide ones. */
 .sidebar {
+  grid-area: aside;
+  align-self: start;
   display: flex;
   position: sticky;
   top: calc(var(--layout-topbar-height) + var(--space-4));
@@ -169,23 +186,18 @@
   background: var(--surface-1);
 }
 
-.inlineActions {
-  display: none;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 @media (max-width: $mantine-breakpoint-md) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      'top'
+      'aside'
+      'rest';
   }
 
   .sidebar {
-    display: none;
-  }
-
-  .inlineActions {
-    display: flex;
+    position: static;
   }
 }
 

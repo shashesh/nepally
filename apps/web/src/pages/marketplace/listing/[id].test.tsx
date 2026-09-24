@@ -157,12 +157,12 @@ describe('ListingDetailPage', () => {
     });
   });
 
-  it('renders listing price', async () => {
+  it('renders listing price once, in the actions panel', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('$15-25').length).toBeGreaterThanOrEqual(1);
-    });
+    const actions = await screen.findByRole('complementary', { name: 'Listing actions' });
+    expect(within(actions).getByText('$15-25')).toBeDefined();
+    expect(screen.getAllByText('$15-25')).toHaveLength(1);
   });
 
   it('renders business details', async () => {
@@ -225,13 +225,16 @@ describe('ListingDetailPage', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
   });
 
-  it('shows Contact and Save buttons when not owner', async () => {
+  it('renders the actions once, in one Listing actions panel, for a non-owner', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('Contact Seller').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('Save listing').length).toBeGreaterThanOrEqual(1);
-    });
+    const actions = await screen.findByRole('complementary', { name: 'Listing actions' });
+
+    expect(screen.getAllByRole('complementary', { name: 'Listing actions' })).toHaveLength(1);
+    expect(within(actions).getByRole('button', { name: 'Contact Seller' })).toBeDefined();
+    expect(within(actions).getByRole('button', { name: 'Save listing' })).toBeDefined();
+    expect(screen.getAllByRole('button', { name: 'Contact Seller' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Save listing' })).toHaveLength(1);
   });
 
   // The button used to push /messages?to=<owner>, which nothing read, so the
@@ -241,7 +244,7 @@ describe('ListingDetailPage', () => {
       user: { id: 'u1', full_name: 'Bikal Shrestha', trust_level: 1, metro_area_id: 'metro-1' },
     });
     render(React.createElement(ListingDetailPage));
-    const [contact] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+    const contact = await screen.findByRole('button', { name: 'Contact Seller' });
 
     fireEvent.click(contact);
 
@@ -262,12 +265,12 @@ describe('ListingDetailPage', () => {
       })
     );
     render(React.createElement(ListingDetailPage));
-    const [contact] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+    const contact = await screen.findByRole('button', { name: 'Contact Seller' });
 
     fireEvent.click(contact);
     fireEvent.click(contact);
 
-    const [busy] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+    const busy = await screen.findByRole('button', { name: 'Contact Seller' });
     expect(busy.getAttribute('aria-disabled')).toBe('true');
     expect(incrementListingContacts).toHaveBeenCalledTimes(1);
 
@@ -276,12 +279,11 @@ describe('ListingDetailPage', () => {
     expect(getOrCreateConversation).toHaveBeenCalledTimes(1);
   });
 
-  it('shows Edit button when user is the owner', async () => {
+  it('shows one Edit Listing link when user is the owner', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'user-2', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('Edit Listing').length).toBeGreaterThanOrEqual(1);
-    });
+    const edit = await screen.findByRole('link', { name: 'Edit Listing' });
+    expect(edit.getAttribute('href')).toBe('/marketplace/create?edit=listing-1');
   });
 
   it('renders business hours', async () => {
@@ -381,21 +383,14 @@ describe('ListingDetailPage', () => {
     });
   });
 
-  it('renders sidebar with Contact Seller and Save buttons for non-owner', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('Contact Seller').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('Save listing').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('renders Edit and Promote buttons in sidebar for owner', async () => {
+  it('renders Edit and Promote once, in the Listing actions panel, for the owner', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'user-2', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('Edit Listing').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('Promote').length).toBeGreaterThanOrEqual(1);
-    });
+    const actions = await screen.findByRole('complementary', { name: 'Listing actions' });
+
+    expect(within(actions).getByRole('link', { name: 'Edit Listing' })).toBeDefined();
+    expect(within(actions).getByRole('link', { name: 'Promote' })).toBeDefined();
+    expect(screen.getAllByRole('link', { name: 'Edit Listing' })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: 'Promote' })).toHaveLength(1);
   });
 });

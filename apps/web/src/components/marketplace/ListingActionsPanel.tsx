@@ -17,10 +17,8 @@ export interface ListingActionsPanelProps {
 }
 
 /**
- * The price and what the viewer can do with the listing. The detail page
- * renders it in two places — inline on narrow screens and in the aside on
- * wide ones — with CSS showing one at a time, so it lives here rather than
- * being written twice.
+ * The price and what the viewer can do with the listing, rendered once in
+ * the detail page's "Listing actions" aside.
  */
 export function ListingActionsPanel({
   listing,
