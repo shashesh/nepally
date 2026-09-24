@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   deleteNotification,
   getNotifications,
@@ -9,6 +9,7 @@ import {
 } from '@nepally/shared';
 import type { Notification } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
+import { NOTIFICATIONS_CHANGED_EVENT } from '../lib/notificationsChanged';
 
 const BELL_LIMIT = 8;
 const POLL_INTERVAL_MS = 30_000;
@@ -47,37 +48,61 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<Notification[]>([]);
 
-  const applyFeed = useCallback((feed: BellFeed) => {
-    setUnreadCount(feed.unreadCount);
-    if (feed.items) setItems(feed.items);
-  }, []);
+  // A different member (or none) starts from an empty feed, so whoever signs
+  // in next never sees the previous member's count or items while their own
+  // first load is in flight (react.dev: adjusting state when a prop changes).
+  const [feedUserId, setFeedUserId] = useState(userId);
+  if (userId !== feedUserId) {
+    setFeedUserId(userId);
+    setUnreadCount(0);
+    setItems([]);
+  }
 
-  // The poll and tab-focus refresh go through this.
-  const load = useCallback(async () => {
+  // Loads overlap (a poll, then an announcement from /notifications), and
+  // their answers can land in either order: only the latest one applies. A
+  // previous user's answer is older than the new user's first load, so this
+  // also drops it.
+  const latestRequestRef = useRef(0);
+
+  // Every load — first, polling back on, announcement, focus, poll — goes through this.
+  const load = useCallback(() => {
+    // Advance even with no member, so a request for the one who just signed
+    // out is dropped when it lands.
+    latestRequestRef.current += 1;
+    const request = latestRequestRef.current;
     if (!userId) return;
-    applyFeed(await fetchBellFeed(userId));
-  }, [userId, applyFeed]);
+    void fetchBellFeed(userId).then((feed) => {
+      if (request !== latestRequestRef.current) return;
+      setUnreadCount(feed.unreadCount);
+      if (feed.items) setItems(feed.items);
+    });
+  }, [userId]);
 
-  // Initial load for each user; a response for a previous user is dropped.
+  // Loads for each user, and again whenever polling turns on or off: while
+  // /notifications is open the bell has no channel, so INSERTs that arrived
+  // there only reach the bell through this reload.
+  useEffect(() => {
+    load();
+  }, [load, pollingEnabled]);
+
+  // /notifications announces its mark-read, mark-all and delete.
   useEffect(() => {
     if (!userId) return;
-    let cancelled = false;
-    void fetchBellFeed(userId).then((feed) => {
-      if (!cancelled) applyFeed(feed);
-    });
-    return () => {
-      cancelled = true;
+    const onChanged = () => {
+      load();
     };
-  }, [userId, applyFeed]);
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+  }, [userId, load]);
 
   useEffect(() => {
     if (!userId || !pollingEnabled) return;
 
     const onVisibilityChange = () => {
-      if (!document.hidden) void load();
+      if (!document.hidden) load();
     };
     const intervalId = window.setInterval(() => {
-      void load();
+      load();
     }, POLL_INTERVAL_MS);
 
     document.addEventListener('visibilitychange', onVisibilityChange);

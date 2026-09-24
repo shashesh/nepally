@@ -140,7 +140,7 @@ The events list (`/events`) and event detail (`/events/[id]`) are built from the
 
 ### Busy controls stay focusable
 
-A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You, the public profile's Message button, event detail's Message Organizer, listing detail's Contact Seller, the message thread's Send and `AddLocationForm`'s Save and Cancel all work this way.
+A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You, the public profile's Message button, event detail's Message Organizer, listing detail's Contact Seller, the message thread's Send, `AddLocationForm`'s Save and Cancel, notification preferences' Save, the notifications page's Mark all as read and the moderation queue's actions all work this way.
 
 Two controls are the exception, both for the same reason: they show the member's new state at once, and `data-disabled` would repaint it in Mantine's grey. While a follow or unfollow saves, `FollowButton` sets only `aria-disabled`, so "Following" or "Follow" stays at full opacity. `EventResponseControl` does the same, so the Interested or Going button the member just pressed stays visibly pressed until the write lands.
 
@@ -149,8 +149,10 @@ When an action removes the control that had focus, focus moves somewhere sensibl
 - **Unsaving a post** (`profile.page.tsx`) focuses the Saved tab panel, if focus is on `<body>`.
 - **Removing the photo** (`ProfilePhotoControl`) focuses Add Photo, if focus is on `<body>`.
 - **Manage Locations** records a pending target and focuses it once `savedLocations` refreshes, if `isFocusStranded()` says focus is on `<body>` or still inside the closing confirm dialog. The target is the neighbouring row's Rename after a remove, that row's Rename after Set as default, and Add a Location after an add (or the new row's Rename, when the cap hides that button).
+- **Deleting a notification** (`NotificationList`) focuses the open button of the row that took its place, then the row before, then the page's Preferences link. **Mark all as read** removes itself on success and focuses Preferences.
+- **A moderation card leaving** (`moderation.page.tsx`) focuses the card that took its place, then the card before, then the section's `h2`. Cards and section headings take `tabIndex={-1}` for this. Focus goes to the card, not its first button, so a second Enter can't act on the next card.
 
-A shared `useFocusAfterUpdate` hook, built on `isFocusStranded`, is planned for PR 10 to replace all three.
+A shared `useFocusAfterUpdate` hook, built on `isFocusStranded`, is planned for PR 10 to replace all of these.
 
 `ActionMenu` moves focus from the menu to its trigger before an item's action runs, and turns off Mantine's delayed `returnFocus`. A dialog the action opens therefore keeps focus while it's open and returns it to the trigger when it closes, instead of to the unmounted menu item, which would drop it to `<body>`. After a click outside, focus stays where the click put it (usually `<body>`) and isn't pulled back to the trigger. That's deliberate, so a click into a field is never overridden.
 
@@ -194,6 +196,26 @@ The inbox (`/messages`) and a thread (`/messages/[id]`) are built from these, in
 
 Every web realtime channel, and shared `subscribeToMessages`, takes its topic from shared `uniqueChannelTopic(base)`. realtime-js hands back a still-leaving channel for a matching topic, and that channel's `subscribe()` does nothing, so resubscribing to a fixed topic straight after removing it — React StrictMode's dev remount, or A → B → A — gets no events. Mobile's own channels (`HomeScreen`, `NotificationsScreen`) still use fixed topics; moving them is on PR 10's list.
 
+## Notifications and moderation components
+
+`/notifications`, `/profile/notifications` and `/moderation` are built from these.
+
+| Component | Notes |
+|---|---|
+| `NotificationList` | `components/notifications/`. Emergency alerts first, then a `section` per day, each named by its `h2` (`groupNotifications`, `formatDayLabel`). Each row is PR 2's `NotificationItem`: an open button beside a separate Delete. Keeps focus in the list after a delete |
+| `PendingPostCard` | `components/moderation/`. A post waiting for review, as an `article` named by its `h3` title link, with Approve and Remove |
+| `ReportCard` | An open report, headed by its reason, with what was reported and the actions its target allows (Dismiss; Remove post and Ban author for a post; Ban user for a member) |
+| `ModerationActionButton` | A card action that follows the busy-controls rule: `aria-disabled` while any action runs, `aria-busy` and a `Loader` on the running one |
+
+The preferences page's switches render their description outside Mantine's `<label>` and link it with `aria-describedby`. Mantine's own `description` sits inside the label, which makes it part of the accessible name.
+
+| Hook | Notes |
+|---|---|
+| `useNotificationsPage(userId)` | The page's list, unread count, paging and realtime. Subscribes before loading and keeps what arrives meanwhile without counting it. Pages from the rows on screen, with deletes and pages serialized as in `useMyListings`. Leaves out `message` notifications, as the queries do. A second mark-read or delete of a row already in flight shares the first request. Each mutation resolves false on failure and calls `announceNotificationsChanged()` on success |
+| `useUserSettings(userId)` | Notification preferences. `values` is null after a failed load, so nothing unloaded can be saved; a member with no row gets `DEFAULT_USER_SETTINGS` |
+| `useModerationQueue(moderatorId)` | Pending posts, open reports and the reported posts, failing as a whole. Actions run one at a time and resolve to `{ ok }` or a sentence to show |
+| `useNotificationsFeed({ userId, pollingEnabled })` | The bell. Reloads when polling turns back on and on `announceNotificationsChanged()`, and applies only the latest of overlapping loads |
+
 ## Web-only helpers (`src/lib`)
 
 | Helper | Notes |
@@ -204,6 +226,7 @@ Every web realtime channel, and shared `subscribeToMessages`, takes its topic fr
 | `cropToSquare(file, size?)` | In `resizeImage.ts`. Centre-crops to the largest square and scales it to at most `PROFILE_PHOTO_SIZE_PX`, never up, as a JPEG `File` |
 | `replaceProfilePhoto(supabase, userId, file)` | `lib/profilePhoto.ts`: `cropToSquare`, then the shared `setProfilePhoto`. Returns `{ error }` as a message; an image that won't decode is logged and reads "We couldn't process that image" |
 | `announceMessagesRead()` | `lib/unreadMessages.ts`. A thread calls it once `markAsRead` has run, and `useUnreadMessageCount` refreshes on it, so the top bar's badge clears at once instead of waiting on realtime or its 30s poll |
+| `announceNotificationsChanged()` | `lib/notificationsChanged.ts`. `/notifications` calls it after a mark-read, mark-all or delete, and the bell reloads on it. The page turns the bell's own polling and realtime off while it's open |
 | `isFocusStranded()` | `lib/focus.ts`. True when focus is on `<body>` or still inside a closing modal (`[aria-modal="true"]`). Mantine returns focus on a timer and keeps a modal mounted through its exit transition, so an effect restoring focus must treat both as lost |
 | `parseMarketplaceQuery(query)` | `lib/marketplaceQuery.ts`. One reading of the marketplace's URL state for both routes, which both expose the slug as `query.category`. Also `isFilteredQuery` and `SEARCH_SLUG`, the pseudo-category `/marketplace/search` uses |
 | `submitNewPost` / `submitEditedPost` | Create post's two submit paths, as pure functions. They own the rollback rules: delete what was just uploaded when the write fails, delete what the member dropped only once it succeeds |

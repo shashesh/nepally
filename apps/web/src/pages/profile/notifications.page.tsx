@@ -1,201 +1,169 @@
-import React, { useEffect, useState } from 'react';
-import { Button, Switch, Text } from '@mantine/core';
+import React, { useEffect, useId } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Button, Loader, Radio, Stack, Switch, Text, Title } from '@mantine/core';
+import type { NotifyChatPref, NotifyLikesPref } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
-import { supabase } from '../../lib/supabase';
-import { getUserSettings, upsertUserSettings } from '@nepally/shared';
-import type { UserSettings, NotifyChatPref, NotifyLikesPref } from '@nepally/shared';
-import styles from '../../styles/NotificationPreferences.module.css';
+import { useUserSettings } from '../../hooks/useUserSettings';
+import { ErrorState, LoadingState, PageHeader } from '../../components/ui';
+import { notify } from '../../components/ui/notify';
+import styles from './notificationPreferences.module.css';
 
-const DEFAULT_SETTINGS: Omit<UserSettings, 'user_id'> = {
-  email_notifications: true,
-  push_notifications: true,
-  emergency_alerts: true,
-  metro_area_alerts: true,
-  notify_chat: 'all',
-  notify_comments: true,
-  notify_likes: 'grouped',
-};
+const CHAT_OPTIONS: ReadonlyArray<{ value: NotifyChatPref; label: string }> = [
+  { value: 'all', label: 'Every message' },
+  { value: 'batched', label: 'Batched, every 30 minutes' },
+  { value: 'off', label: 'Off' },
+];
+
+const LIKES_OPTIONS: ReadonlyArray<{ value: NotifyLikesPref; label: string }> = [
+  { value: 'all', label: 'Every like' },
+  { value: 'grouped', label: 'When 5 or more likes arrive' },
+  { value: 'off', label: 'Off' },
+];
+
+interface PreferenceSwitchProps {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange?: (checked: boolean) => void;
+  disabled?: boolean;
+}
+
+/**
+ * A Switch with its description outside the label. Mantine's own
+ * `description` renders inside the <label>, which makes it part of the
+ * accessible name; here it is announced as a description instead.
+ */
+function PreferenceSwitch({ label, description, checked, onChange, disabled }: PreferenceSwitchProps) {
+  const descriptionId = useId();
+  return (
+    <div className={styles.switchRow}>
+      <Switch
+        label={label}
+        checked={checked}
+        disabled={disabled}
+        readOnly={!onChange}
+        aria-describedby={descriptionId}
+        onChange={onChange ? (event) => onChange(event.currentTarget.checked) : undefined}
+      />
+      <Text id={descriptionId} className={styles.switchDescription}>
+        {description}
+      </Text>
+    </div>
+  );
+}
 
 export default function NotificationPreferencesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  const [settings, setSettings] = useState<Omit<UserSettings, 'user_id'>>(DEFAULT_SETTINGS);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) router.replace('/login');
+    if (!authLoading && !user) router.replace('/login');
   }, [authLoading, user, router]);
 
-  useEffect(() => {
-    if (!user) return;
-    getUserSettings(supabase, user.id).then((result) => {
-      if (result.data) {
-        setSettings({
-          email_notifications: result.data.email_notifications,
-          push_notifications: result.data.push_notifications,
-          emergency_alerts: result.data.emergency_alerts,
-          metro_area_alerts: result.data.metro_area_alerts,
-          notify_chat: result.data.notify_chat,
-          notify_comments: result.data.notify_comments,
-          notify_likes: result.data.notify_likes,
-        });
-      }
-      setLoading(false);
-    });
-  }, [user]);
-
-  const handleSave = async () => {
-    if (!user) return;
-    setSaving(true);
-    setError(null);
-    const result = await upsertUserSettings(supabase, user.id, settings);
-    setSaving(false);
-    if (result.error) {
-      setError('Failed to save preferences. Please try again.');
-    } else {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    }
-  };
-
   if (!user) return null;
+  return <PreferencesView userId={user.id} />;
+}
+
+function PreferencesView({ userId }: { userId: string }) {
+  const settings = useUserSettings(userId);
+  const { values } = settings;
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    // Save stays focusable while it saves (aria-disabled), so presses land here.
+    if (settings.saving) return;
+    if (await settings.save()) notify.success('Preferences saved.');
+    else notify.error("Couldn't save your preferences. Please try again.");
+  };
 
   return (
     <>
       <Head>
-        <title>Notification Preferences — Nepally</title>
+        <title>Notification preferences - Nepally</title>
       </Head>
+      <div className={styles.page}>
+        <PageHeader title="Notification preferences" backHref="/notifications" backLabel="Notifications" />
 
-      <div className={styles.shell}>
-        <nav className={styles.breadcrumb}>
-          <Link href="/notifications" className={styles.breadcrumbLink}>← Notifications</Link>
-        </nav>
-
-        <h1 className={styles.title}>⚙️ Notification Preferences</h1>
-
-        {loading ? (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-          </div>
+        {settings.loading ? (
+          <LoadingState variant="detail" label="Loading your preferences…" />
+        ) : !values ? (
+          <ErrorState
+            message={settings.error ?? "Couldn't load your notification preferences."}
+            onRetry={settings.reload}
+          />
         ) : (
-          <div className={styles.sections}>
-
-            {/* Push notifications master toggle */}
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Push Notifications</h2>
-              <p className={styles.sectionDesc}>Receive alerts even when the app is closed.</p>
-              <div className={styles.toggleRow}>
-                <span className={styles.toggleLabel}>Enable push notifications</span>
-                <Switch
-                  checked={settings.push_notifications}
-                  onChange={(e) => setSettings((s) => ({ ...s, push_notifications: e.currentTarget.checked }))}
-                />
-              </div>
+          <form className={styles.form} onSubmit={handleSubmit}>
+            <section className={styles.section} aria-labelledby="delivery-heading">
+              <Title order={2} id="delivery-heading" className={styles.sectionTitle}>
+                Delivery
+              </Title>
+              <PreferenceSwitch
+                label="Push notifications"
+                description="Receive alerts even when the app is closed."
+                checked={values.push_notifications}
+                onChange={(checked) => settings.setValue('push_notifications', checked)}
+              />
             </section>
 
-            {/* Notification types */}
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Notification Types</h2>
-
-              {/* Chat messages */}
-              <div className={styles.prefGroup}>
-                <div className={styles.prefGroupHeader}>
-                  <span className={styles.prefGroupTitle}>💬 Chat Messages</span>
-                  <span className={styles.prefGroupDesc}>New messages from conversations</span>
-                </div>
-                <div className={styles.radioGroup}>
-                  {(['all', 'batched', 'off'] as NotifyChatPref[]).map((val) => (
-                    <label key={val} className={styles.radioRow}>
-                      <input
-                        type="radio"
-                        name="notify_chat"
-                        value={val}
-                        checked={settings.notify_chat === val}
-                        onChange={() => setSettings((s) => ({ ...s, notify_chat: val }))}
-                      />
-                      <span>
-                        {val === 'all' && 'Every message'}
-                        {val === 'batched' && 'Batched (every 30 min)'}
-                        {val === 'off' && 'Off'}
-                      </span>
-                    </label>
+            <section className={styles.section} aria-labelledby="types-heading">
+              <Title order={2} id="types-heading" className={styles.sectionTitle}>
+                Notification types
+              </Title>
+              <Radio.Group
+                label="Chat messages"
+                description="New messages from your conversations"
+                value={values.notify_chat}
+                onChange={(value) => settings.setValue('notify_chat', value as NotifyChatPref)}
+              >
+                <Stack gap="xs" mt="xs">
+                  {CHAT_OPTIONS.map((option) => (
+                    <Radio key={option.value} value={option.value} label={option.label} />
                   ))}
-                </div>
-              </div>
-
-              {/* Comments */}
-              <div className={styles.prefGroup}>
-                <div className={styles.toggleRow}>
-                  <div>
-                    <span className={styles.prefGroupTitle}>💬 Comments</span>
-                    <span className={styles.prefGroupDesc}>When someone comments on your post</span>
-                  </div>
-                  <Switch
-                    checked={settings.notify_comments}
-                    onChange={(e) => setSettings((s) => ({ ...s, notify_comments: e.currentTarget.checked }))}
-                  />
-                </div>
-              </div>
-
-              {/* Likes */}
-              <div className={styles.prefGroup}>
-                <div className={styles.prefGroupHeader}>
-                  <span className={styles.prefGroupTitle}>❤️ Likes</span>
-                  <span className={styles.prefGroupDesc}>When people like your posts</span>
-                </div>
-                <div className={styles.radioGroup}>
-                  {(['all', 'grouped', 'off'] as NotifyLikesPref[]).map((val) => (
-                    <label key={val} className={styles.radioRow}>
-                      <input
-                        type="radio"
-                        name="notify_likes"
-                        value={val}
-                        checked={settings.notify_likes === val}
-                        onChange={() => setSettings((s) => ({ ...s, notify_likes: val }))}
-                      />
-                      <span>
-                        {val === 'all' && 'Every like'}
-                        {val === 'grouped' && 'When 5+ likes received'}
-                        {val === 'off' && 'Off'}
-                      </span>
-                    </label>
+                </Stack>
+              </Radio.Group>
+              <PreferenceSwitch
+                label="Comments"
+                description="When someone comments on your post"
+                checked={values.notify_comments}
+                onChange={(checked) => settings.setValue('notify_comments', checked)}
+              />
+              <Radio.Group
+                label="Likes"
+                description="When people like your posts"
+                value={values.notify_likes}
+                onChange={(value) => settings.setValue('notify_likes', value as NotifyLikesPref)}
+              >
+                <Stack gap="xs" mt="xs">
+                  {LIKES_OPTIONS.map((option) => (
+                    <Radio key={option.value} value={option.value} label={option.label} />
                   ))}
-                </div>
-              </div>
-
-              {/* Emergency alerts — display only, always on */}
-              <div className={styles.prefGroup}>
-                <div className={`${styles.toggleRow} ${styles.toggleRowDisabled}`}>
-                  <div>
-                    <span className={styles.prefGroupTitle}>🛡️ Emergency Alerts</span>
-                    <span className={styles.prefGroupDesc}>Verified metro-wide emergency broadcasts — required for your safety</span>
-                  </div>
-                  <Switch checked disabled />
-                </div>
-              </div>
+                </Stack>
+              </Radio.Group>
+              {/* Always on, so native disabled: the member can't have just used it. */}
+              <PreferenceSwitch
+                label="Emergency alerts"
+                description="Verified metro-wide emergency broadcasts. Always on for your safety."
+                checked
+                disabled
+              />
             </section>
-
-            {error && <Text c="red" mb="sm">{error}</Text>}
 
             <div className={styles.actions}>
               <Button
-                onClick={handleSave}
-                loading={saving}
-                type="button"
+                type="submit"
+                aria-disabled={settings.saving || undefined}
+                data-disabled={settings.saving || undefined}
+                leftSection={settings.saving ? <Loader size={14} color="currentColor" aria-hidden="true" /> : undefined}
               >
-                {saved ? '✓ Saved' : 'Save Preferences'}
+                Save preferences
               </Button>
-              <Button component={Link} href="/notifications" variant="default">Cancel</Button>
+              <Button component={Link} href="/notifications" variant="default">
+                Cancel
+              </Button>
             </div>
-          </div>
+          </form>
         )}
       </div>
     </>

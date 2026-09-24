@@ -38,6 +38,7 @@ vi.mock('@nepally/shared', async () => ({
 
 import { useNotificationsFeed } from './useNotificationsFeed';
 import { supabase } from '../lib/supabase';
+import { announceNotificationsChanged } from '../lib/notificationsChanged';
 
 const base: Notification = {
   id: 'n-1',
@@ -176,6 +177,32 @@ describe('useNotificationsFeed', () => {
     expect(result.current.items.map((item) => item.id)).toEqual(['n-new']);
   });
 
+  // Layout keeps the bell mounted through sign-out; a request for the member
+  // who left must not land, nor show to whoever signs in next.
+  it('drops a signed-out member’s feed and shows the next member none of it', async () => {
+    let resolveFirst!: (value: { count: number }) => void;
+    mocks.getUnreadNotificationCount.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFirst = resolve;
+      })
+    );
+    mocks.getNotifications.mockResolvedValueOnce({ data: [{ ...base, id: 'n-old' }] });
+    const { result, rerender } = renderHook(
+      ({ userId }: { userId: string | null }) => useNotificationsFeed({ userId, pollingEnabled: true }),
+      { initialProps: { userId: 'user-1' as string | null } }
+    );
+
+    rerender({ userId: null });
+    await act(async () => {
+      resolveFirst({ count: 9 });
+    });
+
+    mocks.getUnreadNotificationCount.mockReturnValueOnce(new Promise(() => {}));
+    rerender({ userId: 'user-2' });
+    expect(result.current.unreadCount).toBe(0);
+    expect(result.current.items).toEqual([]);
+  });
+
   // Leaving /notifications turns polling back on and resubscribes at once;
   // a reused topic would join the channel that is still leaving.
   it('subscribes on a fresh topic each time polling turns back on', () => {
@@ -206,5 +233,54 @@ describe('useNotificationsFeed', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
     expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(1);
+  });
+
+  // /notifications turns the bell's polling and realtime off; INSERTs that
+  // landed meanwhile only reach the bell through a reload (recon 23).
+  it('reloads when polling turns back on', async () => {
+    const { rerender } = renderHook(({ pollingEnabled }) => useNotificationsFeed({ userId: 'user-1', pollingEnabled }), {
+      initialProps: { pollingEnabled: false },
+    });
+    await waitFor(() => expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(1));
+    rerender({ pollingEnabled: true });
+    await waitFor(() => expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(2));
+  });
+
+  it.each([true, false])('reloads when /notifications announces a change (polling %s)', async (pollingEnabled) => {
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled }));
+    await waitFor(() => expect(result.current.unreadCount).toBe(1));
+
+    mocks.getUnreadNotificationCount.mockResolvedValue({ count: 0 });
+    act(() => announceNotificationsChanged());
+    await waitFor(() => expect(result.current.unreadCount).toBe(0));
+    expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops listening for announcements on unmount', async () => {
+    const { unmount } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+    await waitFor(() => expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(1));
+    unmount();
+    act(() => announceNotificationsChanged());
+    expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies only the latest of two overlapping loads', async () => {
+    let resolveFirst!: (value: { count: number }) => void;
+    let resolveSecond!: (value: { count: number }) => void;
+    mocks.getUnreadNotificationCount
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+    const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: false }));
+    await waitFor(() => expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(1));
+
+    act(() => announceNotificationsChanged());
+    await waitFor(() => expect(mocks.getUnreadNotificationCount).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      resolveSecond({ count: 4 });
+    });
+    await act(async () => {
+      resolveFirst({ count: 9 });
+    });
+    expect(result.current.unreadCount).toBe(4);
   });
 });
