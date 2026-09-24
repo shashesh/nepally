@@ -133,4 +133,12 @@ describe('cssVariablesResolver', () => {
       '--mantine-color-error': 'var(--danger)',
     });
   });
+
+  it('gives disabled controls the palette instead of Mantine greys', () => {
+    expect(cssVariablesResolver(theme).light).toMatchObject({
+      '--mantine-color-disabled': 'var(--surface-2)',
+      '--mantine-color-disabled-color': 'var(--text-3)',
+      '--mantine-color-disabled-border': 'var(--border-subtle)',
+    });
+  });
 });
