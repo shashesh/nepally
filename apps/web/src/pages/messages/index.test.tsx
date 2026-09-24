@@ -1,148 +1,119 @@
 import React from 'react';
-import { render, screen, waitFor } from '../../test-utils';
+import { fireEvent, render, screen, waitFor } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ConversationWithParticipant } from '@nepally/shared';
 
-type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
-
-const messagesMocks = vi.hoisted(() => ({
-  useAuthMock: vi.fn(),
-  useRouterMock: vi.fn(),
-  getConversationsMock: vi.fn(),
-  formatRelativeTimeMock: vi.fn(),
+const mocks = vi.hoisted(() => ({
+  useAuth: vi.fn(),
+  replace: vi.fn(),
+  useConversations: vi.fn(),
+  reload: vi.fn(),
+  alert: vi.fn(),
 }));
 
-vi.mock('../../hooks/useAuth', () => ({ useAuth: messagesMocks.useAuthMock }));
-vi.mock('next/router', () => ({ useRouter: messagesMocks.useRouterMock }));
-vi.mock('../../lib/supabase', () => ({ supabase: {} }));
-vi.mock('@nepally/shared', async () => {
-  const actual = await vi.importActual<object>('@nepally/shared');
-  return {
-    ...actual,
-    getConversations: messagesMocks.getConversationsMock,
-    formatRelativeTime: messagesMocks.formatRelativeTimeMock,
-  };
-});
-vi.mock('../../components/Avatar', () => ({
-  default: ({ name }: { name: string }) =>
-    React.createElement('div', { 'data-testid': 'avatar' }, name),
-}));
+vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
+vi.mock('../../hooks/useConversations', () => ({ useConversations: mocks.useConversations }));
+vi.mock('next/router', () => ({ useRouter: () => ({ replace: mocks.replace }) }));
 vi.mock('next/head', () => ({
-  default: ({ children }: { children: React.ReactNode }) =>
-    React.createElement(React.Fragment, null, children),
+  default: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: MockLinkProps) =>
-    React.createElement('a', { href, className }, children),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
+    { href, children, ...rest },
+    ref
+  ) {
+    return React.createElement('a', { href, ref, ...rest }, children);
+  }),
 }));
 
 import MessagesPage from './index.page';
 
-describe('MessagesPage', () => {
-  const mockReplace = vi.fn();
-  const mockUser = { id: 'user-1', full_name: 'Test User' };
+const VIEWER = { id: 'user-1', full_name: 'Test User' };
 
+function conversation(id: string, name: string, unread = 0): ConversationWithParticipant {
+  return {
+    id,
+    last_message: `Last from ${name}`,
+    last_message_time: null,
+    created_at: '2026-09-20T10:00:00Z',
+    other_user_id: `other-${id}`,
+    other_user_name: name,
+    unread_count: unread,
+  };
+}
+
+function inbox(overrides: Partial<ReturnType<typeof mocks.useConversations>> = {}) {
+  return { conversations: [], loading: false, error: null, reload: mocks.reload, ...overrides };
+}
+
+describe('MessagesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    messagesMocks.useRouterMock.mockReturnValue({ replace: mockReplace });
-    messagesMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
+    vi.stubGlobal('alert', mocks.alert);
+    mocks.useAuth.mockReturnValue({ user: VIEWER });
+    mocks.useConversations.mockReturnValue(inbox());
   });
 
-  it('returns null and redirects when user is not logged in', async () => {
-    messagesMocks.useAuthMock.mockReturnValue({ user: null });
+  it('sends a signed-out visitor to log in and renders nothing', async () => {
+    mocks.useAuth.mockReturnValue({ user: null });
     render(<MessagesPage />);
-    expect(screen.queryByText('Messages')).toBeNull();
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
+
+    expect(screen.queryByRole('heading', { name: 'Messages' })).toBeNull();
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/login'));
   });
 
-  it('shows loading state while fetching conversations', () => {
-    messagesMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    messagesMocks.getConversationsMock.mockReturnValue(new Promise(() => {}));
+  it("loads the viewer's inbox under a Messages heading", () => {
     render(<MessagesPage />);
-    expect(screen.getByText('Loading conversations...')).toBeDefined();
+
+    expect(mocks.useConversations).toHaveBeenCalledWith('user-1');
+    expect(screen.getByRole('heading', { level: 1, name: 'Messages' })).toBeDefined();
   });
 
-  it('shows empty state when there are no conversations', async () => {
-    messagesMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    messagesMocks.getConversationsMock.mockResolvedValue({ data: [] });
+  it('shows a loading state', () => {
+    mocks.useConversations.mockReturnValue(inbox({ loading: true }));
     render(<MessagesPage />);
-    await waitFor(() => {
-      expect(screen.getByText('No messages yet')).toBeDefined();
-    });
+
+    expect(screen.getByRole('status').textContent).toContain('Loading conversations…');
   });
 
-  it('renders a list of conversations', async () => {
-    messagesMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    messagesMocks.getConversationsMock.mockResolvedValue({
-      data: [
-        {
-          id: 'conv-1',
-          other_user_name: 'Bikal Shrestha',
-          other_user_photo: null,
-          other_user_trust_level: 1,
-          last_message: 'Hello there!',
-          last_message_time: '2026-02-24T10:00:00Z',
-          unread_count: 0,
-        },
-        {
-          id: 'conv-2',
-          other_user_name: 'Ram Thapa',
-          other_user_photo: null,
-          other_user_trust_level: 0,
-          last_message: 'How are you?',
-          last_message_time: '2026-02-24T09:00:00Z',
-          unread_count: 3,
-        },
-      ],
-    });
+  it('shows a failed load as an error with a retry, not as an empty inbox', () => {
+    mocks.useConversations.mockReturnValue(inbox({ error: "Couldn't load your messages." }));
     render(<MessagesPage />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Bikal Shrestha').length).toBeGreaterThan(0);
-      expect(screen.getByText('Hello there!')).toBeDefined();
-      expect(screen.getAllByText('Ram Thapa').length).toBeGreaterThan(0);
-      expect(screen.getByText('How are you?')).toBeDefined();
-    });
+
+    expect(screen.getByText("Couldn't load your messages.")).toBeDefined();
+    expect(screen.queryByText('No messages yet')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(mocks.reload).toHaveBeenCalled();
   });
 
-  it('shows unread badge on conversations with unread messages', async () => {
-    messagesMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    messagesMocks.getConversationsMock.mockResolvedValue({
-      data: [
-        {
-          id: 'conv-1',
-          other_user_name: 'Ram',
-          other_user_photo: null,
-          other_user_trust_level: 0,
-          last_message: 'Hi',
-          last_message_time: null,
-          unread_count: 5,
-        },
-      ],
-    });
+  it('says how to start a conversation when there are none', () => {
     render(<MessagesPage />);
-    await waitFor(() => {
-      expect(screen.getByText('5')).toBeDefined();
-    });
+
+    expect(screen.getByRole('heading', { name: 'No messages yet' })).toBeDefined();
+    expect(screen.getByText(/member's profile, a post or a listing/)).toBeDefined();
   });
 
-  it('links each conversation to /messages/[id]', async () => {
-    messagesMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    messagesMocks.getConversationsMock.mockResolvedValue({
-      data: [
-        {
-          id: 'conv-abc',
-          other_user_name: 'Someone',
-          other_user_photo: null,
-          other_user_trust_level: 0,
-          last_message: 'Hey',
-          last_message_time: null,
-          unread_count: 0,
-        },
-      ],
-    });
+  it('lists each conversation as a row linking to its thread', () => {
+    mocks.useConversations.mockReturnValue(
+      inbox({ conversations: [conversation('conv-1', 'Bikal Shrestha'), conversation('conv-2', 'Ram Thapa', 3)] })
+    );
     render(<MessagesPage />);
-    await waitFor(() => {
-      const link = screen.getByText('Hey').closest('a');
-      expect(link?.getAttribute('href')).toBe('/messages/conv-abc');
-    });
+
+    const rows = screen.getAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    expect(screen.getByRole('link', { name: /Bikal S\./ }).getAttribute('href')).toBe('/messages/conv-1');
+    expect(screen.getByRole('link', { name: /Ram T\..*3 unread/ }).getAttribute('href')).toBe('/messages/conv-2');
+  });
+
+  it("opens a member's profile from their avatar instead of an alert", async () => {
+    mocks.useConversations.mockReturnValue(inbox({ conversations: [conversation('conv-1', 'Bikal Shrestha')] }));
+    render(<MessagesPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal S.' }));
+
+    const profile = await screen.findByRole('menuitem', { name: 'View profile' });
+    expect(profile.getAttribute('href')).toBe('/users/other-conv-1');
+    expect(mocks.alert).not.toHaveBeenCalled();
   });
 });

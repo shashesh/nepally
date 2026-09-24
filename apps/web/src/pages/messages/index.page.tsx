@@ -1,25 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Badge, Center, Text, UnstyledButton } from '@mantine/core';
+import React, { useEffect } from 'react';
 import Head from 'next/head';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { IconMessageCircle } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth';
-import { supabase } from '../../lib/supabase';
-import { getConversations, formatRelativeTime } from '@nepally/shared';
-import type { ConversationWithParticipant } from '@nepally/shared';
-import Avatar from '../../components/Avatar';
-import styles from '../../styles/Messages.module.css';
+import { useConversations } from '../../hooks/useConversations';
+import { EmptyState, ErrorState, LoadingState, PageHeader } from '../../components/ui';
+import { ConversationRow } from '../../components/messages/ConversationRow';
+import styles from './messages.module.css';
 
 export default function MessagesPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const userId = user?.id;
-  const [conversations, setConversations] = useState<
-    ConversationWithParticipant[]
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [openAvatarMenuId, setOpenAvatarMenuId] = useState<string | null>(null);
-  const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -27,125 +18,36 @@ export default function MessagesPage() {
     }
   }, [user, router]);
 
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    getConversations(supabase, userId).then((result) => {
-      if (cancelled) return;
-      if (result.data) {
-        setConversations(result.data);
-      }
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
-
-  // Close avatar dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target as Node)) {
-        setOpenAvatarMenuId(null);
-      }
-    }
-    if (openAvatarMenuId) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openAvatarMenuId]);
-
   if (!user) return null;
+  return <MessagesView userId={user.id} />;
+}
+
+function MessagesView({ userId }: { userId: string }) {
+  const inbox = useConversations(userId);
 
   return (
     <>
       <Head>
         <title>Messages - Nepally</title>
       </Head>
-      <div className={styles.messagesPage}>
-        <h1 className={styles.pageTitle}>Messages</h1>
-
-        {loading ? (
-          <Center p="xl"><Text c="dimmed">Loading conversations...</Text></Center>
-        ) : conversations.length === 0 ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>💬</div>
-            <h3>No messages yet</h3>
-            <p>
-              Tap any user&apos;s avatar on a post to start chatting.
-            </p>
-          </div>
+      <div className={styles.page}>
+        <PageHeader title="Messages" />
+        {inbox.loading ? (
+          <LoadingState label="Loading conversations…" />
+        ) : inbox.error ? (
+          <ErrorState message={inbox.error} onRetry={inbox.reload} />
+        ) : inbox.conversations.length === 0 ? (
+          <EmptyState
+            icon={<IconMessageCircle size={32} />}
+            title="No messages yet"
+            description="Start a conversation from a member's profile, a post or a listing."
+          />
         ) : (
-          <div className={styles.conversationList}>
-            {conversations.map((conv) => (
-              <div key={conv.id} className={styles.conversationItem}>
-                {/* Avatar with View Profile dropdown */}
-                <div
-                  className={styles.avatarMenuWrapper}
-                  ref={openAvatarMenuId === conv.id ? avatarMenuRef : undefined}
-                >
-                  <UnstyledButton
-                    className={styles.avatarMenuBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenAvatarMenuId(openAvatarMenuId === conv.id ? null : conv.id);
-                    }}
-                    aria-label="User options"
-                  >
-                    <Avatar
-                      name={conv.other_user_name || '?'}
-                      photoUrl={conv.other_user_photo}
-                      trustLevel={conv.other_user_trust_level}
-                      size="medium"
-                    />
-                  </UnstyledButton>
-                  {openAvatarMenuId === conv.id && (
-                    <div className={styles.avatarDropdown}>
-                      <UnstyledButton
-                        className={styles.avatarDropdownItem}
-                        onClick={() => {
-                          setOpenAvatarMenuId(null);
-                          alert('User profiles will be available in a future update.');
-                        }}
-                      >
-                        👤 View Profile
-                      </UnstyledButton>
-                    </div>
-                  )}
-                </div>
-
-                {/* Conversation content (navigates to thread) */}
-                <Link
-                  href={`/messages/${conv.id}`}
-                  className={styles.convContent}
-                >
-                  <div className={styles.convHeader}>
-                    <span className={styles.convName}>
-                      {conv.other_user_name}
-                    </span>
-                    <span className={styles.convTime}>
-                      {conv.last_message_time
-                        ? formatRelativeTime(new Date(conv.last_message_time))
-                        : ''}
-                    </span>
-                  </div>
-                  <div
-                    className={`${styles.convMessage} ${
-                      conv.unread_count > 0 ? styles.convUnreadMessage : ''
-                    }`}
-                  >
-                    {conv.last_message || 'No messages yet'}
-                  </div>
-                </Link>
-
-                {conv.unread_count > 0 && (
-                  <Badge circle size="lg">
-                    {conv.unread_count}
-                  </Badge>
-                )}
-              </div>
+          <ul className={styles.list}>
+            {inbox.conversations.map((conversation) => (
+              <ConversationRow key={conversation.id} conversation={conversation} />
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </>
