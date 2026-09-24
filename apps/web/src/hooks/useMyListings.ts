@@ -8,6 +8,7 @@ import {
   type MarketplaceListing,
 } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
 
 export const MY_LISTINGS_PAGE_SIZE = 20;
 
@@ -121,7 +122,7 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
       if (result.error) {
         setListings([]);
         setHasMore(false);
-        setError(result.error.message);
+        setError(userMessage(result.error, "Couldn't load your listings.", 'my_listings_load_failed', { platform: 'web', userId }));
       } else {
         setListings(result.data ?? []);
         setHasMore(Boolean(result.hasMore));
@@ -158,7 +159,13 @@ export function useMyListings(userId: string | null, now: () => Date = systemNow
       loadingMoreRef.current = false;
       setLoadingMore(false);
       if (result.error) {
-        setLoadMoreError(result.error.message);
+        setLoadMoreError(
+          userMessage(result.error, "Couldn't load more listings.", 'my_listings_load_more_failed', {
+            platform: 'web',
+            userId,
+            offset,
+          })
+        );
         return;
       }
       setListings((rows) => appendPage(rows, result.data ?? []));

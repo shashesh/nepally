@@ -443,18 +443,18 @@ describe('ProfilePage', () => {
 
   it('shows error when posts fail to load', async () => {
     profileMocks.getPostsByAuthorIdMock.mockResolvedValue({
-      error: new Error('DB error'),
+      error: new Error(RLS_TEXT),
       data: null,
     });
     render(<ProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText('DB error')).toBeDefined();
+      expect(screen.getByText('Failed to load your posts')).toBeDefined();
     });
   });
 
   it('refetches a list that failed to load when "Try again" is pressed', async () => {
     profileMocks.getPostsByAuthorIdMock
-      .mockResolvedValueOnce({ error: new Error('DB error'), data: null })
+      .mockResolvedValueOnce({ error: new Error(RLS_TEXT), data: null })
       .mockResolvedValueOnce({
         data: [
           {
@@ -469,14 +469,14 @@ describe('ProfilePage', () => {
         ],
       });
     await renderPage();
-    expect(screen.getByText('DB error')).toBeDefined();
+    expect(screen.getByText('Failed to load your posts')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     });
 
     expect(profileMocks.getPostsByAuthorIdMock).toHaveBeenCalledTimes(2);
-    expect(screen.queryByText('DB error')).toBeNull();
+    expect(screen.queryByText('Failed to load your posts')).toBeNull();
     expect(screen.getByText('My Post')).toBeDefined();
   });
 
@@ -614,7 +614,7 @@ describe('ProfilePage', () => {
 
   it('shows error when saved posts fail to load', async () => {
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
-      error: new Error('Saved posts DB error'),
+      error: new Error(RLS_TEXT),
       data: null,
     });
     render(<ProfilePage />);
@@ -623,7 +623,7 @@ describe('ProfilePage', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Saved Posts' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Saved posts DB error')).toBeDefined();
+      expect(screen.getByText('Failed to load saved posts')).toBeDefined();
     });
   });
 

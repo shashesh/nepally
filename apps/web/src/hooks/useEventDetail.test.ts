@@ -2,6 +2,8 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Event } from '@nepally/shared';
 
+const RLS_TEXT = 'new row violates row-level security policy';
+
 const mocks = vi.hoisted(() => ({
   getEventById: vi.fn(),
   getUserEventResponse: vi.fn(),
@@ -99,12 +101,12 @@ describe('useEventDetail', () => {
       expect(result.current.event).toBeNull();
     });
 
-    it('sets only error when the request fails', async () => {
-      mocks.getEventById.mockResolvedValue({ error: new Error('Failed to fetch') });
+    it('sets only error, in our copy, when the request fails', async () => {
+      mocks.getEventById.mockResolvedValue({ error: new Error(RLS_TEXT) });
       const { result } = await renderDetail();
 
       expect(result.current.notFound).toBe(false);
-      expect(result.current.error).toBe('Failed to fetch');
+      expect(result.current.error).toBe("Couldn't load this event.");
     });
 
     it('leaves the response null when its request fails', async () => {
@@ -251,8 +253,8 @@ describe('useEventDetail', () => {
       expect(result.current.event?.status).toBe('cancelled');
     });
 
-    it('cancel returns the shared message on failure', async () => {
-      mocks.cancelEvent.mockResolvedValue({ error: new Error('Event not found or not allowed') });
+    it('cancel returns our copy, never the raw error, on failure', async () => {
+      mocks.cancelEvent.mockResolvedValue({ error: new Error(RLS_TEXT) });
       const { result } = await renderDetail();
 
       let outcome: string | null = null;
@@ -260,11 +262,11 @@ describe('useEventDetail', () => {
         outcome = await result.current.cancel();
       });
 
-      expect(outcome).toBe('Event not found or not allowed');
+      expect(outcome).toBe("Couldn't cancel the event. Please try again.");
       expect(result.current.event?.status).toBe('active');
     });
 
-    it('remove reports success, and the shared message on failure', async () => {
+    it('remove reports success, and our copy on failure', async () => {
       const { result } = await renderDetail();
 
       let outcome: string | null = 'unset';
@@ -274,11 +276,11 @@ describe('useEventDetail', () => {
       expect(outcome).toBeNull();
       expect(mocks.deleteEvent).toHaveBeenCalledWith(expect.anything(), 'e1');
 
-      mocks.deleteEvent.mockResolvedValue({ error: new Error('Failed to delete event') });
+      mocks.deleteEvent.mockResolvedValue({ error: new Error(RLS_TEXT) });
       await act(async () => {
         outcome = await result.current.remove();
       });
-      expect(outcome).toBe('Failed to delete event');
+      expect(outcome).toBe("Couldn't delete the event. Please try again.");
     });
   });
 });

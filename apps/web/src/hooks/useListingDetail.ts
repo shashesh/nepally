@@ -8,6 +8,7 @@ import {
   type MarketplaceListing,
 } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
 
 export interface ListingDetailState {
   listing: MarketplaceListing | null;
@@ -79,7 +80,14 @@ export function useListingDetail(
       if (listingResult.error) {
         setListing(null);
         setNotFound(Boolean(listingResult.notFound));
-        setError(listingResult.notFound ? null : listingResult.error.message);
+        setError(
+          listingResult.notFound
+            ? null
+            : userMessage(listingResult.error, "Couldn't load this listing.", 'listing_load_failed', {
+                platform: 'web',
+                listingId: id,
+              })
+        );
         setLoading(false);
         return;
       }

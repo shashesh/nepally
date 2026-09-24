@@ -280,12 +280,12 @@ describe('MarketplaceIndexPage', () => {
 
   // recon 1: a failed fetch used to be indistinguishable from an empty result.
   it('a failed load is an error with a retry, not an empty list', async () => {
-    mocks.getListingsByMetro.mockResolvedValue({ error: new Error('network down') });
+    mocks.getListingsByMetro.mockResolvedValue({ error: new Error('new row violates row-level security policy') });
     mocks.useAuth.mockReturnValue({ user: AUTHED_USER });
     mocks.useRouter.mockReturnValue(buildRouter({ category: 'food-restaurants' }));
     render(React.createElement(MarketplaceIndexPage));
     await waitFor(() => {
-      expect(screen.getByText('network down')).toBeDefined();
+      expect(screen.getByText("Couldn't load listings.")).toBeDefined();
     });
     expect(screen.queryByText(/No listings/i)).toBeNull();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();

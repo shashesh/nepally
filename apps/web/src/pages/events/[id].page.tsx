@@ -19,6 +19,7 @@ import { useEventDetail } from '../../hooks/useEventDetail';
 import { useNow } from '../../hooks/useNow';
 import { useStartConversation } from '../../hooks/useStartConversation';
 import { supabase } from '../../lib/supabase';
+import { userMessage } from '../../lib/userMessage';
 import AttendeeList from '../../components/events/AttendeeList';
 import { EventAttendanceCard, type EventResponseBlock } from '../../components/events/EventAttendanceCard';
 import { EventOrganizerCard } from '../../components/events/EventOrganizerCard';
@@ -76,8 +77,16 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
     setAttendeesLoading(true);
     setAttendeesError(null);
     const result = await getEventAttendees(supabase, event.id);
-    if (result.error) setAttendeesError(result.error.message);
-    else setAttendees(result.data ?? []);
+    if (result.error) {
+      setAttendeesError(
+        userMessage(result.error, "Couldn't load attendees.", 'event_attendees_load_failed', {
+          platform: 'web',
+          eventId: event.id,
+        })
+      );
+    } else {
+      setAttendees(result.data ?? []);
+    }
     setAttendeesLoading(false);
   }, [event]);
 

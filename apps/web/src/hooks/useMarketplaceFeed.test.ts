@@ -20,6 +20,10 @@ vi.mock('@nepally/shared', async (importOriginal) => ({
 
 vi.mock('../lib/supabase', () => ({ supabase: {} }));
 
+const RLS_TEXT = 'new row violates row-level security policy';
+const LOAD_FAILED = "Couldn't load listings.";
+const LOAD_MORE_FAILED = "Couldn't load more listings.";
+
 const mockGetListings = getListingsByMetro as ReturnType<typeof vi.fn>;
 const mockGetFeatured = getFeaturedListings as ReturnType<typeof vi.fn>;
 const mockGetTrending = getTrendingListings as ReturnType<typeof vi.fn>;
@@ -75,12 +79,12 @@ describe('useMarketplaceFeed', () => {
   });
 
   it('clears the rows and reports the failure when the grid fails', async () => {
-    mockGetListings.mockResolvedValue({ error: new Error('network down') });
+    mockGetListings.mockResolvedValue({ error: new Error(RLS_TEXT) });
 
     const { result } = renderHook(() => useMarketplaceFeed('metro-1', FILTERED));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.error).toBe('network down');
+    expect(result.current.error).toBe(LOAD_FAILED);
     expect(result.current.grid).toEqual([]);
   });
 
@@ -93,10 +97,10 @@ describe('useMarketplaceFeed', () => {
     );
     await waitFor(() => expect(result.current.grid.map((l) => l.id)).toEqual(['g1']));
 
-    mockGetListings.mockResolvedValue({ error: new Error('network down') });
+    mockGetListings.mockResolvedValue({ error: new Error(RLS_TEXT) });
     rerender({ metro: 'metro-2' });
 
-    await waitFor(() => expect(result.current.error).toBe('network down'));
+    await waitFor(() => expect(result.current.error).toBe(LOAD_FAILED));
     expect(result.current.grid).toEqual([]);
   });
 
@@ -109,16 +113,16 @@ describe('useMarketplaceFeed', () => {
     );
     await waitFor(() => expect(result.current.featured.map((l) => l.id)).toEqual(['f1']));
 
-    mockGetListings.mockResolvedValue({ error: new Error('network down') });
+    mockGetListings.mockResolvedValue({ error: new Error(RLS_TEXT) });
     rerender({ metro: 'metro-2' });
 
-    await waitFor(() => expect(result.current.error).toBe('network down'));
+    await waitFor(() => expect(result.current.error).toBe(LOAD_FAILED));
     expect(result.current.featured).toEqual([]);
     expect(result.current.grid).toEqual([]);
   });
 
   it('stops offering more after a failed first load', async () => {
-    mockGetListings.mockResolvedValue({ error: new Error('network down') });
+    mockGetListings.mockResolvedValue({ error: new Error(RLS_TEXT) });
 
     const { result } = renderHook(() => useMarketplaceFeed('metro-1', FILTERED));
 
@@ -132,10 +136,10 @@ describe('useMarketplaceFeed', () => {
     const { result } = renderHook(() => useMarketplaceFeed('metro-1', FILTERED));
     await waitFor(() => expect(result.current.hasMore).toBe(true));
 
-    mockGetListings.mockResolvedValueOnce({ error: new Error('page 2 failed') });
+    mockGetListings.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
     act(() => { result.current.loadMore(); });
 
-    await waitFor(() => expect(result.current.loadMoreError).toBe('page 2 failed'));
+    await waitFor(() => expect(result.current.loadMoreError).toBe(LOAD_MORE_FAILED));
     expect(result.current.grid.map((l) => l.id)).toEqual(['g1']);
     expect(result.current.hasMore).toBe(false);
   });
@@ -145,9 +149,9 @@ describe('useMarketplaceFeed', () => {
     const { result } = renderHook(() => useMarketplaceFeed('metro-1', FILTERED));
     await waitFor(() => expect(result.current.hasMore).toBe(true));
 
-    mockGetListings.mockResolvedValueOnce({ error: new Error('page 2 failed') });
+    mockGetListings.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
     act(() => { result.current.loadMore(); });
-    await waitFor(() => expect(result.current.loadMoreError).toBe('page 2 failed'));
+    await waitFor(() => expect(result.current.loadMoreError).toBe(LOAD_MORE_FAILED));
 
     mockGetListings.mockResolvedValueOnce(page(['g2']));
     act(() => { result.current.retryLoadMore(); });

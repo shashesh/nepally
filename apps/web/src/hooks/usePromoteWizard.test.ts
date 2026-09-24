@@ -51,10 +51,10 @@ describe('usePromoteWizard', () => {
     expect(result.current.notFound).toBe(false);
   });
 
-  it('reports a failed read apart from a listing that is gone', async () => {
-    mockGetListing.mockResolvedValueOnce({ error: new Error('network down') });
+  it('reports a failed read, in our copy, apart from a listing that is gone', async () => {
+    mockGetListing.mockResolvedValueOnce({ error: new Error('new row violates row-level security policy') });
     const failed = await loaded();
-    expect(failed.result.current.error).toBe('network down');
+    expect(failed.result.current.error).toBe("Couldn't load this listing.");
     expect(failed.result.current.notFound).toBe(false);
     expect(failed.result.current.listing).toBeNull();
 
@@ -130,8 +130,8 @@ describe('usePromoteWizard', () => {
     expect(mockCheckout).not.toHaveBeenCalled();
   });
 
-  it('shows a checkout error and frees the button', async () => {
-    mockCheckout.mockResolvedValue({ error: new Error('This listing already has an active promotion of this type') });
+  it('shows a checkout error in our copy, never the raw error, and frees the button', async () => {
+    mockCheckout.mockResolvedValue({ error: new Error('new row violates row-level security policy') });
     const { result } = await loaded();
     act(() => result.current.setTier(FEATURED));
 
@@ -139,7 +139,7 @@ describe('usePromoteWizard', () => {
       await result.current.pay();
     });
 
-    expect(result.current.payError).toBe('This listing already has an active promotion of this type');
+    expect(result.current.payError).toBe("Couldn't start checkout. Please try again.");
     expect(result.current.paying).toBe(false);
   });
 

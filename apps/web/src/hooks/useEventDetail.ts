@@ -12,6 +12,7 @@ import {
 } from '@nepally/shared';
 import { notify } from '../components/ui';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
 
 const RESPONSE_ERROR = "Couldn't update your response. Try again.";
 
@@ -76,7 +77,14 @@ export function useEventDetail(id: string | undefined, userId: string | null): E
     void fetchDetail(id, userId).then(({ eventResult, responseResult }) => {
       if (cancelled) return;
       if (eventResult.error || !eventResult.data) {
-        setError(eventResult.error?.message ?? 'Event not found');
+        setError(
+          eventResult.error && !eventResult.notFound
+            ? userMessage(eventResult.error, "Couldn't load this event.", 'event_load_failed', {
+                platform: 'web',
+                eventId: id,
+              })
+            : 'Event not found'
+        );
         setNotFound(Boolean(eventResult.notFound));
         setLoading(false);
         return;
@@ -142,7 +150,12 @@ export function useEventDetail(id: string | undefined, userId: string | null): E
     if (!event) return null;
     const eventId = event.id;
     const result = await cancelEvent(supabase, eventId);
-    if (result.error) return result.error.message || "Couldn't cancel this event.";
+    if (result.error) {
+      return userMessage(result.error, "Couldn't cancel the event. Please try again.", 'event_cancel_failed', {
+        platform: 'web',
+        eventId,
+      });
+    }
     setEvent((current) => (current?.id === eventId ? { ...current, status: 'cancelled' } : current));
     return null;
   }, [event]);
@@ -150,7 +163,11 @@ export function useEventDetail(id: string | undefined, userId: string | null): E
   const remove = useCallback(async () => {
     if (!event) return null;
     const result = await deleteEvent(supabase, event.id);
-    return result.error ? result.error.message || "Couldn't delete this event." : null;
+    if (!result.error) return null;
+    return userMessage(result.error, "Couldn't delete the event. Please try again.", 'event_delete_failed', {
+      platform: 'web',
+      eventId: event.id,
+    });
   }, [event]);
 
   return { event, response, loading, error, notFound, responding, reload, respond, cancel, remove };

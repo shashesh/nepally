@@ -260,9 +260,9 @@ describe('EventDetailPage', () => {
       expect(within(dialog).getByText('Rohan S.')).toBeDefined();
     });
 
-    it('shows a failed attendee request with Try again', async () => {
+    it('shows a failed attendee request in our copy, with Try again', async () => {
       vi.mocked(getEventAttendees)
-        .mockResolvedValueOnce({ error: new Error('Failed to fetch attendees') })
+        .mockResolvedValueOnce({ error: new Error('new row violates row-level security policy') })
         .mockResolvedValue({ data: [] });
       await renderPage();
 
@@ -270,7 +270,8 @@ describe('EventDetailPage', () => {
       await settle();
 
       const dialog = screen.getByRole('dialog', { name: 'People going' });
-      expect(within(dialog).getByText("Couldn't load attendees")).toBeDefined();
+      expect(within(dialog).getByText("Couldn't load attendees.")).toBeDefined();
+      expect(within(dialog).queryByText(/row-level security/)).toBeNull();
       fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
       await settle();
 
@@ -363,7 +364,7 @@ describe('EventDetailPage', () => {
     });
 
     it('raises a toast when the delete fails', async () => {
-      vi.mocked(deleteEvent).mockResolvedValue({ error: new Error('Failed to delete event') });
+      vi.mocked(deleteEvent).mockResolvedValue({ error: new Error('new row violates row-level security policy') });
       await renderPage();
       fireEvent.click(screen.getByRole('button', { name: 'Delete Event' }));
       await settle();
@@ -377,7 +378,7 @@ describe('EventDetailPage', () => {
 
       expect(mockPush).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to delete event' })
+        expect.objectContaining({ message: "Couldn't delete the event. Please try again." })
       );
     });
   });

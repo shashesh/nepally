@@ -62,6 +62,8 @@ function pageCalls(): MetroEventsPageOptions[] {
 }
 
 /** Answer each period from its own queue of results, in order. */
+const RLS_TEXT = 'new row violates row-level security policy';
+
 function queuePages(queues: { upcoming?: EventsResult[]; past?: EventsResult[] }) {
   const pending = { upcoming: [...(queues.upcoming ?? [])], past: [...(queues.past ?? [])] };
   mocks.getMetroEventsPage.mockImplementation(
@@ -178,22 +180,30 @@ describe('useEventFeed', () => {
   });
 
   describe('failures', () => {
-    it('shows a failed first page as the error', async () => {
-      queuePages({ upcoming: [{ error: new Error('Network down') }] });
+    it('shows a failed first page as our copy, never the raw error', async () => {
+      queuePages({ upcoming: [{ error: new Error(RLS_TEXT) }] });
       const { result } = await renderFeed();
 
       expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBe('Network down');
+      expect(result.current.error).toBe("Couldn't load events.");
+    });
+
+    it('shows a failed opening past page as our copy, never the raw error', async () => {
+      queuePages({ upcoming: [page(makeEvents('u', 3))], past: [{ error: new Error(RLS_TEXT) }] });
+      const { result } = await renderFeed();
+
+      expect(result.current.error).toBeNull();
+      expect(result.current.loadMoreError).toBe("Couldn't load more events.");
     });
 
     it('pauses paging after a failed load more', async () => {
-      queuePages({ upcoming: [page(makeEvents('u', 20)), { error: new Error('Timed out') }] });
+      queuePages({ upcoming: [page(makeEvents('u', 20)), { error: new Error(RLS_TEXT) }] });
       const { result } = await renderFeed();
 
       act(() => result.current.loadMore());
       await settle();
 
-      expect(result.current.loadMoreError).toBe('Timed out');
+      expect(result.current.loadMoreError).toBe("Couldn't load more events.");
       expect(result.current.hasMore).toBe(false);
 
       act(() => result.current.loadMore());

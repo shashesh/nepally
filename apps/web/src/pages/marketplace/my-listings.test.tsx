@@ -136,10 +136,10 @@ describe('MyListingsPage', () => {
   });
 
   it('shows a failed load with a retry that works', async () => {
-    mockGetListingsByOwner.mockResolvedValueOnce({ error: new Error('network down') });
+    mockGetListingsByOwner.mockResolvedValueOnce({ error: new Error('new row violates row-level security policy') });
     render(<MyListingsPage />);
 
-    expect(await screen.findByText('network down')).toBeDefined();
+    expect(await screen.findByText("Couldn't load your listings.")).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByRole('link', { name: 'My Restaurant' })).toBeDefined();

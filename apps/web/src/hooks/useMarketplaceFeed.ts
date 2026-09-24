@@ -8,6 +8,7 @@ import {
   type MarketplaceListing,
 } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
 import { isFilteredQuery, type MarketplaceQuery } from '../lib/marketplaceQuery';
 
 const STRIP_LIMIT = 10;
@@ -169,7 +170,7 @@ export function useMarketplaceFeed(
         setSections(EMPTY_SECTIONS);
         setGrid([]);
         setHasMore(false);
-        setError(gridResult.error.message);
+        setError(userMessage(gridResult.error, "Couldn't load listings.", 'listings_load_failed', { platform: 'web', metroId }));
         setLoading(false);
         return;
       }
@@ -219,7 +220,13 @@ export function useMarketplaceFeed(
       if (result.error) {
         // Paging stops rather than retrying in a loop while the sentinel is
         // on screen, and the footer says so (recon 2).
-        setLoadMoreError(result.error.message);
+        setLoadMoreError(
+          userMessage(result.error, "Couldn't load more listings.", 'listings_load_more_failed', {
+            platform: 'web',
+            metroId,
+            offset,
+          })
+        );
         return;
       }
       setGrid((rows) => appendPage(rows, result.data ?? []));

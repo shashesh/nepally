@@ -222,18 +222,19 @@ describe('EventsPage', () => {
   });
 
   it('shows a load error with Try again, which reloads', async () => {
-    queuePages({ upcoming: [{ error: new Error('Network error') }, shortPage(mockEvents)] });
+    queuePages({ upcoming: [{ error: new Error('new row violates row-level security policy') }, shortPage(mockEvents)] });
     await renderPage();
 
     expect(screen.getByText("Couldn't load events")).toBeDefined();
-    expect(screen.getByText('Network error')).toBeDefined();
+    expect(screen.getByText("Couldn't load events.")).toBeDefined();
+    expect(screen.queryByText(/row-level security/)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     await act(async () => {});
     await act(async () => {});
 
     expect(screen.getByText('Dashain Celebration')).toBeDefined();
-    expect(screen.queryByText('Network error')).toBeNull();
+    expect(screen.queryByText("Couldn't load events.")).toBeNull();
     // The failed first page, then the reload's first page and the past page it chains.
     expect(vi.mocked(getMetroEventsPage).mock.calls.map((call) => call[2].period)).toEqual([
       'upcoming',

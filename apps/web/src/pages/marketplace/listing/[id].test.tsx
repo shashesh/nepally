@@ -216,10 +216,10 @@ describe('ListingDetailPage', () => {
   // recon 6: a failed read used to render as "Listing not found."
   it('shows a failed read as an error with a retry, not as not-found', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingById.mockResolvedValue({ error: new Error('network down') });
+    mockGetListingById.mockResolvedValue({ error: new Error('new row violates row-level security policy') });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('network down')).toBeDefined();
+      expect(screen.getByText("Couldn't load this listing.")).toBeDefined();
     });
     expect(screen.queryByText('Listing not found')).toBeNull();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();

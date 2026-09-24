@@ -13,9 +13,12 @@ import {
 } from '@nepally/shared';
 import { notify } from '../components/ui';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
 
 const PAGE_SIZE = 20;
 const RESPONSE_ERROR = "Couldn't update your response. Try again.";
+const LOAD_FAILED = "Couldn't load events.";
+const LOAD_MORE_FAILED = "Couldn't load more events.";
 
 export interface EventFeedState {
   upcoming: Event[];
@@ -138,7 +141,7 @@ export function useEventFeed(metroId: string | null, userId: string | null): Eve
         setResponses(responsesResult.data);
       }
       if (upcomingResult.error) {
-        setError(upcomingResult.error.message);
+        setError(userMessage(upcomingResult.error, LOAD_FAILED, 'events_load_failed', { platform: 'web', metroId }));
         setLoading(false);
         return;
       }
@@ -154,7 +157,13 @@ export function useEventFeed(metroId: string | null, userId: string | null): Eve
           offset: 0,
         });
         if (cancelled || generation !== generationRef.current) return;
-        if (pastResult.error) pastError = pastResult.error.message;
+        if (pastResult.error) {
+          pastError = userMessage(pastResult.error, LOAD_MORE_FAILED, 'events_load_more_failed', {
+            platform: 'web',
+            metroId,
+            period: 'past',
+          });
+        }
         else loaded = appendPage(loaded, 'past', pastResult);
       }
 
@@ -197,7 +206,9 @@ export function useEventFeed(metroId: string | null, userId: string | null): Eve
       setLoadingMore(false);
       if (result.error) {
         // Paging stops rather than retrying in a loop while the sentinel is on screen (decision 4).
-        setLoadMoreError(result.error.message);
+        setLoadMoreError(
+          userMessage(result.error, LOAD_MORE_FAILED, 'events_load_more_failed', { platform: 'web', metroId, period })
+        );
         return;
       }
       setPages((current) => appendPage(current, period, result));
