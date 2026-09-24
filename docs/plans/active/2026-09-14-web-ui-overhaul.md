@@ -196,8 +196,8 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 7 Events | `feat/web-ui-events` | 7.1–7.15, in four chunks | Merged (PR #86) | 2026-09-22 | branched from `master` at 3386a5d. **Chunk 1** (7.1–7.5, b9e4eb3..294c80e) done 2026-09-22: gate green (shared 660, web 1402, mobile 636 tests); review found no CRITICAL or HIGH. Routed from its review: (1) **for the user to decide:** `EventResponseControl`'s `data-disabled` gives both buttons Mantine's grey disabled look while a response saves, hiding the pressed state decision 6 says moves at once — the reason `FollowButton` sets only `aria-disabled`; (2) `getMetroEventsPage`'s comment should cite the `CHECK` in `006_events.sql`, not `createEventSchema`; (3) no test asserts `EventTypeBadge`'s `data-type`; (4) `getUserEventResponse` swaps a PostgREST error for a generic message, as the rest of `api/events.ts` does; (5) a malformed id returns `22P02`, so `notFound` stays unset — Task 7.11 should weigh that; (6) Task 7.15's docs pass also drops `hasUserRsvp` from `events-feature-breakdown.md:91` and `13-event-discovery-and-rsvp.md:499`; (7) a double blank line in `api/events.test.ts`. **Chunk 2** (7.6–7.10, e4e1fb9..30f1c6e) done 2026-09-22: gate green (shared 660, web 1428 tests); `events/index.page.tsx` 333 → 141 lines. Review: two HIGH fixed in 30f1c6e (the organizer avatar was a dead spot above the stretched link's overlay; the title clamp clipped the link's focus ring), plus ragged card heights, a regression from the `li` becoming the grid item. Routed from its review: (1) `useEventFeed.test.ts`'s "drops a page that lands after the reload" leans on the previous test's mock for its chained past call, so it fails alone — add `mockResolvedValueOnce(page([]))` and reset mocks in `beforeEach`; (2) the pages test's fake `IntersectionObserver` fires disconnected observers too, so it can't catch a sentinel unmounted while a filter shows nothing; (3) untested hook branches: the chained past page failing on first load, and the reset when metro or viewer changes; (4) `hasMore` stays true after a failed first load (no visible effect; add `&& error === null`); (5) a `loadMore` in flight when the metro becomes null still lands — bump the generation before the early return; (6) "Couldn't load more events" reads oddly when a metro's first past page fails and nothing is on screen; (7) a mid-row chip focused on a phone sits flush against the scroll edge and clips its ring — add `scroll-padding-inline`; (8) `EventCard.test.tsx` queries `time` with `querySelector` where `getByRole('time')` works; (9) the page tests check sections by `closest('section')`, not `getByRole('region')` and list items; (10) Task 7.15's list already covers the stale `pages.ts` comment and `ToggleChipGroup`'s new props in `web-ui-system.md`. **Chunk 3** (7.11–7.14, c917f93..616d3b4) done 2026-09-22: gate green (shared 661, web 1464 tests); `events/[id].page.tsx` 379 → 277 lines, against a ~230 target, the difference being the id-keyed view wrapper and the `blockedBy` helper. Review: one HIGH fixed in 616d3b4 (Mantine's `Breadcrumbs` nowrap clipped a long title on phones), with the two other breadcrumb nits on the same lines. Routed from its review: (1) `AttendeeList` rows pass `full_name` to a non-decorative `Avatar`, so screen readers hear the surname the row masks — PR 10, with the test id; (2) `useEventDetail` can't clear `responding` in its render-time reset, which only the page's id key makes safe — narrow the comment or clear it in the effect; (3) the load effect has no `.catch`, harmless while every shared API catches its own errors; (4) the sidebar card chrome is defined three times, a candidate for one primitive in PR 10; (5) the attendee list is cached per open, so the dialog can show 12 while the count reads 13 (pre-existing); (6) "This event has passed." appears in both the alert and the attendance card, which reads as helpful rather than redundant, but a cancelled event shows no line at all, and chunk 4's e2e must scope that string to a role. **Chunk 4** (7.15, 8407421) done 2026-09-22: smoke pass, e2e (102), baselines regenerated in Docker and the visual suite green, full gate green (shared 661, web 1464, mobile 636), docs updated, draft PR #86 open with Copilot requested. The a11y diff only deletes the four `events` / `event-detail` entries. Twelve screenshots changed and were reviewed; reviewing them caught a three-column card squeezing the organizer name to one letter, fixed by wrapping the response control to its own line. The feed's visual ready check waited only for its first post, so the Metro Pulse strip was in the shot or not depending on timing; it now waits for the strip. The keyboard walk ran in Chromium against the production build and passed every case in Step 7 |
 | 8a Marketplace: browse + listing detail | `feat/web-ui-marketplace` | 8a.1–8a.12, in four chunks | Merged (PR #88) | 2026-09-23 | rebased onto `master` at `f995deb` after PR #87 merged. Owns both visual pages, so it takes `a11y-baseline.json` to `{}`. **Chunk 1** (8a.1–8a.4, cf331d8..4e90113) done 2026-09-22: gate green (shared 666, web 1492 tests); `marketplace.module.css` 837 → 713 lines and 159 → 136 guard violations; `FilterBar` and `ListingStrip` off both allowlists, so the raw-element list is down to 9 files. Review found no CRITICAL. Two HIGH: (1) `Select` → `NativeSelect` was a real deviation from the task text and is now implementation decision 26; (2) "the twelve dead `.categoryTheme*` blocks should be deleted" is **wrong** — `listing/[id].page.tsx` 26–38 keeps its own copy of the map and applies it at 150, so they belong to Task 8a.10. Fixed in the review commit: the pending-debounce-then-clear path had no test, and `data-category` sat on both the article and the chip. Routed from its review: (1) the tests use `data-testid` for the decorative star and cover placeholder, and read the article's `data-category` — PR 7's own review asked for exactly that kind of `data-type` assertion, so this stays, but PR 10 should settle whether the "role, label or text" rule carves out styling hooks explicitly; (2) mobile's two `isVerifiedSeller` copies cannot be touched here (global constraint: web only), so they go to PR 10 with the other mobile parity items. **Chunk 2** (8a.5–8a.8, 30be668..84780a9) done 2026-09-22: gate green (shared 666, web 1546 tests). `index.page.tsx` 330 → 77 lines and `[category].page.tsx` 177 → 79, over one 193-line `MarketplaceBrowse`; `marketplace.module.css` 713 → 524 lines and 136 → 108 guard violations, with 21 dead class blocks deleted. Review found no CRITICAL or HIGH. Fixed in the review commit: **twelve references to tokens that do not exist**, shipped in chunk 1 and repeated here — `--weight-*` for `--font-weight-*`, `--text-sm`/`--text-lg` for `--font-size-*` (`--text-1/2/3` are colours), `--radius-pill` for `--radius-full` — each silently falling back to the inherited value; the hardcoded `'search'` in `[category].page.tsx` now uses `SEARCH_SLUG`; the leftover `ListingStrip` mock in the category test; and the sponsored strip had no view-level test. Routed to PR 10: the missing undefined-custom-property guard, the paging offset that counts unique rather than consumed rows, and the empty-state copy for a member with no metro. **Chunk 3** (8a.9–8a.11, 543fe61..d8ae4c4) done 2026-09-22: gate green (shared 666, web 1565 tests). `listing/[id].page.tsx` 330 → 216 lines; `marketplace.module.css` 524 → 190 lines and 108 → 32 guard violations, the twelve `.categoryTheme*` blocks finally gone; the page comes off the raw-element allowlist, down to 8 files. `ListingResult` gains `notFound`, mirroring `EventResult`, so a failed read stops reading as "Listing not found." Review found no CRITICAL; two HIGH, both fixed in the review commit: the two extracted components shipped with no tests of their own, and the save button had lost its visible saved state (it now keeps one stable name with `aria-pressed`, and the bookmark icon fills in, rather than renaming itself). Also fixed there: dropping `router.isReady` made a hard reload flash "Listing not found" before the id arrived; Mantine's `Breadcrumbs` renders a plain `div`, so the `nav` landmark came back; a business listing with no details rendered an empty "Business Details" heading; and `.badge` still referenced `--category-bg` / `--category-color` after their defining blocks were deleted. Routed to PR 10: event detail's identical breadcrumb-landmark gap, `PhotoCarousel` having no `priority` hint, and the actions panel rendering twice. **Chunk 4** (8a.12) done 2026-09-22: e2e 107, visual 39, full gate green (shared 666, web 1584, mobile 636). **`a11y-baseline.json` is now `{}`** and the diff only deletes lines, so the app has no known serious or critical violation on any screenshotted page. Four screenshots changed, all reviewed: `marketplace` and `listing-detail` at both widths. Seven others changed on the first run and were restored — re-running the suite against the originals passed, so they were rendering noise, not real diffs. **The keyboard walk found a real bug:** pressing Save dropped focus to `<body>`, because the panel used Mantine's `loading`, which sets native `disabled` — the exact thing "Busy controls stay focusable" forbids. The old page did it too, so it was carried over rather than introduced. It now takes `aria-disabled` / `data-disabled` with a `Loader` in `leftSection`. The walk is kept as `13-marketplace-keyboard.spec.ts` rather than run once, since its 375px checks are the regression guard for recon 9. Routed to PR 10: listing detail shows the category and condition twice, once as a badge and once as a highlight chip, which `getListingHighlights` has always done. **Copilot review** (5 rounds, 15 inline comments) answered 2026-09-23. Four were real and are fixed in `fix(web): address Copilot's review`: (1) `getListingsByMetro` derives `hasMore` from the raw window *before* dropping rows of another category, so a full window can arrive filtered to nothing — the browse view called that empty and unmounted the sentinel, stranding a category that does have listings, and the hook offset by `grid.length`, which never advanced and re-requested the same window; the offset now counts the API window and the empty state waits for `hasMore` to go false; (2) a load-more in flight when the metro cleared still landed, because the effect returned before bumping the generation — the same fault PR 7 found in `useEventFeed`; (3) `/marketplace/search` showed an h1 "Search: momo" over a region named "All Listings"; it now reads "Results"; (4) `getListingById` missed `22P02`, so a mistyped UUID gave a retryable error rather than not-found, where `getEventById` handles both. Two were already fixed in earlier chunk reviews (the undefined token names, and `loading` on the save button). One was **rejected**: it claimed `ListingBusinessDetails` could not type-check because a `Row[]` annotation took nullable members, but the `as Row[]` cast applies to the `.filter(Boolean)` result, not the literal, and `type-check` passes. The remaining six were on the plan text itself, written before the implementation diverged from it; the task interfaces now match what shipped |
 | 8b Marketplace: seller flow | `feat/web-ui-marketplace-seller` | 8b.1–8b.12, in three chunks | Merged (PR #89) | 2026-09-23 | branched from `master` at f632e79. No visual pages, so no baseline run; `a11y-baseline.json` stays `{}`. `marketplace.module.css` is deleted in chunk 1 (my-listings is its last consumer). **Chunk 1** (8b.1–8b.5, fd1c478..ff4d273) done 2026-09-23: gate green (shared 670, web 1610 tests); `my-listings.page.tsx` 216 → 104 lines before the review fix; `marketplace.module.css` (193 lines, 32 guard violations) deleted, and the page off the raw-element allowlist, down to 7 files. One deviation from decision 2: the next page's offset is `listings.length`, which equals "rows fetched minus rows deleted" because deactivated rows stay on screen and deleted ones leave both the screen and the server's results. Review found no CRITICAL. Two HIGH, both fixed in 90eabce: (1) that equivalence failed when a delete and a page load overlapped — the page's offset counted a row the delete then removed, so one listing never appeared — so a delete now waits for a page in flight and no page is requested while a delete is pending; (2) deleting a row unmounted the menu trigger the confirm dialog returns focus to, dropping focus to `<body>`, so focus now moves to the neighbouring row's link, or to Create listing, when `isFocusStranded()`. Nothing routed. **Chunk 2** (8b.6–8b.11, 2f6d18f..345a7ec) done 2026-09-23: gate green (shared 677, web 1650 tests). `listing/promote/[id].page.tsx` 410 → 173 lines; `promote.module.css` 841 → 99 lines and 107 → 0 guard violations. Both pages off both allowlists: the raw-element list is down to 6 files and the CSS guard allowlist holds only PR 10's four stylesheets. Deviations: a small `SummaryList` shared by the duration and review steps; `promote.module.css` came off the CSS allowlist in 8b.10 rather than 8b.11, because the guard fails on an allowlisted file that is already clean — the rewrite kept the success page's class names on tokens so it stayed styled between commits; a checkout response with no URL now reports an error rather than doing nothing; Continue waits with `aria-disabled`, not native `disabled`; and step markers use the action ink pair, since `--accent` is never text. Review found no CRITICAL, HIGH or MEDIUM. Fixed in the review commit: clearing the duration field snapped it straight back to 1 (found while triaging the review, not by it), so deleting "7" and typing "3" gave "13"; and the missing test for a checkout with no URL. Routed to PR 10: `tokens.contrast.test.ts` has no `--accent-ink` / `--success` on `--surface-sunken` pair, used by the tier icons and the success icon (both `aria-hidden` beside text that carries the same meaning). **Chunk 3** (8b.12, a71f26e..addf5f5) done 2026-09-23: e2e 111, visual 39 with no screenshot diffs (neither page is in `pages.ts`), and `a11y-baseline.json` still `{}`; full gate green (shared 677, web 1653, mobile 636). The my-listings e2e now drives the row menu and confirm dialogs and checks focus survives a delete, and a new e2e walks the wizard to review by keyboard. The keyboard walk is kept in `13-marketplace-keyboard.spec.ts`, as 8a's was: a row menu opens on Enter, moves on arrows and returns focus to its trigger on Escape, and neither page overflows at 375px on any step. Screenshots of both pages at 1280 and 375 were reviewed by eye, with nothing to fix: at 375 the third step's label truncates to "Review …" (its full text stays in the DOM). The mobile Jest run needed `--cacheDirectory` pointed at a writable folder, because the default system-temp transform cache failed to write in this environment — not a code issue. **Copilot review** (round 1, 2 inline comments) answered 2026-09-23; both were real and are fixed: (1) the wizard worked out its blocker only when it opened, and the edge function does not check status, so a listing deactivated in another tab could still be paid for — Pay now re-reads the listing first (bef9022); (2) a load-more from before a reload could clear the in-flight page ref for a newer request, releasing a delete early — a request now clears the ref only while it still holds it (3b1229f). The durable fix for (1) followed at the user's go-ahead: `create-promotion-checkout` now refuses a listing that is not active with a 409, after the ownership check (8307a28), deployed to `nusa-staging` as version 6 on 2026-09-23. The deployed v5 source was diffed against the repo first and matched, and v6 was read back and matched the commit; a smoke call without auth returned the function's own 401. The 409 path itself was not exercised live, since that needs a member's session and an inactive listing. Found while doing it and fixed at the user's go-ahead (b2abda2, deployed as version 7 the same way, read back and smoke-tested): the web checkout's `cancel_url` pointed at `/marketplace/listing/<id>/promote`, a route that does not exist, so cancelling on Stripe's page landed on a 404; it now returns to the wizard at `/marketplace/listing/promote/<id>`. **Copilot round 2** (2 inline comments) answered 2026-09-23, both real and fixed: (1) a delete that waited for a page in flight checked the generation only after sending the mutation, so a reload or account switch during the wait still sent it — it now checks right after the wait and sends nothing (f3ef86b); (2) the duration's `aria-valuenow` reported the last committed value while the field was empty — it now follows the draft and is omitted when empty (4bfa303). Round 3 (on the edge function commit) raised one comment, **rejected**: it asked for the status check to be atomic with the `listing_promotions` insert, but that insert only creates a `pending` row — payment happens minutes later on Stripe's page and `stripe-webhook` activates the row after — and only the owner can change a listing's status (RLS), so a lock around the insert protects nothing that matters. **Open for the user:** what a paid promotion should do when its listing is inactive at payment time or is deactivated mid-run (a webhook check before activation, a refund, a pause) — a billing decision, not this PR's |
-| 9a Messages | `feat/web-ui-messaging` | 9a.1–9a.12, in three chunks | In Review (PR #90) | 2026-09-23 | branched from `master` at e59513a. PR 9 split into 9a and 9b at recon (see "PR 9 — split into 9a and 9b"). Owns the `messages` visual page. **Chunk 1** (9a.1–9a.6, bf8fdf7..2b1bf9a) done 2026-09-23: gate green (shared 689, web 1692, mobile 636 tests). `getMessages` now returns a thread's newest messages (mobile included); `formatDayLabel` and `buildThreadDays` shared; `useStartConversation` adopted by feed, post detail, event detail, the public profile and listing detail, so **Contact Seller now opens the thread** instead of `/messages?to=`, and feed and post detail report a failed start. `useConversations` is a wrapper over `useUserList` rather than a copy of its pattern. Review found no CRITICAL. One HIGH, fixed in 7a5923b: `useMessageThread` subscribed only after its load, as Task 9a.6 said, so a message sent during the load (five `getConversations` queries plus the channel join) was never delivered and stayed unread — a regression, since the old page subscribed at once. It now subscribes first and merges. Also fixed there: listing detail counted a contact twice on a double press and showed no busy state during the counter's round trip (`start` gained a `beforeStart` step inside its guard); realtime callbacks could run after leaving a thread and mark it read; messages arriving out of order were appended rather than placed by time; `starting` cleared before navigation finished. Routed to PR 10: shared `subscribeToMessages` reuses one topic per conversation, which can leave a thread without live updates after A → B → A while A's leave is pending (pre-existing). Web now 1705 tests. **Chunk 2** (9a.7–9a.11, 7ed37c7..4af4fee) done 2026-09-23: gate green (web 1726 tests). `messages/index.page.tsx` 153 → 55 lines and `[id].page.tsx` 336 → 81; `Messages.module.css` (293 lines, 74 guard violations) deleted; the thread off the raw-element allowlist, down to 5 files, and the CSS allowlist down to 7. Deviation: the thread's loading, error and not-found states render a `PageHeader` "Conversation" so the page always has an `h1`. Review found no CRITICAL; three HIGH, all fixed in 0c13315. (1) **No `position: sticky` on the site has ever stuck**: `globals.css` set `overflow-x: hidden` on both `html` and `body`, which makes `body` a scroll container that never scrolls, so every sticky element pinned to it — the composer, and before it the feed's `SponsoredRail` and listing detail's sidebar. Now `overflow-x: clip`. Chunk 3's baselines should be checked for the rail and sidebar. (2) `MessageLog` scrolled a sentinel into view, which stopped ~130px short of the page end (page gap, composer and paddings below it), past the 120px follow threshold, so after its own scroll the log stopped following new messages; it now scrolls the window to the document end. (3) The composer lifted itself above the phone tab bar, but a thread is a task route with no tab bar, which would have left a 64px gap. Also fixed there: the log announced every Sent → Read change (`aria-relevant="additions"`); text typed during a slow send was erased when it succeeded; a send that threw left Send busy; the badge rendered a `div` inside the link. Chunk 3 must scope `phone/navigation.spec.ts:45`'s `/messages/i` heading to level 1, since the empty inbox's `EmptyState` h3 "No messages yet" also matches. Web now 1732 tests. **Chunk 3** (9a.12, 9835a68..40d4ed9) done 2026-09-23: e2e 117 (six new in `14-messages.spec.ts`, over a stateful chat mock: public names and unread counts, sending, the profile menu, not found, keyboard order, and at 375px no overflow with the composer pinned while reading back); the marketplace spec now expects Contact Seller to open `/messages/<id>`; the phone spec's heading is scoped to the h1. The base e2e mock gained a `conversations` POST so `getOrCreateConversation` can create one. Visual 39 green, and `a11y-baseline.json` still `{}`. The Docker `--update` rewrote twelve PNGs: eight had no pixel over the diff threshold and two (`feed`, `search-dropdown`) differed by ~1.5% with nothing visible — re-running the suite against their originals passed, so all ten were restored as noise, and only `messages` at both widths was accepted (the new `PageHeader` and `EmptyState`). The thread, which no baseline covers, was screenshotted by eye at 1280 and 375: the composer stays pinned when scrolled to the top, long messages wrap in their bubble. Full gate green (shared 689, web 1732, mobile 636). **Follow-ups fixed at the user's go-ahead** (2026-09-23, 67b2fa7..): (1) the realtime topic reuse routed to PR 10 in chunk 1 — shared `uniqueChannelTopic` now gives `subscribeToMessages`, the unread badge and the bell a fresh topic per subscription; it also meant that under React StrictMode (on in dev) a thread's remount rejoined its own leaving channel and got no live messages; mobile's own fixed topics stay on PR 10's list. (2) The stale Messages badge: staging does publish `conversation_participants` to realtime (checked with a read-only query), so the stale badge in the e2e screenshot was the mock, which has no realtime — but two real gaps remained and are fixed: overlapping refreshes could land out of order and restore a stale count (only the latest request's answer applies now), and a thread now announces on `window` once it has marked itself read, so the badge refreshes at once rather than waiting on realtime or the 30s poll. e2e 118, shared 692, web 1737. **Copilot review** (2 rounds, 3 inline comments) answered 2026-09-24; all three were real and are fixed (ed25e35, 2ddc8a2): (1) `MessageLog`'s day labels and times read the clock only on render, so a thread left open past midnight still said Today — it and the inbox rows now take `useNow()`, and shared `formatRelativeTime` gained an optional `now`; (2) the thread announced a badge refresh even after a failed `markAsRead` — and underneath, shared `markAsRead` never returned an error at all, because it ignored both updates' `error`; it now does, and the thread announces only on success; (3) `web-ui-system.md` claimed every channel used `uniqueChannelTopic` — now scoped to web and shared, with mobile named as PR 10's, and the notifications page's own channel moved onto it so the web claim holds. Shared 696, web 1740. Round 3 (1 comment, real, fixed in 06a7fce): the failed-load and not-found paths left the channel without setting `cancelled`, and `removeChannel` is a round trip, so an in-flight event could still add a message and mark the thread read behind the error screen; one `leave()` now serves both paths and the cleanup. Web 1743 |
-| 9b Notifications, preferences, moderation | `feat/web-ui-notifications` | breakdown at PR start | Not Started | 2026-09-23 | branches from `master` after 9a merges; scope is PR 9 recon items 16–27. Owns the `notifications` visual page |
+| 9a Messages | `feat/web-ui-messaging` | 9a.1–9a.12, in three chunks | Merged (PR #90) | 2026-09-24 | branched from `master` at e59513a. PR 9 split into 9a and 9b at recon (see "PR 9 — split into 9a and 9b"). Owns the `messages` visual page. **Chunk 1** (9a.1–9a.6, bf8fdf7..2b1bf9a) done 2026-09-23: gate green (shared 689, web 1692, mobile 636 tests). `getMessages` now returns a thread's newest messages (mobile included); `formatDayLabel` and `buildThreadDays` shared; `useStartConversation` adopted by feed, post detail, event detail, the public profile and listing detail, so **Contact Seller now opens the thread** instead of `/messages?to=`, and feed and post detail report a failed start. `useConversations` is a wrapper over `useUserList` rather than a copy of its pattern. Review found no CRITICAL. One HIGH, fixed in 7a5923b: `useMessageThread` subscribed only after its load, as Task 9a.6 said, so a message sent during the load (five `getConversations` queries plus the channel join) was never delivered and stayed unread — a regression, since the old page subscribed at once. It now subscribes first and merges. Also fixed there: listing detail counted a contact twice on a double press and showed no busy state during the counter's round trip (`start` gained a `beforeStart` step inside its guard); realtime callbacks could run after leaving a thread and mark it read; messages arriving out of order were appended rather than placed by time; `starting` cleared before navigation finished. Routed to PR 10: shared `subscribeToMessages` reuses one topic per conversation, which can leave a thread without live updates after A → B → A while A's leave is pending (pre-existing). Web now 1705 tests. **Chunk 2** (9a.7–9a.11, 7ed37c7..4af4fee) done 2026-09-23: gate green (web 1726 tests). `messages/index.page.tsx` 153 → 55 lines and `[id].page.tsx` 336 → 81; `Messages.module.css` (293 lines, 74 guard violations) deleted; the thread off the raw-element allowlist, down to 5 files, and the CSS allowlist down to 7. Deviation: the thread's loading, error and not-found states render a `PageHeader` "Conversation" so the page always has an `h1`. Review found no CRITICAL; three HIGH, all fixed in 0c13315. (1) **No `position: sticky` on the site has ever stuck**: `globals.css` set `overflow-x: hidden` on both `html` and `body`, which makes `body` a scroll container that never scrolls, so every sticky element pinned to it — the composer, and before it the feed's `SponsoredRail` and listing detail's sidebar. Now `overflow-x: clip`. Chunk 3's baselines should be checked for the rail and sidebar. (2) `MessageLog` scrolled a sentinel into view, which stopped ~130px short of the page end (page gap, composer and paddings below it), past the 120px follow threshold, so after its own scroll the log stopped following new messages; it now scrolls the window to the document end. (3) The composer lifted itself above the phone tab bar, but a thread is a task route with no tab bar, which would have left a 64px gap. Also fixed there: the log announced every Sent → Read change (`aria-relevant="additions"`); text typed during a slow send was erased when it succeeded; a send that threw left Send busy; the badge rendered a `div` inside the link. Chunk 3 must scope `phone/navigation.spec.ts:45`'s `/messages/i` heading to level 1, since the empty inbox's `EmptyState` h3 "No messages yet" also matches. Web now 1732 tests. **Chunk 3** (9a.12, 9835a68..40d4ed9) done 2026-09-23: e2e 117 (six new in `14-messages.spec.ts`, over a stateful chat mock: public names and unread counts, sending, the profile menu, not found, keyboard order, and at 375px no overflow with the composer pinned while reading back); the marketplace spec now expects Contact Seller to open `/messages/<id>`; the phone spec's heading is scoped to the h1. The base e2e mock gained a `conversations` POST so `getOrCreateConversation` can create one. Visual 39 green, and `a11y-baseline.json` still `{}`. The Docker `--update` rewrote twelve PNGs: eight had no pixel over the diff threshold and two (`feed`, `search-dropdown`) differed by ~1.5% with nothing visible — re-running the suite against their originals passed, so all ten were restored as noise, and only `messages` at both widths was accepted (the new `PageHeader` and `EmptyState`). The thread, which no baseline covers, was screenshotted by eye at 1280 and 375: the composer stays pinned when scrolled to the top, long messages wrap in their bubble. Full gate green (shared 689, web 1732, mobile 636). **Follow-ups fixed at the user's go-ahead** (2026-09-23, 67b2fa7..): (1) the realtime topic reuse routed to PR 10 in chunk 1 — shared `uniqueChannelTopic` now gives `subscribeToMessages`, the unread badge and the bell a fresh topic per subscription; it also meant that under React StrictMode (on in dev) a thread's remount rejoined its own leaving channel and got no live messages; mobile's own fixed topics stay on PR 10's list. (2) The stale Messages badge: staging does publish `conversation_participants` to realtime (checked with a read-only query), so the stale badge in the e2e screenshot was the mock, which has no realtime — but two real gaps remained and are fixed: overlapping refreshes could land out of order and restore a stale count (only the latest request's answer applies now), and a thread now announces on `window` once it has marked itself read, so the badge refreshes at once rather than waiting on realtime or the 30s poll. e2e 118, shared 692, web 1737. **Copilot review** (2 rounds, 3 inline comments) answered 2026-09-24; all three were real and are fixed (ed25e35, 2ddc8a2): (1) `MessageLog`'s day labels and times read the clock only on render, so a thread left open past midnight still said Today — it and the inbox rows now take `useNow()`, and shared `formatRelativeTime` gained an optional `now`; (2) the thread announced a badge refresh even after a failed `markAsRead` — and underneath, shared `markAsRead` never returned an error at all, because it ignored both updates' `error`; it now does, and the thread announces only on success; (3) `web-ui-system.md` claimed every channel used `uniqueChannelTopic` — now scoped to web and shared, with mobile named as PR 10's, and the notifications page's own channel moved onto it so the web claim holds. Shared 696, web 1740. Round 3 (1 comment, real, fixed in 06a7fce): the failed-load and not-found paths left the channel without setting `cancelled`, and `removeChannel` is a round trip, so an in-flight event could still add a message and mark the thread read behind the error screen; one `leave()` now serves both paths and the cleanup. Web 1743 |
+| 9b Notifications, preferences, moderation | `feat/web-ui-notifications` | 9b.1–9b.12, in three chunks | In Progress | 2026-09-24 | branched from `master` at 1f35700; scope is PR 9 recon items 16–27. Owns the `notifications` visual page. Breakdown written 2026-09-24 |
 | 10 Static pages + cleanup | `feat/web-ui-cleanup` | breakdown at PR start | Not Started | 2026-09-14 | |
 
 ---
@@ -14756,11 +14756,511 @@ The page reads `router.query.id` once `router.isReady` (a hard reload must not f
 
 ## PR 9b — Notifications, preferences, moderation (`feat/web-ui-notifications`)
 
-Branches from `master` after 9a merges. Recon items 16–27 are its scope; the breakdown is written when it starts. What the recon settles already:
+**Branch:** `feat/web-ui-notifications`, created from `master` at `1f35700` (PR #90 merged). Recon items 16–27 are its scope.
 
-- **Notifications:** a `useNotificationsPage` hook owns the list, the count and the realtime INSERTs — dropping `type: 'message'` as the bell does (19) — and pages with `useInfiniteScroll` at an offset equal to the rows on screen (20). "Load more" goes. Rows are `NotificationItem`; every mutation checks its result and says so with `notify.error` (21, 22). Day labels come from `formatDayLabel` (9a.2). `useNotificationsFeed` reloads when polling turns back on (23). `PageHeader` "Notifications", with the unread count as its description rather than inside the `h1` (27).
-- **Preferences:** a failed `getUserSettings` shows `ErrorState` with retry and no Save (16); every switch gets a `label`, the two radio groups become `Radio.Group`s with a `label` (17); Save follows the busy-controls rule and reports with `notify.success` (18).
-- **Moderation:** a `useModerationQueue` hook with a real error state (24); `PendingPostCard` and `ReportCard` extracted; Remove and Ban confirm through `useConfirm` with `danger: true` (26); busy buttons stay focusable, and focus moves to the next card when an acted-on card leaves (25). Which report actions sit behind an `ActionMenu` is settled in its breakdown.
+**Inventory at branch start** (the "Starting an area PR" commands, 2026-09-24):
+
+| File | Lines | CSS guard | `confirm(`/`alert(` | Raw elements |
+|---|---|---|---|---|
+| `pages/notifications.page.tsx` | 303 | — | 0 | 0 |
+| `pages/profile/notifications.page.tsx` | 203 | — | 0 | 2 (117, 157) |
+| `pages/moderation.page.tsx` | 355 | — | 1 (156) | 0 |
+| `styles/Notifications.module.css` | 214 | **45** | — | — |
+| `styles/NotificationPreferences.module.css` | 164 | **31** | — | — |
+| `styles/Moderation.module.css` | 166 | **38** | — | — |
+
+Each stylesheet has exactly one consumer, its page, so all three are deleted rather than rewritten. `a11y-baseline.json` is `{}`; `pages.ts` screenshots only `notifications`.
+
+| File | Change | Why |
+|---|---|---|
+| `packages/shared/src/api/notifications.ts` (+ test) | Modify | `getNotifications` returns `hasMore`, and its error path stops returning a stray `count` |
+| `packages/shared/src/types/user.ts`, `constants/users.ts` (+ test) | Modify | `UserSettingsValues` and `DEFAULT_USER_SETTINGS`, today copied in web and mobile |
+| `packages/shared/src/logic/notifications.ts` (+ test, + `logic/index.ts`) | Create | `groupNotifications`: emergency first, then by day |
+| `apps/web/src/lib/notificationsChanged.ts` | Create | A same-page signal from `/notifications` to the bell, as `unreadMessages.ts` is for chat |
+| `apps/web/src/hooks/useNotificationsFeed.ts` (+ test) | Modify | Reloads when polling comes back on, and on the signal (recon 23) |
+| `apps/web/src/hooks/useNotificationsPage.ts` (+ test) | Create | The page's list, count, paging, realtime and mutations (19–21) |
+| `apps/web/src/hooks/useUserSettings.ts` (+ test) | Create | Preferences load, error, edit and save (16, 18) |
+| `apps/web/src/hooks/useModerationQueue.ts` (+ test) | Create | The queue's load, error and actions (24) |
+| `apps/web/src/components/notifications/NotificationList.tsx` (+ test, `.module.css`) | Create | Grouped `NotificationItem`s, with focus kept after a delete (22) |
+| `apps/web/src/components/moderation/{PendingPostCard,ReportCard}.tsx` (+ tests, `moderationCard.module.css`) | Create | Extracted from the moderation page |
+| `apps/web/src/pages/notifications.page.tsx`, `profile/notifications.page.tsx`, `moderation.page.tsx` (+ tests) | Rewrite | The pages over the hooks and components |
+| `apps/web/src/pages/{notifications,moderation}.module.css`, `pages/profile/notificationPreferences.module.css` | Create | Page layout, semantic tokens only |
+| `apps/web/src/styles/{Notifications,NotificationPreferences,Moderation}.module.css` | Delete | Their only consumers move off them |
+| `scripts/guard-css-tokens.allowlist.json`, `apps/web/eslint/raw-element-allowlist.mjs` | Modify | The three stylesheets off the first (4 left, all PR 10's), `profile/notifications` off the second (4 left, all PR 10's) |
+
+**How this PR runs.** As 9a did: three chunks. Inside a chunk each task writes its failing test, runs only that task's tests, implements, re-runs and commits, with no review between tasks. At each chunk boundary: `type-check`, `lint`, `lint:guards`, the full unit suite of every workspace touched (web Vitest must run from a `C:\…` cwd), then one code-review agent over the chunk's whole diff, CRITICAL and HIGH fixed in one `fix(web): address chunk N review` commit, everything else routed to PR 10's list or the tracker — **never to new tasks**. e2e and the `notifications` baseline run only in chunk 3.
+
+| Chunk | Tasks | Ends with |
+|---|---|---|
+| 1. Shared + hooks | 9b.1–9b.6 | `hasMore`, the defaults, `groupNotifications`, the bell's reloads, and the three page hooks |
+| 2. Pages | 9b.7–9b.11 | All three pages rebuilt, their stylesheets deleted, both allowlists down to PR 10's files |
+| 3. Finish | 9b.12 | e2e, the `notifications` re-baseline, keyboard walk, docs and the draft PR |
+
+**Decisions this breakdown locks in:**
+
+1. **The notifications page pages by rows on screen** (recon 20), as my-listings does: the next page starts at `notifications.length`, rows are de-duplicated by id on append, and a delete waits for a page in flight while no page is requested during a pending delete. A realtime insert adds one row to the screen and one to the server's list, so the offset stays in step; an insert that lands while a page is in flight only produces a duplicate, which the de-dupe drops. `useInfiniteScroll` replaces "Load more"; a failed page shows `ErrorState` "Couldn't load more notifications." with Try again, as my-listings' footer does. This is the second copy of this paging logic (after `useMyListings`), not the third, so there is no shared paging hook yet.
+2. **The page subscribes before it loads**, the lesson from 9a's chunk 1. Realtime INSERTs of `type: 'message'` are dropped, as the bell drops them (recon 19). An insert that arrives while the first page is loading is kept and merged by id, but it doesn't raise the count, because the count query ran at the same time and may already include it. In that race the count reads one low until the next load, never one high.
+3. **Opening a notification navigates at once.** It fires `markRead` without waiting, so the member isn't held on a failed write. A failed mark-read leaves the row unread, which is the truth, and doesn't show a toast on the page they just left. Mark all as read and Delete do show a toast when they fail (recon 21): "Couldn't mark your notifications as read. Please try again." and "Couldn't delete that notification. Please try again." A successful delete of an unread row lowers the count.
+4. **The page tells the bell** (recon 23). After a successful mark-read, mark-all or delete, the page calls `announceNotificationsChanged()`, and `useNotificationsFeed` reloads on that event, polling or not. It also reloads whenever `pollingEnabled` changes, which catches INSERTs that reached `/notifications` while the bell's own channel was off.
+5. **Headings carry no emoji** (recon 27). The page is `PageHeader` "Notifications", with "3 unread" as its description when the count is above zero. Its actions are Mark all as read (only while the count is above zero) and a Preferences link (`IconSettings`, `aria-hidden`). Groups are `section`s with an `h2`: "Emergency alerts", then `formatDayLabel` for each day, fed by `useNow()`. The empty state is `EmptyState` "You're all caught up", "Comments, likes and emergency alerts will appear here.", with `IconBell`.
+6. **Focus survives the row leaving.** Delete removes the control that had focus. After the list commits, and only if `isFocusStranded()`, focus goes to the open button of the row that took the deleted row's place, then the row before it, then the Preferences link. Mark all as read removes itself, so after a success focus goes to the Preferences link, under the same condition.
+7. **Preferences never save what they didn't load** (recon 16). `useUserSettings` returns `values: null` after a failed load, and the page then shows `ErrorState` "Couldn't load your notification preferences." with Try again, and no form. A member with no settings row yet gets `DEFAULT_USER_SETTINGS`, which match the table's column defaults in `001_schema.sql`.
+8. **Every preference control has a name** (recon 17). Each Mantine `Switch` takes a `label` and a `description`. The two raw radio groups become `Radio.Group`s with a `label` ("Chat messages", "Likes") and a `description`. The Emergency alerts switch stays `checked disabled`, since it is always on, which the "can't have just used it" case allows. The fields sit in a `form`, and Save preferences is its submit button. Save preferences sets `aria-disabled` while it saves and shows a `Loader` in `leftSection`. A success calls `notify.success("Preferences saved.")`, which retires the "✓ Saved" label and its uncleared `setTimeout` (recon 18). A failure calls `notify.error("Couldn't save your preferences. Please try again.")` and leaves the edits in place.
+9. **The moderation queue fails as a whole** (recon 24). If `getPendingPosts`, `listReports` or `getPostsByIds` fails, the page shows `ErrorState` "Couldn't load the moderation queue." with Try again, and no sections. A report whose post is missing from a *successful* `getPostsByIds` still says "Post no longer available", which is then true.
+10. **No `ActionMenu` on report cards.** A card has at most three actions (Dismiss, Remove post, Ban author), a moderator works the queue fast, and a menu would hide which actions exist. They stay visible `Button`s.
+11. **Destructive moderation actions confirm** (recon 26), through `useConfirm` with `danger: true`, which starts focus on Cancel:
+    - Remove (a pending post) and Remove post (a report): title "Remove this post?", message "“{title}” will be taken down and won't appear in any feed.", confirm label "Remove post".
+    - Ban author / Ban user: title "Ban {name}?", message "Their posts will be removed and they will no longer be able to post.", confirm label "Ban".
+    - Approve and Dismiss don't confirm, because both can be undone from the post.
+12. **One moderation action at a time, and busy buttons stay focusable** (recon 25). While any action runs, every action button on the page has `aria-disabled` and ignores presses. The running button also shows a `Loader` in `leftSection` and has `aria-busy="true"`, and its label doesn't change. When the acted-on card leaves, and only if `isFocusStranded()`, focus goes to the card that took its place in the same section, then the card before it, then the section's `h2`. Each card is an `article` with `tabIndex={-1}` named by its own `h3`, and each section `h2` has `tabIndex={-1}`. Focus goes to the card, not to its first button, so a moderator pressing Enter twice can't approve the next post by accident.
+13. **Moderation messages are sentences, not raw errors.** Each failure has its own line in the hook. For example, "Couldn't approve the post. Please try again." When a reported post's removal succeeds but closing its report fails, the message is "The post was removed, but the report couldn't be closed. Please try again." Raw PostgREST text never reaches the toast, ahead of PR 10's policy item. A ban also drops that member's pending posts from the queue, because `moderate_user()` removes them server-side.
+14. **Each report card's heading is its reason** ("Spam", "Harassment"), rather than a styled `span`. Each section shows its count as plain text beside the heading ("3 waiting", "2 open"), not inside it.
+
+## PR 9b — Task breakdown
+
+### Task 9b.1: `getNotifications` returns `hasMore`
+
+**Files:** modify `packages/shared/src/api/notifications.ts` (8–41) and `notifications.test.ts`.
+
+```ts
+export interface NotificationsResult {
+  data?: Notification[];
+  /** True when a full page came back, so another may follow. */
+  hasMore?: boolean;
+  error?: Error;
+}
+```
+
+- [ ] **Step 1: Write the failing test.** A full page (`limit` rows) returns `hasMore: true`; a short page returns `false`; an error returns `{ error }` and no `count` key (`expect(result).toEqual({ error: expect.any(Error) })`).
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=packages/shared -- src/api/notifications.test.ts`
+- [ ] **Step 3: Implement.** `if (error) return { error: new Error(error.message) };` then `const rows = (data ?? []) as Notification[]; return { data: rows, hasMore: rows.length === limit };`
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(shared): getNotifications reports hasMore`.
+
+### Task 9b.2: `DEFAULT_USER_SETTINGS` and `groupNotifications`
+
+**Files:** modify `packages/shared/src/types/user.ts`, `constants/users.ts` (+ its test, or create `constants/users.test.ts`); create `packages/shared/src/logic/notifications.ts` and `notifications.test.ts`; export from `logic/index.ts`.
+
+```ts
+// types/user.ts — what the preferences form edits and upsertUserSettings writes.
+export type UserSettingsValues = Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>;
+
+// constants/users.ts — the column defaults in 001_schema.sql's user_settings.
+export const DEFAULT_USER_SETTINGS: Readonly<UserSettingsValues>;
+
+// logic/notifications.ts
+export interface NotificationGroup {
+  /** 'emergency', or the day's toDateString(); stable as a React key. */
+  key: string;
+  kind: 'emergency' | 'day';
+  /** sent_at of the group's first notification, for formatDayLabel. */
+  timestamp: string;
+  notifications: Notification[];
+}
+/** Emergency alerts first as one group, then the rest by local day, keeping the input order within each. */
+export function groupNotifications(notifications: Notification[]): NotificationGroup[];
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `DEFAULT_USER_SETTINGS` equals `{ email_notifications: true, push_notifications: true, emergency_alerts: true, metro_area_alerts: true, notify_chat: 'all', notify_comments: true, notify_likes: 'grouped' }`.
+  - `groupNotifications([])` is `[]`; two emergency alerts on different days make one `emergency` group, placed first; three others over two days make two `day` groups in input order; an emergency alert never appears in a day group; `timestamp` is the first row's `sent_at`. Build dates with `new Date(y, m, d, h).toISOString()`, so the test is timezone-safe.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=packages/shared -- src/constants src/logic/notifications.test.ts`
+- [ ] **Step 3: Implement.** Use one pass. It pushes emergency alerts into one group, and starts a new day group whenever `new Date(sent_at).toDateString()` changes from the previous non-emergency row. Put the emergency group first when it has rows.
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(shared): add DEFAULT_USER_SETTINGS and groupNotifications`.
+
+### Task 9b.3: The bell reloads when `/notifications` changes things
+
+**Files:** create `apps/web/src/lib/notificationsChanged.ts`; modify `apps/web/src/hooks/useNotificationsFeed.ts` and `useNotificationsFeed.test.tsx`.
+
+```ts
+// lib/notificationsChanged.ts — mirrors lib/unreadMessages.ts.
+export const NOTIFICATIONS_CHANGED_EVENT = 'nepally:notifications-changed';
+export function announceNotificationsChanged(): void;
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - Rendering with `pollingEnabled: false` and rerendering with `true` fetches again: `getUnreadNotificationCount` is called twice.
+  - `announceNotificationsChanged()` fetches again, with polling on and with it off.
+  - Unmount removes the listener: an announce after unmount makes no call.
+  - A response from before a newer fetch doesn't overwrite it. Resolve the second fetch first, then the first, and the count is the second's. This is the rule 9a's badge follows.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/hooks/useNotificationsFeed.test.tsx`
+- [ ] **Step 3: Implement.**
+  - Replace the initial-load effect with one keyed on `[userId, pollingEnabled, reloadKey]`.
+  - A separate effect adds the window listener, and the listener bumps `reloadKey`.
+  - A request counter ref applies only the latest response, and `load` goes through the same counter.
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): the bell reloads after /notifications changes`.
+
+### Task 9b.4: `useNotificationsPage`
+
+**Files:** create `apps/web/src/hooks/useNotificationsPage.ts` and `useNotificationsPage.test.ts`.
+
+```ts
+export const NOTIFICATIONS_PAGE_SIZE = 20;
+
+export interface NotificationsPageState {
+  notifications: Notification[];
+  unreadCount: number;
+  loading: boolean;
+  /** The first page or the count failed. The list is empty, never stale. */
+  error: string | null;
+  loadingMore: boolean;
+  loadMoreError: string | null;
+  hasMore: boolean;
+  loadMore: () => void;
+  retryLoadMore: () => void;
+  reload: () => void;
+  /** Resolves false on failure, with the row unchanged. Already read resolves true with no call. */
+  markRead: (notification: Notification) => Promise<boolean>;
+  markAllRead: () => Promise<boolean>;
+  remove: (notification: Notification) => Promise<boolean>;
+}
+
+export function useNotificationsPage(userId: string | null): NotificationsPageState;
+```
+
+Model it on `useMyListings`. It uses a generation ref, render-time reset when `userId` changes, a reload key, `loadingMoreRef`, `deletesInFlightRef` and `pageRequestRef` (decision 1). The channel is `uniqueChannelTopic(\`notifications-page:${userId}\`)`, subscribed before the first request (decision 2), and removed on unmount and on a changed id.
+
+- [ ] **Step 1: Write the failing test.** Mock `supabase.channel` to capture the INSERT callback, as `notifications.test.tsx` does today, and set every mock in `beforeEach`.
+  - First load calls `getNotifications(supabase, id, 20, 0)` and `getUnreadNotificationCount` together, after `channel().subscribe()`. It fills `notifications`, `unreadCount` and `hasMore`.
+  - Either request failing sets `error` to "Couldn't load your notifications." and leaves the list empty. `reload` clears it and asks again.
+  - `loadMore` asks at offset `notifications.length`. A page containing an id already on screen appends only the new rows. A failed page sets `loadMoreError`, and `retryLoadMore` asks again.
+  - After one realtime INSERT, `loadMore` asks at offset 21, not 20.
+  - An INSERT of `type: 'message'` is ignored. A duplicate id is ignored. An unread insert raises the count by one. An insert delivered before the first page resolves is in the list afterwards and doesn't raise the count.
+  - `markRead` success sets that row's `read`, lowers the count and calls `announceNotificationsChanged` (mock the module). A failure resolves false and changes nothing. An already-read row makes no call.
+  - `markAllRead` success marks every row read, sets the count to 0 and announces. A failure resolves false.
+  - `remove` success drops the row, lowers the count only if it was unread, and announces. A failure resolves false and keeps it. A `remove` started while a page is pending sends its delete only after the page lands, and `hasMore` reads false while it waits.
+  - A changed `userId` resets the state, leaves the old channel, and drops the old user's late responses.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useNotificationsPage.test.ts`
+- [ ] **Step 3: Implement.** Keep inserts that arrive while `loading` in a ref, and merge them into the first page by id, newest first, without counting them.
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useNotificationsPage`.
+
+### Task 9b.5: `useUserSettings`
+
+**Files:** create `apps/web/src/hooks/useUserSettings.ts` and `useUserSettings.test.ts`.
+
+```ts
+export interface UserSettingsState {
+  /** Null while loading and after a failed load, so nothing unloaded can be saved (decision 7). */
+  values: UserSettingsValues | null;
+  loading: boolean;
+  error: string | null;
+  reload: () => void;
+  setValue: <K extends keyof UserSettingsValues>(key: K, value: UserSettingsValues[K]) => void;
+  saving: boolean;
+  /** Resolves false on failure, keeping the edits. A second call while saving resolves false with no request. */
+  save: () => Promise<boolean>;
+}
+
+export function useUserSettings(userId: string | null): UserSettingsState;
+```
+
+- [ ] **Step 1: Write the failing test.**
+  - A row loads as exactly the seven `UserSettingsValues` fields: `user_id`, `created_at` and `updated_at` are not in `values`.
+  - No row and no error loads `DEFAULT_USER_SETTINGS`.
+  - An error sets `error` to "Couldn't load your notification preferences." and `values` stays null. `reload` asks again.
+  - `setValue('notify_likes', 'off')` changes only that field.
+  - `save` calls `upsertUserSettings(supabase, userId, values)` with the edited values and resolves true. `{ error }` resolves false and the edits stay. A second `save` while the first is pending makes no second call.
+  - With `values` null, `save` resolves false with no call.
+  - A changed `userId` resets, and the old user's late response is dropped.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useUserSettings.test.ts`
+- [ ] **Step 3: Implement.** Pick the fields explicitly in a small `toValues(row: UserSettings): UserSettingsValues`. Use a `savingRef` for the double-submit guard.
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useUserSettings`.
+
+### Task 9b.6: `useModerationQueue`
+
+**Files:** create `apps/web/src/hooks/useModerationQueue.ts` and `useModerationQueue.test.ts`.
+
+```ts
+export type ModerationResult = { ok: true } | { ok: false; message: string };
+export type ModerationAction = 'approve' | 'remove' | 'dismiss' | 'remove-post' | 'ban';
+
+export interface ModerationQueueState {
+  pendingPosts: Post[];
+  reports: ReportWithUsers[];
+  /** Posts named by post reports, by id. A missing id means the post is gone. */
+  reportedPosts: Readonly<Record<string, Post>>;
+  loading: boolean;
+  error: string | null;
+  reload: () => void;
+  /** The card and action in flight; null when idle. One action at a time (decision 12). */
+  busy: { id: string; action: ModerationAction } | null;
+  approvePost: (post: Post) => Promise<ModerationResult>;
+  removePost: (post: Post) => Promise<ModerationResult>;
+  dismissReport: (report: ReportWithUsers) => Promise<ModerationResult>;
+  removeReportedPost: (report: ReportWithUsers) => Promise<ModerationResult>;
+  banUser: (report: ReportWithUsers, targetUserId: string) => Promise<ModerationResult>;
+}
+
+/** `moderatorId` is null for a non-moderator, and then nothing loads. */
+export function useModerationQueue(moderatorId: string | null): ModerationQueueState;
+```
+
+Failure messages (decision 13):
+
+| Action | Message |
+|---|---|
+| approve | "Couldn't approve the post. Please try again." |
+| remove / remove reported post (status write) | "Couldn't remove the post. Please try again." |
+| remove reported post (report close) | "The post was removed, but the report couldn't be closed. Please try again." |
+| dismiss | "Couldn't dismiss the report. Please try again." |
+| ban (RPC) | "Couldn't ban this member. Please try again." |
+| ban (report close) | "The member was banned, but the report couldn't be closed. Please try again." |
+| another action is running | "Another action is still running." (no request) |
+
+- [ ] **Step 1: Write the failing test.**
+  - The load calls `getPendingPosts` and `listReports({ status: 'pending' })` together, then calls `getPostsByIds` with the unique ids of post reports.
+  - Any of the three failing sets `error` to "Couldn't load the moderation queue." and empties all three collections (decision 9). `reload` asks again.
+  - A null `moderatorId` makes no call and reports `loading: false`.
+  - `approvePost` calls `setPostModerationStatus(…, 'active')`, drops the post and returns `{ ok: true }`. On failure it returns the approve message and keeps the post.
+  - `removeReportedPost` sets the status to `removed`, drops that post from `pendingPosts` too, and closes the report with `{ status: 'actioned', reviewed_by, action: 'removed' }`. When the close fails it returns the partial message, the pending post stays dropped, and the report stays.
+  - `banUser` calls `setUserBanStatus(supabase, target, true, report.reason)`, closes the report with `action: 'banned'`, and drops that member's pending posts.
+  - `dismissReport` closes the report with `{ status: 'dismissed', action: 'none' }`.
+  - `busy` is `{ id: post.id, action: 'approve' }` while an approve is pending, and null after. A ban's `busy.id` is the report's id. A second action while one runs returns the "still running" message and makes no call.
+  - A reload or a changed `moderatorId` drops late results.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/hooks/useModerationQueue.test.ts`
+- [ ] **Step 3: Implement.** Use a `busyRef` for the one-at-a-time guard, since state lags a render, and a generation ref for late results.
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useModerationQueue`.
+
+### Task 9b.7: `NotificationList`
+
+**Files:** create `apps/web/src/components/notifications/NotificationList.tsx`, `NotificationList.module.css`, `NotificationList.test.tsx`.
+
+```ts
+export interface NotificationListProps {
+  notifications: Notification[];
+  now: Date;
+  onOpen: (notification: Notification) => void;
+  /** Resolves true when the row was deleted, so focus can move (decision 6). */
+  onDelete: (notification: Notification) => Promise<boolean>;
+  /** Where focus goes when the last row is deleted. */
+  getFallbackFocus: () => HTMLElement | null;
+}
+```
+
+It renders `groupNotifications(notifications)` as `section`s, each with an `h2`. The emergency group's heading is "Emergency alerts". A day group's heading is `formatDayLabel(new Date(group.timestamp), now)`. Each section holds a `ul` of `li`s, each wrapping a `NotificationItem`. On a successful delete it records the deleted row's index in the flattened list. After the next commit where `notifications` changed, and only if `isFocusStranded()`, it focuses the first `button` in the `li` now at that index, then the one before it, then `getFallbackFocus()`.
+
+- [ ] **Step 1: Write the failing test** with real Mantine in the test-utils provider.
+  - An emergency alert and two others today and yesterday give three `h2`s, in the order "Emergency alerts", "Today", "Yesterday". Fake the clock with `vi.setSystemTime` and pass `now`.
+  - No heading contains an emoji: each `h2`'s name matches `/^[\w ,]+$/`.
+  - Clicking a row's open button calls `onOpen` with that notification. "Delete notification" calls `onDelete`.
+  - After `onDelete` resolves true and a rerender without that row, with focus on `<body>`, focus is on the next row's open button. With the last row deleted, focus is on the element `getFallbackFocus` returns. With focus moved elsewhere first, it stays there.
+  - When `onDelete` resolves false, focus doesn't move.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/components/notifications/NotificationList.test.tsx`
+- [ ] **Step 3: Implement**, with the CSS on semantic tokens only.
+- [ ] **Step 4: Run and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add NotificationList`.
+
+### Task 9b.8: Rebuild the notifications page
+
+**Files:** rewrite `apps/web/src/pages/notifications.page.tsx` and `notifications.test.tsx`; create `apps/web/src/pages/notifications.module.css`; delete `apps/web/src/styles/Notifications.module.css`; modify `scripts/guard-css-tokens.allowlist.json`.
+
+The page keeps its redirects: a signed-out visitor goes to `/login`, and a member with no metro to `/onboarding/zip`. It shows decision 5's `PageHeader`, then one of these:
+
+- `LoadingState` labelled "Loading notifications…"
+- `ErrorState` with retry
+- the empty state
+- `NotificationList`, followed by the sentinel from `useInfiniteScroll`, then a `Loader` with a visually hidden "Loading more notifications…" while `loadingMore`, or `ErrorState` "Couldn't load more notifications." with Try again → `retryLoadMore`
+
+`onOpen` calls `void markRead(n)`, then `router.push(getNotificationHref(n))` (decision 3). `onDelete` awaits `remove`, and on false calls `notify.error` with decision 3's sentence. Mark all as read works like this:
+
+- While it runs, it has `aria-disabled` and a `Loader`.
+- A failure shows a toast.
+- A success moves focus to the Preferences link if focus is stranded (decision 6). The link is held in a ref, which is also what `getFallbackFocus` returns.
+
+- [ ] **Step 1: Rewrite the test** over a mocked `useNotificationsPage`:
+  - Each state renders.
+  - The `h1` is exactly "Notifications", and "3 unread" is outside it.
+  - Mark all as read shows only while `unreadCount > 0`.
+  - A failed mark-all toasts. A failed delete toasts.
+  - Opening pushes the row's href and calls `markRead`.
+  - Try again calls `reload`.
+  - No `CloseButton` is named "Dismiss notification".
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/pages/notifications.test.tsx`
+- [ ] **Step 3: Implement.** Then delete `styles/Notifications.module.css` and take it off the CSS allowlist.
+- [ ] **Step 4: Run the page tests and `npm run lint:guards`.** Both pass.
+- [ ] **Step 5: Commit** as `feat(web): rebuild the notifications page`.
+
+### Task 9b.9: Rebuild notification preferences
+
+**Files:** rewrite `apps/web/src/pages/profile/notifications.page.tsx` and `notifications.test.tsx`; create `apps/web/src/pages/profile/notificationPreferences.module.css`; delete `apps/web/src/styles/NotificationPreferences.module.css`; modify both allowlists.
+
+The page is `PageHeader` "Notification preferences", with `backHref="/notifications"` and `backLabel="Notifications"`. It then shows one of these:
+
+- `LoadingState variant="detail"`
+- `ErrorState` with retry and no form (decision 7)
+- the form (decision 8), in two `section`s with `h2`s: "Push notifications", then "Notification types".
+
+The fields:
+
+| Field | Control | Label | Description | Options |
+|---|---|---|---|---|
+| `push_notifications` | `Switch` | "Push notifications" | "Receive alerts even when the app is closed." | — |
+| `notify_chat` | `Radio.Group` | "Chat messages" | "New messages from your conversations" | "Every message", "Batched, every 30 minutes", "Off" |
+| `notify_comments` | `Switch` | "Comments" | "When someone comments on your post" | — |
+| `notify_likes` | `Radio.Group` | "Likes" | "When people like your posts" | "Every like", "When 5 or more likes arrive", "Off" |
+| emergency alerts | `Switch`, `checked disabled` | "Emergency alerts" | "Verified metro-wide emergency broadcasts. Always on for your safety." | — |
+
+The form ends with Save preferences (`type="submit"`) and Cancel (`Button component={Link} href="/notifications" variant="default"`).
+
+- [ ] **Step 1: Rewrite the test** over a mocked `useUserSettings`:
+  - `getByRole('switch', { name: 'Push notifications' })` and `getByRole('radiogroup', { name: 'Chat messages' })` exist, and so does every other control in the table.
+  - Choosing "Off" under Likes calls `setValue('notify_likes', 'off')`.
+  - The error state has no Save preferences button.
+  - Submitting calls `save`. While `saving`, the button has `aria-disabled="true"` and is not `disabled`.
+  - A true result calls `notify.success('Preferences saved.')`. A false one calls `notify.error` with decision 8's sentence.
+  - The `h1` has no emoji.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/pages/profile/notifications.test.tsx`
+- [ ] **Step 3: Implement.**
+  - Delete `styles/NotificationPreferences.module.css` and take it off the CSS allowlist.
+  - Regenerate the raw-element allowlist with `node apps/web/eslint/write-raw-element-allowlist.mjs`. Check that the diff only deletes the `profile/notifications` line.
+- [ ] **Step 4: Run the page tests, then `npm run lint:guards` and `npm run lint --workspace=apps/web`.** All pass. The raw-element list is down to 4 files.
+- [ ] **Step 5: Commit** as `feat(web): rebuild notification preferences`.
+
+### Task 9b.10: `PendingPostCard` and `ReportCard`
+
+**Files:** create `apps/web/src/components/moderation/PendingPostCard.tsx`, `ReportCard.tsx`, a shared `moderationCard.module.css`, and a test for each.
+
+```ts
+interface ModerationCardBusy {
+  /** This card's running action: that button shows a Loader and aria-busy. */
+  busyAction: ModerationAction | null;
+  /** Any action on the page is running: every button is aria-disabled. */
+  locked: boolean;
+}
+
+export interface PendingPostCardProps extends ModerationCardBusy {
+  post: Post;
+  now: Date;
+  onApprove: () => void;
+  onRemove: () => void;
+}
+
+export interface ReportCardProps extends ModerationCardBusy {
+  report: ReportWithUsers;
+  /** The reported post, when the report is about a post that still exists. */
+  post: Post | undefined;
+  now: Date;
+  onDismiss: () => void;
+  onRemovePost: () => void;
+  /** Called with the target's id and display name; absent when there is no one to ban. */
+  onBan: (targetUserId: string, name: string) => void;
+}
+```
+
+`PendingPostCard` is an `article` with `tabIndex={-1}`, labelled by its `h3`, which holds a link to `/posts/<id>`. Under it are the meta line ("by Ram S. · Austin, TX · 2h ago"), a 280-character preview, the post's tags as `TagChip`s, then Approve and Remove.
+
+`ReportCard` is an `article` with `tabIndex={-1}`, labelled by its `h3`, the reason (decision 14). Under it are the description, and then what the report is about:
+
+- **A post:** its title (or "Post no longer available") and a View post link.
+- **A member:** a View member link.
+- **A message:** the privacy note.
+
+Then "Reported by Sita R. · 1h ago", and then its actions:
+
+- Dismiss, always.
+- Remove post, for a post.
+- Ban author, for a post whose author is known.
+- Ban user, for a member.
+
+Every button follows decision 12. A pressed button ignores the press while `locked`.
+
+- [ ] **Step 1: Write the failing tests.**
+  - `getByRole('article', { name: 'Flood help needed' })` exists.
+  - The meta line uses public names.
+  - A 300-character description is cut to 280 plus "…".
+  - With `locked`, every button has `aria-disabled="true"`, none is `disabled`, and clicking one calls nothing.
+  - With `busyAction: 'approve'`, Approve has `aria-busy="true"` and keeps its name "Approve", and Remove has no `aria-busy`. The `Loader` has no role to query, and adding hidden text would change the button's name, which the busy-controls rule forbids.
+  - For `ReportCard`:
+    - The `h3` is the reason.
+    - A post report with no post says "Post no longer available" and has no Ban author.
+    - A user report links to `/users/<id>` and offers Ban user.
+    - A message report shows the privacy note and only Dismiss.
+    - `onBan` receives `(author_id, 'Ram S.')` for Ban author, and `(target_id, 'this member')` for Ban user.
+- [ ] **Step 2: Run and watch them fail.** `npm run test --workspace=apps/web -- src/components/moderation`
+- [ ] **Step 3: Implement**, with the CSS on semantic tokens only. The pending card's accent uses the `--warning` pair and the report card's uses `--danger`, as the old `.cardPending` and `.cardReport` did. Use only token names that exist in `tokens.css`, because nothing guards undefined ones yet.
+- [ ] **Step 4: Run and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): add PendingPostCard and ReportCard`.
+
+### Task 9b.11: Rebuild the moderation page
+
+**Files:** rewrite `apps/web/src/pages/moderation.page.tsx` and `moderation.test.tsx`; create `apps/web/src/pages/moderation.module.css`; delete `apps/web/src/styles/Moderation.module.css`; modify `scripts/guard-css-tokens.allowlist.json`.
+
+The page starts with `PageHeader` "Moderation", described as "Review Emergency submissions and community reports."
+
+- **A non-moderator** sees `EmptyState` "Moderator access required", "You need moderator access to view this page."
+- **A moderator** sees one of these:
+  - `LoadingState`
+  - `ErrorState` with retry (decision 9)
+  - two `section`s, "Pending posts" and "Open reports". Each has an `h2` with `tabIndex={-1}` and its count text (decision 14), then its cards, or a `Text` "No posts waiting for review." / "No open reports."
+
+The handlers:
+
+- **Approve and Dismiss** call the hook, then `notify.success` ("Post approved and published.", "Report dismissed.") or `notify.error(result.message)`.
+- **Remove, Remove post and Ban** first await `useConfirm` with decision 11's options, and do nothing on cancel. Their successes read "Post removed.", "Post removed and report closed." and "{name} has been banned."
+- **Focus:** before an action it records the acting card's section and index. After a success, once the section's list has committed, and only if `isFocusStranded()`, it focuses the card now at that index, then the card before it, then the section `h2` (decision 12).
+
+- [ ] **Step 1: Rewrite the test** over a mocked `useModerationQueue` and a mocked `useConfirm`:
+  - A non-moderator sees the access message and no sections.
+  - Each state renders.
+  - Remove opens the confirm with `danger: true`. Cancelling calls nothing. Confirming calls `removePost` and toasts.
+  - Ban confirms before `banUser`.
+  - Approve doesn't confirm.
+  - A failed result toasts its message.
+  - After approving the first of two pending posts, with the list rerendered without it and focus on `<body>`, focus is on the second card's `article`. After approving the only one, it is on the "Pending posts" `h2`.
+  - `window.confirm` is never called: spy on it and assert no calls.
+- [ ] **Step 2: Run and watch it fail.** `npm run test --workspace=apps/web -- src/pages/moderation.test.tsx`
+- [ ] **Step 3: Implement.** Then delete `styles/Moderation.module.css` and take it off the CSS allowlist.
+- [ ] **Step 4: Run the page tests, `npm run lint:guards` and `npm run lint --workspace=apps/web`.** All pass. The CSS allowlist holds only PR 10's four stylesheets.
+- [ ] **Step 5: Commit** as `feat(web): rebuild the moderation queue`.
+
+### Task 9b.12: E2E, baselines, keyboard, docs and the PR
+
+**Files:** a new `apps/web/e2e/tests/15-notifications.spec.ts`; `apps/web/e2e/tests/phone/navigation.spec.ts`; `docs/architecture/web-ui-system.md`; new `docs/product/features/notifications.md` and `moderation.md`; `docs/INDEX.md`.
+
+- [ ] **Step 1: Scope the phone spec.** `navigation.spec.ts:49`'s `/notifications/i` heading becomes `{ level: 1, name: 'Notifications' }`.
+- [ ] **Step 2: Add `15-notifications.spec.ts`**, over a stateful mock of `notifications` and `user_settings`, as `14-messages.spec.ts` mocks chat.
+  - **Notifications page:**
+    - It lists notifications under "Today" with "2 unread" beside the `h1`.
+    - Opening one navigates to its post and sends the read `PATCH`.
+    - Delete removes the row and leaves focus on the next row.
+    - Mark all as read clears the count, and focus lands on Preferences.
+  - **Preferences:**
+    - A failed settings read shows the error and no Save preferences.
+    - Toggling Comments by its label and saving sends the upsert and shows "Preferences saved."
+  - **Moderation:** route `users` for the test user with `is_moderator: true`, registered after `mockSupabaseLoggedIn`, since Playwright tries the most recent route first.
+    - Remove opens a dialog with focus on Cancel.
+    - Cancel keeps the card.
+    - Confirming removes it and focuses the next card.
+  - **At 375px,** none of the three pages overflows.
+- [ ] **Step 3: Run the e2e suite.** `npm run test:e2e:web`
+- [ ] **Step 4: Re-baseline `notifications`** in Docker (`npm run test:visual:docker --workspace=apps/web -- --update`) and review both PNGs. Restore any other page that changed without cause, as 8a and 9a did. `a11y-baseline.json` stays `{}`. Preferences and moderation have no baseline: screenshot them by eye at 1280 and 375.
+- [ ] **Step 5: Update the docs.**
+  - **`web-ui-system.md`:** add `NotificationList`, `PendingPostCard`, `ReportCard` and the three hooks. Add Save preferences, Mark all as read and the moderation actions to the busy-controls list. Add the notification delete, Mark all as read and the moderation cards to the focus-after-removal list.
+  - **New feature docs, both listed in `docs/INDEX.md`:**
+    - `notifications.md`: what the page, the bell and preferences do today — grouping, paging, realtime, the bell's reloads, and the failure messages.
+    - `moderation.md`: the queue, its confirmations, one action at a time, and the ban side effect.
+- [ ] **Step 6: Run the full gate.** `npm run lint`, `lint:guards`, `type-check`, `test`, `test:e2e:web`, `test:visual:web` and `docs:check`.
+- [ ] **Step 7: Walk the keyboard.** Keep the steps as e2e cases where they fit, as 8a did.
+  - **Notifications:**
+    - Tab goes Mark all as read → Preferences → each row's open button → its Delete.
+    - Enter on Delete keeps focus in the list.
+  - **Preferences:**
+    - Tab reaches each switch and each radio group.
+    - Arrow keys move within a radio group.
+    - Space toggles a switch.
+    - Enter anywhere in the form submits it, and focus stays on Save preferences while it saves.
+  - **Moderation:**
+    - Tab reaches each card's link and buttons.
+    - The confirm opens with focus on Cancel, and Escape closes it and returns focus to the button that opened it.
+    - After an action, focus is on the next card.
+- [ ] **Step 8: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`, then `gh pr edit <number> --add-reviewer @copilot`. Update the tracker row to `In Review (PR #NN)`.
+
+**Routed to PR 10 at planning time:** mobile's `NotificationPreferencesScreen.tsx:21` copy of the defaults onto `DEFAULT_USER_SETTINGS`, and mobile's `NotificationsScreen.tsx` grouping onto `groupNotifications` — `apps/mobile/` is out of this overhaul's scope.
 
 ## PR 10 — Static pages + cleanup (`feat/web-ui-cleanup`)
 
