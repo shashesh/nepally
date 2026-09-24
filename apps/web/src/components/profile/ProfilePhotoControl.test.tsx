@@ -184,7 +184,7 @@ describe('ProfilePhotoControl', () => {
     expect(props.onRemove).toHaveBeenCalledTimes(1);
   });
 
-  it('marks both buttons aria-disabled/data-disabled (not natively disabled) and announces "Updating photo…" while busy', () => {
+  it('marks both buttons aria-disabled (not natively disabled) and announces "Updating photo…" while busy', () => {
     renderControl({ photoUrl: 'https://example.com/me.jpg', busy: true });
 
     const addButton = screen.getByRole('button', { name: 'Change Photo' });
@@ -192,8 +192,6 @@ describe('ProfilePhotoControl', () => {
 
     expect(addButton.getAttribute('aria-disabled')).toBe('true');
     expect(removeButton.getAttribute('aria-disabled')).toBe('true');
-    expect(addButton.getAttribute('data-disabled')).toBe('true');
-    expect(removeButton.getAttribute('data-disabled')).toBe('true');
     expect(addButton.hasAttribute('disabled')).toBe(false);
     expect(removeButton.hasAttribute('disabled')).toBe(false);
 

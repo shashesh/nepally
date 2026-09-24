@@ -82,13 +82,17 @@ describe('EventResponseControl', () => {
     expect(document.activeElement).toBe(going);
   });
 
-  it('keeps the pressed state visible while busy, so it never takes Mantine’s grey', () => {
+  it('keeps the pressed state while busy: aria-disabled, never natively disabled', () => {
     const { interested, going } = renderControl('going', { busy: true });
 
-    // data-disabled would repaint both buttons flat grey and hide the choice
-    // the member just made; FollowButton is the same exception.
-    expect(going.getAttribute('data-disabled')).toBeNull();
-    expect(interested.getAttribute('data-disabled')).toBeNull();
+    // A disabled Mantine button repaints flat grey and hides the choice the
+    // member just made (FollowButton is the same exception), so busy is
+    // aria-disabled only and the pressed state survives it. The colour
+    // itself is covered by the visual baseline.
+    for (const button of [interested, going]) {
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      expect((button as HTMLButtonElement).disabled).toBe(false);
+    }
     expect(going.getAttribute('aria-pressed')).toBe('true');
     expect(interested.getAttribute('aria-pressed')).toBe('false');
   });

@@ -442,6 +442,19 @@ describe('CreatePostPage', () => {
   });
 
   describe('tags', () => {
+    it('says nothing about tags on load, and asks for one once the last is cleared', async () => {
+      render(<CreatePostPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());
+
+      expect(screen.queryByText('Please select at least 1 tag')).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: /Housing/ }));
+      expect(screen.queryByText('Please select at least 1 tag')).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: /Housing/ }));
+      expect(screen.getByText('Please select at least 1 tag')).toBeDefined();
+    });
+
     it('reports which tags are chosen', async () => {
       render(<CreatePostPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /Housing/ })).toBeDefined());

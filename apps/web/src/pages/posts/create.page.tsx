@@ -45,6 +45,9 @@ export default function CreatePostPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  // Post stays disabled until the tags are valid, so "select a tag" can never
+  // come from a submit: it waits until the member has changed a chip.
+  const [tagsTouched, setTagsTouched] = useState(false);
   const [photos, setPhotos] = useState<UploaderPhoto[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isGlobal, setIsGlobal] = useState(false);
@@ -381,11 +384,14 @@ export default function CreatePostPage() {
               };
             })}
             value={selectedTagIds}
-            onChange={setSelectedTagIds}
+            onChange={(next) => {
+              setTagsTouched(true);
+              setSelectedTagIds(next);
+            }}
             max={MAX_TAGS_PER_POST}
             error={
               tagsError ??
-              (!tagsValid && !tagsLoading ? 'Please select at least 1 tag' : undefined)
+              (tagsTouched && !tagsValid && !tagsLoading ? 'Please select at least 1 tag' : undefined)
             }
           />
 

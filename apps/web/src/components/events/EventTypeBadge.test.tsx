@@ -37,4 +37,14 @@ describe('EventTypeBadge (web)', () => {
     expect(readableText(text.parentElement!)).toBe(label);
     expect(screen.getByText(icon).closest('[aria-hidden="true"]')).not.toBeNull();
   });
+
+  it.each(TYPES)('colours the %s badge through its data-type hook', (type, _icon, label) => {
+    render(React.createElement(EventTypeBadge, { type }));
+
+    // data-type is the badge's documented contract with its stylesheet
+    // (the --event-<type> tokens), so asserting it is allowed; Mantine's own
+    // data-* attributes are not.
+    const badge = screen.getByText(label).closest('[data-type]');
+    expect(badge?.getAttribute('data-type')).toBe(type);
+  });
 });
