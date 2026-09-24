@@ -47,6 +47,9 @@ describe('Home (index page)', () => {
     expect(screen.getByTestId('landing-page')).toBeDefined();
     expect(screen.queryByTestId('feed-page')).toBeNull();
     expect(document.querySelector('title')?.textContent).toBe('Nepally - The Nepali community in the USA');
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toMatch(
+      /housing, jobs, help, events and a local marketplace/
+    );
     // React hoists <title> and <meta> into document.head; Next provides the viewport meta itself.
     expect(document.querySelector('meta[name="viewport"]')).toBeNull();
   });

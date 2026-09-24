@@ -20,7 +20,7 @@ export default function Home() {
         <title>Nepally - The Nepali community in the USA</title>
         <meta
           name="description"
-          content="Community platform for the Nepalese diaspora in the USA. Find housing, jobs, emergency help, and travel companions."
+          content="The Nepali community in the USA, organized by where you live. Find housing, jobs, help, events and a local marketplace near you."
         />
       </Head>
       <LandingPage />
