@@ -93,6 +93,9 @@ export interface UserSettings {
   updated_at?: string;
 }
 
+/** The preferences a member edits; what upsertUserSettings writes. */
+export type UserSettingsValues = Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>;
+
 /** Auth result types */
 export interface EmailAuthResult {
   user?: { id: string; email: string };

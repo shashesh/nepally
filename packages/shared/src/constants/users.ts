@@ -1,3 +1,5 @@
+import type { UserSettingsValues } from '../types/user';
+
 /**
  * Users table column visibility
  *
@@ -57,3 +59,17 @@ export const PROFILE_PHOTO_SIZE_PX = 500;
  * covers real camera output while catching the pathological cases.
  */
 export const MAX_PROFILE_PHOTO_SOURCE_BYTES = 15 * 1024 * 1024;
+
+/**
+ * A member's notification preferences before they save any. Mirrors the
+ * column defaults of user_settings in 001_schema.sql.
+ */
+export const DEFAULT_USER_SETTINGS: Readonly<UserSettingsValues> = {
+  email_notifications: true,
+  push_notifications: true,
+  emergency_alerts: true,
+  metro_area_alerts: true,
+  notify_chat: 'all',
+  notify_comments: true,
+  notify_likes: 'grouped',
+};
