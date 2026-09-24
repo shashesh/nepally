@@ -1,0 +1,54 @@
+.page {
+  max-width: var(--layout-content-width);
+  margin: 0 auto;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--card-padding);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.switchRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.switchDescription {
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+@media (max-width: $mantine-breakpoint-sm) {
+  .page {
+    padding: var(--space-4) var(--space-3);
+  }
+}
