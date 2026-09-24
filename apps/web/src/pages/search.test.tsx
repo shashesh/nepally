@@ -107,6 +107,23 @@ describe('SearchPage', () => {
     expect(mocks.replace).toHaveBeenCalledWith('/search?q=thapa&tab=posts', undefined, { shallow: true, scroll: false });
   });
 
+  it('scrolls each result tab into view when it takes focus', () => {
+    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView');
+    try {
+      render(<SearchPage />);
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs).toHaveLength(4);
+      for (const tab of tabs) {
+        scrollIntoView.mockClear();
+        fireEvent.focus(tab);
+        expect(scrollIntoView).toHaveBeenCalledTimes(1);
+        expect(scrollIntoView.mock.contexts[0]).toBe(tab);
+      }
+    } finally {
+      scrollIntoView.mockRestore();
+    }
+  });
+
   it('widens the scope through the URL', () => {
     render(<SearchPage />);
     fireEvent.click(screen.getByLabelText('All metros'));

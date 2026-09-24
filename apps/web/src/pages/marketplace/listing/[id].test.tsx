@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '../../../test-utils';
+import { fireEvent, render, screen, waitFor, within } from '../../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   getListingById,
@@ -305,6 +305,20 @@ describe('ListingDetailPage', () => {
     expect(
       screen.getByRole('link', { name: 'Food & Restaurants' }).getAttribute('href')
     ).toBe('/marketplace/food-restaurants');
+  });
+
+  it('marks the current crumb and keeps the separators out of the reading order', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(ListingDetailPage));
+    const nav = await screen.findByRole('navigation', { name: 'Breadcrumb' });
+
+    const current = within(nav).getByText(MOCK_LISTING.title);
+    expect(current.getAttribute('aria-current')).toBe('page');
+    const separators = within(nav).getAllByText('›');
+    expect(separators.length).toBeGreaterThan(0);
+    for (const separator of separators) {
+      expect(separator.closest('[aria-hidden="true"]')).not.toBeNull();
+    }
   });
 
   it('descends from h1 to h2 with no skipped level', async () => {

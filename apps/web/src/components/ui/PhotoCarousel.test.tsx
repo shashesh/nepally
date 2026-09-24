@@ -59,6 +59,26 @@ describe('PhotoCarousel', () => {
     expect(screen.getByRole('img', { name: 'Post image 1' }).getAttribute('src')).toContain('x1.jpg');
   });
 
+  it('loads the first photo with high priority when it is above the fold', () => {
+    render(<PhotoCarousel photos={photos} alt="Post image" priority />);
+
+    const image = screen.getByRole('img', { name: 'Post image 1' });
+    expect(image.getAttribute('fetchpriority')).toBe('high');
+    expect(image.getAttribute('loading')).not.toBe('lazy');
+  });
+
+  it('loads photos lazily without priority, and only the first photo takes it', () => {
+    const { unmount } = render(<PhotoCarousel photos={photos} alt="Post image" />);
+    expect(screen.getByRole('img', { name: 'Post image 1' }).getAttribute('loading')).toBe('lazy');
+    unmount();
+
+    render(<PhotoCarousel photos={photos} alt="Post image" priority />);
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+    const second = screen.getByRole('img', { name: 'Post image 2' });
+    expect(second.getAttribute('fetchpriority')).not.toBe('high');
+    expect(second.getAttribute('loading')).toBe('lazy');
+  });
+
   it('leaves the photo inert when it cannot be opened', () => {
     render(<PhotoCarousel photos={['/only.jpg']} alt="Post image" />);
 

@@ -8,7 +8,14 @@ import { getShortMetroName, normalizeSearchInput } from '@nepally/shared';
 import type { SearchSuggestions, SearchTab } from '@nepally/shared';
 import { SearchResultItem, getSearchResultHref, type SearchResult } from '../components/search/SearchResultItem';
 import { buildSearchHref, parseSearchParams } from '../components/search/searchUrl';
-import { EmptyState, ErrorState, LoadingState, PageHeader } from '../components/ui';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  scrollFocusedTabIntoView,
+  scrollingTabsClassNames,
+} from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useLocation } from '../hooks/useLocation';
@@ -121,14 +128,20 @@ export default function SearchPage() {
 
       {state.error ? <ErrorState message="We couldn't load search results." onRetry={state.retry} /> : null}
 
-      <Tabs value={tab} onChange={(value) => value && updateUrl({ tab: value as SearchTab })} keepMounted={false}>
-        <Tabs.List aria-label="Result types" className={styles.tabs}>
+      <Tabs
+        value={tab}
+        onChange={(value) => value && updateUrl({ tab: value as SearchTab })}
+        keepMounted={false}
+        classNames={{ ...scrollingTabsClassNames, list: `${scrollingTabsClassNames.list} ${styles.tabs}` }}
+      >
+        <Tabs.List aria-label="Result types">
           {TABS.map((key) => {
             const count = key === 'all' ? totalCount : state.counts?.[key] ?? null;
             return (
               <Tabs.Tab
                 key={key}
                 value={key}
+                onFocus={scrollFocusedTabIntoView}
                 rightSection={count === null ? null : <Badge variant="light" color="ink" size="sm">{count}</Badge>}
               >
                 {TAB_LABELS[key]}

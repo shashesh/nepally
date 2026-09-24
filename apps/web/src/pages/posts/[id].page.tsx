@@ -511,6 +511,7 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
             <PhotoCarousel
               photos={postPhotos}
               alt="Post image"
+              priority
               onPhotoClick={(index) => openLightbox(postPhotos, index)}
             />
           )}

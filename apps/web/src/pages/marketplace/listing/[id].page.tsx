@@ -124,7 +124,7 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
       </Head>
       <div className={styles.container} data-category={slug}>
         <nav aria-label="Breadcrumb">
-          <Breadcrumbs className={styles.breadcrumbs} separator="›">
+          <Breadcrumbs className={styles.breadcrumbs} separator={<span aria-hidden="true">›</span>}>
             <Anchor component={Link} href="/marketplace" className={styles.crumb}>
               Marketplace
             </Anchor>
@@ -137,14 +137,16 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
                 {listing.category.name}
               </Anchor>
             )}
-            <span className={styles.crumbCurrent}>{listing.title}</span>
+            <span aria-current="page" className={styles.crumbCurrent}>
+              {listing.title}
+            </span>
           </Breadcrumbs>
         </nav>
 
         <div className={styles.layout}>
           <div className={styles.main}>
             {listing.photos.length > 0 && (
-              <PhotoCarousel photos={listing.photos} alt={listing.title} />
+              <PhotoCarousel photos={listing.photos} alt={listing.title} priority />
             )}
 
             <section className={styles.section}>
