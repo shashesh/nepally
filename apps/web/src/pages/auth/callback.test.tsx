@@ -10,6 +10,11 @@ const callbackMocks = vi.hoisted(() => ({
   onAuthStateChangeMock: vi.fn(),
   getSessionMock: vi.fn(),
   finishSignInMock: vi.fn(),
+  refreshUserMock: vi.fn(),
+}));
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ refreshUser: callbackMocks.refreshUserMock }),
 }));
 
 vi.mock('next/router', () => ({
@@ -74,6 +79,7 @@ describe('AuthCallbackPage', () => {
     });
     callbackMocks.getSessionMock.mockResolvedValue({ data: { session: null } });
     callbackMocks.finishSignInMock.mockResolvedValue({ destination: '/feed' });
+    callbackMocks.refreshUserMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -91,6 +97,28 @@ describe('AuthCallbackPage', () => {
     await fireAuthEvent('SIGNED_IN');
     expect(callbackMocks.finishSignInMock).toHaveBeenCalledWith(expect.anything(), SESSION);
     expect(mockPush).toHaveBeenCalledWith('/onboarding/zip');
+  });
+
+  it('reloads the signed-in member before navigating, so the next page sees the new profile', async () => {
+    // AuthContext read the profile when the session arrived, before finishSignIn created it.
+    const order: string[] = [];
+    callbackMocks.refreshUserMock.mockImplementation(async () => {
+      order.push('refreshUser');
+    });
+    mockPush.mockImplementation(() => {
+      order.push('push');
+    });
+    callbackMocks.finishSignInMock.mockResolvedValue({ destination: '/onboarding/zip' });
+    render(<AuthCallbackPage />);
+    await fireAuthEvent('SIGNED_IN');
+    expect(order).toEqual(['refreshUser', 'push']);
+  });
+
+  it('does not reload the member when finishSignIn fails', async () => {
+    callbackMocks.finishSignInMock.mockResolvedValue({ error: 'nope' });
+    render(<AuthCallbackPage />);
+    await fireAuthEvent('SIGNED_IN');
+    expect(callbackMocks.refreshUserMock).not.toHaveBeenCalled();
   });
 
   it('runs finishSignIn from getSession when the session already exists', async () => {

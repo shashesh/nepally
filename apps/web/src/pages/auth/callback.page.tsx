@@ -6,6 +6,7 @@ import { Button, Group, Loader, Text } from '@mantine/core';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { finishSignIn } from '../../lib/authCallback';
+import { useAuth } from '../../hooks/useAuth';
 import { AuthCard } from '../../components/auth/AuthCard';
 
 type CallbackState = { kind: 'working' } | { kind: 'expired' } | { kind: 'failed'; message: string };
@@ -48,6 +49,7 @@ function FailedCard({ message, onRetry }: { message: string; onRetry: () => void
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [state, setState] = useState<CallbackState>({ kind: 'working' });
 
   useEffect(() => {
@@ -73,6 +75,13 @@ export default function AuthCallbackPage() {
         setState({ kind: 'failed', message: result.error });
         return;
       }
+      // AuthContext read the profile when the session arrived, before finishSignIn
+      // created it, so a new member is still null there; onboarding would send them
+      // to /login. Setting the user swaps Layout's shell, which remounts this page:
+      // this run then stops at `mounted`, and the new one repeats the (idempotent)
+      // steps and navigates.
+      await refreshUser();
+      if (!mounted) return;
       void router.push(result.destination);
     }
 

@@ -350,6 +350,40 @@ test.describe('Onboarding', () => {
 });
 
 test.describe('Auth callback', () => {
+  test('a first sign-in lands on onboarding, not login, once its profile exists', async ({ page }) => {
+    // Through the real AuthProvider and Layout: the provider reads the profile when
+    // the session arrives, before the callback creates it, so the callback must
+    // reload the member or onboarding sees nobody and sends them to /login.
+    let profileCreated = false;
+    const profile = { ...MOCK_USER_PROFILE, metro_area_id: undefined, trust_level: 1 };
+    await injectAuthSession(page);
+    await mockSupabaseLoggedIn(page);
+    await page.route('**/rest/v1/rpc/get_my_profile**', async (route) => {
+      const body = profileCreated ? profile : null;
+      await route.fulfill({
+        status: 200,
+        headers: JSON_HEADERS,
+        body: JSON.stringify(wantsObject(route) ? body : body ? [body] : []),
+      });
+    });
+    await page.route('**/rest/v1/rpc/mark_user_verified**', async (route) => {
+      await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify([profile]) });
+    });
+    await page.route('**/rest/v1/users**', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.fallback();
+        return;
+      }
+      profileCreated = true;
+      await route.fulfill({ status: 201, headers: JSON_HEADERS, body: '' });
+    });
+
+    await page.goto('/auth/callback');
+    await expect(page).toHaveURL(/\/onboarding\/zip$/, { timeout: 10_000 });
+    await expect(page.locator('main').getByRole('heading', { level: 1, name: 'Where are you?' })).toBeVisible();
+    expect(page.url()).not.toContain('/login');
+  });
+
   test('a failed profile write ends on the failed state, and Try again runs it again', async ({ page }) => {
     await injectAuthSession(page);
     await mockUnhandledRest(page);
