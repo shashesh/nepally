@@ -152,6 +152,37 @@ describe('useMessageThread', () => {
       expect(mocks.removeChannel).toHaveBeenCalledWith(CHANNEL);
     });
 
+    it('ignores an event still in flight after a failed load left the channel', async () => {
+      mocks.getMessages.mockResolvedValue({ error: new Error('boom') });
+      const { result } = await renderLoaded();
+      const before = result.current.messages;
+      mocks.markAsRead.mockClear();
+
+      await act(async () => subscription!.onInsert(message('m3', PARTNER_ID)));
+
+      expect(result.current.messages).toBe(before);
+      expect(mocks.markAsRead).not.toHaveBeenCalled();
+    });
+
+    it('ignores an event still in flight after not-found left the channel', async () => {
+      mocks.getConversations.mockResolvedValue({ data: [conversation('conv-0')] });
+      const { result } = await renderLoaded();
+
+      await act(async () => subscription!.onInsert(message('m3', PARTNER_ID)));
+
+      expect(result.current.messages).toEqual([]);
+      expect(mocks.markAsRead).not.toHaveBeenCalled();
+    });
+
+    it('leaves the channel only once when a failed load is followed by unmount', async () => {
+      mocks.getMessages.mockResolvedValue({ error: new Error('boom') });
+      const { unmount } = await renderLoaded();
+
+      unmount();
+
+      expect(mocks.removeChannel).toHaveBeenCalledTimes(1);
+    });
+
     it('keeps a message that arrives while the thread is still loading', async () => {
       const conversations = deferred<{ data: ConversationWithParticipant[] }>();
       mocks.getConversations.mockReturnValue(conversations.promise);

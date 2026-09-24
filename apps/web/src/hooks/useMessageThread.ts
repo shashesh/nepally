@@ -107,6 +107,16 @@ export function useMessageThread(conversationId: string | null, userId: string |
       }
     );
 
+    // Stops this subscription for good: callbacks and the load see
+    // `cancelled` straight away (removeChannel is a round trip, and events
+    // already in flight still arrive), and the channel is left only once,
+    // whether the access check or the cleanup gets there first.
+    function leave(): void {
+      if (cancelled) return;
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    }
+
     async function load(): Promise<void> {
       const [messagesResult, conversationsResult] = await Promise.all([
         getMessages(supabase, id, THREAD_MESSAGE_LIMIT),
@@ -115,14 +125,14 @@ export function useMessageThread(conversationId: string | null, userId: string |
       if (cancelled) return;
 
       if (messagesResult.error || conversationsResult.error) {
-        void supabase.removeChannel(channel);
+        leave();
         setState({ ...startState(false), error: LOAD_ERROR });
         return;
       }
 
       const partner = conversationsResult.data?.find((conversation) => conversation.id === id) ?? null;
       if (!partner) {
-        void supabase.removeChannel(channel);
+        leave();
         setState({ ...startState(false), notFound: true });
         return;
       }
@@ -140,10 +150,7 @@ export function useMessageThread(conversationId: string | null, userId: string |
 
     void load();
 
-    return () => {
-      cancelled = true;
-      void supabase.removeChannel(channel);
-    };
+    return leave;
   }, [conversationId, userId, attempt]);
 
   const reload = useCallback((): void => {
