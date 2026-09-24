@@ -45,8 +45,26 @@ describe('getNotifications', () => {
 
     const result = await getNotifications(supabase, 'u1');
 
-    expect(result.data).toBeUndefined();
-    expect(result.error).toBeInstanceOf(Error);
+    expect(result).toEqual({ error: expect.any(Error) });
+  });
+
+  it('reports hasMore when a full page comes back', async () => {
+    const rows = [{ id: 'n1' }, { id: 'n2' }];
+    const q = makeQuery({ data: rows, error: null });
+    const supabase = { from: vi.fn().mockReturnValue(q) } as unknown as SupabaseClient;
+
+    const result = await getNotifications(supabase, 'u1', 2, 0);
+
+    expect(result.hasMore).toBe(true);
+  });
+
+  it('reports no more after a short page', async () => {
+    const q = makeQuery({ data: [{ id: 'n1' }], error: null });
+    const supabase = { from: vi.fn().mockReturnValue(q) } as unknown as SupabaseClient;
+
+    const result = await getNotifications(supabase, 'u1', 2, 0);
+
+    expect(result.hasMore).toBe(false);
   });
 
   it('uses correct offset for pagination', async () => {

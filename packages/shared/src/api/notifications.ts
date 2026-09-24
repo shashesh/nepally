@@ -7,6 +7,8 @@ import type { Notification } from '../types/notification';
 
 export interface NotificationsResult {
   data?: Notification[];
+  /** True when a full page came back, so another may follow. */
+  hasMore?: boolean;
   error?: Error;
 }
 
@@ -36,8 +38,9 @@ export async function getNotifications(
     .order('sent_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) return { count: 0, error: new Error(error.message) } as NotificationsResult;
-  return { data: data as Notification[] };
+  if (error) return { error: new Error(error.message) };
+  const rows = (data ?? []) as Notification[];
+  return { data: rows, hasMore: rows.length === limit };
 }
 
 /**
