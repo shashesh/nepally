@@ -488,6 +488,7 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
                 photoUrl={post.author?.profile_photo}
                 trustLevel={post.author?.trust_level}
                 size="medium"
+                decorative
               />
             )}
             <div className={styles.authorInfo}>

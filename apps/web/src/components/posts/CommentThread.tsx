@@ -54,6 +54,7 @@ export function CommentThread({ thread, currentUserId, onReply, onDelete, onChat
             photoUrl={comment.author?.profile_photo}
             trustLevel={comment.author?.trust_level}
             size="small"
+            decorative
           />
         )}
 

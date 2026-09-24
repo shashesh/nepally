@@ -12,17 +12,26 @@ vi.mock('next/link', () => ({
   }),
 }));
 
-// Records what the trigger hands Avatar; the menu behaviour doesn't depend on
-// how the avatar draws.
+// Records what the trigger hands Avatar, then draws the real one.
 const avatarProps = vi.hoisted(() => ({ calls: [] as Array<{ name: string; toneKey?: string }> }));
-vi.mock('../Avatar', () => ({
-  default: (props: { name: string; toneKey?: string }) => {
-    avatarProps.calls.push(props);
-    return React.createElement('span', null, props.name);
-  },
-}));
+vi.mock('../Avatar', async () => {
+  const actual = await vi.importActual<typeof import('../Avatar')>('../Avatar');
+  return {
+    default: (props: React.ComponentProps<typeof actual.default>) => {
+      avatarProps.calls.push(props);
+      return React.createElement(actual.default, props);
+    },
+  };
+});
 
 describe('UserMenuTrigger', () => {
+  it('names its button once: the avatar inside it is decorative', () => {
+    render(<UserMenuTrigger userId="u1" name="Asha Kumar" photoUrl="https://example.com/asha.jpg" />);
+
+    expect(screen.getByRole('button', { name: 'Options for Asha Kumar' })).toBeDefined();
+    expect(screen.queryByRole('img', { name: /Asha/ })).toBeNull();
+  });
+
   it('passes a tone key through to the avatar, so a masked name keeps its colour', () => {
     avatarProps.calls = [];
     render(<UserMenuTrigger userId="u1" name="Bikash T." toneKey="Bikash Thapa" />);
