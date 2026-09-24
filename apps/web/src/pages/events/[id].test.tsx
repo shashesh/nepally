@@ -185,7 +185,7 @@ describe('EventDetailPage', () => {
       vi.mocked(getEventById).mockResolvedValue({ error: new Error('Event not found'), notFound: true });
       await renderPage();
 
-      expect(screen.getByText('Event not found')).toBeDefined();
+      expect(screen.getByRole('heading', { level: 1, name: 'Event not found' })).toBeDefined();
       expect(screen.getByText('It may have been deleted.')).toBeDefined();
       expect(screen.getByRole('link', { name: 'Back to events' }).getAttribute('href')).toBe('/events');
     });

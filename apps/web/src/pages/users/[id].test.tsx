@@ -191,7 +191,7 @@ describe('PublicProfilePage', () => {
     render(<PublicProfilePage />);
     await act(async () => {});
 
-    expect(screen.getByRole('heading', { name: 'Member not found' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'Member not found' })).toBeDefined();
     expect(screen.getByRole('link', { name: 'Back to feed' }).getAttribute('href')).toBe('/');
   });
 

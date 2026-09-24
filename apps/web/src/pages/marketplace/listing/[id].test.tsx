@@ -206,7 +206,7 @@ describe('ListingDetailPage', () => {
     mockGetListingById.mockResolvedValue({ error: new Error('Listing not found'), notFound: true });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('Listing not found')).toBeDefined();
+      expect(screen.getByRole('heading', { level: 1, name: 'Listing not found' })).toBeDefined();
     });
     expect(
       screen.getByRole('link', { name: 'Back to Marketplace' }).getAttribute('href')

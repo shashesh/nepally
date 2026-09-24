@@ -170,6 +170,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
       <ProfileShell title="Profile · Nepally" variant="state">
         <EmptyState
           title="Member not found"
+          titleOrder={1}
           description={profile.error ?? undefined}
           action={
             <Button component={Link} href="/">

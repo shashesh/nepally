@@ -18,8 +18,14 @@ describe('EmptyState', () => {
     expect(screen.getByRole('button', { name: 'Create post' })).toBeDefined();
   });
 
-  it('renders the title as a heading', () => {
+  it('renders the title as an h3 by default', () => {
     render(<EmptyState title="Nothing here" />);
-    expect(screen.getByRole('heading', { name: 'Nothing here' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 3, name: 'Nothing here' })).toBeDefined();
+  });
+
+  it('renders the title at the level it is given', () => {
+    render(<EmptyState title="Post not found" titleOrder={1} />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Post not found' })).toBeDefined();
+    expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
   });
 });

@@ -389,7 +389,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: null });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Post not found')).toBeDefined();
+      expect(screen.getByRole('heading', { level: 1, name: 'Post not found' })).toBeDefined();
     });
   });
 

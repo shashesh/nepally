@@ -7,9 +7,11 @@ export interface EmptyStateProps {
   title: string;
   description?: ReactNode;
   action?: ReactNode;
+  /** The heading level; 1 for a page whose empty state is its only heading. Default 3. */
+  titleOrder?: 1 | 2 | 3;
 }
 
-export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, titleOrder = 3 }: EmptyStateProps) {
   return (
     <div className={styles.root} role="status">
       {icon ? (
@@ -17,7 +19,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
           {icon}
         </div>
       ) : null}
-      <Title order={3} className={styles.title}>
+      <Title order={titleOrder} size="h3">
         {title}
       </Title>
       {description ? <Text className={styles.description}>{description}</Text> : null}

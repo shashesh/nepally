@@ -92,6 +92,7 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
         <EmptyState
           icon={<IconBuildingStore size={40} />}
           title="Listing not found"
+          titleOrder={1}
           description="It may have been removed by its owner."
           action={<Anchor component={Link} href="/marketplace">Back to Marketplace</Anchor>}
         />

@@ -450,6 +450,7 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
     return (
       <EmptyState
         title="Post not found"
+        titleOrder={1}
         description="This post may have been deleted."
         action={
           <Button component={Link} href="/feed">

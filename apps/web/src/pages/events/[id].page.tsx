@@ -136,6 +136,7 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
         {detail.notFound ? (
           <EmptyState
             title="Event not found"
+            titleOrder={1}
             description="It may have been deleted."
             action={
               <Button component={Link} href="/events">
