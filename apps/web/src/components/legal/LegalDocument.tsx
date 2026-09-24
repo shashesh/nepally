@@ -2,7 +2,7 @@ import React, { type ReactNode } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { LEGAL_LAST_UPDATED } from '@nepally/shared';
-import styles from '../../styles/Legal.module.css';
+import styles from './legal.module.css';
 
 interface LegalDocumentProps {
   title: string;
