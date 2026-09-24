@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, act } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ZIP_CODE_NOT_FOUND_MESSAGE } from '@nepally/shared';
 
 const zipMocks = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
@@ -134,10 +135,23 @@ describe('ZipCodePage', () => {
   });
 
   it('shows an unknown ZIP on the field', async () => {
-    zipMocks.getMetroByZipMock.mockResolvedValue({ error: new Error('not found'), data: null });
+    zipMocks.getMetroByZipMock.mockResolvedValue({ error: new Error(ZIP_CODE_NOT_FOUND_MESSAGE), data: null });
     render(<ZipCodePage />);
     await lookUp('10001');
     expect(descriptionOf(zipField())).toContain('ZIP code not found. Please double-check and try again.');
+  });
+
+  it('reports a failed lookup as retryable, not as an unknown ZIP', async () => {
+    const outage = new Error('fetch failed');
+    zipMocks.getMetroByZipMock.mockResolvedValue({ error: outage, data: null });
+    render(<ZipCodePage />);
+    await lookUp('10001');
+    expect(screen.getByRole('alert').textContent).toContain("Couldn't look up that ZIP code. Please try again.");
+    expect(descriptionOf(zipField())).not.toContain('ZIP code not found');
+    expect(zipField().getAttribute('aria-invalid')).not.toBe('true');
+    expect(zipMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'onboarding_zip_lookup_failed', error: outage })
+    );
   });
 
   it('moves to the confirm step and focuses its heading', async () => {

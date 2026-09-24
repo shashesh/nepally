@@ -8,6 +8,7 @@ import {
   cleanZipCode,
   getMetroByZip,
   isValidZipCode,
+  isZipCodeNotFoundError,
   logClientEvent,
   updateUserLocation,
 } from '@nepally/shared';
@@ -21,7 +22,8 @@ import styles from './onboarding.module.css';
 
 const INVALID_ZIP = 'Please enter a valid 5-digit ZIP code.';
 const UNKNOWN_ZIP = 'ZIP code not found. Please double-check and try again.';
-const DETECT_FAILED = "Couldn't detect your location. Please enter your ZIP code instead.";
+const LOOKUP_FAILED = "Couldn't look up that ZIP code. Please try again.";
+const DETECT_FAILED ="Couldn't detect your location. Please enter your ZIP code instead.";
 const SAVE_FAILED = 'Failed to save location. Please try again.';
 
 type ZipBusy = 'lookup' | 'detect' | null;
@@ -201,8 +203,14 @@ export default function ZipCodePage() {
       showStep(result.data, lookedUp);
       return;
     }
-    setUnknownZip(true);
-    zipRef.current?.focus();
+    // Only a missing row is an unknown ZIP; a query or network failure is retryable.
+    if (isZipCodeNotFoundError(result.error)) {
+      setUnknownZip(true);
+      zipRef.current?.focus();
+      return;
+    }
+    logClientEvent({ event: 'onboarding_zip_lookup_failed', context: { platform: 'web' }, error: result.error });
+    setAlert(LOOKUP_FAILED);
   }
 
   async function handleDetect() {
