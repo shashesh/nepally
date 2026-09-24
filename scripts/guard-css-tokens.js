@@ -2,21 +2,18 @@
 /**
  * Guard: web CSS Modules must use semantic design tokens.
  *
- * Fails on colour literals (hex, rgb/rgba, hsl/hsla, oklch/oklab) and on the
- * legacy design-system variables that legacy-aliases.css keeps alive during the
- * web UI overhaul. Files in guard-css-tokens.allowlist.json are skipped; an
- * allowlisted file that is now clean also fails, so the list only shrinks.
+ * Fails on colour literals (hex, rgb/rgba, hsl/hsla, oklch/oklab), named
+ * colours, primitive tokens and the legacy design-system variables, in every
+ * CSS Module under apps/web/src. There is no allowlist.
  * Spec: docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1.
  *
- *   node scripts/guard-css-tokens.js                    check
- *   node scripts/guard-css-tokens.js --write-allowlist  record current offenders
+ *   node scripts/guard-css-tokens.js
  */
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
 const TARGET_DIR = path.join(ROOT, 'apps/web/src');
-const ALLOWLIST_PATH = path.join(__dirname, 'guard-css-tokens.allowlist.json');
 const IGNORED_DIRS = new Set(['node_modules', '.next', 'coverage']);
 
 /** CSS named colours. `transparent` and `currentColor` are keywords, not literals, so they stay legal. */
@@ -85,48 +82,36 @@ function toRepoPath(filePath) {
   return path.relative(ROOT, filePath).replace(/\\/g, '/');
 }
 
-function main() {
-  const offenders = new Map();
-  for (const filePath of walk(TARGET_DIR)) {
-    const violations = findViolations(fs.readFileSync(filePath, 'utf8'));
-    if (violations.length > 0) offenders.set(toRepoPath(filePath), violations);
-  }
-
-  if (process.argv.includes('--write-allowlist')) {
-    fs.writeFileSync(ALLOWLIST_PATH, `${JSON.stringify([...offenders.keys()].sort(), null, 2)}\n`);
-    console.log(`Wrote ${offenders.size} files to ${toRepoPath(ALLOWLIST_PATH)}.`);
-    return;
-  }
-
-  const allowlist = new Set(
-    fs.existsSync(ALLOWLIST_PATH) ? JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8')) : []
+/**
+ * One error line per violation across `files`, as `path:line kind: text`.
+ * @param {Array<{ path: string, content: string }>} files
+ * @returns {string[]}
+ */
+function checkFiles(files) {
+  return files.flatMap((file) =>
+    findViolations(file.content).map(
+      (violation) => `${file.path}:${violation.line} ${violation.kind}: ${violation.text}`
+    )
   );
-  let failed = false;
+}
 
-  for (const [filePath, violations] of offenders) {
-    if (allowlist.has(filePath)) continue;
-    failed = true;
-    for (const violation of violations) {
-      console.error(`${filePath}:${violation.line} ${violation.kind}: ${violation.text}`);
-    }
-  }
+function main() {
+  const files = walk(TARGET_DIR).map((filePath) => ({
+    path: toRepoPath(filePath),
+    content: fs.readFileSync(filePath, 'utf8'),
+  }));
+  const errors = checkFiles(files);
 
-  for (const filePath of allowlist) {
-    if (!offenders.has(filePath)) {
-      failed = true;
-      console.error(`${filePath} is clean — remove it from scripts/guard-css-tokens.allowlist.json`);
-    }
-  }
-
-  if (failed) {
+  if (errors.length > 0) {
+    for (const error of errors) console.error(error);
     console.error('\nUse semantic tokens from apps/web/src/styles/tokens.css (docs/architecture/web-ui-system.md).\n');
     process.exit(1);
   }
 
-  console.log('CSS Modules use semantic tokens (outside the allowlist).');
+  console.log(`All ${files.length} CSS Modules use semantic tokens.`);
 }
 
-module.exports = { findViolations };
+module.exports = { checkFiles, findViolations };
 
 if (require.main === module) {
   main();

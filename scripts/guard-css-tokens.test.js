@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { findViolations } = require('./guard-css-tokens');
+const { checkFiles, findViolations } = require('./guard-css-tokens');
 
 test('flags hex, rgb, hsl and oklch colour literals', () => {
   const css = [
@@ -92,4 +92,26 @@ test('allows semantic tokens that merely start with a primitive family name', ()
 test('ignores colours inside comments but keeps line numbers', () => {
   const css = '/* was\n #fff */\n.a { color: #000; }';
   assert.deepEqual(findViolations(css).map((violation) => violation.line), [3]);
+});
+
+test('checkFiles reports one line per violation, naming the file and line', () => {
+  const content = ['.a {', '  color: #fff;', '}'].join('\n');
+  const errors = checkFiles([{ path: 'apps/web/src/a.module.css', content }]);
+  assert.deepEqual(errors, ['apps/web/src/a.module.css:2 colour literal: #fff']);
+});
+
+test('checkFiles reports nothing for a clean file', () => {
+  assert.deepEqual(checkFiles([{ path: 'apps/web/src/b.module.css', content: '.b { color: var(--text-1); }' }]), []);
+});
+
+test('checkFiles reports every offending file, with no allowlist to skip one', () => {
+  const errors = checkFiles([
+    { path: 'apps/web/src/styles/Old.module.css', content: '.a { color: var(--color-primary); }' },
+    { path: 'apps/web/src/c.module.css', content: '.c { color: var(--text-2); }' },
+    { path: 'apps/web/src/d.module.css', content: '.d { background: white; }' },
+  ]);
+  assert.deepEqual(errors, [
+    'apps/web/src/styles/Old.module.css:1 legacy token: var(--color-',
+    'apps/web/src/d.module.css:1 named colour: white',
+  ]);
 });
