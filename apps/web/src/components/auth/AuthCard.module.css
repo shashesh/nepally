@@ -44,3 +44,10 @@
   font-size: var(--font-size-sm);
   text-align: center;
 }
+
+/* A link inside running text needs more than its colour to stand out (WCAG 1.4.1; axe's link-in-text-block). */
+.body a,
+.footer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
