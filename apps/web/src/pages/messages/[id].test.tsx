@@ -1,224 +1,163 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../../test-utils';
+import { fireEvent, render, screen, waitFor } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatMessage, ConversationWithParticipant } from '@nepally/shared';
 
-type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
-
-const threadMocks = vi.hoisted(() => ({
-  useAuthMock: vi.fn(),
-  useRouterMock: vi.fn(),
-  getConversationsMock: vi.fn(),
-  getMessagesMock: vi.fn(),
-  sendMessageMock: vi.fn(),
-  markAsReadMock: vi.fn(),
-  subscribeToMessagesMock: vi.fn(),
-  formatRelativeTimeMock: vi.fn(),
-  removeChannelMock: vi.fn(),
+const mocks = vi.hoisted(() => ({
+  useAuth: vi.fn(),
+  useRouter: vi.fn(),
+  replace: vi.fn(),
+  useMessageThread: vi.fn(),
+  reload: vi.fn(),
+  send: vi.fn(),
+  alert: vi.fn(),
 }));
 
-vi.mock('../../hooks/useAuth', () => ({ useAuth: threadMocks.useAuthMock }));
-vi.mock('next/router', () => ({ useRouter: threadMocks.useRouterMock }));
-vi.mock('../../lib/supabase', () => ({
-  supabase: { removeChannel: threadMocks.removeChannelMock },
-}));
-vi.mock('@nepally/shared', async () => {
-  const actual = await vi.importActual<object>('@nepally/shared');
-  return {
-    ...actual,
-    getConversations: threadMocks.getConversationsMock,
-    getMessages: threadMocks.getMessagesMock,
-    sendMessage: threadMocks.sendMessageMock,
-    markAsRead: threadMocks.markAsReadMock,
-    subscribeToMessages: threadMocks.subscribeToMessagesMock,
-    formatRelativeTime: threadMocks.formatRelativeTimeMock,
-  };
-});
+vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
+vi.mock('../../hooks/useMessageThread', () => ({ useMessageThread: mocks.useMessageThread }));
+vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
 vi.mock('next/head', () => ({
-  default: ({ children }: { children: React.ReactNode }) =>
-    React.createElement(React.Fragment, null, children),
+  default: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: MockLinkProps) =>
-    React.createElement('a', { href, className }, children),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
+    { href, children, ...rest },
+    ref
+  ) {
+    return React.createElement('a', { href, ref, ...rest }, children);
+  }),
 }));
 
 import MessageThreadPage from './[id].page';
 
-const mockChannel = { id: 'channel-1' };
+const VIEWER = { id: 'viewer-1', full_name: 'Test User' };
+
+const PARTNER: ConversationWithParticipant = {
+  id: 'conv-1',
+  last_message: null,
+  last_message_time: null,
+  created_at: '2026-09-20T10:00:00Z',
+  other_user_id: 'partner-1',
+  other_user_name: 'Bikal Shrestha',
+  unread_count: 0,
+};
+
+const MESSAGE: ChatMessage = {
+  id: 'm1',
+  conversation_id: 'conv-1',
+  sender_id: 'partner-1',
+  text: 'Is the room still available?',
+  type: 'text',
+  read: false,
+  read_at: null,
+  timestamp: '2026-09-23T09:00:00Z',
+};
+
+function thread(overrides: Partial<ReturnType<typeof mocks.useMessageThread>> = {}) {
+  return {
+    messages: [],
+    partner: null,
+    loading: false,
+    error: null,
+    notFound: false,
+    reload: mocks.reload,
+    send: mocks.send,
+    ...overrides,
+  };
+}
 
 describe('MessageThreadPage', () => {
-  const mockReplace = vi.fn();
-  const mockUser = { id: 'user-1', full_name: 'Test User' };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    threadMocks.useRouterMock.mockReturnValue({
-      replace: mockReplace,
-      query: { id: 'conv-123' },
-    });
-    threadMocks.subscribeToMessagesMock.mockReturnValue(mockChannel);
-    threadMocks.getConversationsMock.mockResolvedValue({ data: [] });
-    threadMocks.markAsReadMock.mockResolvedValue({});
-    threadMocks.formatRelativeTimeMock.mockReturnValue('2h ago');
+    vi.stubGlobal('alert', mocks.alert);
+    mocks.useAuth.mockReturnValue({ user: VIEWER });
+    mocks.useRouter.mockReturnValue({ replace: mocks.replace, query: { id: 'conv-1' }, isReady: true });
+    mocks.useMessageThread.mockReturnValue(thread({ partner: PARTNER, messages: [MESSAGE] }));
   });
 
-  it('returns null and redirects when user is not logged in', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: null });
+  it('sends a signed-out visitor to log in', async () => {
+    mocks.useAuth.mockReturnValue({ user: null });
     render(<MessageThreadPage />);
-    expect(screen.queryByText('Loading messages...')).toBeNull();
+
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/login'));
+  });
+
+  it('asks for nothing until the router has the id', () => {
+    mocks.useRouter.mockReturnValue({ replace: mocks.replace, query: {}, isReady: false });
+    mocks.useMessageThread.mockReturnValue(thread());
+    render(<MessageThreadPage />);
+
+    expect(mocks.useMessageThread).toHaveBeenCalledWith(null, 'viewer-1');
+    expect(screen.getByRole('status').getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByText('Conversation not found')).toBeNull();
+  });
+
+  it('loads the conversation in the URL for the viewer', () => {
+    render(<MessageThreadPage />);
+
+    expect(mocks.useMessageThread).toHaveBeenCalledWith('conv-1', 'viewer-1');
+  });
+
+  it('shows a loading state under a heading', () => {
+    mocks.useMessageThread.mockReturnValue(thread({ loading: true }));
+    render(<MessageThreadPage />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toBeDefined();
+    expect(screen.getByRole('status').textContent).toContain('Loading conversation…');
+  });
+
+  it('offers a retry when the conversation fails to load', () => {
+    mocks.useMessageThread.mockReturnValue(thread({ error: "Couldn't load this conversation." }));
+    render(<MessageThreadPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(mocks.reload).toHaveBeenCalled();
     expect(screen.queryByRole('textbox')).toBeNull();
-    expect(screen.queryByRole('main')).toBeNull();
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 
-  it('shows loading state while fetching messages', () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockReturnValue(new Promise(() => {}));
+  it('says a conversation the viewer cannot see was not found, with no composer', () => {
+    mocks.useMessageThread.mockReturnValue(thread({ notFound: true }));
     render(<MessageThreadPage />);
-    expect(screen.getByText('Loading messages...')).toBeDefined();
+
+    expect(screen.getByText('Conversation not found')).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Back to Messages' }).getAttribute('href')).toBe('/messages');
+    expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('shows empty state when there are no messages', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockResolvedValue({ data: [] });
+  it('shows the thread under the partner’s public name, with the composer', () => {
     render(<MessageThreadPage />);
-    await waitFor(() => {
-      expect(screen.getByText('No messages yet. Say hello!')).toBeDefined();
-    });
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Bikal S.' })).toBeDefined();
+    expect(screen.getByRole('log', { name: 'Messages with Bikal S.' })).toBeDefined();
+    expect(screen.getByText('Is the room still available?')).toBeDefined();
+    expect(screen.getByRole('textbox', { name: 'Message Bikal S.' })).toBeDefined();
   });
 
-  it('shows error state when messages fail to load', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockResolvedValue({ data: null });
+  it('invites a first message in an empty thread', () => {
+    mocks.useMessageThread.mockReturnValue(thread({ partner: PARTNER }));
     render(<MessageThreadPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Could not load messages. Please try again.')).toBeDefined();
-      expect(screen.getByRole('button', { name: 'Retry' })).toBeDefined();
-    });
+
+    expect(screen.getByText('No messages yet. Say hello!')).toBeDefined();
+    expect(screen.getByRole('textbox', { name: 'Message Bikal S.' })).toBeDefined();
   });
 
-  it('renders messages when loaded', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockResolvedValue({
-      data: [
-        {
-          id: 'msg-1',
-          sender_id: 'user-1',
-          text: 'Hello there!',
-          timestamp: '2026-02-24T10:00:00Z',
-          read: true,
-        },
-        {
-          id: 'msg-2',
-          sender_id: 'user-2',
-          text: 'Hi back!',
-          timestamp: '2026-02-24T10:01:00Z',
-          read: false,
-        },
-      ],
-    });
+  it("sends through the thread's send", async () => {
+    mocks.send.mockResolvedValue(true);
     render(<MessageThreadPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Hello there!')).toBeDefined();
-      expect(screen.getByText('Hi back!')).toBeDefined();
-    });
+
+    const field = screen.getByRole('textbox', { name: 'Message Bikal S.' });
+    fireEvent.change(field, { target: { value: 'Yes, it is' } });
+    fireEvent.submit(field.closest('form')!);
+
+    await waitFor(() => expect(mocks.send).toHaveBeenCalledWith('Yes, it is'));
   });
 
-  it('shows read receipt for sent messages', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockResolvedValue({
-      data: [
-        { id: 'msg-1', sender_id: 'user-1', text: 'Sent msg', timestamp: '2026-02-24T10:00:00Z', read: true },
-      ],
-    });
-    render(<MessageThreadPage />);
-    await waitFor(() => {
-      expect(screen.getByText('✓✓')).toBeDefined();
-    });
-  });
-
-  it('sends a message when the form is submitted', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockResolvedValue({ data: [] });
-    threadMocks.sendMessageMock.mockResolvedValue({
-      data: { id: 'msg-new', sender_id: 'user-1', text: 'New message', timestamp: '2026-02-24T11:00:00Z', read: false },
-    });
-    render(<MessageThreadPage />);
-    await waitFor(() => expect(screen.getByText('No messages yet. Say hello!')).toBeDefined());
-    const input = screen.getByPlaceholderText('Type a message...');
-    fireEvent.change(input, { target: { value: 'New message' } });
-    fireEvent.submit(input.closest('form')!);
-    await waitFor(() => {
-      expect(threadMocks.sendMessageMock).toHaveBeenCalledWith(
-        expect.anything(),
-        'conv-123',
-        'user-1',
-        'New message'
-      );
-    });
-  });
-
-  it('disables send button when input is empty', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockResolvedValue({ data: [] });
-    render(<MessageThreadPage />);
-    await waitFor(() => expect(screen.queryByText('Loading messages...')).toBeNull());
-    const sendBtn = screen.getByRole('button', { name: 'Send message' });
-    expect(sendBtn.hasAttribute('disabled')).toBe(true);
-  });
-
-  it('renders back link to /messages', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockResolvedValue({ data: [] });
-    render(<MessageThreadPage />);
-    await waitFor(() => expect(screen.getByText('← Back')).toBeDefined());
-    expect(screen.getByText('← Back').closest('a')?.getAttribute('href')).toBe('/messages');
-  });
-
-  it('groups messages by date separator', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    const today = new Date().toISOString();
-    threadMocks.getMessagesMock.mockResolvedValue({
-      data: [
-        { id: 'msg-1', sender_id: 'user-1', text: 'Today msg', timestamp: today, read: false },
-      ],
-    });
-    render(<MessageThreadPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Today')).toBeDefined();
-    });
-  });
-
-  it('shows View Profile only in avatar menu within message thread', async () => {
-    threadMocks.useAuthMock.mockReturnValue({ user: mockUser });
-    threadMocks.getMessagesMock.mockResolvedValue({ data: [] });
-    const mockConversations = [
-      {
-        id: 'conv-123',
-        last_message: 'Hi',
-        last_message_time: '2026-02-24T10:00:00Z',
-        created_at: '2026-02-24T09:00:00Z',
-        other_user_id: 'user-2',
-        other_user_name: 'Other User',
-        other_user_photo: null,
-        other_user_trust_level: 1,
-        unread_count: 0,
-      },
-    ];
-
-    threadMocks.getConversationsMock.mockResolvedValue({ data: mockConversations });
-
+  it("opens the partner's profile from the avatar instead of an alert", async () => {
     render(<MessageThreadPage />);
 
-    await waitFor(() => {
-      expect(screen.getByLabelText('User options')).toBeDefined();
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal S.' }));
 
-    fireEvent.click(screen.getByLabelText('User options'));
-
-    await waitFor(() => {
-      expect(screen.getByText('👤 View Profile')).toBeDefined();
-    });
-    expect(screen.queryByText(/^Chat$/)).toBeNull();
+    expect((await screen.findByRole('menuitem', { name: 'View profile' })).getAttribute('href')).toBe('/users/partner-1');
+    expect(mocks.alert).not.toHaveBeenCalled();
   });
 });
