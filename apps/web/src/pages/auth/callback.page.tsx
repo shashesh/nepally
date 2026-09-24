@@ -5,7 +5,8 @@ import { useRouter } from 'next/router';
 import { Button, Group, Loader, Text } from '@mantine/core';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { finishSignIn } from '../../lib/authCallback';
+import { logClientEvent } from '@nepally/shared';
+import { FINISH_SIGN_IN_FAILED, finishSignIn } from '../../lib/authCallback';
 import { useAuth } from '../../hooks/useAuth';
 import { AuthCard } from '../../components/auth/AuthCard';
 
@@ -79,9 +80,25 @@ export default function AuthCallbackPage() {
       // created it, so a new member is still null there; onboarding would send them
       // to /login. Setting the user swaps Layout's shell, which remounts this page:
       // this run then stops at `mounted`, and the new one repeats the (idempotent)
-      // steps and navigates.
-      await refreshUser();
+      // steps and navigates. A refresh that throws or loads no profile would leave
+      // the member as nobody, so it fails rather than navigating.
+      let refreshed: Awaited<ReturnType<typeof refreshUser>> = null;
+      let refreshError: unknown = null;
+      try {
+        refreshed = await refreshUser();
+      } catch (error) {
+        refreshError = error;
+      }
       if (!mounted) return;
+      if (!refreshed) {
+        logClientEvent({
+          event: 'auth_callback_failed',
+          context: { step: 'refresh_user', provider: session.user.app_metadata?.provider },
+          error: refreshError ?? new Error('No profile after sign-in'),
+        });
+        setState({ kind: 'failed', message: FINISH_SIGN_IN_FAILED });
+        return;
+      }
       void router.push(result.destination);
     }
 

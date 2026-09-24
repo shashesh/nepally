@@ -12,7 +12,8 @@ interface AuthContextType {
   supabaseUser: SupabaseUser | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  /** Re-reads the member's profile; resolves with it, or null when none loaded. */
+  refreshUser: () => Promise<User | null>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -20,7 +21,7 @@ export const AuthContext = createContext<AuthContextType>({
   supabaseUser: null,
   loading: true,
   signOut: async () => {},
-  refreshUser: async () => {},
+  refreshUser: async () => null,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -31,15 +32,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Own row (email, phone, zip_code, moderation flags) is only readable through
   // the get_my_profile RPC — clients hold column-level SELECT on users (036).
-  const fetchUserProfile = useCallback(async () => {
+  const fetchUserProfile = useCallback(async (): Promise<User | null> => {
     try {
       const result = await getMyProfile(supabase);
       if (result.data) {
         setUser(result.data);
+        return result.data;
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
     }
+    return null;
   }, []);
 
   // Load initial session
@@ -122,13 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchUserProfile]);
 
-  async function refreshUser() {
+  async function refreshUser(): Promise<User | null> {
     const {
       data: { user: sbUser },
     } = await supabase.auth.getUser();
-    if (sbUser) {
-      await fetchUserProfile();
-    }
+    return sbUser ? fetchUserProfile() : null;
   }
 
   async function handleSignOut() {

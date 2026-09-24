@@ -11,7 +11,13 @@ const callbackMocks = vi.hoisted(() => ({
   getSessionMock: vi.fn(),
   finishSignInMock: vi.fn(),
   refreshUserMock: vi.fn(),
+  logClientEventMock: vi.fn(),
 }));
+
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<object>('@nepally/shared');
+  return { ...actual, logClientEvent: callbackMocks.logClientEventMock };
+});
 
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ refreshUser: callbackMocks.refreshUserMock }),
@@ -32,6 +38,7 @@ vi.mock('../../lib/supabase', () => ({
 
 vi.mock('../../lib/authCallback', () => ({
   finishSignIn: callbackMocks.finishSignInMock,
+  FINISH_SIGN_IN_FAILED: "We couldn't finish setting up your account. Please try again.",
 }));
 
 vi.mock('next/head', () => ({
@@ -79,7 +86,7 @@ describe('AuthCallbackPage', () => {
     });
     callbackMocks.getSessionMock.mockResolvedValue({ data: { session: null } });
     callbackMocks.finishSignInMock.mockResolvedValue({ destination: '/feed' });
-    callbackMocks.refreshUserMock.mockResolvedValue(undefined);
+    callbackMocks.refreshUserMock.mockResolvedValue({ id: 'user-123' });
   });
 
   afterEach(() => {
@@ -104,6 +111,7 @@ describe('AuthCallbackPage', () => {
     const order: string[] = [];
     callbackMocks.refreshUserMock.mockImplementation(async () => {
       order.push('refreshUser');
+      return { id: 'user-123' };
     });
     mockPush.mockImplementation(() => {
       order.push('push');
@@ -112,6 +120,20 @@ describe('AuthCallbackPage', () => {
     render(<AuthCallbackPage />);
     await fireAuthEvent('SIGNED_IN');
     expect(order).toEqual(['refreshUser', 'push']);
+  });
+
+  it.each([
+    ['throws', () => callbackMocks.refreshUserMock.mockRejectedValue(new Error('network'))],
+    ['loads no profile', () => callbackMocks.refreshUserMock.mockResolvedValue(null)],
+  ])('shows the failed state, without navigating, when reloading the member %s', async (_case, arrange) => {
+    arrange();
+    render(<AuthCallbackPage />);
+    await fireAuthEvent('SIGNED_IN');
+    expect(screen.getByRole('heading', { level: 1, name: "Couldn't finish signing you in" })).toBeDefined();
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(callbackMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'auth_callback_failed', context: expect.objectContaining({ step: 'refresh_user' }) })
+    );
   });
 
   it('does not reload the member when finishSignIn fails', async () => {
