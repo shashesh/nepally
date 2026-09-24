@@ -72,6 +72,34 @@ describe('MessageComposer', () => {
     expect(send.hasAttribute('aria-disabled')).toBe(false);
   });
 
+  it('keeps what the member typed while a send was in flight', async () => {
+    const pending = deferred<boolean>();
+    const { field } = renderComposer(vi.fn(() => pending.promise));
+    fireEvent.change(field, { target: { value: 'hi' } });
+    fireEvent.submit(field.form!);
+
+    fireEvent.change(field, { target: { value: 'are you there?' } });
+    await act(async () => {
+      pending.resolve(true);
+    });
+
+    expect(field.value).toBe('are you there?');
+  });
+
+  it('is ready to send again if sending throws', async () => {
+    const onSend = vi.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValue(true);
+    const { field, send } = renderComposer(onSend);
+    fireEvent.change(field, { target: { value: 'hi' } });
+
+    await act(async () => {
+      fireEvent.submit(field.form!);
+    });
+
+    expect(send.hasAttribute('aria-disabled')).toBe(false);
+    expect(mocks.notifyError).toHaveBeenCalledWith("Couldn't send your message. Please try again.");
+    expect(field.value).toBe('hi');
+  });
+
   it('keeps the text and says so when sending fails', async () => {
     const onSend = vi.fn().mockResolvedValue(false);
     const { field } = renderComposer(onSend);

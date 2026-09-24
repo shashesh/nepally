@@ -30,14 +30,22 @@ export function MessageComposer({ partnerName, onSend }: MessageComposerProps) {
     event.preventDefault();
     if (isBlank || sendingRef.current) return;
 
+    const text = draft;
     sendingRef.current = true;
     setSending(true);
-    const sent = await onSend(draft);
-    sendingRef.current = false;
-    setSending(false);
+    let sent = false;
+    try {
+      sent = await onSend(text);
+    } catch {
+      sent = false;
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
 
     if (sent) {
-      setDraft('');
+      // The field stays editable while sending: keep anything typed since.
+      setDraft((current) => (current === text ? '' : current));
       fieldRef.current?.focus();
     } else {
       notify.error("Couldn't send your message. Please try again.");

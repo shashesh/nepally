@@ -28,7 +28,8 @@
   white-space: nowrap;
 }
 
-/* The window scrolls; the composer stays in reach at its foot. */
+/* The window scrolls; the composer stays in reach at its foot. A thread is
+   a task route, so there is no phone tab bar to clear (navItems.ts). */
 .composer {
   position: sticky;
   bottom: 0;
@@ -44,11 +45,4 @@
 .field {
   flex: 1;
   min-width: 0;
-}
-
-/* Lifted above the phone tab bar, which is fixed over the page's foot. */
-@media (max-width: $mantine-breakpoint-sm) {
-  .composer {
-    bottom: calc(var(--layout-tabbar-height) + env(safe-area-inset-bottom));
-  }
 }

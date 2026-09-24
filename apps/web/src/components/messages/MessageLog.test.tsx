@@ -41,18 +41,18 @@ function setScroll({ scrollY, innerHeight, scrollHeight }: { scrollY: number; in
 }
 
 describe('MessageLog', () => {
-  let scrollIntoView: ReturnType<typeof vi.spyOn>;
+  let scrollTo: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 8, 23, 12));
-    // vitest.setup.ts stubs scrollIntoView on HTMLElement (jsdom lacks it).
-    scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView');
+    // jsdom doesn't implement window.scrollTo.
+    scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    scrollIntoView.mockRestore();
+    scrollTo.mockRestore();
   });
 
   function renderLog(messages: ChatMessage[]) {
@@ -63,6 +63,12 @@ describe('MessageLog', () => {
     renderLog([message('m1', 'partner-1', TODAY)]);
 
     expect(screen.getByRole('log', { name: 'Messages with Bikal S.' })).toBeDefined();
+  });
+
+  it('announces new messages only, not a receipt or time changing', () => {
+    renderLog([message('m1', 'partner-1', TODAY)]);
+
+    expect(screen.getByRole('log').getAttribute('aria-relevant')).toBe('additions');
   });
 
   it('heads each day with its label', () => {
@@ -98,44 +104,76 @@ describe('MessageLog', () => {
     it('scrolls to the newest message on first render', () => {
       renderLog([message('m1', 'partner-1', TODAY)]);
 
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollTo).toHaveBeenCalledTimes(1);
     });
 
     it("scrolls to the viewer's own new message wherever they were", () => {
       const first = [message('m1', 'partner-1', TODAY)];
       const { rerender } = renderLog(first);
       setScroll({ scrollY: 0, innerHeight: 600, scrollHeight: 3000 });
-      scrollIntoView.mockClear();
+      scrollTo.mockClear();
 
       rerender(<MessageLog messages={[...first, message('m2', VIEWER, TODAY)]} viewerId={VIEWER} partner={PARTNER} />);
 
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollTo).toHaveBeenCalledTimes(1);
     });
 
-    it('follows an incoming message when the viewer is at the bottom', () => {
+    it('scrolls to the very end of the page, below the composer too', () => {
+      Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, value: 4200 });
+      renderLog([message('m1', 'partner-1', TODAY)]);
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 4200 });
+    });
+
+    it('keeps following after its own scroll to the end', () => {
       const first = [message('m1', 'partner-1', TODAY)];
       const { rerender } = renderLog(first);
-      setScroll({ scrollY: 2350, innerHeight: 600, scrollHeight: 3000 });
-      scrollIntoView.mockClear();
+      // The scroll it just made lands exactly at the end of the page.
+      setScroll({ scrollY: 2400, innerHeight: 600, scrollHeight: 3000 });
+      scrollTo.mockClear();
 
       rerender(
         <MessageLog messages={[...first, message('m2', 'partner-1', TODAY)]} viewerId={VIEWER} partner={PARTNER} />
       );
 
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollTo).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not scroll when the newest message only changes, e.g. is read', () => {
+      const first = [message('m1', VIEWER, TODAY)];
+      const { rerender } = renderLog(first);
+      scrollTo.mockClear();
+
+      rerender(<MessageLog messages={[{ ...first[0], read: true }]} viewerId={VIEWER} partner={PARTNER} />);
+
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('follows an incoming message when the viewer is at the bottom', () => {
+      const first = [message('m1', 'partner-1', TODAY)];
+      const { rerender } = renderLog(first);
+      setScroll({ scrollY: 0, innerHeight: 600, scrollHeight: 3000 });
+      setScroll({ scrollY: 2350, innerHeight: 600, scrollHeight: 3000 });
+      scrollTo.mockClear();
+
+      rerender(
+        <MessageLog messages={[...first, message('m2', 'partner-1', TODAY)]} viewerId={VIEWER} partner={PARTNER} />
+      );
+
+      expect(scrollTo).toHaveBeenCalledTimes(1);
     });
 
     it('leaves a viewer reading back where they are when a message arrives', () => {
       const first = [message('m1', 'partner-1', TODAY)];
       const { rerender } = renderLog(first);
       setScroll({ scrollY: 0, innerHeight: 600, scrollHeight: 3000 });
-      scrollIntoView.mockClear();
+      scrollTo.mockClear();
 
       rerender(
         <MessageLog messages={[...first, message('m2', 'partner-1', TODAY)]} viewerId={VIEWER} partner={PARTNER} />
       );
 
-      expect(scrollIntoView).not.toHaveBeenCalled();
+      expect(scrollTo).not.toHaveBeenCalled();
     });
   });
 });

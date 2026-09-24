@@ -21,15 +21,18 @@ function isNearBottom(): boolean {
 }
 
 /**
- * The thread, as a polite live region so incoming messages are announced.
- * The window scrolls, not this element: it scrolls the newest message into
- * view on first render, after the viewer sends, and when one arrives while
- * the viewer is already at the bottom — never while they are reading back.
+ * The thread, as a polite live region that announces new messages only
+ * (not a receipt turning to Read, or a time ticking over). The window
+ * scrolls, not this element: it scrolls to the end of the page on first
+ * render, after the viewer sends, and when one arrives while the viewer is
+ * already at the bottom — never while they are reading back. The end of the
+ * page, not the last bubble: that puts the sticky composer in its own place
+ * below the thread instead of over the newest message, and leaves the page
+ * exactly at the bottom, so the next message is followed too.
  */
 export function MessageLog({ messages, viewerId, partner }: MessageLogProps) {
   const name = formatPublicName(partner.other_user_name);
   const days = buildThreadDays(messages, viewerId);
-  const endRef = useRef<HTMLDivElement>(null);
   const shownLastIdRef = useRef<string | null>(null);
   // Recorded on scroll, so it describes the page before a new message renders.
   const nearBottomRef = useRef(true);
@@ -48,13 +51,13 @@ export function MessageLog({ messages, viewerId, partner }: MessageLogProps) {
     const isFirst = shownLastIdRef.current === null;
     shownLastIdRef.current = last.id;
     if (isFirst || last.sender_id === viewerId || nearBottomRef.current) {
-      endRef.current?.scrollIntoView({ block: 'end' });
+      window.scrollTo({ top: document.documentElement.scrollHeight });
       nearBottomRef.current = true;
     }
   }, [last, viewerId]);
 
   return (
-    <div role="log" aria-label={`Messages with ${name}`} className={styles.log}>
+    <div role="log" aria-label={`Messages with ${name}`} aria-relevant="additions" className={styles.log}>
       {days.map((day) => (
         <section key={day.key} className={styles.day}>
           <h2 className={styles.dayLabel}>{formatDayLabel(new Date(day.timestamp))}</h2>
@@ -93,7 +96,6 @@ export function MessageLog({ messages, viewerId, partner }: MessageLogProps) {
           ))}
         </section>
       ))}
-      <div ref={endRef} className={styles.end} />
     </div>
   );
 }

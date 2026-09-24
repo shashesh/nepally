@@ -38,7 +38,7 @@ export function ConversationRow({ conversation }: ConversationRowProps) {
         <span className={styles.bottom}>
           <span className={styles.preview}>{conversation.last_message || 'No messages yet'}</span>
           {unread ? (
-            <Badge circle size="lg" className={styles.badge}>
+            <Badge component="span" circle size="lg" className={styles.badge}>
               {conversation.unread_count}{' '}
               <VisuallyHidden>unread</VisuallyHidden>
             </Badge>
