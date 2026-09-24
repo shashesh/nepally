@@ -197,8 +197,10 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 8a Marketplace: browse + listing detail | `feat/web-ui-marketplace` | 8a.1–8a.12, in four chunks | Merged (PR #88) | 2026-09-23 | rebased onto `master` at `f995deb` after PR #87 merged. Owns both visual pages, so it takes `a11y-baseline.json` to `{}`. **Chunk 1** (8a.1–8a.4, cf331d8..4e90113) done 2026-09-22: gate green (shared 666, web 1492 tests); `marketplace.module.css` 837 → 713 lines and 159 → 136 guard violations; `FilterBar` and `ListingStrip` off both allowlists, so the raw-element list is down to 9 files. Review found no CRITICAL. Two HIGH: (1) `Select` → `NativeSelect` was a real deviation from the task text and is now implementation decision 26; (2) "the twelve dead `.categoryTheme*` blocks should be deleted" is **wrong** — `listing/[id].page.tsx` 26–38 keeps its own copy of the map and applies it at 150, so they belong to Task 8a.10. Fixed in the review commit: the pending-debounce-then-clear path had no test, and `data-category` sat on both the article and the chip. Routed from its review: (1) the tests use `data-testid` for the decorative star and cover placeholder, and read the article's `data-category` — PR 7's own review asked for exactly that kind of `data-type` assertion, so this stays, but PR 10 should settle whether the "role, label or text" rule carves out styling hooks explicitly; (2) mobile's two `isVerifiedSeller` copies cannot be touched here (global constraint: web only), so they go to PR 10 with the other mobile parity items. **Chunk 2** (8a.5–8a.8, 30be668..84780a9) done 2026-09-22: gate green (shared 666, web 1546 tests). `index.page.tsx` 330 → 77 lines and `[category].page.tsx` 177 → 79, over one 193-line `MarketplaceBrowse`; `marketplace.module.css` 713 → 524 lines and 136 → 108 guard violations, with 21 dead class blocks deleted. Review found no CRITICAL or HIGH. Fixed in the review commit: **twelve references to tokens that do not exist**, shipped in chunk 1 and repeated here — `--weight-*` for `--font-weight-*`, `--text-sm`/`--text-lg` for `--font-size-*` (`--text-1/2/3` are colours), `--radius-pill` for `--radius-full` — each silently falling back to the inherited value; the hardcoded `'search'` in `[category].page.tsx` now uses `SEARCH_SLUG`; the leftover `ListingStrip` mock in the category test; and the sponsored strip had no view-level test. Routed to PR 10: the missing undefined-custom-property guard, the paging offset that counts unique rather than consumed rows, and the empty-state copy for a member with no metro. **Chunk 3** (8a.9–8a.11, 543fe61..d8ae4c4) done 2026-09-22: gate green (shared 666, web 1565 tests). `listing/[id].page.tsx` 330 → 216 lines; `marketplace.module.css` 524 → 190 lines and 108 → 32 guard violations, the twelve `.categoryTheme*` blocks finally gone; the page comes off the raw-element allowlist, down to 8 files. `ListingResult` gains `notFound`, mirroring `EventResult`, so a failed read stops reading as "Listing not found." Review found no CRITICAL; two HIGH, both fixed in the review commit: the two extracted components shipped with no tests of their own, and the save button had lost its visible saved state (it now keeps one stable name with `aria-pressed`, and the bookmark icon fills in, rather than renaming itself). Also fixed there: dropping `router.isReady` made a hard reload flash "Listing not found" before the id arrived; Mantine's `Breadcrumbs` renders a plain `div`, so the `nav` landmark came back; a business listing with no details rendered an empty "Business Details" heading; and `.badge` still referenced `--category-bg` / `--category-color` after their defining blocks were deleted. Routed to PR 10: event detail's identical breadcrumb-landmark gap, `PhotoCarousel` having no `priority` hint, and the actions panel rendering twice. **Chunk 4** (8a.12) done 2026-09-22: e2e 107, visual 39, full gate green (shared 666, web 1584, mobile 636). **`a11y-baseline.json` is now `{}`** and the diff only deletes lines, so the app has no known serious or critical violation on any screenshotted page. Four screenshots changed, all reviewed: `marketplace` and `listing-detail` at both widths. Seven others changed on the first run and were restored — re-running the suite against the originals passed, so they were rendering noise, not real diffs. **The keyboard walk found a real bug:** pressing Save dropped focus to `<body>`, because the panel used Mantine's `loading`, which sets native `disabled` — the exact thing "Busy controls stay focusable" forbids. The old page did it too, so it was carried over rather than introduced. It now takes `aria-disabled` / `data-disabled` with a `Loader` in `leftSection`. The walk is kept as `13-marketplace-keyboard.spec.ts` rather than run once, since its 375px checks are the regression guard for recon 9. Routed to PR 10: listing detail shows the category and condition twice, once as a badge and once as a highlight chip, which `getListingHighlights` has always done. **Copilot review** (5 rounds, 15 inline comments) answered 2026-09-23. Four were real and are fixed in `fix(web): address Copilot's review`: (1) `getListingsByMetro` derives `hasMore` from the raw window *before* dropping rows of another category, so a full window can arrive filtered to nothing — the browse view called that empty and unmounted the sentinel, stranding a category that does have listings, and the hook offset by `grid.length`, which never advanced and re-requested the same window; the offset now counts the API window and the empty state waits for `hasMore` to go false; (2) a load-more in flight when the metro cleared still landed, because the effect returned before bumping the generation — the same fault PR 7 found in `useEventFeed`; (3) `/marketplace/search` showed an h1 "Search: momo" over a region named "All Listings"; it now reads "Results"; (4) `getListingById` missed `22P02`, so a mistyped UUID gave a retryable error rather than not-found, where `getEventById` handles both. Two were already fixed in earlier chunk reviews (the undefined token names, and `loading` on the save button). One was **rejected**: it claimed `ListingBusinessDetails` could not type-check because a `Row[]` annotation took nullable members, but the `as Row[]` cast applies to the `.filter(Boolean)` result, not the literal, and `type-check` passes. The remaining six were on the plan text itself, written before the implementation diverged from it; the task interfaces now match what shipped |
 | 8b Marketplace: seller flow | `feat/web-ui-marketplace-seller` | 8b.1–8b.12, in three chunks | Merged (PR #89) | 2026-09-23 | branched from `master` at f632e79. No visual pages, so no baseline run; `a11y-baseline.json` stays `{}`. `marketplace.module.css` is deleted in chunk 1 (my-listings is its last consumer). **Chunk 1** (8b.1–8b.5, fd1c478..ff4d273) done 2026-09-23: gate green (shared 670, web 1610 tests); `my-listings.page.tsx` 216 → 104 lines before the review fix; `marketplace.module.css` (193 lines, 32 guard violations) deleted, and the page off the raw-element allowlist, down to 7 files. One deviation from decision 2: the next page's offset is `listings.length`, which equals "rows fetched minus rows deleted" because deactivated rows stay on screen and deleted ones leave both the screen and the server's results. Review found no CRITICAL. Two HIGH, both fixed in 90eabce: (1) that equivalence failed when a delete and a page load overlapped — the page's offset counted a row the delete then removed, so one listing never appeared — so a delete now waits for a page in flight and no page is requested while a delete is pending; (2) deleting a row unmounted the menu trigger the confirm dialog returns focus to, dropping focus to `<body>`, so focus now moves to the neighbouring row's link, or to Create listing, when `isFocusStranded()`. Nothing routed. **Chunk 2** (8b.6–8b.11, 2f6d18f..345a7ec) done 2026-09-23: gate green (shared 677, web 1650 tests). `listing/promote/[id].page.tsx` 410 → 173 lines; `promote.module.css` 841 → 99 lines and 107 → 0 guard violations. Both pages off both allowlists: the raw-element list is down to 6 files and the CSS guard allowlist holds only PR 10's four stylesheets. Deviations: a small `SummaryList` shared by the duration and review steps; `promote.module.css` came off the CSS allowlist in 8b.10 rather than 8b.11, because the guard fails on an allowlisted file that is already clean — the rewrite kept the success page's class names on tokens so it stayed styled between commits; a checkout response with no URL now reports an error rather than doing nothing; Continue waits with `aria-disabled`, not native `disabled`; and step markers use the action ink pair, since `--accent` is never text. Review found no CRITICAL, HIGH or MEDIUM. Fixed in the review commit: clearing the duration field snapped it straight back to 1 (found while triaging the review, not by it), so deleting "7" and typing "3" gave "13"; and the missing test for a checkout with no URL. Routed to PR 10: `tokens.contrast.test.ts` has no `--accent-ink` / `--success` on `--surface-sunken` pair, used by the tier icons and the success icon (both `aria-hidden` beside text that carries the same meaning). **Chunk 3** (8b.12, a71f26e..addf5f5) done 2026-09-23: e2e 111, visual 39 with no screenshot diffs (neither page is in `pages.ts`), and `a11y-baseline.json` still `{}`; full gate green (shared 677, web 1653, mobile 636). The my-listings e2e now drives the row menu and confirm dialogs and checks focus survives a delete, and a new e2e walks the wizard to review by keyboard. The keyboard walk is kept in `13-marketplace-keyboard.spec.ts`, as 8a's was: a row menu opens on Enter, moves on arrows and returns focus to its trigger on Escape, and neither page overflows at 375px on any step. Screenshots of both pages at 1280 and 375 were reviewed by eye, with nothing to fix: at 375 the third step's label truncates to "Review …" (its full text stays in the DOM). The mobile Jest run needed `--cacheDirectory` pointed at a writable folder, because the default system-temp transform cache failed to write in this environment — not a code issue. **Copilot review** (round 1, 2 inline comments) answered 2026-09-23; both were real and are fixed: (1) the wizard worked out its blocker only when it opened, and the edge function does not check status, so a listing deactivated in another tab could still be paid for — Pay now re-reads the listing first (bef9022); (2) a load-more from before a reload could clear the in-flight page ref for a newer request, releasing a delete early — a request now clears the ref only while it still holds it (3b1229f). The durable fix for (1) followed at the user's go-ahead: `create-promotion-checkout` now refuses a listing that is not active with a 409, after the ownership check (8307a28), deployed to `nusa-staging` as version 6 on 2026-09-23. The deployed v5 source was diffed against the repo first and matched, and v6 was read back and matched the commit; a smoke call without auth returned the function's own 401. The 409 path itself was not exercised live, since that needs a member's session and an inactive listing. Found while doing it and fixed at the user's go-ahead (b2abda2, deployed as version 7 the same way, read back and smoke-tested): the web checkout's `cancel_url` pointed at `/marketplace/listing/<id>/promote`, a route that does not exist, so cancelling on Stripe's page landed on a 404; it now returns to the wizard at `/marketplace/listing/promote/<id>`. **Copilot round 2** (2 inline comments) answered 2026-09-23, both real and fixed: (1) a delete that waited for a page in flight checked the generation only after sending the mutation, so a reload or account switch during the wait still sent it — it now checks right after the wait and sends nothing (f3ef86b); (2) the duration's `aria-valuenow` reported the last committed value while the field was empty — it now follows the draft and is omitted when empty (4bfa303). Round 3 (on the edge function commit) raised one comment, **rejected**: it asked for the status check to be atomic with the `listing_promotions` insert, but that insert only creates a `pending` row — payment happens minutes later on Stripe's page and `stripe-webhook` activates the row after — and only the owner can change a listing's status (RLS), so a lock around the insert protects nothing that matters. **Open for the user:** what a paid promotion should do when its listing is inactive at payment time or is deactivated mid-run (a webhook check before activation, a refund, a pause) — a billing decision, not this PR's |
 | 9a Messages | `feat/web-ui-messaging` | 9a.1–9a.12, in three chunks | Merged (PR #90) | 2026-09-24 | branched from `master` at e59513a. PR 9 split into 9a and 9b at recon (see "PR 9 — split into 9a and 9b"). Owns the `messages` visual page. **Chunk 1** (9a.1–9a.6, bf8fdf7..2b1bf9a) done 2026-09-23: gate green (shared 689, web 1692, mobile 636 tests). `getMessages` now returns a thread's newest messages (mobile included); `formatDayLabel` and `buildThreadDays` shared; `useStartConversation` adopted by feed, post detail, event detail, the public profile and listing detail, so **Contact Seller now opens the thread** instead of `/messages?to=`, and feed and post detail report a failed start. `useConversations` is a wrapper over `useUserList` rather than a copy of its pattern. Review found no CRITICAL. One HIGH, fixed in 7a5923b: `useMessageThread` subscribed only after its load, as Task 9a.6 said, so a message sent during the load (five `getConversations` queries plus the channel join) was never delivered and stayed unread — a regression, since the old page subscribed at once. It now subscribes first and merges. Also fixed there: listing detail counted a contact twice on a double press and showed no busy state during the counter's round trip (`start` gained a `beforeStart` step inside its guard); realtime callbacks could run after leaving a thread and mark it read; messages arriving out of order were appended rather than placed by time; `starting` cleared before navigation finished. Routed to PR 10: shared `subscribeToMessages` reuses one topic per conversation, which can leave a thread without live updates after A → B → A while A's leave is pending (pre-existing). Web now 1705 tests. **Chunk 2** (9a.7–9a.11, 7ed37c7..4af4fee) done 2026-09-23: gate green (web 1726 tests). `messages/index.page.tsx` 153 → 55 lines and `[id].page.tsx` 336 → 81; `Messages.module.css` (293 lines, 74 guard violations) deleted; the thread off the raw-element allowlist, down to 5 files, and the CSS allowlist down to 7. Deviation: the thread's loading, error and not-found states render a `PageHeader` "Conversation" so the page always has an `h1`. Review found no CRITICAL; three HIGH, all fixed in 0c13315. (1) **No `position: sticky` on the site has ever stuck**: `globals.css` set `overflow-x: hidden` on both `html` and `body`, which makes `body` a scroll container that never scrolls, so every sticky element pinned to it — the composer, and before it the feed's `SponsoredRail` and listing detail's sidebar. Now `overflow-x: clip`. Chunk 3's baselines should be checked for the rail and sidebar. (2) `MessageLog` scrolled a sentinel into view, which stopped ~130px short of the page end (page gap, composer and paddings below it), past the 120px follow threshold, so after its own scroll the log stopped following new messages; it now scrolls the window to the document end. (3) The composer lifted itself above the phone tab bar, but a thread is a task route with no tab bar, which would have left a 64px gap. Also fixed there: the log announced every Sent → Read change (`aria-relevant="additions"`); text typed during a slow send was erased when it succeeded; a send that threw left Send busy; the badge rendered a `div` inside the link. Chunk 3 must scope `phone/navigation.spec.ts:45`'s `/messages/i` heading to level 1, since the empty inbox's `EmptyState` h3 "No messages yet" also matches. Web now 1732 tests. **Chunk 3** (9a.12, 9835a68..40d4ed9) done 2026-09-23: e2e 117 (six new in `14-messages.spec.ts`, over a stateful chat mock: public names and unread counts, sending, the profile menu, not found, keyboard order, and at 375px no overflow with the composer pinned while reading back); the marketplace spec now expects Contact Seller to open `/messages/<id>`; the phone spec's heading is scoped to the h1. The base e2e mock gained a `conversations` POST so `getOrCreateConversation` can create one. Visual 39 green, and `a11y-baseline.json` still `{}`. The Docker `--update` rewrote twelve PNGs: eight had no pixel over the diff threshold and two (`feed`, `search-dropdown`) differed by ~1.5% with nothing visible — re-running the suite against their originals passed, so all ten were restored as noise, and only `messages` at both widths was accepted (the new `PageHeader` and `EmptyState`). The thread, which no baseline covers, was screenshotted by eye at 1280 and 375: the composer stays pinned when scrolled to the top, long messages wrap in their bubble. Full gate green (shared 689, web 1732, mobile 636). **Follow-ups fixed at the user's go-ahead** (2026-09-23, 67b2fa7..): (1) the realtime topic reuse routed to PR 10 in chunk 1 — shared `uniqueChannelTopic` now gives `subscribeToMessages`, the unread badge and the bell a fresh topic per subscription; it also meant that under React StrictMode (on in dev) a thread's remount rejoined its own leaving channel and got no live messages; mobile's own fixed topics stay on PR 10's list. (2) The stale Messages badge: staging does publish `conversation_participants` to realtime (checked with a read-only query), so the stale badge in the e2e screenshot was the mock, which has no realtime — but two real gaps remained and are fixed: overlapping refreshes could land out of order and restore a stale count (only the latest request's answer applies now), and a thread now announces on `window` once it has marked itself read, so the badge refreshes at once rather than waiting on realtime or the 30s poll. e2e 118, shared 692, web 1737. **Copilot review** (2 rounds, 3 inline comments) answered 2026-09-24; all three were real and are fixed (ed25e35, 2ddc8a2): (1) `MessageLog`'s day labels and times read the clock only on render, so a thread left open past midnight still said Today — it and the inbox rows now take `useNow()`, and shared `formatRelativeTime` gained an optional `now`; (2) the thread announced a badge refresh even after a failed `markAsRead` — and underneath, shared `markAsRead` never returned an error at all, because it ignored both updates' `error`; it now does, and the thread announces only on success; (3) `web-ui-system.md` claimed every channel used `uniqueChannelTopic` — now scoped to web and shared, with mobile named as PR 10's, and the notifications page's own channel moved onto it so the web claim holds. Shared 696, web 1740. Round 3 (1 comment, real, fixed in 06a7fce): the failed-load and not-found paths left the channel without setting `cancelled`, and `removeChannel` is a round trip, so an in-flight event could still add a message and mark the thread read behind the error screen; one `leave()` now serves both paths and the cleanup. Web 1743 |
-| 9b Notifications, preferences, moderation | `feat/web-ui-notifications` | 9b.1–9b.12, in three chunks | In Review (PR #91) | 2026-09-24 | branched from `master` at 1f35700; scope is PR 9 recon items 16–27. Owns the `notifications` visual page. **Chunk 1** (9b.1–9b.6, f93ab44..83a0175): gate green (shared 703, web 1795, mobile 636). Review found no CRITICAL; one HIGH, fixed in e9b2ce2: `useNotificationsPage` counted a redelivered realtime row twice when both events landed before a render, because its duplicate check read a ref that only catches up after commit — the channel now keeps its own id set. The review's MEDIUM was real too and fixed in the same commit: a double press on one row's Open or Delete lowered the count twice; a second call for a row in flight now shares the first request. Lint lesson: an effect that calls a loader which sets state after an `await` trips `react-hooks/set-state-in-effect`; setting state inside the loader's `.then` passes. **Chunk 2** (9b.7–9b.11, a3358ba..c3b79e9): gate green (web 1824). All three stylesheets deleted (114 guard violations), so the CSS allowlist holds only PR 10's four and the raw-element list is down to 4 files; pages are 156, 171 and 237 lines. Deviations: the preferences switches put their description outside Mantine's label (decision 8 now says so), and its first section is "Delivery". Review found no CRITICAL; one HIGH, fixed in 2cbab62: `NotificationList` picked the post-delete focus target by the index at the click, and a realtime insert during the delete moved it one row off — it now records the neighbouring rows' ids. **Chunk 3** (9b.12): `15-notifications.spec.ts` (11 cases: the list and count, open marks read, delete keeps focus, mark-all focuses Preferences, keyboard order, preferences failed-read and save by label with Space and arrow keys, moderation confirm/cancel/focus-next-card, no overflow at 375px on all three pages); the phone spec's heading is scoped to the h1. The bell mock needed `access-control-expose-headers: content-range`, without which the browser hides the count from supabase-js. e2e 129, visual 39: the Docker `--update` rewrote eleven PNGs; the nine outside `notifications` were restored and the suite passed against them, so only `notifications` at both widths was accepted. `a11y-baseline.json` stays `{}`. Preferences and moderation screenshotted by eye at 1280 and 375, which caught the switch descriptions rendering larger than the radio groups' (49aaf92). Full gate green (shared 703, web 1825, mobile 636). One full e2e run had a single failure that did not recur in three more full runs or five repeats of the new spec (55/55); its log was overwritten, so the test is unknown. Routed to PR 10: the bell's own realtime INSERT handler has no id de-dupe (pre-existing, found in chunk 1's review). **Copilot review** (round 1, 1 inline comment) answered 2026-09-24; real and fixed in 8d4e5f1: 9b.3's `load` returned for a null `userId` before advancing its request counter, so a request for the member who signed out still landed and, since `Layout` keeps the bell mounted, showed their count to the next member until that member's first load returned — a regression, as the old effect had a `cancelled` flag. The counter now advances first, and the feed resets during render when `userId` changes |
-| 10 Static pages + cleanup | `feat/web-ui-cleanup` | breakdown at PR start | Not Started | 2026-09-14 | |
+| 9b Notifications, preferences, moderation | `feat/web-ui-notifications` | 9b.1–9b.12, in three chunks | Merged (PR #91) | 2026-09-24 | branched from `master` at 1f35700; scope is PR 9 recon items 16–27. Owns the `notifications` visual page. **Chunk 1** (9b.1–9b.6, f93ab44..83a0175): gate green (shared 703, web 1795, mobile 636). Review found no CRITICAL; one HIGH, fixed in e9b2ce2: `useNotificationsPage` counted a redelivered realtime row twice when both events landed before a render, because its duplicate check read a ref that only catches up after commit — the channel now keeps its own id set. The review's MEDIUM was real too and fixed in the same commit: a double press on one row's Open or Delete lowered the count twice; a second call for a row in flight now shares the first request. Lint lesson: an effect that calls a loader which sets state after an `await` trips `react-hooks/set-state-in-effect`; setting state inside the loader's `.then` passes. **Chunk 2** (9b.7–9b.11, a3358ba..c3b79e9): gate green (web 1824). All three stylesheets deleted (114 guard violations), so the CSS allowlist holds only PR 10's four and the raw-element list is down to 4 files; pages are 156, 171 and 237 lines. Deviations: the preferences switches put their description outside Mantine's label (decision 8 now says so), and its first section is "Delivery". Review found no CRITICAL; one HIGH, fixed in 2cbab62: `NotificationList` picked the post-delete focus target by the index at the click, and a realtime insert during the delete moved it one row off — it now records the neighbouring rows' ids. **Chunk 3** (9b.12): `15-notifications.spec.ts` (11 cases: the list and count, open marks read, delete keeps focus, mark-all focuses Preferences, keyboard order, preferences failed-read and save by label with Space and arrow keys, moderation confirm/cancel/focus-next-card, no overflow at 375px on all three pages); the phone spec's heading is scoped to the h1. The bell mock needed `access-control-expose-headers: content-range`, without which the browser hides the count from supabase-js. e2e 129, visual 39: the Docker `--update` rewrote eleven PNGs; the nine outside `notifications` were restored and the suite passed against them, so only `notifications` at both widths was accepted. `a11y-baseline.json` stays `{}`. Preferences and moderation screenshotted by eye at 1280 and 375, which caught the switch descriptions rendering larger than the radio groups' (49aaf92). Full gate green (shared 703, web 1825, mobile 636). One full e2e run had a single failure that did not recur in three more full runs or five repeats of the new spec (55/55); its log was overwritten, so the test is unknown. Routed to PR 10: the bell's own realtime INSERT handler has no id de-dupe (pre-existing, found in chunk 1's review). **Copilot review** (round 1, 1 inline comment) answered 2026-09-24; real and fixed in 8d4e5f1: 9b.3's `load` returned for a null `userId` before advancing its request counter, so a request for the member who signed out still landed and, since `Layout` keeps the bell mounted, showed their count to the next member until that member's first load returned — a regression, as the old effect had a `cancelled` flag. The counter now advances first, and the feed resets during render when `userId` changes |
+| 10a Static pages + scaffolding | `feat/web-ui-cleanup` | 10a.1–10a.16, in four chunks | In Progress | 2026-09-24 | branched from `master` at 936aaed. PR 10 split three ways at planning (see "PR 10 — split into 10a, 10b and 10c"). Owns the `landing`, `login` and `signup` visual pages; ends with both allowlists and `legacy-aliases.css` deleted |
+| 10b Web consistency + a11y | `fix/web-ui-polish` | breakdown at PR start | Not Started | 2026-09-24 | the remaining web items from PR 10's list |
+| 10c Shared + mobile parity, archive | `chore/mobile-parity` | breakdown at PR start | Not Started | 2026-09-24 | includes the `full_name` CHECK migration, which needs the user's go-ahead to apply |
 
 ---
 
@@ -15329,6 +15331,486 @@ The handlers:
   - [ ] **Mobile's own realtime channels onto `uniqueChannelTopic`.** PR 9a gave shared `subscribeToMessages` and web's badge and bell channels a per-subscription topic suffix: realtime-js returns a still-leaving channel for a matching topic, and its `subscribe()` does nothing, so a quick resubscribe (StrictMode's dev remount, A → B → A) got no events. Mobile's `HomeScreen.tsx` (`chat-unread-mobile:`, `chat-messages-unread-mobile:`, `feed-posts-mobile:`) and `NotificationsScreen.tsx` (`notifications-mobile:`) still use fixed topics (found in PR 9a's chunk 1 review; the shared and web parts fixed in PR 9a).
   - [ ] **The bell drops no duplicate realtime rows.** `useNotificationsFeed`'s INSERT handler prepends and counts every event, so a redelivered one (a reconnect) shows twice and raises the count by two. PR 9b fixed the same fault on the notifications page with a per-channel id set (found in PR 9b's chunk 1 review; pre-existing).
   - [ ] Set this plan and the spec to `status: implemented` and `git mv` both into `docs/archive/plans/` and `docs/archive/specs/`. Update `docs/INDEX.md` (Specs back to "_None active._") and any links. Run `npm run docs:check`.
+
+## PR 10 — split into 10a, 10b and 10c (2026-09-24)
+
+The list above is ten pages, four stylesheets (198 guard violations) and about 35 items that earlier PRs routed here, many of them mobile. It is now three PRs. Each branches from `master` after the one before it merges, and each item above belongs to exactly one:
+
+- **10a — static pages and retiring the scaffolding** (`feat/web-ui-cleanup`). The ten pages and `LegalDocument`, all four stylesheets, and everything that can only go once they are gone: both allowlists and their tooling, `legacy-aliases.css`, the undefined-custom-property guard. Also the wireframe marked superseded, web signup onto `fullNameSchema`, and friendly auth errors (the auth-page slice of the raw-error policy item). Owns the `landing`, `login` and `signup` visual pages.
+- **10b — web consistency and a11y** (`fix/web-ui-polish`). Every remaining web item above: PostCard and sponsored-card hover, the save toggle's name, Mantine's disabled palette, the Avatar and `AttendeeList` alt text, the follower count, public-profile list failures and the shared list states, `EmptyState`'s `titleOrder`, the raw-error policy for the rest of web, `useFocusAfterUpdate`, Manage Locations' rows, the 6.19a baseline items, the two profile pages' size and width, the feed badges at 375, one sign-out and one label, `SummaryRowMeta`'s dot, `DetailList` and the bio's line breaks, web's phone row, search's tabs, event detail's breadcrumb landmark, `PhotoCarousel`'s `eager`, the two contrast pairs, listing detail's duplicate chips and double actions panel, the no-metro copy, the `data-*` query rule, the attendee dialog's cache, and the bell's duplicate realtime rows. The sidebar-card primitive stays deferred until a fourth copy appears, as its item says.
+- **10c — shared and mobile parity, then archive** (`chore/mobile-parity`). Shared `getErrorMessage` and `requestPasswordReset`; mobile onto `setProfilePhoto`, `formatMegabytes`, `fullNameSchema`, the About You limits and parse, `isVerifiedSeller`, `getMetroEventsPage`, `formatCount`, Interested / Going, `uniqueChannelTopic`, `formatDayLabel` and public names in chat (routed at 9a's planning); mobile's phone clearing (`null`); mobile's auth screens onto 10a's `getAuthErrorMessage`; the `users.full_name` length `CHECK` migration, **which needs the user's go-ahead before it is applied**; `roadmap.md`; and archiving this plan and the spec.
+
+## PR 10a — Static pages + scaffolding (`feat/web-ui-cleanup`)
+
+**Branch:** `feat/web-ui-cleanup`, created from `master` at `936aaed` (PR #91 merged).
+
+**Inventory at branch start** (the "Starting an area PR" commands, 2026-09-24):
+
+| File | Lines | CSS guard | `confirm(`/`alert(` | Raw elements |
+|---|---|---|---|---|
+| `pages/index.page.tsx` | 85 | — | 0 | 0 |
+| `pages/login.page.tsx` | 163 | — | 0 | 1 (102) |
+| `pages/signup.page.tsx` | 189 | — | 0 | 1 (102) |
+| `pages/verify-email.page.tsx` | 117 | — | 0 | 1 (97) |
+| `pages/onboarding/zip.page.tsx` | 195 | — | 0 | 1 (114) |
+| `pages/auth/callback.page.tsx` | 124 | — | 0 | 0 |
+| `pages/{privacy,terms,guidelines,help}.page.tsx` | 134 / 137 / 89 / 159 | — | 0 | 0 |
+| `components/legal/LegalDocument.tsx` | 61 | — | 0 | 0 |
+| `styles/Auth.module.css` | 311 | **106** | — | — |
+| `styles/Home.module.css` | 112 | **41** | — | — |
+| `styles/Legal.module.css` | 167 | **46** | — | — |
+| `styles/ComingSoon.module.css` | 53 | **5** | — | — |
+
+Both allowlists hold exactly these files: the CSS allowlist the four stylesheets, the raw-element list the four raw-element pages. Only these four stylesheets reference any of `legacy-aliases.css`'s 89 names (Auth 87 references, Legal 40, Home 39, ComingSoon 5); no TSX, TS or other CSS does. `ComingSoon.module.css` has **no importer**. `a11y-baseline.json` is `{}`. `pages.ts` screenshots `landing`, `login` and `signup`, readied by the h1s "Welcome to Nepally", "Welcome back" and "Join Nepally", which this PR keeps.
+
+**Recon:**
+
+1. **Every landing card is a dead end.** The four tag cards link to `/feed?tags=…`, which sends a signed-out visitor to `/login`. The page has no sign-up call to action. Its `.ctaLink` is dead, and its `<title>` still reads "Nepalese United Support Alliance", from before the rename. It sets its own viewport meta, which Next already provides.
+2. **Auth pages show raw Supabase text.** Login, signup and Google show `result.error.message` ("Invalid login credentials"), and verify-email shows `err.message`. `02-login.spec.ts:51` asserts that raw text.
+3. **Signing up with an existing address strands the member.** With email confirmation on, Supabase's `signUp` returns no error for a taken address. Instead it returns a user with `identities: []` so it can't be used to discover which emails are registered. The page sends the member to verify-email for a message that never comes. The `'already registered'` string match only catches the confirmation-off case.
+4. **Validation lives in one top alert.** No field gets `error` or `aria-invalid`. Signup's password rules appear on the first keystroke, and `PasswordInput error={true}` links nothing. `validateFullName` rejects Devanagari, "O'Brien-Rai" and every other non-ASCII name, which is why `fullNameSchema` exists.
+5. **Login, signup and onboarding redirect during render** (`router.replace` in the body). This is a side effect in render, and it runs on every render until navigation lands.
+6. **Busy Google and resend buttons use native `disabled`**, which drops focus. Both are raw `<button>`s, and Google's icon is a "🔵" emoji that is read aloud.
+7. **verify-email's resend calls `supabase` from the page**, bypassing `lib/auth`. Its messages are plain `div`s with no role. With no `?email=`, the countdown still runs, and the button then does nothing.
+8. **Onboarding's ZIP field is a raw `<input>`** with errors in `<Text c="red">`, which is neither linked nor announced. Submit is disabled until five digits are entered, so "Please enter a valid 5-digit ZIP code." can never show. The page ignores `addSavedLocation`'s result. When the step changes, the h1 changes and focus stays on a button that no longer exists. A member who already has a metro isn't sent on.
+9. **The callback can hang forever.** `settled = true` is set before the awaits, so a thrown or failed `createUserProfile`, `mark*Verified` or `getMyProfile` leaves "Verifying your email..." on screen with no timeout. A failed mark-verified is also ignored: the member lands in the app at trust level 0 and can't post. The Google flow is told "Verifying your email".
+10. **Copy disagrees.** `PublicShell` says "Log In" and "Sign Up", while the pages say "Sign In".
+11. **Legal pages import `Legal.module.css` directly** for `callout` and `faq`, so the stylesheet is shared across five files. The FAQ is native `<details>`, which already works with a keyboard and a screen reader.
+
+| File | Change | Why |
+|---|---|---|
+| `packages/shared/src/logic/authErrors.ts` (+ test, + `logic/index.ts`) | Create | `getAuthErrorMessage` and `isExistingAccountError` (recon 2, 3) |
+| `apps/web/src/lib/auth.ts` (+ new `auth.test.ts`) | Modify | `resendSignupEmail`; `signUpWithEmail` reports an obfuscated existing account (3, 7) |
+| `apps/web/src/lib/authCallback.ts` (+ test) | Create | `finishSignIn(session)`: the callback's profile and verification steps, with results checked (9) |
+| `apps/web/src/hooks/useRedirectWhen.ts`, `useCountdown.ts` (+ tests) | Create | Redirects in an effect (5); the resend cooldown (7) |
+| `apps/web/src/components/auth/{AuthCard,GoogleButton}.tsx` (+ tests, `AuthCard.module.css`) | Create | The card chrome and the Google button every auth page shares |
+| `apps/web/src/pages/{login,signup,verify-email}.page.tsx`, `onboarding/zip.page.tsx`, `auth/callback.page.tsx` (+ tests) | Rewrite | Over the components and hooks |
+| `apps/web/src/components/landing/LandingPage.tsx` (+ test, `.module.css`), `pages/index.page.tsx` (+ test) | Create / modify | A landing page that leads to sign-up (1) |
+| `apps/web/src/components/legal/{LegalDocument,Callout,Faq}.tsx` (+ tests, `legal.module.css`), the four legal pages | Modify / create | The stylesheet goes private to `components/legal/` (11) |
+| `apps/web/src/styles/{Auth,Home,Legal,ComingSoon}.module.css` | Delete | Every consumer moves off them |
+| `scripts/guard-css-tokens.js` (+ test), `scripts/guard-css-tokens.allowlist.json` | Modify / delete | No allowlist; undefined custom properties fail |
+| `apps/web/eslint.config.mjs`, `apps/web/eslint/*`, root `package.json` | Modify / delete | The raw-element allowlist and its writer go |
+| `apps/web/src/styles/legacy-aliases.css`, `legacy-aliases.test.ts`, `globals.css` | Delete / modify | Nothing references an alias any more |
+
+**How this PR runs.** Four chunks, as 9a and 9b ran. Inside a chunk, each task writes its failing test, runs only that task's tests, implements, re-runs and commits, with no review between tasks. At each chunk boundary, run `type-check`, `lint`, `lint:guards` and the full unit suite of every workspace touched. Web Vitest must run from a `C:\…` cwd. Then one code-review agent reviews the chunk's whole diff. CRITICAL and HIGH findings are fixed in one `fix(web): address chunk N review` commit. Everything else goes to 10b's list or the tracker, **never to new tasks**. e2e and the three baselines run only in chunk 4.
+
+| Chunk | Tasks | Ends with |
+|---|---|---|
+| 1. Building blocks | 10a.1–10a.5 | Auth error copy, `lib/auth` and `finishSignIn`, the two hooks, `AuthCard` and `GoogleButton` |
+| 2. Auth pages | 10a.6–10a.10 | Five pages rebuilt, `Auth.module.css` deleted, the raw-element allowlist empty |
+| 3. Landing, legal, scaffolding | 10a.11–10a.15 | Landing and legal rebuilt, the other three stylesheets deleted, both allowlists and `legacy-aliases.css` gone, the undefined-property guard on |
+| 4. Finish | 10a.16 | e2e, the three re-baselines, a keyboard walk, docs and the draft PR |
+
+**Decisions this breakdown locks in:**
+
+1. **"Log in" and "Sign up", in sentence case, everywhere signed-out** (recon 10). This covers `PublicShell`'s buttons, each page's submit button and cross-links, and the `<title>`s. "Sign in" survives only in "Continue with Google". The h1s stay "Welcome back", "Join Nepally" and "Welcome to Nepally", which keeps the visual ready checks.
+2. **Auth errors are sentences keyed on Supabase's error `code`** (recon 2), in shared, because mobile's auth screens show the same errors (10c adopts it there):
+   - `invalid_credentials` → "That email and password don't match. Check them and try again."
+   - `email_not_confirmed` → "Confirm your email first. Use the link we sent when you signed up."
+   - `over_email_send_rate_limit` and `over_request_rate_limit` → "Too many attempts. Please wait a minute and try again."
+   - `weak_password` → "Choose a stronger password."
+   - A network failure (`name === 'AuthRetryableFetchError'` or `status === 0`) → "Couldn't reach Nepally. Check your connection and try again."
+   - Anything else → a per-action fallback: "Couldn't log you in. Please try again.", "Couldn't create your account. Please try again.", "Couldn't continue with Google. Please try again." or "Couldn't resend the email. Please try again."
+   - The raw error goes to `logClientEvent`, never to the screen.
+3. **An existing account goes to login**, whichever way Supabase reports it (recon 3). `isExistingAccountError` is true for the codes `user_already_exists` and `email_exists`. `signUpWithEmail` turns a returned user with `identities: []` into an `AuthError`-shaped `{ code: 'user_already_exists' }`. Signup then pushes `/login?reason=existing-account&email=…`, as it does today, and login's info alert stays.
+4. **Validate on submit, then on change** (recon 4). Nothing shows before the first submit. After it, each field shows its own `error` (Mantine sets `aria-invalid` and `aria-describedby`), and focus goes to the first invalid field. The errors then re-check on every change until the member fixes them. A server error is one `Alert` above the form: Mantine's renders `role="alert"`.
+   - **Password:** before submit, a `description` gives the rule ("At least 8 characters, with an uppercase letter, a lowercase letter and a number"). After submit, `validatePassword`'s unmet rules become the field's `error`, as a list.
+   - **Name:** `fullNameSchema`, whose normalized value is what `signUpWithEmail` receives. The label becomes "Full name".
+   - **Email:** `validateEmail`, message "Enter a valid email address."
+   - **Login's password:** "Enter your password."
+5. **Redirects happen in an effect** (recon 5). `useRedirectWhen(condition, href)` calls `router.replace(href)` in an effect when `condition` is true, and returns `condition` so the page renders `null` meanwhile. Login and signup use `!!user` → `/feed`. Onboarding uses `!user` → `/login`, and `!!user?.metro_area_id` → `/feed` for a member who already has a metro (recon 8), except while its own confirm is completing, which pushes `/feed` itself.
+6. **Busy auth buttons stay focusable** (recon 6):
+   - `GoogleButton` is a `variant="default"` Mantine `Button` with `IconBrandGoogle` (`aria-hidden`). While busy it takes `aria-disabled` and `aria-busy` with a `Loader` in `leftSection`, and ignores presses. Its label stays "Continue with Google".
+   - The submit buttons swap Mantine's `loading` for the same treatment.
+   - Resend is a `variant="subtle"` `Button` "Resend email", `aria-disabled` during its cooldown. The cooldown shows beside it as plain text ("You can resend in 42s"), which is not a live region, so it isn't announced every second.
+7. **verify-email** resends through `lib/auth`'s `resendSignupEmail` (recon 7). Success shows a green `Alert` "Email sent. Check your inbox." Failure shows decision 2's sentence. With no `?email=`, the page says "We sent a verification link to your email address." and renders no resend row, only the Log in link. The cooldown is `useCountdown(60)`, which returns `{ remaining, restart }`.
+8. **Onboarding's ZIP field is a Mantine `TextInput`** labelled "ZIP code", with `inputMode="numeric"`, `autoComplete="postal-code"` and `maxLength={5}` (recon 8).
+   - "Find my area" is always enabled, so the five-digit error can show. Errors sit on the field. Detect failures and save failures go in an `Alert`.
+   - "Detect my location" gets `IconMapPin`.
+   - When the step changes, focus moves to the new step's h1, which has `tabIndex={-1}`.
+   - A failed `addSavedLocation` doesn't block the member: their metro is already saved on their profile, so the page logs it with `logClientEvent` and continues. Manage Locations can add Home later.
+   - The `radius="xl"` props go, since the theme owns the radius.
+9. **The callback always ends** (recon 9). `finishSignIn(supabase, session)` returns `{ destination: '/feed' | '/onboarding/zip' } | { error: string }`, and fails on any `{ error }` or throw from its four calls. The page has three states:
+   - **working:** h1 "Signing you in…" and a `Loader`, for email and Google alike.
+   - **expired:** the timeout. The existing copy "Link expired" stays, with Sign up and Log in links.
+   - **failed:** h1 "Couldn't finish signing you in", decision 2's style of sentence, and "Try again", which reloads the page. The session persists, so a reload re-runs `finishSignIn`.
+   - `settled` now only stops a second concurrent run. The timeout is cleared as soon as a run starts, so a slow profile write can't flip a working page to expired.
+10. **The landing page leads somewhere** (recon 1). Its content:
+    - A hero: h1 "Welcome to Nepally", a lead ("The Nepali community in the USA, organized by where you live."), a primary "Sign up" and a default "Log in".
+    - An h2 "What you'll find" over five items that are not links: Housing, Jobs, Help, Events and Marketplace, each a Tabler icon (`aria-hidden`), an h3 and one sentence.
+    - A closing line linking the Community Guidelines.
+    - The `<title>` is "Nepally - The Nepali community in the USA". The viewport meta goes.
+11. **Legal pages keep native `<details>`** (recon 11): they are keyboard- and screen-reader-operable without JS, and Mantine `Accordion` would add nothing. `components/legal/` gains `Callout` (a `div` with `role="note"`) and `Faq` / `FaqItem` (`details` / `summary`), and the pages import those instead of the stylesheet. Prose sizes come from the type tokens; the related links become a `nav` of plain links on tokens.
+12. **The undefined-custom-property check** (PR 10's item, from 8a's review):
+    - Every `var(--x)` in a `.module.css` must be defined in `tokens.css`, or be defined in the same file (`--x:`), or start with `--mantine-`.
+    - A fallback (`var(--x, …)`) doesn't excuse an undefined name, because a fallback is exactly how such a typo hides.
+    - Mantine's component variables (for example `--tabs-list-border-width`) are allowed only by an explicit list in the guard, each with a comment naming the component that sets it.
+    - The four hits 8a's sweep found are fixed or listed in the task, not allowlisted by file.
+    - The legacy-token rule stays, for its clearer message.
+
+## PR 10a — Task breakdown
+
+### Task 10a.1: `getAuthErrorMessage` and `isExistingAccountError`
+
+**Files:** create `packages/shared/src/logic/authErrors.ts` and `authErrors.test.ts`; export from `logic/index.ts`.
+
+```ts
+export type AuthAction = 'log-in' | 'sign-up' | 'google' | 'resend';
+
+/** The fields of a Supabase AuthError this reads; duck-typed so shared needn't import auth-js classes. */
+export interface AuthErrorLike {
+  name?: string;
+  code?: string;
+  status?: number;
+}
+
+/** A sentence for the member (decision 2). Never the raw message. */
+export function getAuthErrorMessage(error: unknown, action: AuthAction): string;
+
+/** True for Supabase's existing-account codes (decision 3). */
+export function isExistingAccountError(error: unknown): boolean;
+```
+
+- [ ] **Step 1: Write the failing test.** For each code in decision 2, assert its sentence, whatever the action. `{ name: 'AuthRetryableFetchError', status: 0 }` → the connection sentence. An unknown code, a plain `Error`, `null` and a string each give the action's fallback (one case per action). `isExistingAccountError` is true for `{ code: 'user_already_exists' }` and `{ code: 'email_exists' }`, and false for `{ code: 'invalid_credentials' }`, `new Error('User already registered')` and `undefined`.
+- [ ] **Step 2: Run it and watch it fail.** `npm run test --workspace=packages/shared -- src/logic/authErrors.test.ts`
+- [ ] **Step 3: Implement.** Use a `Record<string, string>` from code to sentence, plus a `Record<AuthAction, string>` of fallbacks. Read `code`, `name` and `status` only when `typeof error === 'object' && error !== null`.
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(shared): add auth error messages`.
+
+### Task 10a.2: `lib/auth` resends and reports existing accounts
+
+**Files:** modify `apps/web/src/lib/auth.ts`; create `apps/web/src/lib/auth.test.ts` (none exists).
+
+```ts
+/** Resends the sign-up confirmation email. */
+export async function resendSignupEmail(email: string): Promise<{ error?: Error }>;
+```
+
+`signUpWithEmail` keeps its signature. When `data.user.identities` is an empty array, it returns `{ error }`, where `error` is an `Error` whose `code` is `'user_already_exists'` (use `Object.assign(new Error('User already registered'), { code: 'user_already_exists' })`).
+
+- [ ] **Step 1: Write the failing test.** Mock `./supabase`.
+  - `signUpWithEmail` with `identities: []` returns an error for which `isExistingAccountError` is true.
+  - With `identities: [{…}]`, it returns the user.
+  - With a Supabase `error`, it returns that error unchanged, so its `code` survives.
+  - `resendSignupEmail` calls `supabase.auth.resend({ type: 'signup', email })`. It returns `{}` on success and `{ error }` on failure.
+- [ ] **Step 2: Run it and watch it fail.** `npm run test --workspace=apps/web -- src/lib/auth.test.ts`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `fix(web): report an existing account on sign-up, and resend through lib/auth`.
+
+### Task 10a.3: `finishSignIn`
+
+**Files:** create `apps/web/src/lib/authCallback.ts` and `authCallback.test.ts`.
+
+```ts
+export type FinishSignInResult =
+  | { destination: '/feed' | '/onboarding/zip' }
+  | { error: string };
+
+export const FINISH_SIGN_IN_FAILED = "We couldn't finish setting up your account. Please try again.";
+
+/** The callback's steps: profile if missing, mark verified by provider, route by metro (decision 9). */
+export async function finishSignIn(supabase: SupabaseClient, session: Session): Promise<FinishSignInResult>;
+```
+
+- [ ] **Step 1: Write the failing test.** Mock the four shared functions.
+  - A new user: it calls `getMyProfile`, then `createUserProfile(supabase, id, email, full_name)`, then `markEmailVerified`. The second `getMyProfile` has no metro, so the result is `/onboarding/zip`.
+  - An existing profile skips `createUserProfile`.
+  - `app_metadata.provider === 'google'` calls `markGoogleVerified`, not `markEmailVerified`.
+  - A metro gives `/feed`.
+  - Each of `createUserProfile`, `mark*Verified` and the second `getMyProfile` returning `{ error }` gives `{ error: FINISH_SIGN_IN_FAILED }`, and so does one of them throwing. Each failure calls `logClientEvent` with `event: 'auth_callback_failed'`.
+- [ ] **Step 2: Run it and watch it fail.** `npm run test --workspace=apps/web -- src/lib/authCallback.test.ts`
+- [ ] **Step 3: Implement**, with a single `try` around the sequence. The first `getMyProfile`'s `{ error }` counts as "no profile" only when `data` is null and there is no error. On an error, fail.
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): add finishSignIn`.
+
+### Task 10a.4: `useRedirectWhen` and `useCountdown`
+
+**Files:** create `apps/web/src/hooks/useRedirectWhen.ts`, `useCountdown.ts` and a test for each.
+
+```ts
+/** router.replace(href) in an effect while `condition` holds; returns `condition` (decision 5). */
+export function useRedirectWhen(condition: boolean, href: string): boolean;
+
+export interface Countdown {
+  /** Whole seconds left; 0 when done. */
+  remaining: number;
+  restart: () => void;
+}
+/** Counts down from `seconds` once a second, starting on mount. */
+export function useCountdown(seconds: number): Countdown;
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `useRedirectWhen`: while `true`, it calls `replace(href)` once and does not call it again on re-render with the same arguments. While `false`, it makes no call. It returns its condition.
+  - `useCountdown` (fake timers): it starts at `seconds`, reads `seconds - 3` after 3 s, stops at 0, and `restart()` goes back to `seconds`. After unmount no timer is left (`vi.getTimerCount() === 0`).
+- [ ] **Step 2: Run them and watch them fail.** `npm run test --workspace=apps/web -- src/hooks/useRedirectWhen.test.ts src/hooks/useCountdown.test.ts`
+- [ ] **Step 3: Implement.** `useCountdown` keeps an end timestamp in state, set by `restart`, and ticks `remaining` from a one-second interval. The interval is cleared at 0 and on unmount. Deriving `remaining` from the end time keeps a throttled background tab honest.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): add useRedirectWhen and useCountdown`.
+
+### Task 10a.5: `AuthCard` and `GoogleButton`
+
+**Files:** create `apps/web/src/components/auth/AuthCard.tsx`, `AuthCard.module.css`, `GoogleButton.tsx`, and a test for each.
+
+```ts
+export interface AuthCardProps {
+  title: string;
+  description?: ReactNode;
+  /** Lets a step change move focus to the heading (decision 8). */
+  titleRef?: Ref<HTMLHeadingElement>;
+  children: ReactNode;
+  /** Cross-links under the card body ("Don't have an account? Sign up"). */
+  footer?: ReactNode;
+}
+
+export interface GoogleButtonProps {
+  onClick: () => void;
+  busy: boolean;
+}
+```
+
+`AuthCard` is a centred `Paper` with `--card-padding`, at most 420px wide via a token-based width. It holds an `h1` with `tabIndex={-1}` (Mantine `Title order={1}`), the description in `--text-2`, the children, and the footer in `--text-2` at `--font-size-sm`. `GoogleButton` is decision 6.
+
+- [ ] **Step 1: Write the failing tests.**
+  - `AuthCard` renders one `heading` of level 1 with `title`. A `titleRef` receives the h1. The description and footer render.
+  - `GoogleButton` is named "Continue with Google", and its icon is hidden from the accessibility tree. With `busy`, it has `aria-disabled="true"` and `aria-busy="true"`, is not `disabled`, and a click doesn't call `onClick`. Without `busy`, a click calls it.
+- [ ] **Step 2: Run them and watch them fail.** `npm run test --workspace=apps/web -- src/components/auth`
+- [ ] **Step 3: Implement**, with CSS on semantic tokens only.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): add AuthCard and GoogleButton`.
+
+**Chunk 1 gate:** run `type-check`, `lint`, `lint:guards`, and the shared and web unit suites, then the chunk review.
+
+### Task 10a.6: Rebuild login
+
+**Files:** rewrite `apps/web/src/pages/login.page.tsx` and `login.test.tsx`.
+
+The page is `AuthCard` "Welcome back", with the description "Log in to your Nepally account" and the footer "Don't have an account? Sign up". Inside it, in order:
+- the existing-account info `Alert` (as today);
+- the server-error `Alert`;
+- `GoogleButton`;
+- a Mantine `Divider` labelled "or log in with email";
+- a `form` with `noValidate`, holding Email (`TextInput type="email"`) and Password (`PasswordInput`), each with decision 4's field error, then the submit button "Log in".
+
+On success the page awaits `refreshUser()` and pushes `/feed`. Errors use `getAuthErrorMessage(error, 'log-in')` and `'google'`. The `?email=` prefill logic stays as it is.
+
+- [ ] **Step 1: Rewrite the test**, keeping every current case that still holds and changing names to decision 1's. New and changed cases:
+  - Submitting blank shows "Enter a valid email address." on the Email field (`toHaveAccessibleDescription`) with `aria-invalid`, and focuses it.
+  - Typing a valid email clears that error without another submit.
+  - `{ code: 'invalid_credentials' }` shows decision 2's sentence and never the raw message.
+  - A signed-in user triggers `replace('/feed')` from an effect, and the page renders nothing.
+  - While signing in, "Log in" has `aria-disabled` and isn't `disabled`.
+- [ ] **Step 2: Run it and watch it fail.** `npm run test --workspace=apps/web -- src/pages/login.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): rebuild login`.
+
+### Task 10a.7: Rebuild signup
+
+**Files:** rewrite `apps/web/src/pages/signup.page.tsx` and `signup.test.tsx`.
+
+The page is `AuthCard` "Join Nepally", with the description "Create your account to connect with the community" and the footer "Already have an account? Log in". The Terms and Privacy consent line sits above the footer. It has the same structure as login: Google, a `Divider` "or sign up with email", then Full name, Email and Password (decision 4), and "Create account". The name goes through `fullNameSchema.safeParse`, and its `data` is what `signUpWithEmail` receives. `isExistingAccountError` drives the redirect to `/login?reason=existing-account&email=…`. Success pushes `/verify-email?email=…`.
+
+- [ ] **Step 1: Rewrite the test.**
+  - "Bikal Shrestha", "O'Brien-Rai" and "बिकल श्रेष्ठ" are all accepted, and "  Bikal   Shrestha " is sent as "Bikal Shrestha".
+  - A one-character name shows "Name must be at least 2 characters" on the field.
+  - No password error shows before submit. After a submit with "abc", the field's description includes the unmet rules. Typing a valid password then clears them.
+  - `{ code: 'user_already_exists' }` redirects to login with the reason.
+  - Other errors show the sign-up sentence.
+  - Focus goes to the first invalid field.
+  - A signed-in user is redirected from an effect.
+- [ ] **Step 2: Run it and watch it fail.** `npm run test --workspace=apps/web -- src/pages/signup.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): rebuild signup on fullNameSchema`.
+
+### Task 10a.8: Rebuild verify-email
+
+**Files:** rewrite `apps/web/src/pages/verify-email.page.tsx` and `verify-email.test.tsx`.
+
+The page is `AuthCard` "Check your email", with the description "We sent a verification link to {masked email}. Open it to verify your account and continue." `maskEmail` stays in the page. Below that comes decision 7's resend row (with `?email=` only), then the success or error `Alert`, then the footer "Already verified? Log in".
+
+- [ ] **Step 1: Rewrite the test** (fake timers; mock `lib/auth`).
+  - Resend starts `aria-disabled` with "You can resend in 60s". After 60 s it is enabled, and pressing it calls `resendSignupEmail(email)`.
+  - Success shows "Email sent. Check your inbox." and restarts the cooldown, and focus stays on Resend.
+  - `{ code: 'over_email_send_rate_limit' }` shows the rate-limit sentence.
+  - With no `?email=`, there is no Resend button and the copy says "your email address".
+- [ ] **Step 2: Run it and watch it fail.** `npm run test --workspace=apps/web -- src/pages/verify-email.test.tsx`
+- [ ] **Step 3: Implement** over `useCountdown(60)`.
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): rebuild verify-email`.
+
+### Task 10a.9: Rebuild onboarding
+
+**Files:** rewrite `apps/web/src/pages/onboarding/zip.page.tsx` and `zip.test.tsx`.
+
+The zip step is `AuthCard` "Where are you?" with the description "Enter your ZIP code so we can show you local community posts." It holds the `form` (decision 8), then a `Divider` "or", then "Detect my location". The confirm step is `AuthCard` "Confirm your area", with "We found your metro area:", the metro in a `Paper` of `--surface-sunken`, and "Change ZIP" (`variant="default"`) beside "Confirm and continue". `titleRef` is focused in an effect keyed on `step`, but not on first mount, where the field's `autoFocus` wins. The two `useRedirectWhen` calls implement decision 5, and a `completing` flag set by `handleConfirm` suppresses the metro redirect.
+
+- [ ] **Step 1: Rewrite the test.**
+  - The ZIP field is `getByRole('textbox', { name: 'ZIP code' })`.
+  - Submitting "123" shows "Please enter a valid 5-digit ZIP code." on the field.
+  - Detect is `getByRole('button', { name: 'Detect my location' })` (the three old emoji-name queries go).
+  - Reaching the confirm step focuses the "Confirm your area" heading, and Change ZIP focuses "Where are you?".
+  - A failed `addSavedLocation` still pushes `/feed` and calls `logClientEvent`.
+  - A member with `metro_area_id` is sent to `/feed`, and a signed-out visitor to `/login`, both from effects.
+  - Confirm is `aria-disabled` while it saves.
+- [ ] **Step 2: Run it and watch it fail.** `npm run test --workspace=apps/web -- src/pages/onboarding/zip.test.tsx`
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `feat(web): rebuild onboarding`.
+
+### Task 10a.10: Rebuild the callback and delete `Auth.module.css`
+
+**Files:** rewrite `apps/web/src/pages/auth/callback.page.tsx` and `callback.test.tsx`; delete `apps/web/src/styles/Auth.module.css`; modify `scripts/guard-css-tokens.allowlist.json` and `apps/web/eslint/raw-element-allowlist.mjs`.
+
+The page subscribes to `onAuthStateChange` and checks `getSession` as it does today, but hands the session to `finishSignIn`. It renders decision 9's three states in `AuthCard`. The cleanup unsubscribes and clears the timeout, and a result that lands after unmount is dropped.
+
+- [ ] **Step 1: Rewrite the test** over a mocked `finishSignIn`.
+  - The working state shows "Signing you in…".
+  - A destination is pushed.
+  - `{ error }` shows the failed state, and Try again calls `router.reload()`.
+  - A `finishSignIn` still pending at 10 s doesn't flip to expired.
+  - With no session by 10 s, the expired state shows its two links.
+  - `SIGNED_IN` and `getSession` both firing call `finishSignIn` once.
+- [ ] **Step 2: Run it and watch it fail.** `npm run test --workspace=apps/web -- src/pages/auth/callback.test.tsx`
+- [ ] **Step 3: Implement.** Then:
+  - Delete `Auth.module.css` (`git grep -n "Auth.module.css" apps/web/src` must print nothing).
+  - Take it off the CSS allowlist.
+  - Regenerate the raw-element allowlist with `node apps/web/eslint/write-raw-element-allowlist.mjs`. It should be `[]`.
+- [ ] **Step 4: Run the auth page tests, then `npm run lint:guards` and `npm run lint --workspace=apps/web`.** All pass. The raw-element list is empty, and the CSS allowlist holds the three stylesheets left.
+- [ ] **Step 5: Commit** as `feat(web): rebuild the auth callback and retire Auth.module.css`.
+
+**Chunk 2 gate:** run `type-check`, `lint`, `lint:guards`, and the web unit suite, then the chunk review.
+
+### Task 10a.11: The landing page
+
+**Files:** create `apps/web/src/components/landing/LandingPage.tsx`, `LandingPage.module.css`, `LandingPage.test.tsx`; modify `apps/web/src/pages/index.page.tsx` and `index.test.tsx`; delete `apps/web/src/styles/Home.module.css`.
+
+`LandingPage` is decision 10. `index.page.tsx` keeps its three branches: `null` while loading, `FeedPage` when signed in, and otherwise `LandingPage` with the `Head`.
+
+- [ ] **Step 1: Write the failing tests.**
+  - `LandingPage`: the h1 is "Welcome to Nepally".
+  - "Sign up" links to `/signup` and "Log in" to `/login`.
+  - The h2 "What you'll find" is followed by five h3s.
+  - No link goes to `/feed`.
+  - Every `svg` is `aria-hidden`.
+  - Change `index.test.tsx`'s two card cases to "renders LandingPage when signed out".
+- [ ] **Step 2: Run them and watch them fail.** `npm run test --workspace=apps/web -- src/components/landing src/pages/index.test.tsx`
+- [ ] **Step 3: Implement.** Delete `Home.module.css` and take it off the CSS allowlist.
+- [ ] **Step 4: Run them, then `npm run lint:guards`, and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): a landing page that leads to sign-up`.
+
+### Task 10a.12: Legal pages on their own stylesheet
+
+**Files:** modify `apps/web/src/components/legal/LegalDocument.tsx`; create `components/legal/legal.module.css`, `Callout.tsx`, `Faq.tsx`, and `legal-components.test.tsx`; modify the four legal pages and `pages/legal.test.tsx`; delete `apps/web/src/styles/Legal.module.css`.
+
+```ts
+export function Callout({ children }: { children: ReactNode }): JSX.Element; // div role="note"
+export function Faq({ children }: { children: ReactNode }): JSX.Element;     // wrapper
+export function FaqItem({ question, children }: { question: string; children: ReactNode }): JSX.Element; // details > summary
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `Callout` is `getByRole('note')`.
+  - A `FaqItem`'s `summary` shows its question, and clicking it opens the `details`. `details` has an implicit `group` role; assert on the `open` attribute via `toHaveAttribute`.
+  - `LegalDocument`'s related `nav` ("Policies and help") lists the three other pages.
+  - `legal.test.tsx` keeps its five cases.
+- [ ] **Step 2: Run them and watch them fail.** `npm run test --workspace=apps/web -- src/components/legal src/pages/legal.test.tsx`
+- [ ] **Step 3: Implement.**
+  - Move `LegalDocument`'s styles into `legal.module.css` on tokens. Prose sizes come from `--font-size-*`, the title from `--font-display`, links from the action ink, and the callout's rule from `--danger`.
+  - Replace `styles.callout` and `styles.faq` in the pages with the components.
+  - Delete `Legal.module.css` and take it off the allowlist.
+- [ ] **Step 4: Run them, then `npm run lint:guards`, and watch them pass.**
+- [ ] **Step 5: Commit** as `feat(web): legal pages on the design system`.
+
+### Task 10a.13: Delete `ComingSoon.module.css` and the CSS allowlist
+
+**Files:** delete `apps/web/src/styles/ComingSoon.module.css` and `scripts/guard-css-tokens.allowlist.json`; modify `scripts/guard-css-tokens.js` and `guard-css-tokens.test.js`.
+
+- [ ] **Step 1: Write the failing test.** Export `checkFiles(files: Array<{ path: string; content: string }>): string[]` from the guard. It returns one error line per violation and never consults an allowlist. Test that a file with `#fff` yields one line naming it, and that a clean file yields none.
+- [ ] **Step 2: Run it and watch it fail.** `node --test scripts/guard-css-tokens.test.js`
+- [ ] **Step 3: Implement.** `main` walks, calls `checkFiles`, and prints and fails on any line. Remove `ALLOWLIST_PATH`, `--write-allowlist`, the clean-file check and the header's allowlist lines. Delete `ComingSoon.module.css`, which has no importer (`git grep ComingSoon apps/web/src` prints nothing), and the allowlist file.
+- [ ] **Step 4: Run `npm run guards:test` and `node scripts/guard-css-tokens.js`.** Both pass.
+- [ ] **Step 5: Commit** as `chore(web): retire the CSS token allowlist`.
+
+### Task 10a.14: Delete the raw-element allowlist and `legacy-aliases.css`
+
+**Files:** delete `apps/web/eslint/raw-element-allowlist.mjs`, `write-raw-element-allowlist.mjs`, `escape-glob.mjs` and `escape-glob.test.mjs`; modify `apps/web/eslint.config.mjs` and the root `package.json`; delete `apps/web/src/styles/legacy-aliases.css` and `legacy-aliases.test.ts`; modify `apps/web/src/styles/globals.css`.
+
+- [ ] **Step 1: Prove the rule still bites.** Add a temporary `<button>` to `pages/help.page.tsx`. Run `npm run lint --workspace=apps/web`: it currently fails with `react/forbid-elements`. Remove the button. The same check is repeated after Step 3.
+- [ ] **Step 2: Implement the ESLint half.**
+  - In `eslint.config.mjs`, drop the two imports, the `RAW_ELEMENT_ALLOWLIST_DISABLED` spread and the comment about bracket escaping. The rule block keeps only the `components/ui/**` and test ignores.
+  - `escape-glob` is used only by that spread (`git grep -n escape-glob apps/web` prints only these files), so delete it too.
+  - In `package.json`, drop `&& node apps/web/eslint/write-raw-element-allowlist.mjs --check` from `lint:guards`, and `\"apps/web/eslint/*.test.mjs\"` from `guards:test`. No test file is left there, and an unmatched pattern fails `node --test`.
+- [ ] **Step 3: Repeat Step 1's check.** The temporary button fails lint, and without it lint passes.
+- [ ] **Step 4: Implement the CSS half.**
+  - Remove `@import './legacy-aliases.css';` from `globals.css`.
+  - Delete `legacy-aliases.css` and its test.
+  - Check that `git grep -nE "var\(--(color-|gradient-|glass-|ghost-border|space-(xxs|xs|s|m|l|xl|xxl)\b)" apps/web/src` prints nothing.
+- [ ] **Step 5: Run `npm run lint:guards`, `npm run guards:test`, `npm run lint --workspace=apps/web` and the web unit suite.** All pass.
+- [ ] **Step 6: Commit** as `chore(web): retire the raw-element allowlist and the legacy token aliases`.
+
+### Task 10a.15: Fail on undefined custom properties
+
+**Files:** modify `scripts/guard-css-tokens.js` and `guard-css-tokens.test.js`; fix whatever it finds.
+
+```js
+/** Names defined in tokens.css. */
+function readTokenNames(tokensCss) {}               // -> Set<string>
+/** One violation per var(--x) that is not defined (decision 12). */
+function findUndefinedProperties(content, tokenNames) {} // -> Array<{ line, kind: 'undefined property', text }>
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `var(--text-1)` passes with `--text-1` in the set.
+  - `var(--weight-semibold)` fails, and so does `var(--text-sm, 14px)` (a fallback doesn't excuse it).
+  - `var(--mantine-color-ink-8)` passes.
+  - A name defined in the same file (`.a { --tier-color: red; } .b { color: var(--tier-color); }`) passes, though `red` still fails the named-colour rule.
+  - A name on the Mantine component list passes.
+  - Line numbers survive comments.
+- [ ] **Step 2: Run them and watch them fail.** `node --test scripts/guard-css-tokens.test.js`
+- [ ] **Step 3: Implement and run it over the app.** `node scripts/guard-css-tokens.js`. Triage each hit, one fix per cause, in this commit:
+  - a typo of a real token: fix it;
+  - a Mantine component variable: add it to `MANTINE_COMPONENT_PROPERTIES` with the component named;
+  - a dead reference: delete the declaration.
+  - 8a's sweep predicts `--tier-color`, `--color-background-subtle`, `--color-surface-muted` and `--tabs-list-border-width`. Record what was actually found in the tracker.
+- [ ] **Step 4: Run `npm run guards:test` and `npm run lint:guards`.** Both pass. Run `test:visual:web` against the Linux baselines only if a fix changed a rendered value. Otherwise that is left to chunk 4.
+- [ ] **Step 5: Commit** as `feat(guards): fail on undefined CSS custom properties`.
+
+**Chunk 3 gate:** run `type-check`, `lint`, `lint:guards`, `guards:test`, and the web unit suite, then the chunk review.
+
+### Task 10a.16: E2E, baselines, keyboard, docs and the PR
+
+**Files:** `apps/web/e2e/tests/01-unauthenticated.spec.ts`, `02-login.spec.ts` and `03-signup.spec.ts`; a new `apps/web/e2e/tests/16-auth-onboarding.spec.ts`; `apps/web/src/components/layout/PublicShell.tsx` (+ test) for decision 1; `docs/architecture/web-ui-system.md`; `docs/wireframes/00-design-system-foundation/00-design-system-foundation.md`; a new `docs/product/features/sign-up-and-log-in.md` (no auth feature doc exists yet); `docs/INDEX.md`.
+
+- [ ] **Step 1: PublicShell's labels.** Change them to "Log in" and "Sign up", and update `PublicShell`'s and `Layout`'s tests. (This is a component edit that lands in chunk 4, because it changes the e2e names below.)
+- [ ] **Step 2: Update the three specs.**
+  - Names follow decision 1.
+  - `02-login.spec.ts:51` asserts decision 2's invalid-credentials sentence. Mock a 400 with `{ code: 'invalid_credentials' }`.
+  - `03-signup.spec.ts:53` reads the password errors as the field's description, not a `list`.
+  - `01`'s landing test asserts the Sign up link.
+- [ ] **Step 3: Add `16-auth-onboarding.spec.ts`.**
+  - verify-email: the resend row and its countdown, with the clock faked through `page.clock`.
+  - Onboarding: a signed-in member with no metro gets the ZIP field, mocked `metro_areas` lookup, confirm, and lands on `/feed`.
+  - The callback's failed state, with the session mocked and the profile insert returning 500.
+  - Each legal page: an h1, the related nav, and a FAQ item opened with Enter.
+  - At 375px, none of login, signup, onboarding or a legal page overflows.
+- [ ] **Step 4: Run the e2e suite.** `npm run test:e2e:web`
+- [ ] **Step 5: Re-baseline `landing`, `login` and `signup`** in Docker (`npm run test:visual:docker --workspace=apps/web -- --update`). Review all six PNGs. Restore any other page that changed without cause and re-run against it, as 9a and 9b did. `a11y-baseline.json` stays `{}`.
+- [ ] **Step 6: Update the docs.**
+  - `web-ui-system.md`: the guards section now describes no allowlists and the undefined-property check, with its Mantine list. Add `AuthCard`, `GoogleButton`, `useRedirectWhen`, `useCountdown` and the legal components. List Google, submit and resend among the busy-controls cases.
+  - Mark the wireframe superseded, with a link to `web-ui-system.md`.
+  - Create `sign-up-and-log-in.md` (evergreen: what sign-up, log-in, verification, the callback and onboarding do today), recording the error sentences, existing-account handling, the callback's failed state and the onboarding redirect. Add it to `INDEX.md` under product features.
+  - `INDEX.md`'s overhaul line reads "PRs 0–10a".
+- [ ] **Step 7: Run the full gate.** `npm run lint`, `lint:guards`, `type-check`, `test`, `test:e2e:web`, `test:visual:web` and `docs:check`.
+- [ ] **Step 8: Walk the keyboard.**
+  - Login and signup: Tab order is Google, then each field, then the submit button, then the cross-link. Submitting blank lands focus on the first invalid field. Google and the submit button keep focus while busy.
+  - verify-email: Resend keeps focus through a send.
+  - Onboarding: Enter in the field submits, and each step change lands on its h1.
+  - Legal: Enter and Space toggle each FAQ item.
+  - At 375px nothing overflows.
+- [ ] **Step 9: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`. Then run `gh pr edit <number> --add-reviewer @copilot` and update the tracker row to `In Review (PR #NN)`.
 
 ## After the overhaul — Mantine 9
 
