@@ -1,3 +1,4 @@
+export { DetailList, DetailRow, type DetailListProps, type DetailRowProps } from './DetailList';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { ErrorState, type ErrorStateProps } from './ErrorState';
 export { LoadingState, type LoadingStateProps, type LoadingStateVariant } from './LoadingState';

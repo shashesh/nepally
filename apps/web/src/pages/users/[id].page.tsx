@@ -4,16 +4,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Badge, Button, Tabs } from '@mantine/core';
 import { formatPublicName, getFirstName, TrustLevel } from '@nepally/shared';
-import type { Event, PublicUser } from '@nepally/shared';
+import type { Event } from '@nepally/shared';
 import {
   EmptyState,
   ErrorState,
   ListStates,
   LoadingState,
-  TrustBadge,
   scrollFocusedTabIntoView,
   scrollingTabsClassNames,
 } from '../../components/ui';
+import { AboutPanel } from '../../components/users/AboutPanel';
 import { PublicProfileHeader } from '../../components/users/PublicProfileHeader';
 import { PostSummaryRow } from '../../components/posts/PostSummaryRow';
 import { EventSummaryRow } from '../../components/events/EventSummaryRow';
@@ -51,49 +51,6 @@ function ProfileShell({ title, children, variant = 'default' }: ProfileShellProp
       </Head>
       <div className={containerClassName}>{children}</div>
     </>
-  );
-}
-
-function AboutRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className={styles.aboutRow}>
-      <dt className={styles.aboutLabel}>{label}</dt>
-      <dd className={styles.aboutValue}>{children}</dd>
-    </div>
-  );
-}
-
-interface AboutPanelProps {
-  profileUser: PublicUser;
-  metroName: string | null;
-  postCount: number;
-  eventCount: number;
-  listingCount: number;
-}
-
-function AboutPanel({ profileUser, metroName, postCount, eventCount, listingCount }: AboutPanelProps) {
-  return (
-    <div className={styles.aboutSection}>
-      <dl>
-        {profileUser.bio && (
-          <div className={styles.aboutBioBlock}>
-            <dt className={styles.aboutLabel}>Bio</dt>
-            <dd className={styles.aboutBio}>{profileUser.bio}</dd>
-          </div>
-        )}
-        <AboutRow label="Location">{metroName || 'Not set'}</AboutRow>
-        <AboutRow label="Member since">{new Date(profileUser.created_at).getFullYear()}</AboutRow>
-        <AboutRow label="Trust level">
-          <TrustBadge level={profileUser.trust_level} />
-        </AboutRow>
-      </dl>
-      <div className={styles.aboutDivider} aria-hidden="true" />
-      <dl>
-        <AboutRow label="Posts">{postCount}</AboutRow>
-        <AboutRow label="Events organized">{eventCount}</AboutRow>
-        <AboutRow label="Active listings">{listingCount}</AboutRow>
-      </dl>
-    </div>
   );
 }
 

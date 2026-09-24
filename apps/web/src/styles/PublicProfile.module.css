@@ -1,11 +1,12 @@
 /*
- * Public Profile — page shell, tab content area and the About panel.
+ * Public Profile — page shell and tab content area.
  * Semantic tokens only (scripts/guard-css-tokens.js). Spec:
  * docs/specs/2026-09-14-web-ui-overhaul-design.md §4.1.
  *
  * The banner/card/avatar/identity rules live in PublicProfileHeader.module.css
- * (components/users/); loading and not-found states are components/ui/LoadingState
- * and components/ui/EmptyState; post/event/listing rows are components/ui/SummaryRow
+ * and the About tab's in AboutPanel.module.css (components/users/); loading
+ * and not-found states are components/ui/LoadingState and
+ * components/ui/EmptyState; post/event/listing rows are components/ui/SummaryRow
  * and its callers (PostSummaryRow, EventSummaryRow, ListingSummaryRow).
  *
  * No .page wrapper: AppShell.Main (Layout.module.css .main) already paints
@@ -34,63 +35,6 @@
    components/ui/scrollingTabs.module.css. */
 .content {
   margin: var(--space-4) var(--space-4) var(--space-7);
-}
-
-/* ── About tab ─────────────────────────────────── */
-
-.aboutSection {
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-card);
-  padding: var(--space-4);
-}
-
-.aboutBioBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: var(--space-1);
-}
-
-.aboutBio {
-  font-size: var(--font-size-base);
-  color: var(--text-2);
-  line-height: var(--leading-normal);
-  max-width: 48ch;
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.aboutDivider {
-  height: 0;
-  border-bottom: 1px solid var(--border-subtle);
-  margin: var(--space-1) 0;
-}
-
-.aboutRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-}
-
-.aboutLabel {
-  font-size: var(--font-size-sm);
-  color: var(--text-3);
-  font-weight: var(--font-weight-medium);
-}
-
-.aboutValue {
-  font-size: var(--font-size-base);
-  color: var(--text-1);
-  font-weight: var(--font-weight-medium);
-  text-align: right;
-  overflow-wrap: anywhere;
 }
 
 /* ── Rows (posts / events / listings) ─────────── */

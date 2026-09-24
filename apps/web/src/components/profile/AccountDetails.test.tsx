@@ -131,12 +131,19 @@ describe('AccountDetails', () => {
     expect(definitionFor(accountInfo, 'Member Since').textContent).toBe('March 15, 2024');
   });
 
-  it('shows "Not set" for a missing phone and ZIP code', () => {
+  it('has no Phone row for a missing phone, and shows "Not set" for a missing ZIP code', () => {
     renderDetails({ phone: undefined, zip_code: undefined });
     const accountInfo = within(screen.getByRole('region', { name: 'Account Info' }));
 
-    expect(definitionFor(accountInfo, 'Phone').textContent).toBe('Not set');
+    expect(accountInfo.queryByText('Phone')).toBeNull();
     expect(definitionFor(accountInfo, 'ZIP Code').textContent).toBe('Not set');
+  });
+
+  it('has no Phone row for an empty phone', () => {
+    renderDetails({ phone: '' });
+
+    expect(screen.queryByText('Phone')).toBeNull();
+    expect(screen.getAllByRole('term')).toHaveLength(5);
   });
 
   it('shows the phone and ZIP code when set', () => {
