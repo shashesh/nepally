@@ -43,8 +43,9 @@ export function ProfilePhotoControl({
   // an unrelated update that clears photoUrl never steals focus; and checked
   // after the removal commits rather than at click time (a mouse click
   // doesn't focus a button in Safari), so focus the member has moved
-  // elsewhere meanwhile is left alone.
-  const armFocus = useFocusAfterUpdate(photoUrl);
+  // elsewhere meanwhile is left alone. Keyed on whether there is a photo, not
+  // its URL, so a photo replaced while the removal is pending doesn't spend it.
+  const armFocus = useFocusAfterUpdate(Boolean(photoUrl));
 
   function rejectPick(message: string) {
     setPickError(message);
