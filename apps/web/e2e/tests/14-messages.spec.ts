@@ -152,6 +152,18 @@ test.describe('Messages', () => {
     await expect(field).toBeFocused();
   });
 
+  // No realtime runs under the mock, so only the thread's own "messages
+  // read" signal can clear the badge here.
+  test('opening a thread clears the Messages badge straight away', async ({ page }) => {
+    await page.goto('/messages');
+    await expect(page.getByRole('link', { name: 'Messages, 2 unread', exact: true })).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole('link', { name: /Bikash T\./ }).click();
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Bikash T.' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Messages, 2 unread', exact: true })).toHaveCount(0);
+  });
+
   test("the thread header's avatar opens the partner's profile", async ({ page }) => {
     await page.goto(`/messages/${CONVERSATION_ID}`);
 
