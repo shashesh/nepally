@@ -10,6 +10,8 @@ export interface ListingActionsPanelProps {
   isOwner: boolean;
   isSaved: boolean;
   saving: boolean;
+  /** A conversation with the seller is being opened. */
+  contacting: boolean;
   onContact: () => void;
   onToggleSave: () => void;
 }
@@ -25,6 +27,7 @@ export function ListingActionsPanel({
   isOwner,
   isSaved,
   saving,
+  contacting,
   onContact,
   onToggleSave,
 }: ListingActionsPanelProps) {
@@ -42,7 +45,17 @@ export function ListingActionsPanel({
         </>
       ) : (
         <>
-          <Button onClick={onContact}>Contact Seller</Button>
+          {/* Busy the same way as Save below, for the same reason. */}
+          <Button
+            onClick={() => {
+              if (!contacting) onContact();
+            }}
+            aria-disabled={contacting || undefined}
+            data-disabled={contacting || undefined}
+            leftSection={contacting ? <Loader size={16} /> : undefined}
+          >
+            Contact Seller
+          </Button>
           {/* One stable name, with aria-pressed carrying the state: renaming
               the button to "Saved" while also setting aria-pressed is the
               contradiction APG warns about. The bookmark fills in, so the

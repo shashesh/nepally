@@ -8,7 +8,6 @@ import { useRouter } from 'next/router';
 import {
   formatEventDateLong,
   getEventAttendees,
-  getOrCreateConversation,
   isEventPast,
   TrustLevel,
   type Event,
@@ -18,6 +17,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useEventDetail } from '../../hooks/useEventDetail';
 import { useNow } from '../../hooks/useNow';
+import { useStartConversation } from '../../hooks/useStartConversation';
 import { supabase } from '../../lib/supabase';
 import AttendeeList from '../../components/events/AttendeeList';
 import { EventAttendanceCard, type EventResponseBlock } from '../../components/events/EventAttendanceCard';
@@ -69,7 +69,7 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
   const [attendeesOpen, setAttendeesOpen] = useState(false);
   const [attendeesLoading, setAttendeesLoading] = useState(false);
   const [attendeesError, setAttendeesError] = useState<string | null>(null);
-  const [messaging, setMessaging] = useState(false);
+  const { start: startConversation, starting: messaging } = useStartConversation();
 
   const loadAttendees = useCallback(async () => {
     if (!event) return;
@@ -86,14 +86,9 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
     if (attendees === null && !attendeesLoading) void loadAttendees();
   };
 
-  const handleMessage = async () => {
+  const handleMessage = () => {
     const organizer = event?.organizer;
-    if (!organizer || messaging) return;
-    setMessaging(true);
-    const result = await getOrCreateConversation(supabase, viewer.id, viewer.full_name, organizer.id, organizer.full_name);
-    setMessaging(false);
-    if (result.data) router.push(`/messages/${result.data.conversationId}`);
-    else notify.error("Couldn't start a conversation. Try again.");
+    if (organizer) void startConversation({ id: organizer.id, name: organizer.full_name });
   };
 
   const handleCancel = async () => {

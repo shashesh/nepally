@@ -16,3 +16,4 @@ export * from './listingPrice';
 export * from './text';
 export * from './bytes';
 export * from './eventDates';
+export * from './realtime';

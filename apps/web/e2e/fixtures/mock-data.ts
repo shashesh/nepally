@@ -15,6 +15,8 @@ export const FIXTURE_NOW_MS = process.env.E2E_FIXED_NOW ? Date.parse(process.env
 export const MOCK_USER_ID = 'e2e-user-00000000-0000-0000-0000-000000000001';
 export const MOCK_USER_EMAIL = 'e2e-test@nusa.app';
 export const MOCK_METRO_ID = 'metro-nyc-001';
+/** The conversation getOrCreateConversation "creates" in the logged-in mock. */
+export const MOCK_NEW_CONVERSATION_ID = 'conv-e2e-new-0000-0000-0000-000000000001';
 
 export const MOCK_USER_PROFILE: User = {
   id: MOCK_USER_ID,

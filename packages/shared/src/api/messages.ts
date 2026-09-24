@@ -4,9 +4,12 @@
  */
 import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import type { ChatMessage } from '../types/chat';
+import { uniqueChannelTopic } from '../utils/realtime';
 
 /**
- * Get messages for a conversation in chronological order
+ * The newest `limit` messages of a conversation, oldest first. Ordering
+ * ascending before the limit would return the oldest messages instead, and a
+ * long conversation would never show its latest ones.
  */
 export async function getMessages(
   supabase: SupabaseClient,
@@ -18,11 +21,11 @@ export async function getMessages(
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
-      .order('timestamp', { ascending: true })
+      .order('timestamp', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    return { data: (data || []) as ChatMessage[] };
+    return { data: ((data || []) as ChatMessage[]).slice().reverse() };
   } catch (error) {
     return {
       error: error instanceof Error
@@ -91,20 +94,25 @@ export async function markAsRead(
   try {
     const now = new Date().toISOString();
 
-    // Mark messages as read
-    await supabase
+    // Mark messages as read. supabase-js reports a failed update in `error`
+    // rather than throwing, so each result is checked.
+    const { error: messagesError } = await supabase
       .from('messages')
       .update({ read: true, read_at: now })
       .eq('conversation_id', conversationId)
       .neq('sender_id', userId)
       .eq('read', false);
 
+    if (messagesError) throw messagesError;
+
     // Reset unread_count
-    await supabase
+    const { error: participantError } = await supabase
       .from('conversation_participants')
       .update({ unread_count: 0 })
       .eq('conversation_id', conversationId)
       .eq('user_id', userId);
+
+    if (participantError) throw participantError;
 
     return {};
   } catch (error) {
@@ -127,7 +135,7 @@ export function subscribeToMessages(
   onMessageUpdate?: (message: ChatMessage) => void
 ): RealtimeChannel {
   const channel = supabase
-    .channel(`messages:${conversationId}`)
+    .channel(uniqueChannelTopic(`messages:${conversationId}`))
     .on(
       'postgres_changes',
       {

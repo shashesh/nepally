@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
+import { useStartConversation } from '../../hooks/useStartConversation';
 import { supabase } from '../../lib/supabase';
 import {
   getPostById,
@@ -17,7 +18,6 @@ import {
   savePost,
   unsavePost,
   getUserSavedPostIds,
-  getOrCreateConversation,
   createReport,
   buildSingleLevelCommentThreads,
   formatRelativeTime,
@@ -69,6 +69,7 @@ export default function PostDetailPage() {
 function PostDetailView({ routePostId }: { routePostId: string | null }) {
   const router = useRouter();
   const { user } = useAuth();
+  const { start: startConversation } = useStartConversation();
   const confirm = useConfirm();
 
   const [post, setPost] = useState<Post | null>(null);
@@ -314,15 +315,8 @@ function PostDetailView({ routePostId }: { routePostId: string | null }) {
     setComments((prev) => prev.filter((comment) => comment.id !== commentId && comment.parent_comment_id !== commentId));
   }
 
-  async function handleAvatarChat(targetId: string, targetName: string) {
-    if (!user || targetId === user.id) return;
-
-    const result = await getOrCreateConversation(supabase, user.id, user.full_name, targetId, targetName);
-    if (!viewActiveRef.current) return;
-
-    if (result.data) {
-      router.push(`/messages/${result.data.conversationId}`);
-    }
+  function handleAvatarChat(targetId: string, targetName: string) {
+    void startConversation({ id: targetId, name: targetName });
   }
 
   async function submitReport(values: { reason: string; description?: string }) {

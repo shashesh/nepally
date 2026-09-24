@@ -2,13 +2,24 @@
 
 **Status:** Draft
 **Phase:** 1 (Utility Core & Trust Foundation)
-**Last Updated:** 2026-02-15
+**Last Updated:** 2026-09-23
 
 ---
 
 ## Overview
 
 Real-time one-on-one messaging between users, initiated by tapping another user's avatar. All private communication flows through in-app chat rather than exposing phone numbers or email addresses. Built on Supabase Realtime for instant message delivery.
+
+## Web behaviour today (2026-09-23, web UI overhaul PR 9a)
+
+The rest of this document is the original draft spec. What web does now:
+
+- **Starting a chat.** Chat on a post or comment avatar, Message on a public profile, Message Organizer on an event, and Contact Seller on a listing all open the conversation with that member, creating it on first contact. Contact Seller used to land on the inbox with no conversation. A failure says "Couldn't start a conversation. Please try again." everywhere; feed and post detail used to fail silently.
+- **Names.** Chat shows public names ("Bikal S."), as the rest of the site does. The avatar menu in the inbox and the thread header offers View profile, which opens the member's public profile.
+- **The inbox** shows each conversation's time, last message and unread count ("3 unread" to a screen reader). A failed load says so with Try again, rather than looking like an empty inbox. It is not paged.
+- **A thread** shows its newest 100 messages; before PR 9a it showed the oldest 100 and never the latest. Messages are grouped under day headings (Today, Yesterday, Mar 5), and the viewer's own say Sent or Read. The composer stays pinned to the bottom of the screen. The page follows new messages only when the viewer sent them or is already at the bottom, and screen readers announce new messages, not receipt changes.
+- **Sending.** A failed send keeps the text and says "Couldn't send your message. Please try again."
+- **Not found.** A conversation the viewer isn't in — a mistyped link, or one with a member they have blocked — shows "Conversation not found" with a link back to Messages, and no composer.
 
 ## Problem Statement
 

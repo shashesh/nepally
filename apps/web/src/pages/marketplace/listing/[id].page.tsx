@@ -7,6 +7,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../../hooks/useAuth';
 import { useNow } from '../../../hooks/useNow';
 import { useListingDetail } from '../../../hooks/useListingDetail';
+import { useStartConversation } from '../../../hooks/useStartConversation';
 import { supabase } from '../../../lib/supabase';
 import {
   incrementListingContacts,
@@ -51,16 +52,19 @@ interface ListingDetailViewProps {
 }
 
 function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
-  const router = useRouter();
   const now = useNow();
   const detail = useListingDetail(id, viewer);
   const { listing } = detail;
+  const { start: startConversation, starting: contacting } = useStartConversation();
 
-  const handleContact = useCallback(async () => {
-    if (!listing?.owner || !id) return;
-    await incrementListingContacts(supabase, id);
-    router.push(`/messages?to=${listing.owner.id}`);
-  }, [listing, id, router]);
+  const handleContact = useCallback(() => {
+    const owner = listing?.owner;
+    if (!owner || !id) return;
+    void startConversation(
+      { id: owner.id, name: owner.full_name },
+      { beforeStart: () => incrementListingContacts(supabase, id) }
+    );
+  }, [listing, id, startConversation]);
 
   if (!ready || detail.loading) {
     return (
@@ -106,6 +110,7 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
       isOwner={isOwner}
       isSaved={detail.isSaved}
       saving={detail.saving}
+      contacting={contacting}
       onContact={handleContact}
       onToggleSave={detail.toggleSave}
     />

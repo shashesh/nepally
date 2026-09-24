@@ -12,6 +12,7 @@ import {
   markAllNotificationsRead,
   deleteNotification,
   resolveNotificationRouteTarget,
+  uniqueChannelTopic,
 } from '@nepally/shared';
 import type { Notification } from '@nepally/shared';
 import styles from '../styles/Notifications.module.css';
@@ -132,7 +133,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`notifications-page:${user.id}`)
+      .channel(uniqueChannelTopic(`notifications-page:${user.id}`))
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },

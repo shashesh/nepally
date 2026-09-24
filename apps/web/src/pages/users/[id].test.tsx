@@ -381,7 +381,7 @@ describe('PublicProfilePage', () => {
     await act(async () => {});
 
     expect(profilePageMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Failed to start conversation. Please try again.', color: 'red' })
+      expect.objectContaining({ message: "Couldn't start a conversation. Please try again.", color: 'red' })
     );
     expect(mockPush).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Message Bikal S.' })).toBeDefined();

@@ -75,6 +75,7 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
   - Landmarks are named `Primary`, `Tabs` and `Topics`.
   - Active links carry `aria-current="page"`.
   - Badge counts are part of accessible names ("Messages, 3 unread").
+- `globals.css` clips horizontal overflow on `html` and `body` with `overflow-x: clip`, never `hidden`. `hidden` on both makes `<body>` a scroll container that never scrolls, and every `position: sticky` on the site then sticks to it, which means never. It did, until PR 9a: the feed's `SponsoredRail` and listing detail's sidebar had never stuck.
 
 ## UI primitives (`components/ui`)
 
@@ -139,7 +140,7 @@ The events list (`/events`) and event detail (`/events/[id]`) are built from the
 
 ### Busy controls stay focusable
 
-A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You, the public profile's Message button, event detail's Message Organizer and `AddLocationForm`'s Save and Cancel all work this way.
+A control that is busy because the member just used it keeps focus. It gets `aria-disabled` and `data-disabled`, plus a handler that ignores presses while busy, and never native `disabled` or Mantine's `loading`, which sets `disabled`: disabling the focused element drops focus to `<body>`. Show progress with a `Loader` in `leftSection` or a `role="status"` region and keep the label, so the accessible name doesn't change. `globals.css` gives the pointer cursor only to `button:not(:disabled, [data-disabled])`, so busy buttons show Mantine's `not-allowed`. Native `disabled` is still right for a control the member can't have just used, such as `FollowButton` while its status first loads, or Save Location while the name is empty. `ProfilePhotoControl`, `AccountDetails`' bio button, the profile's Save About You, the public profile's Message button, event detail's Message Organizer, listing detail's Contact Seller, the message thread's Send and `AddLocationForm`'s Save and Cancel all work this way.
 
 Two controls are the exception, both for the same reason: they show the member's new state at once, and `data-disabled` would repaint it in Mantine's grey. While a follow or unfollow saves, `FollowButton` sets only `aria-disabled`, so "Following" or "Follow" stays at full opacity. `EventResponseControl` does the same, so the Interested or Going button the member just pressed stays visibly pressed until the write lands.
 
@@ -174,6 +175,25 @@ The marketplace (`/marketplace`, `/marketplace/[category]`, `/marketplace/listin
 
 Their data comes from four hooks: `useMarketplaceFeed(metroId, query)` for the strips, grid and paging, `useListingDetail(id, viewer)` for one listing, `useMyListings(userId)` for an owner's listings and their actions, and `usePromoteWizard(listingId, viewer)` for the wizard and checkout. Both keep loading, empty and failed apart — a failed read clears its rows rather than leaving the previous metro's on screen, and a failed page says so instead of looking like the end of the list.
 
+## Messages components
+
+The inbox (`/messages`) and a thread (`/messages/[id]`) are built from these, in `components/messages/`. Chat shows public names ("Bikal S."), with the full name as the avatar's `toneKey`.
+
+| Component | Notes |
+|---|---|
+| `ConversationRow` | One inbox `li`: the partner's `UserMenuTrigger` (View profile only) beside a link to the thread. Not a stretched link — its overlay would cover the avatar button. The link's name carries the time, the preview and the unread count ("3 unread", the word visually hidden) |
+| `ThreadHeader` | A back link to Messages, the partner's one avatar menu, and the page's `h1` |
+| `MessageLog` | A `role="log"` region named "Messages with {name}", with `aria-relevant="additions"` so only new messages are announced, not a receipt turning to Read. A `section` and `h2` per day (`formatDayLabel`), receipts spoken as Sent or Read, and a decorative avatar at the end of each received run (`buildThreadDays`). The window scrolls, not the log: it goes to the end of the page on first render, after the viewer sends, and when a message arrives while the viewer is within 120px of the bottom |
+| `MessageComposer` | A labelled field ("Message {name}") and an icon Send, `position: sticky` at the bottom of the viewport. Send is natively disabled only while the field is blank and is `aria-disabled` while sending. A sent message clears the field unless the member kept typing, and puts focus back in it; a failed one keeps the text and says so |
+
+| Hook | Notes |
+|---|---|
+| `useStartConversation()` | `{ start(partner, { beforeStart? }), starting }`, the one way to open a chat, used by the feed, post detail, event detail, the public profile and listing detail. Sends a signed-out visitor to log in, ignores the viewer's own id and a second press, and reports a failure with one toast. `beforeStart` runs inside the double-press guard, which is how listing detail counts one contact per press. `starting` stays set after a success until navigation unmounts the caller |
+| `useConversations(userId)` | The inbox, over `useUserList`: a failed load is an error with a retry, never an empty inbox. Not paged — `getConversations` returns every conversation |
+| `useMessageThread(conversationId, userId)` | The newest 100 messages, the partner, realtime and `send`. Subscribes before loading and merges what arrives meanwhile; a conversation missing from the viewer's list (never theirs, or with a member they blocked) is `notFound`, and the channel is left. Keyed on the two ids, not the user object |
+
+Every web realtime channel, and shared `subscribeToMessages`, takes its topic from shared `uniqueChannelTopic(base)`. realtime-js hands back a still-leaving channel for a matching topic, and that channel's `subscribe()` does nothing, so resubscribing to a fixed topic straight after removing it — React StrictMode's dev remount, or A → B → A — gets no events. Mobile's own channels (`HomeScreen`, `NotificationsScreen`) still use fixed topics; moving them is on PR 10's list.
+
 ## Web-only helpers (`src/lib`)
 
 | Helper | Notes |
@@ -183,6 +203,7 @@ Their data comes from four hooks: `useMarketplaceFeed(metroId, query)` for the s
 | `resizeImage(file)` | Downscales to 1200px wide at JPEG quality 0.8, returning a `File`. Passed to `ImageUploader` as `transformFile` |
 | `cropToSquare(file, size?)` | In `resizeImage.ts`. Centre-crops to the largest square and scales it to at most `PROFILE_PHOTO_SIZE_PX`, never up, as a JPEG `File` |
 | `replaceProfilePhoto(supabase, userId, file)` | `lib/profilePhoto.ts`: `cropToSquare`, then the shared `setProfilePhoto`. Returns `{ error }` as a message; an image that won't decode is logged and reads "We couldn't process that image" |
+| `announceMessagesRead()` | `lib/unreadMessages.ts`. A thread calls it once `markAsRead` has run, and `useUnreadMessageCount` refreshes on it, so the top bar's badge clears at once instead of waiting on realtime or its 30s poll |
 | `isFocusStranded()` | `lib/focus.ts`. True when focus is on `<body>` or still inside a closing modal (`[aria-modal="true"]`). Mantine returns focus on a timer and keeps a modal mounted through its exit transition, so an effect restoring focus must treat both as lost |
 | `parseMarketplaceQuery(query)` | `lib/marketplaceQuery.ts`. One reading of the marketplace's URL state for both routes, which both expose the slug as `query.category`. Also `isFilteredQuery` and `SEARCH_SLUG`, the pseudo-category `/marketplace/search` uses |
 | `submitNewPost` / `submitEditedPost` | Create post's two submit paths, as pure functions. They own the rollback rules: delete what was just uploaded when the write fails, delete what the member dropped only once it succeeds |
@@ -198,7 +219,7 @@ Their data comes from four hooks: `useMarketplaceFeed(metroId, query)` for the s
 | `CommentComposer` | `components/posts/` | The comment field, with a real label and a reply banner naming the person |
 | `PostComposer` | `components/feed/` | The prompt row; it links to the composer, or to verification below trust level 1 |
 | `SponsoredRail` | `components/feed/` | The `<aside>` holding paid listings and the upcoming-events widget |
-| `UserMenuTrigger` | `components/users/` | An avatar that opens View profile / Chat through `ActionMenu` |
+| `UserMenuTrigger` | `components/users/` | An avatar that opens View profile / Chat through `ActionMenu`. `toneKey` keeps the avatar's colour when `name` is a public name |
 | `DateTimeField` | `components/events/` | A date and a time behaving as one `YYYY-MM-DDTHH:mm` value. The time does nothing until a date is set. Takes both input ids from its caller, because the e2e suite drives them directly |
 
 ## Profile components
