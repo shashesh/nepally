@@ -1,16 +1,15 @@
 import React from 'react';
-import { render, screen, waitFor, act } from '../../test-utils';
+import { render, screen, fireEvent, act } from '../../test-utils';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
+
+type AuthListener = (event: AuthChangeEvent, session: Session | null) => void;
 
 const callbackMocks = vi.hoisted(() => ({
   useRouterMock: vi.fn(),
   onAuthStateChangeMock: vi.fn(),
   getSessionMock: vi.fn(),
-  createUserProfileMock: vi.fn(),
-  markEmailVerifiedMock: vi.fn(),
-  markGoogleVerifiedMock: vi.fn(),
-  getMyProfileMock: vi.fn(),
+  finishSignInMock: vi.fn(),
 }));
 
 vi.mock('next/router', () => ({
@@ -26,11 +25,8 @@ vi.mock('../../lib/supabase', () => ({
   },
 }));
 
-vi.mock('@nepally/shared', () => ({
-  createUserProfile: callbackMocks.createUserProfileMock,
-  markEmailVerified: callbackMocks.markEmailVerifiedMock,
-  markGoogleVerified: callbackMocks.markGoogleVerifiedMock,
-  getMyProfile: callbackMocks.getMyProfileMock,
+vi.mock('../../lib/authCallback', () => ({
+  finishSignIn: callbackMocks.finishSignInMock,
 }));
 
 vi.mock('next/head', () => ({
@@ -43,204 +39,136 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
-const mockUnsubscribe = vi.fn();
+import AuthCallbackPage from './callback.page';
 
-function makeSession(overrides: Partial<Session['user']> = {}): Session {
-  return {
-    user: {
-      id: 'user-123',
-      email: 'test@example.com',
-      user_metadata: { full_name: 'Test User' },
-      ...overrides,
-    },
-  } as unknown as Session;
+const SESSION = { user: { id: 'user-123', email: 'test@example.com' } } as unknown as Session;
+
+const mockUnsubscribe = vi.fn();
+let listener: AuthListener | null = null;
+
+async function fireAuthEvent(event: AuthChangeEvent, session: Session | null = SESSION) {
+  await act(async () => {
+    listener?.(event, session);
+  });
 }
 
-import AuthCallbackPage from './callback.page';
+function advance(ms: number) {
+  act(() => {
+    vi.advanceTimersByTime(ms);
+  });
+}
 
 describe('AuthCallbackPage', () => {
   const mockPush = vi.fn();
+  const mockReload = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    listener = null;
 
-    callbackMocks.useRouterMock.mockReturnValue({ push: mockPush });
-    callbackMocks.onAuthStateChangeMock.mockImplementation(() => ({
-      data: { subscription: { unsubscribe: mockUnsubscribe } },
-    }));
+    callbackMocks.useRouterMock.mockReturnValue({ push: mockPush, reload: mockReload });
+    callbackMocks.onAuthStateChangeMock.mockImplementation((cb: AuthListener) => {
+      listener = cb;
+      return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
+    });
     callbackMocks.getSessionMock.mockResolvedValue({ data: { session: null } });
-    callbackMocks.createUserProfileMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
-    callbackMocks.markEmailVerifiedMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
-    callbackMocks.markGoogleVerifiedMock.mockResolvedValue({ data: { id: 'user-123' }, error: null });
-    callbackMocks.getMyProfileMock.mockResolvedValue({ data: null, error: { message: 'Not found' } });
+    callbackMocks.finishSignInMock.mockResolvedValue({ destination: '/feed' });
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('renders verifying state initially', () => {
+  it('shows the working state first', () => {
     render(<AuthCallbackPage />);
-    expect(screen.getByText('Verifying your email...')).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'Signing you in…' })).toBeDefined();
   });
 
-  it('creates profile and marks email verified when SIGNED_IN fires for new user', async () => {
-    let capturedCallback: ((event: AuthChangeEvent, session: Session | null) => void) | null = null;
-
-    callbackMocks.onAuthStateChangeMock.mockImplementation(
-      (cb: (event: AuthChangeEvent, session: Session | null) => void) => {
-        capturedCallback = cb;
-        return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
-      }
-    );
-
-    // New user: first getMyProfile returns null, second returns profile with no metro
-    callbackMocks.getMyProfileMock
-      .mockResolvedValueOnce({ data: null, error: null })
-      .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: null }, error: null });
-
+  it('hands the session to finishSignIn and pushes its destination', async () => {
+    callbackMocks.finishSignInMock.mockResolvedValue({ destination: '/onboarding/zip' });
     render(<AuthCallbackPage />);
-
-    await act(async () => {
-      capturedCallback!('SIGNED_IN', makeSession());
-    });
-
-    await waitFor(() => {
-      expect(callbackMocks.createUserProfileMock).toHaveBeenCalledWith(
-        expect.anything(),
-        'user-123',
-        'test@example.com',
-        'Test User'
-      );
-      expect(callbackMocks.markEmailVerifiedMock).toHaveBeenCalledWith(
-        expect.anything(),
-        'user-123'
-      );
-    });
+    await fireAuthEvent('SIGNED_IN');
+    expect(callbackMocks.finishSignInMock).toHaveBeenCalledWith(expect.anything(), SESSION);
+    expect(mockPush).toHaveBeenCalledWith('/onboarding/zip');
   });
 
-  it('redirects to /onboarding/zip when metro_area_id is null', async () => {
-    let capturedCallback: ((event: AuthChangeEvent, session: Session | null) => void) | null = null;
-
-    callbackMocks.onAuthStateChangeMock.mockImplementation(
-      (cb: (event: AuthChangeEvent, session: Session | null) => void) => {
-        capturedCallback = cb;
-        return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
-      }
-    );
-
-    callbackMocks.getMyProfileMock
-      .mockResolvedValueOnce({ data: null, error: null })
-      .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: null }, error: null });
-
+  it('runs finishSignIn from getSession when the session already exists', async () => {
+    callbackMocks.getSessionMock.mockResolvedValue({ data: { session: SESSION } });
     render(<AuthCallbackPage />);
-
-    await act(async () => {
-      capturedCallback!('SIGNED_IN', makeSession());
-    });
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/onboarding/zip');
-    });
+    await act(async () => {});
+    expect(callbackMocks.finishSignInMock).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/feed');
   });
 
-  it('redirects to /feed when metro_area_id is already set (returning user)', async () => {
-    let capturedCallback: ((event: AuthChangeEvent, session: Session | null) => void) | null = null;
-
-    callbackMocks.onAuthStateChangeMock.mockImplementation(
-      (cb: (event: AuthChangeEvent, session: Session | null) => void) => {
-        capturedCallback = cb;
-        return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
-      }
-    );
-
-    // Returning user: profile exists with metro_area_id set
-    callbackMocks.getMyProfileMock
-      .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: '35620' }, error: null })
-      .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: '35620' }, error: null });
-
+  it('calls finishSignIn once when SIGNED_IN and getSession both deliver a session', async () => {
+    callbackMocks.getSessionMock.mockResolvedValue({ data: { session: SESSION } });
     render(<AuthCallbackPage />);
-
-    await act(async () => {
-      capturedCallback!('SIGNED_IN', makeSession());
-    });
-
-    await waitFor(() => {
-      expect(callbackMocks.createUserProfileMock).not.toHaveBeenCalled();
-      expect(mockPush).toHaveBeenCalledWith('/feed');
-    });
+    await fireAuthEvent('SIGNED_IN');
+    await act(async () => {});
+    expect(callbackMocks.finishSignInMock).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledTimes(1);
   });
 
-  it('shows error state after timeout when no SIGNED_IN fires', async () => {
+  it('ignores events that carry no session', async () => {
     render(<AuthCallbackPage />);
-
-    act(() => {
-      vi.advanceTimersByTime(11000);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Link Expired')).toBeDefined();
-    });
+    await fireAuthEvent('INITIAL_SESSION', null);
+    expect(callbackMocks.finishSignInMock).not.toHaveBeenCalled();
   });
 
-  it('shows links to Sign Up and Sign In on error state', async () => {
+  it('shows the failed state, and Try again reloads the page', async () => {
+    callbackMocks.finishSignInMock.mockResolvedValue({
+      error: "We couldn't finish setting up your account. Please try again.",
+    });
     render(<AuthCallbackPage />);
+    await fireAuthEvent('SIGNED_IN');
+    expect(
+      screen.getByRole('heading', { level: 1, name: "Couldn't finish signing you in" })
+    ).toBeDefined();
+    expect(screen.getByText("We couldn't finish setting up your account. Please try again.")).toBeDefined();
+    expect(mockPush).not.toHaveBeenCalled();
 
-    act(() => {
-      vi.advanceTimersByTime(11000);
-    });
-
-    await waitFor(() => {
-      const backLink = screen.getByText('Back to Sign Up').closest('a');
-      expect(backLink?.getAttribute('href')).toBe('/signup');
-      const signInLink = screen.getByText('Sign In').closest('a');
-      expect(signInLink?.getAttribute('href')).toBe('/login');
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(mockReload).toHaveBeenCalled();
   });
 
-  it('unsubscribes from onAuthStateChange on unmount', () => {
+  it('does not flip to expired while finishSignIn is still running at 10 seconds', async () => {
+    callbackMocks.finishSignInMock.mockImplementation(() => new Promise(() => {}));
+    render(<AuthCallbackPage />);
+    await fireAuthEvent('SIGNED_IN');
+    advance(11_000);
+    expect(screen.getByRole('heading', { level: 1, name: 'Signing you in…' })).toBeDefined();
+    expect(screen.queryByText('Link expired')).toBeNull();
+  });
+
+  it('shows the expired state with Sign up and Log in links when no session arrives', () => {
+    render(<AuthCallbackPage />);
+    advance(11_000);
+    expect(screen.getByRole('heading', { level: 1, name: 'Link expired' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Sign up' }).getAttribute('href')).toBe('/signup');
+    expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
+  });
+
+  it('unsubscribes and stops the timeout on unmount', () => {
     const { unmount } = render(<AuthCallbackPage />);
     unmount();
     expect(mockUnsubscribe).toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('calls markGoogleVerified instead of markEmailVerified for Google provider', async () => {
-    let capturedCallback: ((event: AuthChangeEvent, session: Session | null) => void) | null = null;
-
-    callbackMocks.onAuthStateChangeMock.mockImplementation(
-      (cb: (event: AuthChangeEvent, session: Session | null) => void) => {
-        capturedCallback = cb;
-        return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
-      }
+  it('drops a result that lands after unmount', async () => {
+    let resolve: (value: { destination: '/feed' }) => void = () => {};
+    callbackMocks.finishSignInMock.mockImplementation(
+      () => new Promise((r) => {
+        resolve = r;
+      })
     );
-
-    callbackMocks.getMyProfileMock
-      .mockResolvedValueOnce({ data: null, error: null })
-      .mockResolvedValueOnce({ data: { id: 'user-123', metro_area_id: null }, error: null });
-
-    render(<AuthCallbackPage />);
-
-    const googleSession = {
-      user: {
-        id: 'user-123',
-        email: 'test@gmail.com',
-        user_metadata: { full_name: 'Google User' },
-        app_metadata: { provider: 'google' },
-      },
-    } as unknown as Session;
-
+    const { unmount } = render(<AuthCallbackPage />);
+    await fireAuthEvent('SIGNED_IN');
+    unmount();
     await act(async () => {
-      capturedCallback!('SIGNED_IN', googleSession);
+      resolve({ destination: '/feed' });
     });
-
-    await waitFor(() => {
-      expect(callbackMocks.markGoogleVerifiedMock).toHaveBeenCalledWith(
-        expect.anything(),
-        'user-123'
-      );
-      expect(callbackMocks.markEmailVerifiedMock).not.toHaveBeenCalled();
-      expect(mockPush).toHaveBeenCalledWith('/onboarding/zip');
-    });
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });
