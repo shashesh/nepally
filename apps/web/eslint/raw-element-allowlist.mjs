@@ -1,6 +1,0 @@
-/**
- * Files that still render raw <button>/<input>/<select>/<textarea>.
- * Each web UI overhaul area PR removes its files; delete the list when empty.
- * Regenerate: node apps/web/eslint/write-raw-element-allowlist.mjs
- */
-export const RAW_ELEMENT_ALLOWLIST = [];

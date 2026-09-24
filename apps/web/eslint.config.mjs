@@ -1,7 +1,5 @@
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
 import tseslint from 'typescript-eslint';
-import { RAW_ELEMENT_ALLOWLIST } from './eslint/raw-element-allowlist.mjs';
-import { escapeGlobLiteral } from './eslint/escape-glob.mjs';
 
 /**
  * Flat config for the web app, replacing the former .eslintrc.json.
@@ -48,23 +46,12 @@ const config = [
   },
 
   // Web UI overhaul (spec §4.2): interactive primitives come from Mantine.
-  // components/ui/ may wrap raw elements. Files not migrated yet are listed in
-  // eslint/raw-element-allowlist.mjs, which shrinks with each area PR.
-  //
-  // Next.js dynamic route segments (src/pages/**/[id].page.tsx) put literal
-  // square brackets in the filename. ESLint's `ignores` patterns are globs, and
-  // an unescaped `[id]` is a bracket expression matching a single 'i' or 'd'
-  // character, not the four literal characters — so allowlisted dynamic routes
-  // would silently fail to be ignored. Escape `[` and `]` so each allowlist
-  // entry matches the literal path.
+  // components/ui/ may wrap raw elements; every other file uses Mantine.
   {
     files: ['src/**/*.tsx'],
     ignores: [
       'src/components/ui/**',
       'src/**/*.test.tsx',
-      ...(process.env.RAW_ELEMENT_ALLOWLIST_DISABLED === '1'
-        ? []
-        : RAW_ELEMENT_ALLOWLIST.map(escapeGlobLiteral)),
     ],
     rules: {
       'react/forbid-elements': [
