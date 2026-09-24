@@ -96,6 +96,7 @@ export default function SearchPage() {
         </Head>
         <PageHeader title="Search" />
         <EmptyState
+          titleOrder={2}
           icon={<IconSearch size={22} />}
           title="Search Nepally"
           description="Use the search bar to find posts, marketplace listings and people."
@@ -157,7 +158,7 @@ export default function SearchPage() {
           {state.error ? null : state.loading || !state.preview ? (
             <LoadingState label="Searching…" />
           ) : totalCount === 0 ? (
-            <EmptyState title={`Nothing matches “${query}”`} description={allMetros ? undefined : `Nothing in ${metroLabel} yet.`} action={allMetrosAction} />
+            <EmptyState titleOrder={2} title={`Nothing matches “${query}”`} description={allMetros ? undefined : `Nothing in ${metroLabel} yet.`} action={allMetrosAction} />
           ) : (
             (['posts', 'listings', 'people'] as TypeTab[]).map((key) => {
               const group = state.preview![key];
@@ -187,6 +188,7 @@ export default function SearchPage() {
               <LoadingState label="Searching…" />
             ) : state.items.length === 0 ? (
               <EmptyState
+                titleOrder={2}
                 title={`No ${TAB_LABELS[key].toLowerCase()} match “${query}”`}
                 description={allMetros ? undefined : `Nothing in ${metroLabel} yet.`}
                 action={allMetrosAction}

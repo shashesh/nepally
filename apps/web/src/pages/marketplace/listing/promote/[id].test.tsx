@@ -90,7 +90,7 @@ describe('PromoteListingPage', () => {
     mockGetListing.mockResolvedValue({ error: new Error('Listing not found'), notFound: true });
     render(<PromoteListingPage />);
 
-    expect(await screen.findByRole('heading', { name: 'Listing not found' })).toBeDefined();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Listing not found' })).toBeDefined();
     expect(screen.queryByRole('radiogroup')).toBeNull();
   });
 

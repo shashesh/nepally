@@ -90,7 +90,7 @@ describe('SearchPage', () => {
   it('prompts for a query when q is missing', () => {
     setRoute({});
     render(<SearchPage />);
-    expect(screen.getByRole('heading', { name: 'Search Nepally' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 2, name: 'Search Nepally' })).toBeDefined();
   });
 
   it('shows the query, counts and the All preview', () => {
