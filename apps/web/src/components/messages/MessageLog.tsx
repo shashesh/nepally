@@ -4,6 +4,7 @@ import { IconCheck, IconChecks } from '@tabler/icons-react';
 import { buildThreadDays, formatDayLabel, formatPublicName, formatRelativeTime } from '@nepally/shared';
 import type { ChatMessage, ConversationWithParticipant } from '@nepally/shared';
 import Avatar from '../Avatar';
+import { useNow } from '../../hooks/useNow';
 import styles from './MessageLog.module.css';
 
 /** How close to the bottom still counts as "following along" for an incoming message. */
@@ -33,6 +34,10 @@ function isNearBottom(): boolean {
 export function MessageLog({ messages, viewerId, partner }: MessageLogProps) {
   const name = formatPublicName(partner.other_user_name);
   const days = buildThreadDays(messages, viewerId);
+  // A ticking clock, so "Today" becomes "Yesterday" at midnight and "just
+  // now" ages while the thread stays open. aria-relevant="additions" keeps
+  // these text changes from being announced.
+  const now = useNow();
   const shownLastIdRef = useRef<string | null>(null);
   // Recorded on scroll, so it describes the page before a new message renders.
   const nearBottomRef = useRef(true);
@@ -60,7 +65,7 @@ export function MessageLog({ messages, viewerId, partner }: MessageLogProps) {
     <div role="log" aria-label={`Messages with ${name}`} aria-relevant="additions" className={styles.log}>
       {days.map((day) => (
         <section key={day.key} className={styles.day}>
-          <h2 className={styles.dayLabel}>{formatDayLabel(new Date(day.timestamp))}</h2>
+          <h2 className={styles.dayLabel}>{formatDayLabel(new Date(day.timestamp), now)}</h2>
           {day.messages.map(({ message, isOwn, endsRun }) => (
             <div key={message.id} className={styles.row} data-own={isOwn || undefined}>
               {isOwn ? null : (
@@ -79,7 +84,7 @@ export function MessageLog({ messages, viewerId, partner }: MessageLogProps) {
               <div className={styles.bubble} data-message>
                 <p className={styles.text}>{message.text}</p>
                 <span className={styles.meta}>
-                  <span>{formatRelativeTime(new Date(message.timestamp))}</span>
+                  <span>{formatRelativeTime(new Date(message.timestamp), now)}</span>
                   {isOwn ? (
                     <span className={styles.receipt}>
                       {message.read ? (

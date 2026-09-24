@@ -175,6 +175,15 @@ describe('useMessageThread', () => {
       await waitFor(() => expect(mocks.announceMessagesRead).toHaveBeenCalledTimes(1));
     });
 
+    it('does not tell the badge when marking the thread read fails', async () => {
+      mocks.markAsRead.mockResolvedValue({ error: new Error('rls') });
+      await renderLoaded();
+      await act(async () => {});
+
+      expect(mocks.markAsRead).toHaveBeenCalled();
+      expect(mocks.announceMessagesRead).not.toHaveBeenCalled();
+    });
+
     it('marks the thread read only once the viewer is known to be in it', async () => {
       const conversations = deferred<{ data: ConversationWithParticipant[] }>();
       mocks.getConversations.mockReturnValue(conversations.promise);

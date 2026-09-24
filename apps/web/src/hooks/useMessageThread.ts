@@ -81,10 +81,11 @@ export function useMessageThread(conversationId: string | null, userId: string |
     const viewerId = userId;
 
     // The badge learns straight away rather than waiting on realtime, even
-    // if the viewer has already left: the count changed either way.
+    // if the viewer has already left: the count changed either way. After a
+    // failure nothing changed, so there is nothing to announce.
     async function markThreadRead(): Promise<void> {
-      await markAsRead(supabase, id, viewerId);
-      announceMessagesRead();
+      const { error } = await markAsRead(supabase, id, viewerId);
+      if (!error) announceMessagesRead();
     }
 
     // `removeChannel` is a round trip, and events already in flight for this

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, within } from '../../test-utils';
+import { act, render, screen, within } from '../../test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatMessage, ConversationWithParticipant } from '@nepally/shared';
 import { MessageLog } from './MessageLog';
@@ -69,6 +69,20 @@ describe('MessageLog', () => {
     renderLog([message('m1', 'partner-1', TODAY)]);
 
     expect(screen.getByRole('log').getAttribute('aria-relevant')).toBe('additions');
+  });
+
+  it('moves Today to Yesterday when the clock passes midnight with the thread open', () => {
+    vi.useRealTimers();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 23, 23, 59, 30));
+    renderLog([message('m1', 'partner-1', new Date(2026, 8, 23, 23, 0))]);
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Today');
+
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Yesterday');
   });
 
   it('heads each day with its label', () => {

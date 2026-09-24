@@ -192,7 +192,7 @@ The inbox (`/messages`) and a thread (`/messages/[id]`) are built from these, in
 | `useConversations(userId)` | The inbox, over `useUserList`: a failed load is an error with a retry, never an empty inbox. Not paged — `getConversations` returns every conversation |
 | `useMessageThread(conversationId, userId)` | The newest 100 messages, the partner, realtime and `send`. Subscribes before loading and merges what arrives meanwhile; a conversation missing from the viewer's list (never theirs, or with a member they blocked) is `notFound`, and the channel is left. Keyed on the two ids, not the user object |
 
-Every realtime channel takes its topic from shared `uniqueChannelTopic(base)`. realtime-js hands back a still-leaving channel for a matching topic, and that channel's `subscribe()` does nothing, so resubscribing to a fixed topic straight after removing it — React StrictMode's dev remount, or A → B → A — gets no events.
+Every web realtime channel, and shared `subscribeToMessages`, takes its topic from shared `uniqueChannelTopic(base)`. realtime-js hands back a still-leaving channel for a matching topic, and that channel's `subscribe()` does nothing, so resubscribing to a fixed topic straight after removing it — React StrictMode's dev remount, or A → B → A — gets no events. Mobile's own channels (`HomeScreen`, `NotificationsScreen`) still use fixed topics; moving them is on PR 10's list.
 
 ## Web-only helpers (`src/lib`)
 

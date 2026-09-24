@@ -8,6 +8,8 @@ import styles from './ConversationRow.module.css';
 
 export interface ConversationRowProps {
   conversation: ConversationWithParticipant;
+  /** The inbox's ticking clock (useNow), so the time ages while the page is open. */
+  now: Date;
 }
 
 /**
@@ -15,7 +17,7 @@ export interface ConversationRowProps {
  * link sits beside the avatar rather than stretching over the row, so the
  * menu trigger is never under the link's overlay.
  */
-export function ConversationRow({ conversation }: ConversationRowProps) {
+export function ConversationRow({ conversation, now }: ConversationRowProps) {
   const name = formatPublicName(conversation.other_user_name);
   const unread = conversation.unread_count > 0;
 
@@ -32,7 +34,7 @@ export function ConversationRow({ conversation }: ConversationRowProps) {
         <span className={styles.top}>
           <span className={styles.name}>{name}</span>
           {conversation.last_message_time ? (
-            <span className={styles.time}>{formatRelativeTime(new Date(conversation.last_message_time))}</span>
+            <span className={styles.time}>{formatRelativeTime(new Date(conversation.last_message_time), now)}</span>
           ) : null}
         </span>
         <span className={styles.bottom}>

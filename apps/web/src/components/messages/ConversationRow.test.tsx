@@ -29,10 +29,10 @@ function conversation(overrides: Partial<ConversationWithParticipant> = {}): Con
   };
 }
 
-function renderRow(overrides: Partial<ConversationWithParticipant> = {}) {
+function renderRow(overrides: Partial<ConversationWithParticipant> = {}, now = new Date('2026-09-23T11:00:00Z')) {
   return render(
     <ul>
-      <ConversationRow conversation={conversation(overrides)} />
+      <ConversationRow conversation={conversation(overrides)} now={now} />
     </ul>
   );
 }
@@ -61,6 +61,12 @@ describe('ConversationRow', () => {
     const link = screen.getByRole('link', { name: /Bikal S\./ });
     expect(link.textContent).toContain('2h ago');
     expect(link.textContent).toContain('Is the room still available?');
+  });
+
+  it('ages its time from the clock it is given', () => {
+    renderRow({}, new Date('2026-09-23T09:05:00Z'));
+
+    expect(screen.getByRole('link', { name: /Bikal S\./ }).textContent).toContain('5m ago');
   });
 
   it('says so when there are no messages yet', () => {
