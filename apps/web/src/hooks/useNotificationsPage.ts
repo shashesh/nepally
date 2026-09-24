@@ -84,6 +84,10 @@ export function useNotificationsPage(userId: string | null): NotificationsPageSt
   // The rows on screen, for the realtime handler: a row it already has is
   // neither added nor counted again.
   const rowsRef = useRef<Notification[]>([]);
+  // A second mark-read or delete of a row already in flight (a double press)
+  // gets the first one's promise, so the count moves once.
+  const markingRef = useRef(new Map<string, Promise<boolean>>());
+  const removingRef = useRef(new Map<string, Promise<boolean>>());
   useEffect(() => {
     rowsRef.current = notifications;
   }, [notifications]);
@@ -110,6 +114,10 @@ export function useNotificationsPage(userId: string | null): NotificationsPageSt
     let active = true;
     // Rows delivered while the first page loads; null once it has landed.
     let early: Notification[] | null = [];
+    // Ids this channel has delivered. Updated at once, unlike rowsRef, which
+    // only catches up after a render: a redelivered event (a reconnect, two
+    // events in one flush) must not be counted twice.
+    const delivered = new Set<string>();
 
     const channel = supabase
       .channel(uniqueChannelTopic(`notifications-page:${userId}`))
@@ -121,9 +129,10 @@ export function useNotificationsPage(userId: string | null): NotificationsPageSt
           const row = payload.new as Notification;
           // getNotifications and the count exclude chat notifications, so one
           // accepted here would vanish on reload (recon 19).
-          if (row.type === 'message') return;
+          if (row.type === 'message' || delivered.has(row.id)) return;
+          delivered.add(row.id);
           if (early) {
-            if (!early.some((n) => n.id === row.id)) early.push(row);
+            early.push(row);
             return;
           }
           if (rowsRef.current.some((n) => n.id === row.id)) return;
@@ -208,16 +217,23 @@ export function useNotificationsPage(userId: string | null): NotificationsPageSt
     requestNextPage();
   }, [requestNextPage]);
 
-  const markRead = useCallback(async (notification: Notification): Promise<boolean> => {
-    if (notification.read) return true;
+  const markRead = useCallback((notification: Notification): Promise<boolean> => {
+    if (notification.read) return Promise.resolve(true);
+    const inFlight = markingRef.current.get(notification.id);
+    if (inFlight) return inFlight;
+
     const generation = generationRef.current;
-    const result = await markNotificationRead(supabase, notification.id);
-    if (result.error) return false;
-    announceNotificationsChanged();
-    if (generation !== generationRef.current) return true;
-    setNotifications((rows) => rows.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
-    setUnreadCount((count) => Math.max(0, count - 1));
-    return true;
+    const request = markNotificationRead(supabase, notification.id).then((result) => {
+      markingRef.current.delete(notification.id);
+      if (result.error) return false;
+      announceNotificationsChanged();
+      if (generation !== generationRef.current) return true;
+      setNotifications((rows) => rows.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
+      setUnreadCount((count) => Math.max(0, count - 1));
+      return true;
+    });
+    markingRef.current.set(notification.id, request);
+    return request;
   }, []);
 
   const markAllRead = useCallback(async (): Promise<boolean> => {
@@ -232,7 +248,7 @@ export function useNotificationsPage(userId: string | null): NotificationsPageSt
     return true;
   }, [userId]);
 
-  const remove = useCallback(async (notification: Notification): Promise<boolean> => {
+  const runRemove = useCallback(async (notification: Notification): Promise<boolean> => {
     deletesInFlightRef.current += 1;
     setDeleting(true);
     try {
@@ -255,6 +271,17 @@ export function useNotificationsPage(userId: string | null): NotificationsPageSt
       setDeleting(deletesInFlightRef.current > 0);
     }
   }, []);
+
+  const remove = useCallback(
+    (notification: Notification): Promise<boolean> => {
+      const inFlight = removingRef.current.get(notification.id);
+      if (inFlight) return inFlight;
+      const request = runRemove(notification).finally(() => removingRef.current.delete(notification.id));
+      removingRef.current.set(notification.id, request);
+      return request;
+    },
+    [runRemove]
+  );
 
   const hasUser = Boolean(userId);
   return {

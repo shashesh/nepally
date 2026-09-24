@@ -195,6 +195,19 @@ describe('useNotificationsPage', () => {
     expect(result.current.unreadCount).toBe(1);
   });
 
+  it('counts a redelivered realtime row once, even before a render', async () => {
+    const { result } = await loaded();
+
+    act(() => {
+      const callback = mocks.inserts[mocks.inserts.length - 1];
+      callback({ new: notification('new') });
+      callback({ new: notification('new') });
+    });
+
+    expect(result.current.notifications.map((n) => n.id)).toEqual(['new', 'a', 'b']);
+    expect(result.current.unreadCount).toBe(2);
+  });
+
   it('keeps a row delivered during the first load without counting it', async () => {
     const list = deferred<{ data: Notification[]; hasMore: boolean }>();
     mocks.getNotifications.mockReturnValueOnce(list.promise);
@@ -238,6 +251,20 @@ describe('useNotificationsPage', () => {
     expect(result.current.notifications[0].read).toBe(false);
     expect(result.current.unreadCount).toBe(1);
     expect(mocks.announce).not.toHaveBeenCalled();
+  });
+
+  it('marks a row read once when asked twice at once', async () => {
+    const { result } = await loaded();
+    const row = result.current.notifications[0];
+
+    let results: boolean[] = [];
+    await act(async () => {
+      results = await Promise.all([result.current.markRead(row), result.current.markRead(row)]);
+    });
+
+    expect(results).toEqual([true, true]);
+    expect(mocks.markNotificationRead).toHaveBeenCalledTimes(1);
+    expect(result.current.unreadCount).toBe(0);
   });
 
   it('makes no call for a row that is already read', async () => {
@@ -296,6 +323,21 @@ describe('useNotificationsPage', () => {
     expect(result.current.notifications).toEqual([]);
     expect(result.current.unreadCount).toBe(0);
     expect(mocks.announce).toHaveBeenCalledTimes(2);
+  });
+
+  it('deletes a row once when asked twice at once', async () => {
+    mocks.getUnreadNotificationCount.mockResolvedValue({ count: 2 });
+    const { result } = await loaded();
+    const row = result.current.notifications[0];
+
+    let results: boolean[] = [];
+    await act(async () => {
+      results = await Promise.all([result.current.remove(row), result.current.remove(row)]);
+    });
+
+    expect(results).toEqual([true, true]);
+    expect(mocks.deleteNotification).toHaveBeenCalledTimes(1);
+    expect(result.current.unreadCount).toBe(1);
   });
 
   it('keeps the row when a delete fails', async () => {
