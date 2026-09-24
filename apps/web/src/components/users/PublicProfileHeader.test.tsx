@@ -18,11 +18,27 @@ vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
 const mocks = vi.hoisted(() => ({ followButtonSpy: vi.fn() }));
 
+// "Follow" and "Unfollow" stand in for the real toggle's two outcomes: each
+// reports the new state through onChange, as FollowButton does once its
+// request succeeds.
 vi.mock('./FollowButton', () => ({
-  FollowButton: (props: { viewerId: string | null; targetUserId: string }) => {
+  FollowButton: (props: {
+    viewerId: string | null;
+    targetUserId: string;
+    onChange?: (nowFollowing: boolean) => void;
+  }) => {
     mocks.followButtonSpy(props);
     return props.viewerId
-      ? React.createElement('button', { type: 'button', 'data-testid': 'follow-button' }, 'Follow')
+      ? React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(
+            'button',
+            { type: 'button', 'data-testid': 'follow-button', onClick: () => props.onChange?.(true) },
+            'Follow'
+          ),
+          React.createElement('button', { type: 'button', onClick: () => props.onChange?.(false) }, 'Unfollow')
+        )
       : null;
   },
 }));
@@ -212,6 +228,30 @@ describe('PublicProfileHeader', () => {
     expect(screen.getByText(/1 following\b/)).toBeDefined();
     expect(screen.queryByText(/1 followers/)).toBeNull();
     expect(screen.queryByText(/1 followings/)).toBeNull();
+  });
+
+  it('counts the viewer in as they follow, and out again as they unfollow', () => {
+    renderHeader({ profileUser: { ...baseUser, follower_count: 12 } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Follow' }));
+    expect(screen.getByText('13 followers')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unfollow' }));
+    expect(screen.getByText('12 followers')).toBeDefined();
+  });
+
+  it('pluralises the moved count: 1 follower becomes 2 followers', () => {
+    renderHeader({ profileUser: { ...baseUser, follower_count: 1 } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Follow' }));
+    expect(screen.getByText('2 followers')).toBeDefined();
+  });
+
+  it('never counts below 0 followers', () => {
+    renderHeader({ profileUser: { ...baseUser, follower_count: 0 } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unfollow' }));
+    expect(screen.getByText('0 followers')).toBeDefined();
   });
 
   it('renders the follow control for another profile when signed in, targeting the profile user', () => {
