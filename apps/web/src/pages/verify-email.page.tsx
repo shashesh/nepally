@@ -43,6 +43,10 @@ export default function VerifyEmailPage() {
     restart();
   }
 
+  // Pages Router: the query is empty until isReady, which would render the no-email
+  // copy and then pop the resend row in a tick later.
+  if (!router.isReady) return null;
+
   return (
     <>
       <Head>

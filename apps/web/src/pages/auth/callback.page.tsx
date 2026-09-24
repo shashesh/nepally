@@ -90,7 +90,11 @@ export default function AuthCallbackPage() {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, [router]);
+    // Subscribe once. Next hands out a fresh router object on router-driven renders,
+    // and re-running would reset `started` and could finish sign-in twice. Its push
+    // delegates to the router singleton, so the first render's object stays usable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
+  }, []);
 
   if (state.kind === 'expired') return <ExpiredCard />;
   // The session persists, so a reload runs finishSignIn again.

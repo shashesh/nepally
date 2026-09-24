@@ -149,6 +149,16 @@ describe('AuthCallbackPage', () => {
     expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
   });
 
+  it('keeps one subscription when the router object changes identity', async () => {
+    // Next hands out a fresh public router object on router-driven renders.
+    const { rerender } = render(<AuthCallbackPage />);
+    callbackMocks.useRouterMock.mockReturnValue({ push: mockPush, reload: mockReload });
+    rerender(<AuthCallbackPage />);
+    await act(async () => {});
+    expect(callbackMocks.onAuthStateChangeMock).toHaveBeenCalledTimes(1);
+    expect(mockUnsubscribe).not.toHaveBeenCalled();
+  });
+
   it('unsubscribes and stops the timeout on unmount', () => {
     const { unmount } = render(<AuthCallbackPage />);
     unmount();

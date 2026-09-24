@@ -58,6 +58,7 @@ describe('VerifyEmailPage', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     verifyMocks.useRouterMock.mockReturnValue({
       query: { email: 'test@example.com' },
+      isReady: true,
     });
     verifyMocks.resendSignupEmailMock.mockResolvedValue({});
   });
@@ -146,8 +147,16 @@ describe('VerifyEmailPage', () => {
     );
   });
 
+  it('renders nothing until the router has read the query', () => {
+    // Pages Router: the query is empty until isReady, so the email would read as missing.
+    verifyMocks.useRouterMock.mockReturnValue({ query: {}, isReady: false });
+    render(<VerifyEmailPage />);
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+    expect(screen.queryByText(/your email address/)).toBeNull();
+  });
+
   it('has no resend row without an email in the query', () => {
-    verifyMocks.useRouterMock.mockReturnValue({ query: {} });
+    verifyMocks.useRouterMock.mockReturnValue({ query: {}, isReady: true });
     render(<VerifyEmailPage />);
     expect(screen.getByText(/We sent a verification link to your email address\./)).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Resend email' })).toBeNull();
