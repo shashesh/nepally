@@ -198,8 +198,8 @@ One task is `In Progress` at a time. Update this table when a PR starts and when
 | 8b Marketplace: seller flow | `feat/web-ui-marketplace-seller` | 8b.1–8b.12, in three chunks | Merged (PR #89) | 2026-09-23 | branched from `master` at f632e79. No visual pages, so no baseline run; `a11y-baseline.json` stays `{}`. `marketplace.module.css` is deleted in chunk 1 (my-listings is its last consumer). **Chunk 1** (8b.1–8b.5, fd1c478..ff4d273) done 2026-09-23: gate green (shared 670, web 1610 tests); `my-listings.page.tsx` 216 → 104 lines before the review fix; `marketplace.module.css` (193 lines, 32 guard violations) deleted, and the page off the raw-element allowlist, down to 7 files. One deviation from decision 2: the next page's offset is `listings.length`, which equals "rows fetched minus rows deleted" because deactivated rows stay on screen and deleted ones leave both the screen and the server's results. Review found no CRITICAL. Two HIGH, both fixed in 90eabce: (1) that equivalence failed when a delete and a page load overlapped — the page's offset counted a row the delete then removed, so one listing never appeared — so a delete now waits for a page in flight and no page is requested while a delete is pending; (2) deleting a row unmounted the menu trigger the confirm dialog returns focus to, dropping focus to `<body>`, so focus now moves to the neighbouring row's link, or to Create listing, when `isFocusStranded()`. Nothing routed. **Chunk 2** (8b.6–8b.11, 2f6d18f..345a7ec) done 2026-09-23: gate green (shared 677, web 1650 tests). `listing/promote/[id].page.tsx` 410 → 173 lines; `promote.module.css` 841 → 99 lines and 107 → 0 guard violations. Both pages off both allowlists: the raw-element list is down to 6 files and the CSS guard allowlist holds only PR 10's four stylesheets. Deviations: a small `SummaryList` shared by the duration and review steps; `promote.module.css` came off the CSS allowlist in 8b.10 rather than 8b.11, because the guard fails on an allowlisted file that is already clean — the rewrite kept the success page's class names on tokens so it stayed styled between commits; a checkout response with no URL now reports an error rather than doing nothing; Continue waits with `aria-disabled`, not native `disabled`; and step markers use the action ink pair, since `--accent` is never text. Review found no CRITICAL, HIGH or MEDIUM. Fixed in the review commit: clearing the duration field snapped it straight back to 1 (found while triaging the review, not by it), so deleting "7" and typing "3" gave "13"; and the missing test for a checkout with no URL. Routed to PR 10: `tokens.contrast.test.ts` has no `--accent-ink` / `--success` on `--surface-sunken` pair, used by the tier icons and the success icon (both `aria-hidden` beside text that carries the same meaning). **Chunk 3** (8b.12, a71f26e..addf5f5) done 2026-09-23: e2e 111, visual 39 with no screenshot diffs (neither page is in `pages.ts`), and `a11y-baseline.json` still `{}`; full gate green (shared 677, web 1653, mobile 636). The my-listings e2e now drives the row menu and confirm dialogs and checks focus survives a delete, and a new e2e walks the wizard to review by keyboard. The keyboard walk is kept in `13-marketplace-keyboard.spec.ts`, as 8a's was: a row menu opens on Enter, moves on arrows and returns focus to its trigger on Escape, and neither page overflows at 375px on any step. Screenshots of both pages at 1280 and 375 were reviewed by eye, with nothing to fix: at 375 the third step's label truncates to "Review …" (its full text stays in the DOM). The mobile Jest run needed `--cacheDirectory` pointed at a writable folder, because the default system-temp transform cache failed to write in this environment — not a code issue. **Copilot review** (round 1, 2 inline comments) answered 2026-09-23; both were real and are fixed: (1) the wizard worked out its blocker only when it opened, and the edge function does not check status, so a listing deactivated in another tab could still be paid for — Pay now re-reads the listing first (bef9022); (2) a load-more from before a reload could clear the in-flight page ref for a newer request, releasing a delete early — a request now clears the ref only while it still holds it (3b1229f). The durable fix for (1) followed at the user's go-ahead: `create-promotion-checkout` now refuses a listing that is not active with a 409, after the ownership check (8307a28), deployed to `nusa-staging` as version 6 on 2026-09-23. The deployed v5 source was diffed against the repo first and matched, and v6 was read back and matched the commit; a smoke call without auth returned the function's own 401. The 409 path itself was not exercised live, since that needs a member's session and an inactive listing. Found while doing it and fixed at the user's go-ahead (b2abda2, deployed as version 7 the same way, read back and smoke-tested): the web checkout's `cancel_url` pointed at `/marketplace/listing/<id>/promote`, a route that does not exist, so cancelling on Stripe's page landed on a 404; it now returns to the wizard at `/marketplace/listing/promote/<id>`. **Copilot round 2** (2 inline comments) answered 2026-09-23, both real and fixed: (1) a delete that waited for a page in flight checked the generation only after sending the mutation, so a reload or account switch during the wait still sent it — it now checks right after the wait and sends nothing (f3ef86b); (2) the duration's `aria-valuenow` reported the last committed value while the field was empty — it now follows the draft and is omitted when empty (4bfa303). Round 3 (on the edge function commit) raised one comment, **rejected**: it asked for the status check to be atomic with the `listing_promotions` insert, but that insert only creates a `pending` row — payment happens minutes later on Stripe's page and `stripe-webhook` activates the row after — and only the owner can change a listing's status (RLS), so a lock around the insert protects nothing that matters. **Open for the user:** what a paid promotion should do when its listing is inactive at payment time or is deactivated mid-run (a webhook check before activation, a refund, a pause) — a billing decision, not this PR's |
 | 9a Messages | `feat/web-ui-messaging` | 9a.1–9a.12, in three chunks | Merged (PR #90) | 2026-09-24 | branched from `master` at e59513a. PR 9 split into 9a and 9b at recon (see "PR 9 — split into 9a and 9b"). Owns the `messages` visual page. **Chunk 1** (9a.1–9a.6, bf8fdf7..2b1bf9a) done 2026-09-23: gate green (shared 689, web 1692, mobile 636 tests). `getMessages` now returns a thread's newest messages (mobile included); `formatDayLabel` and `buildThreadDays` shared; `useStartConversation` adopted by feed, post detail, event detail, the public profile and listing detail, so **Contact Seller now opens the thread** instead of `/messages?to=`, and feed and post detail report a failed start. `useConversations` is a wrapper over `useUserList` rather than a copy of its pattern. Review found no CRITICAL. One HIGH, fixed in 7a5923b: `useMessageThread` subscribed only after its load, as Task 9a.6 said, so a message sent during the load (five `getConversations` queries plus the channel join) was never delivered and stayed unread — a regression, since the old page subscribed at once. It now subscribes first and merges. Also fixed there: listing detail counted a contact twice on a double press and showed no busy state during the counter's round trip (`start` gained a `beforeStart` step inside its guard); realtime callbacks could run after leaving a thread and mark it read; messages arriving out of order were appended rather than placed by time; `starting` cleared before navigation finished. Routed to PR 10: shared `subscribeToMessages` reuses one topic per conversation, which can leave a thread without live updates after A → B → A while A's leave is pending (pre-existing). Web now 1705 tests. **Chunk 2** (9a.7–9a.11, 7ed37c7..4af4fee) done 2026-09-23: gate green (web 1726 tests). `messages/index.page.tsx` 153 → 55 lines and `[id].page.tsx` 336 → 81; `Messages.module.css` (293 lines, 74 guard violations) deleted; the thread off the raw-element allowlist, down to 5 files, and the CSS allowlist down to 7. Deviation: the thread's loading, error and not-found states render a `PageHeader` "Conversation" so the page always has an `h1`. Review found no CRITICAL; three HIGH, all fixed in 0c13315. (1) **No `position: sticky` on the site has ever stuck**: `globals.css` set `overflow-x: hidden` on both `html` and `body`, which makes `body` a scroll container that never scrolls, so every sticky element pinned to it — the composer, and before it the feed's `SponsoredRail` and listing detail's sidebar. Now `overflow-x: clip`. Chunk 3's baselines should be checked for the rail and sidebar. (2) `MessageLog` scrolled a sentinel into view, which stopped ~130px short of the page end (page gap, composer and paddings below it), past the 120px follow threshold, so after its own scroll the log stopped following new messages; it now scrolls the window to the document end. (3) The composer lifted itself above the phone tab bar, but a thread is a task route with no tab bar, which would have left a 64px gap. Also fixed there: the log announced every Sent → Read change (`aria-relevant="additions"`); text typed during a slow send was erased when it succeeded; a send that threw left Send busy; the badge rendered a `div` inside the link. Chunk 3 must scope `phone/navigation.spec.ts:45`'s `/messages/i` heading to level 1, since the empty inbox's `EmptyState` h3 "No messages yet" also matches. Web now 1732 tests. **Chunk 3** (9a.12, 9835a68..40d4ed9) done 2026-09-23: e2e 117 (six new in `14-messages.spec.ts`, over a stateful chat mock: public names and unread counts, sending, the profile menu, not found, keyboard order, and at 375px no overflow with the composer pinned while reading back); the marketplace spec now expects Contact Seller to open `/messages/<id>`; the phone spec's heading is scoped to the h1. The base e2e mock gained a `conversations` POST so `getOrCreateConversation` can create one. Visual 39 green, and `a11y-baseline.json` still `{}`. The Docker `--update` rewrote twelve PNGs: eight had no pixel over the diff threshold and two (`feed`, `search-dropdown`) differed by ~1.5% with nothing visible — re-running the suite against their originals passed, so all ten were restored as noise, and only `messages` at both widths was accepted (the new `PageHeader` and `EmptyState`). The thread, which no baseline covers, was screenshotted by eye at 1280 and 375: the composer stays pinned when scrolled to the top, long messages wrap in their bubble. Full gate green (shared 689, web 1732, mobile 636). **Follow-ups fixed at the user's go-ahead** (2026-09-23, 67b2fa7..): (1) the realtime topic reuse routed to PR 10 in chunk 1 — shared `uniqueChannelTopic` now gives `subscribeToMessages`, the unread badge and the bell a fresh topic per subscription; it also meant that under React StrictMode (on in dev) a thread's remount rejoined its own leaving channel and got no live messages; mobile's own fixed topics stay on PR 10's list. (2) The stale Messages badge: staging does publish `conversation_participants` to realtime (checked with a read-only query), so the stale badge in the e2e screenshot was the mock, which has no realtime — but two real gaps remained and are fixed: overlapping refreshes could land out of order and restore a stale count (only the latest request's answer applies now), and a thread now announces on `window` once it has marked itself read, so the badge refreshes at once rather than waiting on realtime or the 30s poll. e2e 118, shared 692, web 1737. **Copilot review** (2 rounds, 3 inline comments) answered 2026-09-24; all three were real and are fixed (ed25e35, 2ddc8a2): (1) `MessageLog`'s day labels and times read the clock only on render, so a thread left open past midnight still said Today — it and the inbox rows now take `useNow()`, and shared `formatRelativeTime` gained an optional `now`; (2) the thread announced a badge refresh even after a failed `markAsRead` — and underneath, shared `markAsRead` never returned an error at all, because it ignored both updates' `error`; it now does, and the thread announces only on success; (3) `web-ui-system.md` claimed every channel used `uniqueChannelTopic` — now scoped to web and shared, with mobile named as PR 10's, and the notifications page's own channel moved onto it so the web claim holds. Shared 696, web 1740. Round 3 (1 comment, real, fixed in 06a7fce): the failed-load and not-found paths left the channel without setting `cancelled`, and `removeChannel` is a round trip, so an in-flight event could still add a message and mark the thread read behind the error screen; one `leave()` now serves both paths and the cleanup. Web 1743 |
 | 9b Notifications, preferences, moderation | `feat/web-ui-notifications` | 9b.1–9b.12, in three chunks | Merged (PR #91) | 2026-09-24 | branched from `master` at 1f35700; scope is PR 9 recon items 16–27. Owns the `notifications` visual page. **Chunk 1** (9b.1–9b.6, f93ab44..83a0175): gate green (shared 703, web 1795, mobile 636). Review found no CRITICAL; one HIGH, fixed in e9b2ce2: `useNotificationsPage` counted a redelivered realtime row twice when both events landed before a render, because its duplicate check read a ref that only catches up after commit — the channel now keeps its own id set. The review's MEDIUM was real too and fixed in the same commit: a double press on one row's Open or Delete lowered the count twice; a second call for a row in flight now shares the first request. Lint lesson: an effect that calls a loader which sets state after an `await` trips `react-hooks/set-state-in-effect`; setting state inside the loader's `.then` passes. **Chunk 2** (9b.7–9b.11, a3358ba..c3b79e9): gate green (web 1824). All three stylesheets deleted (114 guard violations), so the CSS allowlist holds only PR 10's four and the raw-element list is down to 4 files; pages are 156, 171 and 237 lines. Deviations: the preferences switches put their description outside Mantine's label (decision 8 now says so), and its first section is "Delivery". Review found no CRITICAL; one HIGH, fixed in 2cbab62: `NotificationList` picked the post-delete focus target by the index at the click, and a realtime insert during the delete moved it one row off — it now records the neighbouring rows' ids. **Chunk 3** (9b.12): `15-notifications.spec.ts` (11 cases: the list and count, open marks read, delete keeps focus, mark-all focuses Preferences, keyboard order, preferences failed-read and save by label with Space and arrow keys, moderation confirm/cancel/focus-next-card, no overflow at 375px on all three pages); the phone spec's heading is scoped to the h1. The bell mock needed `access-control-expose-headers: content-range`, without which the browser hides the count from supabase-js. e2e 129, visual 39: the Docker `--update` rewrote eleven PNGs; the nine outside `notifications` were restored and the suite passed against them, so only `notifications` at both widths was accepted. `a11y-baseline.json` stays `{}`. Preferences and moderation screenshotted by eye at 1280 and 375, which caught the switch descriptions rendering larger than the radio groups' (49aaf92). Full gate green (shared 703, web 1825, mobile 636). One full e2e run had a single failure that did not recur in three more full runs or five repeats of the new spec (55/55); its log was overwritten, so the test is unknown. Routed to PR 10: the bell's own realtime INSERT handler has no id de-dupe (pre-existing, found in chunk 1's review). **Copilot review** (round 1, 1 inline comment) answered 2026-09-24; real and fixed in 8d4e5f1: 9b.3's `load` returned for a null `userId` before advancing its request counter, so a request for the member who signed out still landed and, since `Layout` keeps the bell mounted, showed their count to the next member until that member's first load returned — a regression, as the old effect had a `cancelled` flag. The counter now advances first, and the feed resets during render when `userId` changes |
-| 10a Static pages + scaffolding | `feat/web-ui-cleanup` | 10a.1–10a.16, in four chunks | In Review (PR #92) | 2026-09-24 | branched from `master` at 936aaed. PR 10 split three ways at planning (see "PR 10 — split into 10a, 10b and 10c"). Owns the `landing`, `login` and `signup` visual pages; ends with both allowlists and `legacy-aliases.css` deleted. **Chunk 1** (10a.1–10a.5, a25384a..8315322) done 2026-09-24: gate green (shared 737, web 1858 tests). Deviations: `lib/auth.test.ts` already existed, so the cases went there; the code-to-sentence table is a `Map` (shared targets ES2021, and a plain object would match inherited keys); `finishSignIn` also fails when the second `getMyProfile` finds no profile, rather than sending the member to onboarding with no row; `AuthCard` builds its 420px width from space tokens, as no width token fits. Review found no CRITICAL; one HIGH, fixed in 0e2d4c0: `AuthCard`'s h1 dropped its focus ring for keyboard users too, where the promotion wizard's step heading already had the right rule (`:focus:not(:focus-visible)`). Also fixed there: `resendSignupEmail` copied shared `resendVerificationEmail` line for line and now delegates to it. Its MEDIUM about `useRedirectWhen` firing before auth resolves does not apply: `Layout` renders its loader while auth loads, so no page mounts then. **Chunk 2** (10a.6–10a.10, e8778ee..01db10e) done 2026-09-24: gate green (web 1876 tests). Pages: login 163 → 173 lines, signup 189 → 193, verify-email 117 → 105, onboarding 195 → 270 (it holds both steps), callback 124 → 111. `Auth.module.css` deleted; **the raw-element allowlist is empty**. Deviations: Mantine's `PasswordInput` links its error but never sets `aria-invalid`, so both forms pass it; signup's unmet password rules are one line each inside Mantine's error `<p>`, which cannot hold a list; onboarding's metro card has a one-class `onboarding.module.css`; its step derives from `metro`; "ZIP code not found" is a field error (decision 8); the callback's expired links read Sign up / Log in. Review found no CRITICAL; two HIGH, fixed in 072c365 with a regression test each: (1) the callback's effect depended on the router object, which Next rebuilds on router-driven renders, so a re-run reset its guard and could finish sign-in twice or restart the expiry timer — it now subscribes once; (2) verify-email read `router.query` before `isReady`, so a real load showed the no-email copy and then popped the resend row in — it now renders nothing until the query is read. Routed to 10b: `handleGoogle` is the same ten lines in login and signup; shared `validateFullName` has no web caller left (mobile keeps it until 10c). **Chunk 3** (10a.11–10a.15, ad7a277..d1a1771) done 2026-09-24: gate green (web 1785 tests — the 100 fewer are the deleted `legacy-aliases.test.ts`: 96 names plus 4). Landing rebuilt as `components/landing/LandingPage`; legal pages on `components/legal/legal.module.css` with `Callout` and `Faq`; `Home`, `Legal` and `ComingSoon.module.css` deleted; **both allowlists, their tooling and `legacy-aliases.css` are gone**. The approved `apps/web/eslint.config.mjs` edit removed only the allowlist import, the glob escaping and the ignore spread: lint stayed at 0 errors and 0 warnings, and a stray `<button>` or `<input>` in a page still fails. The undefined-property check found exactly one name across all 88 modules, `--tabs-list-border-width`, which Mantine's Tabs sets, so it is the component list's only entry; the other three 8a's sweep predicted are already gone. Legal body text moved from 15.5px to `--font-size-base` (17px), the nearest token. Review found no CRITICAL or HIGH (legal prose checked byte-identical after the scripted conversion). Routed to 10b: the guard matches `var(` per line and case-sensitively, so `var(` split across lines or written `VAR(` escapes both the undefined-property check and the existing rules. Routed to chunk 4: the landing meta description still promises "travel companions" (fixed there). **Chunk 4** (10a.16, 4ecde8b..beafeb5) done 2026-09-24: `PublicShell` says "Log in" / "Sign up"; e2e 129 → 158, with a new `16-auth-onboarding.spec.ts` (verify-email's countdown on `page.clock`, onboarding end to end, the callback's failed state, the hidden existing account, each legal page) and the keyboard walk kept as specs in `02` and `16` (tab orders, focus on the first invalid field, busy buttons keeping focus, step headings, FAQ Enter/Space, no overflow at 375px on every page in scope). The auth-error mock needed `x-supabase-api-version` (exposed cross-origin), or auth-js ignores the body's `code`: `mockAuthError`. The first Docker `--update` failed axe `link-in-text-block` on login and signup — the card's links were marked by colour only — so they are underlined (a5ad0ef). The second rewrote fifteen PNGs; the nine outside `landing`, `login` and `signup` were restored and the suite passed against them (39 passed, 1 skipped). All six reviewed by eye. `a11y-baseline.json` stays `{}`. Docs: `web-ui-system.md`'s guards section rewritten without allowlists, new auth / landing / legal components, busy-controls cases; new `product/features/sign-up-and-log-in.md`; the design-system wireframe marked superseded. Full gate green (shared 737, web 1785, mobile 636, docs 45, guards 39; e2e 158; visual 39). Draft PR #92 open with Copilot requested. **Copilot review** (round 1, 3 inline comments) answered 2026-09-24, all fixed in ffde03d with a regression test each: (1) onboarding's Change ZIP stayed live while Confirm saved, so a member could step back while the first save still landed and pushed `/feed` — it now takes the busy-controls lock; (2) a session arriving after the page said "Link expired" still ran `finishSignIn` behind that screen — it asked for expiry to be terminal, but Supabase has stored the session by then, and dropping it would leave a signed-in member with no profile row, so the page instead goes back to "Signing you in…" and finishes; (3) `getAuthErrorMessage` now treats any `status >= 500` as a connection failure, as the feature doc says, rather than relying only on auth-js naming 5xx `AuthRetryableFetchError` (which it does for 500–504 and 520–530). Shared 738, web 1787; e2e specs 02 and 16 re-run, 34 passed. Round 2 (1 comment, real): the lookup sent the ZIP at submit while Confirm saved the field's current value, and the field stays editable during the lookup, so typing then saved one ZIP's metro with another ZIP. The confirm step now carries the ZIP its metro was found for (looked up or detected), and Confirm saves that, with a test that edits the field mid-lookup. Round 3 (2 comments, both real): (1) the callback pushed without refreshing `AuthContext`, which had read the profile before `finishSignIn` created it — staging has no `auth.users` trigger — so a first-time member reached onboarding as nobody and was sent to `/login` (pre-existing: the old callback did the same). It now awaits `refreshUser()` before navigating; that swaps `Layout`'s shell and remounts the page, whose new run repeats the idempotent steps and navigates. A new e2e through the real provider and layout landed on `/login` without the fix and passes 8/8 with it (9f591db). (2) Turning `identities: []` into an existing-account redirect made sign-up reveal who is registered; at the user's call a taken address now looks like a new one (decision 3 amended; code in d476ab0). Round 4 (1 comment, real, c168d12): round 3's `refreshUser()` sat outside any catch, and `AuthContext.refreshUser` does not catch `getUser()`, so a rejection hung the page on "Signing you in…"; and a refresh that loaded no profile still navigated with the member null. `refreshUser` now resolves with the profile it loaded or `null`, and the callback treats a throw or a `null` as the failed state (logged as step `refresh_user`). Round 5 (2 comments, one cause, a0b2134): the same uncaught `getUser()` could leave login's button busy for good and onboarding's confirm step locked after its save; `refreshUser` now never rejects (it logs and resolves `null`), fixing every caller at once. Round 6 (1 comment, real, 353914b): the callback's `getSession()` had no rejection handler and ignored its returned `error`, so a failed read was an unhandled rejection followed by "Link expired" ten seconds later; both now show the failed state at once (step `get_session`) and clear the expiry timer, while a session delivered by a later auth event still finishes. Round 7 (1 comment, real, 0692ae1): onboarding called every `getMetroByZip` error "ZIP code not found", outages included; only `isZipCodeNotFoundError` gives the field error now, and any other failure shows a retryable alert and is logged as `onboarding_zip_lookup_failed` |
-| 10b Web consistency + a11y | `fix/web-ui-polish` | breakdown at PR start | Not Started | 2026-09-24 | the remaining web items from PR 10's list |
+| 10a Static pages + scaffolding | `feat/web-ui-cleanup` | 10a.1–10a.16, in four chunks | Merged (PR #92) | 2026-09-24 | branched from `master` at 936aaed. PR 10 split three ways at planning (see "PR 10 — split into 10a, 10b and 10c"). Owns the `landing`, `login` and `signup` visual pages; ends with both allowlists and `legacy-aliases.css` deleted. **Chunk 1** (10a.1–10a.5, a25384a..8315322) done 2026-09-24: gate green (shared 737, web 1858 tests). Deviations: `lib/auth.test.ts` already existed, so the cases went there; the code-to-sentence table is a `Map` (shared targets ES2021, and a plain object would match inherited keys); `finishSignIn` also fails when the second `getMyProfile` finds no profile, rather than sending the member to onboarding with no row; `AuthCard` builds its 420px width from space tokens, as no width token fits. Review found no CRITICAL; one HIGH, fixed in 0e2d4c0: `AuthCard`'s h1 dropped its focus ring for keyboard users too, where the promotion wizard's step heading already had the right rule (`:focus:not(:focus-visible)`). Also fixed there: `resendSignupEmail` copied shared `resendVerificationEmail` line for line and now delegates to it. Its MEDIUM about `useRedirectWhen` firing before auth resolves does not apply: `Layout` renders its loader while auth loads, so no page mounts then. **Chunk 2** (10a.6–10a.10, e8778ee..01db10e) done 2026-09-24: gate green (web 1876 tests). Pages: login 163 → 173 lines, signup 189 → 193, verify-email 117 → 105, onboarding 195 → 270 (it holds both steps), callback 124 → 111. `Auth.module.css` deleted; **the raw-element allowlist is empty**. Deviations: Mantine's `PasswordInput` links its error but never sets `aria-invalid`, so both forms pass it; signup's unmet password rules are one line each inside Mantine's error `<p>`, which cannot hold a list; onboarding's metro card has a one-class `onboarding.module.css`; its step derives from `metro`; "ZIP code not found" is a field error (decision 8); the callback's expired links read Sign up / Log in. Review found no CRITICAL; two HIGH, fixed in 072c365 with a regression test each: (1) the callback's effect depended on the router object, which Next rebuilds on router-driven renders, so a re-run reset its guard and could finish sign-in twice or restart the expiry timer — it now subscribes once; (2) verify-email read `router.query` before `isReady`, so a real load showed the no-email copy and then popped the resend row in — it now renders nothing until the query is read. Routed to 10b: `handleGoogle` is the same ten lines in login and signup; shared `validateFullName` has no web caller left (mobile keeps it until 10c). **Chunk 3** (10a.11–10a.15, ad7a277..d1a1771) done 2026-09-24: gate green (web 1785 tests — the 100 fewer are the deleted `legacy-aliases.test.ts`: 96 names plus 4). Landing rebuilt as `components/landing/LandingPage`; legal pages on `components/legal/legal.module.css` with `Callout` and `Faq`; `Home`, `Legal` and `ComingSoon.module.css` deleted; **both allowlists, their tooling and `legacy-aliases.css` are gone**. The approved `apps/web/eslint.config.mjs` edit removed only the allowlist import, the glob escaping and the ignore spread: lint stayed at 0 errors and 0 warnings, and a stray `<button>` or `<input>` in a page still fails. The undefined-property check found exactly one name across all 88 modules, `--tabs-list-border-width`, which Mantine's Tabs sets, so it is the component list's only entry; the other three 8a's sweep predicted are already gone. Legal body text moved from 15.5px to `--font-size-base` (17px), the nearest token. Review found no CRITICAL or HIGH (legal prose checked byte-identical after the scripted conversion). Routed to 10b: the guard matches `var(` per line and case-sensitively, so `var(` split across lines or written `VAR(` escapes both the undefined-property check and the existing rules. Routed to chunk 4: the landing meta description still promises "travel companions" (fixed there). **Chunk 4** (10a.16, 4ecde8b..beafeb5) done 2026-09-24: `PublicShell` says "Log in" / "Sign up"; e2e 129 → 158, with a new `16-auth-onboarding.spec.ts` (verify-email's countdown on `page.clock`, onboarding end to end, the callback's failed state, the hidden existing account, each legal page) and the keyboard walk kept as specs in `02` and `16` (tab orders, focus on the first invalid field, busy buttons keeping focus, step headings, FAQ Enter/Space, no overflow at 375px on every page in scope). The auth-error mock needed `x-supabase-api-version` (exposed cross-origin), or auth-js ignores the body's `code`: `mockAuthError`. The first Docker `--update` failed axe `link-in-text-block` on login and signup — the card's links were marked by colour only — so they are underlined (a5ad0ef). The second rewrote fifteen PNGs; the nine outside `landing`, `login` and `signup` were restored and the suite passed against them (39 passed, 1 skipped). All six reviewed by eye. `a11y-baseline.json` stays `{}`. Docs: `web-ui-system.md`'s guards section rewritten without allowlists, new auth / landing / legal components, busy-controls cases; new `product/features/sign-up-and-log-in.md`; the design-system wireframe marked superseded. Full gate green (shared 737, web 1785, mobile 636, docs 45, guards 39; e2e 158; visual 39). Draft PR #92 open with Copilot requested. **Copilot review** (round 1, 3 inline comments) answered 2026-09-24, all fixed in ffde03d with a regression test each: (1) onboarding's Change ZIP stayed live while Confirm saved, so a member could step back while the first save still landed and pushed `/feed` — it now takes the busy-controls lock; (2) a session arriving after the page said "Link expired" still ran `finishSignIn` behind that screen — it asked for expiry to be terminal, but Supabase has stored the session by then, and dropping it would leave a signed-in member with no profile row, so the page instead goes back to "Signing you in…" and finishes; (3) `getAuthErrorMessage` now treats any `status >= 500` as a connection failure, as the feature doc says, rather than relying only on auth-js naming 5xx `AuthRetryableFetchError` (which it does for 500–504 and 520–530). Shared 738, web 1787; e2e specs 02 and 16 re-run, 34 passed. Round 2 (1 comment, real): the lookup sent the ZIP at submit while Confirm saved the field's current value, and the field stays editable during the lookup, so typing then saved one ZIP's metro with another ZIP. The confirm step now carries the ZIP its metro was found for (looked up or detected), and Confirm saves that, with a test that edits the field mid-lookup. Round 3 (2 comments, both real): (1) the callback pushed without refreshing `AuthContext`, which had read the profile before `finishSignIn` created it — staging has no `auth.users` trigger — so a first-time member reached onboarding as nobody and was sent to `/login` (pre-existing: the old callback did the same). It now awaits `refreshUser()` before navigating; that swaps `Layout`'s shell and remounts the page, whose new run repeats the idempotent steps and navigates. A new e2e through the real provider and layout landed on `/login` without the fix and passes 8/8 with it (9f591db). (2) Turning `identities: []` into an existing-account redirect made sign-up reveal who is registered; at the user's call a taken address now looks like a new one (decision 3 amended; code in d476ab0). Round 4 (1 comment, real, c168d12): round 3's `refreshUser()` sat outside any catch, and `AuthContext.refreshUser` does not catch `getUser()`, so a rejection hung the page on "Signing you in…"; and a refresh that loaded no profile still navigated with the member null. `refreshUser` now resolves with the profile it loaded or `null`, and the callback treats a throw or a `null` as the failed state (logged as step `refresh_user`). Round 5 (2 comments, one cause, a0b2134): the same uncaught `getUser()` could leave login's button busy for good and onboarding's confirm step locked after its save; `refreshUser` now never rejects (it logs and resolves `null`), fixing every caller at once. Round 6 (1 comment, real, 353914b): the callback's `getSession()` had no rejection handler and ignored its returned `error`, so a failed read was an unhandled rejection followed by "Link expired" ten seconds later; both now show the failed state at once (step `get_session`) and clear the expiry timer, while a session delivered by a later auth event still finishes. Round 7 (1 comment, real, 0692ae1): onboarding called every `getMetroByZip` error "ZIP code not found", outages included; only `isZipCodeNotFoundError` gives the field error now, and any other failure shows a retryable alert and is logged as `onboarding_zip_lookup_failed` |
+| 10b Web consistency + a11y | `fix/web-ui-polish` | 10b.1–10b.22, in four chunks | In Progress | 2026-09-24 | branched from `master` at b544340 (PR #92 merged). The remaining web items from PR 10's list |
 | 10c Shared + mobile parity, archive | `chore/mobile-parity` | breakdown at PR start | Not Started | 2026-09-24 | includes the `full_name` CHECK migration, which needs the user's go-ahead to apply |
 
 ---
@@ -15811,6 +15811,392 @@ function findUndefinedProperties(content, tokenNames) {} // -> Array<{ line, kin
   - Legal: Enter and Space toggle each FAQ item.
   - At 375px nothing overflows.
 - [ ] **Step 9: Push and open the draft PR** against `master`, filling `.github/pull_request_template.md`. Then run `gh pr edit <number> --add-reviewer @copilot` and update the tracker row to `In Review (PR #NN)`.
+
+## PR 10b — Web consistency + a11y (`fix/web-ui-polish`)
+
+**Branch:** `fix/web-ui-polish`, created from `master` at `b544340` (PR #92 merged).
+
+**Recon** (2026-09-24, three read-only sweeps against `b544340`). Every item 10b owns is still present except one, and three are not what their item says:
+
+1. **Event detail's breadcrumb is already a landmark** (`events/[id].page.tsx:164`, `nav aria-label="Breadcrumb"` with an `aria-current` crumb and an `aria-hidden` separator). Listing detail is now the weaker one: its current crumb has no `aria-current` and its `›` separator is read aloud.
+2. **The no-metro marketplace never says anything.** `useMarketplaceFeed` starts with `loading: true` and returns early without a metro (`:87`, `:135`), so the member sees the skeleton forever, not "No listings in your area yet". The feed redirects such a member to `/onboarding/zip`.
+3. **The public profile page is 315 lines, not 351**; the own profile is still 388.
+4. **The 6.19a post-detail changes have one cause each.** The action row: `PostActions.module.css` `.statButton` padding (`--space-1 --space-2`) now shows beside the `--space-4` gap. The taller Help chip: `TagChip.module.css` sets `height: auto` but keeps Mantine's `line-height: var(--badge-lh)` (24px), so the chip is ~32px. The larger "No comments yet": `EmptyState.module.css` `.title { font-size: var(--font-size-xl) }` beats `<Title order={3}>`, so every empty state's heading is 24px — larger than the "Comments (n)" h2 it sits under.
+5. **Create post's tag error shows on load and can never come from a submit**: Submit is disabled until `canSubmit`, and the message is gated only on `!tagsValid && !tagsLoading` (`create.page.tsx:378`).
+6. **Avatar alt text.** `AttendeeList` is the one place a full name sits beside a masked one. Everywhere else the full name is already visible beside the avatar (post author, comment author, search person, listing owner), so the alt only repeats it. `UserMenuTrigger` names its button *and* its avatar.
+7. **Listing detail's duplicate chips are shared.** `getListingHighlights` pushes `condition` and `category` for individual listings, and mobile's `ListingDetailScreen` renders both the badges and the strip too.
+8. **Raw error text:** 38 sites in 17 files put a Supabase or shared-API `message` on screen (`lib/postSubmit`, `posts/create`, `events/create`, `marketplace/create`, `feed`, `posts/[id]`, `events/[id]`, `profile`, `useProfileEditing`, `AddLocationForm`, `useEventFeed`, `useEventDetail`, `useMarketplaceFeed`, `useMyListings`, `useListingDetail`, `usePromoteWizard`, `useUserList`); 8 of them log. The shared API passes PostgREST's `Error` through unchanged, so RLS text reaches the member.
+9. **Sign-out:** `Layout.tsx:45` and `profile.page.tsx:148` each push `/` then sign out; `AuthContext.handleSignOut` swallows errors with `console.error`, so profile's catch never runs; `lib/auth.ts` `signOut` has no caller. Labels: "Logout" (profile menu), "Sign out" (Settings nav), "Sign Out" (`AccountMenu`).
+10. **`validateFullName` has no caller at all** — web signup moved to `fullNameSchema` in 10a, and mobile never used it — so it goes here rather than in 10c.
+11. **Tests already assert `data-*` styling hooks** (`data-category`, `data-status`, `data-tone`, `data-variant`, `data-value`, `data-emergency`, `data-layout`), and two assert Mantine's own `data-disabled` (`EventResponseControl.test.tsx:90`, `ProfilePhotoControl.test.tsx:195`). The written rule (Global Constraints) forbids only Mantine's internals; `web-ui-system.md` states no rule.
+
+| File | Change | Why |
+|---|---|---|
+| `components/ui/EmptyState.tsx` (+ test, css) | Modify | `titleOrder`; one heading size (recon 4) |
+| `components/ui/TagChip.module.css`, `components/posts/PostActions.{tsx,module.css}`, `components/posts/PostMeta.{tsx,module.css}`, `components/ui/SummaryRow.module.css` | Modify | 6.19a items, save name, badge row, the dot |
+| `PostCard.module.css`, `Feed.module.css` (+ any other card hover on `--shadow-float`) | Modify | Border hover (PR 6 decision 11) |
+| `styles/mantine-theme.ts`, `styles/tokens.contrast.test.ts` | Modify | Disabled palette; two pairs |
+| `components/ui/PhotoCarousel.tsx`, `marketplace/listing/[id].page.tsx`, `search.page.tsx` | Modify | `priority`; breadcrumb; scrolling tabs |
+| `scripts/guard-css-tokens.js` (+ test), `packages/shared/src/utils/validators.ts` (+ test) | Modify | `var(` across lines and in any case; dead validator |
+| `components/ui/ListStates.tsx`, `components/ui/DetailList.tsx`, `hooks/useFocusAfterUpdate.ts` (+ tests) | Create | Shared list states, `dl` rows, focus restore |
+| `hooks/usePublicProfile.ts`, `pages/users/[id].page.tsx`, `components/users/{AboutPanel,PublicProfileHeader}.tsx`, `pages/profile.page.tsx`, `components/profile/*`, `pages/profile/locations.page.tsx`, `components/locations/SavedLocationRow.*`, `styles/Profile.module.css` | Modify / create | The profile items |
+| `contexts/AuthContext.tsx`, `components/Layout.tsx`, `components/layout/AccountMenu.tsx`, `lib/auth.ts` | Modify | One sign-out, one label |
+| `hooks/useGoogleSignIn.ts` (+ test), `pages/{login,signup}.page.tsx` | Create / modify | 10a's routed duplicate |
+| `components/events/AttendeeList.tsx`, `components/users/UserMenuTrigger.tsx`, `components/search/SearchResultItem.tsx`, `components/posts/{PostCard,CommentThread}.tsx`, `pages/posts/[id].page.tsx` | Modify | Avatar names (recon 6) |
+| `pages/events/[id].page.tsx`, `hooks/useNotificationsFeed.ts` | Modify | Attendee reload; bell dedupe |
+| `packages/shared/src/logic/marketplace/getListingHighlights.ts`, `listing/[id].page.tsx` + `listingDetail.module.css`, `components/marketplace/MarketplaceBrowse.tsx` | Modify | Chips once, actions once, no-metro state |
+| `packages/shared/src/logic/authErrors.ts`, `apps/web/src/lib/userMessage.ts` (+ test) and the 17 files of recon 8 | Modify / create | The raw-error policy |
+| `docs/architecture/web-ui-system.md`, feature docs | Modify | New components, the test-query rule |
+
+**How this PR runs.** As 10a: four chunks. Inside a chunk each task writes its failing test, runs only its own tests, implements, re-runs and commits. At each chunk boundary run `type-check`, `lint`, `lint:guards` and the full unit suites of every touched workspace (web Vitest from a `C:\…` cwd; mobile too whenever shared changed), then one code-review agent over the chunk's diff. CRITICAL and HIGH are fixed in one `fix(web): address chunk N review` commit; everything else goes to the tracker or 10c, **never to new tasks**. e2e, the re-baseline and the keyboard walk run only in chunk 4.
+
+| Chunk | Tasks | Ends with |
+|---|---|---|
+| 1. Primitives | 10b.1–10b.6 | EmptyState, chips, PostActions, PostMeta, hovers, disabled palette, carousel, breadcrumb, search tabs, guard |
+| 2. Profile | 10b.7–10b.12 | `ListStates`, public-profile errors, `DetailList`, follower count, `useFocusAfterUpdate`, locations rows, widths |
+| 3. Session, events, marketplace | 10b.13–10b.18 | One sign-out, `useGoogleSignIn`, avatar names, attendee reload, bell dedupe, listing detail, no-metro |
+| 4. Errors and finish | 10b.19–10b.22 | The raw-error policy, create post's tag error, the test-query rule, e2e, baselines, docs, draft PR |
+
+**Decisions this breakdown locks in:**
+
+1. **One empty-state heading size.** `EmptyState` gains `titleOrder?: 1 | 2 | 3` (default 3) and always renders `<Title order={titleOrder} size="h3">`; the `.title` font-size override goes. Page-level not-found and blocked states with no other h1 pass `1`: public profile, event, listing, promote (both), post, moderation's access state and search's initial state. `messages/[id]` keeps 3 if its `PageHeader` already gives the page an h1.
+2. **Save is one name.** `aria-label="Save post"` always; `aria-pressed` carries the state, as listing detail's save does.
+3. **Compact surfaces answer hover with their border.** `border-color: var(--border-solid)` on hover and focus-within, transition on `border-color`; `--shadow-float` stays for floating layers. The sponsored card keeps its 3px accent left border. Other `--shadow-float` hovers (`ListingStrip`, `createEvent.module.css`, `CreatePost.module.css`) change only if they are hovers on in-flow cards.
+4. **Disabled Mantine controls use the palette**: `--mantine-color-disabled: var(--surface-2)`, `--mantine-color-disabled-color: var(--text-3)`, `--mantine-color-disabled-border: var(--border-subtle)`.
+5. **Avatars never repeat a visible name.** `AttendeeList` passes `formatPublicName(full_name)` with `toneKey={full_name}` (its test id becomes `avatar-Asha K.`). `UserMenuTrigger`'s avatar is `decorative` (its button already says "Options for …"). `SearchResultItem`, and any `Avatar` beside a visible author name in `PostCard`, `CommentThread` and post detail, are `decorative`. **Not in scope:** posts, comments, search and listing detail show members' full names as visible text, while events and messages show public names. That is a product decision, recorded for the user.
+6. **Listing detail owns category and condition in its badges.** Shared `getListingHighlights` stops returning `condition` and `category` chips, fixing web and mobile together (recon 7); no file under `apps/mobile/` changes. The actions panel renders once: `.main` splits into a top block (carousel, title, badges, highlights) and a rest block, and a grid places the one `<aside aria-label="Listing actions">` beside both at `md` and up (sticky) and between them below.
+7. **A member with no metro is asked to set one.** `MarketplaceBrowse` with `metroId === null` renders `EmptyState` "Choose your area to see listings", description "Add your ZIP code and we'll show listings near you.", and a `Button component={Link} href="/onboarding/zip"` "Set your area".
+8. **The attendee dialog reloads on every open**, keeping the previous list visible while it loads; a count and a list read from the same moment cannot disagree.
+9. **One sign-out.** `AuthContext.signOut()` sets `signingOut`, calls `supabase.auth.signOut()`, then on success clears the user and `await router.replace('/')`, then clears the flag. On `{ error }` it logs `auth_sign_out_failed`, keeps the member signed in, clears the flag and returns `{ error: "Couldn't log you out. Please try again." }`, which callers show with `notify.error`. `Layout` renders its loader while `loading || signingOut`. The label is **"Log out"** everywhere (10a decision 1's sentence case). `lib/auth.ts` `signOut` is deleted.
+10. **The raw-error policy.** Shared `authErrors.ts` exports `isConnectionError(error)` (its existing network test) and `CONNECTION_ERROR_MESSAGE`. Web gains `lib/userMessage.ts`:
+    ```ts
+    /** Logs the raw error and returns copy for the member: the connection sentence for a network failure, else `fallback`. */
+    export function userMessage(error: unknown, fallback: string, event: string, context?: Record<string, unknown>): string;
+    ```
+    Every site in recon 8 calls it instead of reading `.message`; sites that already log fold their `logClientEvent` into it. Fallbacks are "Couldn't <verb> <thing>. Please try again." for actions and "Couldn't load <things>." for lists. Validation copy (zod `issue.message`) is ours and stays.
+11. **Tests may assert a component's own styling hooks.** Query by role, label or text. Never assert Mantine's internal `data-*` (`data-disabled`, `data-active`, `data-loading`…) or CSS-module class names. A `data-*` attribute that a component documents as its contract with its stylesheet (`data-type`, `data-category`, `data-variant`…) may be asserted with `toHaveAttribute` on an element found by role or text. `web-ui-system.md`'s Testing section says so; the two Mantine `data-disabled` assertions move to `aria-disabled` or `toBeDisabled()`.
+12. **`useFocusAfterUpdate(key)`** returns `arm(getTarget, options?)`. When `key` changes (`Object.is`) after an arm, it disarms, and if `isFocusStranded()` focuses `getTarget()` with `options`. A later `arm` replaces an earlier one. Manage Locations keys on `savedLocations` plus `showAdd`, so a form that closes without a list change still restores focus.
+
+## PR 10b — Task breakdown
+
+Paths are under `apps/web/src/` unless they start with `packages/` or `scripts/`. Web tests run with `npm run test --workspace=apps/web -- <paths>` from `C:\…`; shared with `npm run test --workspace=packages/shared -- <paths>`; the guard with `node --test scripts/guard-css-tokens.test.js`.
+
+### Task 10b.1: `EmptyState` heading level and size
+
+**Files:** `components/ui/EmptyState.tsx`, `EmptyState.module.css`, `EmptyState.test.tsx`; the page-level callers of decision 1 and their tests.
+
+```ts
+export interface EmptyStateProps {
+  icon?: ReactNode;
+  title: string;
+  description?: ReactNode;
+  action?: ReactNode;
+  /** The heading level; 1 for a page whose empty state is its only heading. Default 3. */
+  titleOrder?: 1 | 2 | 3;
+}
+```
+
+- [ ] **Step 1: Write the failing tests.** `EmptyState` renders an h3 by default and an h1 with `titleOrder={1}` (`getByRole('heading', { level: 1, name })`). Each page test for a not-found state asserts `getByRole('heading', { level: 1, name: '… not found' })`.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement.** `<Title order={titleOrder} size="h3">`; delete `.title`'s `font-size`. Pass `titleOrder={1}` at each caller in decision 1, checking each page has no other h1 in that state.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): empty states take a heading level, and one size`.
+
+### Task 10b.2: Post chips, actions, meta row and the summary dot
+
+**Files:** `components/ui/TagChip.module.css`; `components/posts/PostActions.tsx`, `PostActions.module.css`, `PostActions.test.tsx`; `components/posts/PostMeta.tsx`, `PostMeta.module.css`, `PostMeta.test.tsx`; `components/ui/SummaryRow.module.css`.
+
+- [ ] **Step 1: Write the failing tests.**
+  - `PostActions`: with `saved` true and false, the button is `getByRole('button', { name: 'Save post' })`, with `aria-pressed` `true` and `false`. Update the old `'Unsave post'` case (`:71`).
+  - `PostMeta`: the tags and the scope badge share one list (`getByRole('list')` contains both the tag and the scope text), so they wrap as one group.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement.**
+  - `PostActions`: the stable label. `.stats { gap: 0 }`, so the padded stat buttons keep their hit area and their content sits 16px apart, as before 6.19a.
+  - `TagChip.module.css`: add `line-height: var(--line-height-tight)` (or the nearest line-height token) beside `height: auto`, so the chip is its text plus padding, not 32px.
+  - `PostMeta`: the identity block takes the whole first line (`flex-basis: 100%`), and the scope badge moves inside `ul.tags` as the last `li`, so tags and scope wrap together below the name.
+  - `SummaryRow.module.css`: the dot moves to the item before it: `.line > *:not(:last-child)::after { content: '·' / ''; margin-left: var(--space-1); }` and the `::before` rule goes. A wrapped line then ends with the dot rather than starting with it.
+- [ ] **Step 4: Run them and watch them pass**, with `SummaryRow.test.tsx` and `TagChip.test.tsx`.
+- [ ] **Step 5: Commit** as `fix(web): tidy post chips, actions and meta row`.
+
+### Task 10b.3: Border hover on compact cards
+
+**Files:** `components/posts/PostCard.module.css`, `styles/Feed.module.css`; `ListingStrip.module.css`, `pages/events/createEvent.module.css`, `styles/CreatePost.module.css` if decision 3 applies to them.
+
+- [ ] **Step 1: Read the five rules.** For each `--shadow-float` in a `:hover`/`:focus-within` on an in-flow card, move it to decision 3. Leave resting elevation and floating layers alone.
+- [ ] **Step 2: Implement.** The same three lines `SummaryRow.module.css` uses, including its comment. Check the card has a `1px solid var(--border-subtle)` border to change.
+- [ ] **Step 3: Run** `npm run lint:guards` and the `PostCard` and feed tests (no CSS assertions exist; the baselines check this in chunk 4).
+- [ ] **Step 4: Commit** as `fix(web): cards answer hover with their border`.
+
+### Task 10b.4: Mantine's disabled palette and two contrast pairs
+
+**Files:** `styles/mantine-theme.ts`, `styles/mantine-theme.test.ts`, `styles/tokens.contrast.test.ts`.
+
+- [ ] **Step 1: Write the failing tests.** `mantine-theme.test.ts`'s resolver case expects the three decision 4 entries in `.light`. `TEXT_PAIRS` gains `['--accent-ink', '--surface-sunken']` and `['--success', '--surface-sunken']`.
+- [ ] **Step 2: Run them.** The theme case fails; the pairs should pass. If a pair fails, stop and record its ratio: it is an icon beside same-meaning text, so the fix is a token decision for the user, not a silent change.
+- [ ] **Step 3: Implement** the three resolver entries.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): disabled controls use the palette`.
+
+### Task 10b.5: Carousel priority, listing breadcrumb, search tabs
+
+**Files:** `components/ui/PhotoCarousel.tsx` (+ test); `pages/marketplace/listing/[id].page.tsx` (+ test); `pages/posts/[id].page.tsx`; `pages/search.page.tsx` (+ test), `styles/Search.module.css`.
+
+```ts
+export interface PhotoCarouselProps {
+  photos: string[];
+  alt: string;
+  onPhotoClick?: (index: number) => void;
+  /** Above the fold: the first photo loads with high priority (the page's LCP). */
+  priority?: boolean;
+}
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `PhotoCarousel` with `priority` renders the first image eagerly (`next/image` sets `loading="eager"` / `fetchpriority="high"` for `priority`; assert whichever the mocked or real `Image` exposes, via `getByRole('img')`), and without it lazily.
+  - Listing detail: the current crumb has `aria-current="page"`, and the breadcrumb `nav` reads no `›` (`within(nav).queryByText('›')` is hidden: `aria-hidden`).
+  - Search: each tab, when focused, calls `scrollIntoView` (the `vitest.setup.ts` stub is a spy-able function).
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement.** `priority={priority && index === 0}` on `Image`; pass `priority` from listing detail and post detail. The listing crumb as event detail's (`separator={<span aria-hidden="true">›</span>}`, `aria-current="page"`). Search: `classNames={{ ...scrollingTabsClassNames, list: cx(scrollingTabsClassNames.list, styles.tabs) }}` (or move the margin to the `Tabs` root) and `onFocus={scrollFocusedTabIntoView}` on each `Tabs.Tab`.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): hero photo priority, listing breadcrumb, scrolling search tabs`.
+
+### Task 10b.6: The guard reads `var(` across lines and in any case; drop `validateFullName`
+
+**Files:** `scripts/guard-css-tokens.js`, `scripts/guard-css-tokens.test.js`; `packages/shared/src/utils/validators.ts`, `validators.test.ts`, the doc comment in `packages/shared/src/validation/user.ts`.
+
+- [ ] **Step 1: Write the failing tests.**
+  - `findUndefinedProperties('.a { color: var(\n  --nope\n); }', tokens)` reports `--nope` on line 2 (where the name is).
+  - `VAR(--nope)` and `Var(--nope)` are reported; `var(--Surface-0)` is reported (property names stay case-sensitive).
+  - `findViolations('.a { color: VAR(--color-primary); }')` reports a legacy token, and `VAR(--ink-900)` a primitive.
+  - A `var(\n--color-primary)` split across lines reports a legacy token.
+- [ ] **Step 2: Run them and watch them fail.** `node --test scripts/guard-css-tokens.test.js`
+- [ ] **Step 3: Implement.** The `var`-based rules (primitive, legacy, undefined) match against the whole comment-stripped text with `[vV][aA][rR]\(\s*` (where `\s` spans newlines) and take the line from the match's `--` index; the colour-literal and named-colour rules stay per line. Remove `validateFullName`, its tests and the comment that names it.
+- [ ] **Step 4: Run them and watch them pass**, then `npm run lint:guards` (the app must stay clean) and the shared validators test.
+- [ ] **Step 5: Commit** as `fix(guards): read var() across lines and in any case` and, separately, `refactor(shared): drop the unused validateFullName`.
+
+### Task 10b.7: `ListStates`, adopted by the own profile
+
+**Files:** create `components/ui/ListStates.tsx` and `ListStates.test.tsx`; modify `pages/profile.page.tsx` (remove `ListPanel`, `ListingsPanel`), `pages/profile.test.tsx`.
+
+```ts
+export interface ListStatesProps {
+  loading: boolean;
+  loadingLabel: string;
+  /** Shown with a retry; takes precedence over empty. */
+  error: string | null;
+  onRetry: () => void;
+  isEmpty: boolean;
+  /** Usually an EmptyState. */
+  empty: ReactNode;
+  children: ReactNode;
+}
+/** loading → error with retry → empty → children. */
+export function ListStates(props: ListStatesProps): ReactElement;
+```
+
+- [ ] **Step 1: Write the failing test.** Each of the four states renders only its own content: `LoadingState` label; `ErrorState` message whose retry button calls `onRetry`; `empty`; `children`. Loading wins over error, error over empty.
+- [ ] **Step 2: Run it and watch it fail.**
+- [ ] **Step 3: Implement**, then replace `ListPanel` and `ListingsPanel` in `profile.page.tsx` with `ListStates` (rows in the existing `Stack gap="xs"`). If the page stays over ~320 lines, move its panel bodies into `components/profile/` components.
+- [ ] **Step 4: Run** `ListStates.test.tsx` and `profile.test.tsx`.
+- [ ] **Step 5: Commit** as `feat(web): add ListStates and use it on the own profile`.
+
+### Task 10b.8: The public profile tells failures from empty lists and from a missing member
+
+**Files:** `hooks/usePublicProfile.ts`, `usePublicProfile.test.ts`; `pages/users/[id].page.tsx`, `[id].test.tsx`.
+
+```ts
+export type PublicProfileStatus = 'loading' | 'ready' | 'not-found' | 'error';
+export interface PublicProfile {
+  status: PublicProfileStatus;
+  profileUser: User | null;
+  /** Re-runs the member lookup (the 'error' state's retry). */
+  reload: () => void;
+  posts: ListResource<Post>;
+  events: ListResource<Event>;
+  listings: ListResource<MarketplaceListing>;
+}
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - Hook: a failed posts, events or listings request gives that list an `error` (and `reload` refetches it) while the others load. Events are fetched with limit 50, posts and listings 30.
+  - `getUserById` with no row, or error code `PGRST116` or `22P02`, gives `not-found`; any other error gives `error`, and `reload` retries.
+  - Page: `not-found` shows "Member not found" as an h1; `error` shows `ErrorState` "Couldn't load this profile." with Retry; a failed tab shows its own `ErrorState` with Retry.
+  - Rewrite `:265` ("falls back to an empty list") and the "deleted their account" assertions.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement** with three module-level fetchers passed to `useUserList` (`useOwnProfileContent.ts` is the model), and `ListStates` in place of `RowList` (rows keep `.rowList`).
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): the public profile shows failures, not empty lists`.
+
+### Task 10b.9: `DetailList`, `AboutPanel`, the bio's line breaks, the phone row
+
+**Files:** create `components/ui/DetailList.tsx`, `DetailList.module.css`, `DetailList.test.tsx`, `components/users/AboutPanel.tsx` (+ test); modify `components/profile/AccountDetails.tsx` (+ css, test), `pages/users/[id].page.tsx`, `styles/PublicProfile.module.css`.
+
+```ts
+export function DetailList(props: { divided?: boolean; children: ReactNode }): ReactElement; // <dl>
+export function DetailRow(props: { label: ReactNode; children: ReactNode }): ReactElement;   // <div><dt/><dd/></div>
+```
+
+- [ ] **Step 1: Write the failing tests.** `DetailList` renders a `dl` whose `dt`/`dd` pairs read label then value (`getByRole('term')`, `getByRole('definition')`). `AccountDetails` renders no Phone row when `user.phone` is empty, and the number when set (rewrite `:138`). `AboutPanel` renders a bio with a newline as two lines (assert `toHaveTextContent` and that the `dd` holds the raw `\n`).
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement.** Move the row CSS from `AccountDetails.module.css` into `DetailList.module.css` (`divided` adds the row borders); both callers adopt it. Move `AboutPanel` out of the page. `.aboutBio` gains `white-space: pre-line`.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `refactor(web): share DetailList; keep bio line breaks; hide an unset phone`.
+
+### Task 10b.10: The follower count follows the button
+
+**Files:** `components/users/PublicProfileHeader.tsx`, `PublicProfileHeader.test.tsx`.
+
+- [ ] **Step 1: Write the failing test.** Let the `FollowButton` mock expose its `onChange` (a button that calls `onChange(true)`, another `onChange(false)`). From "12 followers", following reads "13 followers" and unfollowing back "12 followers"; "1 follower" becomes "2 followers".
+- [ ] **Step 2: Run it and watch it fail.**
+- [ ] **Step 3: Implement** a `followerDelta` state and `onChange={(now) => setFollowerDelta((d) => d + (now ? 1 : -1))}`, counted from `profileUser.follower_count ?? 0`, never below 0.
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `fix(web): the follower count moves with Follow`.
+
+### Task 10b.11: `useFocusAfterUpdate`
+
+**Files:** create `hooks/useFocusAfterUpdate.ts` and its test; modify `pages/profile/locations.page.tsx`, `components/profile/ProfilePhotoControl.tsx`, `pages/profile.page.tsx` and their tests only where behaviour changes.
+
+```ts
+export type ArmFocus = (getTarget: () => HTMLElement | null | undefined, options?: FocusOptions) => void;
+/** Decision 12. */
+export function useFocusAfterUpdate(key: unknown): ArmFocus;
+```
+
+- [ ] **Step 1: Write the failing tests.** Armed, then `key` changes with focus on `<body>`: the target is focused, once. With focus on another element: nothing moves, and the arm is spent. Two arms before the change: the second target wins. No arm: nothing happens. Options pass through (`preventScroll`).
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement** (a ref holding the armed getter, an effect on `[key]`), then replace the three copies: Manage Locations' two effects become one arm keyed on `` `${savedLocations.map((l) => l.id).join()}|${showAdd}` ``; `ProfilePhotoControl` keys on `photoUrl` (it gains `isFocusStranded` over its body-only check); the profile page keys on `saved.items`. Existing focus tests in `locations.test.tsx`, `ProfilePhotoControl.test.tsx` and `profile.test.tsx` must pass unchanged; add one for Manage Locations' "add succeeds, refresh fails" case (focus returns to Add).
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `refactor(web): one useFocusAfterUpdate for three focus restores`.
+
+### Task 10b.12: Manage Locations rows and the profile widths
+
+**Files:** `components/locations/SavedLocationRow.tsx`, `SavedLocationRow.module.css`, `SavedLocationRow.test.tsx`; `styles/Profile.module.css`.
+
+- [ ] **Step 1: Write the failing test.** A row with `canRemove={false}` still renders its actions column with two slots: the pencil, then an `aria-hidden` spacer (`container.querySelector` is not allowed, so assert the pencil is followed by an element with no role and no name inside the group labelled by the row; if that is untestable by role, cover it by the baseline and say so).
+- [ ] **Step 2: Implement.**
+  - `.actions` becomes a two-column grid of `var(--ai-size, 28px)` tracks; the trash slot renders an `aria-hidden` `<span>` when `canRemove` is false.
+  - `.setDefault` pulls left by the button's inline padding: `margin-left: calc(24px + var(--space-2) - var(--button-padding-x, var(--space-2)))`, so its text starts on the label column.
+  - `Profile.module.css`: `.profilePage { max-width: var(--layout-content-width); }` (both profile pages 800px), `.profileCard { padding: var(--card-padding); }` (its phone override stays).
+- [ ] **Step 3: Run** the row and locations tests, and `lint:guards`.
+- [ ] **Step 4: Commit** as `fix(web): align Manage Locations rows and the profile widths`.
+
+### Task 10b.13: One sign-out, "Log out"
+
+**Files:** `contexts/AuthContext.tsx` (+ test), `components/Layout.tsx` (+ test), `components/layout/AccountMenu.tsx`, `components/layout/TopBar.test.tsx`, `pages/profile.page.tsx` (+ test), `lib/auth.ts` (+ test).
+
+```ts
+// AuthContext value
+signOut: () => Promise<{ error?: string }>;
+signingOut: boolean;
+```
+
+- [ ] **Step 1: Write the failing tests.**
+  - `AuthContext`: `signOut` sets `signingOut` true, calls `supabase.auth.signOut()`, clears the user, replaces `/`, then `signingOut` is false. On `{ error }` the user stays, `signingOut` returns to false, the result is decision 9's sentence, and `logClientEvent` got `auth_sign_out_failed`.
+  - `Layout`: while `signingOut` it renders the loader, not the page. Rewrite `:139-169` (no "push before signOut" order any more).
+  - Profile and `AccountMenu`: the item is "Log out"; the Settings nav button is "Log out". A failed sign-out shows the sentence through `notify.error`.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement.** Both callers call `signOut()` and show `result.error` if any. Delete `lib/auth.ts` `signOut` and its test. Re-read `profile.page.tsx:117-123`'s redirect comment: `Layout`'s loader now unmounts the page before the user clears, so rewrite the comment.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): one sign-out behind a loader, labelled Log out`.
+
+### Task 10b.14: `useGoogleSignIn`
+
+**Files:** create `hooks/useGoogleSignIn.ts` and its test; modify `pages/login.page.tsx`, `pages/signup.page.tsx`.
+
+```ts
+/** Starts Google sign-in. `setError('')` first; on failure logs auth_google_failed and sets the mapped sentence. */
+export function useGoogleSignIn(setError: (message: string) => void): { busy: boolean; start: () => Promise<void> };
+```
+
+- [ ] **Step 1: Write the failing test.** Success leaves `busy` true (the browser is leaving). Failure sets `busy` false, logs, and calls `setError(getAuthErrorMessage(error, 'google'))` after `setError('')`.
+- [ ] **Step 2: Run it and watch it fail.**
+- [ ] **Step 3: Implement**, and replace both `handleGoogle`s. `login.test.tsx` and `signup.test.tsx` pass unchanged.
+- [ ] **Step 4: Run** the hook and both page tests.
+- [ ] **Step 5: Commit** as `refactor(web): share useGoogleSignIn between log in and sign up`.
+
+### Task 10b.15: Avatar names
+
+**Files:** `components/events/AttendeeList.tsx` (+ test), `components/users/UserMenuTrigger.tsx` (+ test), `components/search/SearchResultItem.tsx`, `components/posts/PostCard.tsx`, `components/posts/CommentThread.tsx`, `pages/posts/[id].page.tsx`.
+
+- [ ] **Step 1: Write the failing tests.** `AttendeeList`'s avatar is named "Asha K." (`avatar-Asha K.`). `UserMenuTrigger`'s button is "Options for Asha Kumar" and holds no second `img` name (`getByRole('button')` has exactly that name, and `queryByRole('img', { name: /Asha/ })` is null because the avatar is decorative). `SearchResultItem`'s person avatar is decorative.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement** decision 5.
+- [ ] **Step 4: Run them**, plus `PostCard`, `CommentThread` and post detail tests, updating any that looked an avatar up by name.
+- [ ] **Step 5: Commit** as `fix(web): avatars never repeat or unmask a name`.
+
+### Task 10b.16: Attendee reload, bell dedupe
+
+**Files:** `pages/events/[id].page.tsx`, `[id].test.tsx`; `hooks/useNotificationsFeed.ts`, `useNotificationsFeed.test.tsx`.
+
+- [ ] **Step 1: Write the failing tests.**
+  - Event detail: open the attendees, close, open again: `getEventAttendees` ran twice, and the second list replaces the first.
+  - Bell: the same INSERT delivered twice shows one item and counts 1; an INSERT with `read: true` does not raise the count; a row already in the list from the initial fetch is not prepended again.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement.** `handleShowAttendees` always loads (decision 8). The bell's effect keeps a `delivered` `Set` per subscription, as `useNotificationsPage` does, checks the current items, and counts only unread rows.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): attendees reload on open; the bell drops redelivered rows`.
+
+### Task 10b.17: Listing detail — chips once, actions once
+
+**Files:** `packages/shared/src/logic/marketplace/getListingHighlights.ts` (+ test); `pages/marketplace/listing/[id].page.tsx` (+ test), `listingDetail.module.css`.
+
+- [ ] **Step 1: Write the failing tests.** Shared: an individual listing's highlights hold only `posted` (no `condition`, no `category`); business listings are unchanged. Page: `ListingActionsPanel` renders once (`getByRole('complementary', { name: 'Listing actions' })` and a single "Message seller"/"Edit listing" button via `getByRole`, replacing the `getAllByText` workarounds).
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement** decision 6. The grid: `grid-template-areas: "top aside" "rest aside"` with `aside { grid-area: aside; position: sticky; align-self: start; }` at `md` and up; below it `"top" "aside" "rest"`. Delete `.inlineActions` and the display toggles.
+- [ ] **Step 4: Run them and watch them pass**, plus the mobile suite (it renders the shared chips).
+- [ ] **Step 5: Commit** as `fix(shared,web): listing detail shows category, condition and actions once`.
+
+### Task 10b.18: The no-metro marketplace
+
+**Files:** `components/marketplace/MarketplaceBrowse.tsx`, `MarketplaceBrowse.test.tsx`.
+
+- [ ] **Step 1: Write the failing test.** With `metroId={null}`: the decision 7 heading and a "Set your area" link to `/onboarding/zip`, and no loading skeleton.
+- [ ] **Step 2: Run it and watch it fail.**
+- [ ] **Step 3: Implement** an early return before the feed states.
+- [ ] **Step 4: Run it and watch it pass.**
+- [ ] **Step 5: Commit** as `fix(web): ask a member with no area to set one on the marketplace`.
+
+### Task 10b.19: `userMessage`, and the create, edit and profile flows
+
+**Files:** `packages/shared/src/logic/authErrors.ts` (+ test); create `lib/userMessage.ts` and `userMessage.test.ts`; modify `lib/postSubmit.ts`, `lib/profilePhoto.ts`, `pages/posts/create.page.tsx`, `pages/events/create.page.tsx`, `pages/marketplace/create.page.tsx`, `pages/feed.page.tsx`, `pages/posts/[id].page.tsx`, `pages/profile.page.tsx`, `hooks/useProfileEditing.ts`, `components/locations/AddLocationForm.tsx`, and their tests.
+
+- [ ] **Step 1: Write the failing tests.**
+  - Shared: `isConnectionError` is true for `AuthRetryableFetchError`, status 0 and status ≥ 500, and false otherwise; `getAuthErrorMessage` still passes its suite.
+  - `userMessage`: logs `{ event, error, context }` once; returns the connection sentence for a connection error and `fallback` for anything else, including an `Error` whose message is RLS text.
+  - Per flow, one test that feeds `new Error('new row violates row-level security policy')` and asserts the screen shows the fallback and never that text: new post, edited post, new/edited event, new/edited listing, report (feed and post detail), delete comment, profile photo set and remove, About You, name, bio, password reset, add location.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement** decision 10 at each site of recon 8 in these files. `lib/profilePhoto.ts`'s private `getErrorMessage` goes.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): actions show our copy, never a raw server error`.
+
+### Task 10b.20: The load hooks
+
+**Files:** `hooks/useEventFeed.ts`, `hooks/useEventDetail.ts`, `pages/events/[id].page.tsx` (attendees), `hooks/useMarketplaceFeed.ts`, `hooks/useMyListings.ts`, `hooks/useListingDetail.ts`, `hooks/usePromoteWizard.ts`, `hooks/useUserList.ts`, and their tests.
+
+- [ ] **Step 1: Write the failing tests.** In each hook's test, a rejected or `{ error }` response with RLS text yields the hook's fallback ("Couldn't load events.", "Couldn't load this event.", "Couldn't cancel the event. Please try again.", "Couldn't load attendees.", "Couldn't load listings.", "Couldn't load your listings.", "Couldn't load this listing.", "Couldn't start checkout. Please try again.", and `useUserList`'s own `fallbackError`), and the raw text appears nowhere.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement** `userMessage` at each site; `useUserList` always returns its `fallbackError` through it.
+- [ ] **Step 4: Run them and watch them pass.** Then `grep -rn "\.message" apps/web/src --include=*.ts --include=*.tsx | grep -v test` and account for every hit left (zod issues, logged-only use, `getAuthErrorMessage` inputs).
+- [ ] **Step 5: Commit** as `fix(web): lists and details show our copy, never a raw server error`.
+
+### Task 10b.21: Create post's tag error, the test-query rule
+
+**Files:** `pages/posts/create.page.tsx`, `create.test.tsx`; `components/events/EventTypeBadge.test.tsx`; `components/events/EventResponseControl.test.tsx`, `components/profile/ProfilePhotoControl.test.tsx`; `docs/architecture/web-ui-system.md`.
+
+- [ ] **Step 1: Write the failing tests.** Create post: no "Please select at least 1 tag" on load; after selecting a tag and clearing it, it shows. `EventTypeBadge` asserts its `data-type` with `toHaveAttribute` on the element found by its text.
+- [ ] **Step 2: Run them and watch them fail.**
+- [ ] **Step 3: Implement** a `tagsTouched` flag set by the first chip change, gating the message (Submit stays disabled until valid, so the touched flag is the only trigger). Replace the two Mantine `data-disabled` assertions per decision 11. Write decision 11 into `web-ui-system.md`'s Testing section.
+- [ ] **Step 4: Run them and watch them pass.**
+- [ ] **Step 5: Commit** as `fix(web): create post's tag error waits for a change; write down the test-query rule`.
+
+### Task 10b.22: Finish
+
+- [ ] **Step 1: e2e.** Update specs that read the old strings ("Logout"/"Sign Out", "Unsave post", "No listings in your area yet" for a no-metro member, raw errors). Add to an existing spec: the attendees dialog reopened after responding lists the viewer; the marketplace without a metro shows "Set your area". Run `npm run test:e2e:web`.
+- [ ] **Step 2: Re-baseline** every visual page in Docker (`npm run test:visual:docker --workspace=apps/web -- --update`). This PR touches primitives most pages use, so expect most PNGs to change: review each against its cause (empty-state heading, chip height, meta row, card hover is not captured, profile widths, locations rows, listing detail grid, search tabs). `a11y-baseline.json` stays `{}`.
+- [ ] **Step 3: Docs.** `web-ui-system.md`: `ListStates`, `DetailList`, `useFocusAfterUpdate`, `useGoogleSignIn`, `lib/userMessage`, `EmptyState`'s `titleOrder`, the border-hover rule, the disabled palette. Feature docs under `docs/product/features/` for changed behaviour (sign-out, public profile errors, marketplace no-metro, listing detail). `INDEX.md`'s overhaul line reads "PRs 0–10b".
+- [ ] **Step 4: Full gate.** `npm run lint`, `lint:guards`, `type-check`, `test`, `test:e2e:web`, `test:visual:web`, `docs:check`.
+- [ ] **Step 5: Keyboard walk.** Log out from each of the three places; the public profile's Follow then the count; Manage Locations add, rename, remove and set default with focus landing on a live control; search tabs at 375px with the focused tab fully in view; listing detail's actions reached once in tab order at both widths; attendees dialog open, Escape, reopen.
+- [ ] **Step 6: Push and open the draft PR** against `master` with `.github/pull_request_template.md`, run `gh pr edit <number> --add-reviewer @copilot`, and set the tracker row to `In Review (PR #NN)`.
 
 ## After the overhaul — Mantine 9
 
