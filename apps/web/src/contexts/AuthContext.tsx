@@ -125,11 +125,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchUserProfile]);
 
+  // Never rejects: login, onboarding and the auth callback await it on their
+  // success paths, and a rejection would strand them mid-flow.
   async function refreshUser(): Promise<User | null> {
-    const {
-      data: { user: sbUser },
-    } = await supabase.auth.getUser();
-    return sbUser ? fetchUserProfile() : null;
+    try {
+      const {
+        data: { user: sbUser },
+      } = await supabase.auth.getUser();
+      return sbUser ? await fetchUserProfile() : null;
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      return null;
+    }
   }
 
   async function handleSignOut() {

@@ -185,4 +185,22 @@ describe('AuthProvider', () => {
     authMocks.getUserMock.mockResolvedValue({ data: { user: null } });
     await expect(snapshots[snapshots.length - 1].refreshUser()).resolves.toBeNull();
   });
+
+  it('refreshUser never rejects: a getUser that throws resolves null', async () => {
+    // Login, onboarding and the callback await it on their success paths; a
+    // rejection there would leave a busy button or a page stuck.
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const snapshots: Array<React.ContextType<typeof AuthContext>> = [];
+    render(
+      <AuthProvider>
+        <ContextProbe onSnapshot={(v) => snapshots.push(v)} />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(snapshots[snapshots.length - 1].loading).toBe(false));
+
+    authMocks.getUserMock.mockRejectedValue(new Error('network down'));
+    await expect(snapshots[snapshots.length - 1].refreshUser()).resolves.toBeNull();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
 });
