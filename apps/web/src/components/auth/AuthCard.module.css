@@ -24,7 +24,8 @@
   font-size: var(--font-size-xl);
 }
 
-.title:focus {
+/* Focused by script when a step changes; it is not a control, so no ring unless the browser decides the focus came from the keyboard. */
+.title:focus:not(:focus-visible) {
   outline: none;
 }
 

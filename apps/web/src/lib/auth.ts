@@ -3,6 +3,7 @@
  * Uses the platform-specific supabase client from lib/supabase.ts.
  */
 import { supabase } from './supabase';
+import { resendVerificationEmail } from '@nepally/shared';
 import type { EmailAuthResult, GoogleAuthResult } from '@nepally/shared';
 
 export async function signInWithGoogle(): Promise<GoogleAuthResult> {
@@ -66,16 +67,8 @@ export async function signUpWithEmail(
 }
 
 /** Resends the sign-up confirmation email. */
-export async function resendSignupEmail(email: string): Promise<{ error?: Error }> {
-  try {
-    const { error } = await supabase.auth.resend({ type: 'signup', email });
-    if (error) throw error;
-    return {};
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error : new Error('Resending the email failed'),
-    };
-  }
+export function resendSignupEmail(email: string): Promise<{ error?: Error }> {
+  return resendVerificationEmail(supabase, email);
 }
 
 export async function signInWithEmail(
