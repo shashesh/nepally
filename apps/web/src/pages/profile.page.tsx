@@ -28,6 +28,7 @@ import { ProfilePhotoControl } from '../components/profile/ProfilePhotoControl';
 import { OwnListingsPanel, OwnPostsPanel, SavedPostsPanel } from '../components/profile/ProfileListPanels';
 import { getSettingsLinks } from '../components/layout/navItems';
 import { useAuth } from '../hooks/useAuth';
+import { useFocusAfterUpdate } from '../hooks/useFocusAfterUpdate';
 import { useOwnProfileContent } from '../hooks/useOwnProfileContent';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { replaceProfilePhoto } from '../lib/profilePhoto';
@@ -85,15 +86,7 @@ export default function ProfilePage() {
   // the Saved panel instead, but only if it was lost: never steal it from
   // wherever the member has moved since (as ProfilePhotoControl does).
   const savedPanelRef = useRef<HTMLDivElement>(null);
-  const refocusSavedPanel = useRef(false);
-  useEffect(() => {
-    if (!refocusSavedPanel.current) return;
-    refocusSavedPanel.current = false;
-    const active = document.activeElement;
-    // preventScroll: the panel is often taller than the viewport, and a plain
-    // focus() would scroll its top into view, jumping the page.
-    if (!active || active === document.body) savedPanelRef.current?.focus({ preventScroll: true });
-  }, [saved.items]);
+  const armFocus = useFocusAfterUpdate(saved.items);
 
   if (!user) {
     return null;
@@ -191,8 +184,10 @@ export default function ProfilePage() {
   };
 
   const handleUnsave = async (postId: string): Promise<void> => {
-    // The row unmounts on the next render; the effect above catches the focus.
-    refocusSavedPanel.current = true;
+    // The row unmounts on the next render, and focus with it. preventScroll:
+    // the panel is often taller than the viewport, and a plain focus() would
+    // scroll its top into view, jumping the page.
+    armFocus(() => savedPanelRef.current, { preventScroll: true });
     const { error } = await unsave(postId);
     if (error) {
       notify.error('Failed to unsave post.');

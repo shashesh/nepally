@@ -1,7 +1,8 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { Button, FileButton, Loader, Text, VisuallyHidden } from '@mantine/core';
 import { formatMegabytes, MAX_PROFILE_PHOTO_SOURCE_BYTES } from '@nepally/shared';
 import Avatar from '../Avatar';
+import { useFocusAfterUpdate } from '../../hooks/useFocusAfterUpdate';
 import { DEFAULT_IMAGE_MIME_TYPES } from '../ui';
 import styles from './ProfilePhotoControl.module.css';
 
@@ -37,28 +38,13 @@ export function ProfilePhotoControl({
   const [errorGeneration, setErrorGeneration] = useState(0);
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
-  // Set true only by a real Remove click, so this effect never fires for an
-  // unrelated update that happens to clear photoUrl (e.g. someone else's
-  // edit landing via realtime) — that must never steal focus from whatever
-  // the member is doing elsewhere on the page.
-  const removedRef = useRef(false);
-
-  // Removing the photo unmounts the Remove button on the next render. jsdom
-  // (v29+) and every real browser both drop focus to <body> when the
-  // focused element is removed from the document, so checking focus here —
-  // after the removal has committed — is enough to tell whether it was lost.
-  // Checking *what* used to be focused (e.g. at click time) would be wrong
-  // too: a mouse click doesn't focus a button in every browser (Safari),
-  // and if the member had already moved focus elsewhere before the removal
-  // committed, that focus must be left alone rather than stolen back.
-  useEffect(() => {
-    if (photoUrl || !removedRef.current) return;
-    removedRef.current = false;
-    const active = document.activeElement;
-    if (!active || active === document.body) {
-      addButtonRef.current?.focus();
-    }
-  }, [photoUrl]);
+  // Removing the photo unmounts the Remove button on the next render, and
+  // the browser drops focus to <body>. Armed only by a real Remove click, so
+  // an unrelated update that clears photoUrl never steals focus; and checked
+  // after the removal commits rather than at click time (a mouse click
+  // doesn't focus a button in Safari), so focus the member has moved
+  // elsewhere meanwhile is left alone.
+  const armFocus = useFocusAfterUpdate(photoUrl);
 
   function rejectPick(message: string) {
     setPickError(message);
@@ -90,7 +76,7 @@ export function ProfilePhotoControl({
 
   function handleRemoveClick() {
     if (busy) return;
-    removedRef.current = true;
+    armFocus(() => addButtonRef.current);
     setPickError(null);
     onRemove();
   }
