@@ -144,6 +144,9 @@ export default function ZipCodePage() {
   const [submitted, setSubmitted] = useState(false);
   const [unknownZip, setUnknownZip] = useState(false);
   const [metro, setMetro] = useState<MetroArea | null>(null);
+  // The ZIP the metro was found for. Confirm saves this, not the field, which
+  // stays editable while a lookup runs.
+  const [metroZip, setMetroZip] = useState('');
   const [alert, setAlert] = useState('');
   const [busy, setBusy] = useState<ZipBusy>(null);
   // Set by handleConfirm, whose own push to /feed must win over the has-a-metro redirect.
@@ -167,9 +170,10 @@ export default function ZipCodePage() {
   if (signedOut || hasMetro || !user) return null;
   const userId = user.id;
 
-  function showStep(next: MetroArea | null) {
+  function showStep(next: MetroArea | null, zip = '') {
     stepChanged.current = true;
     setMetro(next);
+    setMetroZip(zip);
     setAlert('');
   }
 
@@ -189,11 +193,12 @@ export default function ZipCodePage() {
       return;
     }
 
+    const lookedUp = zipCode;
     setBusy('lookup');
-    const result = await getMetroByZip(supabase, zipCode);
+    const result = await getMetroByZip(supabase, lookedUp);
     setBusy(null);
     if (result.data) {
-      showStep(result.data);
+      showStep(result.data, lookedUp);
       return;
     }
     setUnknownZip(true);
@@ -211,14 +216,17 @@ export default function ZipCodePage() {
       return;
     }
     setZipCode(result.zip_code);
-    showStep({ id: result.metro_area_id, name: result.metro_name, state: result.metro_state, population: null });
+    showStep(
+      { id: result.metro_area_id, name: result.metro_name, state: result.metro_state, population: null },
+      result.zip_code
+    );
   }
 
   async function handleConfirm() {
     if (!metro || completing) return;
     setCompleting(true);
     setAlert('');
-    const result = await updateUserLocation(supabase, userId, zipCode, metro.id);
+    const result = await updateUserLocation(supabase, userId, metroZip, metro.id);
     if (result.error) {
       setCompleting(false);
       setAlert(SAVE_FAILED);
@@ -227,7 +235,7 @@ export default function ZipCodePage() {
 
     // The metro is saved on the profile now, so a failed Home entry doesn't
     // block the member: Manage Locations can add it later.
-    const home = await addSavedLocation(supabase, userId, metro.id, 'Home', zipCode, true);
+    const home = await addSavedLocation(supabase, userId, metro.id, 'Home', metroZip, true);
     if (home.error) {
       logClientEvent({
         event: 'onboarding_home_location_failed',

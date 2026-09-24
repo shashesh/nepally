@@ -217,6 +217,27 @@ describe('ZipCodePage', () => {
     expect(zipMocks.updateUserLocationMock).toHaveBeenCalledTimes(1);
   });
 
+  it('saves the ZIP the metro was found for, even if the field changed during the lookup', async () => {
+    let resolveLookup: (value: { data: typeof NEW_YORK; error: null }) => void = () => {};
+    zipMocks.getMetroByZipMock.mockImplementation(
+      () => new Promise((resolve) => { resolveLookup = resolve; })
+    );
+    render(<ZipCodePage />);
+    fireEvent.change(zipField(), { target: { value: '10001' } });
+    await act(async () => {
+      fireEvent.click(findButton());
+    });
+    fireEvent.change(zipField(), { target: { value: '90210' } });
+    await act(async () => {
+      resolveLookup({ data: NEW_YORK, error: null });
+    });
+    await act(async () => {
+      fireEvent.click(confirmButton());
+    });
+    expect(zipMocks.updateUserLocationMock).toHaveBeenCalledWith({}, 'user-1', '10001', '35620');
+    expect(zipMocks.addSavedLocationMock).toHaveBeenCalledWith({}, 'user-1', '35620', 'Home', '10001', true);
+  });
+
   it('locks Change ZIP while Confirm saves', async () => {
     zipMocks.updateUserLocationMock.mockImplementation(() => new Promise(() => {}));
     render(<ZipCodePage />);
