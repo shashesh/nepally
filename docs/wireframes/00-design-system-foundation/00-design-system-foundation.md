@@ -1,6 +1,8 @@
 # Nepally Design System Foundation
 
-> **Document:** 00 | **Version:** 1.0 | **Status:** Draft | **Updated:** 2026-02-19
+> **Document:** 00 | **Version:** 1.0 | **Status:** Superseded | **Updated:** 2026-09-24
+
+> **Superseded.** The web app no longer follows this foundation. Its design system is H1 · Ink & Marigold, described in [web-ui-system.md](../../architecture/web-ui-system.md), with tokens in `apps/web/src/styles/tokens.css`. The colours, type and primitives below are kept for history; don't build web UI from them.
 
 ---
 
