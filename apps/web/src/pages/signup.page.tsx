@@ -1,12 +1,40 @@
-import React, { useState, FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Alert, Button, List, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
-import { validateEmail, validatePassword, validateFullName } from '@nepally/shared';
-import { signUpWithEmail, signInWithGoogle } from '../lib/auth';
+import { Alert, Button, Divider, Loader, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
+import {
+  fullNameSchema,
+  getAuthErrorMessage,
+  isExistingAccountError,
+  logClientEvent,
+  validateEmail,
+  validatePassword,
+} from '@nepally/shared';
+import { signInWithGoogle, signUpWithEmail } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
-import styles from '../styles/Auth.module.css';
+import { useRedirectWhen } from '../hooks/useRedirectWhen';
+import { AuthCard } from '../components/auth/AuthCard';
+import { GoogleButton } from '../components/auth/GoogleButton';
+
+const PASSWORD_RULE = 'At least 8 characters, with an uppercase letter, a lowercase letter and a number';
+
+interface SignupErrors {
+  fullName?: string;
+  email?: string;
+  /** The unmet password rules. */
+  password?: string[];
+}
+
+function validateSignup(fullName: string, email: string, password: string): SignupErrors {
+  const name = fullNameSchema.safeParse(fullName);
+  const passwordResult = validatePassword(password);
+  return {
+    ...(name.success ? {} : { fullName: name.error.issues[0]?.message }),
+    ...(validateEmail(email) ? {} : { email: 'Enter a valid email address.' }),
+    ...(passwordResult.isValid ? {} : { password: passwordResult.errors }),
+  };
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -14,176 +42,152 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [serverError, setServerError] = useState('');
+  const [signingUp, setSigningUp] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
-  // Redirect if already logged in
-  if (user) {
-    router.replace('/feed');
-    return null;
-  }
+  const redirecting = useRedirectWhen(!!user, '/feed');
+  if (redirecting) return null;
 
-  function handlePasswordChange(value: string) {
-    setPassword(value);
-    if (value) {
-      const result = validatePassword(value);
-      setPasswordErrors(result.errors);
-    } else {
-      setPasswordErrors([]);
-    }
-  }
+  // Nothing shows before the first submit; after it, errors follow every change.
+  const errors = submitted ? validateSignup(fullName, email, password) : {};
 
-  async function handleGoogleSignup() {
-    setError('');
-    setGoogleLoading(true);
+  async function handleGoogle() {
+    setServerError('');
+    setGoogleBusy(true);
     const result = await signInWithGoogle();
-    // If we get here, it means the redirect failed
-    setGoogleLoading(false);
+    // On success the browser is already navigating to Google, so stay busy.
     if (result.error) {
-      setError(result.error.message);
+      setGoogleBusy(false);
+      logClientEvent({ event: 'auth_google_failed', context: { platform: 'web' }, error: result.error });
+      setServerError(getAuthErrorMessage(result.error, 'google'));
     }
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError('');
+    if (signingUp) return;
+    setSubmitted(true);
+    setServerError('');
 
-    if (!validateFullName(fullName)) {
-      setError('Please enter your full name (at least 2 characters, letters only).');
+    const found = validateSignup(fullName, email, password);
+    const fields = [
+      [found.fullName, nameRef],
+      [found.email, emailRef],
+      [found.password, passwordRef],
+    ] as const;
+    const firstInvalid = fields.find(([error]) => error)?.[1];
+    if (firstInvalid) {
+      firstInvalid.current?.focus();
       return;
     }
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address.');
+
+    setSigningUp(true);
+    const result = await signUpWithEmail(email, password, fullNameSchema.parse(fullName));
+    if (!result.error) {
+      void router.push('/verify-email?email=' + encodeURIComponent(email));
       return;
     }
-    const pwResult = validatePassword(password);
-    if (!pwResult.isValid) {
-      setError('Please fix password issues before continuing.');
+    if (isExistingAccountError(result.error)) {
+      void router.push('/login?reason=existing-account&email=' + encodeURIComponent(email));
       return;
     }
-
-    setLoading(true);
-    const result = await signUpWithEmail(email, password, fullName);
-    setLoading(false);
-
-    if (result.error) {
-      const msg = result.error.message.toLowerCase();
-      if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('user already registered')) {
-        router.push('/login?reason=existing-account&email=' + encodeURIComponent(email));
-        return;
-      }
-      setError(result.error.message);
-    } else {
-      router.push('/verify-email?email=' + encodeURIComponent(email));
-    }
+    setSigningUp(false);
+    logClientEvent({ event: 'auth_sign_up_failed', context: { platform: 'web' }, error: result.error });
+    setServerError(getAuthErrorMessage(result.error, 'sign-up'));
   }
 
   return (
     <>
       <Head>
-        <title>Sign Up - Nepally</title>
+        <title>Sign up - Nepally</title>
       </Head>
-      <div className={styles.authPage}>
-        <div className={styles.authCard}>
-          <h1 className={styles.authTitle}>Join Nepally</h1>
-          <p className={styles.authSubtitle}>
-            Create your account to connect with the community
-          </p>
+      <AuthCard
+        title="Join Nepally"
+        description="Create your account to connect with the community"
+        footer={
+          <>
+            Already have an account? <Link href="/login">Log in</Link>
+          </>
+        }
+      >
+        {serverError && (
+          <Alert color="red" variant="light">
+            {serverError}
+          </Alert>
+        )}
 
-          {error && (
-            <Alert color="red" variant="light">
-              {error}
-            </Alert>
-          )}
+        <GoogleButton onClick={handleGoogle} busy={googleBusy} />
 
-          <div className={styles.methodGroup}>
-            <button
-              type="button"
-              className={styles.methodButton}
-              onClick={handleGoogleSignup}
-              disabled={googleLoading}
+        <Divider label="or sign up with email" labelPosition="center" />
+
+        <form noValidate onSubmit={handleSubmit}>
+          <Stack gap="sm">
+            <TextInput
+              ref={nameRef}
+              label="Full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your full name"
+              autoComplete="name"
+              error={errors.fullName}
+            />
+
+            <TextInput
+              ref={emailRef}
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              error={errors.email}
+            />
+
+            <PasswordInput
+              ref={passwordRef}
+              label="Password"
+              description={PASSWORD_RULE}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a strong password"
+              autoComplete="new-password"
+              // One unmet rule per line. Mantine's error is a <p>, which can't hold a <ul>.
+              error={errors.password?.map((rule) => (
+                <Text key={rule} component="span" display="block" inherit>
+                  {rule}
+                </Text>
+              ))}
+              // Mantine's PasswordInput links the error but doesn't set aria-invalid.
+              aria-invalid={errors.password ? true : undefined}
+              visibilityToggleButtonProps={{ 'aria-label': 'Toggle password visibility' }}
+            />
+
+            <Button
+              type="submit"
+              fullWidth
+              mt="xs"
+              aria-disabled={signingUp || undefined}
+              data-disabled={signingUp || undefined}
+              aria-busy={signingUp || undefined}
+              leftSection={
+                signingUp ? <Loader size={16} color="currentColor" aria-hidden="true" /> : undefined
+              }
             >
-              <span className={styles.methodIcon}>🔵</span>
-              <span className={styles.methodLabel}>
-                {googleLoading ? 'Redirecting...' : 'Continue with Google'}
-              </span>
-            </button>
+              Create account
+            </Button>
+          </Stack>
+        </form>
 
-          </div>
-
-          <div className={styles.divider}>
-            <span className={styles.dividerLine} />
-            <span className={styles.dividerLabel}>or sign up with email</span>
-            <span className={styles.dividerLine} />
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <Stack gap="sm">
-              <TextInput
-                label="Full Name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Your full name"
-                autoComplete="name"
-              />
-
-              <TextInput
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-              />
-
-              <div>
-                <PasswordInput
-                  label="Password"
-                  value={password}
-                  onChange={(e) => handlePasswordChange(e.target.value)}
-                  placeholder="Create a strong password"
-                  autoComplete="new-password"
-                  error={passwordErrors.length > 0}
-                  visibilityToggleButtonProps={{ 'aria-label': 'Toggle password visibility' }}
-                />
-                {passwordErrors.length > 0 && (
-                  <List size="xs" mt={4}>
-                    {passwordErrors.map((err) => (
-                      <List.Item key={err}>
-                        <Text size="xs" c="red">{err}</Text>
-                      </List.Item>
-                    ))}
-                  </List>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                fullWidth
-                loading={loading}
-                mt="xs"
-              >
-                Create Account
-              </Button>
-            </Stack>
-          </form>
-
-          <p className={styles.legalConsent}>
-            By creating an account you agree to the{' '}
-            <Link href="/terms">Terms of Service</Link> and{' '}
-            <Link href="/privacy">Privacy Policy</Link>.
-          </p>
-
-          <p className={styles.switchText}>
-            Already have an account?{' '}
-            <Link href="/login" className={styles.switchLink}>
-              Sign In
-            </Link>
-          </p>
-        </div>
-      </div>
+        <Text size="sm" c="dimmed" ta="center">
+          By creating an account you agree to the <Link href="/terms">Terms of Service</Link> and{' '}
+          <Link href="/privacy">Privacy Policy</Link>.
+        </Text>
+      </AuthCard>
     </>
   );
 }

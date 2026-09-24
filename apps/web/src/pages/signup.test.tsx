@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '../test-utils';
+import { render, screen, fireEvent, act } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type MockLinkProps = { href: string; children?: React.ReactNode; className?: string };
@@ -9,21 +9,20 @@ const signupMocks = vi.hoisted(() => ({
   useRouterMock: vi.fn(),
   signUpWithEmailMock: vi.fn(),
   signInWithGoogleMock: vi.fn(),
-  validateEmailMock: vi.fn(),
-  validatePasswordMock: vi.fn(),
-  validateFullNameMock: vi.fn(),
+  logClientEventMock: vi.fn(),
 }));
 
 vi.mock('../hooks/useAuth', () => ({ useAuth: signupMocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: signupMocks.useRouterMock }));
-vi.mock('../lib/auth', () => ({ signUpWithEmail: signupMocks.signUpWithEmailMock, signInWithGoogle: signupMocks.signInWithGoogleMock }));
+vi.mock('../lib/auth', () => ({
+  signUpWithEmail: signupMocks.signUpWithEmailMock,
+  signInWithGoogle: signupMocks.signInWithGoogleMock,
+}));
 vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<object>('@nepally/shared');
   return {
     ...actual,
-    validateEmail: signupMocks.validateEmailMock,
-    validatePassword: signupMocks.validatePasswordMock,
-    validateFullName: signupMocks.validateFullNameMock,
+    logClientEvent: signupMocks.logClientEventMock,
   };
 });
 vi.mock('next/head', () => ({
@@ -37,6 +36,35 @@ vi.mock('next/link', () => ({
 
 import SignupPage from './signup.page';
 
+const VALID_PASSWORD = 'Password123';
+
+/** The text of every element an element's aria-describedby points at. */
+function descriptionOf(element: HTMLElement): string {
+  return (element.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent ?? '')
+    .join(' ');
+}
+
+const nameField = () => screen.getByLabelText('Full name');
+const emailField = () => screen.getByLabelText('Email');
+const passwordField = () => screen.getByLabelText('Password');
+const createButton = () => screen.getByRole('button', { name: 'Create account' });
+
+async function submit() {
+  await act(async () => {
+    fireEvent.click(createButton());
+  });
+}
+
+async function submitWith(name: string, email: string, password: string) {
+  fireEvent.change(nameField(), { target: { value: name } });
+  fireEvent.change(emailField(), { target: { value: email } });
+  fireEvent.change(passwordField(), { target: { value: password } });
+  await submit();
+}
+
 describe('SignupPage', () => {
   const mockPush = vi.fn();
   const mockReplace = vi.fn();
@@ -46,146 +74,153 @@ describe('SignupPage', () => {
     vi.clearAllMocks();
     signupMocks.useRouterMock.mockReturnValue({ push: mockPush, replace: mockReplace });
     signupMocks.useAuthMock.mockReturnValue({ user: null, refreshUser: mockRefreshUser });
-    signupMocks.validateFullNameMock.mockReturnValue(true);
-    signupMocks.validateEmailMock.mockReturnValue(true);
-    signupMocks.validatePasswordMock.mockReturnValue({ isValid: true, errors: [] });
     signupMocks.signInWithGoogleMock.mockResolvedValue({});
+    signupMocks.signUpWithEmailMock.mockResolvedValue({ user: { id: 'user-1' } });
   });
 
   it('renders the signup form', () => {
     render(<SignupPage />);
-    expect(screen.getByText('Join Nepally')).toBeDefined();
-    expect(screen.getByLabelText('Full Name')).toBeDefined();
-    expect(screen.getByLabelText('Email')).toBeDefined();
-    expect(screen.getByLabelText('Password')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Create Account' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'Join Nepally' })).toBeDefined();
+    expect(screen.getByText('Create your account to connect with the community')).toBeDefined();
+    expect(nameField()).toBeDefined();
+    expect(emailField()).toBeDefined();
+    expect(passwordField()).toBeDefined();
+    expect(createButton()).toBeDefined();
   });
 
-  it('redirects to /feed when user is already logged in', () => {
+  it('links to the Log in page', () => {
+    render(<SignupPage />);
+    expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
+  });
+
+  it('redirects a signed-in user to /feed from an effect and renders nothing', async () => {
     signupMocks.useAuthMock.mockReturnValue({ user: { id: 'user-1' }, refreshUser: mockRefreshUser });
     render(<SignupPage />);
+    await act(async () => {});
+    expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith('/feed');
+    expect(screen.queryByRole('heading')).toBeNull();
   });
 
-  it('shows error when full name is invalid', async () => {
-    signupMocks.validateFullNameMock.mockReturnValue(false);
+  it.each(['Bikal Shrestha', "O'Brien-Rai", 'बिकल श्रेष्ठ'])('accepts the name %s', async (name) => {
     render(<SignupPage />);
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'X' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
-    await waitFor(() => {
-      expect(screen.getByText('Please enter your full name (at least 2 characters, letters only).')).toBeDefined();
-    });
+    await submitWith(name, 'test@example.com', VALID_PASSWORD);
+    expect(signupMocks.signUpWithEmailMock).toHaveBeenCalledWith('test@example.com', VALID_PASSWORD, name);
+  });
+
+  it('sends the normalized name', async () => {
+    render(<SignupPage />);
+    await submitWith('  Bikal   Shrestha ', 'test@example.com', VALID_PASSWORD);
+    expect(signupMocks.signUpWithEmailMock).toHaveBeenCalledWith(
+      'test@example.com',
+      VALID_PASSWORD,
+      'Bikal Shrestha'
+    );
+  });
+
+  it('shows a short name error on the name field', async () => {
+    render(<SignupPage />);
+    await submitWith('X', 'test@example.com', VALID_PASSWORD);
+    expect(nameField().getAttribute('aria-invalid')).toBe('true');
+    expect(descriptionOf(nameField())).toContain('Name must be at least 2 characters');
     expect(signupMocks.signUpWithEmailMock).not.toHaveBeenCalled();
   });
 
-  it('shows error when email is invalid', async () => {
-    signupMocks.validateEmailMock.mockReturnValue(false);
+  it('shows an invalid email error on the email field', async () => {
     render(<SignupPage />);
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'bad' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
-    await waitFor(() => {
-      expect(screen.getByText('Please enter a valid email address.')).toBeDefined();
-    });
+    await submitWith('Test User', 'bad', VALID_PASSWORD);
+    expect(emailField().getAttribute('aria-invalid')).toBe('true');
+    expect(descriptionOf(emailField())).toContain('Enter a valid email address.');
     expect(signupMocks.signUpWithEmailMock).not.toHaveBeenCalled();
   });
 
-  it('shows error when password is invalid', async () => {
-    signupMocks.validatePasswordMock.mockReturnValue({ isValid: false, errors: ['Too short'] });
+  it('describes the password rule and shows no password error before submit', () => {
     render(<SignupPage />);
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'bad' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
-    await waitFor(() => {
-      expect(screen.getByText('Please fix password issues before continuing.')).toBeDefined();
-    });
+    fireEvent.change(passwordField(), { target: { value: 'abc' } });
+    expect(descriptionOf(passwordField())).toContain(
+      'At least 8 characters, with an uppercase letter, a lowercase letter and a number'
+    );
+    expect(passwordField().getAttribute('aria-invalid')).not.toBe('true');
+    expect(screen.queryByText('Password must be at least 8 characters')).toBeNull();
   });
 
-  it('shows password validation errors inline as user types', async () => {
-    signupMocks.validatePasswordMock.mockReturnValue({
-      isValid: false,
-      errors: ['Password must be at least 8 characters'],
-    });
+  it('lists the unmet password rules after submit, and clears them once the password is valid', async () => {
     render(<SignupPage />);
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'short' } });
-    await waitFor(() => {
-      expect(screen.getByText('Password must be at least 8 characters')).toBeDefined();
-    });
+    await submitWith('Test User', 'test@example.com', 'abc');
+    const description = descriptionOf(passwordField());
+    expect(description).toContain('Password must be at least 8 characters');
+    expect(description).toContain('Password must contain at least one uppercase letter');
+    expect(description).toContain('Password must contain at least one number');
+    expect(description).not.toContain('Password must contain at least one lowercase letter');
+    expect(passwordField().getAttribute('aria-invalid')).toBe('true');
+
+    fireEvent.change(passwordField(), { target: { value: VALID_PASSWORD } });
+    expect(descriptionOf(passwordField())).not.toContain('Password must');
+    expect(passwordField().getAttribute('aria-invalid')).not.toBe('true');
   });
 
-  it('shows API error when signup fails', async () => {
+  it('focuses the first invalid field on submit', async () => {
+    render(<SignupPage />);
+    await submitWith('Test User', 'bad', 'abc');
+    expect(document.activeElement).toBe(emailField());
+  });
+
+  it('focuses the name field when everything is blank', async () => {
+    render(<SignupPage />);
+    await submit();
+    expect(document.activeElement).toBe(nameField());
+  });
+
+  it('shows the sign-up sentence when signup fails, never the raw message', async () => {
+    signupMocks.signUpWithEmailMock.mockResolvedValue({ error: new Error('Database exploded') });
+    render(<SignupPage />);
+    await submitWith('Test User', 'test@example.com', VALID_PASSWORD);
+    expect(screen.getByRole('alert').textContent).toContain(
+      "Couldn't create your account. Please try again."
+    );
+    expect(screen.queryByText('Database exploded')).toBeNull();
+    expect(signupMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'auth_sign_up_failed' })
+    );
+  });
+
+  it('redirects to login with the reason when the account already exists', async () => {
     signupMocks.signUpWithEmailMock.mockResolvedValue({
-      error: new Error('Email already in use'),
+      error: Object.assign(new Error('User already registered'), { code: 'user_already_exists' }),
     });
     render(<SignupPage />);
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
-    await waitFor(() => {
-      expect(screen.getByText('Email already in use')).toBeDefined();
-    });
-  });
-
-  it('redirects to login with reason when email is already registered', async () => {
-    signupMocks.signUpWithEmailMock.mockResolvedValue({
-      error: new Error('User already registered'),
-    });
-    render(<SignupPage />);
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'google@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/login?reason=existing-account&email=google%40example.com');
-    });
+    await submitWith('Test User', 'google@example.com', VALID_PASSWORD);
+    expect(mockPush).toHaveBeenCalledWith('/login?reason=existing-account&email=google%40example.com');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('redirects to /verify-email on successful signup', async () => {
-    signupMocks.signUpWithEmailMock.mockResolvedValue({ user: { id: 'user-1' } });
     render(<SignupPage />);
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
-    await waitFor(() => {
-      expect(mockRefreshUser).not.toHaveBeenCalled();
-      expect(mockPush).toHaveBeenCalledWith(
-        '/verify-email?email=test%40example.com'
-      );
-    });
+    await submitWith('Test User', 'test@example.com', VALID_PASSWORD);
+    expect(mockRefreshUser).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/verify-email?email=test%40example.com');
   });
 
   it('toggles password visibility', async () => {
     render(<SignupPage />);
-    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('password');
+    expect(passwordField().getAttribute('type')).toBe('password');
     await act(async () => {
       fireEvent.mouseDown(screen.getByLabelText('Toggle password visibility'));
     });
-    expect(screen.getByLabelText('Password').getAttribute('type')).toBe('text');
+    expect(passwordField().getAttribute('type')).toBe('text');
   });
 
-  it('shows loading state while submitting', async () => {
-    // Never settles: this test only asserts the pending state. A mock that
-    // resolves on a real timer outlives the test — cleanup unmounts the page,
-    // then the success path resumes and calls the shared mockPush inside
-    // whichever test is running by then. No timer, nothing to resume.
+  it('keeps Create account focusable and aria-disabled while submitting', async () => {
+    // Never settles: this test only asserts the pending state.
     signupMocks.signUpWithEmailMock.mockImplementation(() => new Promise(() => {}));
     render(<SignupPage />);
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Account' }));
-    await waitFor(() => {
-      const btn = screen.getByRole('button', { name: 'Create Account' });
-      // Mantine renders `loading` as a disabled native <button>; assert that
-      // user-observable state rather than Mantine's data-loading attribute.
-      expect(btn.hasAttribute('disabled')).toBe(true);
-    });
+    await submitWith('Test User', 'test@example.com', VALID_PASSWORD);
+    const button = createButton();
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect((button as HTMLButtonElement).disabled).toBe(false);
+    await submit();
+    expect(signupMocks.signUpWithEmailMock).toHaveBeenCalledTimes(1);
   });
 
   it('links to the Terms of Service and Privacy Policy', () => {
@@ -194,32 +229,35 @@ describe('SignupPage', () => {
     expect(screen.getByRole('link', { name: 'Privacy Policy' }).getAttribute('href')).toBe('/privacy');
   });
 
-  it('renders Google signup button without phone option', () => {
+  it('renders the Google button without a phone option', () => {
     render(<SignupPage />);
-    expect(screen.getByText('Continue with Google')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeDefined();
     expect(screen.queryByText('Continue with Phone')).toBeNull();
   });
 
-  it('calls signInWithGoogle when Google button is clicked', async () => {
+  it('calls signInWithGoogle when the Google button is pressed', async () => {
     render(<SignupPage />);
-    fireEvent.click(screen.getByText('Continue with Google'));
-    await waitFor(() => {
-      expect(signupMocks.signInWithGoogleMock).toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     });
+    expect(signupMocks.signInWithGoogleMock).toHaveBeenCalled();
   });
 
-  it('shows error when Google sign-in fails', async () => {
+  it('shows the Google sentence when Google sign-in fails', async () => {
     signupMocks.signInWithGoogleMock.mockResolvedValue({
       error: new Error('Provider not enabled'),
     });
     render(<SignupPage />);
-    fireEvent.click(screen.getByText('Continue with Google'));
-    await waitFor(() => {
-      expect(screen.getByText('Provider not enabled')).toBeDefined();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     });
+    expect(screen.getByRole('alert').textContent).toContain(
+      "Couldn't continue with Google. Please try again."
+    );
+    expect(screen.queryByText('Provider not enabled')).toBeNull();
   });
 
-  it('shows divider text for email option', () => {
+  it('shows divider text for the email option', () => {
     render(<SignupPage />);
     expect(screen.getByText('or sign up with email')).toBeDefined();
   });
