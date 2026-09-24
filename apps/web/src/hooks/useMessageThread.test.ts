@@ -60,6 +60,14 @@ interface Subscription {
 let subscription: Subscription | null;
 const CHANNEL = { name: 'channel' };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
+
 async function renderLoaded(conversationId = 'conv-1', userId = VIEWER) {
   const hook = renderHook(({ id, user }) => useMessageThread(id, user), {
     initialProps: { id: conversationId as string | null, user: userId as string | null },
@@ -124,7 +132,7 @@ describe('useMessageThread', () => {
       expect(result.current.partner).toBeNull();
       expect(result.current.messages).toEqual([]);
       expect(mocks.markAsRead).not.toHaveBeenCalled();
-      expect(mocks.subscribeToMessages).not.toHaveBeenCalled();
+      expect(mocks.removeChannel).toHaveBeenCalledWith(CHANNEL);
     });
 
     it('waits for both ids before asking for anything', () => {
@@ -132,6 +140,65 @@ describe('useMessageThread', () => {
 
       expect(result.current.loading).toBe(false);
       expect(mocks.getMessages).not.toHaveBeenCalled();
+    });
+
+    it('leaves the channel when the load fails', async () => {
+      mocks.getMessages.mockResolvedValue({ error: new Error('boom') });
+      await renderLoaded();
+
+      expect(mocks.removeChannel).toHaveBeenCalledWith(CHANNEL);
+    });
+
+    it('keeps a message that arrives while the thread is still loading', async () => {
+      const conversations = deferred<{ data: ConversationWithParticipant[] }>();
+      mocks.getConversations.mockReturnValue(conversations.promise);
+      const { result } = renderHook(() => useMessageThread('conv-1', VIEWER));
+
+      // Subscribed before the load finishes, so nothing sent meanwhile is lost.
+      expect(mocks.subscribeToMessages).toHaveBeenCalledTimes(1);
+      act(() => subscription!.onInsert(message('m3', PARTNER_ID, { timestamp: '2026-09-23T10:05:00Z' })));
+
+      await act(async () => {
+        conversations.resolve({ data: [conversation('conv-1')] });
+      });
+
+      expect(result.current.loading).toBe(false);
+      expect(result.current.messages.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
+    });
+
+    it('marks the thread read only once the viewer is known to be in it', async () => {
+      const conversations = deferred<{ data: ConversationWithParticipant[] }>();
+      mocks.getConversations.mockReturnValue(conversations.promise);
+      renderHook(() => useMessageThread('conv-1', VIEWER));
+      await act(async () => {});
+
+      expect(mocks.markAsRead).not.toHaveBeenCalled();
+
+      await act(async () => {
+        conversations.resolve({ data: [conversation('conv-1')] });
+      });
+
+      expect(mocks.markAsRead).toHaveBeenCalledWith(expect.anything(), 'conv-1', VIEWER);
+    });
+
+    it("drops a load that lands after the conversation changed", async () => {
+      const firstMessages = deferred<{ data: ChatMessage[] }>();
+      mocks.getMessages.mockReturnValueOnce(firstMessages.promise);
+      mocks.getConversations.mockResolvedValue({ data: [conversation('conv-1'), conversation('conv-2')] });
+      const { result, rerender } = renderHook(({ id }) => useMessageThread(id, VIEWER), {
+        initialProps: { id: 'conv-1' },
+      });
+
+      mocks.getMessages.mockResolvedValue({ data: [message('x1', PARTNER_ID, { conversation_id: 'conv-2' })] });
+      rerender({ id: 'conv-2' });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        firstMessages.resolve({ data: [message('m1', PARTNER_ID)] });
+      });
+
+      expect(result.current.partner?.id).toBe('conv-2');
+      expect(result.current.messages.map((m) => m.id)).toEqual(['x1']);
     });
 
     it('reload clears the error and loads again', async () => {
@@ -192,6 +259,36 @@ describe('useMessageThread', () => {
 
       expect(mocks.getMessages).toHaveBeenCalledTimes(1);
       expect(mocks.subscribeToMessages).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores an event that arrives after leaving the thread', async () => {
+      const { result, unmount } = await renderLoaded();
+      const late = subscription!;
+      const before = result.current.messages;
+      unmount();
+      mocks.markAsRead.mockClear();
+
+      act(() => late.onInsert(message('m3', PARTNER_ID)));
+
+      expect(mocks.markAsRead).not.toHaveBeenCalled();
+      expect(result.current.messages).toBe(before);
+    });
+
+    it("ignores an event for another conversation", async () => {
+      const { result } = await renderLoaded();
+
+      act(() => subscription!.onInsert(message('x1', PARTNER_ID, { conversation_id: 'conv-9' })));
+
+      expect(result.current.messages).toHaveLength(2);
+    });
+
+    it('keeps messages in time order when they arrive out of order', async () => {
+      const { result } = await renderLoaded();
+
+      act(() => subscription!.onInsert(message('m4', PARTNER_ID, { timestamp: '2026-09-23T10:10:00Z' })));
+      act(() => subscription!.onInsert(message('m3', VIEWER, { timestamp: '2026-09-23T10:05:00Z' })));
+
+      expect(result.current.messages.map((m) => m.id)).toEqual(['m1', 'm2', 'm3', 'm4']);
     });
 
     it('unsubscribes on unmount', async () => {
@@ -256,6 +353,30 @@ describe('useMessageThread', () => {
 
       expect(sent).toBe(false);
       expect(result.current.messages).toBe(before);
+    });
+
+    it('does not add a send that lands after the conversation changed', async () => {
+      const pending = deferred<{ data: ChatMessage }>();
+      mocks.sendMessage.mockReturnValue(pending.promise);
+      mocks.getConversations.mockResolvedValue({ data: [conversation('conv-1'), conversation('conv-2')] });
+      const { result, rerender } = await renderLoaded();
+
+      let sending!: Promise<boolean>;
+      act(() => {
+        sending = result.current.send('hi');
+      });
+      mocks.getMessages.mockResolvedValue({ data: [] });
+      rerender({ id: 'conv-2', user: VIEWER });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let sent = false;
+      await act(async () => {
+        pending.resolve({ data: message('m3', VIEWER) });
+        sent = await sending;
+      });
+
+      expect(sent).toBe(true);
+      expect(result.current.messages).toEqual([]);
     });
 
     it('resolves false without a request for blank text', async () => {

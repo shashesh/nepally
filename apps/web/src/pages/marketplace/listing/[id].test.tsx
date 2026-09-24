@@ -251,6 +251,31 @@ describe('ListingDetailPage', () => {
     expect(mockPush).not.toHaveBeenCalledWith(expect.stringContaining('?to='));
   });
 
+  it('counts one contact for a double press, and shows Contact Seller busy meanwhile', async () => {
+    mocks.useAuth.mockReturnValue({
+      user: { id: 'u1', full_name: 'Bikal Shrestha', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    let finishCount!: (value: { error?: Error }) => void;
+    vi.mocked(incrementListingContacts).mockReturnValueOnce(
+      new Promise<{ error?: Error }>((resolve) => {
+        finishCount = resolve;
+      })
+    );
+    render(React.createElement(ListingDetailPage));
+    const [contact] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+
+    fireEvent.click(contact);
+    fireEvent.click(contact);
+
+    const [busy] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+    expect(busy.getAttribute('aria-disabled')).toBe('true');
+    expect(incrementListingContacts).toHaveBeenCalledTimes(1);
+
+    finishCount({});
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/messages/conv-1'));
+    expect(getOrCreateConversation).toHaveBeenCalledTimes(1);
+  });
+
   it('shows Edit button when user is the owner', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'user-2', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));

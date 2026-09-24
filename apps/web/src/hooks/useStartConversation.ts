@@ -11,9 +11,22 @@ export interface ConversationPartner {
   name: string;
 }
 
+export interface StartConversationOptions {
+  /**
+   * Runs first, inside the double-press guard, e.g. listing detail's contact
+   * counter, so a second press can't run it twice. Best effort: if it
+   * rejects, the conversation still opens.
+   */
+  beforeStart?: () => Promise<unknown>;
+}
+
 export interface StartConversation {
-  start: (partner: ConversationPartner) => Promise<void>;
-  /** True while a conversation is being found or created. */
+  start: (partner: ConversationPartner, options?: StartConversationOptions) => Promise<void>;
+  /**
+   * True from the press until a failure, or until navigation unmounts the
+   * caller: it stays set on success so the button can't start a second one
+   * while the route changes.
+   */
   starting: boolean;
 }
 
@@ -40,7 +53,7 @@ export function useStartConversation(): StartConversation {
   }, []);
 
   const start = useCallback(
-    async (partner: ConversationPartner): Promise<void> => {
+    async (partner: ConversationPartner, options: StartConversationOptions = {}): Promise<void> => {
       if (!user) {
         void router.push('/login');
         return;
@@ -49,14 +62,22 @@ export function useStartConversation(): StartConversation {
 
       startingRef.current = true;
       setStarting(true);
-      const result = await getOrCreateConversation(supabase, user.id, user.full_name, partner.id, partner.name);
-      startingRef.current = false;
+      try {
+        await options.beforeStart?.();
+      } catch {
+        // A side effect like a counter must not stand between a member and the chat.
+      }
+      // Gone before we asked: don't create a conversation nobody will see.
       if (!mountedRef.current) return;
-      setStarting(false);
+
+      const result = await getOrCreateConversation(supabase, user.id, user.full_name, partner.id, partner.name);
+      if (!mountedRef.current) return;
 
       if (result.data) {
         void router.push(`/messages/${result.data.conversationId}`);
       } else {
+        startingRef.current = false;
+        setStarting(false);
         notify.error(START_ERROR);
       }
     },

@@ -57,11 +57,13 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
   const { listing } = detail;
   const { start: startConversation, starting: contacting } = useStartConversation();
 
-  const handleContact = useCallback(async () => {
+  const handleContact = useCallback(() => {
     const owner = listing?.owner;
     if (!owner || !id) return;
-    await incrementListingContacts(supabase, id);
-    await startConversation({ id: owner.id, name: owner.full_name });
+    void startConversation(
+      { id: owner.id, name: owner.full_name },
+      { beforeStart: () => incrementListingContacts(supabase, id) }
+    );
   }, [listing, id, startConversation]);
 
   if (!ready || detail.loading) {
@@ -109,7 +111,7 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
       isSaved={detail.isSaved}
       saving={detail.saving}
       contacting={contacting}
-      onContact={() => void handleContact()}
+      onContact={handleContact}
       onToggleSave={detail.toggleSave}
     />
   );

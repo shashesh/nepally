@@ -100,8 +100,66 @@ describe('useStartConversation', () => {
       pending.resolve({ data: { conversationId: 'conv-9' } });
       await first;
     });
-    expect(result.current.starting).toBe(false);
     expect(mocks.push).toHaveBeenCalledTimes(1);
+    // Stays busy while the route changes, so the button can't start another.
+    expect(result.current.starting).toBe(true);
+  });
+
+  it('is ready again after a failure', async () => {
+    mocks.getOrCreateConversation.mockResolvedValue({ error: new Error('rls') });
+    const { result } = renderHook(() => useStartConversation());
+
+    await act(() => result.current.start(PARTNER));
+    expect(result.current.starting).toBe(false);
+
+    await act(() => result.current.start(PARTNER));
+    expect(mocks.getOrCreateConversation).toHaveBeenCalledTimes(2);
+  });
+
+  it('runs beforeStart once, inside the double-press guard, before starting', async () => {
+    const counted = deferred<void>();
+    const beforeStart = vi.fn(() => counted.promise);
+    const { result } = renderHook(() => useStartConversation());
+
+    let first!: Promise<void>;
+    act(() => {
+      first = result.current.start(PARTNER, { beforeStart });
+    });
+    expect(result.current.starting).toBe(true);
+    expect(mocks.getOrCreateConversation).not.toHaveBeenCalled();
+
+    await act(() => result.current.start(PARTNER, { beforeStart }));
+    expect(beforeStart).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      counted.resolve();
+      await first;
+    });
+    expect(mocks.getOrCreateConversation).toHaveBeenCalledTimes(1);
+    expect(mocks.push).toHaveBeenCalledWith('/messages/conv-9');
+  });
+
+  it('still opens the conversation when beforeStart fails', async () => {
+    const { result } = renderHook(() => useStartConversation());
+
+    await act(() => result.current.start(PARTNER, { beforeStart: () => Promise.reject(new Error('rpc')) }));
+
+    expect(mocks.push).toHaveBeenCalledWith('/messages/conv-9');
+  });
+
+  it('does not create a conversation once the caller has gone', async () => {
+    const counted = deferred<void>();
+    const { result, unmount } = renderHook(() => useStartConversation());
+
+    let started!: Promise<void>;
+    act(() => {
+      started = result.current.start(PARTNER, { beforeStart: () => counted.promise });
+    });
+    unmount();
+    counted.resolve();
+    await started;
+
+    expect(mocks.getOrCreateConversation).not.toHaveBeenCalled();
   });
 
   it('drops a result that lands after unmount', async () => {
