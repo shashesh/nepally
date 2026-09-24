@@ -46,7 +46,7 @@ test.describe('Phone navigation', () => {
     await expect(page.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
 
     await page.goto('/notifications');
-    await expect(page.getByRole('heading', { name: /notifications/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { level: 1, name: 'Notifications' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
 
     // mockSupabaseLoggedIn's generic /rest/v1/posts** route returns every mock
