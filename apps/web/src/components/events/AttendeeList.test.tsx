@@ -12,8 +12,12 @@ vi.mock('@nepally/shared', () => ({
 }));
 
 vi.mock('../Avatar', () => ({
-  default: ({ name, toneKey }: { name: string; toneKey?: string }) =>
-    React.createElement('div', { 'data-testid': `avatar-${name}`, 'data-tone-key': toneKey }),
+  default: ({ name, toneKey, decorative }: { name: string; toneKey?: string; decorative?: boolean }) =>
+    React.createElement('div', {
+      'data-testid': `avatar-${name}`,
+      'data-tone-key': toneKey,
+      'data-decorative': decorative ? 'true' : undefined,
+    }),
 }));
 
 import AttendeeList, { type AttendeeListProps } from './AttendeeList';
@@ -76,6 +80,11 @@ describe('AttendeeList (web)', () => {
     renderList({ attendees: [makeRsvp('1', 'Asha Kumar')] });
     expect(screen.getByTestId('avatar-Asha K.').getAttribute('data-tone-key')).toBe('Asha Kumar');
     expect(screen.queryByTestId('avatar-Asha Kumar')).toBeNull();
+  });
+
+  it('keeps the avatar decorative, since the name is written beside it', () => {
+    renderList({ attendees: [makeRsvp('1', 'Asha Kumar')] });
+    expect(screen.getByTestId('avatar-Asha K.').getAttribute('data-decorative')).toBe('true');
   });
 
   it('calls onClose when close button is clicked', () => {

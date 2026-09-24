@@ -39,6 +39,7 @@ export default function AttendeeList({ opened, attendees, loading, error, onRetr
                 photoUrl={rsvp.user?.profile_photo}
                 trustLevel={rsvp.user?.trust_level}
                 size="small"
+                decorative
               />
               <Text size="sm">
                 {rsvp.user ? formatPublicName(rsvp.user.full_name) : 'User'}
