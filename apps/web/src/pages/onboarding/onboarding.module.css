@@ -1,0 +1,6 @@
+.metro {
+  padding: var(--space-4);
+  background: var(--surface-sunken);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
