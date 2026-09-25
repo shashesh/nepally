@@ -26,6 +26,7 @@ jest.mock('expo-file-system/legacy', () => ({
 }));
 
 import {
+  formatMegabytes,
   getTags,
   getPostById,
   createPost,
@@ -43,6 +44,7 @@ jest.mock('@nepally/shared', () => ({
   getPostPhotoPathFromUrl: jest.fn().mockReturnValue(''),
   uploadPostPhotos: jest.fn().mockResolvedValue({ urls: [], paths: [], error: null }),
   MAX_POST_PHOTO_BYTES: 5 * 1024 * 1024,
+  formatMegabytes: jest.fn(jest.requireActual('@nepally/shared').formatMegabytes),
   TAG_EMOJI: { housing: '🏠', jobs: '💼', help: '🤝', emergency: '🚨' },
   TAG_COLORS: { housing: '#4CAF50', jobs: '#2196F3', help: '#FF9800', emergency: '#F44336' },
   DEFAULT_TAG_COLOR: '#E0E0E0',
@@ -713,6 +715,8 @@ describe('CreatePostScreen', () => {
     it('shows allowed file types hint', async () => {
       const { getByText } = await renderAndSettle();
       expect(getByText(/Allowed: JPG, PNG, WEBP up to 5MB each/)).toBeTruthy();
+      // The size copy comes from the shared formatter web uses, not a local sum.
+      expect(formatMegabytes).toHaveBeenCalledWith(5 * 1024 * 1024);
     });
   });
 });

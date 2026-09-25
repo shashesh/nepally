@@ -28,6 +28,7 @@ import {
   deletePostPhotos,
   getPostPhotoPathFromUrl,
   getTags,
+  formatMegabytes,
   MAX_POST_PHOTO_BYTES,
   TAG_EMOJI,
   TAG_COLORS,
@@ -801,7 +802,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
               <Text style={styles.photoCount}>{existingPhotos.length + selectedPhotos.length}/{MAX_PHOTOS_PER_POST}</Text>
             </TouchableOpacity>
             <Text style={styles.optionalHint}>Photos are optional and not required to publish.</Text>
-            <Text style={styles.optionalHint}>Allowed: JPG, PNG, WEBP up to {Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each.</Text>
+            <Text style={styles.optionalHint}>Allowed: JPG, PNG, WEBP up to {formatMegabytes(MAX_POST_PHOTO_BYTES)} each.</Text>
 
             {(existingPhotos.length > 0 || selectedPhotos.length > 0) && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoPreviewRow}>

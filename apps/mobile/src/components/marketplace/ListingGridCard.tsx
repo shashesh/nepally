@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { TrustLevel, formatListingFreshness, type MarketplaceListing } from '@nepally/shared';
+import { formatListingFreshness, isVerifiedSeller, type MarketplaceListing } from '@nepally/shared';
 import { spacing } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 import {
@@ -34,7 +34,7 @@ export const ListingGridCard = React.memo(function ListingGridCard({
   const imageHeight = Math.round(width * 1.25); // 4:5
   const [firstPhoto] = listing.photos;
   const categoryColor = listing.category?.color ?? '#9E9E9E';
-  const isVerified = (listing.owner?.trust_level ?? 0) >= TrustLevel.VERIFIED;
+  const isVerified = isVerifiedSeller(listing);
   const freshness = useMemo(() => formatListingFreshness(listing.created_at), [listing.created_at]);
 
   const handleToggleSave = useCallback(() => {
