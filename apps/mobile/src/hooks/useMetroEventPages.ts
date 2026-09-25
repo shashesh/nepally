@@ -287,6 +287,8 @@ export function useMetroEventPages(metroId: string, userId: string | null): Metr
 
       setEventPending(eventId, true);
       applyResponse(eventId, previous, next);
+      // A load after this point replaces the optimistic counts with the server's.
+      const generation = generationRef.current;
 
       const write =
         next === null
@@ -295,7 +297,8 @@ export function useMetroEventPages(metroId: string, userId: string | null): Metr
       void write.then((result) => {
         setEventPending(eventId, false);
         if (!mountedRef.current || !result.error) return;
-        applyResponse(eventId, next, previous);
+        // Rolling back a reloaded list would undo a change it never saw.
+        if (generation === generationRef.current) applyResponse(eventId, next, previous);
         Alert.alert('Error', RESPONSE_ERROR);
       });
     },

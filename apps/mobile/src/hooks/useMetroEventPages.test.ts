@@ -343,6 +343,29 @@ describe('useMetroEventPages', () => {
       expect(Alert.alert).toHaveBeenCalledWith('Error', "Couldn't update your response. Try again.");
     });
 
+    it('leaves a reload’s counts alone when a write from before it fails', async () => {
+      queuePages({ upcoming: [page([makeEvent('e1')]), page([makeEvent('e1')])] });
+      let resolveWrite: (result: { error?: Error }) => void = () => {};
+      mockSetEventResponse.mockReturnValue(
+        new Promise((resolve) => {
+          resolveWrite = resolve;
+        })
+      );
+      const { result } = await renderPages();
+
+      act(() => result.current.respond('e1', 'going'));
+      act(() => result.current.refresh());
+      await settle();
+      // The reload read the server before the write landed: 5 going, no response.
+      expect(result.current.upcoming[0].rsvp_count).toBe(5);
+
+      await act(async () => resolveWrite({ error: new Error(RLS_TEXT) }));
+
+      expect(result.current.upcoming[0].rsvp_count).toBe(5);
+      expect(result.current.responses.e1).toBeUndefined();
+      expect(Alert.alert).toHaveBeenCalledWith('Error', "Couldn't update your response. Try again.");
+    });
+
     it('removes the response when passed null', async () => {
       queuePages({ upcoming: [page([makeEvent('e1')])] });
       mockGetUserEventResponses.mockResolvedValue({ data: { e1: 'going' } });
