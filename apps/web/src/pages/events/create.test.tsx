@@ -59,8 +59,7 @@ vi.mock('@nepally/shared', async () => {
   };
 
   return {
-    isConnectionError: actual.isConnectionError,
-    CONNECTION_ERROR_MESSAGE: actual.CONNECTION_ERROR_MESSAGE,
+    userMessage: actual.userMessage,
     logClientEvent: vi.fn(),
     createEvent: vi.fn(async () => ({ data: { id: 'new-event' } })),
     updateEvent: vi.fn(async () => ({ data: { id: 'edit-event' } })),

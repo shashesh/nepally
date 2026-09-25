@@ -73,8 +73,7 @@ const RLS_TEXT = 'new row violates row-level security policy';
 vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
   return {
-    isConnectionError: actual.isConnectionError,
-    CONNECTION_ERROR_MESSAGE: actual.CONNECTION_ERROR_MESSAGE,
+    userMessage: actual.userMessage,
     logClientEvent: vi.fn(),
     getCategories: vi.fn(async () => ({ data: [] })),
     getListingById: vi.fn(async () => ({ data: null })),

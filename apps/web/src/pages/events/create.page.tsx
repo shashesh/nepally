@@ -6,7 +6,6 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { toPhotoUploadInputs } from '../../lib/photoUploads';
-import { userMessage } from '../../lib/userMessage';
 import { ImageUploader, ToggleChipGroup, type UploaderPhoto } from '../../components/ui';
 import { DateTimeField } from '../../components/events/DateTimeField';
 import {
@@ -22,6 +21,7 @@ import {
   EVENT_TYPE_ICONS,
   TrustLevel,
   type EventType,
+  userMessage,
 } from '@nepally/shared';
 import styles from './createEvent.module.css';
 

@@ -25,7 +25,7 @@ vi.mock('../../hooks/useLocation', () => ({ useLocation: locationsMocks.useLocat
 vi.mock('next/router', () => ({ useRouter: locationsMocks.useRouterMock }));
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 vi.mock('@nepally/shared', async () => {
-  const actual = await vi.importActual<object>('@nepally/shared');
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
   return {
     ...actual,
     updateSavedLocation: locationsMocks.updateSavedLocationMock,
@@ -36,6 +36,12 @@ vi.mock('@nepally/shared', async () => {
     getMetroByZip: locationsMocks.getMetroByZipMock,
     isValidZipCode: locationsMocks.isValidZipCodeMock,
     logClientEvent: locationsMocks.logClientEventMock,
+    // userMessage logs through shared's own logger import, which this mock
+    // can't reach; forward its log to the spy the assertions read.
+    userMessage: (error: unknown, fallback: string, event: string, context?: Record<string, unknown>) => {
+      locationsMocks.logClientEventMock({ event, error, context });
+      return actual.userMessage(error, fallback, event, context);
+    },
     MAX_SAVED_LOCATIONS_PREMIUM: 5,
     SUGGESTED_LOCATION_LABELS: ['Home', 'Work', 'Family'],
   };

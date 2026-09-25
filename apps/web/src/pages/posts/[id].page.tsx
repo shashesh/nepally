@@ -6,7 +6,6 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { useStartConversation } from '../../hooks/useStartConversation';
 import { supabase } from '../../lib/supabase';
-import { userMessage } from '../../lib/userMessage';
 import {
   getPostById,
   deletePost,
@@ -22,6 +21,7 @@ import {
   createReport,
   buildSingleLevelCommentThreads,
   formatRelativeTime,
+  userMessage,
 } from '@nepally/shared';
 import type { Post, PostComment } from '@nepally/shared';
 import Avatar from '../../components/Avatar';

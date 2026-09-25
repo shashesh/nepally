@@ -36,7 +36,7 @@ vi.mock('../lib/profilePhoto', () => ({
   replaceProfilePhoto: profileMocks.replaceProfilePhotoMock,
 }));
 vi.mock('@nepally/shared', async () => {
-  const actual = await vi.importActual<object>('@nepally/shared');
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
   return {
     ...actual,
     getPostsByAuthorId: profileMocks.getPostsByAuthorIdMock,
@@ -47,6 +47,12 @@ vi.mock('@nepally/shared', async () => {
     updateUserProfile: profileMocks.updateUserProfileMock,
     removeProfilePhoto: profileMocks.removeProfilePhotoMock,
     logClientEvent: profileMocks.logClientEventMock,
+    // userMessage logs through shared's own logger import, which this mock
+    // can't reach; forward its log to the spy the assertions read.
+    userMessage: (error: unknown, fallback: string, event: string, context?: Record<string, unknown>) => {
+      profileMocks.logClientEventMock({ event, error, context });
+      return actual.userMessage(error, fallback, event, context);
+    },
   };
 });
 vi.mock('../components/Avatar', () => ({

@@ -5,11 +5,11 @@ import {
   BIO_MAX_LENGTH,
   fullNameSchema,
   FULL_NAME_MAX_LENGTH,
+  userMessage,
 } from '@nepally/shared';
 import type { User } from '@nepally/shared';
 import { usePrompt, notify } from '../components/ui';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 
 const NAME_FAILED = "Couldn't update your name. Please try again.";
 const BIO_FAILED = "Couldn't update your bio. Please try again.";

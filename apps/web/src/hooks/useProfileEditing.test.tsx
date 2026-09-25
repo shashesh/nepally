@@ -22,11 +22,20 @@ vi.mock('../lib/supabase', () => ({
   },
 }));
 
-vi.mock('@nepally/shared', async () => ({
-  ...(await vi.importActual<object>('@nepally/shared')),
-  updateUserProfile: mocks.updateUserProfile,
-  logClientEvent: mocks.logClientEvent,
-}));
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
+  return {
+    ...actual,
+    updateUserProfile: mocks.updateUserProfile,
+    logClientEvent: mocks.logClientEvent,
+    // userMessage logs through shared's own logger import, which this mock
+    // can't reach; forward its log to the spy the assertions read.
+    userMessage: (error: unknown, fallback: string, event: string, context?: Record<string, unknown>) => {
+      mocks.logClientEvent({ event, error, context });
+      return actual.userMessage(error, fallback, event, context);
+    },
+  };
+});
 
 import { useProfileEditing } from './useProfileEditing';
 

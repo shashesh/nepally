@@ -11,9 +11,9 @@ import {
   type PromotionBlocker,
   type PromotionTierConfig,
   type PromotionViewer,
+  userMessage,
 } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 import { useNow } from './useNow';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';

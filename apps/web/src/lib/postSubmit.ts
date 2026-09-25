@@ -13,10 +13,10 @@ import {
   getPostPhotoPathFromUrl,
   updatePost,
   uploadPostPhotos,
+  userMessage,
 } from '@nepally/shared';
 import type { UploaderPhoto } from '../components/ui';
 import { uploadPhotosInOrder } from './photoUploads';
-import { userMessage } from './userMessage';
 
 const UPLOAD_FAILED = "Couldn't upload your photos. Please try again.";
 const CREATE_FAILED = "Couldn't create your post. Please try again.";

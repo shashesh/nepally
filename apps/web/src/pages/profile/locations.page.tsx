@@ -7,7 +7,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useFocusAfterUpdate } from '../../hooks/useFocusAfterUpdate';
 import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
-import { userMessage } from '../../lib/userMessage';
 import {
   updateSavedLocation,
   deleteSavedLocation,
@@ -15,6 +14,7 @@ import {
   addSavedLocation,
   logClientEvent,
   MAX_SAVED_LOCATIONS_PREMIUM,
+  userMessage,
 } from '@nepally/shared';
 import type { SavedLocation, MetroArea } from '@nepally/shared';
 import { PageHeader, useConfirm, notify } from '../../components/ui';

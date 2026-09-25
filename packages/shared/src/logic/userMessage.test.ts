@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CONNECTION_ERROR_MESSAGE } from '@nepally/shared';
+import { toApiError } from '../utils/apiError';
+import { CONNECTION_ERROR_MESSAGE } from './authErrors';
 
 const mocks = vi.hoisted(() => ({ logClientEvent: vi.fn() }));
 
-vi.mock('@nepally/shared', async () => {
-  const actual = await vi.importActual<object>('@nepally/shared');
-  return { ...actual, logClientEvent: mocks.logClientEvent };
-});
+vi.mock('../utils/clientLogger', () => ({ logClientEvent: mocks.logClientEvent }));
 
 import { userMessage } from './userMessage';
 
@@ -51,5 +49,14 @@ describe('userMessage', () => {
       CONNECTION_ERROR_MESSAGE
     );
     expect(userMessage({ status: 503 }, FALLBACK, 'x_failed')).toBe(CONNECTION_ERROR_MESSAGE);
+  });
+
+  it('gives the connection sentence for a shared-API fetch failure', () => {
+    const error = toApiError(
+      { message: 'TypeError: Failed to fetch', details: '', hint: '', code: '' },
+      'Failed to fetch posts'
+    );
+
+    expect(userMessage(error, FALLBACK, 'feed_load_failed')).toBe(CONNECTION_ERROR_MESSAGE);
   });
 });

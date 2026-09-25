@@ -10,10 +10,10 @@ import {
   type EventsResult,
   type RsvpStatus,
   type UserEventResponses,
+  userMessage,
 } from '@nepally/shared';
 import { notify } from '../components/ui';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 
 const PAGE_SIZE = 20;
 const RESPONSE_ERROR = "Couldn't update your response. Try again.";

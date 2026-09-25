@@ -6,9 +6,9 @@ import {
   getTrendingListings,
   type ListingsResult,
   type MarketplaceListing,
+  userMessage,
 } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 import { isFilteredQuery, type MarketplaceQuery } from '../lib/marketplaceQuery';
 
 const STRIP_LIMIT = 10;

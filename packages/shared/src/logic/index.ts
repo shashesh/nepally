@@ -5,3 +5,4 @@ export * from './events';
 export * from './chat';
 export * from './notifications';
 export * from './authErrors';
+export * from './userMessage';

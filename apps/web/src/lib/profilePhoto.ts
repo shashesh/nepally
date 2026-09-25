@@ -9,9 +9,8 @@
  * comment; there is nothing here to roll back either.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { logClientEvent, setProfilePhoto } from '@nepally/shared';
+import { logClientEvent, setProfilePhoto, userMessage } from '@nepally/shared';
 import { cropToSquare } from './resizeImage';
-import { userMessage } from './userMessage';
 
 const UPDATE_FAILED = "Couldn't update your photo. Please try again.";
 

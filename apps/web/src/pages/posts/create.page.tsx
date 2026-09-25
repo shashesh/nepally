@@ -6,7 +6,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
 import { submitEditedPost, submitNewPost } from '../../lib/postSubmit';
-import { userMessage } from '../../lib/userMessage';
 import {
   ImageUploader,
   ToggleChipGroup,
@@ -21,6 +20,7 @@ import {
   MAX_TAGS_PER_POST,
   MAX_PHOTOS_PER_POST,
   MAX_POST_PHOTO_BYTES,
+  userMessage,
 } from '@nepally/shared';
 import type { Tag } from '@nepally/shared';
 import styles from '../../styles/CreatePost.module.css';

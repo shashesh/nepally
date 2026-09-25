@@ -6,9 +6,9 @@ import {
   saveListing,
   unsaveListing,
   type MarketplaceListing,
+  userMessage,
 } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 
 export interface ListingDetailState {
   listing: MarketplaceListing | null;
