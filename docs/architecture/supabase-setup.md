@@ -133,25 +133,17 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 ## Database Setup
 
-### 1. Run Initial Migration
+### 1. Run the Migrations
 
-Using Supabase CLI (recommended):
-
-```bash
-# Link to your project
-supabase link --project-ref your-project-ref
-
-# Push migration to Supabase
-supabase db push
-```
-
-Or manually via SQL Editor:
+Apply every file in `supabase/migrations/` in numeric order (`001`, `002`, … up to the latest). `001`–`003` drop and recreate their tables, so run them only on an empty database. Use the Supabase MCP `apply_migration` tool, or the dashboard:
 
 1. Go to **SQL Editor** in Supabase Dashboard
-2. Open `supabase/migrations/001_schema.sql`
+2. Open the next file, starting with `supabase/migrations/001_schema.sql`
 3. Copy entire content
 4. Paste into SQL Editor
-5. Click **Run**
+5. Click **Run**, then repeat with the next file
+
+Either way, realign each new tracker row to its `NNN` version afterwards. Do not use `supabase db push`: the repo uses numeric prefixes, not the CLI's timestamps. See [migration-workflow.md](migration-workflow.md).
 
 ### 2. Verify Tables
 
@@ -382,8 +374,8 @@ ALTER DATABASE postgres SET "app.settings.service_role_key" = '<your-service-rol
 Deploy steps:
 
 ```bash
-# 1) Apply latest migration (includes push fanout trigger)
-supabase db push
+# 1) Apply the migrations through MCP apply_migration or the SQL editor,
+#    never `supabase db push` (see migration-workflow.md)
 
 # 2) Configure the required DB settings (see above)
 

@@ -161,11 +161,11 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - Post photo cleanup on web (`apps/web/src/lib/postSubmit.ts`) and mobile (`CreatePostScreen.tsx`) goes through the shared `cleanUpPostPhotos`. It logs `post_photos_cleanup_failed` with only the paths left behind. The post write has already decided what the member sees, so the failure is logged rather than shown.
   - The shared `removeProfilePhoto` deletes the file first. It stops and returns the error if the delete fails, leaving `users.profile_photo` untouched. The web profile page and mobile `EditProfileScreen` show that error, so the member can try again.
 
-- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Applied to staging on 2026-09-25, where all six `test:security:*` smoke tests pass; prod gets it after `001`–`040`:
+- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Applied to staging on 2026-09-25, where all six `test:security:*` smoke tests pass; prod gets it with `001`–`046`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.
-  - Still to do: apply to prod after `001`–`040` and run the `test:security:*` smoke tests there. The staging tracker row was realigned to `041` in the 2026-09-25 reconcile.
+  - Still to do: apply to prod as part of the `001`–`046` apply above, then check it with the read-only prod probes. The `test:security:*` smoke tests create and delete users, so they stay on staging (see W9). The staging tracker row was realigned to `041` in the 2026-09-25 reconcile.
 - [x] **Code:** SEC-06 hardening backlog (staging 2026-09-25; prod gets `045`/`046` with the apply above):
   - Storage bucket `allowed_mime_types` and `file_size_limit`: migration `045` gives all four buckets (event photos too) the limits the apps already enforce. Checked by `npm run test:security:storage-limits`.
   - Cron functions: rather than a shared-secret header, both edge functions are gone. `expire-posts` was dead code: it queried `posts.expiry_date`, which the 2026-02 tag redesign dropped. Migration `046` replaces `expire-promotions` with `expire_paid_promotions()` on an hourly `pg_cron` job, so no public endpoint is left. Nothing had ever scheduled the old function, so ended paid promotions had stayed `active` on staging. Checked by `npm run test:security:promotion-expiry`.
