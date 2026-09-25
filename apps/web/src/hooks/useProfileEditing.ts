@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   updateUserProfile,
+  requestPasswordReset,
   bioSchema,
   BIO_MAX_LENGTH,
   fullNameSchema,
@@ -122,9 +123,7 @@ export function useProfileEditing(
 
     setSaving(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/login`,
-      });
+      const { error } = await requestPasswordReset(supabase, user.email, `${window.location.origin}/login`);
 
       if (error) {
         notify.error(userMessage(error, RESET_FAILED, 'password_reset_request_failed', context));
