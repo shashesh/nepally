@@ -134,17 +134,17 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
 ### W1 — Production environment (Sep 21–27)
 
 - [ ] **You + Code:** Create the production Supabase project (`nepally-prod`, us-west-2). You approve the cost; Claude creates it through MCP.
-- [ ] **Code:** Reconcile staging first:
-  - Realign the `038` tracker row on `nusa-staging` (`20260918021920` → `038`).
-  - Update the "After (current)" section of `migration-workflow.md` to `001`–`038`.
-  - Confirm that staging and the repo list the same migrations.
-- [ ] **Code:** Apply `001`–`038` in order on the empty prod database.
+- [x] **Code:** Reconcile staging first (2026-09-25):
+  - Realigned tracker rows `038`–`046` on `nusa-staging` from timestamp versions to `NNN`.
+  - Updated the "After (current)" section of `migration-workflow.md` to `001`–`046`.
+  - Confirmed that staging and the repo list the same 46 migrations.
+- [ ] **Code:** Apply `001`–`046` in order on the empty prod database.
   - Use the MCP `apply_migration` tool or the dashboard SQL editor, never `supabase db push`.
   - Realign the tracker rows to `NNN` as [migration-workflow.md](../../architecture/migration-workflow.md) describes.
   - The frozen files are safe on a fresh database.
   - Record the rehearsal in the same doc.
 - [ ] **Code:** Run `npm run seed:metro` against prod. The migrations do not seed `metro_areas` or `metro_area_zipcodes`. Check that the six markets exist and their ZIP counts roughly match staging (see [Launch markets](#launch-markets)).
-- [ ] **Code:** Migration `039_storage_owner_select_policies`: owner-only SELECT policies on `storage.objects`. Without them every photo delete silently does nothing and every avatar upload fails, first-time ones included (see [supabase-setup.md](../../architecture/supabase-setup.md#2-storage-policies)). Apply to staging and run `npm run test:security:storage` there. Then apply to prod after `001`–`038`.
+- [ ] **Code:** Migration `039_storage_owner_select_policies`: owner-only SELECT policies on `storage.objects`. Without them every photo delete silently does nothing and every avatar upload fails, first-time ones included (see [supabase-setup.md](../../architecture/supabase-setup.md#2-storage-policies)). Apply to staging and run `npm run test:security:storage` there. Prod gets it with `001`–`046`.
 - [ ] **Code:** One-off orphan reconciliation on staging, after 039. Every file "deleted" since 027 reached staging (tracker version `20260416023723`) is still in its bucket and still public at its URL. With the service role, compare each bucket against the rows that reference it:
   - `post-photos` against `posts.photos`
   - `listing-photos` against `marketplace_listings.photos`
@@ -165,11 +165,12 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.
-  - Still to do: apply to prod after `001`–`040` and run the `test:security:*` smoke tests there. The staging tracker row still carries a timestamp version; the W1 reconcile realigns it.
-- [ ] **Code:** SEC-06 hardening backlog:
-  - storage bucket `allowed_mime_types` and `file_size_limit` (avatars, post photos, listing photos)
-  - a shared-secret header on the `expire-posts` and `expire-promotions` cron functions
-  - mobile session storage moved to `expo-secure-store`. This matters more now that sessions are long-lived (Decision 6).
+  - Still to do: apply to prod after `001`–`040` and run the `test:security:*` smoke tests there. The staging tracker row was realigned to `041` in the 2026-09-25 reconcile.
+- [x] **Code:** SEC-06 hardening backlog (staging 2026-09-25; prod gets `045`/`046` with the apply above):
+  - Storage bucket `allowed_mime_types` and `file_size_limit`: migration `045` gives all four buckets (event photos too) the limits the apps already enforce. Checked by `npm run test:security:storage-limits`.
+  - Cron functions: rather than a shared-secret header, both edge functions are gone. `expire-posts` was dead code: it queried `posts.expiry_date`, which the 2026-02 tag redesign dropped. Migration `046` replaces `expire-promotions` with `expire_paid_promotions()` on an hourly `pg_cron` job, so no public endpoint is left. Nothing had ever scheduled the old function, so ended paid promotions had stayed `active` on staging. Checked by `npm run test:security:promotion-expiry`.
+  - Mobile session storage: encrypted at rest with an AES key held in `expo-secure-store` (PR #76). This matters more now that sessions are long-lived (Decision 6).
+  - The two retired functions were deleted from staging on 2026-09-25 (`npx supabase functions delete`); prod never gets them.
 - [ ] **You:** In both projects:
   - Turn on leaked-password protection.
   - Under Auth → Sessions, leave "Time-box user sessions" and "Inactivity timeout" at never, and "Single session per user" off (Decision 6).
@@ -249,7 +250,7 @@ See [Monitoring](#monitoring) for the full spec.
 - [ ] **Code:** Web UI overhaul PR 4 (feed + post detail).
 - [ ] **You:** Activate the Stripe account (individual/sole proprietor). Switch to live keys and register the live webhook for `stripe-webhook`.
 - [ ] **Code:** Make one real live purchase of each tier on the web and refund it.
-  - Confirm each placement renders on web and mobile, and that `expire-promotions` ends it.
+  - Confirm each placement renders on web and mobile, and that the hourly `expire-paid-promotions` job (migration `046`) ends it.
   - Remove the tier prices duplicated between `create-promotion-checkout` and `packages/shared/src/constants/promotions.ts`, or add a test that keeps them equal.
 - [ ] **You:** Store listings: name, subtitle, description, keywords, screenshots (phone sizes for both stores), support URL, privacy URL. Also Apple privacy labels and the Google data-safety form (must include Sentry, PostHog, Stripe).
 - [ ] **You:** Line up a metro champion for DFW and one for New York. Seed both markets.
