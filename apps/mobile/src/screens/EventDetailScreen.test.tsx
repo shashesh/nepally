@@ -30,6 +30,8 @@ const mockGoBack = jest.fn();
 const mockParentNavigate = jest.fn();
 const mockGetParent = jest.fn(() => ({ navigate: mockParentNavigate }));
 const mockUseAuth = jest.fn();
+// Mutable so a test can navigate the mounted screen to another event, as a notification tap does.
+const mockRouteParams = { eventId: 'event-1' };
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
@@ -37,7 +39,7 @@ jest.mock('@react-navigation/native', () => ({
     goBack: mockGoBack,
     getParent: mockGetParent,
   }),
-  useRoute: () => ({ params: { eventId: 'event-1' } }),
+  useRoute: () => ({ params: mockRouteParams }),
 }));
 
 jest.mock('../hooks/useAuth', () => ({
@@ -178,6 +180,7 @@ async function renderAndSettle() {
 describe('EventDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRouteParams.eventId = 'event-1';
     // userMessage logs the raw error through logClientEvent (console.error).
     jest.spyOn(console, 'error').mockImplementation(() => {});
     setEvent();
@@ -589,6 +592,67 @@ describe('EventDetailScreen', () => {
       setAuthUser({ trust_level: 0 });
       const { queryByText } = await renderAndSettle();
       expect(queryByText('Message')).toBeNull();
+    });
+  });
+
+  // ─── Another event on the same screen ─────────────────────────────────
+
+  describe('when the route moves to another event', () => {
+    const SECOND_EVENT: Event = { ...BASE_EVENT, id: 'event-2', title: 'Tihar Lights', rsvp_count: 20 };
+
+    function eventsById() {
+      mockGetEventById.mockImplementation(async (_client: unknown, id: string) => ({
+        data: id === 'event-2' ? SECOND_EVENT : BASE_EVENT,
+      }));
+    }
+
+    it('ignores a response from the previous event that lands afterwards', async () => {
+      eventsById();
+      let finishWrite: (result: { error?: Error }) => void = () => {};
+      mockSetEventResponse.mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishWrite = resolve;
+        })
+      );
+      const { getByText, getByRole, queryByText, rerender } = await renderAndSettle();
+
+      fireEvent.press(getByRole('button', { name: 'Going' }));
+      mockRouteParams.eventId = 'event-2';
+      rerender(<EventDetailScreen />);
+      await act(async () => {});
+      await act(async () => {});
+      expect(getByText('Tihar Lights')).toBeTruthy();
+
+      await act(async () => finishWrite({}));
+      await act(async () => {});
+
+      // Event 1's refetch must not replace event 2, nor free event 2's controls early.
+      expect(getByText('Tihar Lights')).toBeTruthy();
+      expect(queryByText('Dashain Celebration')).toBeNull();
+      expect(getByText('15 interested · 20 going')).toBeTruthy();
+      expect(getByRole('button', { name: 'Going' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: false, disabled: false })
+      );
+    });
+
+    it('loads the new event’s attendees rather than reusing the previous list', async () => {
+      eventsById();
+      mockGetEventAttendees.mockResolvedValue({ data: MOCK_ATTENDEES });
+      const { getByText, rerender } = await renderAndSettle();
+      await act(async () => {
+        fireEvent.press(getByText('8 people going'));
+      });
+      expect(mockGetEventAttendees).toHaveBeenLastCalledWith({}, 'event-1');
+
+      mockRouteParams.eventId = 'event-2';
+      rerender(<EventDetailScreen />);
+      await act(async () => {});
+      await act(async () => {});
+      await act(async () => {
+        fireEvent.press(getByText('20 people going'));
+      });
+
+      expect(mockGetEventAttendees).toHaveBeenLastCalledWith({}, 'event-2');
     });
   });
 

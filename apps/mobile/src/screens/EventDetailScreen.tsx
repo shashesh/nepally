@@ -67,10 +67,20 @@ async function fetchDetail(eventId: string, userId: string | undefined) {
   return { eventResult, responseResult };
 }
 
+/**
+ * Navigating to the focused screen updates its params rather than pushing, so a
+ * notification or profile tap can move this screen to another event. Keying the
+ * view on the id gives each event fresh state, and the previous event's
+ * in-flight writes and reads land on an unmounted view and are dropped.
+ */
 export default function EventDetailScreen() {
-  const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { eventId } = route.params;
+  return <EventDetailView key={eventId} eventId={eventId} />;
+}
+
+function EventDetailView({ eventId }: { eventId: string }) {
+  const navigation = useNavigation<Nav>();
   const { user } = useAuth();
   const userId = user?.id;
 
