@@ -107,6 +107,8 @@ export function useEventFeed(metroId: string | null, userId: string | null): Eve
   const loadingMoreRef = useRef(false);
   // Read by respond, so the previous response never comes from inside an updater (recon 6).
   const responsesRef = useRef<UserEventResponses>({});
+  // Whose answers responsesRef holds, so a failed reload never shows one member another's.
+  const responsesOwnerRef = useRef<string | null>(null);
   const pendingRef = useRef<ReadonlySet<string>>(new Set());
 
   // A new metro or viewer starts from nothing (react.dev: adjusting state when a prop changes).
@@ -136,9 +138,16 @@ export function useEventFeed(metroId: string | null, userId: string | null): Eve
       ]);
       if (cancelled || generation !== generationRef.current) return;
 
+      const owner = userId ?? null;
       if (responsesResult.data) {
         responsesRef.current = responsesResult.data;
+        responsesOwnerRef.current = owner;
         setResponses(responsesResult.data);
+      } else if (responsesOwnerRef.current !== owner) {
+        // A failed read keeps this member's last answers, but never another member's.
+        responsesRef.current = {};
+        responsesOwnerRef.current = owner;
+        setResponses({});
       }
       if (upcomingResult.error) {
         setError(userMessage(upcomingResult.error, LOAD_FAILED, 'events_load_failed', { platform: 'web', metroId }));

@@ -252,6 +252,35 @@ describe('useEventFeed', () => {
       expect(second.now).not.toBe(first.now);
     });
 
+    it('drops the previous member’s answers when the next member’s fail to load', async () => {
+      queuePages({ upcoming: [page([makeEvent('e1')]), page([makeEvent('e1')])] });
+      mocks.getUserEventResponses.mockResolvedValueOnce({ data: { e1: 'going' } });
+      const { result, rerender } = renderHook(
+        ({ user }: { user: string }) => useEventFeed('19100', user),
+        { initialProps: { user: 'u1' } }
+      );
+      await settle();
+      expect(result.current.responses.e1).toBe('going');
+
+      mocks.getUserEventResponses.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+      rerender({ user: 'u2' });
+      await settle();
+
+      expect(result.current.responses).toEqual({});
+    });
+
+    it('keeps the member’s own answers when a reload fails to fetch them', async () => {
+      queuePages({ upcoming: [page([makeEvent('e1')]), page([makeEvent('e1')])] });
+      mocks.getUserEventResponses.mockResolvedValueOnce({ data: { e1: 'going' } });
+      const { result } = await renderFeed();
+
+      mocks.getUserEventResponses.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+      act(() => result.current.reload());
+      await settle();
+
+      expect(result.current.responses.e1).toBe('going');
+    });
+
     it('drops a page that lands after the reload', async () => {
       let resolveLate: (result: EventsResult) => void = () => {};
       const late = new Promise<EventsResult>((resolve) => {

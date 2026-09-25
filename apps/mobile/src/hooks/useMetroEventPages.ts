@@ -112,6 +112,8 @@ export function useMetroEventPages(metroId: string, userId: string | null): Metr
   const mountedRef = useRef(true);
   // Read by respond, so the previous response never comes from inside an updater.
   const responsesRef = useRef<UserEventResponses>({});
+  // Whose answers responsesRef holds, so a failed reload never shows one member another's.
+  const responsesOwnerRef = useRef<string | null>(null);
   const pendingRef = useRef<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
@@ -152,9 +154,16 @@ export function useMetroEventPages(metroId: string, userId: string | null): Metr
       ]);
       if (isStale()) return;
 
+      const owner = userId ?? null;
       if (responsesResult.data) {
         responsesRef.current = responsesResult.data;
+        responsesOwnerRef.current = owner;
         setResponses(responsesResult.data);
+      } else if (responsesOwnerRef.current !== owner) {
+        // A failed read keeps this member's last answers, but never another member's.
+        responsesRef.current = {};
+        responsesOwnerRef.current = owner;
+        setResponses({});
       }
       if (upcomingResult.error) {
         setError(

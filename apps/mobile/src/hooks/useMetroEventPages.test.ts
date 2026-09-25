@@ -366,6 +366,31 @@ describe('useMetroEventPages', () => {
       expect(Alert.alert).toHaveBeenCalledWith('Error', "Couldn't update your response. Try again.");
     });
 
+    it('drops the previous member’s answers when the next member’s fail to load', async () => {
+      queuePages({ upcoming: [page([makeEvent('e1')]), page([makeEvent('e1')])] });
+      mockGetUserEventResponses.mockResolvedValueOnce({ data: { e1: 'going' } });
+      const { result, rerender } = await renderPages('19100', 'u1');
+      expect(result.current.responses.e1).toBe('going');
+
+      mockGetUserEventResponses.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+      rerender({ metro: '19100', user: 'u2' });
+      await settle();
+
+      expect(result.current.responses).toEqual({});
+    });
+
+    it('keeps the member’s own answers when a refresh fails to reload them', async () => {
+      queuePages({ upcoming: [page([makeEvent('e1')]), page([makeEvent('e1')])] });
+      mockGetUserEventResponses.mockResolvedValueOnce({ data: { e1: 'going' } });
+      const { result } = await renderPages('19100', 'u1');
+
+      mockGetUserEventResponses.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+      act(() => result.current.refresh());
+      await settle();
+
+      expect(result.current.responses.e1).toBe('going');
+    });
+
     it('removes the response when passed null', async () => {
       queuePages({ upcoming: [page([makeEvent('e1')])] });
       mockGetUserEventResponses.mockResolvedValue({ data: { e1: 'going' } });
