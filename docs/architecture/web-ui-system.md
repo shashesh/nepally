@@ -31,7 +31,7 @@ The web app uses one design language, **H1 · Ink & Marigold**. It combines edit
 - **Space:** `--space-1…9` = 4, 8, 12, 16, 24, 32, 48, 64, 96px.
 - **Radius:** `--radius-{chip,tag,control,card,overlay,full}`.
 - **Layout widths:** `--layout-content-width` (800px) for a column of text; `--layout-content-width-wide` (960px) for a page whose content is a multi-column grid, such as the marketplace.
-- **Elevation:** borders by default. Only floating layers get `--shadow-float` (menus, popovers, dropdowns) or `--shadow-modal`.
+- **Elevation:** borders by default. Only floating layers get `--shadow-float` (menus, popovers, dropdowns) or `--shadow-modal`. A card in the page's flow (`PostCard`, the feed's sponsored card, `SummaryRow`, `EventCard`, `ListingCard`) answers hover and focus-within by changing its border to `--border-solid`, never by lifting.
 - **Motion:** `--duration-fast`, `--duration-base`, `--ease-out`. Non-essential motion is disabled under `prefers-reduced-motion`.
 - **Breakpoints:** in CSS Modules use `$mantine-breakpoint-sm` (48em), `-md` (62em) and `-lg` (75em), never pixel literals.
 
@@ -52,7 +52,7 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 
 - `primaryColor: 'ink'` (shade 8 = `--action-bg`). `marigold` is available for accents.
 - `variantColorResolver` renders `light` variants as a solid tint with shade-9 text, so the Mantine 9 change is invisible.
-- `cssVariablesResolver` points Mantine's body, text, dimmed and border variables at semantic tokens.
+- `cssVariablesResolver` points Mantine's body, text, dimmed, border and disabled variables at semantic tokens. A disabled control is `--surface-2` with `--text-3` text and a `--border-subtle` border, not Mantine's cool grey.
 - `focusClassName: 'nepally-focus'` gives Mantine components the global focus ring: a 2px ink outline plus a marigold halo.
 - Component overrides are plain objects, not `Component.extend`, so tests that mock individual Mantine components can still load the theme.
 - `Modal`'s `defaultProps` name its close button "Close", which `@mantine/modals` dialogs pick up too.
@@ -78,7 +78,12 @@ Gambarino (400) and Switzer (400/500/600) are self-hosted through `next/font/loc
 
 ## UI primitives (`components/ui`)
 
-`EmptyState`, `LoadingState`, `ErrorState`, `PageHeader`, `TagChip`, `ScopeBadge`, `TrustBadge`, `ActionMenu`, and `useConfirm` / `usePrompt` (never `window.confirm`/`alert`/`prompt`). `hooks/useInfiniteScroll` handles paginated lists.
+`EmptyState`, `LoadingState`, `ErrorState`, `ListStates`, `DetailList`, `PageHeader`, `TagChip`, `ScopeBadge`, `TrustBadge`, `ActionMenu`, and `useConfirm` / `usePrompt` (never `window.confirm`/`alert`/`prompt`). `hooks/useInfiniteScroll` handles paginated lists.
+
+- `EmptyState`'s heading is an `h3` by default, always at the h3 size. `titleOrder={1}` makes it the page's `h1` where nothing else is (the not-found states of the public profile, an event, a listing and a post), and `titleOrder={2}` puts it directly under a `PageHeader` h1.
+- `ErrorState` leaves out a message that only restates its title, so "Couldn't load events" over "Couldn't load events." reads once. A message that adds something, such as the connection sentence, still shows.
+- `ListStates` is a list's four states in one place: `loading`, then `error` with retry, then `isEmpty` (its `empty` node), then `children`. Both profile pages use it.
+- `DetailList` and `DetailRow` are a `<dl>` of label/value rows (`div > dt + dd`), with `divided` adding the rule between rows. The own profile's Account Info and the public profile's About tab use it.
 
 Both dialogs name their close button "Close". A `danger: true` confirm opens with focus on Cancel: the APG alertdialog pattern puts initial focus on the least destructive action, and a named "Cancel" says what Enter will do more clearly than the icon-only close button, Mantine's default first focus, which also cancels. Other confirms keep Mantine's initial focus, and a prompt focuses its field. `usePrompt`'s `validate` keeps the dialog open with its message on the field.
 
@@ -98,11 +103,11 @@ Both dialogs name their close button "Close". A `danger: true` confirm opens wit
 
 Only `menu` sits above the overlay. Anything interactive in `badge`, `leading` or `children` is covered and can't be clicked, and anything positioned in `badge` or `children` paints above the overlay and leaves a dead spot, so keep those two unpositioned (a `VisuallyHidden` span is fine). `leading` comes before the link in document order, so positioned content there, such as a `next/image` with `fill`, still paints underneath.
 
-`SummaryRowMeta` is one line of items separated by a dot that screen readers skip. Each item must be its own element (`<span>`, `<time>`), because the dot attaches to an element, not to bare text. `variant` is `'meta'` (small and quiet, the default) or `'detail'` (body size).
+`SummaryRowMeta` is one line of items separated by a dot that screen readers skip. Each item must be its own element (`<span>`, `<time>`), because the dot attaches to an element, not to bare text. The dot follows the item before it (`::after`), so a line that wraps ends with a dot rather than starting with one. `variant` is `'meta'` (small and quiet, the default) or `'detail'` (body size).
 
-`scrollingTabs` keeps a Mantine `Tabs` row on one line and scrolls it sideways on phones instead of wrapping. Pass `classNames={scrollingTabsClassNames}` (spread it to add slots, as the profile does for `panel`) and give every `Tabs.Tab` `onFocus={scrollFocusedTabIntoView}`, because Chromium doesn't scroll a partly clipped tab into view when it takes focus. The module redraws the underline on the list so it stays put while the tabs scroll, stops tabs and their count badges shrinking, and insets the focus ring, which the scroller would otherwise clip. Both profile pages use it; search's result tabs don't yet.
+`scrollingTabs` keeps a Mantine `Tabs` row on one line and scrolls it sideways on phones instead of wrapping. Pass `classNames={scrollingTabsClassNames}` (spread it to add slots, as the profile does for `panel`) and give every `Tabs.Tab` `onFocus={scrollFocusedTabIntoView}`, because Chromium doesn't scroll a partly clipped tab into view when it takes focus. The module redraws the underline on the list so it stays put while the tabs scroll, stops tabs and their count badges shrinking, and insets the focus ring, which the scroller would otherwise clip. Both profile pages and search's result tabs use it.
 
-`PhotoCarousel` shows one photo at a time with wrap-around previous and next, announces "Photo 2 of 3", and keeps a 40px swipe threshold. `ImageLightbox` is the full-screen viewer over Mantine `Modal`, which owns the focus trap, Escape and scroll lock; it adds paging, seven zoom levels and controls that fade after 1.5s.
+`PhotoCarousel` shows one photo at a time with wrap-around previous and next, announces "Photo 2 of 3", and keeps a 40px swipe threshold. `priority` marks it as the page's hero: the first photo gets `next/image`'s `priority` and `fetchPriority="high"` (Next 16's `priority` only preloads and sets nothing on the `img`). Listing detail and post detail pass it. `ImageLightbox` is the full-screen viewer over Mantine `Modal`, which owns the focus trap, Escape and scroll lock; it adds paging, seven zoom levels and controls that fade after 1.5s.
 
 `ImageUploader` is the multi-photo picker, with three callers: create post, create listing and create event. Drop or click to choose, thumbnails, remove, and optional reorder. Over @mantine/dropzone. The profile photo doesn't use it: that photo uploads as soon as it's picked and the avatar is its preview, so `ProfilePhotoControl` wraps Mantine `FileButton` instead.
 
@@ -143,29 +148,27 @@ A control that is busy because the member just used it keeps focus. It gets `ari
 
 Two controls are the exception, both for the same reason: they show the member's new state at once, and `data-disabled` would repaint it in Mantine's grey. While a follow or unfollow saves, `FollowButton` sets only `aria-disabled`, so "Following" or "Follow" stays at full opacity. `EventResponseControl` does the same, so the Interested or Going button the member just pressed stays visibly pressed until the write lands.
 
-When an action removes the control that had focus, focus moves somewhere sensible after the next commit, but only if it was lost. It is never taken back from wherever the member has moved since. Each case does this by hand today:
+When an action removes the control that had focus, focus moves somewhere sensible after the next commit, but only if it was lost. It is never taken back from wherever the member has moved since. `hooks/useFocusAfterUpdate(key)` returns `arm(getTarget, options?)`: when `key` next changes, it disarms, and focuses `getTarget()` if `isFocusStranded()`. A later `arm` replaces an earlier one. The cases:
 
-- **Unsaving a post** (`profile.page.tsx`) focuses the Saved tab panel, if focus is on `<body>`.
-- **Removing the photo** (`ProfilePhotoControl`) focuses Add Photo, if focus is on `<body>`.
-- **Manage Locations** records a pending target and focuses it once `savedLocations` refreshes, if `isFocusStranded()` says focus is on `<body>` or still inside the closing confirm dialog. The target is the neighbouring row's Rename after a remove, that row's Rename after Set as default, and Add a Location after an add (or the new row's Rename, when the cap hides that button).
-- **Deleting a notification** (`NotificationList`) focuses the open button of the row that took its place, then the row before, then the page's Preferences link. **Mark all as read** removes itself on success and focuses Preferences.
-- **A moderation card leaving** (`moderation.page.tsx`) focuses the card that took its place, then the card before, then the section's `h2`. Cards and section headings take `tabIndex={-1}` for this. Focus goes to the card, not its first button, so a second Enter can't act on the next card.
-
-A shared `useFocusAfterUpdate` hook, built on `isFocusStranded`, is planned for PR 10 to replace all of these.
+- **Unsaving a post** (`profile.page.tsx`) focuses the Saved tab panel, keyed on the saved list.
+- **Removing the photo** (`ProfilePhotoControl`) focuses Add Photo, keyed on whether there is a photo, so a photo replaced meanwhile doesn't spend it.
+- **Manage Locations** keys on each row's id and default flag plus whether the add form is open, so a set-default (which changes no id) and an add whose refresh failed (which changes no row) both restore focus. The target is the neighbouring row's Rename after a remove, that row's Rename after Set as default, and Add a Location after an add (or the new row's Rename, when the cap hides that button).
+- **Deleting a notification** (`NotificationList`, by hand) focuses the open button of the row that took its place, then the row before, then the page's Preferences link. **Mark all as read** removes itself on success and focuses Preferences.
+- **A moderation card leaving** (`moderation.page.tsx`, by hand) focuses the card that took its place, then the card before, then the section's `h2`. Cards and section headings take `tabIndex={-1}` for this. Focus goes to the card, not its first button, so a second Enter can't act on the next card.
 
 `ActionMenu` moves focus from the menu to its trigger before an item's action runs, and turns off Mantine's delayed `returnFocus`. A dialog the action opens therefore keeps focus while it's open and returns it to the trigger when it closes, instead of to the unmounted menu item, which would drop it to `<body>`. After a click outside, focus stays where the click put it (usually `<body>`) and isn't pulled back to the trigger. That's deliberate, so a click into a field is never overridden.
 
 ## Marketplace components
 
-The marketplace (`/marketplace`, `/marketplace/[category]`, `/marketplace/listing/[id]`, `/marketplace/my-listings` and the promote wizard) is built from these, alongside `ListingSummaryRow` in the profile section below.
+The marketplace (`/marketplace`, `/marketplace/[category]`, `/marketplace/listing/[id]`, `/marketplace/my-listings` and the promote wizard) is built from these, alongside `ListingSummaryRow` in the profile section below. Listing detail shows the category and condition as badges under the title; shared `getListingHighlights` no longer repeats them as chips.
 
 | Component | Notes |
 |---|---|
-| `MarketplaceBrowse` | The whole browse experience, behind both routes. `metroId`, `query`, `title`, `actions`, `backHref`, `backLabel`, `lockedCategory`, `onFilterChange`, `gridHeading`, `emptyAction`, `ready`. The two routes differ only in heading, back link and where a filter change navigates, so neither owns a grid of its own |
+| `MarketplaceBrowse` | The whole browse experience, behind both routes. `metroId`, `query`, `title`, `actions`, `backHref`, `backLabel`, `lockedCategory`, `onFilterChange`, `gridHeading`, `emptyAction`, `ready`. The two routes differ only in heading, back link and where a filter change navigates, so neither owns a grid of its own. A member with no metro gets "Choose your area to see listings" and a Set your area link to `/onboarding/zip` instead of the feed |
 | `ListingCard` | One card in the grid and the strips. An `<article>` whose only link is the title, stretched over the card by `::after`; `data-category` colours the chip from the category tokens |
 | `ListingStrip` | A horizontally scrolling row of cards, with Mantine `ActionIcon` arrows and `scroll-padding-inline` so a focused card's ring clears the edge |
 | `FilterBar` | Category and sort as Mantine `NativeSelect` (short fixed lists, native pickers on phones), plus a `TextInput` with a search icon and a `CloseButton` that clears it |
-| `ListingActionsPanel` | Price plus what the viewer can do. Rendered twice by listing detail — inline on narrow screens, in the aside on wide ones — with CSS showing one at a time |
+| `ListingActionsPanel` | Price plus what the viewer can do. Rendered once by listing detail, in an `<aside aria-label="Listing actions">` that a grid places beside the listing (sticky) from 62em and between its top block and the rest below that, so it comes once in tab order at every width |
 | `ListingBusinessDetails` | A business listing's contact details and hours as a `<dl>`. `hasBusinessDetails(listing)` says whether there is anything to show, so the page can skip the heading |
 | `MyListingActions` | An owner's actions on one listing, as one `ActionMenu` named "Actions for <title>", passed to `ListingSummaryRow`'s `menu`. Edit and Promote are links; Deactivate and Delete ask through `useConfirm` (Delete as `danger`); every action reports its outcome with `notify`. `pending` disables the items while an action runs |
 | `PromoteSteps` | `components/marketplace/promote/`. The wizard's progress as an `<ol aria-label="Progress">` with `aria-current="step"` and a visually hidden "completed" — not Mantine's `Stepper`, whose steps are buttons a member could click past |
@@ -213,7 +216,7 @@ The preferences page's switches render their description outside Mantine's `<lab
 | `useNotificationsPage(userId)` | The page's list, unread count, paging and realtime. Subscribes before loading and keeps what arrives meanwhile without counting it. Pages from the rows on screen, with deletes and pages serialized as in `useMyListings`. Leaves out `message` notifications, as the queries do. A second mark-read or delete of a row already in flight shares the first request. Each mutation resolves false on failure and calls `announceNotificationsChanged()` on success |
 | `useUserSettings(userId)` | Notification preferences. `values` is null after a failed load, so nothing unloaded can be saved; a member with no row gets `DEFAULT_USER_SETTINGS` |
 | `useModerationQueue(moderatorId)` | Pending posts, open reports and the reported posts, failing as a whole. Actions run one at a time and resolve to `{ ok }` or a sentence to show |
-| `useNotificationsFeed({ userId, pollingEnabled })` | The bell. Reloads when polling turns back on and on `announceNotificationsChanged()`, and applies only the latest of overlapping loads |
+| `useNotificationsFeed({ userId, pollingEnabled })` | The bell. Reloads when polling turns back on and on `announceNotificationsChanged()`, and applies only the latest of overlapping loads. Realtime shows and counts a row once: a redelivered INSERT, a row a load already brought in (the load writes its items ref as it lands, not after the render) and a read row never raise the count |
 
 ## Auth, landing and legal components
 
@@ -234,6 +237,8 @@ Login, signup, verify-email, onboarding, the auth callback, the landing page and
 | `useCountdown(seconds)` | `hooks/`. `{ remaining, restart }`, counting down once a second from mount. `remaining` is derived from an end time, so a throttled background tab still reads right. Verify-email's resend cooldown uses it |
 | `finishSignIn(supabase, session)` | `lib/authCallback.ts`. The callback's steps: create the profile if it's missing, mark the member verified by provider, then route by metro. It resolves to `{ destination }` or `{ error }` and checks every step's result, so the page always ends |
 | `resendSignupEmail(email)` | `lib/auth.ts`. Resends the sign-up confirmation through shared `resendVerificationEmail` |
+| `useGoogleSignIn(setError)` | `hooks/`. `{ busy, start }` for log in and sign up: clears the error, starts Google, stays busy on success (the browser is leaving), and on failure logs `auth_google_failed` and sets `getAuthErrorMessage`'s sentence |
+| `signOut()` / `signingOut` | `AuthContext`. The one sign-out, labelled "Log out" everywhere. It sets `signingOut`, which `Layout` treats like `loading` and renders its full-screen loader for, so no page is mounted while the user clears; then signs out, clears the user and replaces `/`. A failure keeps the member signed in and resolves `{ error }` for the caller's toast |
 
 ## Web-only helpers (`src/lib`)
 
@@ -249,19 +254,20 @@ Login, signup, verify-email, onboarding, the auth callback, the landing page and
 | `isFocusStranded()` | `lib/focus.ts`. True when focus is on `<body>` or still inside a closing modal (`[aria-modal="true"]`). Mantine returns focus on a timer and keeps a modal mounted through its exit transition, so an effect restoring focus must treat both as lost |
 | `parseMarketplaceQuery(query)` | `lib/marketplaceQuery.ts`. One reading of the marketplace's URL state for both routes, which both expose the slug as `query.category`. Also `isFilteredQuery` and `SEARCH_SLUG`, the pseudo-category `/marketplace/search` uses |
 | `submitNewPost` / `submitEditedPost` | Create post's two submit paths, as pure functions. They own the rollback rules: delete what was just uploaded when the write fails, delete what the member dropped only once it succeeds |
+| `userMessage(error, fallback, event, context?)` | `lib/userMessage.ts`. The raw-error policy: logs the raw error through `logClientEvent` under `event`, and returns what the member sees: shared `CONNECTION_ERROR_MESSAGE` when `isConnectionError(error)`, else `fallback`. A Supabase, PostgREST or RLS message never reaches the screen. Fallbacks read "Couldn't <verb> <thing>. Please try again." for actions and "Couldn't load <things>." for lists. Our own validation copy (zod issues) is shown as is |
 
 ## Post and feed components
 
 | Component | Location | Notes |
 |---|---|---|
 | `PostCard` | `components/posts/` | A stretched-link card: the title is the only link and covers the card, so menus, chips and the carousel sit beside it rather than inside it |
-| `PostMeta` | `components/posts/` | Author, relative time, `TagChip` per tag and `ScopeBadge`. Tags become buttons only when the surface can filter |
-| `PostActions` | `components/posts/` | Like, comment and save. A count is a button only where a handler is given — the feed has none, so there it stays text, and post detail passes them |
+| `PostMeta` | `components/posts/` | Author and relative time on the first line, then one list of a `TagChip` per tag and the `ScopeBadge`, which wrap together. Tags become buttons only when the surface can filter |
+| `PostActions` | `components/posts/` | Like, comment and save. A count is a button only where a handler is given — the feed has none, so there it stays text, and post detail passes them. Save is always named "Save post"; `aria-pressed` carries whether it is saved |
 | `CommentThread` | `components/posts/` | One parent comment with its replies behind a "Show replies (n)" toggle; deleting asks through `useConfirm` |
 | `CommentComposer` | `components/posts/` | The comment field, with a real label and a reply banner naming the person |
 | `PostComposer` | `components/feed/` | The prompt row; it links to the composer, or to verification below trust level 1 |
 | `SponsoredRail` | `components/feed/` | The `<aside>` holding paid listings and the upcoming-events widget |
-| `UserMenuTrigger` | `components/users/` | An avatar that opens View profile / Chat through `ActionMenu`. `toneKey` keeps the avatar's colour when `name` is a public name |
+| `UserMenuTrigger` | `components/users/` | An avatar that opens View profile / Chat through `ActionMenu`. The button is named "Options for {name}" and its avatar is decorative, so the name is read once. `toneKey` keeps the avatar's colour when `name` is a public name. Avatars beside a written name (post and comment authors, search people, attendees) are decorative too, and attendees are named by their public name |
 | `DateTimeField` | `components/events/` | A date and a time behaving as one `YYYY-MM-DDTHH:mm` value. The time does nothing until a date is set. Takes both input ids from its caller, because the e2e suite drives them directly |
 
 ## Profile components
@@ -273,10 +279,11 @@ The own profile (`/profile`), the public profile (`/users/[id]`) and Manage Loca
 | `PostSummaryRow` | `components/posts/` | `post` and an optional `menu`. `ScopeBadge`, a two-line excerpt, then relative time · likes · comments |
 | `EventSummaryRow` | `components/events/` | `event` and `now`, from `useNow()` so every row agrees on what is past. Date and place, then "n going" and Past or Cancelled |
 | `ListingSummaryRow` | `components/marketplace/` | `listing`, an optional `owner={{ now }}` and an optional `menu`. Thumbnail in `leading`, then price and category. The owner view adds the status chip (`--success` / `--warning` / `--danger`), view, save and contact counts, and the expiry notice; the public view shows the listing's age |
-| `PublicProfileHeader` | `components/users/` | `profileUser`, `metroName`, `helperScore`, `isOwnProfile`, `viewerId`, `messaging`, `onMessage`. A decorative avatar toned by the full name, the public name as the `h1`, `TrustBadge`, bio, follow counts, identity chips, and the Message or Edit profile button |
+| `PublicProfileHeader` | `components/users/` | `profileUser`, `metroName`, `helperScore`, `isOwnProfile`, `viewerId`, `messaging`, `onMessage`. A decorative avatar toned by the full name, the public name as the `h1`, `TrustBadge`, bio, follow counts, identity chips, and the Message or Edit profile button. The follower count moves with `FollowButton`'s `onChange` |
 | `FollowButton` | `components/users/` | `supabase`, `viewerId`, `targetUserId`, `onChange`. Renders nothing when signed out, on the viewer's own profile, or when the status fails to load, and remounts per viewer and target through a keyed inner `FollowToggle`. Optimistic, rolling back with a toast. Its label reads "Follow" / "Following" beside `aria-pressed`: a deliberate exception to letting the platform announce toggle state, following the social-app convention |
 | `ProfilePhotoControl` | `components/profile/` | `name`, `photoUrl`, `busy`, `onPick(file)`, `onRemove`. The avatar with Add/Change and Remove photo, over Mantine `FileButton`. It rejects an unsupported or oversized file itself (`MAX_PROFILE_PHOTO_SOURCE_BYTES`); the upload and its toasts are the caller's |
-| `AccountDetails` | `components/profile/` | `user`, `onEditBio`, `editBioBusy`. The About tab's Bio, Account Info and Activity sections |
+| `AccountDetails` | `components/profile/` | `user`, `onEditBio`, `editBioBusy`. The About tab's Bio, Account Info and Activity sections. The Phone row shows only when a phone is set, since web can't edit it |
+| `AboutPanel` | `components/users/` | The public profile's About tab on `DetailList`. The bio keeps its line breaks (`white-space: pre-line`) |
 | `AboutYouSection` | `components/profile/` | Controlled `values` / `onChange` (the shared `AboutYouFormValues`) and `disabled`. Hometown district (`NativeSelect`), college, years in the US, and a `ToggleChipGroup` of languages |
 | `SavedLocationRow` | `components/locations/` | One saved location. It owns rename: Enter or blur saves, Escape cancels, and a duplicate name shows on the field. Actions are named per row ("Rename Work", "Remove Work", "Set as default for Work"), and `renameButtonRef` lets the page restore focus |
 | `AddLocationForm` | `components/locations/` | Metro or ZIP search through `useMetroSearch`, then "Name this location" with suggestion chips. `onSave` resolves once the page has refreshed its list; `onCancel` is only for Cancel |
@@ -285,7 +292,7 @@ Their data and actions come from these hooks in `src/hooks`:
 
 | Hook | Notes |
 |---|---|
-| `usePublicProfile(id)` | Loads `/users/[id]`: the member, metro name, posts, events, listings and helper score, with a loading flag for the profile and for each list. Resets during render when `id` changes, so a caller that stays mounted never shows one member's data under another's URL |
+| `usePublicProfile(id)` | Loads `/users/[id]`: `status` (`loading`, `ready`, `not-found` or `error`, with `reload`), the member, metro name, helper score, and posts, events and listings as three `useUserList` resources (limits 30, 50, 30), so a failed list is an error with a retry, never an empty list. No row, `PGRST116` or `22P02` is not-found ("Member not found"); any other failure is "Couldn't load this profile." with Retry. Resets during render when `id` changes, so a caller that stays mounted never shows one member's data under another's URL |
 | `useUserList(userId, fetchList, fallbackError)` | One user-scoped list: `items`, `loading`, `error` and `reload`. `fetchList` must be a module-level function, because an inline closure refetches on every render. Resets per user and drops stale responses |
 | `useOwnProfileContent(userId)` | `/profile`'s posts, saved posts and listings, each a `useUserList`, plus `unsave(postId)`, which hides the post at once and restores it if the delete fails |
 | `useProfileEditing(user, refreshUser)` | `editName`, `editBio` and `changePassword` (a reset email) through `usePrompt` and `notify`. Name and bio are validated inside the dialog with the shared `fullNameSchema` and `bioSchema`. `saving` is true while a write runs |
@@ -308,7 +315,7 @@ The CSS guard fails on:
 - the legacy design-system variables (`--color-*`, `--space-m` and the rest), with a message naming the rule;
 - **an undefined custom property.** Every `var(--x)` must be defined in `tokens.css`, declared in the same file (`--x:`), or start with `--mantine-`. A fallback, as in `var(--x, 4px)`, doesn't excuse an undefined name, because a fallback is exactly how a typo hides. Variables a Mantine component sets on its own root are allowed only through the guard's `MANTINE_COMPONENT_PROPERTIES` list, each entry with a comment naming the component. Today it holds one, `--tabs-list-border-width` (Tabs, read by `scrollingTabs.module.css`). Add one only after checking that Mantine sets it.
 
-The guard reads `var(` one line at a time and case-sensitively, so a `var(` split across lines escapes it. Keep each `var()` on one line.
+The `var()` rules read the whole comment-stripped file, so a `var(` split across lines or written `VAR(` is still checked. Property names stay case-sensitive, as CSS has them: `var(--Surface-0)` is undefined.
 
 `npm run guards:test` runs the guards' own tests.
 

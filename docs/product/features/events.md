@@ -181,7 +181,7 @@ Each event card displays:
 | Private | RSVP count only ("34 going"); attendee list section hidden | Count + full list in organizer's event management view |
 
 - Attendee list (when public): avatar stack showing up to 5 attendee photos/initials; tap → sheet/modal with scrollable full list (masked names + trust badges)
-- Attendee list fetched on demand (not on page load)
+- Attendee list fetched on demand (not on page load), and again each time it opens on web, so it always agrees with the count; the previous list stays on screen while it reloads
 - The list holds **only the people going**. An Interested response counts towards the interested total and never appears among the attendees (fixed 2026-09-22; before, `getEventAttendees` returned every response)
 - Empty state: "Be the first to RSVP!"
 

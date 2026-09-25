@@ -78,6 +78,10 @@ A visitor who isn't signed in is sent to log-in, and a member who already has a 
 
 Confirming saves the ZIP and metro on the profile, adds the metro as the member's default saved location, labelled Home, and goes to `/feed`. If the profile save fails, the page says "Failed to save location. Please try again." and stays put. If only the Home entry fails, the member continues anyway: their metro is already saved, and Manage Locations can add Home later. That failure is logged as `onboarding_home_location_failed`.
 
+## Logging out
+
+"Log out" is the one label, in the account menu, the profile menu and the profile's Settings list. While it runs, the whole screen is a loader, so no page stays mounted with its member half gone; then the member lands on `/`. If Supabase fails to sign them out, they stay signed in and see "Couldn't log you out. Please try again." (logged as `auth_sign_out_failed`).
+
 ## Where it's tested
 
 Unit tests sit beside each page and in `lib/auth.test.ts`, `lib/authCallback.test.ts` and shared `authErrors.test.ts`. End to end, `01-unauthenticated`, `02-login`, `03-signup` and `16-auth-onboarding` (in `apps/web/e2e/tests/`) cover these flows. That includes the keyboard order through both forms, busy buttons keeping focus, and no sideways scrolling at 375px.
