@@ -10,6 +10,7 @@ jest.mock('@react-navigation/native', () => ({
 
 jest.mock('@nepally/shared', () => ({
   formatEventDateShort: jest.requireActual('@nepally/shared').formatEventDateShort,
+  formatCount: jest.requireActual('@nepally/shared').formatCount,
   formatPublicName: (name: string) => {
     const parts = name.trim().split(' ');
     if (parts.length < 2) return parts[0];
@@ -228,5 +229,11 @@ describe('EventCard', () => {
     const { getByText } = render(<EventCard event={event} />);
     expect(getByText(/6\.2K interested/)).toBeTruthy();
     expect(getByText(/1\.5K going/)).toBeTruthy();
+  });
+
+  it('rounds counts of ten thousand and up down to whole thousands, as web does', () => {
+    const event = { ...MOCK_EVENT, rsvp_count: 10500, interested_count: 0 };
+    const { getByText } = render(<EventCard event={event} />);
+    expect(getByText('0 interested · 10K going')).toBeTruthy();
   });
 });

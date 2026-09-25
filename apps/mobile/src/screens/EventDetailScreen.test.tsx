@@ -5,8 +5,8 @@ import {
   getEventById,
   getEventAttendees,
   getUserEventResponse,
-  rsvpToEvent,
-  unrsvpFromEvent,
+  setEventResponse,
+  removeEventResponse,
   cancelEvent,
   deleteEvent,
 } from '@nepally/shared';
@@ -102,11 +102,14 @@ const MOCK_ATTENDEES: EventRsvp[] = [
 jest.mock('@nepally/shared', () => ({
   formatEventDateLong: jest.requireActual('@nepally/shared').formatEventDateLong,
   isEventPast: jest.requireActual('@nepally/shared').isEventPast,
+  applyEventResponseChange: jest.requireActual('@nepally/shared').applyEventResponseChange,
+  formatCount: jest.requireActual('@nepally/shared').formatCount,
+  userMessage: jest.requireActual('@nepally/shared').userMessage,
   getEventById: jest.fn(async () => ({ data: null })),
   getEventAttendees: jest.fn(async () => ({ data: [] })),
   getUserEventResponse: jest.fn(async () => ({ data: null })),
-  rsvpToEvent: jest.fn(async () => ({})),
-  unrsvpFromEvent: jest.fn(async () => ({})),
+  setEventResponse: jest.fn(async () => ({})),
+  removeEventResponse: jest.fn(async () => ({})),
   cancelEvent: jest.fn(async () => ({})),
   deleteEvent: jest.fn(async () => ({})),
   formatPublicName: (name: string) => {
@@ -143,8 +146,8 @@ const mockGetEventById = getEventById as jest.MockedFunction<typeof getEventById
 const mockGetUserEventResponse = getUserEventResponse as jest.MockedFunction<
   typeof getUserEventResponse
 >;
-const mockRsvpToEvent = rsvpToEvent as jest.MockedFunction<typeof rsvpToEvent>;
-const mockUnrsvpFromEvent = unrsvpFromEvent as jest.MockedFunction<typeof unrsvpFromEvent>;
+const mockSetEventResponse = setEventResponse as jest.MockedFunction<typeof setEventResponse>;
+const mockRemoveEventResponse = removeEventResponse as jest.MockedFunction<typeof removeEventResponse>;
 const mockCancelEvent = cancelEvent as jest.MockedFunction<typeof cancelEvent>;
 const mockDeleteEvent = deleteEvent as jest.MockedFunction<typeof deleteEvent>;
 const mockGetEventAttendees = getEventAttendees as jest.MockedFunction<typeof getEventAttendees>;
@@ -175,9 +178,15 @@ async function renderAndSettle() {
 describe('EventDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // userMessage logs the raw error through logClientEvent (console.error).
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     setEvent();
     mockGetUserEventResponse.mockResolvedValue({ data: null });
     setAuthUser();
+  });
+
+  afterEach(() => {
+    (console.error as jest.Mock).mockRestore();
   });
 
   // ─── Loading & Error States ─────────────────────────────────────────
@@ -191,13 +200,21 @@ describe('EventDetailScreen', () => {
       expect(queryByText('Dashain Celebration')).toBeNull();
     });
 
-    it('shows error message on fetch failure', async () => {
+    it('shows our sentence on fetch failure, never the raw error', async () => {
       mockGetEventById.mockResolvedValue({
-        error: new Error('Network error'),
-      } as { error: Error });
+        error: new Error('permission denied for table events'),
+      });
+
+      const { getByText, queryByText } = await renderAndSettle();
+      expect(getByText("Couldn't load this event.")).toBeTruthy();
+      expect(queryByText('permission denied for table events')).toBeNull();
+    });
+
+    it('shows "Event not found" when the event does not exist', async () => {
+      mockGetEventById.mockResolvedValue({ error: new Error('Event not found'), notFound: true });
 
       const { getByText } = await renderAndSettle();
-      expect(getByText('Network error')).toBeTruthy();
+      expect(getByText('Event not found')).toBeTruthy();
     });
 
     it('shows "Event not found" when data is undefined', async () => {
@@ -217,11 +234,12 @@ describe('EventDetailScreen', () => {
       expect(mockGoBack).toHaveBeenCalled();
     });
 
-    it('shows error message on thrown exception', async () => {
+    it('shows our sentence on a thrown exception, never its message', async () => {
       mockGetEventById.mockRejectedValue(new Error('Unexpected crash'));
 
-      const { getByText } = await renderAndSettle();
-      expect(getByText('Unexpected crash')).toBeTruthy();
+      const { getByText, queryByText } = await renderAndSettle();
+      expect(getByText("Couldn't load this event.")).toBeTruthy();
+      expect(queryByText('Unexpected crash')).toBeNull();
     });
   });
 
@@ -397,7 +415,7 @@ describe('EventDetailScreen', () => {
       await act(async () => {
         await destructiveButton.onPress();
       });
-      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Cancel failed');
+      expect(Alert.alert).toHaveBeenCalledWith('Error', "Couldn't cancel the event. Please try again.");
     });
 
     it('shows delete confirmation alert on Delete press', async () => {
@@ -438,7 +456,7 @@ describe('EventDetailScreen', () => {
       await act(async () => {
         await destructiveButton.onPress();
       });
-      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Delete failed');
+      expect(Alert.alert).toHaveBeenCalledWith('Error', "Couldn't delete the event. Please try again.");
       expect(mockGoBack).not.toHaveBeenCalled();
     });
 
@@ -462,90 +480,105 @@ describe('EventDetailScreen', () => {
     });
   });
 
-  // ─── RSVP ─────────────────────────────────────────────────────────────
+  // ─── Responses ───────────────────────────────────────────────────────
 
-  describe('RSVP functionality', () => {
-    it('shows RSVP button for verified non-organizer user', async () => {
-      const { getByText } = await renderAndSettle();
-      expect(getByText('RSVP')).toBeTruthy();
+  describe('responses', () => {
+    it('shows Interested and Going for a verified non-organizer, neither selected', async () => {
+      const { getByRole } = await renderAndSettle();
+      expect(getByRole('button', { name: 'Interested' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: false })
+      );
+      expect(getByRole('button', { name: 'Going' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: false })
+      );
     });
 
-    it('shows hint text when not going', async () => {
+    it('shows both counts', async () => {
       const { getByText } = await renderAndSettle();
-      expect(getByText('Tap RSVP if you plan to attend.')).toBeTruthy();
+      expect(getByText('15 interested · 8 going')).toBeTruthy();
     });
 
-    it('calls rsvpToEvent on RSVP press and re-syncs from server', async () => {
-      mockRsvpToEvent.mockResolvedValue({});
-
-      const { getByText } = await renderAndSettle();
-
-      // After initial render, set up mocks for the refresh call
-      mockGetEventById.mockResolvedValue({ data: { ...BASE_EVENT, rsvp_count: 9 } });
-      mockGetUserEventResponse.mockResolvedValue({ data: 'going' });
-
-      await act(async () => {
-        fireEvent.press(getByText('RSVP'));
-      });
-      await act(async () => {});
-      await act(async () => {});
-
-      expect(mockRsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
-      // Initial fetch + refresh
-      expect(mockGetEventById).toHaveBeenCalledTimes(2);
-      expect(mockGetUserEventResponse).toHaveBeenCalledTimes(2);
-    });
-
-    it('calls unrsvpFromEvent when already going', async () => {
-      mockGetUserEventResponse.mockResolvedValue({ data: 'going' });
-      mockUnrsvpFromEvent.mockResolvedValue({});
-
-      const { getByText } = await renderAndSettle();
-      await act(async () => {
-        fireEvent.press(getByText('Going ✓'));
-      });
-      await act(async () => {});
-
-      expect(mockUnrsvpFromEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
-    });
-
-    it('offers RSVP to an interested member, and RSVP marks them going', async () => {
+    it('shows an interested member Interested selected, not an RSVP that marks them going', async () => {
       mockGetUserEventResponse.mockResolvedValue({ data: 'interested' });
-      mockRsvpToEvent.mockResolvedValue({});
 
-      const { getByText, queryByText } = await renderAndSettle();
-      expect(getByText('RSVP')).toBeTruthy();
-      expect(queryByText('Going ✓')).toBeNull();
+      const { getByRole, queryByText } = await renderAndSettle();
 
-      await act(async () => {
-        fireEvent.press(getByText('RSVP'));
-      });
-      await act(async () => {});
-
-      expect(mockRsvpToEvent).toHaveBeenCalledWith({}, 'event-1', 'user-2');
-      expect(mockUnrsvpFromEvent).not.toHaveBeenCalled();
+      expect(getByRole('button', { name: 'Interested' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: true })
+      );
+      expect(queryByText('RSVP')).toBeNull();
+      expect(mockSetEventResponse).not.toHaveBeenCalled();
     });
 
-    it('reverts RSVP state and shows error alert on failure', async () => {
-      mockRsvpToEvent.mockResolvedValue({ error: new Error('RSVP failed') });
-      // After failure, refreshRsvpState still runs
-      mockGetEventById.mockResolvedValue({ data: BASE_EVENT });
-      mockGetUserEventResponse.mockResolvedValue({ data: null });
+    it('moves the counts at once when the member picks Going', async () => {
+      mockSetEventResponse.mockReturnValue(new Promise(() => {}));
+      const { getByRole, getByText } = await renderAndSettle();
 
-      const { getByText } = await renderAndSettle();
-      await act(async () => {
-        fireEvent.press(getByText('RSVP'));
+      fireEvent.press(getByRole('button', { name: 'Going' }));
+
+      expect(mockSetEventResponse).toHaveBeenCalledWith({}, 'event-1', 'user-2', 'going');
+      expect(getByText('15 interested · 9 going')).toBeTruthy();
+      expect(getByRole('button', { name: 'Going' }).props.accessibilityState).toEqual({
+        selected: true,
+        disabled: true,
       });
-      await act(async () => {});
-
-      expect(Alert.alert).toHaveBeenCalledWith('Error', "Couldn't update RSVP. Try again.");
     });
 
-    it('shows "You are currently going." hint when going', async () => {
+    it('switches an interested member to going', async () => {
+      mockGetUserEventResponse.mockResolvedValue({ data: 'interested' });
+      mockSetEventResponse.mockReturnValue(new Promise(() => {}));
+      const { getByRole, getByText } = await renderAndSettle();
+
+      fireEvent.press(getByRole('button', { name: 'Going' }));
+
+      expect(mockSetEventResponse).toHaveBeenCalledWith({}, 'event-1', 'user-2', 'going');
+      expect(getByText('14 interested · 9 going')).toBeTruthy();
+    });
+
+    it('clears the response when the selected option is pressed, then re-reads the event', async () => {
       mockGetUserEventResponse.mockResolvedValue({ data: 'going' });
+      const { getByRole } = await renderAndSettle();
 
+      mockGetEventById.mockResolvedValue({ data: { ...BASE_EVENT, rsvp_count: 7 } });
+      mockGetUserEventResponse.mockResolvedValue({ data: null });
+      fireEvent.press(getByRole('button', { name: 'Going' }));
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(mockRemoveEventResponse).toHaveBeenCalledWith({}, 'event-1', 'user-2');
+      expect(mockGetEventById).toHaveBeenCalledTimes(2);
+      expect(getByRole('button', { name: 'Going' }).props.accessibilityState).toEqual({
+        selected: false,
+        disabled: false,
+      });
+    });
+
+    it('rolls back and alerts when the write fails', async () => {
+      mockSetEventResponse.mockResolvedValue({ error: new Error('RLS') });
+      const { getByRole, getByText } = await renderAndSettle();
+
+      fireEvent.press(getByRole('button', { name: 'Interested' }));
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(Alert.alert).toHaveBeenCalledWith('Error', "Couldn't update your response. Try again.");
+      expect(getByText('15 interested · 8 going')).toBeTruthy();
+      expect(getByRole('button', { name: 'Interested' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: false })
+      );
+    });
+
+    it('shows "Verify to RSVP" to an unverified member', async () => {
+      setAuthUser({ trust_level: 0 });
+      const { getByText, queryByRole } = await renderAndSettle();
+      expect(getByText('Verify to RSVP')).toBeTruthy();
+      expect(queryByRole('button', { name: 'Going' })).toBeNull();
+    });
+
+    it("tells the organizer they're the organizer", async () => {
+      setOrganizerAuth();
       const { getByText } = await renderAndSettle();
-      expect(getByText('You are currently going.')).toBeTruthy();
+      expect(getByText("You're the Organizer")).toBeTruthy();
     });
   });
 

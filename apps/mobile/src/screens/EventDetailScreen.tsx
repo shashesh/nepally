@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,24 +16,31 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import {
+  applyEventResponseChange,
   getEventById,
   getEventAttendees,
   getUserEventResponse,
-  rsvpToEvent,
-  unrsvpFromEvent,
+  setEventResponse,
+  removeEventResponse,
   cancelEvent,
   deleteEvent,
+  formatCount,
   formatEventDateLong,
   formatPublicName,
   isEventPast,
+  userMessage,
   TrustLevel,
   type Event,
   type EventRsvp,
+  type RsvpStatus,
 } from '@nepally/shared';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../config/supabase';
 import { EventTypeBadge } from '../components/events/EventTypeBadge';
-import { RsvpButton } from '../components/events/RsvpButton';
+import {
+  EventResponseButtons,
+  type EventResponseBlock,
+} from '../components/events/EventResponseButtons';
 import { AttendeeAvatarStack } from '../components/events/AttendeeAvatarStack';
 import { Avatar } from '../components/Avatar';
 import { colors } from '../styles/colors';
@@ -43,6 +50,22 @@ import type { EventsStackParamList } from '../types/navigation';
 
 type Nav = NativeStackNavigationProp<EventsStackParamList>;
 type Route = RouteProp<EventsStackParamList, 'EventDetail'>;
+
+const LOAD_FAILED = "Couldn't load this event.";
+const RESPONSE_ERROR = "Couldn't update your response. Try again.";
+const CANCEL_FAILED = "Couldn't cancel the event. Please try again.";
+const DELETE_FAILED = "Couldn't delete the event. Please try again.";
+
+/** The event and the member's response to it, read together. */
+async function fetchDetail(eventId: string, userId: string | undefined) {
+  const [eventResult, responseResult] = await Promise.all([
+    getEventById(supabase, eventId),
+    userId
+      ? getUserEventResponse(supabase, eventId, userId)
+      : Promise.resolve({ data: null as RsvpStatus | null }),
+  ]);
+  return { eventResult, responseResult };
+}
 
 export default function EventDetailScreen() {
   const navigation = useNavigation<Nav>();
@@ -54,24 +77,33 @@ export default function EventDetailScreen() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isGoing, setIsGoing] = useState(false);
-  const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [response, setResponse] = useState<RsvpStatus | null>(null);
+  const [responding, setResponding] = useState(false);
   const [attendees, setAttendees] = useState<EventRsvp[]>([]);
   const [attendeesModalVisible, setAttendeesModalVisible] = useState(false);
   const [attendeesLoading, setAttendeesLoading] = useState(false);
+  const respondingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const isOrganizer = event?.organizer_id === userId;
   const isPast = event ? isEventPast(event, new Date()) : false;
   const isCancelled = event?.status === 'cancelled';
   const isLevel0 = (user?.trust_level ?? 0) < TrustLevel.VERIFIED;
 
-  const rsvpState = (() => {
-    if (isCancelled) return 'cancelled' as const;
-    if (isPast) return 'past' as const;
-    if (isOrganizer) return 'organizer' as const;
-    if (isLevel0) return 'level0' as const;
-    if (isGoing) return 'going' as const;
-    return 'default' as const;
+  // Why the member can't respond, checked in this order; null when they can.
+  const responseBlock: EventResponseBlock | null = (() => {
+    if (isCancelled) return 'cancelled';
+    if (isPast) return 'past';
+    if (isOrganizer) return 'organizer';
+    if (isLevel0) return 'unverified';
+    return null;
   })();
 
   const isEdited =
@@ -79,44 +111,24 @@ export default function EventDetailScreen() {
       ? new Date(event.updated_at).getTime() - new Date(event.created_at).getTime() > 60_000
       : false;
 
-  const refreshRsvpState = useCallback(async () => {
-    if (!userId) return;
-
-    const [eventResult, rsvpStateResult] = await Promise.all([
-      getEventById(supabase, eventId),
-      getUserEventResponse(supabase, eventId, userId),
-    ]);
-
-    if (eventResult.data) {
-      setEvent(eventResult.data);
-    }
-
-    if (rsvpStateResult.data !== undefined) {
-      setIsGoing(rsvpStateResult.data === 'going');
-    }
-  }, [eventId, userId]);
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const result = await getEventById(supabase, eventId);
+        const { eventResult, responseResult } = await fetchDetail(eventId, userId);
         if (cancelled) return;
-        if (result.error) {
-          setError(result.error.message);
-        } else if (result.data) {
-          setEvent(result.data);
-          if (userId) {
-            const rsvpStateResult = await getUserEventResponse(supabase, eventId, userId);
-            if (cancelled) return;
-            if (rsvpStateResult.data !== undefined) {
-              setIsGoing(rsvpStateResult.data === 'going');
-            }
-          }
+        if (eventResult.error && !eventResult.notFound) {
+          setError(
+            userMessage(eventResult.error, LOAD_FAILED, 'event_load_failed', { platform: 'mobile', eventId })
+          );
+        } else if (eventResult.data) {
+          setEvent(eventResult.data);
+          // A failed response request leaves the member with no response shown.
+          setResponse(responseResult.data ?? null);
         }
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Failed to load event.');
+        setError(userMessage(err, LOAD_FAILED, 'event_load_failed', { platform: 'mobile', eventId }));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -126,27 +138,46 @@ export default function EventDetailScreen() {
     };
   }, [eventId, userId]);
 
-  const handleRsvpToggle = useCallback(async () => {
-    if (!userId || rsvpLoading || !event) return;
-    setRsvpLoading(true);
-    const prevGoing = isGoing;
-    const nextGoing = !prevGoing;
+  // Interested or Going, or null to clear: the counts move at once and roll back if the write fails.
+  const respond = useCallback(
+    (next: RsvpStatus | null) => {
+      if (!userId || !event || respondingRef.current) return;
+      const previous = response;
+      if (previous === next) return;
 
-    setIsGoing(nextGoing);
+      respondingRef.current = true;
+      setResponding(true);
+      setResponse(next);
+      setEvent((current) => (current ? applyEventResponseChange(current, previous, next) : current));
 
-    const result = prevGoing
-      ? await unrsvpFromEvent(supabase, eventId, userId)
-      : await rsvpToEvent(supabase, eventId, userId);
+      const write =
+        next === null
+          ? removeEventResponse(supabase, eventId, userId)
+          : setEventResponse(supabase, eventId, userId, next);
 
-    if (result.error) {
-      // Revert
-      setIsGoing(prevGoing);
-      Alert.alert('Error', "Couldn't update RSVP. Try again.");
-    }
-
-    await refreshRsvpState();
-    setRsvpLoading(false);
-  }, [userId, event, isGoing, rsvpLoading, eventId, refreshRsvpState]);
+      void write
+        .then(async (result) => {
+          if (!mountedRef.current) return;
+          if (result.error) {
+            setResponse(previous);
+            setEvent((current) =>
+              current ? applyEventResponseChange(current, next, previous) : current
+            );
+            Alert.alert('Error', RESPONSE_ERROR);
+          }
+          // Either way, take the counts and the response the server now has.
+          const { eventResult, responseResult } = await fetchDetail(eventId, userId);
+          if (!mountedRef.current) return;
+          if (eventResult.data) setEvent(eventResult.data);
+          if (responseResult.data !== undefined) setResponse(responseResult.data);
+        })
+        .finally(() => {
+          respondingRef.current = false;
+          if (mountedRef.current) setResponding(false);
+        });
+    },
+    [userId, event, response, eventId]
+  );
 
   const handleShowAttendees = useCallback(async () => {
     setAttendeesModalVisible(true);
@@ -170,7 +201,10 @@ export default function EventDetailScreen() {
           onPress: async () => {
             const result = await cancelEvent(supabase, eventId);
             if (result.error) {
-              Alert.alert('Error', result.error.message || 'Could not cancel this event.');
+              Alert.alert(
+                'Error',
+                userMessage(result.error, CANCEL_FAILED, 'event_cancel_failed', { platform: 'mobile', eventId })
+              );
               return;
             }
             setEvent((prev) => (prev ? { ...prev, status: 'cancelled' } : prev));
@@ -192,7 +226,10 @@ export default function EventDetailScreen() {
           onPress: async () => {
             const result = await deleteEvent(supabase, eventId);
             if (result.error) {
-              Alert.alert('Error', result.error.message || 'Could not delete this event.');
+              Alert.alert(
+                'Error',
+                userMessage(result.error, DELETE_FAILED, 'event_delete_failed', { platform: 'mobile', eventId })
+              );
               return;
             }
             navigation.goBack();
@@ -413,19 +450,16 @@ export default function EventDetailScreen() {
               <Text style={styles.rsvpCountPrivate}>{event.rsvp_count} going</Text>
             )}
 
-            <View style={styles.rsvpButtonRow}>
-              <RsvpButton
-                state={rsvpState}
-                onPress={handleRsvpToggle}
-                loading={rsvpLoading}
-              />
-              {rsvpLoading && <ActivityIndicator style={{ marginLeft: 8 }} color={colors.primary.main} />}
-            </View>
-            {(rsvpState === 'default' || rsvpState === 'going') && (
-              <Text style={styles.rsvpHint}>
-                {rsvpState === 'going' ? 'You are currently going.' : 'Tap RSVP if you plan to attend.'}
-              </Text>
-            )}
+            <Text style={styles.responseCounts}>
+              {formatCount(event.interested_count ?? 0)} interested · {formatCount(event.rsvp_count)} going
+            </Text>
+
+            <EventResponseButtons
+              value={response}
+              busy={responding}
+              blockedBy={responseBlock}
+              onChange={respond}
+            />
           </View>
         </View>
       </ScrollView>
@@ -627,14 +661,9 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontWeight: '600',
   },
-  rsvpButtonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rsvpHint: {
+  responseCounts: {
     ...typography.caption,
     color: colors.text.secondary,
-    marginTop: 2,
   },
   // Attendees modal
   modalOverlay: {
