@@ -301,12 +301,12 @@ Exit Criteria
 
 ### Test Plan Matrix
 
-| Area                           | Change Type | Required Tests                       | File Targets                                                             |
-| ------------------------------ | ----------- | ------------------------------------ | ------------------------------------------------------------------------ |
-| Mobile auth and storage        | Update      | Unit tests                           | apps/mobile/src/services/auth/_.test.ts, apps/mobile/src/utils/_.test.ts |
-| Mobile contexts                | Update      | Unit tests                           | apps/mobile/src/contexts/*.test.tsx                                      |
-| Mobile feed and compose        | Update/new  | Unit + focused integration scenarios | apps/mobile/src/screens/**/*.test.tsx                                    |
-| Shared logic touched by mobile | Update      | Unit tests                           | packages/shared/src/**/*.test.ts                                         |
+| Area                           | Change Type | Required Tests                       | File Targets                                                                 |
+| ------------------------------ | ----------- | ------------------------------------ | ---------------------------------------------------------------------------- |
+| Mobile auth and storage        | Update      | Unit tests                           | `apps/mobile/src/services/auth/*.test.ts`, `apps/mobile/src/utils/*.test.ts` |
+| Mobile contexts                | Update      | Unit tests                           | `apps/mobile/src/contexts/*.test.tsx`                                        |
+| Mobile feed and compose        | Update/new  | Unit + focused integration scenarios | `apps/mobile/src/screens/**/*.test.tsx`                                      |
+| Shared logic touched by mobile | Update      | Unit tests                           | `packages/shared/src/**/*.test.ts`                                           |
 
 ### Coverage and Quality Gates
 

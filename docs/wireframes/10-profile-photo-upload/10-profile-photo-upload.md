@@ -397,21 +397,36 @@ Failed to upload photo. Check your connection and try again.
 
 ### Alternative Flow (Take Photo)
 
-1–3 same as above 4. User selects "Take Photo" 5. System checks camera permission → granted 6. Camera opens (system UI) 7. User takes photo
-8–18 continue from Happy Path step 8
+Steps 1–3 same as above.
+
+4. User selects "Take Photo"
+5. System checks camera permission → granted
+6. Camera opens (system UI)
+7. User takes photo
+
+Steps 8–18 continue from Happy Path step 8.
 
 ### Alternative Flow (Remove Photo)
 
-1–3 same as above 4. User selects "Remove Photo" 5. Confirmation dialog: "Remove profile photo? This will replace your photo with your initials." 6. User taps "Remove" 7. System deletes `avatars/{userId}.jpg` from Supabase Storage 8. System sets `users.profile_photo = null` 9. Avatar updates to show initials 10. Status: "Photo removed" (gray text, fades after 2s)
+Steps 1–3 same as above.
+
+4. User selects "Remove Photo"
+5. Confirmation dialog: "Remove profile photo? This will replace your photo with your initials."
+6. User taps "Remove"
+7. System deletes `avatars/{userId}.jpg` from Supabase Storage
+8. System sets `users.profile_photo = null`
+9. Avatar updates to show initials
+10. Status: "Photo removed" (gray text, fades after 2s)
 
 ### Alternative Flow (Permission Denied)
 
-1–4 same as Happy Path 5. System checks photo library permission → denied 6. Alert dialog:
+Steps 1–4 same as Happy Path.
 
-- Title: "Photo Library Access Required"
-- Message: "Please grant photo library access in Settings to choose a profile photo."
-- Buttons: "Cancel", "Open Settings"
-
+5. System checks photo library permission → denied
+6. Alert dialog:
+   - Title: "Photo Library Access Required"
+   - Message: "Please grant photo library access in Settings to choose a profile photo."
+   - Buttons: "Cancel", "Open Settings"
 7. If user taps "Open Settings": Navigate to system Settings, app permissions
 8. User manually grants permission → returns to app
 9. User repeats flow (now permission granted)
