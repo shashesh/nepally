@@ -8,8 +8,8 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  cleanUpPostPhotos,
   createPost,
-  deletePostPhotos,
   getPostPhotoPathFromUrl,
   updatePost,
   uploadPostPhotos,
@@ -90,9 +90,7 @@ export async function submitNewPost(
     });
 
     if (result.error) {
-      if (uploadedPaths.length > 0) {
-        await deletePostPhotos(supabase, uploadedPaths);
-      }
+      await cleanUpPostPhotos(supabase, uploadedPaths, context);
       return { ok: false, message: userMessage(result.error, CREATE_FAILED, 'post_create_failed', context) };
     }
 
@@ -128,9 +126,7 @@ export async function submitEditedPost(
     });
 
     if (result.error) {
-      if (uploadedPaths.length > 0) {
-        await deletePostPhotos(supabase, uploadedPaths);
-      }
+      await cleanUpPostPhotos(supabase, uploadedPaths, context);
       return { ok: false, message: userMessage(result.error, UPDATE_FAILED, 'post_update_failed', context) };
     }
 
@@ -143,9 +139,7 @@ export async function submitEditedPost(
       .map((url) => getPostPhotoPathFromUrl(url))
       .filter((path): path is string => Boolean(path));
 
-    if (droppedPaths.length > 0) {
-      await deletePostPhotos(supabase, droppedPaths);
-    }
+    await cleanUpPostPhotos(supabase, droppedPaths, context);
 
     return { ok: true };
   } catch (error: unknown) {

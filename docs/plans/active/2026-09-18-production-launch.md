@@ -155,9 +155,11 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
 
   Review the list, then delete the orphans through the Storage API: `remove()` with the service role. Never use SQL `DELETE` on `storage.objects`. Storage's `protect_objects_delete` trigger raises on it, and a SQL delete that got through would still leave the files in the storage backend.
 
-- [ ] **Code:** Make the shared storage deletes report partial failure. `deletePostPhotos`, `deleteListingPhotos` and `deleteProfilePhoto` check only `error` and ignore `data`, so a `remove()` that deleted nothing looked like success. Treat `data.length < paths.length` as an error, or at least a logged warning. That check would have caught the 027 regression.
+- [x] **Code:** Make the shared storage deletes report partial failure. `deletePostPhotos`, `deleteListingPhotos` and `deleteProfilePhoto` used to check only `error`, so a `remove()` that deleted nothing looked like success. That is how the 027 regression went unnoticed. They now return an error when any requested path is missing from what `remove()` reports deleted, along with `notRemoved`, the paths that may still be in storage.
 
-  Callers must also check the returned `{ error }` — today several don't, so a real delete failure is silently swallowed one layer up and the UI reports success while the file stays public at its URL. Known call sites: web `apps/web/src/pages/profile.page.tsx` photo removal (`deleteProfilePhoto`); mobile `apps/mobile/src/screens/profile/EditProfileScreen.tsx` photo removal; `apps/web/src/lib/postSubmit.ts`'s `deletePostPhotos` calls; and the shared `removeProfilePhoto` that the web UI overhaul's PR 6 adds, which deliberately ignores the file-delete error today.
+  The callers act on it:
+  - Post photo cleanup on web (`apps/web/src/lib/postSubmit.ts`) and mobile (`CreatePostScreen.tsx`) goes through the shared `cleanUpPostPhotos`. It logs `post_photos_cleanup_failed` with only the paths left behind. The post write has already decided what the member sees, so the failure is logged rather than shown.
+  - The shared `removeProfilePhoto` deletes the file first. It stops and returns the error if the delete fails, leaving `users.profile_photo` untouched. The web profile page and mobile `EditProfileScreen` show that error, so the member can try again.
 
 - [ ] **Code:** Migration `040`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
