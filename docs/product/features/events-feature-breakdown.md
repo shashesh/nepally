@@ -78,7 +78,7 @@ Build the shared data layer that all platforms consume.
 
 - **What:** Add all Supabase query functions to `packages/shared/src/api/events.ts`
 - **Acceptance Criteria:**
-  - `getEventsByMetro(supabase, metroId)` — returns upcoming active events for a metro area, chronological, with organizer join
+  - `getMetroEventsPage(supabase, metroId, { period, now, limit?, offset? })` — one page of a metro's events plus global ones, upcoming soonest first or past most recent first, with organizer join (replaced `getEventsByMetro`, deleted 2026-09-24)
   - `getGlobalEvents(supabase)` — returns upcoming global events across all metros
   - `getEventById(supabase, eventId)` — returns single event with organizer info
   - `getEventsByOrganizer(supabase, organizerId)` — returns events created by a specific user
@@ -107,7 +107,7 @@ Replace the "Coming Soon" placeholder with a real events feed.
 - **Acceptance Criteria:**
   - Screen registered as the Events tab in bottom navigation (already routed, just replace content)
   - Header shows "Events" + user's metro city name
-  - Fetch events via `getEventsByMetro()` on mount
+  - Fetch events via `getMetroEventsPage()` on mount (`hooks/useMetroEventPages.ts`: upcoming, then past)
   - Display events in chronological order (soonest first)
   - Empty state: illustrated card — "No upcoming events in [City]. Check back soon!"
   - Loading skeleton (3 placeholder cards) while fetching
@@ -123,7 +123,7 @@ Replace the "Coming Soon" placeholder with a real events feed.
 - **Acceptance Criteria:**
   - Route: `/events` (already exists as placeholder)
   - Header with "Events" + metro city context
-  - Fetch events via `getEventsByMetro()` on page load
+  - Fetch events via `getMetroEventsPage()` on page load (`hooks/useEventFeed.ts`: upcoming, then past)
   - Same chronological list, empty state, and loading skeleton as mobile
   - "Create Event" button visible for Level 1+ users
   - CSS Modules only — no inline `style={{}}`
@@ -400,7 +400,7 @@ The following code placement decisions apply:
 |-----------|----------|
 | `Event`, `EventRsvp`, `EventType`, `EventStatus` types | `packages/shared/src/types/events.ts` |
 | `createEventSchema`, `updateEventSchema` Zod schemas | `packages/shared/src/validation/events.ts` |
-| All API functions (getEventsByMetro, createEvent, rsvpToEvent, etc.) | `packages/shared/src/api/events.ts` |
+| All API functions (getMetroEventsPage, createEvent, setEventResponse, etc.) | `packages/shared/src/api/events.ts` |
 | EventCard component (mobile) | `apps/mobile/src/components/events/EventCard.tsx` |
 | EventCard component (web) | `apps/web/src/components/events/EventCard.tsx` |
 | EventsScreen (mobile) | `apps/mobile/src/screens/EventsScreen.tsx` |

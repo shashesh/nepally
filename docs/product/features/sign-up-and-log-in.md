@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-09-24 (web UI overhaul PR 10a)
 
-What signing up, logging in, email verification, the auth callback and ZIP onboarding do on web today. Auth is email and password, or Google. Phone sign-in is deferred. The mobile screens still show their own copy; PR 10c moves them onto the same shared error sentences. The journey itself is written up in [the sign-up and onboarding journey](../../user-journeys/onboarding/01-signup-and-onboarding.md).
+What signing up, logging in, email verification, the auth callback and ZIP onboarding do on web today. Auth is email and password, or Google. Phone sign-in is deferred. Since PR 10c (2026-09-24) the mobile email sign-up, log-in, Google and resend screens show the same shared error sentences in their alerts, and change password shows "Couldn't change your password. Please try again."; mobile's code-entry verification keeps its own three sentences. The journey itself is written up in [the sign-up and onboarding journey](../../user-journeys/onboarding/01-signup-and-onboarding.md).
 
 ## Wording
 

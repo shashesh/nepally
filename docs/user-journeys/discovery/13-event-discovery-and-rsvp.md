@@ -52,7 +52,7 @@
 #### Step 1: Tap the Events Tab
 
 **User Action:** Priya taps the calendar icon (Events tab, second position in the bottom nav) on the home screen.
-**System Response:** Navigates to `EventsScreen`. Calls `getEventsByMetro(supabase, metroId)` + `getUserRsvps(supabase, userId)` on mount to hydrate RSVP state.
+**System Response:** Navigates to `EventsScreen`. Calls `getMetroEventsPage(supabase, metroId, { period: 'upcoming', now })` + `getUserEventResponses(supabase, userId)` on mount to hydrate each card's Interested / Going state, then pages past events once upcoming runs out.
 **User Sees:**
 
 - Header: "📅 Events · San Jose-Sunnyvale-Santa Clara"
@@ -492,7 +492,7 @@ User opens Events tab
 
 All in `packages/shared/src/api/events.ts`:
 
-- `getEventsByMetro(supabase, metroId, options?)` — load events feed (upcoming + global)
+- `getMetroEventsPage(supabase, metroId, { period, now, limit?, offset? })` — load events feed (metro + global), upcoming then past
 - `getEventById(supabase, eventId)` — single event with organizer join
 - `getEventAttendees(supabase, eventId)` — attendee list with user info
 - `getUserRsvps(supabase, userId)` → `string[]` — pre-hydrate RSVP state on feed load

@@ -22,7 +22,7 @@ When loads overlap, only the latest answer is applied.
 ## The notifications page (`/notifications`)
 
 - **Layout.** The heading is "Notifications". When anything is unread, the count ("3 unread") sits beside the heading, not inside it, and "Mark all as read" appears. A Preferences link opens the settings page.
-- **Grouping.** Emergency alerts come first as one group, then one group per day: Today, Yesterday, then dates ("Mar 5", or "Mar 5, 2025" for another year). Each group is a labelled section.
+- **Grouping.** Emergency alerts come first as one group, then one group per day: Today, Yesterday, then dates ("Mar 5", or "Mar 5, 2025" for another year). Each group is a labelled section. Mobile's notifications screen uses the same day labels since 2026-09-24 (it used "March 5" with no year, so one date in two years shared a section).
 - **Rows.** Each row has its own Open and Delete buttons. Opening a notification goes straight to its post, event or conversation and marks it read in the background. If that mark fails, the row simply stays unread.
 - **Paging.** More notifications load as the member scrolls, 20 at a time. The next page starts after the rows on screen, so a new notification arriving or a row being deleted never duplicates or skips one. A failed page says "Couldn't load more notifications." with Try again.
 - **Live updates.** New notifications appear at the top as they arrive, including one that arrives while the page is still loading.

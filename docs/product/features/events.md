@@ -90,7 +90,7 @@ Nepally's metro-first location model makes it uniquely positioned to surface the
 - [ ] "All" selected by default; single-select (only one chip active at a time)
 - [ ] Events listed in chronological order (soonest start date first)
 - [ ] Upcoming events shown by default; past events appear below a "Past Events" divider after all upcoming events
-  - **Web (since 2026-09-22):** the two groups are paged separately under "Upcoming" and "Past events" headings. Upcoming events come soonest first, then past events **most recent first**. A metro with nothing upcoming opens on its past events rather than an empty list. Mobile still pages every event by start date ascending
+  - **Web (since 2026-09-22) and mobile (since 2026-09-24):** the two groups are paged separately (web under "Upcoming" and "Past events" headings, mobile below its "Past Events" divider). Upcoming events come soonest first, then past events **most recent first**. A metro with nothing upcoming opens on its past events rather than an empty list
 - [ ] Pull-to-refresh
 - [ ] Infinite scroll / pagination (20 events per page)
 - [ ] Empty state (no upcoming events): illustration + "No upcoming events in [City]. Check back soon!"
@@ -131,7 +131,8 @@ Each event card displays:
   - RSVP count: "34 going"
   - RSVP button (see Section 5)
   - Attendee list or count-only based on privacy setting (see Section 5)
-  - **Web (since 2026-09-22):** the detail page offers **Interested** as well as Going, the same pair the list's cards carry, so a member can mark either from either place. Where a member can't respond, the card says why in a sentence — "This event has passed.", "You're the organizer." or "Verify your account to respond." — instead of showing a disabled button. Mobile detail keeps its single RSVP button
+  - **Web (since 2026-09-22):** the detail page offers **Interested** as well as Going, the same pair the list's cards carry, so a member can mark either from either place. Where a member can't respond, the card says why in a sentence — "This event has passed.", "You're the organizer." or "Verify your account to respond." — instead of showing a disabled button
+  - **Mobile (since 2026-09-24):** the detail screen offers the same **Interested** / **Going** pair, shows both counts ("3 interested · 12 going"), and pressing the selected option clears it. Where a member can't respond, one disabled button says why: "Event Has Passed", "You're the Organizer" or "Verify to RSVP"; a cancelled event shows none
 - [ ] Report button (links into existing report system; no auto-hide threshold for events)
 - [ ] Organizer-only: action menu (Edit, Cancel Event) — three-dot menu top right
 - [ ] Cancelled events: red "Cancelled" banner below hero image; all other content still visible; RSVP button replaced with "Event Cancelled" label
@@ -429,7 +430,7 @@ export interface EventRsvp {
 
 **API Functions** (`src/api/events.ts`) — all accept `supabase: SupabaseClient` as first param:
 
-- `getEventsByMetro(supabase, metroId, options?)` — upcoming active events for a metro + global events
+- `getMetroEventsPage(supabase, metroId, { period, now, limit?, offset? })` — one page of a metro's events plus global ones: `period: 'upcoming'` soonest first, `'past'` most recent first (web and mobile lists)
 - `getEventById(supabase, eventId)` — single event with organizer join
 - `getEventsByOrganizer(supabase, organizerId)` — events created by a user (for profile tab)
 - `getEventAttendees(supabase, eventId)` — attendee list (user info joined from event_rsvps)
@@ -440,6 +441,10 @@ export interface EventRsvp {
 - `rsvpToEvent(supabase, eventId, userId)` — insert into event_rsvps
 - `unrsvpFromEvent(supabase, eventId, userId)` — delete from event_rsvps
 - `getUserRsvps(supabase, userId)` — returns array of event_ids the user has RSVP'd to
+- `setEventResponse(supabase, eventId, userId, status)` / `removeEventResponse(supabase, eventId, userId)` — answer Interested or Going, or clear the answer
+- `getUserEventResponse(supabase, eventId, userId)` / `getUserEventResponses(supabase, userId)` — the viewer's answer for one event, or a map for the list
+
+**Logic** — `applyEventResponseChange(event, previous, next)` (`src/logic/events.ts`) moves an event's counts for an optimistic answer; both apps' list and detail use it, and roll back by swapping `previous` and `next`
 
 **Utils** — reuse existing `formatPublicName()` from `src/utils/user.ts` for organizer name masking
 
@@ -461,7 +466,8 @@ export interface EventRsvp {
 
 - `components/events/EventCard.tsx` — card displayed in list
 - `components/events/EventTypeBadge.tsx` — colored type pill
-- `components/events/RsvpButton.tsx` — RSVP toggle button
+- `components/events/EventResponseButtons.tsx` — detail screen's Interested / Going pair (replaced `RsvpButton` on 2026-09-24)
+- `hooks/useMetroEventPages.ts` — the list's paging, upcoming then past
 - `components/events/AttendeeAvatarStack.tsx` — up to 5 overlapping avatars + count
 
 **Navigation:** `EventDetailScreen` and `CreateEventScreen` added to `HomeStack` (already registered events tab in nav)
@@ -478,7 +484,7 @@ export interface EventRsvp {
 
 - `components/events/EventCard.tsx`
 - `components/events/EventTypeBadge.tsx`
-- `components/events/RsvpButton.tsx`
+- `components/events/EventResponseControl.tsx` — Interested / Going (replaced `RsvpButton` in PR 7)
 - `components/events/AttendeeList.tsx`
 
 **CSS Modules:** Each component has a corresponding `.module.css` file. No inline `style={{}}`.
