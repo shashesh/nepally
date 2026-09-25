@@ -57,9 +57,16 @@ jest.mock('@nepally/shared', () => ({
   bioSchema: {
     safeParse: (val: string) => ({ success: true, data: val }),
   },
-  NEPAL_DISTRICTS: ['Kathmandu', 'Pokhara', 'Lalitpur'],
+  // The real lists: getAboutYouFormValues and extendedProfileUpdateSchema check
+  // against them, so a made-up district here would be one the save refuses.
+  NEPAL_DISTRICTS: jest.requireActual('@nepally/shared').NEPAL_DISTRICTS,
   SUPPORTED_LANGUAGES: ['nepali', 'english', 'newari'],
   LANGUAGE_LABELS: { nepali: 'Nepali', english: 'English', newari: 'Newari' },
+  COLLEGE_MAX_LENGTH: jest.requireActual('@nepally/shared').COLLEGE_MAX_LENGTH,
+  YEARS_IN_US_MIN: jest.requireActual('@nepally/shared').YEARS_IN_US_MIN,
+  YEARS_IN_US_MAX: jest.requireActual('@nepally/shared').YEARS_IN_US_MAX,
+  getAboutYouFormValues: jest.requireActual('@nepally/shared').getAboutYouFormValues,
+  extendedProfileUpdateSchema: jest.requireActual('@nepally/shared').extendedProfileUpdateSchema,
 }));
 
 jest.mock('../../utils/storage', () => ({
@@ -113,6 +120,7 @@ import { EditProfileScreen } from './EditProfileScreen';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import {
+  COLLEGE_MAX_LENGTH,
   FULL_NAME_MAX_LENGTH,
   PROFILE_PHOTO_SIZE_PX,
   removeProfilePhoto,
@@ -229,6 +237,88 @@ describe('EditProfileScreen', () => {
         'user-1',
         expect.objectContaining({ college: 'TU Kirtipur' })
       );
+    });
+  });
+
+  describe('About You', () => {
+    const aboutYouUser = {
+      ...baseUser,
+      hometown_district: null,
+      college: null,
+      years_in_us: null,
+      languages: [],
+    };
+
+    it('saves a whitespace-only college as null and shows the parsed value', async () => {
+      mockUseAuth.mockReturnValue({ user: aboutYouUser, refreshUser: mockRefreshUser });
+
+      const { getByTestId, getByText } = render(<EditProfileScreen />);
+
+      fireEvent.changeText(getByTestId('about-college-input'), '   ');
+      fireEvent.press(getByText('Save Changes'));
+
+      await waitFor(() => {
+        expect(mockedUpdateUserProfile).toHaveBeenCalledWith(
+          expect.anything(),
+          'user-1',
+          expect.objectContaining({ college: null })
+        );
+      });
+      expect(getByTestId('about-college-input').props.value).toBe('');
+    });
+
+    it('writes the trimmed college back to the form after saving', async () => {
+      mockUseAuth.mockReturnValue({ user: aboutYouUser, refreshUser: mockRefreshUser });
+
+      const { getByTestId, getByText } = render(<EditProfileScreen />);
+
+      fireEvent.changeText(getByTestId('about-college-input'), '  Pulchowk Campus  ');
+      fireEvent.press(getByText('Save Changes'));
+
+      await waitFor(() => {
+        expect(mockedUpdateUserProfile).toHaveBeenCalledWith(
+          expect.anything(),
+          'user-1',
+          expect.objectContaining({ college: 'Pulchowk Campus' })
+        );
+      });
+      expect(getByTestId('about-college-input').props.value).toBe('Pulchowk Campus');
+    });
+
+    it('seeds a stored district outside NEPAL_DISTRICTS as null', async () => {
+      mockUseAuth.mockReturnValue({
+        user: { ...aboutYouUser, hometown_district: 'Atlantis', languages: ['nepali', 'klingon'] },
+        refreshUser: mockRefreshUser,
+      });
+
+      const { getByText } = render(<EditProfileScreen />);
+      fireEvent.press(getByText('Save Changes'));
+
+      await waitFor(() => {
+        expect(mockedUpdateUserProfile).toHaveBeenCalledWith(
+          expect.anything(),
+          'user-1',
+          expect.objectContaining({ hometown_district: null, languages: ['nepali'] })
+        );
+      });
+      expect(Alert.alert).not.toHaveBeenCalledWith('Error', expect.anything());
+    });
+
+    it('caps the college input at COLLEGE_MAX_LENGTH', () => {
+      mockUseAuth.mockReturnValue({ user: aboutYouUser, refreshUser: mockRefreshUser });
+      const { getByTestId } = render(<EditProfileScreen />);
+      expect(getByTestId('about-college-input').props.maxLength).toBe(COLLEGE_MAX_LENGTH);
+    });
+
+    it('refuses 100 years in the US and accepts 99', () => {
+      mockUseAuth.mockReturnValue({ user: aboutYouUser, refreshUser: mockRefreshUser });
+      const { getByTestId } = render(<EditProfileScreen />);
+
+      fireEvent.changeText(getByTestId('about-years-input'), '100');
+      expect(getByTestId('about-years-input').props.value).toBe('');
+
+      fireEvent.changeText(getByTestId('about-years-input'), '99');
+      expect(getByTestId('about-years-input').props.value).toBe('99');
     });
   });
 

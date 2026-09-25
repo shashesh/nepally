@@ -28,11 +28,14 @@ import {
   FULL_NAME_MAX_LENGTH,
   PROFILE_PHOTO_SIZE_PX,
   bioSchema,
+  extendedProfileUpdateSchema,
   fullNameSchema,
+  getAboutYouFormValues,
+  type AboutYouFormValues,
 } from '@nepally/shared';
 import { saveMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
-import { AboutYouSection, type AboutYouValues } from './components/AboutYouSection';
+import { AboutYouSection } from './components/AboutYouSection';
 import { Avatar } from '../../components/Avatar';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { colors } from '../../styles/colors';
@@ -42,6 +45,13 @@ import { spacing, borderRadius } from '../../styles/spacing';
 const PHOTO_UPDATE_FAILED = "Couldn't update your photo. Please try again.";
 const PHOTO_REMOVE_FAILED = "Couldn't remove your photo. Please try again.";
 const PROFILE_UPDATE_FAILED = "Couldn't update your profile. Please try again.";
+
+const EMPTY_ABOUT_YOU: AboutYouFormValues = {
+  hometown_district: null,
+  college: null,
+  years_in_us: null,
+  languages: [],
+};
 
 export function EditProfileScreen() {
   const navigation = useNavigation();
@@ -56,12 +66,10 @@ export function EditProfileScreen() {
   const [resolvedMetroId, setResolvedMetroId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [aboutYou, setAboutYou] = useState<AboutYouValues>({
-    hometown_district: user?.hometown_district ?? null,
-    college: user?.college ?? null,
-    years_in_us: user?.years_in_us ?? null,
-    languages: user?.languages ?? [],
-  });
+  // Cleaned to what the controls offer, so a stale stored value can't block every save.
+  const [aboutYou, setAboutYou] = useState<AboutYouFormValues>(() =>
+    user ? getAboutYouFormValues(user) : EMPTY_ABOUT_YOU
+  );
 
   // Photo state
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -285,19 +293,33 @@ export function EditProfileScreen() {
         return;
       }
 
+      // Trims college, maps a blank one to null and refuses a district that
+      // isn't in NEPAL_DISTRICTS. The inputs deliberately don't trim as you type.
+      const parsedAboutYou = extendedProfileUpdateSchema.safeParse(aboutYou);
+      if (!parsedAboutYou.success) {
+        Alert.alert('Error', parsedAboutYou.error.issues[0]?.message ?? 'Check the About You fields');
+        return;
+      }
+      const nextAboutYou: AboutYouFormValues = {
+        hometown_district: parsedAboutYou.data.hometown_district ?? null,
+        college: parsedAboutYou.data.college ?? null,
+        years_in_us: parsedAboutYou.data.years_in_us ?? null,
+        languages: parsedAboutYou.data.languages ?? [],
+      };
+
       const profileResult = await updateUserProfile(supabase, user.id, {
         full_name: parsedFullName,
         // null, not undefined: JSON drops undefined keys, so a cleared phone would never clear.
         phone: phone.trim() || null,
         bio: parsedBio.data,
-        hometown_district: aboutYou.hometown_district,
-        college: aboutYou.college,
-        years_in_us: aboutYou.years_in_us,
-        languages: aboutYou.languages,
+        ...nextAboutYou,
       });
 
       if (profileResult.error) {
         throw profileResult.error;
+      }
+      if (mountedRef.current) {
+        setAboutYou(nextAboutYou);
       }
 
       if (zipCode !== originalZip && resolvedMetroId) {

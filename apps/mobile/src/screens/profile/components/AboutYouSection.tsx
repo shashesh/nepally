@@ -11,19 +11,16 @@ import {
   NEPAL_DISTRICTS,
   SUPPORTED_LANGUAGES,
   LANGUAGE_LABELS,
+  COLLEGE_MAX_LENGTH,
+  YEARS_IN_US_MIN,
+  YEARS_IN_US_MAX,
+  type AboutYouFormValues,
   type LanguageCode,
 } from '@nepally/shared';
 
-export interface AboutYouValues {
-  hometown_district: string | null;
-  college: string | null;
-  years_in_us: number | null;
-  languages: string[];
-}
-
 interface Props {
-  values: AboutYouValues;
-  onChange: (next: AboutYouValues) => void;
+  values: AboutYouFormValues;
+  onChange: (next: AboutYouFormValues) => void;
   disabled?: boolean;
 }
 
@@ -72,7 +69,7 @@ export function AboutYouSection({ values, onChange, disabled }: Props) {
         value={values.college ?? ''}
         editable={!disabled}
         onChangeText={(t) => onChange({ ...values, college: t.length === 0 ? null : t })}
-        maxLength={100}
+        maxLength={COLLEGE_MAX_LENGTH}
       />
 
       <Text style={styles.label}>Years in the US</Text>
@@ -86,7 +83,7 @@ export function AboutYouSection({ values, onChange, disabled }: Props) {
         onChangeText={(t) => {
           if (t.length === 0) return onChange({ ...values, years_in_us: null });
           const n = parseInt(t, 10);
-          if (Number.isFinite(n) && n >= 0 && n <= 99) {
+          if (Number.isFinite(n) && n >= YEARS_IN_US_MIN && n <= YEARS_IN_US_MAX) {
             onChange({ ...values, years_in_us: n });
           }
         }}
