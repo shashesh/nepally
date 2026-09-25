@@ -200,8 +200,7 @@ export async function updateUserProfile(
  * uploadProfilePhoto always upserts the same fixed `<userId>.jpg` path, so
  * if the upload succeeds but the profile write below fails, the file in
  * storage has already been overwritten — there is nothing to roll back.
- * The next successful call simply overwrites it again, same as
- * removeProfilePhoto's best-effort storage cleanup.
+ * The next successful call simply overwrites it again.
  */
 export async function setProfilePhoto(
   supabase: SupabaseClient,
@@ -219,20 +218,24 @@ export async function setProfilePhoto(
 }
 
 /**
- * Clears the member's photo. The column is cleared first, so a storage delete
- * that fails leaves an orphaned file rather than a profile pointing at nothing.
+ * Clears the member's photo. The file is deleted first: the photo is public
+ * at its URL, so a delete that fails must leave the profile as it was, with
+ * the photo still showing and the member able to try again. Clearing the
+ * column first would hide the failure and orphan a public file.
+ *
+ * If the delete succeeds and the column write then fails, the profile points
+ * at a missing file. Uploading a new photo recovers, since it rewrites both.
  */
 export async function removeProfilePhoto(
   supabase: SupabaseClient,
   userId: string
 ): Promise<{ error?: Error }> {
+  const { error: deleteError } = await deleteProfilePhoto(supabase, userId);
+  if (deleteError) return { error: deleteError };
+
   // null, not undefined: JSON drops undefined keys, so the column would never clear.
   const { error } = await updateUserProfile(supabase, userId, { profile_photo: null });
   if (error) return { error };
-
-  // Best-effort: the file is named `<userId>.jpg`, so the next upload
-  // overwrites it even if this delete fails.
-  await deleteProfilePhoto(supabase, userId);
   return {};
 }
 

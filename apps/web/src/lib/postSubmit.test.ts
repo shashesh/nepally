@@ -3,12 +3,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { UploaderPhoto } from '../components/ui';
 import { submitEditedPost, submitNewPost } from './postSubmit';
 
-const { createPost, updatePost, uploadPostPhotos, deletePostPhotos, getPostPhotoPathFromUrl, logClientEvent } =
+const { createPost, updatePost, uploadPostPhotos, cleanUpPostPhotos, getPostPhotoPathFromUrl, logClientEvent } =
   vi.hoisted(() => ({
     createPost: vi.fn(),
     updatePost: vi.fn(),
     uploadPostPhotos: vi.fn(),
-    deletePostPhotos: vi.fn(),
+    cleanUpPostPhotos: vi.fn(),
     getPostPhotoPathFromUrl: vi.fn(),
     logClientEvent: vi.fn(),
   }));
@@ -20,7 +20,7 @@ vi.mock('@nepally/shared', async () => {
     createPost,
     updatePost,
     uploadPostPhotos,
-    deletePostPhotos,
+    cleanUpPostPhotos,
     getPostPhotoPathFromUrl,
     logClientEvent,
     // userMessage logs through shared's own logger import, which this mock
@@ -38,6 +38,11 @@ const CREATE_FAILED = "Couldn't create your post. Please try again.";
 const UPDATE_FAILED = "Couldn't update your post. Please try again.";
 
 const supabase = {} as SupabaseClient;
+
+/** Every path handed to cleanUpPostPhotos, across calls. It may be called with an empty list. */
+function cleanedPaths(): string[] {
+  return cleanUpPostPhotos.mock.calls.flatMap((call) => call[1] as string[]);
+}
 
 function pickedPhoto(name: string): UploaderPhoto {
   return {
@@ -82,7 +87,7 @@ beforeEach(() => {
   createPost.mockResolvedValue({ data: { id: 'post-1' } });
   updatePost.mockResolvedValue({ data: { id: 'post-1' } });
   uploadPostPhotos.mockResolvedValue({ urls: [], paths: [] });
-  deletePostPhotos.mockResolvedValue({});
+  cleanUpPostPhotos.mockResolvedValue(undefined);
   getPostPhotoPathFromUrl.mockImplementation((url: string) => `path/${url}`);
 });
 
@@ -130,7 +135,7 @@ describe('submitNewPost', () => {
 
     const result = await submitNewPost(supabase, { ...NEW_POST, photos: [pickedPhoto('one.png')] });
 
-    expect(deletePostPhotos).toHaveBeenCalledWith(supabase, ['p/one']);
+    expect(cleanUpPostPhotos).toHaveBeenCalledWith(supabase, ['p/one'], expect.objectContaining({ userId: 'user-1' }));
     expect(result).toEqual({ ok: false, message: CREATE_FAILED });
     expect(logClientEvent).toHaveBeenCalledWith(expect.objectContaining({ event: 'post_create_failed', error }));
   });
@@ -174,8 +179,12 @@ describe('submitEditedPost', () => {
       originalPhotoUrls: ['u/kept', 'u/dropped'],
     });
 
-    expect(updatePost).toHaveBeenCalledBefore(deletePostPhotos);
-    expect(deletePostPhotos).toHaveBeenCalledWith(supabase, ['path/u/dropped']);
+    expect(updatePost).toHaveBeenCalledBefore(cleanUpPostPhotos);
+    expect(cleanUpPostPhotos).toHaveBeenCalledWith(
+      supabase,
+      ['path/u/dropped'],
+      expect.objectContaining({ userId: 'user-1', postId: 'post-1' })
+    );
   });
 
   it('keeps a dropped photo when the update fails', async () => {
@@ -188,7 +197,7 @@ describe('submitEditedPost', () => {
       originalPhotoUrls: ['u/kept', 'u/dropped'],
     });
 
-    expect(deletePostPhotos).not.toHaveBeenCalled();
+    expect(cleanedPaths()).toEqual([]);
     expect(result).toEqual({ ok: false, message: UPDATE_FAILED });
     expect(logClientEvent).toHaveBeenCalledWith(expect.objectContaining({ event: 'post_update_failed', error }));
   });
@@ -208,7 +217,7 @@ describe('submitEditedPost', () => {
 
     await submitEditedPost(supabase, { ...EDITED_POST, photos: [pickedPhoto('new.png')] });
 
-    expect(deletePostPhotos).toHaveBeenCalledWith(supabase, ['p/new']);
+    expect(cleanedPaths()).toEqual(['p/new']);
   });
 
   it('ignores a dropped URL that is not a post photo', async () => {
@@ -220,7 +229,7 @@ describe('submitEditedPost', () => {
       originalPhotoUrls: ['https://elsewhere.example.com/a.jpg'],
     });
 
-    expect(deletePostPhotos).not.toHaveBeenCalled();
+    expect(cleanedPaths()).toEqual([]);
   });
 
   it('turns a thrown error into a message the page can show', async () => {

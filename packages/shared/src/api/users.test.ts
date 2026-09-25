@@ -453,67 +453,80 @@ describe('users api', () => {
   });
 
   describe('removeProfilePhoto', () => {
-    it('clears profile_photo on the row, then deletes <userId>.jpg from the avatars bucket', async () => {
+    function buildRemovePhotoClient(options: {
+      removeResult: { data: unknown; error: Error | null };
+      updateError?: Error | null;
+    }) {
+      const calls: string[] = [];
       const query = { update: vi.fn(), eq: vi.fn() };
-      query.update.mockReturnValue(query);
-      query.eq.mockResolvedValue({ error: null });
+      query.update.mockImplementation(() => {
+        calls.push('update');
+        return query;
+      });
+      query.eq.mockResolvedValue({ error: options.updateError ?? null });
       const { rpc } = mockOwnProfileRpc({ id: 'user-1', profile_photo: null });
-      const remove = vi.fn().mockResolvedValue({ data: [], error: null });
+      const remove = vi.fn().mockImplementation(async () => {
+        calls.push('remove');
+        return options.removeResult;
+      });
       const storageFrom = vi.fn().mockReturnValue({ remove });
       const supabase = {
         from: vi.fn().mockReturnValue(query),
         rpc,
         storage: { from: storageFrom },
       } as unknown as SupabaseClient;
+      return { supabase, query, remove, storageFrom, calls };
+    }
+
+    it('deletes <userId>.jpg from the avatars bucket, then clears profile_photo on the row', async () => {
+      const { supabase, query, remove, storageFrom, calls } = buildRemovePhotoClient({
+        removeResult: { data: [{ name: 'user-1.jpg' }], error: null },
+      });
 
       const result = await removeProfilePhoto(supabase, 'user-1');
 
       expect(result.error).toBeUndefined();
-      expect(query.update).toHaveBeenCalledWith(
-        expect.objectContaining({ profile_photo: null })
-      );
       // 'avatars' is AVATARS_BUCKET in storage.ts (not exported).
       expect(storageFrom).toHaveBeenCalledWith('avatars');
       expect(remove).toHaveBeenCalledWith(['user-1.jpg']);
+      expect(query.update).toHaveBeenCalledWith(
+        expect.objectContaining({ profile_photo: null })
+      );
+      expect(calls).toEqual(['remove', 'update']);
     });
 
-    it('does not touch storage when clearing the column fails', async () => {
-      const query = { update: vi.fn(), eq: vi.fn() };
-      query.update.mockReturnValue(query);
-      query.eq.mockResolvedValue({ error: new Error('row-level security') });
-      const { rpc } = mockOwnProfileRpc({ id: 'user-1' });
-      const remove = vi.fn();
-      const storageFrom = vi.fn().mockReturnValue({ remove });
-      const supabase = {
-        from: vi.fn().mockReturnValue(query),
-        rpc,
-        storage: { from: storageFrom },
-      } as unknown as SupabaseClient;
+    it('keeps the photo on the profile and returns the error when the storage delete fails', async () => {
+      const { supabase, query } = buildRemovePhotoClient({
+        removeResult: { data: null, error: new Error('storage unavailable') },
+      });
+
+      const result = await removeProfilePhoto(supabase, 'user-1');
+
+      expect(result.error?.message).toBe('storage unavailable');
+      expect(query.update).not.toHaveBeenCalled();
+    });
+
+    it('returns an error when storage reports success but removed nothing', async () => {
+      // The pre-039 failure: no owner SELECT policy, so remove() quietly skips the file.
+      const { supabase, query } = buildRemovePhotoClient({
+        removeResult: { data: [], error: null },
+      });
+
+      const result = await removeProfilePhoto(supabase, 'user-1');
+
+      expect(result.error).toBeDefined();
+      expect(query.update).not.toHaveBeenCalled();
+    });
+
+    it('returns the error when clearing the column fails after the file is gone', async () => {
+      const { supabase } = buildRemovePhotoClient({
+        removeResult: { data: [{ name: 'user-1.jpg' }], error: null },
+        updateError: new Error('row-level security'),
+      });
 
       const result = await removeProfilePhoto(supabase, 'user-1');
 
       expect(result.error?.message).toBe('row-level security');
-      expect(remove).not.toHaveBeenCalled();
-    });
-
-    it('still succeeds when the storage delete fails, since the next upload overwrites the orphaned file', async () => {
-      const query = { update: vi.fn(), eq: vi.fn() };
-      query.update.mockReturnValue(query);
-      query.eq.mockResolvedValue({ error: null });
-      const { rpc } = mockOwnProfileRpc({ id: 'user-1', profile_photo: null });
-      const remove = vi.fn().mockResolvedValue({ data: null, error: new Error('storage unavailable') });
-      const storageFrom = vi.fn().mockReturnValue({ remove });
-      const supabase = {
-        from: vi.fn().mockReturnValue(query),
-        rpc,
-        storage: { from: storageFrom },
-      } as unknown as SupabaseClient;
-
-      const result = await removeProfilePhoto(supabase, 'user-1');
-
-      expect(result.error).toBeUndefined();
-      // Proves the failure path actually ran, not just that the mock was wired.
-      expect(remove).toHaveBeenCalledWith(['user-1.jpg']);
     });
   });
 

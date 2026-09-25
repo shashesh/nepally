@@ -31,6 +31,7 @@ import {
   getPostById,
   createPost,
   uploadPostPhotos,
+  cleanUpPostPhotos,
 } from '@nepally/shared';
 import type { Tag } from '@nepally/shared';
 import * as ImagePicker from 'expo-image-picker';
@@ -40,7 +41,7 @@ jest.mock('@nepally/shared', () => ({
   getPostById: jest.fn().mockResolvedValue({ data: null }),
   createPost: jest.fn().mockResolvedValue({ data: { id: 'new-post-1' } }),
   updatePost: jest.fn().mockResolvedValue({ data: { id: 'post-1' } }),
-  deletePostPhotos: jest.fn().mockResolvedValue({ error: null }),
+  cleanUpPostPhotos: jest.fn().mockResolvedValue(undefined),
   getPostPhotoPathFromUrl: jest.fn().mockReturnValue(''),
   uploadPostPhotos: jest.fn().mockResolvedValue({ urls: [], paths: [], error: null }),
   MAX_POST_PHOTO_BYTES: 5 * 1024 * 1024,
@@ -81,6 +82,7 @@ const mockGetTags = getTags as jest.MockedFunction<typeof getTags>;
 const mockGetPostById = getPostById as jest.MockedFunction<typeof getPostById>;
 const mockCreatePost = createPost as jest.MockedFunction<typeof createPost>;
 const mockUploadPostPhotos = uploadPostPhotos as jest.MockedFunction<typeof uploadPostPhotos>;
+const mockCleanUpPostPhotos = cleanUpPostPhotos as jest.MockedFunction<typeof cleanUpPostPhotos>;
 const mockRequestMediaLibraryPermissions =
   ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock;
 const mockLaunchImageLibrary = ImagePicker.launchImageLibraryAsync as jest.Mock;
@@ -638,7 +640,8 @@ describe('CreatePostScreen', () => {
   // ─── Photo Upload on Submit ─────────────────────────────────────────
 
   describe('photo upload on submit', () => {
-    it('uploads photos picked after the header submit handler was registered', async () => {
+    /** Fill a valid post, pick one photo, then press the registered header submit. */
+    async function pickPhotoAndSubmit() {
       mockRequestMediaLibraryPermissions.mockResolvedValue({ granted: true });
       mockLaunchImageLibrary.mockResolvedValue({
         canceled: false,
@@ -672,6 +675,10 @@ describe('CreatePostScreen', () => {
       await act(async () => {});
       await act(async () => {});
       await act(async () => {});
+    }
+
+    it('uploads photos picked after the header submit handler was registered', async () => {
+      await pickPhotoAndSubmit();
 
       expect(mockUploadPostPhotos).toHaveBeenCalledWith({}, [
         expect.objectContaining({ mime_type: 'image/jpeg', file_name: 'photo-1.jpg' }),
@@ -679,6 +686,20 @@ describe('CreatePostScreen', () => {
       expect(mockCreatePost).toHaveBeenCalled();
       // Last step of the submit chain, so nothing is left running after the test.
       expect(Alert.alert).toHaveBeenCalledWith('Post Published!', expect.any(String), expect.any(Array));
+    });
+
+    it('cleans up the photos it just uploaded when the post fails', async () => {
+      mockUploadPostPhotos.mockResolvedValueOnce({ urls: ['u/one'], paths: ['user-1/one.jpg'] });
+      mockCreatePost.mockResolvedValueOnce({ error: new Error('new row violates row-level security policy') });
+
+      await pickPhotoAndSubmit();
+
+      expect(mockCleanUpPostPhotos).toHaveBeenCalledWith(
+        {},
+        ['user-1/one.jpg'],
+        expect.objectContaining({ platform: 'mobile' })
+      );
+      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Could not save post. Please try again.');
     });
   });
 

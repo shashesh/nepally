@@ -23,6 +23,36 @@ const AVATARS_BUCKET = 'avatars';
 const EVENT_PHOTOS_BUCKET = 'event-photos';
 
 /**
+ * Remove objects from a bucket, failing unless every one was removed.
+ *
+ * Storage answers a delete it cannot see with success and an empty list, both
+ * for a missing file and for one the caller has no SELECT policy on (the 027
+ * regression that migration 039 fixed). Checking `error` alone reports
+ * success while the file stays public at its URL.
+ */
+async function removeObjects(
+  supabase: SupabaseClient,
+  bucket: string,
+  paths: string[],
+  fallback: string
+): Promise<{ error?: Error }> {
+  if (paths.length === 0) return {};
+
+  try {
+    const { data, error } = await supabase.storage.from(bucket).remove(paths);
+    if (error) throw error;
+
+    const removed = data?.length ?? 0;
+    if (removed < paths.length) {
+      throw new Error(`Removed ${removed} of ${paths.length} files from ${bucket}`);
+    }
+    return {};
+  } catch (error) {
+    return { error: toApiError(error, fallback) };
+  }
+}
+
+/**
  * One photo on its way to storage, as raw bytes.
  *
  * Bytes rather than a `File` because mobile has no `File`: React Native reads
@@ -144,26 +174,13 @@ export async function uploadPostPhotos(
 }
 
 /**
- * Best-effort cleanup for uploaded post photos.
+ * Delete post photos. Returns an error unless every path was removed.
  */
 export async function deletePostPhotos(
   supabase: SupabaseClient,
   paths: string[]
 ): Promise<{ error?: Error }> {
-  if (paths.length === 0) return {};
-
-  try {
-    const { error } = await supabase.storage
-      .from(POST_PHOTOS_BUCKET)
-      .remove(paths);
-
-    if (error) throw error;
-    return {};
-  } catch (error) {
-    return {
-      error: toApiError(error, 'Failed to delete post photos'),
-    };
-  }
+  return removeObjects(supabase, POST_PHOTOS_BUCKET, paths, 'Failed to delete post photos');
 }
 
 /**
@@ -352,47 +369,22 @@ export async function uploadListingPhotos(
 }
 
 /**
- * Best-effort cleanup for uploaded listing photos.
+ * Delete listing photos. Returns an error unless every path was removed.
  */
 export async function deleteListingPhotos(
   supabase: SupabaseClient,
   paths: string[]
 ): Promise<{ error?: Error }> {
-  if (paths.length === 0) return {};
-
-  try {
-    const { error } = await supabase.storage
-      .from(LISTING_PHOTOS_BUCKET)
-      .remove(paths);
-
-    if (error) throw error;
-    return {};
-  } catch (error) {
-    return {
-      error: toApiError(error, 'Failed to delete listing photos'),
-    };
-  }
+  return removeObjects(supabase, LISTING_PHOTOS_BUCKET, paths, 'Failed to delete listing photos');
 }
 
 /**
- * Delete a user's profile photo from Supabase Storage.
+ * Delete a user's profile photo (`<userId>.jpg`) from Supabase Storage.
+ * Returns an error if the file was not removed.
  */
 export async function deleteProfilePhoto(
   supabase: SupabaseClient,
   userId: string
 ): Promise<{ error?: Error }> {
-  try {
-    const fileName = `${userId}.jpg`;
-
-    const { error: deleteError } = await supabase.storage
-      .from(AVATARS_BUCKET)
-      .remove([fileName]);
-
-    if (deleteError) throw deleteError;
-    return {};
-  } catch (error) {
-    return {
-      error: toApiError(error, 'Failed to delete photo'),
-    };
-  }
+  return removeObjects(supabase, AVATARS_BUCKET, [`${userId}.jpg`], 'Failed to delete photo');
 }
