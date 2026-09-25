@@ -163,7 +163,7 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.
-  - Apply to staging, run the `test:security:*` smoke tests there, then apply to prod.
+  - Still to do: apply to prod after `001`–`040` and run the `test:security:*` smoke tests there. The staging tracker row still carries a timestamp version; the W1 reconcile realigns it.
 - [ ] **Code:** SEC-06 hardening backlog:
   - storage bucket `allowed_mime_types` and `file_size_limit` (avatars, post photos, listing photos)
   - a shared-secret header on the `expire-posts` and `expire-promotions` cron functions
