@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_POST_PHOTO_BYTES } from '../constants/postPhotos';
 import { MAX_PHOTOS_PER_POST } from '../constants/tags';
+import { formatMegabytes } from '../utils/bytes';
 import {
   createPostSchema,
   validatePostPhotoCount,
@@ -72,5 +73,12 @@ describe('post validation', () => {
 
     expect(validatePostPhotoCount(MAX_PHOTOS_PER_POST).error).toBeUndefined();
     expect(validatePostPhotoCount(MAX_PHOTOS_PER_POST + 1).error).toBeInstanceOf(Error);
+  });
+
+  it('names the photo size limit in whole megabytes', () => {
+    const { error } = validatePostPhotoFile({ mime_type: 'image/jpeg', size_bytes: MAX_POST_PHOTO_BYTES + 1 });
+
+    expect(error?.message).toBe(`Image must be ${formatMegabytes(MAX_POST_PHOTO_BYTES)} or smaller`);
+    expect(error?.message).toMatch(/^Image must be \d+MB or smaller$/);
   });
 });

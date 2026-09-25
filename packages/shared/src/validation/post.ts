@@ -4,6 +4,7 @@ import {
   MAX_POST_PHOTO_BYTES,
 } from '../constants/postPhotos';
 import { MAX_PHOTOS_PER_POST } from '../constants/tags';
+import { formatMegabytes } from '../utils/bytes';
 
 /**
  * Generic post validation schema (Reddit-style: title + body + tags)
@@ -50,7 +51,7 @@ export const postPhotoFileSchema = z.object({
     .number()
     .int()
     .positive()
-    .max(MAX_POST_PHOTO_BYTES, `Image must be ${Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB or smaller`),
+    .max(MAX_POST_PHOTO_BYTES, `Image must be ${formatMegabytes(MAX_POST_PHOTO_BYTES)} or smaller`),
 });
 
 export type PostPhotoFileInput = z.infer<typeof postPhotoFileSchema>;
