@@ -169,6 +169,70 @@ describe('useNotificationsFeed', () => {
     expect(result.current.unreadCount).toBe(2);
   });
 
+  describe('an INSERT that lands while a load is in flight', () => {
+    async function startSlowLoad() {
+      const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
+      await waitFor(() => expect(result.current.items).toHaveLength(1));
+      const insert = mocks.subscriptions.find((sub) => sub.filter.table === 'notifications');
+      let resolveList!: (value: { data: Notification[] }) => void;
+      let resolveCount!: (value: { count: number }) => void;
+      mocks.getNotifications.mockReturnValueOnce(new Promise((resolve) => { resolveList = resolve; }));
+      mocks.getUnreadNotificationCount.mockReturnValueOnce(new Promise((resolve) => { resolveCount = resolve; }));
+      act(() => announceNotificationsChanged());
+      return { result, insert, resolveList, resolveCount };
+    }
+
+    it('keeps it when the load answers with a snapshot from before it', async () => {
+      const { result, insert, resolveList, resolveCount } = await startSlowLoad();
+      const row = { ...base, id: 'n-2', title: 'New' };
+      act(() => insert?.callback({ new: row }));
+      expect(result.current.unreadCount).toBe(2);
+
+      await act(async () => {
+        resolveCount({ count: 1 });
+        resolveList({ data: [base] });
+      });
+
+      expect(result.current.items.map((item) => item.id)).toEqual(['n-2', 'n-1']);
+      expect(result.current.unreadCount).toBe(2);
+    });
+
+    it('does not bring it back once the member deletes it, nor count it once read', async () => {
+      const { result, insert, resolveList, resolveCount } = await startSlowLoad();
+      const deleted = { ...base, id: 'n-2', title: 'Deleted' };
+      const read = { ...base, id: 'n-3', title: 'Read' };
+      act(() => {
+        insert?.callback({ new: deleted });
+        insert?.callback({ new: read });
+      });
+      await act(() => result.current.remove(deleted));
+      await act(() => result.current.markRead(read));
+
+      await act(async () => {
+        resolveCount({ count: 1 });
+        resolveList({ data: [base] });
+      });
+
+      expect(result.current.items.map((item) => item.id)).toEqual(['n-3', 'n-1']);
+      expect(result.current.items[0].read).toBe(true);
+      expect(result.current.unreadCount).toBe(1);
+    });
+
+    it('counts it once when the load answers with a snapshot that includes it', async () => {
+      const { result, insert, resolveList, resolveCount } = await startSlowLoad();
+      const row = { ...base, id: 'n-2', title: 'New' };
+      act(() => insert?.callback({ new: row }));
+
+      await act(async () => {
+        resolveCount({ count: 2 });
+        resolveList({ data: [row, base] });
+      });
+
+      expect(result.current.items.map((item) => item.id)).toEqual(['n-2', 'n-1']);
+      expect(result.current.unreadCount).toBe(2);
+    });
+  });
+
   it('does not prepend or count a row the first load already shows', async () => {
     const { result } = renderHook(() => useNotificationsFeed({ userId: 'user-1', pollingEnabled: true }));
     await waitFor(() => expect(result.current.items).toHaveLength(1));
