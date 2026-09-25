@@ -289,6 +289,22 @@ describe('NotificationsScreen', () => {
       expect(queryByText('March 8')).toBeNull();
     });
 
+    it('moves Today to Yesterday when the screen stays open past midnight', async () => {
+      jest.setSystemTime(new Date(2026, 2, 9, 23, 59, 30));
+      mockGetNotifications.mockResolvedValue({
+        data: [baseNotification({ id: 'n1', title: 'Evening', sent_at: sentAt(new Date(2026, 2, 9, 20)) })],
+      });
+      const { getByText, queryByText } = await renderAndSettle();
+      expect(getByText('Today')).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+      expect(getByText('Yesterday')).toBeTruthy();
+      expect(queryByText('Today')).toBeNull();
+    });
+
     it('gives last year\'s date its year and its own group', async () => {
       mockGetNotifications.mockResolvedValue({
         data: [

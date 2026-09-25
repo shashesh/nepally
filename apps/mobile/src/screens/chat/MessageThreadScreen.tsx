@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../hooks/useAuth';
+import { useNow } from '../../hooks/useNow';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { ChatInput } from '../../components/chat/ChatInput';
 import { Avatar } from '../../components/Avatar';
@@ -46,6 +47,7 @@ type ThreadNavProp = NativeStackNavigationProp<ChatStackParamList, 'MessageThrea
 
 export default function MessageThreadScreen() {
   const { user } = useAuth();
+  const now = useNow();
   const userId = user?.id;
   const route = useRoute<ThreadRouteProp>();
   const navigation = useNavigation<ThreadNavProp>();
@@ -286,8 +288,8 @@ export default function MessageThreadScreen() {
   );
 
   // A separator before each local calendar day's first message, labelled as web labels it.
+  // `now` ticks, so Today becomes Yesterday on a thread left open past midnight.
   const flatData = useMemo(() => {
-    const now = new Date();
     const items: Array<
       { type: 'date'; data: string } |
       { type: 'message'; data: ChatMessage }
@@ -305,7 +307,7 @@ export default function MessageThreadScreen() {
     }
 
     return items;
-  }, [messages]);
+  }, [messages, now]);
 
   return (
     <SafeAreaView style={styles.container}>

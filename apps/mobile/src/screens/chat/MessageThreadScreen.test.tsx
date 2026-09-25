@@ -151,6 +151,23 @@ describe('MessageThreadScreen avatar menu', () => {
       expect(screen.getByText('Today')).toBeTruthy();
     });
 
+    it('moves Today to Yesterday when the thread stays open past midnight', async () => {
+      jest.setSystemTime(new Date(2026, 2, 9, 23, 59, 30));
+      mockGetMessages.mockResolvedValue({
+        data: [message('m1', 'Monday evening', new Date(2026, 2, 9, 20))],
+      });
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+      expect(screen.getByText('Today')).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+      expect(screen.getByText('Yesterday')).toBeTruthy();
+      expect(screen.queryByText('Today')).toBeNull();
+    });
+
     it('gives last year\'s date its year and its own separator', async () => {
       mockGetMessages.mockResolvedValue({
         data: [

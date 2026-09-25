@@ -26,6 +26,7 @@ import {
 } from '@nepally/shared';
 import type { Notification } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
+import { useNow } from '../../hooks/useNow';
 import type { HomeStackParamList } from '../../types/navigation';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -63,6 +64,7 @@ type ParentNavigator = {
 export function NotificationsScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
+  const now = useNow();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,8 +197,8 @@ export function NotificationsScreen() {
   }, [user]);
 
   // Emergency alerts first, then one section per local calendar day, headed as web heads it.
+  // `now` ticks, so Today becomes Yesterday on a screen left open past midnight.
   const sections: SectionData[] = useMemo(() => {
-    const now = new Date();
     return groupNotifications(notifications).map((group) => ({
       title:
         group.kind === 'emergency'
@@ -204,7 +206,7 @@ export function NotificationsScreen() {
           : formatDayLabel(new Date(group.timestamp), now),
       data: group.notifications,
     }));
-  }, [notifications]);
+  }, [notifications, now]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
