@@ -309,6 +309,33 @@ test.describe('Event detail page', () => {
     await expect(page.getByText(/12 people going/)).toBeVisible({ timeout: 10_000 });
   });
 
+  test('reopening the attendees dialog reloads the list', async ({ page }) => {
+    const attendee = (id: string, userId: string, fullName: string) => ({
+      id,
+      event_id: 'event-e2e-001',
+      user_id: userId,
+      status: 'going',
+      created_at: '2026-09-20T10:00:00Z',
+      user: { id: userId, full_name: fullName, trust_level: 1, profile_photo: null },
+    });
+    // The route answers from this array, so pushing to it changes the next answer.
+    const attendees = [attendee('rsvp-1', 'user-asha', 'Asha Kumar')];
+    await mockEventsEndpoints(page, { eventDetail: MOCK_EVENTS[0], attendees });
+    await page.goto('/events/event-e2e-001');
+
+    await page.getByRole('button', { name: /12 people going/ }).click({ timeout: 10_000 });
+    const dialog = page.getByRole('dialog', { name: 'People going' });
+    await expect(dialog.getByText('Asha K.')).toBeVisible();
+    await expect(dialog.getByText('Ram T.')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+
+    attendees.push(attendee('rsvp-2', 'user-ram', 'Ram Thapa'));
+    await page.getByRole('button', { name: /12 people going/ }).click();
+    await expect(dialog.getByText('Ram T.')).toBeVisible();
+    await expect(dialog.getByText('Asha K.')).toBeVisible();
+  });
+
   test('shows breadcrumb back to Events', async ({ page }) => {
     await page.goto('/events/event-e2e-001');
     await expect(page.getByRole('main').getByRole('link', { name: 'Events' })).toBeVisible({ timeout: 10_000 });
