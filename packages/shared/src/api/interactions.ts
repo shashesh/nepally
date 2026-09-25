@@ -3,6 +3,7 @@
  * All Supabase query logic — accepts SupabaseClient via dependency injection
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { PostComment } from '../types/post';
 
 // ─── Likes API ──────────────────────────────────────────
@@ -26,7 +27,7 @@ export async function likePost(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to like post'),
+      error: toApiError(error, 'Failed to like post'),
     };
   }
 }
@@ -52,7 +53,7 @@ export async function unlikePost(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to unlike post'),
+      error: toApiError(error, 'Failed to unlike post'),
     };
   }
 }
@@ -74,7 +75,7 @@ export async function getUserLikedPostIds(
     return { data: (data || []).map((row) => row.post_id) };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch liked posts'),
+      error: toApiError(error, 'Failed to fetch liked posts'),
     };
   }
 }
@@ -100,7 +101,7 @@ export async function savePost(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to save post'),
+      error: toApiError(error, 'Failed to save post'),
     };
   }
 }
@@ -126,7 +127,7 @@ export async function unsavePost(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to unsave post'),
+      error: toApiError(error, 'Failed to unsave post'),
     };
   }
 }
@@ -148,7 +149,7 @@ export async function getUserSavedPostIds(
     return { data: (data || []).map((row) => row.post_id) };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch saved posts'),
+      error: toApiError(error, 'Failed to fetch saved posts'),
     };
   }
 }
@@ -182,7 +183,7 @@ export async function getPostComments(
     return { data: (data || []) as PostComment[] };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch comments'),
+      error: toApiError(error, 'Failed to fetch comments'),
     };
   }
 }
@@ -223,7 +224,7 @@ export async function createComment(
     return { data: data as PostComment };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to create comment'),
+      error: toApiError(error, 'Failed to create comment'),
     };
   }
 }
@@ -251,7 +252,7 @@ export async function deleteComment(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to delete comment'),
+      error: toApiError(error, 'Failed to delete comment'),
     };
   }
 }

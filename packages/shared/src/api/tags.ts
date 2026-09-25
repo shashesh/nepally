@@ -3,6 +3,7 @@
  * All Supabase query logic for the `tags` table — accepts SupabaseClient via DI
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { Tag, TagsResult } from '../types/post';
 
 /**
@@ -20,7 +21,7 @@ export async function getTags(supabase: SupabaseClient): Promise<TagsResult> {
     return { data: (data || []) as Tag[] };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch tags'),
+      error: toApiError(error, 'Failed to fetch tags'),
     };
   }
 }
@@ -45,7 +46,7 @@ export async function getTagBySlug(
     return { data: data as Tag };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch tag'),
+      error: toApiError(error, 'Failed to fetch tag'),
     };
   }
 }

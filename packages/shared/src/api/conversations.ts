@@ -3,6 +3,7 @@
  * All Supabase query logic — accepts SupabaseClient via dependency injection
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { ConversationWithParticipant } from '../types/chat';
 
 /**
@@ -119,9 +120,7 @@ export async function getConversations(
     return { data: result };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to fetch conversations'),
+      error: toApiError(error, 'Failed to fetch conversations'),
     };
   }
 }
@@ -195,9 +194,7 @@ export async function getOrCreateConversation(
     return { data: { conversationId: newConv.id } };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to create conversation'),
+      error: toApiError(error, 'Failed to create conversation'),
     };
   }
 }
@@ -219,9 +216,7 @@ export async function blockUser(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to block user'),
+      error: toApiError(error, 'Failed to block user'),
     };
   }
 }
@@ -248,9 +243,7 @@ export async function isBlocked(
   } catch (error) {
     return {
       blocked: false,
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to check block status'),
+      error: toApiError(error, 'Failed to check block status'),
     };
   }
 }

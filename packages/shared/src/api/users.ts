@@ -11,6 +11,7 @@
  * `.select()` on users fails with "permission denied".
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { PublicUser, User } from '../types/user';
 import { PUBLIC_USER_COLUMNS } from '../constants/users';
 import { deleteProfilePhoto, uploadProfilePhoto } from './storage';
@@ -87,9 +88,7 @@ export async function getUserById(
     return { data: data as unknown as PublicUser };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to fetch user'),
+      error: toApiError(error, 'Failed to fetch user'),
     };
   }
 }
@@ -111,9 +110,7 @@ export async function getMyProfile(
     return { data: data ?? undefined };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to fetch profile'),
+      error: toApiError(error, 'Failed to fetch profile'),
     };
   }
 }
@@ -146,9 +143,7 @@ export async function updateUserLocation(
     return { data };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to update user location'),
+      error: toApiError(error, 'Failed to update user location'),
     };
   }
 }
@@ -191,9 +186,7 @@ export async function updateUserProfile(
     return { data };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to update profile'),
+      error: toApiError(error, 'Failed to update profile'),
     };
   }
 }
@@ -265,9 +258,7 @@ export async function markUserVerified(
     return { data: row as User };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to mark user verified'),
+      error: toApiError(error, 'Failed to mark user verified'),
     };
   }
 }
@@ -300,9 +291,7 @@ export async function resendVerificationEmail(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to resend verification email'),
+      error: toApiError(error, 'Failed to resend verification email'),
     };
   }
 }
@@ -348,9 +337,7 @@ export async function createUserProfile(
     return { data };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to create profile'),
+      error: toApiError(error, 'Failed to create profile'),
     };
   }
 }

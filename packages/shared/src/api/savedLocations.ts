@@ -3,6 +3,7 @@
  * All Supabase query logic — accepts SupabaseClient via dependency injection
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { SavedLocation } from '../types/location';
 
 interface SavedLocationResult {
@@ -17,11 +18,10 @@ interface SavedLocationsResult {
 
 /** Convert a Supabase/PostgREST error (plain object) to a proper Error */
 function toError(err: unknown, fallback: string): Error {
-  if (err instanceof Error) return err;
   if (err && typeof err === 'object' && 'message' in err) {
-    return new Error(String((err as { message: string }).message));
+    return toApiError(err, String((err as { message: unknown }).message));
   }
-  return new Error(fallback);
+  return toApiError(err, fallback);
 }
 
 /** Standard select clause for saved locations with joined metro data */

@@ -3,6 +3,7 @@
  * All functions accept SupabaseClient via dependency injection.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { UserFollow } from '../types/follow';
 
 interface FollowResult {
@@ -40,11 +41,10 @@ function clampLimit(limit: number | undefined): number {
 }
 
 function toError(raw: unknown, fallback: string): Error {
-  if (raw instanceof Error) return raw;
   if (raw && typeof raw === 'object' && 'message' in raw) {
-    return new Error(String((raw as { message: unknown }).message));
+    return toApiError(raw, String((raw as { message: unknown }).message));
   }
-  return new Error(fallback);
+  return toApiError(raw, fallback);
 }
 
 /**

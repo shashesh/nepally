@@ -3,6 +3,7 @@
  * packages/shared/src/logic/followSuggestions.ts for ranking.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { SuggestionCandidate } from '../logic/followSuggestions';
 
 const CANDIDATE_LIMIT = 50;
@@ -13,11 +14,10 @@ interface Result {
 }
 
 function toError(raw: unknown, fallback: string): Error {
-  if (raw instanceof Error) return raw;
   if (raw && typeof raw === 'object' && 'message' in raw) {
-    return new Error(String((raw as { message: unknown }).message));
+    return toApiError(raw, String((raw as { message: unknown }).message));
   }
-  return new Error(fallback);
+  return toApiError(raw, fallback);
 }
 
 interface UserRow {

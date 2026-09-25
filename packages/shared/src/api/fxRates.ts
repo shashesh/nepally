@@ -7,6 +7,7 @@
  * is returned so the UI never shows a blank card.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 
 const FX_SOURCE_URL = 'https://open.er-api.com/v6/latest/USD';
 const FX_SOURCE_NAME = 'open.er-api.com';
@@ -26,11 +27,10 @@ interface Result {
 type Fetcher = (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
 function toError(raw: unknown, fallback: string): Error {
-  if (raw instanceof Error) return raw;
   if (raw && typeof raw === 'object' && 'message' in raw) {
-    return new Error(String((raw as { message: unknown }).message));
+    return toApiError(raw, String((raw as { message: unknown }).message));
   }
-  return new Error(fallback);
+  return toApiError(raw, fallback);
 }
 
 interface CacheRow {

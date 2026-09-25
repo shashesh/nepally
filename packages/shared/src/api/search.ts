@@ -7,6 +7,7 @@
  * rank order. Rows RLS hides from the viewer simply drop out.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import { SEARCH_SUGGESTION_LIMITS } from '../constants/search';
 import type { MarketplaceListing } from '../types/marketplace';
 import type { Post } from '../types/post';
@@ -35,9 +36,8 @@ function emptyPage<T>(): SearchPage<T> {
 }
 
 function toError(error: unknown, fallback: string): Error {
-  if (error instanceof Error) return error;
   const message = (error as { message?: unknown } | null)?.message;
-  return new Error(typeof message === 'string' ? message : fallback);
+  return toApiError(error, typeof message === 'string' ? message : fallback);
 }
 
 function inRankOrder<T extends { id: string }>(rows: T[], ids: string[]): T[] {

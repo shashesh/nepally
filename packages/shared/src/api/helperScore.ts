@@ -3,6 +3,7 @@
  * See docs/specs/2026-04-20-your-community-today-design.md §4.3
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 
 export interface HelperScore {
   userId: string;
@@ -36,11 +37,10 @@ export const HELPER_SCORE_VISIBILITY_THRESHOLD = 10;
 const TOP_HELPER_FETCH_LIMIT = 5;
 
 function toError(raw: unknown, fallback: string): Error {
-  if (raw instanceof Error) return raw;
   if (raw && typeof raw === 'object' && 'message' in raw) {
-    return new Error(String((raw as { message: unknown }).message));
+    return toApiError(raw, String((raw as { message: unknown }).message));
   }
-  return new Error(fallback);
+  return toApiError(raw, fallback);
 }
 
 interface ScoreRow {
