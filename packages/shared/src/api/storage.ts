@@ -4,14 +4,8 @@
  */
 import { SupabaseClient } from '@supabase/supabase-js';
 import { toApiError } from '../utils/apiError';
-import {
-  ALLOWED_POST_PHOTO_EXTENSIONS,
-  POST_PHOTOS_BUCKET,
-} from '../constants/postPhotos';
-import {
-  validatePostPhotoCount,
-  validatePostPhotoFile,
-} from '../validation/post';
+import { ALLOWED_POST_PHOTO_EXTENSIONS, POST_PHOTOS_BUCKET } from '../constants/postPhotos';
+import { validatePostPhotoCount, validatePostPhotoFile } from '../validation/post';
 import {
   ALLOWED_LISTING_PHOTO_MIME_TYPES,
   LISTING_PHOTOS_BUCKET,
@@ -23,32 +17,51 @@ const AVATARS_BUCKET = 'avatars';
 const EVENT_PHOTOS_BUCKET = 'event-photos';
 
 /**
+ * What a delete reports: `error` unless every path was removed, and with it
+ * `notRemoved`, the paths that may still be in the bucket.
+ */
+export interface DeleteResult {
+  error?: Error;
+  notRemoved?: string[];
+}
+
+/**
  * Remove objects from a bucket, failing unless every one was removed.
  *
  * Storage answers a delete it cannot see with success and an empty list, both
  * for a missing file and for one the caller has no SELECT policy on (the 027
  * regression that migration 039 fixed). Checking `error` alone reports
  * success while the file stays public at its URL.
+ *
+ * `remove()` returns one row per deleted object, named by its full path, so
+ * the paths missing from it are the ones still there. When storage itself
+ * errors, none is known to be gone, so every path is reported.
  */
 async function removeObjects(
   supabase: SupabaseClient,
   bucket: string,
   paths: string[],
   fallback: string
-): Promise<{ error?: Error }> {
+): Promise<DeleteResult> {
   if (paths.length === 0) return {};
 
   try {
     const { data, error } = await supabase.storage.from(bucket).remove(paths);
     if (error) throw error;
 
-    const removed = data?.length ?? 0;
-    if (removed < paths.length) {
-      throw new Error(`Removed ${removed} of ${paths.length} files from ${bucket}`);
+    const removed = new Set((data ?? []).map((object) => object.name));
+    const notRemoved = paths.filter((path) => !removed.has(path));
+    if (notRemoved.length > 0) {
+      return {
+        error: new Error(
+          `Removed ${paths.length - notRemoved.length} of ${paths.length} files from ${bucket}`
+        ),
+        notRemoved,
+      };
     }
     return {};
   } catch (error) {
-    return { error: toApiError(error, fallback) };
+    return { error: toApiError(error, fallback), notRemoved: paths };
   }
 }
 
@@ -112,7 +125,11 @@ export async function uploadPostPhoto(
     if (validation.error) return { error: validation.error };
 
     const extension = getExtensionFromMimeType(input.mime_type);
-    if (!ALLOWED_POST_PHOTO_EXTENSIONS.includes(extension as (typeof ALLOWED_POST_PHOTO_EXTENSIONS)[number])) {
+    if (
+      !ALLOWED_POST_PHOTO_EXTENSIONS.includes(
+        extension as (typeof ALLOWED_POST_PHOTO_EXTENSIONS)[number]
+      )
+    ) {
       return { error: new Error('Unsupported image extension') };
     }
 
@@ -131,9 +148,7 @@ export async function uploadPostPhoto(
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from(POST_PHOTOS_BUCKET)
-      .getPublicUrl(filePath);
+    const { data: urlData } = supabase.storage.from(POST_PHOTOS_BUCKET).getPublicUrl(filePath);
 
     return {
       url: urlData.publicUrl,
@@ -174,12 +189,13 @@ export async function uploadPostPhotos(
 }
 
 /**
- * Delete post photos. Returns an error unless every path was removed.
+ * Delete post photos. Returns an error, and the paths still in the bucket,
+ * unless every path was removed.
  */
 export async function deletePostPhotos(
   supabase: SupabaseClient,
   paths: string[]
-): Promise<{ error?: Error }> {
+): Promise<DeleteResult> {
   return removeObjects(supabase, POST_PHOTOS_BUCKET, paths, 'Failed to delete post photos');
 }
 
@@ -230,9 +246,7 @@ export async function uploadProfilePhoto(
     if (uploadError) throw uploadError;
 
     // Get public URL
-    const { data: urlData } = supabase.storage
-      .from(AVATARS_BUCKET)
-      .getPublicUrl(fileName);
+    const { data: urlData } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(fileName);
 
     // Append cache-buster to force reload after update
     const url = `${urlData.publicUrl}?t=${Date.now()}`;
@@ -269,7 +283,9 @@ export async function uploadEventPhoto(
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 10);
     const baseName = input.file_name
-      ? sanitizeFileName(input.file_name).replace(/\.[a-zA-Z0-9]+$/, '').slice(0, 40)
+      ? sanitizeFileName(input.file_name)
+          .replace(/\.[a-zA-Z0-9]+$/, '')
+          .slice(0, 40)
       : 'event';
     const filePath = `${input.user_id}/${timestamp}-${random}-${baseName}.${extension}`;
 
@@ -282,9 +298,7 @@ export async function uploadEventPhoto(
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from(EVENT_PHOTOS_BUCKET)
-      .getPublicUrl(filePath);
+    const { data: urlData } = supabase.storage.from(EVENT_PHOTOS_BUCKET).getPublicUrl(filePath);
 
     return { url: urlData.publicUrl, path: filePath };
   } catch (error) {
@@ -317,7 +331,9 @@ export async function uploadListingPhoto(
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 10);
     const baseName = input.file_name
-      ? sanitizeFileName(input.file_name).replace(/\.[a-zA-Z0-9]+$/, '').slice(0, 40)
+      ? sanitizeFileName(input.file_name)
+          .replace(/\.[a-zA-Z0-9]+$/, '')
+          .slice(0, 40)
       : 'listing';
     const filePath = `${input.user_id}/${timestamp}-${random}-${baseName}.${extension}`;
 
@@ -330,9 +346,7 @@ export async function uploadListingPhoto(
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from(LISTING_PHOTOS_BUCKET)
-      .getPublicUrl(filePath);
+    const { data: urlData } = supabase.storage.from(LISTING_PHOTOS_BUCKET).getPublicUrl(filePath);
 
     return { url: urlData.publicUrl, path: filePath };
   } catch (error) {
@@ -369,12 +383,13 @@ export async function uploadListingPhotos(
 }
 
 /**
- * Delete listing photos. Returns an error unless every path was removed.
+ * Delete listing photos. Returns an error, and the paths still in the bucket,
+ * unless every path was removed.
  */
 export async function deleteListingPhotos(
   supabase: SupabaseClient,
   paths: string[]
-): Promise<{ error?: Error }> {
+): Promise<DeleteResult> {
   return removeObjects(supabase, LISTING_PHOTOS_BUCKET, paths, 'Failed to delete listing photos');
 }
 
@@ -385,6 +400,6 @@ export async function deleteListingPhotos(
 export async function deleteProfilePhoto(
   supabase: SupabaseClient,
   userId: string
-): Promise<{ error?: Error }> {
+): Promise<DeleteResult> {
   return removeObjects(supabase, AVATARS_BUCKET, [`${userId}.jpg`], 'Failed to delete photo');
 }

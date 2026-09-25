@@ -12,14 +12,20 @@ import {
 const ONE_MB = 1024 * 1024;
 const TWO_MB = 2 * ONE_MB;
 
-function buildMockStorageClient(overrides: {
-  upload?: ReturnType<typeof vi.fn>;
-  getPublicUrl?: ReturnType<typeof vi.fn>;
-} = {}) {
+function buildMockStorageClient(
+  overrides: {
+    upload?: ReturnType<typeof vi.fn>;
+    getPublicUrl?: ReturnType<typeof vi.fn>;
+  } = {}
+) {
   const upload = overrides.upload ?? vi.fn().mockResolvedValue({ error: null });
   const getPublicUrl =
     overrides.getPublicUrl ??
-    vi.fn().mockReturnValue({ data: { publicUrl: 'https://cdn.example.com/event-photos/path/file.jpg' } });
+    vi
+      .fn()
+      .mockReturnValue({
+        data: { publicUrl: 'https://cdn.example.com/event-photos/path/file.jpg' },
+      });
 
   const storageBucket = { upload, getPublicUrl };
   const storage = { from: vi.fn().mockReturnValue(storageBucket) };
@@ -281,8 +287,18 @@ describe('uploadListingPhotos', () => {
     const { supabase } = buildMockStorageClient();
 
     const photos = [
-      { user_id: 'user-1', file_data: new Uint8Array(100), mime_type: 'image/jpeg', size_bytes: 100 },
-      { user_id: 'user-1', file_data: new Uint8Array(200), mime_type: 'image/png', size_bytes: 200 },
+      {
+        user_id: 'user-1',
+        file_data: new Uint8Array(100),
+        mime_type: 'image/jpeg',
+        size_bytes: 100,
+      },
+      {
+        user_id: 'user-1',
+        file_data: new Uint8Array(200),
+        mime_type: 'image/png',
+        size_bytes: 200,
+      },
     ];
 
     const result = await uploadListingPhotos(supabase, photos);
@@ -309,15 +325,26 @@ describe('uploadListingPhotos', () => {
   });
 
   it('stops and returns error if any single upload fails', async () => {
-    const uploadFn = vi.fn()
+    const uploadFn = vi
+      .fn()
       .mockResolvedValueOnce({ error: null })
       .mockResolvedValueOnce({ error: new Error('Upload failed') });
 
     const { supabase } = buildMockStorageClient({ upload: uploadFn });
 
     const photos = [
-      { user_id: 'user-1', file_data: new Uint8Array(100), mime_type: 'image/jpeg', size_bytes: 100 },
-      { user_id: 'user-1', file_data: new Uint8Array(100), mime_type: 'image/jpeg', size_bytes: 100 },
+      {
+        user_id: 'user-1',
+        file_data: new Uint8Array(100),
+        mime_type: 'image/jpeg',
+        size_bytes: 100,
+      },
+      {
+        user_id: 'user-1',
+        file_data: new Uint8Array(100),
+        mime_type: 'image/jpeg',
+        size_bytes: 100,
+      },
     ];
 
     const result = await uploadListingPhotos(supabase, photos);
@@ -340,7 +367,10 @@ function removedRows(paths: string[]) {
 describe('deletePostPhotos', () => {
   it('returns success when every path is removed', async () => {
     const paths = ['user-1/a.jpg', 'user-1/b.jpg'];
-    const { supabase, remove, from } = buildMockRemoveClient({ data: removedRows(paths), error: null });
+    const { supabase, remove, from } = buildMockRemoveClient({
+      data: removedRows(paths),
+      error: null,
+    });
 
     const result = await deletePostPhotos(supabase, paths);
 
@@ -365,11 +395,45 @@ describe('deletePostPhotos', () => {
 
     expect(result.error).toBeDefined();
   });
+
+  it('names only the paths storage did not remove', async () => {
+    const { supabase } = buildMockRemoveClient({
+      data: removedRows(['user-1/a.jpg']),
+      error: null,
+    });
+
+    const result = await deletePostPhotos(supabase, ['user-1/a.jpg', 'user-1/b.jpg']);
+
+    expect(result.notRemoved).toEqual(['user-1/b.jpg']);
+  });
+
+  it('names every path when storage itself fails, since none is known to be gone', async () => {
+    const { supabase } = buildMockRemoveClient({
+      data: null,
+      error: new Error('storage unavailable'),
+    });
+
+    const result = await deletePostPhotos(supabase, ['user-1/a.jpg', 'user-1/b.jpg']);
+
+    expect(result.notRemoved).toEqual(['user-1/a.jpg', 'user-1/b.jpg']);
+  });
+
+  it('names nothing when every path is removed', async () => {
+    const paths = ['user-1/a.jpg'];
+    const { supabase } = buildMockRemoveClient({ data: removedRows(paths), error: null });
+
+    const result = await deletePostPhotos(supabase, paths);
+
+    expect(result.notRemoved).toBeUndefined();
+  });
 });
 
 describe('deleteProfilePhoto', () => {
   it('removes <userId>.jpg from the avatars bucket', async () => {
-    const { supabase, remove, from } = buildMockRemoveClient({ data: removedRows(['user-1.jpg']), error: null });
+    const { supabase, remove, from } = buildMockRemoveClient({
+      data: removedRows(['user-1.jpg']),
+      error: null,
+    });
 
     const result = await deleteProfilePhoto(supabase, 'user-1');
 
@@ -397,7 +461,9 @@ describe('deleteListingPhotos', () => {
   });
 
   it('returns success when paths are deleted', async () => {
-    const removeFn = vi.fn().mockResolvedValue({ data: removedRows(['path/a.jpg', 'path/b.jpg']), error: null });
+    const removeFn = vi
+      .fn()
+      .mockResolvedValue({ data: removedRows(['path/a.jpg', 'path/b.jpg']), error: null });
     const storageBucket = { remove: removeFn };
     const storage = { from: vi.fn().mockReturnValue(storageBucket) };
     const supabase = { storage } as unknown as SupabaseClient;

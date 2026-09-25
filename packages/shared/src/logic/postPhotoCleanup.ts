@@ -8,7 +8,7 @@ import { logClientEvent } from '../utils/clientLogger';
  *
  * The post write has already decided what the member sees, so a failure here
  * doesn't change it. But a file left behind stays public at its URL, so the
- * failure is logged with the paths rather than dropped.
+ * failure is logged with the paths still in storage rather than dropped.
  */
 export async function cleanUpPostPhotos(
   supabase: SupabaseClient,
@@ -17,8 +17,12 @@ export async function cleanUpPostPhotos(
 ): Promise<void> {
   if (paths.length === 0) return;
 
-  const { error } = await deletePostPhotos(supabase, paths);
+  const { error, notRemoved } = await deletePostPhotos(supabase, paths);
   if (error) {
-    logClientEvent({ event: 'post_photos_cleanup_failed', error, context: { ...context, paths } });
+    logClientEvent({
+      event: 'post_photos_cleanup_failed',
+      error,
+      context: { ...context, paths: notRemoved ?? paths },
+    });
   }
 }

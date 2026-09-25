@@ -9,7 +9,9 @@ import { cleanUpPostPhotos } from './postPhotoCleanup';
 
 function buildClient(result: { data: unknown; error: Error | null }) {
   const remove = vi.fn().mockResolvedValue(result);
-  const supabase = { storage: { from: vi.fn().mockReturnValue({ remove }) } } as unknown as SupabaseClient;
+  const supabase = {
+    storage: { from: vi.fn().mockReturnValue({ remove }) },
+  } as unknown as SupabaseClient;
   return { supabase, remove };
 }
 
@@ -22,7 +24,10 @@ describe('cleanUpPostPhotos', () => {
 
   it('deletes the paths and logs nothing when every file is removed', async () => {
     const paths = ['user-1/a.jpg', 'user-1/b.jpg'];
-    const { supabase, remove } = buildClient({ data: paths.map((name) => ({ name })), error: null });
+    const { supabase, remove } = buildClient({
+      data: paths.map((name) => ({ name })),
+      error: null,
+    });
 
     await cleanUpPostPhotos(supabase, paths, CONTEXT);
 
@@ -50,6 +55,16 @@ describe('cleanUpPostPhotos', () => {
       error: expect.objectContaining({ message: 'Removed 0 of 1 files from post-photos' }),
       context: { ...CONTEXT, paths: ['user-1/a.jpg'] },
     });
+  });
+
+  it('logs only the paths still in storage after a partial delete', async () => {
+    const { supabase } = buildClient({ data: [{ name: 'user-1/a.jpg' }], error: null });
+
+    await cleanUpPostPhotos(supabase, ['user-1/a.jpg', 'user-1/b.jpg'], CONTEXT);
+
+    expect(mocks.logClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ context: { ...CONTEXT, paths: ['user-1/b.jpg'] } })
+    );
   });
 
   it('logs when storage returns an error', async () => {
