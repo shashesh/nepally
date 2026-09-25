@@ -2,14 +2,15 @@
  * Live smoke test: a member counts at most once in a listing's views and
  * contacts.
  *
- * Verifies migration 042 (dedupe_listing_counters) against a real Supabase
- * project:
+ * Verifies migrations 042 (dedupe_listing_counters) and 043
+ * (lock_listing_before_counting) against a real Supabase project:
  *   1. Repeat views by one member on one day add 1 to views_count, even
  *      when the calls arrive at once.
  *   2. The same member counts again on a later day.
  *   3. Repeat contacts by one member add 1 to contacts_count, ever.
  *   4. The owner's own views and contacts never count.
- *   5. Members cannot read or write listing_views / listing_contacts.
+ *   5. An inactive listing counts nothing and records no contact.
+ *   6. Members cannot read or write listing_views / listing_contacts.
  *
  * Run: npm run test:security:listing-counters
  * Env: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
@@ -218,7 +219,44 @@ async function main() {
       `The owner's own views and contacts should not count, got ${JSON.stringify(afterOwner)}`
     );
 
-    // 5. The dedupe tables are internal.
+    // 5. An inactive listing counts nothing and records no one. Clear the
+    // member's markers first, so each call would count if the listing were active.
+    const deactivate = await service
+      .from('marketplace_listings')
+      .update({ status: 'inactive' })
+      .eq('id', listingId);
+    assertCondition(!deactivate.error, `Deactivating should succeed: ${deactivate.error?.message}`);
+    const rewind = await service
+      .from('listing_views')
+      .update({ last_counted_on: '2000-01-01' })
+      .eq('listing_id', listingId)
+      .eq('viewer_id', member.id);
+    const forget = await service
+      .from('listing_contacts')
+      .delete()
+      .eq('listing_id', listingId)
+      .eq('contacter_id', member.id);
+    assertCondition(
+      !rewind.error && !forget.error,
+      `Clearing the markers should succeed: ${rewind.error?.message ?? forget.error?.message}`
+    );
+    await call(memberClient, 'increment_listing_views', listingId, 2);
+    await call(memberClient, 'increment_listing_contacts', listingId, 2);
+    const afterInactive = await readCounts(service, listingId);
+    assertCondition(
+      afterInactive.views_count === 2 && afterInactive.contacts_count === 1,
+      `An inactive listing should not count, got ${JSON.stringify(afterInactive)}`
+    );
+    const { data: markers, error: markersError } = await service
+      .from('listing_contacts')
+      .select('contacter_id')
+      .eq('listing_id', listingId);
+    assertCondition(
+      !markersError && markers?.length === 0,
+      `An inactive listing should record no contact, got ${markersError?.message ?? markers?.length}`
+    );
+
+    // 6. The dedupe tables are internal.
     for (const table of ['listing_views', 'listing_contacts']) {
       const read = await memberClient.from(table).select('*').limit(1);
       assertCondition(
