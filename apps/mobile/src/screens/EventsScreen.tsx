@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,21 +12,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
-  getEventsByMetro,
-  getUserEventResponses,
-  setEventResponse,
-  removeEventResponse,
-  applyEventResponseChange,
-  isEventPast,
   EVENT_TYPE_LABELS,
   TrustLevel,
   type Event,
   type EventType,
-  type RsvpStatus,
-  type UserEventResponses,
 } from '@nepally/shared';
 import { useAuth } from '../hooks/useAuth';
-import { supabase } from '../config/supabase';
+import { useMetroEventPages } from '../hooks/useMetroEventPages';
 import { EventCard } from '../components/events/EventCard';
 import { EventFilterBar, type EventFilterBarValue } from '../components/events/EventFilterBar';
 import { colors } from '../styles/colors';
@@ -37,188 +29,38 @@ import type { EventsStackParamList } from '../types/navigation';
 type Nav = NativeStackNavigationProp<EventsStackParamList>;
 
 const DEFAULT_FILTERS: EventFilterBarValue = { type: 'all', query: '' };
-const EVENTS_PAGE_SIZE = 20;
 
 export default function EventsScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
 
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<EventFilterBarValue>(DEFAULT_FILTERS);
   const [level0DismissedBanner, setLevel0DismissedBanner] = useState(false);
-  const [userResponses, setUserResponses] = useState<UserEventResponses>({});
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  // Bumped by pull-to-refresh and Retry to re-run the first-page fetch effect.
-  const [reloadKey, setReloadKey] = useState(0);
-  const loadingMoreRef = useRef(false);
 
-  const userId = user?.id;
+  const userId = user?.id ?? null;
   const metroId = user?.metro_area_id ?? '';
-  // Without a metro there is nothing to fetch, so the screen is never "loading".
-  const isLoading = metroId !== '' && loading;
   const isLevel0 = (user?.trust_level ?? 0) < TrustLevel.VERIFIED;
   const canCreate = !isLevel0;
   const canInteract = !isLevel0;
-  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  // Upcoming soonest first, then past newest first, paged like web (decision 9).
+  const feed = useMetroEventPages(metroId, userId);
+  const userResponses = feed.responses;
+  const handleResponseChange = feed.respond;
 
-  useEffect(() => {
-    if (!metroId) return;
-    let cancelled = false;
-    getEventsByMetro(supabase, metroId, EVENTS_PAGE_SIZE, 0).then((result) => {
-      if (cancelled) return;
-      if (result.error) {
-        setError(result.error.message);
-        setHasMore(false);
-      } else {
-        setError(null);
-        setEvents(result.data ?? []);
-        setHasMore(Boolean(result.hasMore));
-      }
-      setLoading(false);
-      setRefreshing(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [metroId, reloadKey]);
-
-  const loadMoreEvents = useCallback(async () => {
-    if (loadingMoreRef.current) return;
-    if (!metroId || !hasMore || isLoading || refreshing) return;
-
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    try {
-      const result = await getEventsByMetro(
-        supabase,
-        metroId,
-        EVENTS_PAGE_SIZE,
-        events.length
-      );
-      if (!mountedRef.current) return;
-      if (result.data) {
-        setEvents((prev) => {
-          const seen = new Set(prev.map((e) => e.id));
-          const next = [...prev];
-          for (const e of result.data!) {
-            if (!seen.has(e.id)) next.push(e);
-          }
-          return next;
-        });
-        setHasMore(Boolean(result.hasMore));
-      } else {
-        setHasMore(false);
-      }
-    } finally {
-      loadingMoreRef.current = false;
-      if (mountedRef.current) setLoadingMore(false);
-    }
-  }, [metroId, hasMore, isLoading, refreshing, events.length]);
-
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    getUserEventResponses(supabase, userId).then((result) => {
-      if (cancelled) return;
-      if (!result.error && result.data) {
-        setUserResponses(result.data);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
-
-  const reloadEvents = useCallback(() => {
-    setReloadKey((key) => key + 1);
-  }, []);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    reloadEvents();
-  }, [reloadEvents]);
-
-  const handleResponseChange = useCallback(
-    async (eventId: string, status: RsvpStatus | null) => {
-      if (!userId) return;
-
-      const previous = userResponses[eventId] ?? null;
-
-      // Optimistic update: update counts and response map immediately
-      setUserResponses((prev) => {
-        const next = { ...prev };
-        if (status === null) {
-          delete next[eventId];
-        } else {
-          next[eventId] = status;
-        }
-        return next;
-      });
-
-      setEvents((prev) =>
-        prev.map((e) => (e.id === eventId ? applyEventResponseChange(e, previous, status) : e))
-      );
-
-      // Persist to DB
-      const result = status === null
-        ? await removeEventResponse(supabase, eventId, userId)
-        : await setEventResponse(supabase, eventId, userId, status);
-
-      if (result.error) {
-        // Roll back on failure
-        if (!mountedRef.current) return;
-        setUserResponses((prev) => {
-          const next = { ...prev };
-          if (previous === null) {
-            delete next[eventId];
-          } else {
-            next[eventId] = previous;
-          }
-          return next;
-        });
-        setEvents((prev) =>
-          prev.map((e) => (e.id === eventId ? applyEventResponseChange(e, status, previous) : e))
-        );
-      }
-    },
-    [userId, userResponses]
-  );
-
+  // The feed arrives split by period against one `now`; the filters stay client-side.
   const { upcoming, past } = useMemo(() => {
-    const now = new Date();
     const q = filters.query.toLowerCase().trim();
-
-    const filtered = events.filter((e) => {
+    const matches = (e: Event) => {
       const matchesType = filters.type === 'all' || e.event_type === filters.type;
       const matchesQuery =
         !q ||
         e.title.toLowerCase().includes(q) ||
         e.location_name.toLowerCase().includes(q);
       return matchesType && matchesQuery;
-    });
-
-    const upcoming: Event[] = [];
-    const past: Event[] = [];
-
-    for (const e of filtered) {
-      if (isEventPast(e, now)) {
-        past.push(e);
-      } else {
-        upcoming.push(e);
-      }
-    }
-    return { upcoming, past };
-  }, [events, filters]);
+    };
+    return { upcoming: feed.upcoming.filter(matches), past: feed.past.filter(matches) };
+  }, [feed.upcoming, feed.past, filters]);
 
   const listData = useMemo(() => {
     const items: Array<{ type: 'event'; event: Event; past: boolean } | { type: 'divider' }> = [];
@@ -293,22 +135,19 @@ export default function EventsScreen() {
 
       <EventFilterBar value={filters} onChange={setFilters} />
 
-      {isLoading ? (
+      {feed.loading ? (
         <View style={styles.loadingContainer}>
           {[1, 2, 3].map((n) => (
             <View key={n} style={styles.skeletonCard} />
           ))}
         </View>
-      ) : error ? (
+      ) : feed.error ? (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{feed.error}</Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => {
-              setLoading(true);
-              setError(null);
-              reloadEvents();
-            }}
+            onPress={feed.reload}
+            accessibilityRole="button"
           >
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
@@ -322,20 +161,34 @@ export default function EventsScreen() {
           renderItem={renderItem}
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📅</Text>
-              <Text style={styles.emptyTitle}>{getEmptyTitle()}</Text>
-              <Text style={styles.emptySubtitle}>Check back soon!</Text>
-            </View>
+            // While more pages may hold a match, the list isn't empty yet.
+            feed.hasMore || feed.loadingMore || feed.loadMoreError ? null : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>📅</Text>
+                <Text style={styles.emptyTitle}>{getEmptyTitle()}</Text>
+                <Text style={styles.emptySubtitle}>Check back soon!</Text>
+              </View>
+            )
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={<RefreshControl refreshing={feed.refreshing} onRefresh={feed.refresh} />}
           contentContainerStyle={listData.length === 0 ? styles.flatListEmpty : undefined}
-          onEndReached={loadMoreEvents}
+          onEndReached={feed.hasMore ? feed.loadMore : undefined}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
-            loadingMore ? (
+            feed.loadingMore ? (
               <View style={styles.footerLoader}>
                 <ActivityIndicator size="small" color={colors.primary.main} />
+              </View>
+            ) : feed.loadMoreError ? (
+              <View style={styles.footerError}>
+                <Text style={styles.errorText}>{feed.loadMoreError}</Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={feed.retryLoadMore}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
               </View>
             ) : null
           }
@@ -465,6 +318,11 @@ const styles = StyleSheet.create({
   },
   footerLoader: {
     paddingVertical: spacing.m,
+    alignItems: 'center',
+  },
+  footerError: {
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.l,
     alignItems: 'center',
   },
 });

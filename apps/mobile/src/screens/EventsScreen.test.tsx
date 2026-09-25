@@ -1,8 +1,8 @@
 import React from 'react';
-import { RefreshControl } from 'react-native';
+import { FlatList, RefreshControl } from 'react-native';
 import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
-import { getEventsByMetro } from '@nepally/shared';
-import type { Event } from '@nepally/shared';
+import { getMetroEventsPage } from '@nepally/shared';
+import type { Event, EventsResult, MetroEventsPageOptions } from '@nepally/shared';
 import EventsScreen from './EventsScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -93,7 +93,8 @@ jest.mock('@nepally/shared', () => ({
   applyEventResponseChange: jest.requireActual('@nepally/shared').applyEventResponseChange,
   formatEventDateShort: jest.requireActual('@nepally/shared').formatEventDateShort,
   isEventPast: jest.requireActual('@nepally/shared').isEventPast,
-  getEventsByMetro: jest.fn(async () => ({ data: [] })),
+  userMessage: jest.requireActual('@nepally/shared').userMessage,
+  getMetroEventsPage: jest.fn(async () => ({ data: [], hasMore: false })),
   getUserEventResponses: jest.fn(async () => ({ data: {} })),
   setEventResponse: jest.fn(async () => ({})),
   removeEventResponse: jest.fn(async () => ({})),
@@ -118,7 +119,8 @@ jest.mock('@nepally/shared', () => ({
 }));
 
 // --- Helpers ---
-const mockGetEventsByMetro = getEventsByMetro as jest.MockedFunction<typeof getEventsByMetro>;
+const mockGetMetroEventsPage = getMetroEventsPage as jest.MockedFunction<typeof getMetroEventsPage>;
+const { isEventPast } = jest.requireActual('@nepally/shared');
 
 function setAuthUser(overrides: Record<string, unknown> = {}) {
   mockUseAuth.mockReturnValue({
@@ -126,8 +128,18 @@ function setAuthUser(overrides: Record<string, unknown> = {}) {
   });
 }
 
+/** Answers each period with the given events that fall in it, as getMetroEventsPage splits them. */
 function setEvents(events: Event[]) {
-  mockGetEventsByMetro.mockResolvedValue({ data: events });
+  mockGetMetroEventsPage.mockImplementation(
+    async (_client: unknown, _metro: string, { period, now }: MetroEventsPageOptions) => ({
+      data: events.filter((e) => isEventPast(e, now) === (period === 'past')),
+      hasMore: false,
+    })
+  );
+}
+
+function upcomingCalls() {
+  return mockGetMetroEventsPage.mock.calls.filter(([, , options]) => options.period === 'upcoming');
 }
 
 async function renderAndSettle() {
@@ -140,51 +152,58 @@ async function renderAndSettle() {
 describe('EventsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // userMessage logs the raw error through logClientEvent (console.error).
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     setAuthUser();
     setEvents([CULTURAL_EVENT, CAREER_EVENT]);
+  });
+
+  afterEach(() => {
+    (console.error as jest.Mock).mockRestore();
   });
 
   // ─── Loading & Error States ─────────────────────────────────────────
 
   describe('loading and error states', () => {
     it('shows loading skeletons before fetch resolves', () => {
-      mockGetEventsByMetro.mockReturnValue(new Promise(() => {}));
+      mockGetMetroEventsPage.mockReturnValue(new Promise(() => {}));
       const { getByText, queryByText } = render(<EventsScreen />);
       expect(getByText('Events')).toBeTruthy();
       expect(queryByText('Dashain Celebration')).toBeNull();
     });
 
-    it('shows error message on fetch failure', async () => {
-      mockGetEventsByMetro.mockResolvedValue({ error: new Error('Network error') } as { error: Error });
-      const { getByText } = await renderAndSettle();
-      expect(getByText('Network error')).toBeTruthy();
+    it('shows our sentence on fetch failure, never the raw error', async () => {
+      mockGetMetroEventsPage.mockResolvedValue({ error: new Error('permission denied for table events') });
+      const { getByText, queryByText } = await renderAndSettle();
+      expect(getByText("Couldn't load events.")).toBeTruthy();
+      expect(queryByText('permission denied for table events')).toBeNull();
     });
 
     it('shows Retry button on error', async () => {
-      mockGetEventsByMetro.mockResolvedValue({ error: new Error('Failed') } as { error: Error });
+      mockGetMetroEventsPage.mockResolvedValue({ error: new Error('Failed') });
       const { getByText } = await renderAndSettle();
       expect(getByText('Retry')).toBeTruthy();
     });
 
     it('retries fetch when Retry button is pressed', async () => {
-      mockGetEventsByMetro.mockResolvedValueOnce({ error: new Error('Failed') } as { error: Error });
+      mockGetMetroEventsPage.mockResolvedValueOnce({ error: new Error('Failed') });
       const { getByText } = await renderAndSettle();
 
-      mockGetEventsByMetro.mockResolvedValueOnce({ data: [CULTURAL_EVENT] });
+      setEvents([CULTURAL_EVENT]);
 
       await act(async () => {
         fireEvent.press(getByText('Retry'));
       });
       await act(async () => {});
 
-      expect(mockGetEventsByMetro).toHaveBeenCalledTimes(2);
+      expect(upcomingCalls()).toHaveLength(2);
       expect(getByText('Dashain Celebration')).toBeTruthy();
     });
 
     it('stops loading without fetching when no metro_area_id', async () => {
       setAuthUser({ metro_area_id: '' });
       await renderAndSettle();
-      expect(mockGetEventsByMetro).not.toHaveBeenCalled();
+      expect(mockGetMetroEventsPage).not.toHaveBeenCalled();
     });
   });
 
@@ -355,34 +374,85 @@ describe('EventsScreen', () => {
   // ─── Data Fetching ──────────────────────────────────────────────────
 
   describe('data fetching', () => {
-    it('passes supabase client and metro ID to getEventsByMetro', async () => {
+    it('asks for upcoming events first, then past ones when upcoming runs short', async () => {
       await renderAndSettle();
-      expect(mockGetEventsByMetro).toHaveBeenCalledWith({}, '19100', 20, 0);
+      const calls = mockGetMetroEventsPage.mock.calls.map(([client, metro, options]) => [
+        client,
+        metro,
+        options.period,
+        options.offset,
+      ]);
+      expect(calls).toEqual([
+        [{}, '19100', 'upcoming', 0],
+        [{}, '19100', 'past', 0],
+      ]);
     });
 
     it('uses different metro ID from user', async () => {
       setAuthUser({ metro_area_id: '35620' });
       await renderAndSettle();
-      expect(mockGetEventsByMetro).toHaveBeenCalledWith({}, '35620', 20, 0);
+      expect(mockGetMetroEventsPage).toHaveBeenCalledWith(
+        {},
+        '35620',
+        expect.objectContaining({ period: 'upcoming', offset: 0 })
+      );
+    });
+
+    it('loads the next page of the current period when the list end is reached', async () => {
+      const full: Event[] = Array.from({ length: 20 }, (_, i) => ({
+        ...CULTURAL_EVENT,
+        id: `u${i}`,
+        title: `Upcoming ${i}`,
+      }));
+      mockGetMetroEventsPage.mockImplementation(
+        async (_client: unknown, _metro: string, { period, offset }: MetroEventsPageOptions): Promise<EventsResult> =>
+          period === 'upcoming' && offset === 0 ? { data: full, hasMore: true } : { data: [], hasMore: false }
+      );
+      const screen = await renderAndSettle();
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(mockGetMetroEventsPage).toHaveBeenNthCalledWith(
+        2,
+        {},
+        '19100',
+        expect.objectContaining({ period: 'upcoming', offset: 20 })
+      );
+    });
+
+    it('shows a failed next page as our sentence with a Retry', async () => {
+      const full: Event[] = Array.from({ length: 20 }, (_, i) => ({ ...CULTURAL_EVENT, id: `u${i}` }));
+      mockGetMetroEventsPage
+        .mockResolvedValueOnce({ data: full, hasMore: true })
+        .mockResolvedValueOnce({ error: new Error('JWT expired') });
+      const screen = await renderAndSettle();
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(screen.getByText("Couldn't load more events.")).toBeTruthy();
+      expect(screen.queryByText('JWT expired')).toBeNull();
     });
 
     it('refetches the first page on pull-to-refresh', async () => {
-      mockGetEventsByMetro.mockResolvedValueOnce({ data: [CULTURAL_EVENT] });
-      mockGetEventsByMetro.mockResolvedValueOnce({ data: [CAREER_EVENT] });
+      setEvents([CULTURAL_EVENT]);
 
       const screen = render(<EventsScreen />);
       await waitFor(() => {
         expect(screen.getByText('Dashain Celebration')).toBeTruthy();
       });
 
+      setEvents([CAREER_EVENT]);
       fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
 
       await waitFor(() => {
         expect(screen.getByText('Career Networking Night')).toBeTruthy();
       });
       expect(screen.queryByText('Dashain Celebration')).toBeNull();
-      expect(mockGetEventsByMetro).toHaveBeenCalledTimes(2);
-      expect(mockGetEventsByMetro).toHaveBeenLastCalledWith({}, '19100', 20, 0);
+      expect(upcomingCalls()).toHaveLength(2);
       expect(screen.UNSAFE_getByType(RefreshControl).props.refreshing).toBe(false);
     });
   });
