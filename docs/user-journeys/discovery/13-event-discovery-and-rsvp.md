@@ -3,8 +3,10 @@
 **Journey Number:** 13
 **Category:** Discovery
 **User Persona:** Any User (Level 0 can view; Level 1+ can RSVP)
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-09-25 (Technical Requirements)
 **Status:** Reviewed
+
+> **Note (2026-09-25):** Steps 6–7, the flow diagram and the platform table below describe the original single "RSVP — I'm Going" button. Both apps now answer **Interested** or **Going** on the list and the detail screen, and pressing the selected answer clears it. The Technical Requirements section at the end lists the functions they actually call, and [features/events.md](../../product/features/events.md) is the current behaviour.
 
 ---
 
@@ -494,11 +496,13 @@ All in `packages/shared/src/api/events.ts`:
 
 - `getMetroEventsPage(supabase, metroId, { period, now, limit?, offset? })` — load events feed (metro + global), upcoming then past
 - `getEventById(supabase, eventId)` — single event with organizer join
-- `getEventAttendees(supabase, eventId)` — attendee list with user info
-- `getUserRsvps(supabase, userId)` → `string[]` — pre-hydrate RSVP state on feed load
-- `getUserEventResponse(supabase, eventId, userId)` → `'going' | 'interested' | null` — for detail screen (replaced `hasUserRsvp`, which reported any response as going, 2026-09-22)
-- `rsvpToEvent(supabase, eventId, userId)` — insert into `event_rsvps`
-- `unrsvpFromEvent(supabase, eventId, userId)` — delete from `event_rsvps`
+- `getEventAttendees(supabase, eventId)` — attendee list (going only) with user info
+- `getUserEventResponses(supabase, userId)` → `{ [eventId]: 'going' | 'interested' }` — pre-hydrate each card's answer on feed load (web `useEventFeed`, mobile `useMetroEventPages`)
+- `getUserEventResponse(supabase, eventId, userId)` → `'going' | 'interested' | null` — for the detail screen on both apps (replaced `hasUserRsvp`, which reported any response as going, 2026-09-22)
+- `setEventResponse(supabase, eventId, userId, status)` — answer Interested or Going (upsert into `event_rsvps`)
+- `removeEventResponse(supabase, eventId, userId)` — clear the answer (delete from `event_rsvps`)
+
+Both apps apply an answer optimistically with the shared `applyEventResponseChange(event, previous, next)` and roll back by swapping `previous` and `next` if the write fails. `getUserRsvps`, `rsvpToEvent` and `unrsvpFromEvent` still exist in shared but no screen calls them.
 
 ### Data Validations
 
