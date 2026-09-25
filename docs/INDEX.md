@@ -115,6 +115,7 @@ in `wireframes/_prototypes/`. The underscore prefix keeps them out of this index
 - [decisions/2026-02-17-post-tags-redesign-and-premium.md](decisions/2026-02-17-post-tags-redesign-and-premium.md) — post tags redesign and premium toggle
 - [decisions/2026-09-18-long-lived-sessions.md](decisions/2026-09-18-long-lived-sessions.md) — sessions stay signed in until sign-out (Facebook/Reddit style); re-authenticate for sensitive actions; replaces the 30-minute mobile timeout
 - [decisions/2026-09-19-ci-actions-minute-budget.md](decisions/2026-09-19-ci-actions-minute-budget.md) — GitHub Actions minutes: draft PRs and docs-only changes run no CI, fewer jobs, deploy timeouts, prod guard tolerates docs-only commits
+- [decisions/2026-09-25-function-execute-grants.md](decisions/2026-09-25-function-execute-grants.md) — new database functions start with no EXECUTE for anon/authenticated/PUBLIC; each migration grants what it needs (migration 041)
 
 ## Archive
 

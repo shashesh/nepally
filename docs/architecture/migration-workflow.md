@@ -102,8 +102,16 @@ The pre-realignment tracker contents (31 rows), captured before the rewrite:
     WHERE version = '<timestamp>' AND name = '<name>';
    ```
 
-4. Re-run advisors (`get_advisors`) after DDL to catch new RLS/security/perf issues.
-5. **New indexes on tables that already hold data** (production once it has users): use `CREATE INDEX CONCURRENTLY`, because a plain `CREATE INDEX` blocks writes to the table until the build finishes. `CONCURRENTLY` cannot run inside a transaction block. That means an explicit `BEGIN`/`COMMIT` added by the runner, and also the implicit block Postgres opens when several statements arrive in a single query string (Postgres docs, "Multiple Statements in a Simple Query"). So give each such index a migration of its own, containing only that statement. Nobody has yet checked whether `apply_migration` wraps its SQL in a transaction; check that before the first one. A fresh database that replays `001`–`NNN` has empty tables, so a plain `CREATE INDEX` is fine there. That is why `037`/`038` need no change for the production project.
+4. **A new function is executable by nobody but its owner and `service_role`** (since `041`, see the [ADR](../decisions/2026-09-25-function-execute-grants.md)). Grant EXECUTE in the same migration to every role that calls it:
+
+   - an RPC the apps call signed in: `GRANT EXECUTE ON FUNCTION public.fn(args) TO authenticated;`
+   - a helper used in an RLS policy, column default or CHECK: every role the policy applies to, usually `anon, authenticated`
+   - a trigger function, or one only other SECURITY DEFINER functions call: no grant
+
+   A forgotten grant fails loudly with `permission denied for function` (`42501`); it never exposes anything. Then run `npm run test:security:functions` against staging.
+
+5. Re-run advisors (`get_advisors`) after DDL to catch new RLS/security/perf issues.
+6. **New indexes on tables that already hold data** (production once it has users): use `CREATE INDEX CONCURRENTLY`, because a plain `CREATE INDEX` blocks writes to the table until the build finishes. `CONCURRENTLY` cannot run inside a transaction block. That means an explicit `BEGIN`/`COMMIT` added by the runner, and also the implicit block Postgres opens when several statements arrive in a single query string (Postgres docs, "Multiple Statements in a Simple Query"). So give each such index a migration of its own, containing only that statement. Nobody has yet checked whether `apply_migration` wraps its SQL in a transaction; check that before the first one. A fresh database that replays `001`–`NNN` has empty tables, so a plain `CREATE INDEX` is fine there. That is why `037`/`038` need no change for the production project.
 
 ## Adopting the Supabase CLI later (optional, not done)
 
