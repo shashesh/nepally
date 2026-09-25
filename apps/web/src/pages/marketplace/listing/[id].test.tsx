@@ -220,6 +220,7 @@ describe('ListingDetailPage', () => {
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
       expect(screen.getByText("Couldn't load this listing")).toBeDefined();
+      expect(screen.queryByText(/row-level security/)).toBeNull();
     });
     expect(screen.queryByText('Listing not found')).toBeNull();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();

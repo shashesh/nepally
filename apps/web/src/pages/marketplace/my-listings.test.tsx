@@ -140,6 +140,7 @@ describe('MyListingsPage', () => {
     render(<MyListingsPage />);
 
     expect(await screen.findByText("Couldn't load your listings")).toBeDefined();
+    expect(screen.queryByText(/row-level security/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByRole('link', { name: 'My Restaurant' })).toBeDefined();

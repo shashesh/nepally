@@ -81,6 +81,7 @@ describe('PromoteListingPage', () => {
     render(<PromoteListingPage />);
 
     expect(await screen.findByText("Couldn't load this listing")).toBeDefined();
+    expect(screen.queryByText(/row-level security/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByRole('radiogroup', { name: 'Promotion type' })).toBeDefined();

@@ -286,6 +286,7 @@ describe('MarketplaceIndexPage', () => {
     render(React.createElement(MarketplaceIndexPage));
     await waitFor(() => {
       expect(screen.getByText("Couldn't load listings")).toBeDefined();
+      expect(screen.queryByText(/row-level security/)).toBeNull();
     });
     expect(screen.queryByText(/No listings/i)).toBeNull();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
