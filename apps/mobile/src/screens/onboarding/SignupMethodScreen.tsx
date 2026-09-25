@@ -14,7 +14,13 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { OnboardingStackParamList } from '../../types/navigation';
 import { supabase } from '../../config/supabase';
-import { createUserProfile, markGoogleVerified, getUserById } from '@nepally/shared';
+import {
+  createUserProfile,
+  markGoogleVerified,
+  getUserById,
+  getAuthErrorMessage,
+  logClientEvent,
+} from '@nepally/shared';
 import { AuthContext } from '../../contexts/AuthContext';
 import { signInWithGoogle } from '../../services/auth/googleAuth';
 import { colors } from '../../styles/colors';
@@ -79,8 +85,8 @@ export function SignupMethodScreen() {
 
       navigation.navigate('LocationPermission', { userId });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Google sign-in failed';
-      Alert.alert('Google Sign-In Failed', message);
+      logClientEvent({ event: 'auth_google_failed', context: { platform: 'mobile' }, error });
+      Alert.alert('Google Sign-In Failed', getAuthErrorMessage(error, 'google'));
     } finally {
       setGoogleLoading(false);
     }

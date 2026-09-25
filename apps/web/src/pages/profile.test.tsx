@@ -15,7 +15,7 @@ const profileMocks = vi.hoisted(() => ({
   updateUserProfileMock: vi.fn(),
   removeProfilePhotoMock: vi.fn(),
   replaceProfilePhotoMock: vi.fn(),
-  resetPasswordForEmailMock: vi.fn(),
+  requestPasswordResetMock: vi.fn(),
   signOutMock: vi.fn(),
   notificationsShowMock: vi.fn(),
   logClientEventMock: vi.fn(),
@@ -27,16 +27,12 @@ vi.mock('@mantine/notifications', () => ({
 
 vi.mock('../hooks/useAuth', () => ({ useAuth: profileMocks.useAuthMock }));
 vi.mock('next/router', () => ({ useRouter: profileMocks.useRouterMock }));
-vi.mock('../lib/supabase', () => ({
-  supabase: {
-    auth: { resetPasswordForEmail: profileMocks.resetPasswordForEmailMock },
-  },
-}));
+vi.mock('../lib/supabase', () => ({ supabase: {} }));
 vi.mock('../lib/profilePhoto', () => ({
   replaceProfilePhoto: profileMocks.replaceProfilePhotoMock,
 }));
 vi.mock('@nepally/shared', async () => {
-  const actual = await vi.importActual<object>('@nepally/shared');
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
   return {
     ...actual,
     getPostsByAuthorId: profileMocks.getPostsByAuthorIdMock,
@@ -46,7 +42,14 @@ vi.mock('@nepally/shared', async () => {
     formatRelativeTime: profileMocks.formatRelativeTimeMock,
     updateUserProfile: profileMocks.updateUserProfileMock,
     removeProfilePhoto: profileMocks.removeProfilePhotoMock,
+    requestPasswordReset: profileMocks.requestPasswordResetMock,
     logClientEvent: profileMocks.logClientEventMock,
+    // userMessage logs through shared's own logger import, which this mock
+    // can't reach; forward its log to the spy the assertions read.
+    userMessage: (error: unknown, fallback: string, event: string, context?: Record<string, unknown>) => {
+      profileMocks.logClientEventMock({ event, error, context });
+      return actual.userMessage(error, fallback, event, context);
+    },
   };
 });
 vi.mock('../components/Avatar', () => ({
@@ -309,7 +312,7 @@ describe('ProfilePage', () => {
   });
 
   it('disables the three edit items while a change is being saved', async () => {
-    profileMocks.resetPasswordForEmailMock.mockReturnValue(new Promise(() => {}));
+    profileMocks.requestPasswordResetMock.mockReturnValue(new Promise(() => {}));
     await renderPage();
 
     await chooseProfileMenuItem('Change Password');

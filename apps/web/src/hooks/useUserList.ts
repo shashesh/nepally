@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { userMessage } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 
 export interface ListState<T> {
   items: T[];

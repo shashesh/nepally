@@ -1,7 +1,7 @@
 # Nepally App: Product Roadmap
 
 **Version:** 1.5
-**Last Updated:** 2026-09-04 (Phase 1 status resynced with code: reporting + moderation queue shipped; remaining list rewritten)
+**Last Updated:** 2026-09-24 (web UI overhaul, global search and mobile parity added to Shipped)
 
 ---
 
@@ -553,6 +553,9 @@ See [TECH-VERSIONS.md](../../TECH-VERSIONS.md) for exact versions.
 - Avatar component (across feed, chat, comments, profile)
 - Premium subscription scaffolding (`is_premium` flag, global posting, 5 saved locations)
 - Web navigation (sidebar, top nav, all pages)
+- Web UI overhaul (2026-09-14 → 2026-09-24, PRs #62–#93 and the 10c parity PR): Ink & Marigold tokens on a Mantine component library, responsive shell with phone bottom tabs, every web page rebuilt on shared primitives, visual-regression and axe baselines with no known serious or critical violations, and friendly error copy instead of raw server text. See [architecture/web-ui-system.md](../architecture/web-ui-system.md)
+- Global search (migrations 037–038): one search box across posts, events, listings and people, with a phone overlay and a results page. See [features/search.md](features/search.md)
+- Mobile parity with the overhaul's shared logic (2026-09-24): events paged upcoming then past, Interested / Going on event detail, public names in chat, shared day labels, profile and auth screens on the shared validation and error sentences
 
 ### Remaining (Phase 1)
 

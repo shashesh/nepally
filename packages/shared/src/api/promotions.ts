@@ -3,6 +3,7 @@
  * All Supabase query logic for listing promotions — accepts SupabaseClient via dependency injection.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type {
   PromotionResult,
   PromotionsResult,
@@ -51,7 +52,7 @@ export async function getActivePromotionForListing(
     if (error) throw error;
     return { data: data ?? undefined };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to check active promotion') };
+    return { error: toApiError(error, 'Failed to check active promotion') };
   }
 }
 
@@ -72,7 +73,7 @@ export async function getPromotionsByUser(
     if (error) throw error;
     return { data: data ?? [] };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch promotions') };
+    return { error: toApiError(error, 'Failed to fetch promotions') };
   }
 }
 
@@ -93,7 +94,7 @@ export async function getPromotionById(
     if (error) throw error;
     return { data };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch promotion') };
+    return { error: toApiError(error, 'Failed to fetch promotion') };
   }
 }
 
@@ -120,7 +121,7 @@ export async function getSponsoredFeedListings(
     if (error) throw error;
     return { data: (data ?? []) as unknown as SponsoredListing[] };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch sponsored feed listings') };
+    return { error: toApiError(error, 'Failed to fetch sponsored feed listings') };
   }
 }
 
@@ -147,7 +148,7 @@ export async function getStickyBusinessListings(
     if (error) throw error;
     return { data: (data ?? []) as unknown as SponsoredListing[] };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch sticky business listings') };
+    return { error: toApiError(error, 'Failed to fetch sticky business listings') };
   }
 }
 
@@ -187,7 +188,7 @@ export async function createPromotionCheckout(
     const data = (await response.json()) as CheckoutResult['data'];
     return { data };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to create promotion checkout') };
+    return { error: toApiError(error, 'Failed to create promotion checkout') };
   }
 }
 
@@ -230,6 +231,6 @@ export async function getPromotionAnalytics(
       },
     };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch promotion analytics') };
+    return { error: toApiError(error, 'Failed to fetch promotion analytics') };
   }
 }

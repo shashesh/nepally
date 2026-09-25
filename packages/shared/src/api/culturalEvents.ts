@@ -2,6 +2,7 @@
  * Shared Cultural Events API — reads seeded Nepali festival rows from DB.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 
 export interface CulturalEventRow {
   id: string;
@@ -31,11 +32,10 @@ function addDays(d: Date, days: number): Date {
 }
 
 function toError(raw: unknown, fallback: string): Error {
-  if (raw instanceof Error) return raw;
   if (raw && typeof raw === 'object' && 'message' in raw) {
-    return new Error(String((raw as { message: unknown }).message));
+    return toApiError(raw, String((raw as { message: unknown }).message));
   }
-  return new Error(fallback);
+  return toApiError(raw, fallback);
 }
 
 /**

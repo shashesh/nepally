@@ -10,6 +10,7 @@ import {
   removeProfilePhoto,
   TrustLevel,
   updateUserProfile,
+  userMessage,
 } from '@nepally/shared';
 import type { AboutYouFormValues } from '@nepally/shared';
 import {
@@ -31,7 +32,6 @@ import { useFocusAfterUpdate } from '../hooks/useFocusAfterUpdate';
 import { useOwnProfileContent } from '../hooks/useOwnProfileContent';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { replaceProfilePhoto } from '../lib/profilePhoto';
-import { userMessage } from '../lib/userMessage';
 import { supabase } from '../lib/supabase';
 import styles from '../styles/Profile.module.css';
 

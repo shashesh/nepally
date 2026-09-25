@@ -6,6 +6,7 @@
  * See: docs/decisions/2026-02-17-post-tags-redesign-and-premium.md
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { Post, PostsResult, PostResult, Tag } from '../types/post';
 
 type RawPostTagJoin = {
@@ -86,7 +87,7 @@ export async function getPostsByMetroArea(
     return { data: posts, hasMore };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch posts'),
+      error: toApiError(error, 'Failed to fetch posts'),
     };
   }
 }
@@ -114,7 +115,7 @@ export async function getPostById(
     return { data: flattenPostTags(data) };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch post'),
+      error: toApiError(error, 'Failed to fetch post'),
     };
   }
 }
@@ -150,7 +151,7 @@ export async function getPostsByAuthorId(
     return { data: (data || []).map(flattenPostTags) };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch user posts'),
+      error: toApiError(error, 'Failed to fetch user posts'),
     };
   }
 }
@@ -179,7 +180,7 @@ export async function getSavedPostsByUserId(
     return { data: (data || []).map(flattenPostTags) };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch saved posts'),
+      error: toApiError(error, 'Failed to fetch saved posts'),
     };
   }
 }
@@ -262,7 +263,7 @@ export async function createPost(
   } catch (error) {
     console.error('createPost exception:', error);
     return {
-      error: error instanceof Error ? error : new Error('Failed to create post'),
+      error: toApiError(error, 'Failed to create post'),
     };
   }
 }
@@ -354,7 +355,7 @@ export async function updatePost(
     return { data: postData as Post };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to update post'),
+      error: toApiError(error, 'Failed to update post'),
     };
   }
 }
@@ -385,7 +386,7 @@ export async function getRecentPostsCountByMetro(
     return { data: count ?? 0 };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to count recent posts'),
+      error: toApiError(error, 'Failed to count recent posts'),
     };
   }
 }

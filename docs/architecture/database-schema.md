@@ -43,8 +43,11 @@ CREATE TABLE users (
 
   -- Identity
   email TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  phone TEXT,
+  -- Migration 040: users_full_name_length_check, the 100-character limit
+  -- shared fullNameSchema enforces. createUserProfile normalises a provider's
+  -- name and cuts it to 100 code points so sign-up never trips it.
+  full_name TEXT NOT NULL CHECK (char_length(full_name) <= 100),
+  phone TEXT,  -- nullable; clearing a phone writes NULL (shared User.phone: string | null)
   profile_photo TEXT,
 
   -- Location
@@ -133,7 +136,7 @@ CREATE POLICY "Moderators can delete users"
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "email": "user@example.com",
-  "name": "John Doe",
+  "full_name": "John Doe",
   "metro_area_id": "19100",
   "zip_code": "75201",
   "trust_level": 1,

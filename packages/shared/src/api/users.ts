@@ -11,8 +11,10 @@
  * `.select()` on users fails with "permission denied".
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { PublicUser, User } from '../types/user';
 import { PUBLIC_USER_COLUMNS } from '../constants/users';
+import { FULL_NAME_MAX_LENGTH, normalizeFullName } from '../validation/user';
 import { deleteProfilePhoto, uploadProfilePhoto } from './storage';
 
 export interface UserResult {
@@ -87,9 +89,7 @@ export async function getUserById(
     return { data: data as unknown as PublicUser };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to fetch user'),
+      error: toApiError(error, 'Failed to fetch user'),
     };
   }
 }
@@ -111,9 +111,7 @@ export async function getMyProfile(
     return { data: data ?? undefined };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to fetch profile'),
+      error: toApiError(error, 'Failed to fetch profile'),
     };
   }
 }
@@ -146,9 +144,7 @@ export async function updateUserLocation(
     return { data };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to update user location'),
+      error: toApiError(error, 'Failed to update user location'),
     };
   }
 }
@@ -191,9 +187,7 @@ export async function updateUserProfile(
     return { data };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to update profile'),
+      error: toApiError(error, 'Failed to update profile'),
     };
   }
 }
@@ -265,9 +259,7 @@ export async function markUserVerified(
     return { data: row as User };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to mark user verified'),
+      error: toApiError(error, 'Failed to mark user verified'),
     };
   }
 }
@@ -300,9 +292,7 @@ export async function resendVerificationEmail(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to resend verification email'),
+      error: toApiError(error, 'Failed to resend verification email'),
     };
   }
 }
@@ -321,6 +311,16 @@ export async function markGoogleVerified(
 }
 
 /**
+ * A provider's name (Google, or the sign-up form before the schema ran) as
+ * the users table will take it: normalised as fullNameSchema does, then cut
+ * to FULL_NAME_MAX_LENGTH code points so it fits the 040 length check.
+ * Array.from walks code points, so a surrogate pair is never split.
+ */
+function toStoredFullName(fullName: string): string {
+  return Array.from(normalizeFullName(fullName)).slice(0, FULL_NAME_MAX_LENGTH).join('').trimEnd();
+}
+
+/**
  * Create user profile (called after email verification)
  */
 export async function createUserProfile(
@@ -335,7 +335,7 @@ export async function createUserProfile(
       .insert({
         id: userId,
         email,
-        full_name: fullName,
+        full_name: toStoredFullName(fullName),
         trust_level: 0, // Start at Level 0
       });
 
@@ -348,9 +348,7 @@ export async function createUserProfile(
     return { data };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to create profile'),
+      error: toApiError(error, 'Failed to create profile'),
     };
   }
 }

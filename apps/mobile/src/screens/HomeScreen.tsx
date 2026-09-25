@@ -50,6 +50,7 @@ import {
   interleaveSponsoredItems,
   SPONSORED_FEED_INJECTION_INTERVAL,
   TrustLevel,
+  uniqueChannelTopic,
 } from '@nepally/shared';
 import type { Post, Tag, SponsoredListing } from '@nepally/shared';
 
@@ -167,7 +168,7 @@ export default function HomeScreen() {
     if (!user?.id) return;
 
     const participantsChannel = supabase
-      .channel(`chat-unread-mobile:${user.id}`)
+      .channel(uniqueChannelTopic(`chat-unread-mobile:${user.id}`))
       .on(
         'postgres_changes',
         {
@@ -183,7 +184,7 @@ export default function HomeScreen() {
       .subscribe();
 
     const messagesChannel = supabase
-      .channel(`chat-messages-unread-mobile:${user.id}`)
+      .channel(uniqueChannelTopic(`chat-messages-unread-mobile:${user.id}`))
       .on(
         'postgres_changes',
         {
@@ -324,7 +325,7 @@ export default function HomeScreen() {
     if (!metroAreaId) return;
 
     const feedChannel = supabase
-      .channel(`feed-posts-mobile:${metroAreaId}`)
+      .channel(uniqueChannelTopic(`feed-posts-mobile:${metroAreaId}`))
       .on(
         'postgres_changes',
         {

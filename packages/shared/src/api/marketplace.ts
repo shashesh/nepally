@@ -3,6 +3,7 @@
  * All Supabase query logic for marketplace listings — accepts SupabaseClient via dependency injection.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type {
   MarketplaceListing,
   MarketplaceCategory,
@@ -53,7 +54,7 @@ export async function getCategories(
     if (error) throw error;
     return { data: (data || []) as MarketplaceCategory[] };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch categories') };
+    return { error: toApiError(error, 'Failed to fetch categories') };
   }
 }
 
@@ -146,7 +147,7 @@ export async function getListingsByMetro(
 
     return { data: listings, hasMore };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch listings') };
+    return { error: toApiError(error, 'Failed to fetch listings') };
   }
 }
 
@@ -199,7 +200,7 @@ export async function getFeaturedListings(
 
     return { data: rows, hasMore };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch featured listings') };
+    return { error: toApiError(error, 'Failed to fetch featured listings') };
   }
 }
 
@@ -230,7 +231,7 @@ export async function getTrendingListings(
     const rows = (data || []) as MarketplaceListing[];
     return { data: rows, hasMore: rows.length === limit };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch trending listings') };
+    return { error: toApiError(error, 'Failed to fetch trending listings') };
   }
 }
 
@@ -259,7 +260,7 @@ export async function getListingById(
     if (!data) return { error: new Error('Listing not found'), notFound: true };
     return { data: data as MarketplaceListing };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch listing') };
+    return { error: toApiError(error, 'Failed to fetch listing') };
   }
 }
 
@@ -290,9 +291,7 @@ export async function getActiveListingsBySeller(
   } catch (error) {
     return {
       error:
-        error instanceof Error
-          ? error
-          : new Error('Failed to fetch seller listings'),
+        toApiError(error, 'Failed to fetch seller listings'),
     };
   }
 }
@@ -320,7 +319,7 @@ export async function getListingsByOwner(
     const rows = (data || []) as MarketplaceListing[];
     return { data: rows, hasMore: rows.length === limit };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch owner listings') };
+    return { error: toApiError(error, 'Failed to fetch owner listings') };
   }
 }
 
@@ -362,7 +361,7 @@ export async function createListing(
     if (!data) throw new Error('No data returned after insert');
     return { data: data as MarketplaceListing };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to create listing') };
+    return { error: toApiError(error, 'Failed to create listing') };
   }
 }
 
@@ -405,7 +404,7 @@ export async function updateListing(
     if (!data) return { error: new Error('Listing not found') };
     return { data: data as MarketplaceListing };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to update listing') };
+    return { error: toApiError(error, 'Failed to update listing') };
   }
 }
 
@@ -430,7 +429,7 @@ export async function deactivateListing(
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to deactivate listing') };
+    return { error: toApiError(error, 'Failed to deactivate listing') };
   }
 }
 
@@ -455,7 +454,7 @@ export async function reactivateListing(
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to reactivate listing') };
+    return { error: toApiError(error, 'Failed to reactivate listing') };
   }
 }
 
@@ -480,7 +479,7 @@ export async function deleteListing(
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to delete listing') };
+    return { error: toApiError(error, 'Failed to delete listing') };
   }
 }
 
@@ -506,7 +505,7 @@ export async function refreshListing(
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to refresh listing') };
+    return { error: toApiError(error, 'Failed to refresh listing') };
   }
 }
 
@@ -535,7 +534,7 @@ export async function saveListing(
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to save listing') };
+    return { error: toApiError(error, 'Failed to save listing') };
   }
 }
 
@@ -559,7 +558,7 @@ export async function unsaveListing(
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to unsave listing') };
+    return { error: toApiError(error, 'Failed to unsave listing') };
   }
 }
 
@@ -580,7 +579,7 @@ export async function getUserSavedListingIds(
     if (error) throw error;
     return { data: (data || []).map((row: { listing_id: string }) => row.listing_id) };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch saved listing IDs') };
+    return { error: toApiError(error, 'Failed to fetch saved listing IDs') };
   }
 }
 
@@ -618,7 +617,7 @@ export async function getSavedListingsByUser(
 
     return { data: listings };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch saved listings') };
+    return { error: toApiError(error, 'Failed to fetch saved listings') };
   }
 }
 

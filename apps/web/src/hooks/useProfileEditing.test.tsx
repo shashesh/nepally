@@ -7,7 +7,7 @@ import type { User } from '@nepally/shared';
 
 const mocks = vi.hoisted(() => ({
   updateUserProfile: vi.fn(),
-  resetPasswordForEmail: vi.fn(),
+  requestPasswordReset: vi.fn(),
   notificationsShow: vi.fn(),
   logClientEvent: vi.fn(),
 }));
@@ -16,17 +16,23 @@ vi.mock('@mantine/notifications', () => ({
   notifications: { show: mocks.notificationsShow },
 }));
 
-vi.mock('../lib/supabase', () => ({
-  supabase: {
-    auth: { resetPasswordForEmail: mocks.resetPasswordForEmail },
-  },
-}));
+vi.mock('../lib/supabase', () => ({ supabase: {} }));
 
-vi.mock('@nepally/shared', async () => ({
-  ...(await vi.importActual<object>('@nepally/shared')),
-  updateUserProfile: mocks.updateUserProfile,
-  logClientEvent: mocks.logClientEvent,
-}));
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
+  return {
+    ...actual,
+    updateUserProfile: mocks.updateUserProfile,
+    requestPasswordReset: mocks.requestPasswordReset,
+    logClientEvent: mocks.logClientEvent,
+    // userMessage logs through shared's own logger import, which this mock
+    // can't reach; forward its log to the spy the assertions read.
+    userMessage: (error: unknown, fallback: string, event: string, context?: Record<string, unknown>) => {
+      mocks.logClientEvent({ event, error, context });
+      return actual.userMessage(error, fallback, event, context);
+    },
+  };
+});
 
 import { useProfileEditing } from './useProfileEditing';
 
@@ -94,7 +100,7 @@ describe('useProfileEditing', () => {
     vi.clearAllMocks();
     mockRefreshUser = vi.fn(async () => {});
     mocks.updateUserProfile.mockResolvedValue({ data: {} });
-    mocks.resetPasswordForEmail.mockResolvedValue({ error: null });
+    mocks.requestPasswordReset.mockResolvedValue({});
   });
 
   describe('editName', () => {
@@ -359,9 +365,11 @@ describe('useProfileEditing', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
       await act(async () => {});
 
-      expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith('bikal@example.com', {
-        redirectTo: `${window.location.origin}/login`,
-      });
+      expect(mocks.requestPasswordReset).toHaveBeenCalledWith(
+        expect.anything(),
+        'bikal@example.com',
+        `${window.location.origin}/login`
+      );
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'Password reset email sent', color: 'green' })
       );
@@ -369,7 +377,7 @@ describe('useProfileEditing', () => {
 
     it('toasts our copy, never the raw error, and logs it when sending fails', async () => {
       const error = new Error('new row violates row-level security policy');
-      mocks.resetPasswordForEmail.mockResolvedValue({ error });
+      mocks.requestPasswordReset.mockResolvedValue({ error });
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
@@ -388,7 +396,7 @@ describe('useProfileEditing', () => {
 
     it('toasts our copy and logs password_reset_request_failed when the request throws unexpectedly', async () => {
       const thrown = new Error('boom');
-      mocks.resetPasswordForEmail.mockRejectedValue(thrown);
+      mocks.requestPasswordReset.mockRejectedValue(thrown);
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
@@ -406,8 +414,8 @@ describe('useProfileEditing', () => {
     });
 
     it('flips saving true while the request is in flight and false once it settles', async () => {
-      const { promise, resolve } = deferred<{ error: null }>();
-      mocks.resetPasswordForEmail.mockReturnValue(promise);
+      const { promise, resolve } = deferred<{ error?: Error }>();
+      mocks.requestPasswordReset.mockReturnValue(promise);
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
@@ -416,7 +424,7 @@ describe('useProfileEditing', () => {
       expect(screen.getByTestId('saving').textContent).toBe('true');
 
       await act(async () => {
-        resolve({ error: null });
+        resolve({});
       });
 
       expect(screen.getByTestId('saving').textContent).toBe('false');
@@ -433,7 +441,7 @@ describe('useProfileEditing', () => {
       await act(async () => {});
 
       expect(mocks.updateUserProfile).not.toHaveBeenCalled();
-      expect(mocks.resetPasswordForEmail).not.toHaveBeenCalled();
+      expect(mocks.requestPasswordReset).not.toHaveBeenCalled();
       expect(mockRefreshUser).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).not.toHaveBeenCalled();
       expect(screen.queryByLabelText('Full name')).toBeNull();

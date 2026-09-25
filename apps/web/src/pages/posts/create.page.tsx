@@ -6,7 +6,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
 import { submitEditedPost, submitNewPost } from '../../lib/postSubmit';
-import { userMessage } from '../../lib/userMessage';
 import {
   ImageUploader,
   ToggleChipGroup,
@@ -21,6 +20,8 @@ import {
   MAX_TAGS_PER_POST,
   MAX_PHOTOS_PER_POST,
   MAX_POST_PHOTO_BYTES,
+  formatMegabytes,
+  userMessage,
 } from '@nepally/shared';
 import type { Tag } from '@nepally/shared';
 import styles from '../../styles/CreatePost.module.css';
@@ -412,7 +413,7 @@ export default function CreatePostPage() {
             maxBytes={MAX_POST_PHOTO_BYTES}
             disabled={submitting}
             label="Photos"
-            description={`Optional. JPG, PNG or WEBP up to ${Math.round(MAX_POST_PHOTO_BYTES / (1024 * 1024))}MB each. Use the ← and → buttons to reorder.`}
+            description={`Optional. JPG, PNG or WEBP up to ${formatMegabytes(MAX_POST_PHOTO_BYTES)} each. Use the ← and → buttons to reorder.`}
           />
         </div>
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Alert } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import MessageThreadScreen from './MessageThreadScreen';
 
@@ -6,6 +7,7 @@ const mockUseRoute = jest.fn();
 const mockGoBack = jest.fn();
 const mockGetMessages = jest.fn();
 const mockSubscribeToMessages = jest.fn();
+const mockRemoveChannel = jest.fn();
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: () => null,
@@ -21,7 +23,7 @@ jest.mock('../../hooks/useAuth', () => ({
 }));
 
 jest.mock('../../config/supabase', () => ({
-  supabase: {},
+  supabase: { removeChannel: (...args: unknown[]) => mockRemoveChannel(...args) },
 }));
 
 jest.mock('@nepally/shared', () => ({
@@ -31,6 +33,8 @@ jest.mock('@nepally/shared', () => ({
   subscribeToMessages: (...args: unknown[]) => mockSubscribeToMessages(...args),
   blockUser: jest.fn(async () => ({})),
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
+  formatDayLabel: jest.requireActual('@nepally/shared').formatDayLabel,
+  formatPublicName: jest.requireActual('@nepally/shared').formatPublicName,
 }));
 
 describe('MessageThreadScreen avatar menu', () => {
@@ -95,5 +99,124 @@ describe('MessageThreadScreen avatar menu', () => {
     expect(screen.queryByText('Could not load messages. Please try again.')).toBeNull();
     expect(mockGetMessages).toHaveBeenCalledTimes(2);
     expect(mockSubscribeToMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes its realtime channel from the client on unmount', async () => {
+    const channel = { unsubscribe: jest.fn() };
+    mockSubscribeToMessages.mockReturnValue(channel);
+    const screen = render(<MessageThreadScreen />);
+    await act(async () => {});
+
+    screen.unmount();
+
+    expect(mockRemoveChannel).toHaveBeenCalledWith(channel);
+  });
+
+  describe('day separators', () => {
+    // Monday 9 March 2026, the day after US clocks sprang forward: 8 March had 23 hours.
+    const NOW = new Date(2026, 2, 9, 12, 0);
+
+    beforeEach(() => {
+      jest.useFakeTimers({ now: NOW });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    function message(id: string, text: string, at: Date) {
+      return {
+        id,
+        conversation_id: 'conv-1',
+        sender_id: 'other-user',
+        text,
+        type: 'text',
+        read: true,
+        read_at: null,
+        timestamp: at.toISOString(),
+      };
+    }
+
+    it('labels today Today and the previous calendar day Yesterday across a DST change', async () => {
+      mockGetMessages.mockResolvedValue({
+        data: [
+          message('m1', 'Late on Sunday', new Date(2026, 2, 8, 23, 30)),
+          message('m2', 'Monday morning', new Date(2026, 2, 9, 8)),
+        ],
+      });
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      expect(screen.getByText('Yesterday')).toBeTruthy();
+      expect(screen.getByText('Today')).toBeTruthy();
+    });
+
+    it('moves Today to Yesterday when the thread stays open past midnight', async () => {
+      jest.setSystemTime(new Date(2026, 2, 9, 23, 59, 30));
+      mockGetMessages.mockResolvedValue({
+        data: [message('m1', 'Monday evening', new Date(2026, 2, 9, 20))],
+      });
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+      expect(screen.getByText('Today')).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+      expect(screen.getByText('Yesterday')).toBeTruthy();
+      expect(screen.queryByText('Today')).toBeNull();
+    });
+
+    it('gives last year\'s date its year and its own separator', async () => {
+      mockGetMessages.mockResolvedValue({
+        data: [
+          message('m1', 'A year ago', new Date(2025, 2, 5, 12)),
+          message('m2', 'This year', new Date(2026, 2, 5, 12)),
+        ],
+      });
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      expect(screen.getByText('Mar 5, 2025')).toBeTruthy();
+      expect(screen.getByText('Mar 5')).toBeTruthy();
+    });
+  });
+
+  describe('public names', () => {
+    beforeEach(() => {
+      jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      mockUseRoute.mockReturnValue({
+        params: {
+          conversationId: 'conv-1',
+          otherUserId: 'other-user',
+          otherUserName: 'Bikal Shrestha',
+          otherUserTrustLevel: 1,
+          otherUserPhotoUrl: null,
+        },
+      });
+    });
+
+    afterEach(() => {
+      (Alert.alert as jest.Mock).mockRestore();
+    });
+
+    it('heads the thread with the other member\'s public name', async () => {
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      expect(screen.getByText('Bikal S.')).toBeTruthy();
+      expect(screen.queryByText('Bikal Shrestha')).toBeNull();
+    });
+
+    it('asks to block the other member by public name', async () => {
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      fireEvent.press(screen.getByLabelText('Conversation options'));
+      fireEvent.press(screen.getByText('Block User'));
+
+      expect(Alert.alert).toHaveBeenCalledWith('Block Bikal S.?', expect.any(String), expect.any(Array));
+    });
   });
 });

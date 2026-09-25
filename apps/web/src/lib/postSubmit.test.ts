@@ -13,15 +13,24 @@ const { createPost, updatePost, uploadPostPhotos, deletePostPhotos, getPostPhoto
     logClientEvent: vi.fn(),
   }));
 
-vi.mock('@nepally/shared', async () => ({
-  ...(await vi.importActual<object>('@nepally/shared')),
-  createPost,
-  updatePost,
-  uploadPostPhotos,
-  deletePostPhotos,
-  getPostPhotoPathFromUrl,
-  logClientEvent,
-}));
+vi.mock('@nepally/shared', async () => {
+  const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
+  return {
+    ...actual,
+    createPost,
+    updatePost,
+    uploadPostPhotos,
+    deletePostPhotos,
+    getPostPhotoPathFromUrl,
+    logClientEvent,
+    // userMessage logs through shared's own logger import, which this mock
+    // can't reach; forward its log to the spy the assertions read.
+    userMessage: (error: unknown, fallback: string, event: string, context?: Record<string, unknown>) => {
+      logClientEvent({ event, error, context });
+      return actual.userMessage(error, fallback, event, context);
+    },
+  };
+});
 
 const RLS_TEXT = 'new row violates row-level security policy';
 const UPLOAD_FAILED = "Couldn't upload your photos. Please try again.";

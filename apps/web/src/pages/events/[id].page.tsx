@@ -13,13 +13,13 @@ import {
   type Event,
   type EventRsvp,
   type User,
+  userMessage,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { useEventDetail } from '../../hooks/useEventDetail';
 import { useNow } from '../../hooks/useNow';
 import { useStartConversation } from '../../hooks/useStartConversation';
 import { supabase } from '../../lib/supabase';
-import { userMessage } from '../../lib/userMessage';
 import AttendeeList from '../../components/events/AttendeeList';
 import { EventAttendanceCard, type EventResponseBlock } from '../../components/events/EventAttendanceCard';
 import { EventOrganizerCard } from '../../components/events/EventOrganizerCard';

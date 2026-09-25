@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import {
   updateUserProfile,
+  requestPasswordReset,
   bioSchema,
   BIO_MAX_LENGTH,
   fullNameSchema,
   FULL_NAME_MAX_LENGTH,
+  userMessage,
 } from '@nepally/shared';
 import type { User } from '@nepally/shared';
 import { usePrompt, notify } from '../components/ui';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 
 const NAME_FAILED = "Couldn't update your name. Please try again.";
 const BIO_FAILED = "Couldn't update your bio. Please try again.";
@@ -122,9 +123,7 @@ export function useProfileEditing(
 
     setSaving(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/login`,
-      });
+      const { error } = await requestPasswordReset(supabase, user.email, `${window.location.origin}/login`);
 
       if (error) {
         notify.error(userMessage(error, RESET_FAILED, 'password_reset_request_failed', context));

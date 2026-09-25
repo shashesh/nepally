@@ -3,6 +3,7 @@
  * All Supabase query logic for events — accepts SupabaseClient via dependency injection.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type {
   Event,
   EventResult,
@@ -88,36 +89,7 @@ export async function getMetroEventsPage(
     const rows = (data || []) as Event[];
     return { data: rows, hasMore: rows.length === limit };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch events') };
-  }
-}
-
-/**
- * Get a metro area's events (local + global), by start date ascending,
- * past ones included. Excludes removed events. Includes cancelled events
- * (shown with banner). Mobile's EventsScreen still pages with this; web uses
- * getMetroEventsPage, which puts upcoming events first.
- */
-export async function getEventsByMetro(
-  supabase: SupabaseClient,
-  metroId: string,
-  limit = 20,
-  offset = 0
-): Promise<EventsResult> {
-  try {
-    const { data, error } = await supabase
-      .from('events')
-      .select(EVENT_SELECT)
-      .neq('status', 'removed')
-      .or(`metro_area_id.eq.${metroId},is_global.eq.true`)
-      .order('start_date', { ascending: true })
-      .range(offset, offset + limit - 1);
-
-    if (error) throw error;
-    const rows = (data || []) as Event[];
-    return { data: rows, hasMore: rows.length === limit };
-  } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch events') };
+    return { error: toApiError(error, 'Failed to fetch events') };
   }
 }
 
@@ -143,7 +115,7 @@ export async function getUpcomingEventsByMetro(
     if (error) throw error;
     return { data: (data || []) as Event[] };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch upcoming events') };
+    return { error: toApiError(error, 'Failed to fetch upcoming events') };
   }
 }
 
@@ -186,7 +158,7 @@ export async function getUpcomingEventsPulseByMetro(
     return { data: (data || []) as PulseEventSummary[] };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch pulse events'),
+      error: toApiError(error, 'Failed to fetch pulse events'),
     };
   }
 }
@@ -216,7 +188,7 @@ export async function getEventById(
     if (!data) return { error: new Error('Event not found'), notFound: true };
     return { data: data as Event };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch event') };
+    return { error: toApiError(error, 'Failed to fetch event') };
   }
 }
 
@@ -243,7 +215,7 @@ export async function getEventsByOrganizer(
     if (error) throw error;
     return { data: (data || []) as Event[] };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch organizer events') };
+    return { error: toApiError(error, 'Failed to fetch organizer events') };
   }
 }
 
@@ -298,7 +270,7 @@ export async function getEventAttendees(
 
     return { data: attendees };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch attendees') };
+    return { error: toApiError(error, 'Failed to fetch attendees') };
   }
 }
 
@@ -338,7 +310,7 @@ export async function createEvent(
     if (!data) throw new Error('No data returned after insert');
     return { data: data as Event };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to create event') };
+    return { error: toApiError(error, 'Failed to create event') };
   }
 }
 
@@ -382,7 +354,7 @@ export async function updateEvent(
     if (!data) return { error: new Error('Event not found') };
     return { data: data as Event };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to update event') };
+    return { error: toApiError(error, 'Failed to update event') };
   }
 }
 
@@ -409,8 +381,7 @@ export async function cancelEvent(
     if (!data) return { error: new Error('Event not found or not allowed') };
     return {};
   } catch (error) {
-    if (error instanceof Error) return { error };
-    return { error: new Error('Failed to cancel event') };
+    return { error: toApiError(error, 'Failed to cancel event') };
   }
 }
 
@@ -430,8 +401,7 @@ export async function deleteEvent(
     if (error) throw error;
     return {};
   } catch (error) {
-    if (error instanceof Error) return { error };
-    return { error: new Error('Failed to delete event') };
+    return { error: toApiError(error, 'Failed to delete event') };
   }
 }
 
@@ -470,7 +440,7 @@ export async function setEventResponse(
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to set event response') };
+    return { error: toApiError(error, 'Failed to set event response') };
   }
 }
 
@@ -504,7 +474,7 @@ export async function unrsvpFromEvent(
     if (error) throw error;
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to remove RSVP') };
+    return { error: toApiError(error, 'Failed to remove RSVP') };
   }
 }
 
@@ -525,7 +495,7 @@ export async function getUserRsvps(
     if (error) throw error;
     return { data: (data || []).map((row: { event_id: string }) => row.event_id) };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch user RSVPs') };
+    return { error: toApiError(error, 'Failed to fetch user RSVPs') };
   }
 }
 
@@ -551,7 +521,7 @@ export async function getUserEventResponses(
     }
     return { data: map };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch event responses') };
+    return { error: toApiError(error, 'Failed to fetch event responses') };
   }
 }
 
@@ -572,6 +542,6 @@ export async function getUserEventResponse(
     if (error) throw error;
     return { data: (data as { status: RsvpStatus } | null)?.status ?? null };
   } catch (error) {
-    return { error: error instanceof Error ? error : new Error('Failed to fetch event response') };
+    return { error: toApiError(error, 'Failed to fetch event response') };
   }
 }

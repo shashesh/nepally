@@ -4,6 +4,7 @@
  * status changes; bans go through the moderate_user() RPC.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { PostResult, PostsResult } from '../types/post';
 import type { User } from '../types/user';
 import type { UserResult } from './users';
@@ -36,7 +37,7 @@ export async function getPendingPosts(
     return { data: rows.map(flattenPostTags), hasMore: rows.length === limit };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch pending posts'),
+      error: toApiError(error, 'Failed to fetch pending posts'),
     };
   }
 }
@@ -61,7 +62,7 @@ export async function getPostsByIds(
     return { data: (data || []).map(flattenPostTags) };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to fetch posts'),
+      error: toApiError(error, 'Failed to fetch posts'),
     };
   }
 }
@@ -89,7 +90,7 @@ export async function setPostModerationStatus(
     return { data: flattenPostTags(data) };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to update post status'),
+      error: toApiError(error, 'Failed to update post status'),
     };
   }
 }
@@ -119,7 +120,7 @@ export async function setUserBanStatus(
     return { data: row as User };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to update ban status'),
+      error: toApiError(error, 'Failed to update ban status'),
     };
   }
 }

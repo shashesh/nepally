@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../hooks/useAuth';
+import { useNow } from '../../hooks/useNow';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { ChatInput } from '../../components/chat/ChatInput';
 import { Avatar } from '../../components/Avatar';
@@ -30,6 +31,8 @@ import {
   markAsRead,
   subscribeToMessages,
   blockUser,
+  formatDayLabel,
+  formatPublicName,
   TrustLevel,
 } from '@nepally/shared';
 import type { ChatMessage } from '@nepally/shared';
@@ -44,6 +47,7 @@ type ThreadNavProp = NativeStackNavigationProp<ChatStackParamList, 'MessageThrea
 
 export default function MessageThreadScreen() {
   const { user } = useAuth();
+  const now = useNow();
   const userId = user?.id;
   const route = useRoute<ThreadRouteProp>();
   const navigation = useNavigation<ThreadNavProp>();
@@ -54,6 +58,8 @@ export default function MessageThreadScreen() {
     otherUserTrustLevel,
     otherUserPhotoUrl,
   } = route.params;
+  // Route params carry the full name; the thread shows the public form (decision 13).
+  const publicName = formatPublicName(otherUserName);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,7 +148,7 @@ export default function MessageThreadScreen() {
     );
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [conversationId, userId]);
 
@@ -256,7 +262,7 @@ export default function MessageThreadScreen() {
   const handleBlock = () => {
     setMenuVisible(false);
     Alert.alert(
-      `Block ${otherUserName}?`,
+      `Block ${publicName}?`,
       "They won't be able to message you. You can unblock them later in Settings.",
       [
         { text: 'Cancel', style: 'cancel' },
@@ -281,38 +287,27 @@ export default function MessageThreadScreen() {
     </View>
   );
 
-  const formatDateLabel = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) return 'Today';
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  // Group messages by date for separators
-  const renderMessages = () => {
+  // A separator before each local calendar day's first message, labelled as web labels it.
+  // `now` ticks, so Today becomes Yesterday on a thread left open past midnight.
+  const flatData = useMemo(() => {
     const items: Array<
       { type: 'date'; data: string } |
       { type: 'message'; data: ChatMessage }
     > = [];
-    let lastDate = '';
+    let lastDay = '';
 
     for (const msg of messages) {
-      const msgDate = new Date(msg.timestamp).toDateString();
-      if (msgDate !== lastDate) {
-        items.push({ type: 'date', data: msg.timestamp });
-        lastDate = msgDate;
+      const sentAt = new Date(msg.timestamp);
+      const day = sentAt.toDateString();
+      if (day !== lastDay) {
+        items.push({ type: 'date', data: formatDayLabel(sentAt, now) });
+        lastDay = day;
       }
       items.push({ type: 'message', data: msg });
     }
 
     return items;
-  };
-
-  const flatData = renderMessages();
+  }, [messages, now]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -337,7 +332,7 @@ export default function MessageThreadScreen() {
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             <Avatar
-              name={otherUserName}
+              name={publicName}
               photoUrl={otherUserPhotoUrl}
               trustLevel={otherUserTrustLevel}
               size="small"
@@ -347,7 +342,7 @@ export default function MessageThreadScreen() {
 
         <View style={styles.headerInfo}>
           <Text style={styles.headerName} numberOfLines={1}>
-            {otherUserName}
+            {publicName}
           </Text>
           {otherUserTrustLevel >= TrustLevel.VERIFIED && (
             <Ionicons
@@ -363,6 +358,8 @@ export default function MessageThreadScreen() {
           style={styles.menuButton}
           onPress={() => setMenuVisible(!menuVisible)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Conversation options"
         >
           <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
         </TouchableOpacity>
@@ -425,7 +422,7 @@ export default function MessageThreadScreen() {
             data={flatData}
             renderItem={({ item, index }) => {
               if (item.type === 'date') {
-                return renderDateSeparator(formatDateLabel(item.data));
+                return renderDateSeparator(item.data);
               }
               const msg = item.data as ChatMessage;
               const isSent = msg.sender_id === user?.id;
@@ -441,7 +438,7 @@ export default function MessageThreadScreen() {
                   timestamp={msg.timestamp}
                   isSent={isSent}
                   isRead={msg.read}
-                  senderName={otherUserName}
+                  senderName={publicName}
                   senderPhotoUrl={otherUserPhotoUrl}
                   senderTrustLevel={otherUserTrustLevel}
                   showAvatar={isLastInGroup}

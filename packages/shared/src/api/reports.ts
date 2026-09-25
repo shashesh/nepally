@@ -3,6 +3,7 @@
  * All Supabase query logic — accepts SupabaseClient via dependency injection.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type {
   Report,
   ReportAction,
@@ -87,7 +88,7 @@ export async function createReport(
     return { data: data as Report };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to create report'),
+      error: toApiError(error, 'Failed to create report'),
     };
   }
 }
@@ -121,7 +122,7 @@ export async function listReports(
     return { data: (data || []) as ReportWithUsers[] };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to list reports'),
+      error: toApiError(error, 'Failed to list reports'),
     };
   }
 }
@@ -160,7 +161,7 @@ export async function resolveReport(
     return { data: data as Report };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to resolve report'),
+      error: toApiError(error, 'Failed to resolve report'),
     };
   }
 }

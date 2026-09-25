@@ -6,7 +6,6 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { uploadPhotosInOrder } from '../../lib/photoUploads';
-import { userMessage } from '../../lib/userMessage';
 import { resizeImage } from '../../lib/resizeImage';
 import { ImageUploader, ToggleChipGroup, notify, type UploaderPhoto } from '../../components/ui';
 import {
@@ -24,6 +23,7 @@ import {
   type MarketplaceCategory,
   type ListingType,
   type ItemCondition,
+  userMessage,
 } from '@nepally/shared';
 import styles from './createListing.module.css';
 

@@ -6,9 +6,9 @@ import {
   reactivateListing,
   refreshListing,
   type MarketplaceListing,
+  userMessage,
 } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 
 export const MY_LISTINGS_PAGE_SIZE = 20;
 

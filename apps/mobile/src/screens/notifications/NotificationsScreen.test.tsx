@@ -63,6 +63,9 @@ jest.mock('@nepally/shared', () => ({
   markAllNotificationsRead: (...args: unknown[]) => mockMarkAllNotificationsRead(...args),
   deleteNotification: (...args: unknown[]) => mockDeleteNotification(...args),
   resolveNotificationRouteTarget: jest.requireActual('@nepally/shared').resolveNotificationRouteTarget,
+  uniqueChannelTopic: jest.requireActual('@nepally/shared').uniqueChannelTopic,
+  groupNotifications: jest.requireActual('@nepally/shared').groupNotifications,
+  formatDayLabel: jest.requireActual('@nepally/shared').formatDayLabel,
 }));
 
 function baseNotification(overrides: Record<string, unknown> = {}) {
@@ -96,6 +99,19 @@ describe('NotificationsScreen', () => {
     mockMarkNotificationRead.mockResolvedValue({});
     mockMarkAllNotificationsRead.mockResolvedValue({});
     mockDeleteNotification.mockResolvedValue({});
+  });
+
+  it('gives each mount its own realtime topic', async () => {
+    const { supabase } = jest.requireMock('../../config/supabase') as { supabase: { channel: jest.Mock } };
+    // A new key unmounts the first screen and mounts a second in its place.
+    const screen = await renderAndSettle();
+    screen.rerender(<NotificationsScreen key="second" />);
+    await act(async () => {});
+
+    const topics = supabase.channel.mock.calls.map(([topic]) => topic as string);
+    expect(topics).toHaveLength(2);
+    expect(topics.every((topic) => topic.startsWith('notifications-mobile:user-1:'))).toBe(true);
+    expect(new Set(topics).size).toBe(2);
   });
 
   it('routes message notifications to MessageThread when sender metadata exists', async () => {
@@ -236,5 +252,81 @@ describe('NotificationsScreen', () => {
     expect(mockGetNotifications).toHaveBeenCalledTimes(2);
     expect(mockGetNotifications).toHaveBeenLastCalledWith(expect.anything(), 'user-1', 50, 0);
     expect(screen.UNSAFE_getByType(SectionList).props.refreshing).toBe(false);
+  });
+
+  describe('day headings', () => {
+    // Monday 9 March 2026, the day after US clocks sprang forward: 8 March had 23 hours.
+    const NOW = new Date(2026, 2, 9, 12, 0);
+
+    beforeEach(() => {
+      jest.useFakeTimers({ now: NOW });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    function sentAt(date: Date) {
+      return date.toISOString();
+    }
+
+    it('heads today\'s notifications Today', async () => {
+      mockGetNotifications.mockResolvedValue({
+        data: [baseNotification({ id: 'n1', title: 'This morning', sent_at: sentAt(new Date(2026, 2, 9, 8)) })],
+      });
+      const { getByText } = await renderAndSettle();
+      expect(getByText('Today')).toBeTruthy();
+    });
+
+    it('heads the previous calendar day Yesterday across a DST change', async () => {
+      mockGetNotifications.mockResolvedValue({
+        data: [
+          baseNotification({ id: 'n1', title: 'Early', sent_at: sentAt(new Date(2026, 2, 8, 0, 30)) }),
+        ],
+      });
+      const { getByText, queryByText } = await renderAndSettle();
+      expect(getByText('Yesterday')).toBeTruthy();
+      expect(queryByText('March 8')).toBeNull();
+    });
+
+    it('moves Today to Yesterday when the screen stays open past midnight', async () => {
+      jest.setSystemTime(new Date(2026, 2, 9, 23, 59, 30));
+      mockGetNotifications.mockResolvedValue({
+        data: [baseNotification({ id: 'n1', title: 'Evening', sent_at: sentAt(new Date(2026, 2, 9, 20)) })],
+      });
+      const { getByText, queryByText } = await renderAndSettle();
+      expect(getByText('Today')).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+      expect(getByText('Yesterday')).toBeTruthy();
+      expect(queryByText('Today')).toBeNull();
+    });
+
+    it('gives last year\'s date its year and its own group', async () => {
+      mockGetNotifications.mockResolvedValue({
+        data: [
+          baseNotification({ id: 'n1', title: 'This year', sent_at: sentAt(new Date(2026, 2, 5, 12)) }),
+          baseNotification({ id: 'n2', title: 'Last year', sent_at: sentAt(new Date(2025, 2, 5, 12)) }),
+        ],
+      });
+      const { getByText } = await renderAndSettle();
+      expect(getByText('Mar 5')).toBeTruthy();
+      expect(getByText('Mar 5, 2025')).toBeTruthy();
+    });
+
+    it('keeps emergency alerts in their own section', async () => {
+      mockGetNotifications.mockResolvedValue({
+        data: [
+          baseNotification({ id: 'n1', type: 'emergency_alert', title: 'Flood', sent_at: sentAt(new Date(2026, 2, 9, 8)) }),
+          baseNotification({ id: 'n2', title: 'Hello', sent_at: sentAt(new Date(2026, 2, 9, 9)) }),
+        ],
+      });
+      const { getByText } = await renderAndSettle();
+      expect(getByText('🛡️ Emergency Alerts')).toBeTruthy();
+      expect(getByText('Today')).toBeTruthy();
+    });
   });
 });

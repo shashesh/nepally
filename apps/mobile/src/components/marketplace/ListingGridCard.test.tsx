@@ -86,6 +86,39 @@ describe('ListingGridCard', () => {
     expect(screen.getByText('Sponsored')).toBeTruthy();
   });
 
+  it('shows the verified check for a verified seller', () => {
+    const screen = render(
+      <ListingGridCard listing={mkListing()} width={180} onPress={() => {}} isSaved={false} onToggleSave={() => {}} />
+    );
+    expect(screen.getByText('✓')).toBeTruthy();
+  });
+
+  it('hides the verified check for a new seller', () => {
+    const screen = render(
+      <ListingGridCard
+        listing={mkListing({ owner: { id: 'owner-1', full_name: 'Ama', trust_level: 0, profile_photo: null } })}
+        width={180}
+        onPress={() => {}}
+        isSaved={false}
+        onToggleSave={() => {}}
+      />
+    );
+    expect(screen.queryByText('✓')).toBeNull();
+  });
+
+  it('hides the verified check when the owner is missing', () => {
+    const screen = render(
+      <ListingGridCard
+        listing={mkListing({ owner: undefined })}
+        width={180}
+        onPress={() => {}}
+        isSaved={false}
+        onToggleSave={() => {}}
+      />
+    );
+    expect(screen.queryByText('✓')).toBeNull();
+  });
+
   it('renders without price gracefully', () => {
     const screen = render(
       <ListingGridCard

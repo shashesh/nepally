@@ -11,11 +11,14 @@ jest.mock('../../services/auth/googleAuth', () => ({
 const mockCreateUserProfile = jest.fn();
 const mockMarkGoogleVerified = jest.fn();
 const mockGetUserById = jest.fn();
+const mockLogClientEvent = jest.fn();
 
 jest.mock('@nepally/shared', () => ({
   createUserProfile: (...args: Parameters<typeof mockCreateUserProfile>) => mockCreateUserProfile(...args),
   markGoogleVerified: (...args: Parameters<typeof mockMarkGoogleVerified>) => mockMarkGoogleVerified(...args),
   getUserById: (...args: Parameters<typeof mockGetUserById>) => mockGetUserById(...args),
+  getAuthErrorMessage: jest.requireActual('@nepally/shared').getAuthErrorMessage,
+  logClientEvent: (...args: unknown[]) => mockLogClientEvent(...args),
 }));
 
 jest.mock('../../config/supabase', () => ({
@@ -144,10 +147,12 @@ describe('SignupMethodScreen', () => {
     mockAlert.mockRestore();
   });
 
-  it('does not navigate when Google sign-in is cancelled', async () => {
+  it('does not navigate, alert or log when Google sign-in is cancelled', async () => {
     mockSignInWithGoogle.mockResolvedValueOnce({
       error: new Error('Google sign-in was cancelled'),
     });
+
+    const mockAlert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     const { getByText } = renderScreen();
 
@@ -158,6 +163,37 @@ describe('SignupMethodScreen', () => {
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
+    expect(mockAlert).not.toHaveBeenCalled();
+    expect(mockLogClientEvent).not.toHaveBeenCalled();
+    mockAlert.mockRestore();
+  });
+
+  it("shows the Google sentence, logs the failure, and never shows Supabase's text", async () => {
+    const error = Object.assign(new Error('Unable to exchange external code: 4/0Ab'), {
+      code: 'bad_oauth_callback',
+      status: 400,
+    });
+    mockSignInWithGoogle.mockResolvedValueOnce({ error });
+
+    const mockAlert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { getByText } = renderScreen();
+
+    fireEvent.press(getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(mockAlert).toHaveBeenCalledWith(
+        'Google Sign-In Failed',
+        "Couldn't continue with Google. Please try again."
+      );
+    });
+    expect(mockLogClientEvent).toHaveBeenCalledWith({
+      event: 'auth_google_failed',
+      context: { platform: 'mobile' },
+      error,
+    });
+    expect(mockCreateUserProfile).not.toHaveBeenCalled();
+    mockAlert.mockRestore();
   });
 
   it('skips LocationPermission for returning Google user with metro', async () => {

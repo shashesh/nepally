@@ -33,6 +33,7 @@ jest.mock('../../config/supabase', () => ({
 jest.mock('@nepally/shared', () => ({
   getConversations: (...args: unknown[]) => mockGetConversations(...args),
   formatRelativeTime: () => '2h ago',
+  formatPublicName: jest.requireActual('@nepally/shared').formatPublicName,
 }));
 
 describe('ConversationListScreen', () => {
@@ -55,12 +56,13 @@ describe('ConversationListScreen', () => {
     });
   });
 
-  it('navigates to MessageThread when a conversation is pressed', async () => {
+  it('shows the public name and navigates to MessageThread with the full name', async () => {
     const screen = render(<ConversationListScreen />);
     await act(async () => {});
 
-    expect(screen.getByText('Other User')).toBeTruthy();
-    fireEvent.press(screen.getByText('Other User'));
+    expect(screen.getByText('Other U.')).toBeTruthy();
+    expect(screen.queryByText('Other User')).toBeNull();
+    fireEvent.press(screen.getByText('Other U.'));
 
     expect(mockNavigate).toHaveBeenCalledWith('MessageThread', {
       conversationId: 'conv-1',

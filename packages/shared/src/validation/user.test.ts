@@ -10,7 +10,28 @@ import {
   yearsInUsSchema,
   languagesSchema,
   extendedProfileUpdateSchema,
+  normalizeFullName,
 } from './user';
+
+describe('normalizeFullName', () => {
+  it('trims, strips control and bidi characters, and collapses whitespace as the schema does', () => {
+    const input = '  Sita\u0000\u202E\t  Gurung\u200B  ';
+
+    expect(normalizeFullName(input)).toBe('Sita Gurung');
+    expect(fullNameSchema.parse(input)).toBe(normalizeFullName(input));
+  });
+
+  it('keeps ZWJ and ZWNJ, which Devanagari conjuncts and emoji sequences need', () => {
+    const input = 'क\u094D\u200Dष 👩\u200D💻';
+
+    expect(normalizeFullName(input)).toBe(input);
+  });
+
+  it('applies no length limit or minimum of its own', () => {
+    expect(normalizeFullName('A')).toBe('A');
+    expect(normalizeFullName('a'.repeat(FULL_NAME_MAX_LENGTH + 5))).toHaveLength(FULL_NAME_MAX_LENGTH + 5);
+  });
+});
 
 describe('fullNameSchema', () => {
   it('trims surrounding whitespace', () => {

@@ -63,6 +63,7 @@ jest.mock('@nepally/shared', () => ({
   interleaveSponsoredItems: <P, S>(posts: P[], _sponsored: S[], _opts: unknown) => posts,
   SPONSORED_FEED_INJECTION_INTERVAL: 5,
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
+  uniqueChannelTopic: jest.requireActual('@nepally/shared').uniqueChannelTopic,
 }));
 
 jest.mock('../utils/storage', () => ({
@@ -182,6 +183,26 @@ describe('HomeScreen', () => {
     const { toJSON } = render(<HomeScreen />);
     await act(async () => {});
     expect(toJSON()).not.toBeNull();
+  });
+
+  it('gives each mount its own realtime topics', async () => {
+    const { supabase } = jest.requireMock('../config/supabase') as { supabase: { channel: jest.Mock } };
+    // A new key unmounts the first screen and mounts a second in its place.
+    const screen = render(<HomeScreen key="first" />);
+    await act(async () => {});
+    screen.rerender(<HomeScreen key="second" />);
+    await act(async () => {});
+
+    const topics = supabase.channel.mock.calls.map(([topic]) => topic as string);
+    for (const base of [
+      'chat-unread-mobile:user-1',
+      'chat-messages-unread-mobile:user-1',
+      'feed-posts-mobile:35620',
+    ]) {
+      const mine = topics.filter((topic) => topic.startsWith(`${base}:`));
+      expect(mine).toHaveLength(2);
+      expect(new Set(mine).size).toBe(2);
+    }
   });
 
   it('shows no-location empty state when metro is unavailable', async () => {

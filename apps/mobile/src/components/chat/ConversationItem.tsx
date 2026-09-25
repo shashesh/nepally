@@ -14,7 +14,7 @@ import { Avatar } from '../Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
-import { formatRelativeTime } from '@nepally/shared';
+import { formatPublicName, formatRelativeTime } from '@nepally/shared';
 
 interface ConversationItemProps {
   otherUserName: string;
@@ -36,6 +36,8 @@ export const ConversationItem: React.FC<ConversationItemProps> = React.memo(({
   onPress,
 }) => {
   const isUnread = unreadCount > 0;
+  // Full names stay in route params; the list shows the public form (decision 13).
+  const publicName = formatPublicName(otherUserName);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
@@ -76,7 +78,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = React.memo(({
             activeOpacity={0.7}
           >
             <Avatar
-              name={otherUserName}
+              name={publicName}
               photoUrl={otherUserPhoto}
               trustLevel={otherUserTrustLevel}
               size="medium"
@@ -92,7 +94,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = React.memo(({
               style={[styles.name, isUnread && styles.nameUnread]}
               numberOfLines={1}
             >
-              {otherUserName}
+              {publicName}
             </Text>
             {lastMessageTime && (
               <Text style={styles.timestamp}>

@@ -3,6 +3,7 @@
  * the card list.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { PulseCardsResult } from '../types/pulse';
 import { assemblePulseCards } from '../logic/pulse';
 import { getUpcomingCulturalEvents } from './culturalEvents';
@@ -166,7 +167,7 @@ export async function getPulseCards(
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to assemble Pulse'),
+      error: toApiError(error, 'Failed to assemble Pulse'),
     };
   }
 }

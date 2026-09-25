@@ -21,6 +21,8 @@ The rest of this document is the original draft spec. What web does now:
 - **Sending.** A failed send keeps the text and says "Couldn't send your message. Please try again."
 - **Not found.** A conversation the viewer isn't in — a mistyped link, or one with a member they have blocked — shows "Conversation not found" with a link back to Messages, and no composer.
 
+**Mobile (2026-09-24, PR 10c).** The conversation list, the thread header and the block confirmation show public names too ("Bikal S."). A thread's day headings use the same labels as web, including the year for a message from another year. Each thread subscribes on its own realtime channel topic and removes the channel when it closes.
+
 ## Problem Statement
 
 Users who find relevant housing, job, travel, or emergency posts need a private, secure way to contact the post author. Without in-app messaging, users would need to share personal contact info publicly, creating privacy and safety risks. Chat completes the core utility loop: **discover user → tap avatar → chat**.

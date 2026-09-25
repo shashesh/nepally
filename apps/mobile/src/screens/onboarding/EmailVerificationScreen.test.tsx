@@ -18,10 +18,13 @@ jest.mock('../../config/supabase', () => ({
 
 const mockCreateUserProfile = jest.fn();
 const mockMarkEmailVerified = jest.fn();
+const mockLogClientEvent = jest.fn();
 
 jest.mock('@nepally/shared', () => ({
   createUserProfile: (...args: Parameters<typeof mockCreateUserProfile>) => mockCreateUserProfile(...args),
   markEmailVerified: (...args: Parameters<typeof mockMarkEmailVerified>) => mockMarkEmailVerified(...args),
+  getAuthErrorMessage: jest.requireActual('@nepally/shared').getAuthErrorMessage,
+  logClientEvent: (...args: unknown[]) => mockLogClientEvent(...args),
 }));
 
 // AuthContext is mocked as a real React context so useContext works correctly.
@@ -79,6 +82,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { EmailVerificationScreen } from './EmailVerificationScreen';
 import { AuthContext } from '../../contexts/AuthContext';
@@ -250,6 +254,56 @@ describe('EmailVerificationScreen', () => {
       type: 'signup',
       email: 'test@example.com',
     });
+  });
+
+  it("shows the resend sentence, logs the failure, and never shows Supabase's text", async () => {
+    jest.useFakeTimers();
+    const error = Object.assign(new Error('For security purposes, you can only request this after 42 seconds.'), {
+      code: 'over_email_send_rate_limit',
+      status: 429,
+    });
+    mockResend.mockResolvedValueOnce({ error });
+    const mockAlert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { getByText } = renderScreen();
+
+    act(() => {
+      jest.advanceTimersByTime(61000);
+    });
+
+    fireEvent.press(getByText('Resend Code'));
+    await act(async () => {});
+
+    expect(mockAlert).toHaveBeenCalledWith(
+      'Resend Failed',
+      'Too many attempts. Please wait a minute and try again.'
+    );
+    expect(mockLogClientEvent).toHaveBeenCalledWith({
+      event: 'auth_resend_failed',
+      context: { platform: 'mobile' },
+      error,
+    });
+    mockAlert.mockRestore();
+  });
+
+  it('shows the resend fallback for an error without a known code', async () => {
+    jest.useFakeTimers();
+    mockResend.mockResolvedValueOnce({
+      error: Object.assign(new Error('Database error saving new user'), { code: 'unexpected_failure', status: 400 }),
+    });
+    const mockAlert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { getByText } = renderScreen();
+
+    act(() => {
+      jest.advanceTimersByTime(61000);
+    });
+
+    fireEvent.press(getByText('Resend Code'));
+    await act(async () => {});
+
+    expect(mockAlert).toHaveBeenCalledWith('Resend Failed', "Couldn't resend the email. Please try again.");
+    mockAlert.mockRestore();
   });
 
   it('does not call resend when cooldown is active', () => {

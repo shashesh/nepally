@@ -4,7 +4,8 @@
  * constraint text through unchanged, so showing it tells a member nothing
  * they can act on and leaks how the database is built.
  */
-import { CONNECTION_ERROR_MESSAGE, isConnectionError, logClientEvent } from '@nepally/shared';
+import { logClientEvent } from '../utils/clientLogger';
+import { CONNECTION_ERROR_MESSAGE, isConnectionError } from './authErrors';
 
 /** Logs the raw error and returns copy for the member: the connection sentence for a network failure, else `fallback`. */
 export function userMessage(

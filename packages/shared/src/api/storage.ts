@@ -3,6 +3,7 @@
  * Handles file uploads to Supabase Storage — accepts SupabaseClient via dependency injection
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import {
   ALLOWED_POST_PHOTO_EXTENSIONS,
   POST_PHOTOS_BUCKET,
@@ -110,7 +111,7 @@ export async function uploadPostPhoto(
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to upload post photo'),
+      error: toApiError(error, 'Failed to upload post photo'),
     };
   }
 }
@@ -160,7 +161,7 @@ export async function deletePostPhotos(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to delete post photos'),
+      error: toApiError(error, 'Failed to delete post photos'),
     };
   }
 }
@@ -221,7 +222,7 @@ export async function uploadProfilePhoto(
     return { url };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to upload photo'),
+      error: toApiError(error, 'Failed to upload photo'),
     };
   }
 }
@@ -271,7 +272,7 @@ export async function uploadEventPhoto(
     return { url: urlData.publicUrl, path: filePath };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to upload event photo'),
+      error: toApiError(error, 'Failed to upload event photo'),
     };
   }
 }
@@ -319,7 +320,7 @@ export async function uploadListingPhoto(
     return { url: urlData.publicUrl, path: filePath };
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to upload listing photo'),
+      error: toApiError(error, 'Failed to upload listing photo'),
     };
   }
 }
@@ -368,7 +369,7 @@ export async function deleteListingPhotos(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to delete listing photos'),
+      error: toApiError(error, 'Failed to delete listing photos'),
     };
   }
 }
@@ -391,7 +392,7 @@ export async function deleteProfilePhoto(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error ? error : new Error('Failed to delete photo'),
+      error: toApiError(error, 'Failed to delete photo'),
     };
   }
 }

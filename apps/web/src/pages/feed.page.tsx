@@ -9,7 +9,6 @@ import { useLocation } from '../hooks/useLocation';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useStartConversation } from '../hooks/useStartConversation';
 import { supabase } from '../lib/supabase';
-import { userMessage } from '../lib/userMessage';
 import {
   getPostsByMetroArea,
   deletePost,
@@ -23,6 +22,7 @@ import {
   getStickyBusinessListings,
   interleaveSponsoredItems,
   SPONSORED_FEED_INJECTION_INTERVAL,
+  userMessage,
 } from '@nepally/shared';
 import type { Post, Event, SponsoredListing } from '@nepally/shared';
 

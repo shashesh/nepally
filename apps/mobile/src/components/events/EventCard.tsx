@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
+  formatCount,
   formatEventDateShort,
   formatPublicName,
   type Event,
@@ -31,13 +32,6 @@ interface Props {
   onResponseChange?: (eventId: string, status: RsvpStatus | null) => void;
 }
 
-function formatCount(n: number, singular: string, plural: string): string {
-  if (n === 0) return `0 ${plural}`;
-  if (n === 1) return `1 ${singular}`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K ${plural}`;
-  return `${n} ${plural}`;
-}
-
 export const EventCard: React.FC<Props> = React.memo(({
   event,
   past = false,
@@ -53,8 +47,8 @@ export const EventCard: React.FC<Props> = React.memo(({
     ? formatPublicName(event.organizer.full_name)
     : 'Unknown';
 
-  const interestedCount = formatCount(event.interested_count ?? 0, 'interested', 'interested');
-  const goingCount = formatCount(event.rsvp_count, 'going', 'going');
+  const interestedCount = `${formatCount(event.interested_count ?? 0)} interested`;
+  const goingCount = `${formatCount(event.rsvp_count)} going`;
 
   const buttonLabel = userResponse === 'going' ? '✓ Going' : '★ Interested';
   const buttonActive = userResponse !== null;

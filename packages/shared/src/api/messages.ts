@@ -3,6 +3,7 @@
  * All Supabase query logic — accepts SupabaseClient via dependency injection
  */
 import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { ChatMessage } from '../types/chat';
 import { uniqueChannelTopic } from '../utils/realtime';
 
@@ -28,9 +29,7 @@ export async function getMessages(
     return { data: ((data || []) as ChatMessage[]).slice().reverse() };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to fetch messages'),
+      error: toApiError(error, 'Failed to fetch messages'),
     };
   }
 }
@@ -76,9 +75,7 @@ export async function sendMessage(
     return { data: message as ChatMessage };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to send message'),
+      error: toApiError(error, 'Failed to send message'),
     };
   }
 }
@@ -117,9 +114,7 @@ export async function markAsRead(
     return {};
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to mark as read'),
+      error: toApiError(error, 'Failed to mark as read'),
     };
   }
 }
@@ -189,9 +184,7 @@ export async function getTotalUnreadCount(
   } catch (error) {
     return {
       count: 0,
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to get unread count'),
+      error: toApiError(error, 'Failed to get unread count'),
     };
   }
 }

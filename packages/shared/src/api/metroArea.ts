@@ -3,6 +3,7 @@
  * All Supabase query logic — accepts SupabaseClient via dependency injection
  */
 import { SupabaseClient } from '@supabase/supabase-js';
+import { toApiError } from '../utils/apiError';
 import type { MetroArea, MetroAreaResult } from '../types/metro';
 
 type MetroAreasJoinRow = {
@@ -98,7 +99,7 @@ export async function getMetroByZip(
       error:
         error instanceof Error
           ? error
-          : Object.assign(new Error('Failed to fetch metro area'), { cause: error }),
+          : Object.assign(toApiError(error, 'Failed to fetch metro area'), { cause: error }),
     };
   }
 }
@@ -123,9 +124,7 @@ export async function getMetroAreaById(
     return { data: data as MetroArea };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to fetch metro area'),
+      error: toApiError(error, 'Failed to fetch metro area'),
     };
   }
 }
@@ -151,9 +150,7 @@ export async function searchMetroAreas(
     return { data: (data ?? []) as MetroArea[] };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error
-        : new Error('Failed to search metro areas'),
+      error: toApiError(error, 'Failed to search metro areas'),
     };
   }
 }

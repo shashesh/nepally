@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { TrustLevel, type MarketplaceListing } from '@nepally/shared';
+import { isVerifiedSeller, type MarketplaceListing } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
@@ -20,7 +20,7 @@ export const ListingCard = React.memo(function ListingCard({ listing, onPress, w
   const categoryColor = listing.category?.color ?? '#9E9E9E';
   const categoryEmoji = listing.category?.emoji ?? '📦';
   const categoryName = listing.category?.name ?? 'Other';
-  const isVerifiedSeller = (listing.owner?.trust_level ?? 0) >= TrustLevel.VERIFIED;
+  const showVerifiedSeller = isVerifiedSeller(listing);
   const [firstPhoto] = listing.photos;
 
   return (
@@ -67,7 +67,7 @@ export const ListingCard = React.memo(function ListingCard({ listing, onPress, w
         )}
 
         <View style={styles.metaRow}>
-          {isVerifiedSeller && (
+          {showVerifiedSeller && (
             <>
               <Text style={styles.verifiedStar}>★</Text>
               <Text style={styles.metaText}>Verified Seller</Text>
