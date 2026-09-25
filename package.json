@@ -28,6 +28,7 @@
     "test:security:emergency-post": "tsx scripts/security/emergency-post-smoke.ts",
     "test:security:storage": "tsx scripts/security/storage-rls-smoke.ts",
     "test:security:functions": "tsx scripts/security/function-execute-smoke.ts",
+    "test:security:listing-counters": "tsx scripts/security/listing-counters-smoke.ts",
     "ci:local": "node scripts/run-ci-local.js",
     "lint": "npm run lint --workspaces && npm run lint:md",
     "lint:md": "markdownlint-cli2 && prettier --check \"**/*.md\"",

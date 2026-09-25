@@ -188,10 +188,14 @@ test.describe('Messages', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: 'Options for Bikash T.' })).toBeFocused();
 
-    // Enter opens the menu, Escape returns to its trigger.
+    // Enter opens the menu, Escape returns to its trigger. Mantine moves focus
+    // into a menu on a timer after it mounts, and keeps it mounted while it
+    // fades out, so wait for both: a key pressed in between lands in the menu.
     await page.keyboard.press('Enter');
     await expect(page.getByRole('menuitem', { name: 'View profile' })).toBeVisible();
+    await expect(page.locator('[role="menu"]:focus-within')).toHaveCount(1);
     await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Options for Bikash T.' })).toBeFocused();
 
     await page.keyboard.press('Tab');

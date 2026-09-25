@@ -394,6 +394,8 @@ CREATE TRIGGER trigger_decrement_post_comments_count
 
 ### Row Level Security
 
+**Likes are public by design** (decided 2026-09-25). Anyone, signed in or not, can see who liked a post, as with the "Anyone can view likes" policy below. A like is a public "this helped" vote, not a private bookmark; saved posts cover that.
+
 ```sql
 -- Post Likes RLS
 ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
