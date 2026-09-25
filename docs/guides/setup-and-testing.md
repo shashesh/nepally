@@ -703,6 +703,8 @@ in CI without secrets.
 | `npm run test:security:storage`          | Storage RLS is owner-only (migration 039): avatar upserts and plain uploads succeed, another member's `remove()` deletes nothing, anon cannot list any bucket, and the owner's `remove()` really deletes                                             |
 | `npm run test:security:functions`        | Function EXECUTE grants (migration 041): anon cannot call the listing counters, soft-delete RPCs or internal helpers; members can call only the RPCs the apps use; `is_moderator` and triggers still work                                            |
 | `npm run test:security:listing-counters` | Listing counters are deduplicated (migrations 042–044): a member adds at most one view per listing per day and one contact per listing ever, owners and inactive listings never count, and members cannot touch `listing_views` / `listing_contacts` |
+| `npm run test:security:storage-limits`   | Bucket limits (migration 045): every bucket rejects a file one byte over its size limit and a `text/html` upload, and accepts a small image of an allowed type                                                                                       |
+| `npm run test:security:promotion-expiry` | Promotion expiry (migration 046): anon and members cannot call `expire_paid_promotions()`; run as the service role, it expires an ended paid promotion and leaves a running one active                                                               |
 
 **Credentials.** Every script reads `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
 `SUPABASE_SERVICE_ROLE_KEY` from the environment. The npm scripts do not load
@@ -711,7 +713,8 @@ RLS by design — never commit it, and never point these at production.
 
 **When to run them.** After any migration that touches RLS policies on `users`,
 `conversations`, `posts`, or `storage.objects`, and after any migration that adds a
-function or changes its grants (run `test:security:functions`). A migration can pass `npm run test`
+function or changes its grants (run `test:security:functions`). After changing a bucket's
+limits, or an upload constant in `packages/shared`, run `test:security:storage-limits`. A migration can pass `npm run test`
 and still leave a table readable by the wrong user; only these scripts catch that.
 
 **Adding a new one.** Put it in `scripts/security/<area>-smoke.ts`, add a
