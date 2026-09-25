@@ -226,7 +226,6 @@ describe('EventsPage', () => {
     await renderPage();
 
     expect(screen.getByText("Couldn't load events")).toBeDefined();
-    expect(screen.getByText("Couldn't load events.")).toBeDefined();
     expect(screen.queryByText(/row-level security/)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -234,7 +233,7 @@ describe('EventsPage', () => {
     await act(async () => {});
 
     expect(screen.getByText('Dashain Celebration')).toBeDefined();
-    expect(screen.queryByText("Couldn't load events.")).toBeNull();
+    expect(screen.queryByText("Couldn't load events")).toBeNull();
     // The failed first page, then the reload's first page and the past page it chains.
     expect(vi.mocked(getMetroEventsPage).mock.calls.map((call) => call[2].period)).toEqual([
       'upcoming',

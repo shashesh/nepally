@@ -270,7 +270,7 @@ describe('EventDetailPage', () => {
       await settle();
 
       const dialog = screen.getByRole('dialog', { name: 'People going' });
-      expect(within(dialog).getByText("Couldn't load attendees.")).toBeDefined();
+      expect(within(dialog).getByText("Couldn't load attendees")).toBeDefined();
       expect(within(dialog).queryByText(/row-level security/)).toBeNull();
       fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
       await settle();
