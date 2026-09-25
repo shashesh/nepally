@@ -53,6 +53,7 @@ const INTERNAL_RPCS: RpcCall[] = [
   { fn: 'get_post_like_count', args: { p_post_id: MISSING_ID } },
   { fn: 'get_post_comment_count', args: { p_post_id: MISSING_ID } },
   { fn: 'get_metro_by_zip', args: { zip: '75001' } },
+  { fn: 'build_notification_push_url', args: { p_type: 'system', p_data: {} } },
 ];
 
 function requireEnv(name: string): string {
