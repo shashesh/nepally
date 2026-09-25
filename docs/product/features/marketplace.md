@@ -62,6 +62,7 @@ Consolidated from 12 original categories via `016_consolidate_marketplace_catego
 - Individual fields: `item_condition`
 - Contact: `phone`, `email`
 - Counters: `views_count`, `saves_count`, `contacts_count`
+  - `views_count`: one per member, per listing, per UTC day. `contacts_count`: one per member, per listing, ever. The owner never counts on their own listing, and signed-out calls count nothing. `increment_listing_views` / `increment_listing_contacts` enforce this through the internal `listing_views` / `listing_contacts` tables (migration 042), so repeat opens or taps can't inflate `trending_score` (`views + saves × 3 + contacts × 5`). `saves_count` is already one per member, because `saved_listings` is unique per member and listing.
 - `refreshed_at` — for soft expiry (90-day threshold)
 
 ### Migration
@@ -136,8 +137,8 @@ All business logic in `packages/shared/`:
 | `unsaveListing`            | Remove bookmark                                                          |
 | `getUserSavedListingIds`   | Get saved listing IDs for a user                                         |
 | `getSavedListingsByUser`   | Full saved listings with details                                         |
-| `incrementListingViews`    | Non-critical view counter                                                |
-| `incrementListingContacts` | Contact counter                                                          |
+| `incrementListingViews`    | Non-critical view counter; counts once per member per day                |
+| `incrementListingContacts` | Contact counter; counts once per member per listing                      |
 
 ---
 
