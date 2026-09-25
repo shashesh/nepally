@@ -10,7 +10,7 @@ const createMocks = vi.hoisted(() => ({
   updatePostMock: vi.fn(),
   getPostByIdMock: vi.fn(),
   getTagsMock: vi.fn(),
-  deletePostPhotosMock: vi.fn(),
+  cleanUpPostPhotosMock: vi.fn(),
   uploadPostPhotosMock: vi.fn(),
   validatePostPhotoFileMock: vi.fn(),
   getPostPhotoPathFromUrlMock: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('@nepally/shared', async () => {
     updatePost: createMocks.updatePostMock,
     getPostById: createMocks.getPostByIdMock,
     getTags: createMocks.getTagsMock,
-    deletePostPhotos: createMocks.deletePostPhotosMock,
+    cleanUpPostPhotos: createMocks.cleanUpPostPhotosMock,
     uploadPostPhotos: createMocks.uploadPostPhotosMock,
     validatePostPhotoFile: createMocks.validatePostPhotoFileMock,
     getPostPhotoPathFromUrl: createMocks.getPostPhotoPathFromUrlMock,
@@ -532,7 +532,7 @@ describe('CreatePostPage', () => {
         },
       });
       createMocks.updatePostMock.mockResolvedValue({ data: { id: 'post-existing' } });
-      createMocks.deletePostPhotosMock.mockResolvedValue({});
+      createMocks.cleanUpPostPhotosMock.mockResolvedValue(undefined);
       render(<CreatePostPage />);
 
       await waitFor(() => expect(screen.getByText('2/4 photos')).toBeDefined());
@@ -567,7 +567,7 @@ describe('CreatePostPage', () => {
         },
       });
       createMocks.updatePostMock.mockResolvedValue({ data: { id: 'post-existing' } });
-      createMocks.deletePostPhotosMock.mockResolvedValue({});
+      createMocks.cleanUpPostPhotosMock.mockResolvedValue(undefined);
       createMocks.getPostPhotoPathFromUrlMock.mockImplementation((url: string) => `user-1/${url.slice(-5)}`);
       render(<CreatePostPage />);
 
@@ -576,7 +576,7 @@ describe('CreatePostPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
       await waitFor(() =>
-        expect(createMocks.deletePostPhotosMock).toHaveBeenCalledWith(expect.anything(), ['user-1/b.jpg'])
+        expect(createMocks.cleanUpPostPhotosMock).toHaveBeenCalledWith(expect.anything(), ['user-1/b.jpg'], expect.anything())
       );
     });
   });

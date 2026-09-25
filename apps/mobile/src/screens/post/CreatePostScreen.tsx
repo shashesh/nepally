@@ -25,7 +25,7 @@ import {
   createPost,
   getPostById,
   updatePost,
-  deletePostPhotos,
+  cleanUpPostPhotos,
   getPostPhotoPathFromUrl,
   getTags,
   formatMegabytes,
@@ -542,16 +542,20 @@ export default function CreatePostScreen({ navigation, route }: Props) {
         });
 
         if (result.error) {
-          if (uploadedPhotoPaths.length > 0) {
-            await deletePostPhotos(supabase, uploadedPhotoPaths);
-          }
+          await cleanUpPostPhotos(supabase, uploadedPhotoPaths, {
+            platform: 'mobile',
+            userId: user.id,
+            postId: editPostId,
+          });
           Alert.alert('Error', 'Could not save post. Please try again.');
           return;
         }
 
-        if (removedExistingPhotoPaths.length > 0) {
-          await deletePostPhotos(supabase, removedExistingPhotoPaths);
-        }
+        await cleanUpPostPhotos(supabase, removedExistingPhotoPaths, {
+          platform: 'mobile',
+          userId: user.id,
+          postId: editPostId,
+        });
 
         Alert.alert('Post Updated', 'Your post has been updated successfully.', [
           { text: 'OK', onPress: () => navigation.goBack() },
@@ -630,9 +634,7 @@ export default function CreatePostScreen({ navigation, route }: Props) {
       });
 
       if (result.error) {
-        if (uploadedPhotoPaths.length > 0) {
-          await deletePostPhotos(supabase, uploadedPhotoPaths);
-        }
+        await cleanUpPostPhotos(supabase, uploadedPhotoPaths, { platform: 'mobile', userId: user.id });
         Alert.alert('Error', 'Could not save post. Please try again.');
         return;
       }

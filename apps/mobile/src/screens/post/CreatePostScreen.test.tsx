@@ -31,6 +31,9 @@ import {
   getPostById,
   createPost,
   uploadPostPhotos,
+  cleanUpPostPhotos,
+  updatePost,
+  getPostPhotoPathFromUrl,
 } from '@nepally/shared';
 import type { Tag } from '@nepally/shared';
 import * as ImagePicker from 'expo-image-picker';
@@ -40,7 +43,7 @@ jest.mock('@nepally/shared', () => ({
   getPostById: jest.fn().mockResolvedValue({ data: null }),
   createPost: jest.fn().mockResolvedValue({ data: { id: 'new-post-1' } }),
   updatePost: jest.fn().mockResolvedValue({ data: { id: 'post-1' } }),
-  deletePostPhotos: jest.fn().mockResolvedValue({ error: null }),
+  cleanUpPostPhotos: jest.fn().mockResolvedValue(undefined),
   getPostPhotoPathFromUrl: jest.fn().mockReturnValue(''),
   uploadPostPhotos: jest.fn().mockResolvedValue({ urls: [], paths: [], error: null }),
   MAX_POST_PHOTO_BYTES: 5 * 1024 * 1024,
@@ -81,10 +84,12 @@ const mockGetTags = getTags as jest.MockedFunction<typeof getTags>;
 const mockGetPostById = getPostById as jest.MockedFunction<typeof getPostById>;
 const mockCreatePost = createPost as jest.MockedFunction<typeof createPost>;
 const mockUploadPostPhotos = uploadPostPhotos as jest.MockedFunction<typeof uploadPostPhotos>;
+const mockCleanUpPostPhotos = cleanUpPostPhotos as jest.MockedFunction<typeof cleanUpPostPhotos>;
 const mockRequestMediaLibraryPermissions =
   ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock;
 const mockLaunchImageLibrary = ImagePicker.launchImageLibraryAsync as jest.Mock;
-// updatePost is mocked via jest.mock above; cast not needed in current tests
+const mockUpdatePost = updatePost as jest.MockedFunction<typeof updatePost>;
+const mockGetPostPhotoPathFromUrl = getPostPhotoPathFromUrl as jest.Mock;
 
 // --- Mock tags ---
 const MOCK_TAGS: Tag[] = [
@@ -200,12 +205,52 @@ function setLocation(overrides: Record<string, unknown> = {}) {
   });
 }
 
+/**
+ * Press the submit button the screen last registered in the header, then let
+ * the submit chain settle. headerRight() returns <View><TouchableOpacity
+ * onPress={handleSubmit}>; the handler is called directly because rendering
+ * the header as a second tree makes the global synchronous cleanup overlap
+ * act() scopes.
+ */
+async function pressHeaderSubmit() {
+  const headerOptions = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)?.[0];
+  const submitButton = headerOptions.headerRight().props.children as React.ReactElement<{
+    onPress: () => void;
+  }>;
+  act(() => {
+    submitButton.props.onPress();
+  });
+  await act(async () => {});
+  await act(async () => {});
+  await act(async () => {});
+  await act(async () => {});
+}
+
+/** Pick one photo through the mocked image library. */
+async function pickOnePhoto(getByLabelText: (label: RegExp) => unknown) {
+  mockRequestMediaLibraryPermissions.mockResolvedValue({ granted: true });
+  mockLaunchImageLibrary.mockResolvedValue({
+    canceled: false,
+    assets: [
+      {
+        uri: 'file:///photo-1.jpg',
+        mimeType: 'image/jpeg',
+        fileName: 'photo-1.jpg',
+        fileSize: 1000,
+      },
+    ],
+  });
+  fireEvent.press(getByLabelText(/Add photos, optional/) as Parameters<typeof fireEvent.press>[0]);
+  await act(async () => {});
+  await act(async () => {});
+}
+
 async function renderAndSettle(props?: Partial<CreatePostScreenProps>) {
   const utils = render(
     <CreatePostScreen
       navigation={props?.navigation ?? mockNavigation}
       route={props?.route ?? mockRoute}
-    />,
+    />
   );
   await act(async () => {});
   await act(async () => {});
@@ -237,7 +282,7 @@ describe('CreatePostScreen', () => {
     it('sets header title to "Create Post" for new posts', async () => {
       await renderAndSettle();
       expect(mockNavigation.setOptions).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Create Post' }),
+        expect.objectContaining({ title: 'Create Post' })
       );
     });
 
@@ -256,7 +301,7 @@ describe('CreatePostScreen', () => {
       });
       await renderAndSettle({ route: mockEditRoute });
       expect(mockNavigation.setOptions).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Edit Post' }),
+        expect.objectContaining({ title: 'Edit Post' })
       );
     });
 
@@ -296,7 +341,7 @@ describe('CreatePostScreen', () => {
     it('shows "Loading tags..." until tags arrive', () => {
       mockGetTags.mockReturnValue(new Promise(() => {}));
       const { getByText, queryByText } = render(
-        <CreatePostScreen navigation={mockNavigation} route={mockRoute} />,
+        <CreatePostScreen navigation={mockNavigation} route={mockRoute} />
       );
       expect(getByText('Loading tags...')).toBeTruthy();
       expect(queryByText('Please select at least 1 tag')).toBeNull();
@@ -339,9 +384,7 @@ describe('CreatePostScreen', () => {
     it('shows emergency warning when emergency tag is selected', async () => {
       const { getByText } = await renderAndSettle();
       fireEvent.press(getByText(/Emergency/));
-      expect(
-        getByText(/Emergency posts require moderator approval/),
-      ).toBeTruthy();
+      expect(getByText(/Emergency posts require moderator approval/)).toBeTruthy();
     });
 
     it('shows validation error when no tags selected and tags are loaded', async () => {
@@ -404,7 +447,10 @@ describe('CreatePostScreen', () => {
     it('shows tag hint after title and body are valid but no tags', async () => {
       const { getByTestId, getByText } = await renderAndSettle();
       fireEvent.changeText(getByTestId('post-title-input'), 'Valid Title Here');
-      fireEvent.changeText(getByTestId('post-body-input'), 'This is a sufficiently long post body.');
+      fireEvent.changeText(
+        getByTestId('post-body-input'),
+        'This is a sufficiently long post body.'
+      );
       expect(getByText('Select at least 1 tag')).toBeTruthy();
     });
   });
@@ -446,7 +492,7 @@ describe('CreatePostScreen', () => {
       expect(Alert.alert).toHaveBeenCalledWith(
         'Restore Draft?',
         expect.stringContaining('unsaved post'),
-        expect.any(Array),
+        expect.any(Array)
       );
     });
 
@@ -464,7 +510,7 @@ describe('CreatePostScreen', () => {
       expect(Alert.alert).not.toHaveBeenCalledWith(
         'Restore Draft?',
         expect.anything(),
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -535,6 +581,67 @@ describe('CreatePostScreen', () => {
       mockGetPostById.mockResolvedValue({ data: EXISTING_POST });
     });
 
+    describe('saving an edit', () => {
+      beforeEach(() => {
+        mockGetPostPhotoPathFromUrl.mockImplementation(
+          (url: string) => `user-1/${url.split('/').pop()}`
+        );
+      });
+
+      afterEach(() => {
+        mockGetPostPhotoPathFromUrl.mockReturnValue('');
+      });
+
+      it('deletes a removed photo only after the update succeeds', async () => {
+        const { getByLabelText } = await renderAndSettle({ route: mockEditRoute });
+        await act(async () => {});
+
+        fireEvent.press(getByLabelText('Remove photo 1'));
+        await act(async () => {});
+        await pressHeaderSubmit();
+
+        expect(mockCleanUpPostPhotos).toHaveBeenCalledWith(
+          {},
+          ['user-1/photo1.jpg'],
+          expect.objectContaining({ platform: 'mobile', postId: 'post-1' })
+        );
+        const cleanUpCall = mockCleanUpPostPhotos.mock.calls.findIndex(
+          (call) => call[1].length > 0
+        );
+        expect(mockUpdatePost.mock.invocationCallOrder[0]).toBeLessThan(
+          mockCleanUpPostPhotos.mock.invocationCallOrder[cleanUpCall]
+        );
+        expect(Alert.alert).toHaveBeenCalledWith(
+          'Post Updated',
+          expect.any(String),
+          expect.any(Array)
+        );
+      });
+
+      it('rolls back the photos it uploaded and keeps a removed one when the update fails', async () => {
+        mockUploadPostPhotos.mockResolvedValueOnce({ urls: ['u/new'], paths: ['user-1/new.jpg'] });
+        mockUpdatePost.mockResolvedValueOnce({
+          error: new Error('new row violates row-level security policy'),
+        });
+        const { getByLabelText } = await renderAndSettle({ route: mockEditRoute });
+        await act(async () => {});
+
+        fireEvent.press(getByLabelText('Remove photo 1'));
+        await act(async () => {});
+        await pickOnePhoto(getByLabelText);
+        await pressHeaderSubmit();
+
+        expect(mockCleanUpPostPhotos).toHaveBeenCalledWith(
+          {},
+          ['user-1/new.jpg'],
+          expect.objectContaining({ platform: 'mobile', postId: 'post-1' })
+        );
+        const cleaned = mockCleanUpPostPhotos.mock.calls.flatMap((call) => call[1]);
+        expect(cleaned).not.toContain('user-1/photo1.jpg');
+        expect(Alert.alert).toHaveBeenCalledWith('Error', 'Could not save post. Please try again.');
+      });
+    });
+
     it('loads existing post data in edit mode', async () => {
       const { getByTestId } = await renderAndSettle({ route: mockEditRoute });
       await act(async () => {});
@@ -549,9 +656,11 @@ describe('CreatePostScreen', () => {
       mockGetPostById.mockReturnValue(
         new Promise((resolve) => {
           resolvePost = resolve;
-        }),
+        })
       );
-      const { getByText, queryByText, getByTestId } = await renderAndSettle({ route: mockEditRoute });
+      const { getByText, queryByText, getByTestId } = await renderAndSettle({
+        route: mockEditRoute,
+      });
       expect(getByText('Loading post...')).toBeTruthy();
 
       await act(async () => {
@@ -571,11 +680,7 @@ describe('CreatePostScreen', () => {
       await renderAndSettle({ route: mockEditRoute });
       await act(async () => {});
 
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Error',
-        'Not found',
-        expect.any(Array),
-      );
+      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Not found', expect.any(Array));
     });
 
     it('shows "Not Allowed" alert when editing someone else\'s post', async () => {
@@ -589,7 +694,7 @@ describe('CreatePostScreen', () => {
       expect(Alert.alert).toHaveBeenCalledWith(
         'Not Allowed',
         'You can only edit your own posts.',
-        expect.any(Array),
+        expect.any(Array)
       );
     });
   });
@@ -606,7 +711,10 @@ describe('CreatePostScreen', () => {
 
       // Fill valid form
       fireEvent.changeText(getByTestId('post-title-input'), 'Valid Title Here');
-      fireEvent.changeText(getByTestId('post-body-input'), 'This is a long enough body text for validation.');
+      fireEvent.changeText(
+        getByTestId('post-body-input'),
+        'This is a long enough body text for validation.'
+      );
       fireEvent.press(getByText(/Housing/));
 
       // Trigger submit via header
@@ -626,7 +734,10 @@ describe('CreatePostScreen', () => {
       const { getByTestId, getByText } = await renderAndSettle();
 
       fireEvent.changeText(getByTestId('post-title-input'), 'Valid Title Here');
-      fireEvent.changeText(getByTestId('post-body-input'), 'This is a long enough body text for validation.');
+      fireEvent.changeText(
+        getByTestId('post-body-input'),
+        'This is a long enough body text for validation.'
+      );
       fireEvent.press(getByText(/Housing/));
 
       // canSubmit would be true from form perspective but handleSubmit has trust level check
@@ -638,47 +749,56 @@ describe('CreatePostScreen', () => {
   // ─── Photo Upload on Submit ─────────────────────────────────────────
 
   describe('photo upload on submit', () => {
-    it('uploads photos picked after the header submit handler was registered', async () => {
-      mockRequestMediaLibraryPermissions.mockResolvedValue({ granted: true });
-      mockLaunchImageLibrary.mockResolvedValue({
-        canceled: false,
-        assets: [{ uri: 'file:///photo-1.jpg', mimeType: 'image/jpeg', fileName: 'photo-1.jpg', fileSize: 1000 }],
-      });
+    /** Fill a valid post, pick one photo, then press the registered header submit. */
+    async function pickPhotoAndSubmit() {
       const { getByTestId, getByText, getByLabelText } = await renderAndSettle();
 
       // Once the form is dirty and valid, picking a photo does not re-register
       // the header, so its submit handler only sees the photo through the ref.
       fireEvent.changeText(getByTestId('post-title-input'), 'Valid Title Here');
-      fireEvent.changeText(getByTestId('post-body-input'), 'This is a long enough body text for validation.');
+      fireEvent.changeText(
+        getByTestId('post-body-input'),
+        'This is a long enough body text for validation.'
+      );
       fireEvent.press(getByText(/Housing/));
       const headerOptions = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)?.[0];
 
-      fireEvent.press(getByLabelText(/Add photos, optional/));
-      await act(async () => {});
-      await act(async () => {});
+      await pickOnePhoto(getByLabelText);
       expect(getByText('1/4')).toBeTruthy();
       expect((mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)?.[0]).toBe(headerOptions);
 
-      // headerRight() returns <View><TouchableOpacity onPress={handleSubmit}>. Call the
-      // registered handler directly: rendering the header as a second tree makes the
-      // global synchronous cleanup overlap act() scopes.
-      const submitButton = headerOptions.headerRight().props.children as React.ReactElement<{
-        onPress: () => void;
-      }>;
-      act(() => {
-        submitButton.props.onPress();
-      });
-      await act(async () => {});
-      await act(async () => {});
-      await act(async () => {});
-      await act(async () => {});
+      await pressHeaderSubmit();
+    }
+
+    it('uploads photos picked after the header submit handler was registered', async () => {
+      await pickPhotoAndSubmit();
 
       expect(mockUploadPostPhotos).toHaveBeenCalledWith({}, [
         expect.objectContaining({ mime_type: 'image/jpeg', file_name: 'photo-1.jpg' }),
       ]);
       expect(mockCreatePost).toHaveBeenCalled();
       // Last step of the submit chain, so nothing is left running after the test.
-      expect(Alert.alert).toHaveBeenCalledWith('Post Published!', expect.any(String), expect.any(Array));
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Post Published!',
+        expect.any(String),
+        expect.any(Array)
+      );
+    });
+
+    it('cleans up the photos it just uploaded when the post fails', async () => {
+      mockUploadPostPhotos.mockResolvedValueOnce({ urls: ['u/one'], paths: ['user-1/one.jpg'] });
+      mockCreatePost.mockResolvedValueOnce({
+        error: new Error('new row violates row-level security policy'),
+      });
+
+      await pickPhotoAndSubmit();
+
+      expect(mockCleanUpPostPhotos).toHaveBeenCalledWith(
+        {},
+        ['user-1/one.jpg'],
+        expect.objectContaining({ platform: 'mobile' })
+      );
+      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Could not save post. Please try again.');
     });
   });
 
