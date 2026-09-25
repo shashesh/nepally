@@ -1,21 +1,48 @@
-// markdownlint config — read by the VS Code markdownlint extension and by `npx markdownlint-cli2`.
+// markdownlint settings, read by `npm run lint:md` and the VS Code markdownlint extension.
+// Prettier formats Markdown (`npm run format`); markdownlint checks what formatting can't.
 {
   "config": {
-    // Prose docs use long lines; wrapping them adds diff noise without helping readers.
-    "MD013": false,
-    // Tables use `| a | b |` rows with `|---|---|` separators, which matches no MD060 style.
-    "MD060": false,
+    // Turn off the rules Prettier already handles, such as line length and list indentation.
+    "extends": "markdownlint/style/prettier",
+    // Prettier pads table cells so the pipes line up.
+    "table-column-style": { "style": "aligned" },
+    // Front matter `title:` is metadata; the H1 below it is the page title.
+    "single-title": { "front_matter_title": "" },
     // Bold lead-in labels ("**Why:**") are intentional, not headings.
-    "MD036": false,
+    "no-emphasis-as-heading": false,
     // Allow the same subheading (e.g. "Notes") under different parent sections.
-    "MD024": { "siblings_only": true }
+    "no-duplicate-heading": { "siblings_only": true },
   },
-  // Archived docs are frozen; .agents/ and the vercel-*/frontend-* skills are installed third-party copies.
+  "overrides": [
+    {
+      // Read by GitHub and coding agents, not as pages: they start without a heading on purpose.
+      "filter": [".github/pull_request_template.md", "apps/web/CLAUDE.md"],
+      "config": { "first-line-heading": false },
+      "combine": "merge",
+    },
+    {
+      // WireMD mockups: headings inside `:::` blocks are on-screen copy, repeated per screen
+      // state, and `[👤]`-style brackets are WireMD elements, not reference links.
+      "filter": ["docs/wireframes/**"],
+      "config": {
+        "single-title": false,
+        "heading-increment": false,
+        "no-duplicate-heading": false,
+        "no-trailing-punctuation": false,
+        "reference-links-images": false,
+      },
+      "combine": "merge",
+    },
+  ],
+  "globs": ["**/*.md"],
+  "gitignore": true,
+  // Keep in sync with .prettierignore. Archived docs are frozen; scripts/docs/__fixtures__ are
+  // test inputs; .agents/ and the vercel-*/frontend-* skills are installed third-party copies.
   "ignores": [
-    "**/node_modules/**",
     "docs/archive/**",
+    "scripts/docs/__fixtures__/**",
     ".agents/**",
     ".claude/skills/vercel-*/**",
-    ".claude/skills/frontend-*/**"
-  ]
+    ".claude/skills/frontend-*/**",
+  ],
 }

@@ -46,6 +46,7 @@ docs/wireframes/[screen-name]/
 
 ```markdown
 # Wireframe: [Screen Name]
+
 > Metadata: Screen number, Status, Date, Journey link, User story
 
 - Screen Purpose & Key Goals

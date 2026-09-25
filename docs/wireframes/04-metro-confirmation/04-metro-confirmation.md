@@ -58,15 +58,15 @@ Join 12,503 verified members in your area
 
 ### 1. Success Checkmark Icon
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Icon with background circle | Icon with background circle |
-| **Circle Size** | 80×80px | 80×80dp |
-| **Checkmark Size** | 40×40px inside circle | 40×40dp inside circle |
-| **Position** | Centered, top third of screen | Centered, top third of screen |
-| **Circle Background** | #2E7D32 (Success Green) | #2E7D32 (Success Green) |
-| **Checkmark Color** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | None or subtle white (2px) | None or subtle white (2px) |
+| Property              | iOS                           | Android                       |
+| --------------------- | ----------------------------- | ----------------------------- |
+| **Type**              | Icon with background circle   | Icon with background circle   |
+| **Circle Size**       | 80×80px                       | 80×80dp                       |
+| **Checkmark Size**    | 40×40px inside circle         | 40×40dp inside circle         |
+| **Position**          | Centered, top third of screen | Centered, top third of screen |
+| **Circle Background** | #2E7D32 (Success Green)       | #2E7D32 (Success Green)       |
+| **Checkmark Color**   | White (#FFFFFF)               | White (#FFFFFF)               |
+| **Border**            | None or subtle white (2px)    | None or subtle white (2px)    |
 
 **Animation on Load:**
 
@@ -81,14 +81,14 @@ Join 12,503 verified members in your area
 
 ### 2. Metro Area Confirmation Text
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Heading (H1) | Heading (H1) |
-| **Font** | 28pt Bold, San Francisco | 28sp Medium, Roboto |
-| **Color** | #212121 (Almost Black) | #212121 (Almost Black) |
-| **Alignment** | Center | Center |
-| **Max Width** | 320px | 320dp |
-| **Line Height** | 1.2× | 1.2× |
+| Property        | iOS                      | Android                |
+| --------------- | ------------------------ | ---------------------- |
+| **Type**        | Heading (H1)             | Heading (H1)           |
+| **Font**        | 28pt Bold, San Francisco | 28sp Medium, Roboto    |
+| **Color**       | #212121 (Almost Black)   | #212121 (Almost Black) |
+| **Alignment**   | Center                   | Center                 |
+| **Max Width**   | 320px                    | 320dp                  |
+| **Line Height** | 1.2×                     | 1.2×                   |
 
 **Dynamic Content:**
 
@@ -103,13 +103,13 @@ Join 12,503 verified members in your area
 
 ### 3. Member Count Subtext
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Body text (paragraph) | Body text (paragraph) |
-| **Font** | 17pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Color** | #757575 (Medium Gray) | #757575 (Medium Gray) |
-| **Alignment** | Center | Center |
-| **Max Width** | 320px | 320dp |
+| Property      | iOS                         | Android               |
+| ------------- | --------------------------- | --------------------- |
+| **Type**      | Body text (paragraph)       | Body text (paragraph) |
+| **Font**      | 17pt Regular, San Francisco | 16sp Regular, Roboto  |
+| **Color**     | #757575 (Medium Gray)       | #757575 (Medium Gray) |
+| **Alignment** | Center                      | Center                |
+| **Max Width** | 320px                       | 320dp                 |
 
 **Dynamic Content:**
 
@@ -126,14 +126,14 @@ Join 12,503 verified members in your area
 
 ### 4. Continue Button (Primary)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Height** | 48px | 56dp |
-| **Width** | Full width − 32px margins | match_parent − 32dp margins |
-| **Corner Radius** | 8px | 8dp |
-| **Background** | #1565C0 (Primary Blue) | #1565C0 (Primary Blue) |
-| **Text** | 17pt Semibold, White, "Continue" | 14sp Medium, White, "CONTINUE" |
-| **Position** | Bottom, 24px above bottom edge / safe area | Bottom, 24dp above bottom edge / safe area |
+| Property          | iOS                                        | Android                                    |
+| ----------------- | ------------------------------------------ | ------------------------------------------ |
+| **Height**        | 48px                                       | 56dp                                       |
+| **Width**         | Full width − 32px margins                  | match_parent − 32dp margins                |
+| **Corner Radius** | 8px                                        | 8dp                                        |
+| **Background**    | #1565C0 (Primary Blue)                     | #1565C0 (Primary Blue)                     |
+| **Text**          | 17pt Semibold, White, "Continue"           | 14sp Medium, White, "CONTINUE"             |
+| **Position**      | Bottom, 24px above bottom edge / safe area | Bottom, 24dp above bottom edge / safe area |
 
 **States:**
 
@@ -153,15 +153,15 @@ Join 12,503 verified members in your area
 
 ### Vertical Stack (Top to Bottom)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / Status bar | Auto | — |
-| 2 | Flexible space | Flex | Pushes content to center |
-| 3 | Checkmark icon | 80px/dp | 32px/dp |
-| 4 | Metro name text | ~70px (2 lines max) | 16px/dp |
-| 5 | Member count text | ~50px (2 lines max) | Flex |
-| 6 | Continue button | 48px / 56dp | 24px/dp |
-| 7 | Bottom safe area | Auto | — |
+| #   | Element                | Height              | Spacing After            |
+| --- | ---------------------- | ------------------- | ------------------------ |
+| 1   | Safe area / Status bar | Auto                | —                        |
+| 2   | Flexible space         | Flex                | Pushes content to center |
+| 3   | Checkmark icon         | 80px/dp             | 32px/dp                  |
+| 4   | Metro name text        | ~70px (2 lines max) | 16px/dp                  |
+| 5   | Member count text      | ~50px (2 lines max) | Flex                     |
+| 6   | Continue button        | 48px / 56dp         | 24px/dp                  |
+| 7   | Bottom safe area       | Auto                | —                        |
 
 **Total Minimum Height:** ~400px (fits all small devices)
 **Content is vertically centered** with button anchored to bottom
@@ -190,15 +190,15 @@ Join 12,503 verified members in your area
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Checkmark Animation** | Scale + path draw | Scale + path draw (same) |
-| **Button Height** | 48px | 56dp (Material Design) |
-| **Button Text** | Title case ("Continue") | ALL CAPS ("CONTINUE") |
-| **Typography** | San Francisco (28pt H1, 17pt body) | Roboto (28sp H1, 16sp body) |
-| **Press Feedback** | Scale 0.98 + haptic (light impact) | Scale 0.98 + ripple |
-| **Haptic Feedback** | Light impact on button tap | No haptic (ripple only) |
-| **Screen Transition** | Slide in from right (300ms) | Slide up from bottom (300ms, material motion) |
+| Aspect                  | iOS                                | Android                                       |
+| ----------------------- | ---------------------------------- | --------------------------------------------- |
+| **Checkmark Animation** | Scale + path draw                  | Scale + path draw (same)                      |
+| **Button Height**       | 48px                               | 56dp (Material Design)                        |
+| **Button Text**         | Title case ("Continue")            | ALL CAPS ("CONTINUE")                         |
+| **Typography**          | San Francisco (28pt H1, 17pt body) | Roboto (28sp H1, 16sp body)                   |
+| **Press Feedback**      | Scale 0.98 + haptic (light impact) | Scale 0.98 + ripple                           |
+| **Haptic Feedback**     | Light impact on button tap         | No haptic (ripple only)                       |
+| **Screen Transition**   | Slide in from right (300ms)        | Slide up from bottom (300ms, material motion) |
 
 ---
 
@@ -272,12 +272,12 @@ Join 12,503 verified members in your area
 
 ### Color Contrast (WCAG)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Metro name (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Member count (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
-| Button text (White on #1565C0) | 7.2:1 | AAA ✓ |
-| Checkmark (White on #2E7D32) | 8.5:1 | AAA ✓ |
+| Element                           | Ratio  | Level |
+| --------------------------------- | ------ | ----- |
+| Metro name (#212121 on #FFFFFF)   | 16.9:1 | AAA ✓ |
+| Member count (#757575 on #FFFFFF) | 4.6:1  | AA ✓  |
+| Button text (White on #1565C0)    | 7.2:1  | AAA ✓ |
+| Checkmark (White on #2E7D32)      | 8.5:1  | AAA ✓ |
 
 ### Focus Indicators
 
@@ -290,15 +290,15 @@ Join 12,503 verified members in your area
 
 ### Screen Entry Animation
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Background | 0ms | 300ms | Fade from transparent to white (ease-out) |
-| 2 | Checkmark circle | 0ms | 300ms | Scale 0→1.0, ease-out (spring effect), bg #2E7D32 |
-| 3 | Checkmark path | 100ms | 300ms | Path draw top-left to bottom-right, white |
-| 4 | Checkmark pulse | 400ms | 200ms | Scale 1.0→1.05→1.0 (optional gentle rotation ±3°) |
-| 5 | Metro name text | 700ms | 200ms | Fade in (ease-out) |
-| 6 | Member count text | 800ms | 200ms | Fade in (ease-out) |
-| 7 | Continue button | 1000ms | 200ms | Fade in (ease-out) |
+| Step | Element           | Delay  | Duration | Effect                                            |
+| ---- | ----------------- | ------ | -------- | ------------------------------------------------- |
+| 1    | Background        | 0ms    | 300ms    | Fade from transparent to white (ease-out)         |
+| 2    | Checkmark circle  | 0ms    | 300ms    | Scale 0→1.0, ease-out (spring effect), bg #2E7D32 |
+| 3    | Checkmark path    | 100ms  | 300ms    | Path draw top-left to bottom-right, white         |
+| 4    | Checkmark pulse   | 400ms  | 200ms    | Scale 1.0→1.05→1.0 (optional gentle rotation ±3°) |
+| 5    | Metro name text   | 700ms  | 200ms    | Fade in (ease-out)                                |
+| 6    | Member count text | 800ms  | 200ms    | Fade in (ease-out)                                |
+| 7    | Continue button   | 1000ms | 200ms    | Fade in (ease-out)                                |
 
 **Total:** ~1200ms to full visibility
 
@@ -328,13 +328,13 @@ Join 12,503 verified members in your area
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `metro_confirm_title` | You're in {metro_name}! |
+| Key                            | Value                                      |
+| ------------------------------ | ------------------------------------------ |
+| `metro_confirm_title`          | You're in {metro_name}!                    |
 | `metro_confirm_members_plural` | Join {count} verified members in your area |
-| `metro_confirm_members_few` | Join {count} verified members in your area |
-| `metro_confirm_members_zero` | Be among the first members in your area |
-| `metro_confirm_button` | Continue |
+| `metro_confirm_members_few`    | Join {count} verified members in your area |
+| `metro_confirm_members_zero`   | Be among the first members in your area    |
+| `metro_confirm_button`         | Continue                                   |
 
 ### Dynamic Placeholders
 
@@ -372,12 +372,12 @@ Join 12,503 verified members in your area
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | ZIP validation success (Screen 03) | This screen |
-| Entry | Nav params: `{ metroAreaId, metroName, memberCount }` | — |
-| Exit | Tap "Continue" | `/onboarding/tutorial` (Screen 05) |
-| Exit | Back button (Android) | Confirmation dialog → Screen 03 or stay |
+| Direction | Trigger                                               | Destination                             |
+| --------- | ----------------------------------------------------- | --------------------------------------- |
+| Entry     | ZIP validation success (Screen 03)                    | This screen                             |
+| Entry     | Nav params: `{ metroAreaId, metroName, memberCount }` | —                                       |
+| Exit      | Tap "Continue"                                        | `/onboarding/tutorial` (Screen 05)      |
+| Exit      | Back button (Android)                                 | Confirmation dialog → Screen 03 or stay |
 
 **Params passed to next screen:** None (metro area already saved in DB)
 
@@ -489,11 +489,11 @@ Join 12,503 verified members in your area
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md) |
-| Next | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md) |
-| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 9 |
+| Relation | Screen                                                                                          |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| Previous | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md)                               |
+| Next     | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md)                |
+| Journey  | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 9 |
 
 ---
 

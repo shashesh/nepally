@@ -120,24 +120,24 @@ All business logic in `packages/shared/`:
 
 ### API Functions
 
-| Function | Purpose |
-|----------|---------|
-| `getCategories` | Fetch all categories sorted by sort_order |
-| `getListingsByMetro` | Active listings for metro area (with filters) |
-| `getListingById` | Single listing with owner/category joins |
-| `getListingsByOwner` | Owner's listings for My Listings / profile. Returns `hasMore` for paging |
-| `createListing` | Create new listing |
-| `updateListing` | Update listing fields |
-| `deactivateListing` | Set status = inactive |
-| `reactivateListing` | Set status = active, reset refreshed_at |
-| `deleteListing` | Soft delete (status = removed) |
-| `refreshListing` | Reset refreshed_at to now() |
-| `saveListing` | Bookmark a listing (idempotent) |
-| `unsaveListing` | Remove bookmark |
-| `getUserSavedListingIds` | Get saved listing IDs for a user |
-| `getSavedListingsByUser` | Full saved listings with details |
-| `incrementListingViews` | Non-critical view counter |
-| `incrementListingContacts` | Contact counter |
+| Function                   | Purpose                                                                  |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `getCategories`            | Fetch all categories sorted by sort_order                                |
+| `getListingsByMetro`       | Active listings for metro area (with filters)                            |
+| `getListingById`           | Single listing with owner/category joins                                 |
+| `getListingsByOwner`       | Owner's listings for My Listings / profile. Returns `hasMore` for paging |
+| `createListing`            | Create new listing                                                       |
+| `updateListing`            | Update listing fields                                                    |
+| `deactivateListing`        | Set status = inactive                                                    |
+| `reactivateListing`        | Set status = active, reset refreshed_at                                  |
+| `deleteListing`            | Soft delete (status = removed)                                           |
+| `refreshListing`           | Reset refreshed_at to now()                                              |
+| `saveListing`              | Bookmark a listing (idempotent)                                          |
+| `unsaveListing`            | Remove bookmark                                                          |
+| `getUserSavedListingIds`   | Get saved listing IDs for a user                                         |
+| `getSavedListingsByUser`   | Full saved listings with details                                         |
+| `incrementListingViews`    | Non-critical view counter                                                |
+| `incrementListingContacts` | Contact counter                                                          |
 
 ---
 

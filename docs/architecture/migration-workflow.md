@@ -45,39 +45,39 @@ This changed **only the bookkeeping table** — no schema, data, RLS, or applica
 
 The pre-realignment tracker contents (31 rows), captured before the rewrite:
 
-| version (timestamp) | name |
-|---|---|
-| 20260223124703 | drop_conversations_post_id |
-| 20260223163609 | post_photos_storage |
-| 20260224002839 | enable_rls_on_chat_tables |
-| 20260224003545 | fix_function_search_paths |
-| 20260224003810 | fix_multiple_permissive_policies |
-| 20260224004250 | fix_rls_auth_initplan_performance |
-| 20260224114717 | fix_conversation_participants_rls_recursion |
-| 20260303155854 | 001_schema |
-| 20260303170149 | conversations_add_creator_id |
-| 20260303191153 | fix_like_notification_username |
-| 20260303202736 | add_saved_posts |
-| 20260304000000 | 006_events |
-| 20260311021840 | email_verification |
-| 20260312152211 | email_verification |
-| 20260324021032 | notification_push_fanout |
-| 20260324021116 | notification_push_url_fallback |
-| 20260324160411 | notifications_delete_policy |
-| 20260330010356 | 014_marketplace |
-| 20260330011907 | 015_listing_photos_storage |
-| 20260401012532 | 016_consolidate_marketplace_categories |
-| 20260406152015 | marketplace_featured_and_trending |
-| 20260409204319 | 017_fix_marketplace_rpc_security_and_search |
-| 20260409204338 | 019_event_interested |
-| 20260409204348 | 020_promotions |
-| 20260411015235 | 021_fix_cascade_premium_promotion |
-| 20260413194205 | 023_drop_is_featured |
-| 20260413195036 | 022_lock_down_promotion_inserts |
-| 20260414013057 | 024_fix_promotions_rls_and_feed |
-| 20260416014726 | user_bio |
-| 20260416023723 | security_warnings_hardening |
-| 20260608021301 | fix_security_definer_view_and_rls_initplan |
+| version (timestamp) | name                                        |
+| ------------------- | ------------------------------------------- |
+| 20260223124703      | drop_conversations_post_id                  |
+| 20260223163609      | post_photos_storage                         |
+| 20260224002839      | enable_rls_on_chat_tables                   |
+| 20260224003545      | fix_function_search_paths                   |
+| 20260224003810      | fix_multiple_permissive_policies            |
+| 20260224004250      | fix_rls_auth_initplan_performance           |
+| 20260224114717      | fix_conversation_participants_rls_recursion |
+| 20260303155854      | 001_schema                                  |
+| 20260303170149      | conversations_add_creator_id                |
+| 20260303191153      | fix_like_notification_username              |
+| 20260303202736      | add_saved_posts                             |
+| 20260304000000      | 006_events                                  |
+| 20260311021840      | email_verification                          |
+| 20260312152211      | email_verification                          |
+| 20260324021032      | notification_push_fanout                    |
+| 20260324021116      | notification_push_url_fallback              |
+| 20260324160411      | notifications_delete_policy                 |
+| 20260330010356      | 014_marketplace                             |
+| 20260330011907      | 015_listing_photos_storage                  |
+| 20260401012532      | 016_consolidate_marketplace_categories      |
+| 20260406152015      | marketplace_featured_and_trending           |
+| 20260409204319      | 017_fix_marketplace_rpc_security_and_search |
+| 20260409204338      | 019_event_interested                        |
+| 20260409204348      | 020_promotions                              |
+| 20260411015235      | 021_fix_cascade_premium_promotion           |
+| 20260413194205      | 023_drop_is_featured                        |
+| 20260413195036      | 022_lock_down_promotion_inserts             |
+| 20260414013057      | 024_fix_promotions_rls_and_feed             |
+| 20260416014726      | user_bio                                    |
+| 20260416023723      | security_warnings_hardening                 |
+| 20260608021301      | fix_security_definer_view_and_rls_initplan  |
 
 ### After (current)
 
@@ -112,4 +112,4 @@ If the team wants `supabase db push/pull`:
 1. Rename all repo migrations to 14-digit timestamp prefixes (note: touches the FROZEN `001`–`003` filenames — content unchanged).
 2. Set the real `project_id` in `config.toml` and `supabase link`.
 3. `supabase migration repair --status applied <version>` for every migration so none replay.
-This is a dedicated effort; until then, stick to the manual/MCP workflow above.
+   This is a dedicated effort; until then, stick to the manual/MCP workflow above.

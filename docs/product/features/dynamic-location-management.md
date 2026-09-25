@@ -40,18 +40,18 @@ Currently, location is set once during onboarding via manual ZIP code entry and 
 
 ## Scope (Features)
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| **L.1** Location Permission Screen | Custom branded pre-permission screen explaining why location is needed, shown before onboarding | Must-have |
-| **L.2** GPS-to-Metro Mapping | Reverse geocode GPS coordinates to determine which metro area the user is in | Must-have |
-| **L.3** Location Change Detection | On app open/foreground, check GPS and compare to active metro area | Must-have |
-| **L.4** Location Change Prompt | Modal/bottom sheet asking user to browse temporarily or update home location | Must-have |
-| **L.5** Saved Locations | Users can save named locations (Home, Work, custom). Free users: 1 location. Premium users: up to 5 locations. | Must-have |
-| **L.6** Location Switcher (Home Screen) | Tappable location in header opens saved locations picker | Must-have |
-| **L.7** Permission Denied Fallback | Use onboarding ZIP as fallback + periodic subtle banner reminding to enable location | Must-have |
-| **L.8** Snooze Prompt | "Remind me later" option on location change prompt (24-hour snooze) | Must-have |
-| **L.9** Manual Override | Manual location selection overrides GPS detection until next app restart | Must-have |
-| **L.10** Web Location Support | Browser Geolocation API + manual metro picker fallback for Next.js web app | Must-have |
+| Feature                                 | Description                                                                                                    | Priority  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------- |
+| **L.1** Location Permission Screen      | Custom branded pre-permission screen explaining why location is needed, shown before onboarding                | Must-have |
+| **L.2** GPS-to-Metro Mapping            | Reverse geocode GPS coordinates to determine which metro area the user is in                                   | Must-have |
+| **L.3** Location Change Detection       | On app open/foreground, check GPS and compare to active metro area                                             | Must-have |
+| **L.4** Location Change Prompt          | Modal/bottom sheet asking user to browse temporarily or update home location                                   | Must-have |
+| **L.5** Saved Locations                 | Users can save named locations (Home, Work, custom). Free users: 1 location. Premium users: up to 5 locations. | Must-have |
+| **L.6** Location Switcher (Home Screen) | Tappable location in header opens saved locations picker                                                       | Must-have |
+| **L.7** Permission Denied Fallback      | Use onboarding ZIP as fallback + periodic subtle banner reminding to enable location                           | Must-have |
+| **L.8** Snooze Prompt                   | "Remind me later" option on location change prompt (24-hour snooze)                                            | Must-have |
+| **L.9** Manual Override                 | Manual location selection overrides GPS detection until next app restart                                       | Must-have |
+| **L.10** Web Location Support           | Browser Geolocation API + manual metro picker fallback for Next.js web app                                     | Must-have |
 
 **Out of scope (this iteration):**
 
@@ -422,10 +422,10 @@ WHERE metro_area_id IS NOT NULL;
 
 ### New Packages Required
 
-| Package | Platform | Purpose |
-|---------|----------|---------|
-| `expo-location` | Mobile | GPS coordinates + reverse geocoding |
-| `@gorhom/bottom-sheet` or similar | Mobile | Bottom sheet for location prompts (if not already installed) |
+| Package                           | Platform | Purpose                                                      |
+| --------------------------------- | -------- | ------------------------------------------------------------ |
+| `expo-location`                   | Mobile   | GPS coordinates + reverse geocoding                          |
+| `@gorhom/bottom-sheet` or similar | Mobile   | Bottom sheet for location prompts (if not already installed) |
 
 ### Existing Packages Used
 

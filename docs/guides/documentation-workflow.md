@@ -17,6 +17,7 @@ Before opening a PR:
 
 ```bash
 npm run docs:check
+npm run lint:md   # markdownlint + Prettier check; `npm run format` fixes formatting
 ```
 
 ---
@@ -25,20 +26,20 @@ npm run docs:check
 
 The answer to "which doc do I update?"
 
-| If you changed… | You must update… | Enforced by |
-|---|---|---|
-| DB schema / added a migration | `architecture/database-schema.md` | PR template |
-| A feature's user-visible behavior | `product/features/<feature>.md` | PR template |
-| Setup, deploy, or test commands | The matching `guides/` doc | PR template |
-| Monorepo layout or import rules | `architecture/monorepo-structure.md` | PR template |
-| Added a `test:security:*` script | The table in `guides/setup-and-testing.md` | PR template |
-| Made a non-obvious architectural call | New ADR in `decisions/` | PR template |
-| Shipped a roadmap item | `product/roadmap.md` | PR template |
-| **Finished a plan or spec** | `status: implemented` → `git mv` to `archive/` | **CI** |
-| **Added, moved, or retired any doc** | `INDEX.md` | **CI** |
-| **Moved a doc other docs link to** | The linking docs | **CI** |
+| If you changed…                       | You must update…                               | Enforced by |
+| ------------------------------------- | ---------------------------------------------- | ----------- |
+| DB schema / added a migration         | `architecture/database-schema.md`              | PR template |
+| A feature's user-visible behavior     | `product/features/<feature>.md`                | PR template |
+| Setup, deploy, or test commands       | The matching `guides/` doc                     | PR template |
+| Monorepo layout or import rules       | `architecture/monorepo-structure.md`           | PR template |
+| Added a `test:security:*` script      | The table in `guides/setup-and-testing.md`     | PR template |
+| Made a non-obvious architectural call | New ADR in `decisions/`                        | PR template |
+| Shipped a roadmap item                | `product/roadmap.md`                           | PR template |
+| **Finished a plan or spec**           | `status: implemented` → `git mv` to `archive/` | **CI**      |
+| **Added, moved, or retired any doc**  | `INDEX.md`                                     | **CI**      |
+| **Moved a doc other docs link to**    | The linking docs                               | **CI**      |
 
-Rows marked **CI** fail the build. Rows marked *PR template* are prompts a human can
+Rows marked **CI** fail the build. Rows marked _PR template_ are prompts a human can
 skip — they are honest about being unenforced rather than pretending otherwise.
 
 ---
@@ -47,12 +48,12 @@ skip — they are honest about being unenforced rather than pretending otherwise
 
 The most common filing mistake. Both describe features; only one is kept current.
 
-| | `product/features/<name>.md` | `specs/YYYY-MM-DD-<topic>-design.md` |
-|---|---|---|
-| **Tense** | Present — what the feature *is* | Past-dated — what one change *proposed* |
-| **Lifetime** | Evergreen; edited as behavior changes | Frozen at approval |
-| **On ship** | Updated | Archived to `archive/specs/` |
-| **Answers** | "How does marketplace work today?" | "Why did we redesign it in April?" |
+|              | `product/features/<name>.md`          | `specs/YYYY-MM-DD-<topic>-design.md`    |
+| ------------ | ------------------------------------- | --------------------------------------- |
+| **Tense**    | Present — what the feature _is_       | Past-dated — what one change _proposed_ |
+| **Lifetime** | Evergreen; edited as behavior changes | Frozen at approval                      |
+| **On ship**  | Updated                               | Archived to `archive/specs/`            |
+| **Answers**  | "How does marketplace work today?"    | "Why did we redesign it in April?"      |
 
 When a spec ships, the shipping PR updates the evergreen feature doc **and** archives
 the spec. If you only archive the spec, the knowledge leaves the repo. If you only
@@ -86,7 +87,7 @@ Required on every file under `plans/` and `specs/`, including `archive/`:
 title: Notifications feature
 status: planned | in-progress | implemented | abandoned
 created: 2026-04-13
-spec: docs/specs/2026-04-13-notifications-design.md   # plans only; optional
+spec: docs/specs/2026-04-13-notifications-design.md # plans only; optional
 ---
 ```
 
@@ -104,15 +105,15 @@ it is how a plan stops being live without pretending it shipped.
 
 ## What `npm run docs:check` checks
 
-| Rule | Meaning | Fix |
-|---|---|---|
-| `broken-link` | A relative `.md`/`.html` link does not resolve | Repoint it, or remove it if the target was never written |
-| `index-orphan` | A doc exists but `INDEX.md` never mentions it | Add a one-line entry |
-| `index-dangling` | `INDEX.md` points at something that does not exist | Fix or remove the entry |
-| `missing-frontmatter` | A plan/spec has no frontmatter block | Add one per the contract above |
-| `invalid-status` | `status:` is not one of the four values | Use a valid value |
-| `unarchived-terminal` | `implemented`/`abandoned` outside `archive/` | `git mv` it into `archive/` |
-| `archived-non-terminal` | `planned`/`in-progress` inside `archive/` | Fix the status, or move it back to `active/` |
+| Rule                    | Meaning                                            | Fix                                                      |
+| ----------------------- | -------------------------------------------------- | -------------------------------------------------------- |
+| `broken-link`           | A relative `.md`/`.html` link does not resolve     | Repoint it, or remove it if the target was never written |
+| `index-orphan`          | A doc exists but `INDEX.md` never mentions it      | Add a one-line entry                                     |
+| `index-dangling`        | `INDEX.md` points at something that does not exist | Fix or remove the entry                                  |
+| `missing-frontmatter`   | A plan/spec has no frontmatter block               | Add one per the contract above                           |
+| `invalid-status`        | `status:` is not one of the four values            | Use a valid value                                        |
+| `unarchived-terminal`   | `implemented`/`abandoned` outside `archive/`       | `git mv` it into `archive/`                              |
+| `archived-non-terminal` | `planned`/`in-progress` inside `archive/`          | Fix the status, or move it back to `active/`             |
 
 **Exempt from `index-orphan`:** `INDEX.md` itself, anything under `archive/`, and any
 path with an underscore-prefixed segment (`plans/_template.md`,
@@ -122,6 +123,26 @@ with `_` to keep it out of the index.
 **Not checked, deliberately:** anchor fragments (`file.md#section`), external URL
 liveness, and prose style. Links inside fenced code blocks and inline code spans are
 skipped — they are examples, not links.
+
+---
+
+## Markdown formatting and lint
+
+Prettier formats Markdown and markdownlint checks what formatting can't. `npm run lint:md`
+runs both. It is part of `npm run lint` (so `npm run ci:local` and CI) and of the Docs
+workflow, which covers docs-only PRs that CI skips.
+
+- After editing `.md` files, run `npm run format`, then `npm run lint:md`. Don't hand-align
+  tables; Prettier pads the cells so the pipes line up, and markdownlint expects that.
+- Prettier's formatting wins where the two overlap: lines aren't wrapped, and emphasis is
+  `_x_`. Prettier also formats fenced code samples to the repo's code style.
+- Wrap URLs and emails in `<…>` rather than leaving them bare. Escape angle-bracket
+  placeholders outside code as `\<name>`, or markdownlint reads them as HTML.
+- The rules live in `.markdownlint-cli2.jsonc`. It skips the same paths as `.prettierignore`:
+  `docs/archive/` (frozen), `scripts/docs/__fixtures__/` (test inputs) and installed
+  third-party skills. WireMD wireframes in `docs/wireframes/` may repeat on-screen headings.
+- In VS Code, install the recommended Prettier and markdownlint extensions
+  (`.vscode/extensions.json`) to see warnings in the editor.
 
 ---
 

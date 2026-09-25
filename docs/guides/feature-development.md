@@ -215,11 +215,11 @@ Run this before closing the feature. It checks:
 
 ### 6b. Test Placement Rules
 
-| What changed | Where tests go |
-|---|---|
+| What changed                                 | Where tests go                     |
+| -------------------------------------------- | ---------------------------------- |
 | Shared logic (types, API, utils, validation) | `packages/shared/src/**/*.test.ts` |
-| Web logic/pages/components | `apps/web/src/**/*.test.ts(x)` |
-| Mobile screens/hooks/services | `apps/mobile/src/**/*.test.ts(x)` |
+| Web logic/pages/components                   | `apps/web/src/**/*.test.ts(x)`     |
+| Mobile screens/hooks/services                | `apps/mobile/src/**/*.test.ts(x)`  |
 
 Tests should cover:
 
@@ -282,16 +282,16 @@ of which doc to update when, and which rows CI enforces.
 
 ## Quick Reference: Which Skill for What
 
-| Situation | Skill/Action |
-|---|---|
-| Feature is large or unclear in scope | `/break-features` first |
-| Starting a new feature | `/design-feature` |
-| Documenting a user flow | `/user-journey` |
-| Designing a screen | `/wireframe-old` |
-| About to write code | Create implementation plan first |
-| Building the feature | `/implement-feature` |
-| Feature built, verifying architecture | `/shared-first-check` |
-| Roadmap feels stale or unclear | `/refine-roadmap` |
+| Situation                             | Skill/Action                     |
+| ------------------------------------- | -------------------------------- |
+| Feature is large or unclear in scope  | `/break-features` first          |
+| Starting a new feature                | `/design-feature`                |
+| Documenting a user flow               | `/user-journey`                  |
+| Designing a screen                    | `/wireframe-old`                 |
+| About to write code                   | Create implementation plan first |
+| Building the feature                  | `/implement-feature`             |
+| Feature built, verifying architecture | `/shared-first-check`            |
+| Roadmap feels stale or unclear        | `/refine-roadmap`                |
 
 ---
 

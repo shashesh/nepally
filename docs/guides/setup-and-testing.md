@@ -12,14 +12,14 @@ Before starting, ensure you have:
 
 ## Step 1: Verify Node.js Version
 
-### Check your current version:
+### Check your current version
 
 ```bash
 node --version  # Needs v22.13+, v24.3+ or v25+ (React Native 0.86 rejects 22.0-22.12, 23.x and 24.0-24.2)
 npm --version   # Should show 10.x.x or higher
 ```
 
-### If you need to upgrade (Windows):
+### If you need to upgrade (Windows)
 
 ```bash
 # Download and install from https://nodejs.org/
@@ -48,7 +48,7 @@ npm install
 
 ### Option A: Use Existing Supabase Project
 
-1. **Go to** https://supabase.com
+1. **Go to** <https://supabase.com>
 2. **Sign in** and select your project
 3. **Get credentials**:
    - Go to Settings → API
@@ -57,7 +57,7 @@ npm install
 
 ### Option B: Create New Supabase Project
 
-1. **Create project** at https://supabase.com
+1. **Create project** at <https://supabase.com>
 2. **Run database migrations**:
 
    ```bash
@@ -169,7 +169,7 @@ npm start
 › Press w │ open web
 ```
 
-### Test on Physical Device (Easiest):
+### Test on Physical Device (Easiest)
 
 1. **Install Expo Go**:
    - iOS: App Store → Search "Expo Go"
@@ -181,11 +181,11 @@ npm start
 
 3. **App loads on your device** with hot reload!
 
-> **Expo Go must match the project's Expo SDK (57).** The stores only carry Expo Go for the newest SDK. If Expo Go reports "Project is incompatible with this version of Expo Go", the phone and the project are on different SDKs. Either upgrade the project, or install the matching Expo Go from https://expo.dev/go and turn off store auto-update for it until the project catches up.
+> **Expo Go must match the project's Expo SDK (57).** The stores only carry Expo Go for the newest SDK. If Expo Go reports "Project is incompatible with this version of Expo Go", the phone and the project are on different SDKs. Either upgrade the project, or install the matching Expo Go from <https://expo.dev/go> and turn off store auto-update for it until the project catches up.
 >
 > **Push notifications do not work in Expo Go.** On Android, even importing `expo-notifications` throws there. So the app loads it lazily and skips push registration in Expo Go (`apps/mobile/src/services/notifications.ts`). Test push in a development or preview build.
 
-### Test on iOS Simulator (macOS only):
+### Test on iOS Simulator (macOS only)
 
 ```bash
 # Press 'i' in the terminal
@@ -193,7 +193,7 @@ npm start
 npm run ios
 ```
 
-### Test on Android Emulator:
+### Test on Android Emulator
 
 ```bash
 # First, ensure Android Studio is installed with an emulator
@@ -221,7 +221,7 @@ npm run dev
    - Ready in 2.3s
 ```
 
-**Open browser**: http://localhost:3000
+**Open browser**: <http://localhost:3000>
 
 ## Step 7: Test the Mobile App Flow
 
@@ -439,13 +439,13 @@ npm run type-check
 workspace. The React Compiler itself is **not** enabled, so keep `useCallback`/`useMemo`
 where something depends on their identity. Fix the code; don't disable the rule:
 
-| Rule | Usual fix here |
-| --- | --- |
-| `refs` | `useRef(new Animated.Value(x)).current` → `useAnimatedValue(x)` from `react-native`. A "latest value" ref is written in `useLayoutEffect`, not during render. `PanResponder.create` goes in `useMemo` with its real deps (callbacks inside it may not read `ref.current`) |
-| `set-state-in-effect` | Derive the value during render; or adjust state when a prop changes ([react.dev](https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)); or start `loading` as `true`. Fetch inside the effect and set state after the `await`, behind a `cancelled` flag. For refresh/retry, bump a `reloadKey` state that the effect depends on |
-| `immutability` ("accessed before declared") | An effect calling a loader declared below it — move the fetch into the effect as above |
-| `preserve-manual-memoization` | Deps don't match the body, e.g. `[user?.id]`. Hoist `const userId = user?.id` and use it in both |
-| `purity` | No `Date.now()` in render: `const now = useNow()` (each app's `hooks/useNow.ts`, refreshed every minute), passed to pure shared helpers such as `getDaysSinceRefresh(refreshedAt, now)` |
+| Rule                                        | Usual fix here                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `refs`                                      | `useRef(new Animated.Value(x)).current` → `useAnimatedValue(x)` from `react-native`. A "latest value" ref is written in `useLayoutEffect`, not during render. `PanResponder.create` goes in `useMemo` with its real deps (callbacks inside it may not read `ref.current`)                                                                                                  |
+| `set-state-in-effect`                       | Derive the value during render; or adjust state when a prop changes ([react.dev](https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)); or start `loading` as `true`. Fetch inside the effect and set state after the `await`, behind a `cancelled` flag. For refresh/retry, bump a `reloadKey` state that the effect depends on |
+| `immutability` ("accessed before declared") | An effect calling a loader declared below it — move the fetch into the effect as above                                                                                                                                                                                                                                                                                     |
+| `preserve-manual-memoization`               | Deps don't match the body, e.g. `[user?.id]`. Hoist `const userId = user?.id` and use it in both                                                                                                                                                                                                                                                                           |
+| `purity`                                    | No `Date.now()` in render: `const now = useNow()` (each app's `hooks/useNow.ts`, refreshed every minute), passed to pure shared helpers such as `getDaysSinceRefresh(refreshedAt, now)`                                                                                                                                                                                    |
 
 Rule docs: [react.dev/reference/eslint-plugin-react-hooks](https://react.dev/reference/eslint-plugin-react-hooks).
 
@@ -511,7 +511,7 @@ npm run test:coverage --workspace=packages/shared
 
 ### Web App Checklist
 
-- [ ] App loads at http://localhost:3000
+- [ ] App loads at <http://localhost:3000>
 - [ ] No console errors (some warnings OK)
 - [ ] Supabase connection works (check Network tab)
 - [ ] Feed page loads posts with tag filters
@@ -527,7 +527,7 @@ npm run test:coverage --workspace=packages/shared
 2. **Right Monitor/Half**:
    - Terminal 1: Mobile Metro bundler
    - Terminal 2: Web dev server
-   - Browser: http://localhost:3000
+   - Browser: <http://localhost:3000>
    - VS Code: For editing files
 
 **Hot Reload Works!** Edit any file and see changes instantly:
@@ -694,13 +694,13 @@ They are deliberately not part of `npm test`: they need real service-role creden
 and they talk to a real database, so they cannot run in the normal unit-test sweep or
 in CI without secrets.
 
-| Command | Asserts |
-|---|---|
-| `npm run test:security:chat-rls` | Conversation RLS — a user cannot read or join a conversation they are not a participant in |
-| `npm run test:security:users-privilege` | Migration 034's guard trigger on privileged `users` columns (`trust_level`, `is_moderator`, `is_premium`) cannot be self-escalated |
-| `npm run test:security:emergency-post` | Emergency-tagged posts stay invisible until a moderator approves them (migration 035) |
-| `npm run test:security:users-pii` | `users` PII columns are not readable by anon or other members; the owner reads them through `get_my_profile()` (migration 036) |
-| `npm run test:security:storage` | Storage RLS is owner-only (migration 039): avatar upserts and plain uploads succeed, another member's `remove()` deletes nothing, anon cannot list any bucket, and the owner's `remove()` really deletes |
+| Command                                 | Asserts                                                                                                                                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run test:security:chat-rls`        | Conversation RLS — a user cannot read or join a conversation they are not a participant in                                                                                                               |
+| `npm run test:security:users-privilege` | Migration 034's guard trigger on privileged `users` columns (`trust_level`, `is_moderator`, `is_premium`) cannot be self-escalated                                                                       |
+| `npm run test:security:emergency-post`  | Emergency-tagged posts stay invisible until a moderator approves them (migration 035)                                                                                                                    |
+| `npm run test:security:users-pii`       | `users` PII columns are not readable by anon or other members; the owner reads them through `get_my_profile()` (migration 036)                                                                           |
+| `npm run test:security:storage`         | Storage RLS is owner-only (migration 039): avatar upserts and plain uploads succeed, another member's `remove()` deletes nothing, anon cannot list any bucket, and the owner's `remove()` really deletes |
 
 **Credentials.** Every script reads `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
 `SUPABASE_SERVICE_ROLE_KEY` from the environment. The npm scripts do not load

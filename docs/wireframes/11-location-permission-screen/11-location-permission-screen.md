@@ -104,73 +104,73 @@ We use your location to show you community posts, housing, jobs, and events near
 
 ### 1. Illustration
 
-| Property | Value |
-|----------|-------|
-| **Size** | 160×160px (mobile), 140×140px (web) |
-| **Type** | Static image or Lottie animation |
-| **Content** | Map pin with community/people theme |
-| **Alignment** | Center |
+| Property       | Value                                                         |
+| -------------- | ------------------------------------------------------------- |
+| **Size**       | 160×160px (mobile), 140×140px (web)                           |
+| **Type**       | Static image or Lottie animation                              |
+| **Content**    | Map pin with community/people theme                           |
+| **Alignment**  | Center                                                        |
 | **Top margin** | 80px from top of safe area (mobile), 40px from card top (web) |
-| **a11y** | `accessibilityLabel="Map illustration"` (decorative) |
+| **a11y**       | `accessibilityLabel="Map illustration"` (decorative)          |
 
 ---
 
 ### 2. Headline
 
-| Property | Value |
-|----------|-------|
-| **Text** | "Nepally works best with your location" |
-| **Font size** | 28px (mobile), 24px (web) |
-| **Font weight** | Bold (700) |
-| **Color** | `colors.text.primary` |
-| **Alignment** | Center |
-| **Top margin** | 32px below illustration |
-| **Max width** | 280px (to force 2-line wrapping for readability) |
-| **Semantic** | H1 |
+| Property        | Value                                            |
+| --------------- | ------------------------------------------------ |
+| **Text**        | "Nepally works best with your location"          |
+| **Font size**   | 28px (mobile), 24px (web)                        |
+| **Font weight** | Bold (700)                                       |
+| **Color**       | `colors.text.primary`                            |
+| **Alignment**   | Center                                           |
+| **Top margin**  | 32px below illustration                          |
+| **Max width**   | 280px (to force 2-line wrapping for readability) |
+| **Semantic**    | H1                                               |
 
 ---
 
 ### 3. Body Text
 
-| Property | Value |
-|----------|-------|
-| **Text** | "We use your location to show you community posts, housing, jobs, and events near you." |
-| **Font size** | 16px (mobile), 15px (web) |
-| **Font weight** | Regular (400) |
-| **Color** | `colors.text.secondary` |
-| **Alignment** | Center |
-| **Line height** | 24px |
-| **Top margin** | 16px below headline |
-| **Max width** | 300px (mobile), 360px (web) |
+| Property        | Value                                                                                   |
+| --------------- | --------------------------------------------------------------------------------------- |
+| **Text**        | "We use your location to show you community posts, housing, jobs, and events near you." |
+| **Font size**   | 16px (mobile), 15px (web)                                                               |
+| **Font weight** | Regular (400)                                                                           |
+| **Color**       | `colors.text.secondary`                                                                 |
+| **Alignment**   | Center                                                                                  |
+| **Line height** | 24px                                                                                    |
+| **Top margin**  | 16px below headline                                                                     |
+| **Max width**   | 300px (mobile), 360px (web)                                                             |
 
 ---
 
 ### 4. Privacy Assurance Line
 
-| Property | Value |
-|----------|-------|
-| **Text** | "Your exact location is never shared — we only use it to determine your metro area." |
-| **Font size** | 16px (mobile), 15px (web) |
-| **Font weight** | Regular (400) |
-| **Color** | `colors.text.secondary` |
-| **Icon** | 🔒 lock icon prefix |
-| **Purpose** | Address the #1 concern users have about location permissions |
+| Property        | Value                                                                                |
+| --------------- | ------------------------------------------------------------------------------------ |
+| **Text**        | "Your exact location is never shared — we only use it to determine your metro area." |
+| **Font size**   | 16px (mobile), 15px (web)                                                            |
+| **Font weight** | Regular (400)                                                                        |
+| **Color**       | `colors.text.secondary`                                                              |
+| **Icon**        | 🔒 lock icon prefix                                                                  |
+| **Purpose**     | Address the #1 concern users have about location permissions                         |
 
 ---
 
 ### 5. Primary Button — "Enable Location"
 
-| Property | Value |
-|----------|-------|
-| **Text** | "Enable Location" |
-| **Component** | `PrimaryButton` (existing) |
-| **Width** | Full width minus 48px horizontal padding |
-| **Height** | 48px |
-| **Background** | #1565C0 (Primary Blue) |
-| **Text style** | 16px semibold, white |
+| Property            | Value                                                 |
+| ------------------- | ----------------------------------------------------- |
+| **Text**            | "Enable Location"                                     |
+| **Component**       | `PrimaryButton` (existing)                            |
+| **Width**           | Full width minus 48px horizontal padding              |
+| **Height**          | 48px                                                  |
+| **Background**      | #1565C0 (Primary Blue)                                |
+| **Text style**      | 16px semibold, white                                  |
 | **Icon (optional)** | `location-outline` Ionicon, 20px, white, left of text |
-| **Bottom margin** | 16px above "Not Now" |
-| **Position** | ~80px from bottom of screen |
+| **Bottom margin**   | 16px above "Not Now"                                  |
+| **Position**        | ~80px from bottom of screen                           |
 
 **States:**
 
@@ -185,13 +185,13 @@ We use your location to show you community posts, housing, jobs, and events near
 
 ### 6. Secondary Link — "Not Now"
 
-| Property | Value |
-|----------|-------|
-| **Text** | "Not Now" |
-| **Type** | Text link (not a button) |
-| **Font size** | 14px |
-| **Color** | `colors.text.secondary` |
-| **Alignment** | Center |
+| Property          | Value                         |
+| ----------------- | ----------------------------- |
+| **Text**          | "Not Now"                     |
+| **Type**          | Text link (not a button)      |
+| **Font size**     | 14px                          |
+| **Color**         | `colors.text.secondary`       |
+| **Alignment**     | Center                        |
 | **Bottom margin** | 40px from bottom of safe area |
 
 **States:**
@@ -224,12 +224,12 @@ We use your location to show you community posts, housing, jobs, and events near
 
 ## Navigation
 
-| Action | Destination |
-|--------|-------------|
-| "Enable Location" → permission granted → GPS success | MetroConfirmationScreen (pre-filled with detected metro) |
-| "Enable Location" → permission granted → GPS timeout/fail | ZipCodeEntryScreen (with toast message) |
-| "Enable Location" → permission denied by user | ZipCodeEntryScreen (standard flow) |
-| "Not Now" | WelcomeScreen (existing onboarding start) |
+| Action                                                    | Destination                                              |
+| --------------------------------------------------------- | -------------------------------------------------------- |
+| "Enable Location" → permission granted → GPS success      | MetroConfirmationScreen (pre-filled with detected metro) |
+| "Enable Location" → permission granted → GPS timeout/fail | ZipCodeEntryScreen (with toast message)                  |
+| "Enable Location" → permission denied by user             | ZipCodeEntryScreen (standard flow)                       |
+| "Not Now"                                                 | WelcomeScreen (existing onboarding start)                |
 
 ---
 
@@ -286,12 +286,12 @@ We use your location to show you community posts, housing, jobs, and events near
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | Onboarding entry (first launch) |
-| Next (GPS success) | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md) |
-| Next (GPS fail / Not Now) | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md) |
-| Journey | [01-location-permission-and-detection](../../user-journeys/location/01-location-permission-and-detection.md) |
+| Relation                  | Screen                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Previous                  | Onboarding entry (first launch)                                                                              |
+| Next (GPS success)        | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md)                                |
+| Next (GPS fail / Not Now) | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md)                                            |
+| Journey                   | [01-location-permission-and-detection](../../user-journeys/location/01-location-permission-and-detection.md) |
 
 ---
 

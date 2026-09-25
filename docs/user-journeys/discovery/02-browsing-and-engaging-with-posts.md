@@ -133,7 +133,7 @@
 
 **User Action:** Rajesh sees a post from "Sita Gurung" offering a room in his preferred area (near UTD). He taps the heart icon to like it.
 
-**System Response:** 
+**System Response:**
 
 - Heart icon animates (scales up, fills with red color)
 - Like count increments: "12" → "13"
@@ -273,7 +273,7 @@
 
 **User Action:** Rajesh taps on the comment input box and types: "Hi Sita! I'm also at UTD doing MS in CS. Do you have any pet restrictions?"
 
-**System Response:** 
+**System Response:**
 
 - Keyboard opens
 - Text input accepts typing
@@ -553,27 +553,27 @@
 
 ## Edge Cases
 
-| Scenario | Expected Behavior |
-|----------|------------------|
-| User tries to like the same post twice | Like button toggles (unlike), no error |
-| User tries to comment on deleted post | Post detail screen shows "Post no longer available" |
+| Scenario                                     | Expected Behavior                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------------- |
+| User tries to like the same post twice       | Like button toggles (unlike), no error                                 |
+| User tries to comment on deleted post        | Post detail screen shows "Post no longer available"                    |
 | User's comment fails to post (network error) | Toast: "Failed to post comment. Try again." Optimistic update reverted |
-| User tries to delete someone else's comment | Delete icon not visible, API returns 403 error |
-| Post has 0 likes and 0 comments | Show "0" for both (not hidden), indicates new post |
-| Post has 1000+ likes | Display "1K", "1.2K" etc. with proper formatting |
-| User scrolls to bottom of comment list | Load more comments (pagination, 20 per page) |
+| User tries to delete someone else's comment  | Delete icon not visible, API returns 403 error                         |
+| Post has 0 likes and 0 comments              | Show "0" for both (not hidden), indicates new post                     |
+| Post has 1000+ likes                         | Display "1K", "1.2K" etc. with proper formatting                       |
+| User scrolls to bottom of comment list       | Load more comments (pagination, 20 per page)                           |
 
 ---
 
 ## API Interactions
 
-| Action | Endpoint | Payload | Response |
-|--------|----------|---------|----------|
-| Like post | `POST /api/likes` | `{ post_id, user_id }` | `{ success: true }` |
-| Unlike post | `DELETE /api/likes` | `{ post_id, user_id }` | `{ success: true }` |
-| Get comments | `GET /api/comments?post_id=X` | N/A | `{ comments: [...] }` |
-| Create comment | `POST /api/comments` | `{ post_id, author_id, content }` | `{ comment: {...} }` |
-| Delete comment | `DELETE /api/comments/:id` | N/A | `{ success: true }` |
+| Action         | Endpoint                      | Payload                           | Response              |
+| -------------- | ----------------------------- | --------------------------------- | --------------------- |
+| Like post      | `POST /api/likes`             | `{ post_id, user_id }`            | `{ success: true }`   |
+| Unlike post    | `DELETE /api/likes`           | `{ post_id, user_id }`            | `{ success: true }`   |
+| Get comments   | `GET /api/comments?post_id=X` | N/A                               | `{ comments: [...] }` |
+| Create comment | `POST /api/comments`          | `{ post_id, author_id, content }` | `{ comment: {...} }`  |
+| Delete comment | `DELETE /api/comments/:id`    | N/A                               | `{ success: true }`   |
 
 ---
 

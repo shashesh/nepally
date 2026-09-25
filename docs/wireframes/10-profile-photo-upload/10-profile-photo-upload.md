@@ -31,7 +31,7 @@ Allow users to upload, crop, and set their profile photo. The photo will be disp
 ### Edit Profile Screen with Photo Section
 
 ::: card
-[← Edit Profile                                          ✓]{.nav}
+[← Edit Profile ✓]{.nav}
 
 ::: card {.centered}
 ![Avatar: JD initials on blue circle](avatar-placeholder) {64x64 circle}
@@ -52,11 +52,11 @@ Allow users to upload, crop, and set their profile photo. The photo will be disp
 
 ### Select Photo
 
-[📷  Take Photo]*
+[📷 Take Photo]*
 
-[🖼️  Choose from Library]*
+[🖼️ Choose from Library]*
 
-[🗑️  Remove Photo]{.destructive}
+[🗑️ Remove Photo]{.destructive}
 
 ---
 
@@ -68,7 +68,7 @@ Allow users to upload, crop, and set their profile photo. The photo will be disp
 ### Image Cropping Screen (After Selection)
 
 ::: card {.dark}
-[Cancel                                                Done]{.nav}
+[Cancel Done]{.nav}
 
 ::: card {.centered}
 ![Selected image with square crop overlay](crop-preview) {80% width, 1:1 ratio}
@@ -102,7 +102,7 @@ Uploading photo...
 ### Upload Success State
 
 ::: card
-[← Edit Profile                                          ✓]{.nav}
+[← Edit Profile ✓]{.nav}
 
 ::: card {.centered}
 ![New profile photo](avatar-new) {64x64 circle}
@@ -128,18 +128,18 @@ Failed to upload photo. Check your connection and try again.
 
 ### 1. Profile Photo Display (EditProfileScreen)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Circular avatar with button | Circular avatar with button |
-| **Position** | Top of EditProfileScreen, centered | Top of EditProfileScreen, centered |
-| **Margin top** | 24px | 24dp |
-| **Margin bottom** | 24px | 24dp |
+| Property          | iOS                                | Android                            |
+| ----------------- | ---------------------------------- | ---------------------------------- |
+| **Type**          | Circular avatar with button        | Circular avatar with button        |
+| **Position**      | Top of EditProfileScreen, centered | Top of EditProfileScreen, centered |
+| **Margin top**    | 24px                               | 24dp                               |
+| **Margin bottom** | 24px                               | 24dp                               |
 
 #### Avatar Display
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Size** | 64×64px circle | 64×64dp circle |
+| Property   | iOS               | Android           |
+| ---------- | ----------------- | ----------------- |
+| **Size**   | 64×64px circle    | 64×64dp circle    |
 | **Border** | 2px solid #E0E0E0 | 2px solid #E0E0E0 |
 
 **Content:**
@@ -156,15 +156,15 @@ Failed to upload photo. Check your connection and try again.
 
 #### Change Photo Button
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text button | Text button |
-| **Position** | Below avatar, centered | Below avatar, centered |
-| **Margin** | 12px from avatar | 12dp from avatar |
-| **Font** | 15pt Semibold, San Francisco | 14sp Semibold, Roboto |
-| **Color** | #1565C0 (Primary Blue) | #1565C0 |
-| **Underline** | Yes (always visible) | Yes (always visible) |
-| **Touch target** | 44×44pt min | 48×48dp min |
+| Property         | iOS                          | Android                |
+| ---------------- | ---------------------------- | ---------------------- |
+| **Type**         | Text button                  | Text button            |
+| **Position**     | Below avatar, centered       | Below avatar, centered |
+| **Margin**       | 12px from avatar             | 12dp from avatar       |
+| **Font**         | 15pt Semibold, San Francisco | 14sp Semibold, Roboto  |
+| **Color**        | #1565C0 (Primary Blue)       | #1565C0                |
+| **Underline**    | Yes (always visible)         | Yes (always visible)   |
+| **Touch target** | 44×44pt min                  | 48×48dp min            |
 
 **Text:**
 
@@ -178,23 +178,23 @@ Failed to upload photo. Check your connection and try again.
 
 ### 2. Photo Picker Modal (Action Sheet)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Bottom sheet modal | Action Sheet (Material) |
-| **Overlay** | Semi-transparent black (50% opacity) | Semi-transparent black (50% opacity) |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Corner radius** | 16px top corners | 16dp top corners |
-| **Height** | Auto (fits content) | Auto (fits content) |
+| Property          | iOS                                  | Android                              |
+| ----------------- | ------------------------------------ | ------------------------------------ |
+| **Type**          | Bottom sheet modal                   | Action Sheet (Material)              |
+| **Overlay**       | Semi-transparent black (50% opacity) | Semi-transparent black (50% opacity) |
+| **Background**    | White (#FFFFFF)                      | White (#FFFFFF)                      |
+| **Corner radius** | 16px top corners                     | 16dp top corners                     |
+| **Height**        | Auto (fits content)                  | Auto (fits content)                  |
 
 **Modal Title:**
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Text** | "Select Photo" | "Select Photo" |
-| **Font** | 17pt Semibold, San Francisco | 16sp Semibold, Roboto |
-| **Color** | #212121 | #212121 |
-| **Alignment** | Center | Center |
-| **Padding** | 20px vertical | 20dp vertical |
+| Property      | iOS                          | Android               |
+| ------------- | ---------------------------- | --------------------- |
+| **Text**      | "Select Photo"               | "Select Photo"        |
+| **Font**      | 17pt Semibold, San Francisco | 16sp Semibold, Roboto |
+| **Color**     | #212121                      | #212121               |
+| **Alignment** | Center                       | Center                |
+| **Padding**   | 20px vertical                | 20dp vertical         |
 
 **Options:** Each option is a tappable row (56px/56dp height):
 
@@ -245,56 +245,56 @@ Failed to upload photo. Check your connection and try again.
 
 ### 3. Image Cropping Screen
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Full-screen modal | Full-screen modal |
-| **Background** | Black (#000000) | Black (#000000) |
-| **Nav bar text** | White on black | White on black |
+| Property         | iOS               | Android           |
+| ---------------- | ----------------- | ----------------- |
+| **Type**         | Full-screen modal | Full-screen modal |
+| **Background**   | Black (#000000)   | Black (#000000)   |
+| **Nav bar text** | White on black    | White on black    |
 
 #### Header
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Height** | 44px | 56dp |
-| **Background** | Black (#000000) | Black (#000000) |
+| Property          | iOS                  | Android              |
+| ----------------- | -------------------- | -------------------- |
+| **Height**        | 44px                 | 56dp                 |
+| **Background**    | Black (#000000)      | Black (#000000)      |
 | **Cancel (left)** | White text, "Cancel" | White text, "Cancel" |
-| **Done (right)** | White text, "Done" | White text, "Done" |
+| **Done (right)**  | White text, "Done"   | White text, "Done"   |
 
 - **Cancel action:** Discard changes, return to EditProfileScreen
 - **Done action:** Proceed to upload (disabled if image not cropped/positioned)
 
 #### Image Preview Area
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Background** | Black (#000000) | Black (#000000) |
-| **Crop area** | Fixed 1:1 aspect ratio (square) | Fixed 1:1 aspect ratio (square) |
-| **Crop size** | 80% of screen width (max) | 80% of screen width (max) |
-| **Crop border** | 2px white | 2px white |
-| **Outside overlay** | 50% black opacity | 50% black opacity |
-| **Pan gesture** | Drag to reposition | Drag to reposition |
-| **Pinch gesture** | Zoom 1×–3× | Zoom 1×–3× |
+| Property            | iOS                             | Android                         |
+| ------------------- | ------------------------------- | ------------------------------- |
+| **Background**      | Black (#000000)                 | Black (#000000)                 |
+| **Crop area**       | Fixed 1:1 aspect ratio (square) | Fixed 1:1 aspect ratio (square) |
+| **Crop size**       | 80% of screen width (max)       | 80% of screen width (max)       |
+| **Crop border**     | 2px white                       | 2px white                       |
+| **Outside overlay** | 50% black opacity               | 50% black opacity               |
+| **Pan gesture**     | Drag to reposition              | Drag to reposition              |
+| **Pinch gesture**   | Zoom 1×–3×                      | Zoom 1×–3×                      |
 
 #### Help Text (Bottom)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font** | 14pt Regular, San Francisco | 13sp Regular, Roboto |
-| **Color** | #FFFFFF (white) | #FFFFFF (white) |
-| **Position** | Bottom center, 32px from bottom | Bottom center, 32dp from bottom |
+| Property       | iOS                                                    | Android                                                |
+| -------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| **Font**       | 14pt Regular, San Francisco                            | 13sp Regular, Roboto                                   |
+| **Color**      | #FFFFFF (white)                                        | #FFFFFF (white)                                        |
+| **Position**   | Bottom center, 32px from bottom                        | Bottom center, 32dp from bottom                        |
 | **Background** | Semi-transparent black pill (60% opacity), 8px padding | Semi-transparent black pill (60% opacity), 8dp padding |
 
 **Content:** "Drag to reposition" · "Pinch to zoom"
 
 #### Zoom Slider (Optional)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Width** | 200px | 200dp |
-| **Track height** | 4px | 4dp |
-| **Track color** | #FFFFFF at 30% opacity | #FFFFFF at 30% opacity |
-| **Thumb** | 24×24px circle, #FFFFFF | 24×24dp circle, #FFFFFF |
-| **Range** | 1×–3× zoom | 1×–3× zoom |
+| Property         | iOS                     | Android                 |
+| ---------------- | ----------------------- | ----------------------- |
+| **Width**        | 200px                   | 200dp                   |
+| **Track height** | 4px                     | 4dp                     |
+| **Track color**  | #FFFFFF at 30% opacity  | #FFFFFF at 30% opacity  |
+| **Thumb**        | 24×24px circle, #FFFFFF | 24×24dp circle, #FFFFFF |
+| **Range**        | 1×–3× zoom              | 1×–3× zoom              |
 
 **a11y:**
 
@@ -339,34 +339,34 @@ Failed to upload photo. Check your connection and try again.
 
 ### Edit Profile Screen (Vertical Stack)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / Status bar | Auto | — |
-| 2 | Header (← Edit Profile / ✓) | 44px / 56dp | — |
-| 3 | Top padding | 24px/dp | — |
-| 4 | Avatar | 64px/dp | 12px/dp |
-| 5 | Change Photo button | 44px/dp touch | 24px/dp |
-| 6 | Profile fields | Flex | — |
-| 7 | Bottom safe area (iOS) | Auto | — |
+| #   | Element                     | Height        | Spacing After |
+| --- | --------------------------- | ------------- | ------------- |
+| 1   | Safe area / Status bar      | Auto          | —             |
+| 2   | Header (← Edit Profile / ✓) | 44px / 56dp   | —             |
+| 3   | Top padding                 | 24px/dp       | —             |
+| 4   | Avatar                      | 64px/dp       | 12px/dp       |
+| 5   | Change Photo button         | 44px/dp touch | 24px/dp       |
+| 6   | Profile fields              | Flex          | —             |
+| 7   | Bottom safe area (iOS)      | Auto          | —             |
 
 ### Photo Picker Modal
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Title ("Select Photo") | Auto | 20px/dp |
-| 2 | Take Photo row | 56px/dp | 0 |
-| 3 | Choose from Library row | 56px/dp | 0 |
-| 4 | Remove Photo row (conditional) | 56px/dp | 8px (divider) |
-| 5 | Cancel button | 56px/dp | 0 |
+| #   | Element                        | Height  | Spacing After |
+| --- | ------------------------------ | ------- | ------------- |
+| 1   | Title ("Select Photo")         | Auto    | 20px/dp       |
+| 2   | Take Photo row                 | 56px/dp | 0             |
+| 3   | Choose from Library row        | 56px/dp | 0             |
+| 4   | Remove Photo row (conditional) | 56px/dp | 8px (divider) |
+| 5   | Cancel button                  | 56px/dp | 0             |
 
 ### Crop Screen
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Header (Cancel / Done) | 44px / 56dp | 0 |
-| 2 | Image preview + crop overlay | Flex | 24px/dp |
-| 3 | Zoom slider (optional) | 24px/dp | Flex |
-| 4 | Help text pill | Auto | 32px/dp from bottom |
+| #   | Element                      | Height      | Spacing After       |
+| --- | ---------------------------- | ----------- | ------------------- |
+| 1   | Header (Cancel / Done)       | 44px / 56dp | 0                   |
+| 2   | Image preview + crop overlay | Flex        | 24px/dp             |
+| 3   | Zoom slider (optional)       | 24px/dp     | Flex                |
+| 4   | Help text pill               | Auto        | 32px/dp from bottom |
 
 **Horizontal:** 16px/dp margins on both sides. Avatar centered. Crop area 80% width centered.
 
@@ -397,33 +397,20 @@ Failed to upload photo. Check your connection and try again.
 
 ### Alternative Flow (Take Photo)
 
-1–3 same as above
-4. User selects "Take Photo"
-5. System checks camera permission → granted
-6. Camera opens (system UI)
-7. User takes photo
+1–3 same as above 4. User selects "Take Photo" 5. System checks camera permission → granted 6. Camera opens (system UI) 7. User takes photo
 8–18 continue from Happy Path step 8
 
 ### Alternative Flow (Remove Photo)
 
-1–3 same as above
-4. User selects "Remove Photo"
-5. Confirmation dialog: "Remove profile photo? This will replace your photo with your initials."
-6. User taps "Remove"
-7. System deletes `avatars/{userId}.jpg` from Supabase Storage
-8. System sets `users.profile_photo = null`
-9. Avatar updates to show initials
-10. Status: "Photo removed" (gray text, fades after 2s)
+1–3 same as above 4. User selects "Remove Photo" 5. Confirmation dialog: "Remove profile photo? This will replace your photo with your initials." 6. User taps "Remove" 7. System deletes `avatars/{userId}.jpg` from Supabase Storage 8. System sets `users.profile_photo = null` 9. Avatar updates to show initials 10. Status: "Photo removed" (gray text, fades after 2s)
 
 ### Alternative Flow (Permission Denied)
 
-1–4 same as Happy Path
-5. System checks photo library permission → denied
-6. Alert dialog:
+1–4 same as Happy Path 5. System checks photo library permission → denied 6. Alert dialog:
 
-   - Title: "Photo Library Access Required"
-   - Message: "Please grant photo library access in Settings to choose a profile photo."
-   - Buttons: "Cancel", "Open Settings"
+- Title: "Photo Library Access Required"
+- Message: "Please grant photo library access in Settings to choose a profile photo."
+- Buttons: "Cancel", "Open Settings"
 
 7. If user taps "Open Settings": Navigate to system Settings, app permissions
 8. User manually grants permission → returns to app
@@ -433,16 +420,16 @@ Failed to upload photo. Check your connection and try again.
 
 ## Error States & Edge Cases
 
-| Scenario | Expected Behavior |
-|----------|------------------|
-| **Image too large (> 5MB)** | Show toast: "Photo too large. Please choose a smaller image (max 5MB)." |
-| **Invalid image format** | Show toast: "Unsupported format. Please choose a JPEG or PNG image." |
-| **Upload fails (network)** | Show toast: "Upload failed. Check your connection and try again." Revert to previous avatar. |
-| **Storage bucket full** | Show toast: "Upload failed. Please try again later." (rare, admin should monitor storage) |
-| **Permission denied permanently** | Guide user to Settings app with instructions |
-| **User cancels crop** | Return to EditProfileScreen, no changes saved |
-| **Multiple rapid uploads** | Disable "Change Photo" button during upload, queue uploads if multiple triggered |
-| **No profile photo set** | Show initials in avatar, "Add Photo" button instead of "Change Photo" |
+| Scenario                          | Expected Behavior                                                                            |
+| --------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Image too large (> 5MB)**       | Show toast: "Photo too large. Please choose a smaller image (max 5MB)."                      |
+| **Invalid image format**          | Show toast: "Unsupported format. Please choose a JPEG or PNG image."                         |
+| **Upload fails (network)**        | Show toast: "Upload failed. Check your connection and try again." Revert to previous avatar. |
+| **Storage bucket full**           | Show toast: "Upload failed. Please try again later." (rare, admin should monitor storage)    |
+| **Permission denied permanently** | Guide user to Settings app with instructions                                                 |
+| **User cancels crop**             | Return to EditProfileScreen, no changes saved                                                |
+| **Multiple rapid uploads**        | Disable "Change Photo" button during upload, queue uploads if multiple triggered             |
+| **No profile photo set**          | Show initials in avatar, "Add Photo" button instead of "Change Photo"                        |
 
 ---
 
@@ -485,26 +472,26 @@ Failed to upload photo. Check your connection and try again.
 
 ### Color Contrast (WCAG)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
+| Element                          | Ratio | Level |
+| -------------------------------- | ----- | ----- |
 | Button text (#1565C0 on #FFFFFF) | 7.2:1 | AAA ✓ |
-| Help text (white on black) | 21:1 | AAA ✓ |
-| Status text (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
+| Help text (white on black)       | 21:1  | AAA ✓ |
+| Status text (#757575 on #FFFFFF) | 4.6:1 | AA ✓  |
 
 ---
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Photo Picker** | Bottom sheet | Bottom sheet (Material) |
-| **Camera UI** | Native iOS camera | Native Android camera |
-| **Photo Library** | Native Photos app picker | System photo picker (Material) |
-| **Crop UI** | Manual gestures + slider | Manual gestures + slider |
-| **Permissions** | NSCameraUsageDescription, NSPhotoLibraryUsageDescription | CAMERA, READ_EXTERNAL_STORAGE |
-| **Header height** | 44px | 56dp |
-| **Press feedback** | Scale 0.98 + haptic | Scale 0.98 + ripple |
-| **Modal dismiss** | Swipe down | Tap outside or back button |
+| Aspect             | iOS                                                      | Android                        |
+| ------------------ | -------------------------------------------------------- | ------------------------------ |
+| **Photo Picker**   | Bottom sheet                                             | Bottom sheet (Material)        |
+| **Camera UI**      | Native iOS camera                                        | Native Android camera          |
+| **Photo Library**  | Native Photos app picker                                 | System photo picker (Material) |
+| **Crop UI**        | Manual gestures + slider                                 | Manual gestures + slider       |
+| **Permissions**    | NSCameraUsageDescription, NSPhotoLibraryUsageDescription | CAMERA, READ_EXTERNAL_STORAGE  |
+| **Header height**  | 44px                                                     | 56dp                           |
+| **Press feedback** | Scale 0.98 + haptic                                      | Scale 0.98 + ripple            |
+| **Modal dismiss**  | Swipe down                                               | Tap outside or back button     |
 
 ---
 
@@ -558,11 +545,7 @@ Failed to upload photo. Check your connection and try again.
 **Fetch current profile photo:**
 
 ```typescript
-const { data } = await supabase
-  .from('users')
-  .select('profile_photo')
-  .eq('id', userId)
-  .single();
+const { data } = await supabase.from('users').select('profile_photo').eq('id', userId).single();
 ```
 
 **Upload photo:**
@@ -577,31 +560,21 @@ const { data, error } = await supabase.storage
 **Get public URL:**
 
 ```typescript
-const { data } = supabase.storage
-  .from('avatars')
-  .getPublicUrl(filePath);
+const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
 ```
 
 **Update user profile:**
 
 ```typescript
-const { error } = await supabase
-  .from('users')
-  .update({ profile_photo: photoUrl })
-  .eq('id', userId);
+const { error } = await supabase.from('users').update({ profile_photo: photoUrl }).eq('id', userId);
 ```
 
 **Delete photo:**
 
 ```typescript
-const { error } = await supabase.storage
-  .from('avatars')
-  .remove([`${userId}.jpg`]);
+const { error } = await supabase.storage.from('avatars').remove([`${userId}.jpg`]);
 
-await supabase
-  .from('users')
-  .update({ profile_photo: null })
-  .eq('id', userId);
+await supabase.from('users').update({ profile_photo: null }).eq('id', userId);
 ```
 
 ---
@@ -651,13 +624,13 @@ await supabase
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Parent | EditProfileScreen (profile management) |
-| Uses | Device Camera (system UI) |
-| Uses | Photo Library Picker (system UI) |
-| Displays on | [09-post-detail.md](../09-post-detail/09-post-detail.md) — author avatar |
-| Displays on | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md) — chat avatar |
+| Relation    | Screen                                                                                              |
+| ----------- | --------------------------------------------------------------------------------------------------- |
+| Parent      | EditProfileScreen (profile management)                                                              |
+| Uses        | Device Camera (system UI)                                                                           |
+| Uses        | Photo Library Picker (system UI)                                                                    |
+| Displays on | [09-post-detail.md](../09-post-detail/09-post-detail.md) — author avatar                            |
+| Displays on | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md) — chat avatar            |
 | Displays on | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) — post card avatar |
 
 ---

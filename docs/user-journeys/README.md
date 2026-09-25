@@ -28,19 +28,18 @@ This document indexes all user journeys for the Nepally app. Each journey docume
 Journeys are organized by user intent. **Planned** is the original 14-journey
 scope; **written** is what exists on disk today.
 
-| Category | Planned | Written | Purpose |
-|----------|---------|---------|---------|
-| **Onboarding** | 2 | 1 | Getting started with Nepally |
-| **Post Creation** | 4 | 1 | Creating posts (one unified tag-based form, not four separate flows) |
-| **Discovery** | 3 | 2 | Finding posts, responding, and discovering events |
-| **Communication** | 1 | 1 | In-app chat and messaging |
-| **Safety** | 2 | 0 | Reporting content and moderation |
-| **Management** | 2 | 1 | Managing posts and events |
-| **Location** | — | 1 | Location permission, detection, and switching |
-| **Total** | **14** | **7** | |
+| Category          | Planned | Written | Purpose                                                              |
+| ----------------- | ------- | ------- | -------------------------------------------------------------------- |
+| **Onboarding**    | 2       | 1       | Getting started with Nepally                                         |
+| **Post Creation** | 4       | 1       | Creating posts (one unified tag-based form, not four separate flows) |
+| **Discovery**     | 3       | 2       | Finding posts, responding, and discovering events                    |
+| **Communication** | 1       | 1       | In-app chat and messaging                                            |
+| **Safety**        | 2       | 0       | Reporting content and moderation                                     |
+| **Management**    | 2       | 1       | Managing posts and events                                            |
+| **Location**      | —       | 1       | Location permission, detection, and switching                        |
+| **Total**         | **14**  | **7**   |                                                                      |
 
-`location/` was added after the original scope was drawn and is not part of the
-14. `safety/` has no directory yet — nothing has been written for it.
+`location/` was added after the original scope was drawn and is not part of the 14. `safety/` has no directory yet — nothing has been written for it.
 
 ---
 
@@ -48,10 +47,10 @@ scope; **written** is what exists on disk today.
 
 ### Onboarding
 
-| # | Journey Name | User Persona | Status | File |
-|---|--------------|--------------|--------|------|
-| 01 | **Signup and Onboarding** | New User (Level 0) | 🚧 Draft | [onboarding/01-signup-and-onboarding.md](./onboarding/01-signup-and-onboarding.md) |
-| 02 | **Trust Level Verification** | New User (Level 0 → Level 1) | 📝 Not Started | _not yet written_ |
+| #   | Journey Name                 | User Persona                 | Status         | File                                                                               |
+| --- | ---------------------------- | ---------------------------- | -------------- | ---------------------------------------------------------------------------------- |
+| 01  | **Signup and Onboarding**    | New User (Level 0)           | 🚧 Draft       | [onboarding/01-signup-and-onboarding.md](./onboarding/01-signup-and-onboarding.md) |
+| 02  | **Trust Level Verification** | New User (Level 0 → Level 1) | 📝 Not Started | _not yet written_                                                                  |
 
 **Purpose:** These journeys cover how new users discover Nepally, create accounts, verify their identity, and become trusted members of the community.
 
@@ -66,12 +65,12 @@ scope; **written** is what exists on disk today.
 
 ### Post Creation
 
-| # | Journey Name | User Persona | Status | File |
-|---|--------------|--------------|--------|------|
-| 03 | **Housing Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
-| 04 | **Job Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
-| 05 | **Emergency Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
-| 06 | **Travel Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
+| #   | Journey Name                | User Persona             | Status         | File              |
+| --- | --------------------------- | ------------------------ | -------------- | ----------------- |
+| 03  | **Housing Post Creation**   | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
+| 04  | **Job Post Creation**       | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
+| 05  | **Emergency Post Creation** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
+| 06  | **Travel Post Creation**    | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
 
 **Purpose:** Creating tag-based posts (title + body + 1-3 tags) with optional photos — the Reddit-style format used for all post types.
 
@@ -95,11 +94,11 @@ scope; **written** is what exists on disk today.
 
 ### Discovery
 
-| # | Journey Name | User Persona | Status | File |
-|---|--------------|--------------|--------|------|
-| 07 | **Browse and Search Posts** | Any User (Level 0+) | 📝 Not Started | _not yet written_ |
-| 08 | **Respond to a Post** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
-| 13 | **Event Discovery & RSVP** | Any User (Level 0 browse; Level 1+ RSVP) | ✅ Reviewed | [discovery/13-event-discovery-and-rsvp.md](./discovery/13-event-discovery-and-rsvp.md) |
+| #   | Journey Name                | User Persona                             | Status         | File                                                                                   |
+| --- | --------------------------- | ---------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
+| 07  | **Browse and Search Posts** | Any User (Level 0+)                      | 📝 Not Started | _not yet written_                                                                      |
+| 08  | **Respond to a Post**       | Verified User (Level 1+)                 | 📝 Not Started | _not yet written_                                                                      |
+| 13  | **Event Discovery & RSVP**  | Any User (Level 0 browse; Level 1+ RSVP) | ✅ Reviewed    | [discovery/13-event-discovery-and-rsvp.md](./discovery/13-event-discovery-and-rsvp.md) |
 
 **Purpose:** Finding relevant posts and events in the local metro area, initiating contact with post authors, and RSVPing to community events.
 
@@ -123,9 +122,9 @@ scope; **written** is what exists on disk today.
 
 ### Communication
 
-| # | Journey Name | User Persona | Status | File |
-|---|--------------|--------------|--------|------|
-| 09 | **In-App Chat Conversation** | Verified User (Level 1+) | ✅ Reviewed | [communication/09-in-app-chat.md](./communication/09-in-app-chat.md) |
+| #   | Journey Name                 | User Persona             | Status      | File                                                                 |
+| --- | ---------------------------- | ------------------------ | ----------- | -------------------------------------------------------------------- |
+| 09  | **In-App Chat Conversation** | Verified User (Level 1+) | ✅ Reviewed | [communication/09-in-app-chat.md](./communication/09-in-app-chat.md) |
 
 **Purpose:** Real-time messaging between users for inquiries about posts, follow-ups, and coordination.
 
@@ -147,10 +146,10 @@ scope; **written** is what exists on disk today.
 
 ### Safety
 
-| # | Journey Name | User Persona | Status | File |
-|---|--------------|--------------|--------|------|
-| 10 | **Report Content or User** | Any User (Level 0+) | 📝 Not Started | _not yet written_ |
-| 11 | **Moderator Review Flow** | Moderator | 📝 Not Started | _not yet written_ |
+| #   | Journey Name               | User Persona        | Status         | File              |
+| --- | -------------------------- | ------------------- | -------------- | ----------------- |
+| 10  | **Report Content or User** | Any User (Level 0+) | 📝 Not Started | _not yet written_ |
+| 11  | **Moderator Review Flow**  | Moderator           | 📝 Not Started | _not yet written_ |
 
 **Purpose:** Maintaining community safety through user reporting and moderator review of flagged content.
 
@@ -172,10 +171,10 @@ scope; **written** is what exists on disk today.
 
 ### Management
 
-| # | Journey Name | User Persona | Status | File |
-|---|--------------|--------------|--------|------|
-| 12 | **Renew or Edit an Expired Post** | Verified User (Level 1+) | 📝 Not Started | _not yet written_ |
-| 14 | **Event Creation & Management** | Verified User (Level 1+) as Organizer | ✅ Reviewed | [management/14-event-creation-and-management.md](./management/14-event-creation-and-management.md) |
+| #   | Journey Name                      | User Persona                          | Status         | File                                                                                               |
+| --- | --------------------------------- | ------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| 12  | **Renew or Edit an Expired Post** | Verified User (Level 1+)              | 📝 Not Started | _not yet written_                                                                                  |
+| 14  | **Event Creation & Management**   | Verified User (Level 1+) as Organizer | ✅ Reviewed    | [management/14-event-creation-and-management.md](./management/14-event-creation-and-management.md) |
 
 **Purpose:** Managing post and event lifecycle — editing, renewing, cancelling, and deleting content.
 
@@ -200,12 +199,12 @@ scope; **written** is what exists on disk today.
 
 ## Journey Status Legend
 
-| Icon | Status | Description |
-|------|--------|-------------|
-| 📝 | Not Started | Journey needs to be documented |
-| 🚧 | Draft | Journey is being written |
-| ✅ | Reviewed | Journey is complete and reviewed |
-| 🔒 | Approved | Journey is locked and ready for wireframing |
+| Icon | Status      | Description                                 |
+| ---- | ----------- | ------------------------------------------- |
+| 📝   | Not Started | Journey needs to be documented              |
+| 🚧   | Draft       | Journey is being written                    |
+| ✅   | Reviewed    | Journey is complete and reviewed            |
+| 🔒   | Approved    | Journey is locked and ready for wireframing |
 
 ---
 

@@ -31,13 +31,13 @@ Use this plan as a live tracker during execution.
 
 ### Live Step Tracker
 
-| Step | Title | Owner | Status | Last Updated | Notes |
-|------|-------|-------|--------|--------------|-------|
-| 1 | Security Foundations | _TBD_ | Not Started | 2026-03-10 | Secure storage, OAuth callback integrity, error sanitization |
-| 2 | Reliability and Lifecycle Hardening | _TBD_ | Not Started | 2026-03-10 | Realtime cleanup, timeout behavior, context race guards |
-| 3 | UX and Accessibility Baseline | _TBD_ | Not Started | 2026-03-10 | Touch targets, loading states, accessibility metadata |
-| 4 | Proactive Experience Enhancements | _TBD_ | Not Started | 2026-03-10 | Event-first updates, draft recovery, contextual nudges |
-| 5 | Test Coverage and Release Verification | _TBD_ | Not Started | 2026-03-10 | Missing critical tests + full validation pass |
+| Step | Title                                  | Owner | Status      | Last Updated | Notes                                                        |
+| ---- | -------------------------------------- | ----- | ----------- | ------------ | ------------------------------------------------------------ |
+| 1    | Security Foundations                   | _TBD_ | Not Started | 2026-03-10   | Secure storage, OAuth callback integrity, error sanitization |
+| 2    | Reliability and Lifecycle Hardening    | _TBD_ | Not Started | 2026-03-10   | Realtime cleanup, timeout behavior, context race guards      |
+| 3    | UX and Accessibility Baseline          | _TBD_ | Not Started | 2026-03-10   | Touch targets, loading states, accessibility metadata        |
+| 4    | Proactive Experience Enhancements      | _TBD_ | Not Started | 2026-03-10   | Event-first updates, draft recovery, contextual nudges       |
+| 5    | Test Coverage and Release Verification | _TBD_ | Not Started | 2026-03-10   | Missing critical tests + full validation pass                |
 
 ---
 
@@ -301,12 +301,12 @@ Exit Criteria
 
 ### Test Plan Matrix
 
-| Area | Change Type | Required Tests | File Targets |
-|------|-------------|----------------|--------------|
-| Mobile auth and storage | Update | Unit tests | apps/mobile/src/services/auth/*.test.ts, apps/mobile/src/utils/*.test.ts |
-| Mobile contexts | Update | Unit tests | apps/mobile/src/contexts/*.test.tsx |
-| Mobile feed and compose | Update/new | Unit + focused integration scenarios | apps/mobile/src/screens/**/*.test.tsx |
-| Shared logic touched by mobile | Update | Unit tests | packages/shared/src/**/*.test.ts |
+| Area                           | Change Type | Required Tests                       | File Targets                                                             |
+| ------------------------------ | ----------- | ------------------------------------ | ------------------------------------------------------------------------ |
+| Mobile auth and storage        | Update      | Unit tests                           | apps/mobile/src/services/auth/_.test.ts, apps/mobile/src/utils/_.test.ts |
+| Mobile contexts                | Update      | Unit tests                           | apps/mobile/src/contexts/*.test.tsx                                      |
+| Mobile feed and compose        | Update/new  | Unit + focused integration scenarios | apps/mobile/src/screens/**/*.test.tsx                                    |
+| Shared logic touched by mobile | Update      | Unit tests                           | packages/shared/src/**/*.test.ts                                         |
 
 ### Coverage and Quality Gates
 

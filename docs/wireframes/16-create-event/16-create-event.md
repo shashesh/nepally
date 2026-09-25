@@ -28,45 +28,45 @@ A scrollable form for creating a new community event. Users fill in event detail
 [[ ✕ Cancel | Create Event | [Create]{state:disabled} ]]
 
 ::: card
-**Event Name** *(required)*
+**Event Name** _(required)_
 [e.g. Dashain Celebration 2026___]{required maxlength:150}
 
-*5–150 characters*
+_5–150 characters_
 :::
 
 ::: card
-**Event Type** *(required)*
+**Event Type** _(required)_
 
-[🟠 Cultural]{.outline}  [🟣 Religious]{.outline}  [🟢 Social]{.outline}  [🔵 Career]{.outline}  [⚪ Other]{.outline}
+[🟠 Cultural]{.outline} [🟣 Religious]{.outline} [🟢 Social]{.outline} [🔵 Career]{.outline} [⚪ Other]{.outline}
 :::
 
 ::: card
-**Start Date & Time** *(required)*
-[___]{type:date required}  [___]{type:time required}
+**Start Date & Time** _(required)_
+[_**]{type:date required} [**_]{type:time required}
 
-**End Date & Time** *(optional)*
-[___]{type:date}  [___]{type:time}
+**End Date & Time** _(optional)_
+[_**]{type:date} [**_]{type:time}
 :::
 
 ::: card
-**Location Name** *(required)*
+**Location Name** _(required)_
 [e.g. Dallas Convention Center___]{required maxlength:100}
 
-**Location Address** *(optional)*
+**Location Address** _(optional)_
 [e.g. 650 S Griffin St, Dallas, TX 75202___]{maxlength:200}
 :::
 
 ::: card
-**Description** *(required)*
+**Description** _(required)_
 [Describe your event — what to expect, dress code, parking info...]{rows:6 required maxlength:3000}
 
-*10–3000 characters · 0/3000*
+_10–3000 characters · 0/3000_
 :::
 
 ::: card
 📷 [Add Event Photo (optional)]
 
-*Max 2MB · Compressed automatically*
+_Max 2MB · Compressed automatically_
 :::
 
 ::: card
@@ -74,7 +74,7 @@ A scrollable form for creating a new community event. Users fill in event detail
 
 - (*) Public — anyone can see who's going
 - ( ) Private — only you see the attendee list
-:::
+  :::
 
 ::: card {bg:#F5F5F5}
 📍 Posting to: **Dallas-Fort Worth**
@@ -87,37 +87,37 @@ A scrollable form for creating a new community event. Users fill in event detail
 [[ ✕ Cancel | Create Event | [Create]{state:disabled} ]]
 
 ::: card
-**Event Name** *(required)*
+**Event Name** _(required)_
 [e.g. Dashain Celebration 2026___]{required maxlength:150}
 :::
 
 ::: card
-**Event Type** *(required)*
+**Event Type** _(required)_
 
-[🟠 Cultural]{.outline}  [🟣 Religious]{.outline}  [🟢 Social]{.outline}  [🔵 Career]{.outline}  [⚪ Other]{.outline}
+[🟠 Cultural]{.outline} [🟣 Religious]{.outline} [🟢 Social]{.outline} [🔵 Career]{.outline} [⚪ Other]{.outline}
 :::
 
 ::: card
-**Start Date & Time** *(required)*
-[___]{type:date required}  [___]{type:time required}
+**Start Date & Time** _(required)_
+[_**]{type:date required} [**_]{type:time required}
 
-**End Date & Time** *(optional)*
-[___]{type:date}  [___]{type:time}
+**End Date & Time** _(optional)_
+[_**]{type:date} [**_]{type:time}
 :::
 
 ::: card
-**Location Name** *(required)*
+**Location Name** _(required)_
 [e.g. Dallas Convention Center___]{required maxlength:100}
 
-**Location Address** *(optional)*
+**Location Address** _(optional)_
 [e.g. 650 S Griffin St, Dallas, TX 75202___]{maxlength:200}
 :::
 
 ::: card
-**Description** *(required)*
+**Description** _(required)_
 [Describe your event — what to expect, dress code, parking info...]{rows:6 required maxlength:3000}
 
-*10–3000 characters · 0/3000*
+_10–3000 characters · 0/3000_
 :::
 
 ::: card
@@ -129,14 +129,14 @@ A scrollable form for creating a new community event. Users fill in event detail
 
 - (*) Public — anyone can see who's going
 - ( ) Private — only you see the attendee list
-:::
+  :::
 
 ::: card
 🌐 **Make Global (Premium)**
 
 [ ] Visible in all metro feeds — not just Dallas-Fort Worth
 
-*Your premium plan includes global event posting.*
+_Your premium plan includes global event posting._
 :::
 
 ::: card {bg:#F5F5F5}
@@ -153,21 +153,21 @@ A scrollable form for creating a new community event. Users fill in event detail
 **Event Name**
 [Dashain Celebration 2026___]{maxlength:150}
 
-*Dashain Celebration 2026 — 24 characters*
+_Dashain Celebration 2026 — 24 characters_
 :::
 
 ::: card
 **Event Type**
 
-[🟠 Cultural]*  [🟣 Religious]{.outline}  [🟢 Social]{.outline}  [🔵 Career]{.outline}  [⚪ Other]{.outline}
+[🟠 Cultural]* [🟣 Religious]{.outline} [🟢 Social]{.outline} [🔵 Career]{.outline} [⚪ Other]{.outline}
 :::
 
 ::: card
-**Start Date & Time** *(required)*
-[2026-10-03]{type:date}  [6:00 PM]{type:time}
+**Start Date & Time** _(required)_
+[2026-10-03]{type:date} [6:00 PM]{type:time}
 
-**End Date & Time** *(optional)*
-[2026-10-03]{type:date}  [10:00 PM]{type:time}
+**End Date & Time** _(optional)_
+[2026-10-03]{type:date} [10:00 PM]{type:time}
 :::
 
 ::: card
@@ -182,14 +182,14 @@ A scrollable form for creating a new community event. Users fill in event detail
 **Description**
 [Join us for the biggest Nepali festival of the year! Expect traditional music, food stalls, cultural performances and more. Parking available in Lot B.]{rows:6 maxlength:3000}
 
-*242/3000*
+_242/3000_
 :::
 
 ::: card
 **Photo Preview**
 
 [████████████████████]
-*event-photo.jpg · 1.2MB*  [✕ Remove]
+_event-photo.jpg · 1.2MB_ [✕ Remove]
 :::
 
 ::: card
@@ -197,7 +197,7 @@ A scrollable form for creating a new community event. Users fill in event detail
 
 - (*) Public — anyone can see who's going
 - ( ) Private — only you see the attendee list
-:::
+  :::
 
 ::: card {bg:#F5F5F5}
 📍 Posting to: **Dallas-Fort Worth**
@@ -214,22 +214,22 @@ A scrollable form for creating a new community event. Users fill in event detail
 :::
 
 ::: card
-**Event Name** *(required)*
+**Event Name** _(required)_
 [Da___]{state:error required}
 
-*Must be at least 5 characters.*
+_Must be at least 5 characters._
 :::
 
 ::: card
-**Start Date & Time** *(required)*
-[2026-01-01]{type:date state:error}  [6:00 PM]{type:time}
+**Start Date & Time** _(required)_
+[2026-01-01]{type:date state:error} [6:00 PM]{type:time}
 
-*Start date must be in the future.*
+_Start date must be in the future._
 
-**End Date & Time** *(optional)*
-[2026-01-01]{type:date state:error}  [5:00 PM]{type:time}
+**End Date & Time** _(optional)_
+[2026-01-01]{type:date state:error} [5:00 PM]{type:time}
 
-*End date must be after start date.*
+_End date must be after start date._
 :::
 
 ---
@@ -241,7 +241,7 @@ A scrollable form for creating a new community event. Users fill in event detail
 
 [########__________]
 
-*Compressing and uploading — please wait*
+_Compressing and uploading — please wait_
 :::
 
 ---
@@ -266,7 +266,7 @@ You need to verify your account to create events.
 
 Verifying your account takes less than 5 minutes and unlocks full posting rights.
 
-[Not Now]{.outline}  [Verify Account]*
+[Not Now]{.outline} [Verify Account]*
 :::
 
 ---
@@ -275,14 +275,14 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 
 ### 1. Navigation Bar
 
-| Property | iOS | Android | Web |
-|----------|-----|---------|-----|
-| **Type** | Modal sheet nav bar | AppBar | Sticky top bar |
-| **Left** | ✕ Cancel (text button) | ✕ Cancel | ✕ Cancel |
-| **Center** | "Create Event" title | "Create Event" title | "Create Event" title |
-| **Right** | "Create" button (disabled until valid) | "Create" button | "Create" button |
-| **Height** | 44px + safe area | 56dp | 56px |
-| **Background** | #FFFFFF | #FFFFFF | #FFFFFF |
+| Property       | iOS                                    | Android              | Web                  |
+| -------------- | -------------------------------------- | -------------------- | -------------------- |
+| **Type**       | Modal sheet nav bar                    | AppBar               | Sticky top bar       |
+| **Left**       | ✕ Cancel (text button)                 | ✕ Cancel             | ✕ Cancel             |
+| **Center**     | "Create Event" title                   | "Create Event" title | "Create Event" title |
+| **Right**      | "Create" button (disabled until valid) | "Create" button      | "Create" button      |
+| **Height**     | 44px + safe area                       | 56dp                 | 56px                 |
+| **Background** | #FFFFFF                                | #FFFFFF              | #FFFFFF              |
 
 **States:**
 
@@ -293,112 +293,112 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 
 ### 2. Event Type Chip Selector
 
-| Property | Value |
-|----------|-------|
-| **Type** | Horizontal wrapping chip group, single-select |
-| **Chips** | Cultural (🟠), Religious (🟣), Social (🟢), Career (🔵), Other (⚪) |
-| **Unselected** | Outlined border `#E0E0E0`, text `#212121` |
-| **Selected** | Filled: Cultural=`#FF6D00`, Religious=`#7B1FA2`, Social=`#2E7D32`, Career=`#1565C0`, Other=`#757575` |
-| **Selected text** | White |
-| **Height** | 36px / 36dp |
-| **Border radius** | 18px (pill) |
-| **Spacing** | 8px horizontal gap, 8px vertical gap |
+| Property          | Value                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| **Type**          | Horizontal wrapping chip group, single-select                                                        |
+| **Chips**         | Cultural (🟠), Religious (🟣), Social (🟢), Career (🔵), Other (⚪)                                  |
+| **Unselected**    | Outlined border `#E0E0E0`, text `#212121`                                                            |
+| **Selected**      | Filled: Cultural=`#FF6D00`, Religious=`#7B1FA2`, Social=`#2E7D32`, Career=`#1565C0`, Other=`#757575` |
+| **Selected text** | White                                                                                                |
+| **Height**        | 36px / 36dp                                                                                          |
+| **Border radius** | 18px (pill)                                                                                          |
+| **Spacing**       | 8px horizontal gap, 8px vertical gap                                                                 |
 
 ---
 
 ### 3. Date & Time Pickers
 
-| Property | iOS | Android | Web |
-|----------|-----|---------|-----|
-| **Start Date** | Native `DateTimePicker` (wheel) | Native `DatePickerDialog` | `<input type="date">` styled |
-| **Start Time** | Native `DateTimePicker` (wheel) | Native `TimePickerDialog` | `<input type="time">` styled |
-| **End Date** | Same as start | Same as start | Same as start |
-| **Min Date** | Today (no past dates) | Today | Today |
-| **Error highlight** | Red border `#C62828` | Red outline | Red border |
+| Property            | iOS                             | Android                   | Web                          |
+| ------------------- | ------------------------------- | ------------------------- | ---------------------------- |
+| **Start Date**      | Native `DateTimePicker` (wheel) | Native `DatePickerDialog` | `<input type="date">` styled |
+| **Start Time**      | Native `DateTimePicker` (wheel) | Native `TimePickerDialog` | `<input type="time">` styled |
+| **End Date**        | Same as start                   | Same as start             | Same as start                |
+| **Min Date**        | Today (no past dates)           | Today                     | Today                        |
+| **Error highlight** | Red border `#C62828`            | Red outline               | Red border                   |
 
 ---
 
 ### 4. Location Fields
 
-| Property | Value |
-|----------|-------|
-| **Location Name** | Required text input, 1 line |
-| **Location Address** | Optional text input, 1–2 lines |
-| **Hint text** | "e.g. Dallas Convention Center" |
-| **Error state** | Red border + error message below |
-| **Max lengths** | Name: 100 chars, Address: 200 chars |
+| Property             | Value                               |
+| -------------------- | ----------------------------------- |
+| **Location Name**    | Required text input, 1 line         |
+| **Location Address** | Optional text input, 1–2 lines      |
+| **Hint text**        | "e.g. Dallas Convention Center"     |
+| **Error state**      | Red border + error message below    |
+| **Max lengths**      | Name: 100 chars, Address: 200 chars |
 
 ---
 
 ### 5. Description Textarea
 
-| Property | iOS | Android | Web |
-|----------|-----|---------|-----|
-| **Rows** | 6 (expandable) | 6 (expandable) | 6 (expandable) |
-| **Max chars** | 3000 | 3000 | 3000 |
-| **Counter** | Shown as `X/3000` below textarea | Same | Same |
-| **Near limit** | Counter turns amber at 2700+ | Same | Same |
-| **At limit** | Counter turns red at 3000 | Same | Same |
+| Property       | iOS                              | Android        | Web            |
+| -------------- | -------------------------------- | -------------- | -------------- |
+| **Rows**       | 6 (expandable)                   | 6 (expandable) | 6 (expandable) |
+| **Max chars**  | 3000                             | 3000           | 3000           |
+| **Counter**    | Shown as `X/3000` below textarea | Same           | Same           |
+| **Near limit** | Counter turns amber at 2700+     | Same           | Same           |
+| **At limit**   | Counter turns red at 3000        | Same           | Same           |
 
 ---
 
 ### 6. Photo Upload Section
 
-| Property | Value |
-|----------|-------|
-| **Trigger** | Tapping row opens native image picker / file input |
-| **Accepted types** | JPEG, PNG, HEIC |
-| **Max size** | 2MB (compressed client-side before upload) |
-| **Preview** | Thumbnail (80×80px) + filename + Remove (✕) button |
-| **Progress** | Progress bar during upload |
-| **Error** | Toast: "Photo upload failed. Your event can still be posted without a photo." |
-| **Bucket** | `event-photos/` in Supabase Storage |
+| Property           | Value                                                                         |
+| ------------------ | ----------------------------------------------------------------------------- |
+| **Trigger**        | Tapping row opens native image picker / file input                            |
+| **Accepted types** | JPEG, PNG, HEIC                                                               |
+| **Max size**       | 2MB (compressed client-side before upload)                                    |
+| **Preview**        | Thumbnail (80×80px) + filename + Remove (✕) button                            |
+| **Progress**       | Progress bar during upload                                                    |
+| **Error**          | Toast: "Photo upload failed. Your event can still be posted without a photo." |
+| **Bucket**         | `event-photos/` in Supabase Storage                                           |
 
 ---
 
 ### 7. RSVP Visibility Toggle
 
-| Property | Value |
-|----------|-------|
-| **Type** | Radio button group (2 options) |
-| **Default** | Public |
-| **Options** | Public / Private |
-| **Public label** | "Public — anyone can see who's going" |
-| **Private label** | "Private — only you see the attendee list" |
-| **Selected color** | `#1565C0` |
+| Property           | Value                                      |
+| ------------------ | ------------------------------------------ |
+| **Type**           | Radio button group (2 options)             |
+| **Default**        | Public                                     |
+| **Options**        | Public / Private                           |
+| **Public label**   | "Public — anyone can see who's going"      |
+| **Private label**  | "Private — only you see the attendee list" |
+| **Selected color** | `#1565C0`                                  |
 
 ---
 
 ### 8. Global Toggle (Premium Only)
 
-| Property | Value |
-|----------|-------|
-| **Visibility** | Only shown to users where `is_premium = true` |
-| **Type** | Checkbox |
-| **Default** | Unchecked (local by default) |
-| **Label** | "Visible in all metro feeds — not just [City]" |
-| **Icon** | 🌐 |
+| Property           | Value                                                            |
+| ------------------ | ---------------------------------------------------------------- |
+| **Visibility**     | Only shown to users where `is_premium = true`                    |
+| **Type**           | Checkbox                                                         |
+| **Default**        | Unchecked (local by default)                                     |
+| **Label**          | "Visible in all metro feeds — not just [City]"                   |
+| **Icon**           | 🌐                                                               |
 | **Footer preview** | Updates "Posting to" card: "📍 Dallas-Fort Worth · 🌐 Global ON" |
 
 ---
 
 ## Spacing & Layout
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / status bar | Auto | — |
-| 2 | Navigation bar | 44px / 56dp | — |
-| 3 | Scrollable form content | Flex | 16px section gap |
-| 4 | Event Name card | Auto | 16px |
-| 5 | Event Type card | Auto | 16px |
-| 6 | Date/Time card | Auto | 16px |
-| 7 | Location card | Auto | 16px |
-| 8 | Description card | Auto | 16px |
-| 9 | Photo card | Auto | 16px |
-| 10 | RSVP Visibility card | Auto | 16px |
-| 11 | Global toggle card (premium) | Auto | 16px |
-| 12 | "Posting to" footer card | Auto | 32px |
-| 13 | Bottom safe area / padding | 24px | — |
+| #   | Element                      | Height      | Spacing After    |
+| --- | ---------------------------- | ----------- | ---------------- |
+| 1   | Safe area / status bar       | Auto        | —                |
+| 2   | Navigation bar               | 44px / 56dp | —                |
+| 3   | Scrollable form content      | Flex        | 16px section gap |
+| 4   | Event Name card              | Auto        | 16px             |
+| 5   | Event Type card              | Auto        | 16px             |
+| 6   | Date/Time card               | Auto        | 16px             |
+| 7   | Location card                | Auto        | 16px             |
+| 8   | Description card             | Auto        | 16px             |
+| 9   | Photo card                   | Auto        | 16px             |
+| 10  | RSVP Visibility card         | Auto        | 16px             |
+| 11  | Global toggle card (premium) | Auto        | 16px             |
+| 12  | "Posting to" footer card     | Auto        | 32px             |
+| 13  | Bottom safe area / padding   | 24px        | —                |
 
 ---
 
@@ -432,33 +432,33 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android | Web |
-|--------|-----|---------|-----|
-| **Navigation** | Modal sheet (swipe-down dismissable) | Full-screen activity | Full-page route `/events/create` |
-| **Date/Time Picker** | Native wheel picker (UIDatePicker) | Native dialog pickers | Styled `<input type="date/time">` |
-| **Submit Button** | Top-right text button in nav bar | Top-right in AppBar | Sticky bottom button (or top-right in header) |
-| **Photo Picker** | `expo-image-picker` (Photos library) | Same | `<input type="file" accept="image/*">` |
-| **Keyboard Avoidance** | `KeyboardAvoidingView` | `adjustResize` | Browser native scroll |
-| **Haptic Feedback** | Light impact on chip select | None | None |
-| **Typography** | SF Pro | Roboto | Inter / system-ui |
+| Aspect                 | iOS                                  | Android               | Web                                           |
+| ---------------------- | ------------------------------------ | --------------------- | --------------------------------------------- |
+| **Navigation**         | Modal sheet (swipe-down dismissable) | Full-screen activity  | Full-page route `/events/create`              |
+| **Date/Time Picker**   | Native wheel picker (UIDatePicker)   | Native dialog pickers | Styled `<input type="date/time">`             |
+| **Submit Button**      | Top-right text button in nav bar     | Top-right in AppBar   | Sticky bottom button (or top-right in header) |
+| **Photo Picker**       | `expo-image-picker` (Photos library) | Same                  | `<input type="file" accept="image/*">`        |
+| **Keyboard Avoidance** | `KeyboardAvoidingView`               | `adjustResize`        | Browser native scroll                         |
+| **Haptic Feedback**    | Light impact on chip select          | None                  | None                                          |
+| **Typography**         | SF Pro                               | Roboto                | Inter / system-ui                             |
 
 ---
 
 ## Error States & Edge Cases
 
-| Scenario | Behavior |
-|----------|----------|
-| Event Name < 5 chars | Inline error below field: "Must be at least 5 characters." |
-| Start date in the past | Inline error: "Start date must be in the future." |
-| End date before start | Inline error on end field: "End date must be after start date." |
-| No Event Type selected | Create button stays disabled; type section shows subtle required indicator |
-| Description < 10 chars | Inline error: "Must be at least 10 characters." |
-| Photo > 2MB (pre-compression) | Client compresses to ≤ 2MB first; only shows error if compression fails |
-| Photo upload network failure | Toast: "Photo upload failed. Event will be posted without a photo." |
-| Create event API failure | Error toast: "Couldn't create event. Please try again." Form stays open with all values intact |
-| No metro area set | Toast: "Please set your location in profile before creating events." |
-| Level 0 user | Create Event button in list header triggers verification modal instead of opening form |
-| Organizer opens same form for Edit | Form pre-fills with existing data; "Create" label becomes "Save Changes" |
+| Scenario                           | Behavior                                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Event Name < 5 chars               | Inline error below field: "Must be at least 5 characters."                                     |
+| Start date in the past             | Inline error: "Start date must be in the future."                                              |
+| End date before start              | Inline error on end field: "End date must be after start date."                                |
+| No Event Type selected             | Create button stays disabled; type section shows subtle required indicator                     |
+| Description < 10 chars             | Inline error: "Must be at least 10 characters."                                                |
+| Photo > 2MB (pre-compression)      | Client compresses to ≤ 2MB first; only shows error if compression fails                        |
+| Photo upload network failure       | Toast: "Photo upload failed. Event will be posted without a photo."                            |
+| Create event API failure           | Error toast: "Couldn't create event. Please try again." Form stays open with all values intact |
+| No metro area set                  | Toast: "Please set your location in profile before creating events."                           |
+| Level 0 user                       | Create Event button in list header triggers verification modal instead of opening form         |
+| Organizer opens same form for Edit | Form pre-fills with existing data; "Create" label becomes "Save Changes"                       |
 
 ---
 
@@ -490,26 +490,26 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 
 ### Color Contrast (WCAG)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Form labels on #FFFFFF | 14.7:1 | AAA ✓ |
-| Error text #C62828 on #FFFFFF | 5.9:1 | AA ✓ |
-| Disabled button text #BDBDBD on #FFFFFF | 1.6:1 | — (intentionally low, disabled) |
-| Selected chip text (white on #1565C0) | 7.4:1 | AAA ✓ |
+| Element                                 | Ratio  | Level                           |
+| --------------------------------------- | ------ | ------------------------------- |
+| Form labels on #FFFFFF                  | 14.7:1 | AAA ✓                           |
+| Error text #C62828 on #FFFFFF           | 5.9:1  | AA ✓                            |
+| Disabled button text #BDBDBD on #FFFFFF | 1.6:1  | — (intentionally low, disabled) |
+| Selected chip text (white on #1565C0)   | 7.4:1  | AAA ✓                           |
 
 ---
 
 ## Animations & Transitions
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Screen enter (iOS) | 0ms | 350ms | Slide up modal |
-| 2 | Screen enter (Android/Web) | 0ms | 300ms | Fade + slide from right |
-| 3 | Chip selection | 0ms | 150ms | Background fill fade |
-| 4 | Create button enable | 0ms | 200ms | Color transition disabled→blue |
-| 5 | Photo preview appear | 0ms | 200ms | Fade in + scale from 0.95 |
-| 6 | Submit loading state | 0ms | — | Button spinner |
-| 7 | Screen exit on success | 0ms | 300ms | Replace with event detail |
+| Step | Element                    | Delay | Duration | Effect                         |
+| ---- | -------------------------- | ----- | -------- | ------------------------------ |
+| 1    | Screen enter (iOS)         | 0ms   | 350ms    | Slide up modal                 |
+| 2    | Screen enter (Android/Web) | 0ms   | 300ms    | Fade + slide from right        |
+| 3    | Chip selection             | 0ms   | 150ms    | Background fill fade           |
+| 4    | Create button enable       | 0ms   | 200ms    | Color transition disabled→blue |
+| 5    | Photo preview appear       | 0ms   | 200ms    | Fade in + scale from 0.95      |
+| 6    | Submit loading state       | 0ms   | —        | Button spinner                 |
+| 7    | Screen exit on success     | 0ms   | 300ms    | Replace with event detail      |
 
 ---
 
@@ -517,39 +517,39 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 
 ### String Keys
 
-| Key | Default Value |
-|-----|---------------|
-| `create_event_title` | Create Event |
-| `create_event_cta` | Create |
-| `create_event_cancel` | Cancel |
-| `field_event_name` | Event Name |
-| `field_event_name_hint` | e.g. Dashain Celebration 2026 |
-| `field_event_name_error_short` | Must be at least 5 characters. |
-| `field_event_name_error_long` | Maximum 150 characters. |
-| `field_event_type` | Event Type |
-| `field_start_datetime` | Start Date & Time |
-| `field_end_datetime` | End Date & Time (optional) |
-| `field_start_error_past` | Start date must be in the future. |
-| `field_end_error_before_start` | End date must be after start date. |
-| `field_location_name` | Location Name |
-| `field_location_name_hint` | e.g. Dallas Convention Center |
-| `field_location_address` | Location Address (optional) |
-| `field_description` | Description |
-| `field_description_counter` | {count}/3000 |
-| `field_photo_add` | Add Event Photo (optional) |
-| `field_rsvp_visibility` | RSVP Visibility |
-| `field_rsvp_public_label` | Public — anyone can see who's going |
-| `field_rsvp_private_label` | Private — only you see the attendee list |
-| `field_global_toggle_label` | Visible in all metro feeds — not just {city} |
-| `field_global_section_title` | Make Global (Premium) |
-| `posting_to` | Posting to: {city} |
-| `posting_to_global` | Posting to: {city} · 🌐 Global ON |
-| `error_photo_upload` | Photo upload failed. Event will be posted without a photo. |
-| `error_create_failed` | Couldn't create event. Please try again. |
-| `discard_confirm_title` | Discard Event? |
-| `discard_confirm_body` | You'll lose all the details you've entered. |
-| `discard_cta` | Discard |
-| `discard_cancel` | Keep Editing |
+| Key                            | Default Value                                              |
+| ------------------------------ | ---------------------------------------------------------- |
+| `create_event_title`           | Create Event                                               |
+| `create_event_cta`             | Create                                                     |
+| `create_event_cancel`          | Cancel                                                     |
+| `field_event_name`             | Event Name                                                 |
+| `field_event_name_hint`        | e.g. Dashain Celebration 2026                              |
+| `field_event_name_error_short` | Must be at least 5 characters.                             |
+| `field_event_name_error_long`  | Maximum 150 characters.                                    |
+| `field_event_type`             | Event Type                                                 |
+| `field_start_datetime`         | Start Date & Time                                          |
+| `field_end_datetime`           | End Date & Time (optional)                                 |
+| `field_start_error_past`       | Start date must be in the future.                          |
+| `field_end_error_before_start` | End date must be after start date.                         |
+| `field_location_name`          | Location Name                                              |
+| `field_location_name_hint`     | e.g. Dallas Convention Center                              |
+| `field_location_address`       | Location Address (optional)                                |
+| `field_description`            | Description                                                |
+| `field_description_counter`    | {count}/3000                                               |
+| `field_photo_add`              | Add Event Photo (optional)                                 |
+| `field_rsvp_visibility`        | RSVP Visibility                                            |
+| `field_rsvp_public_label`      | Public — anyone can see who's going                        |
+| `field_rsvp_private_label`     | Private — only you see the attendee list                   |
+| `field_global_toggle_label`    | Visible in all metro feeds — not just {city}               |
+| `field_global_section_title`   | Make Global (Premium)                                      |
+| `posting_to`                   | Posting to: {city}                                         |
+| `posting_to_global`            | Posting to: {city} · 🌐 Global ON                          |
+| `error_photo_upload`           | Photo upload failed. Event will be posted without a photo. |
+| `error_create_failed`          | Couldn't create event. Please try again.                   |
+| `discard_confirm_title`        | Discard Event?                                             |
+| `discard_confirm_body`         | You'll lose all the details you've entered.                |
+| `discard_cta`                  | Discard                                                    |
+| `discard_cancel`               | Keep Editing                                               |
 
 ---
 
@@ -575,13 +575,13 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | "Create Event" in events header | Events list |
-| Exit (success) | `createEvent()` resolves | Event detail screen |
-| Exit (cancel) | Tap ✕ Cancel (no form changes) | Events list |
-| Exit (cancel, dirty form) | Tap ✕ → confirm discard | Events list |
-| Exit (edit mode, success) | `updateEvent()` resolves | Event detail screen |
+| Direction                 | Trigger                         | Destination         |
+| ------------------------- | ------------------------------- | ------------------- |
+| Entry                     | "Create Event" in events header | Events list         |
+| Exit (success)            | `createEvent()` resolves        | Event detail screen |
+| Exit (cancel)             | Tap ✕ Cancel (no form changes)  | Events list         |
+| Exit (cancel, dirty form) | Tap ✕ → confirm discard         | Events list         |
+| Exit (edit mode, success) | `updateEvent()` resolves        | Event detail screen |
 
 ---
 
@@ -642,14 +642,14 @@ Verifying your account takes less than 5 minutes and unlocks full posting rights
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Entry from | Events List (screen to be wireframed) |
-| On success → | Event Detail (screen to be wireframed) |
-| Fallback for Level 0 | Verification Prompt (existing flow) |
-| Edit mode reuses | This same screen |
-| Feature spec | [events.md](../../product/features/events.md) |
-| Feature breakdown | [events-feature-breakdown.md](../../product/features/events-feature-breakdown.md) |
+| Relation             | Screen                                                                            |
+| -------------------- | --------------------------------------------------------------------------------- |
+| Entry from           | Events List (screen to be wireframed)                                             |
+| On success →         | Event Detail (screen to be wireframed)                                            |
+| Fallback for Level 0 | Verification Prompt (existing flow)                                               |
+| Edit mode reuses     | This same screen                                                                  |
+| Feature spec         | [events.md](../../product/features/events.md)                                     |
+| Feature breakdown    | [events-feature-breakdown.md](../../product/features/events-feature-breakdown.md) |
 
 ---
 

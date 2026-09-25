@@ -126,11 +126,16 @@ export function formatPhoneNumber(phone: string): string {
 ```typescript
 // constants/tags.ts
 export const DEFAULT_TAGS = [
-  'Housing', 'Jobs', 'Help', 'Question',
-  'Politics', 'Discussion', 'Emergency',
+  'Housing',
+  'Jobs',
+  'Help',
+  'Question',
+  'Politics',
+  'Discussion',
+  'Emergency',
 ] as const;
 
-export type DefaultTag = typeof DEFAULT_TAGS[number];
+export type DefaultTag = (typeof DEFAULT_TAGS)[number];
 ```
 
 **Why shared:**
@@ -150,11 +155,7 @@ export type DefaultTag = typeof DEFAULT_TAGS[number];
 import { supabase } from './client';
 
 export async function createPost(data: CreatePostInput): Promise<Post> {
-  const { data: post, error } = await supabase
-    .from('posts')
-    .insert(data)
-    .select()
-    .single();
+  const { data: post, error } = await supabase.from('posts').insert(data).select().single();
   if (error) throw error;
   return post;
 }
@@ -371,7 +372,9 @@ export function usePosts(metroId: string) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPostsByMetro(metroId).then(setPosts).finally(() => setLoading(false));
+    getPostsByMetro(metroId)
+      .then(setPosts)
+      .finally(() => setLoading(false));
   }, [metroId]);
 
   return { posts, loading };
@@ -390,7 +393,9 @@ export function usePosts(metroId: string) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPostsByMetro(metroId).then(setPosts).finally(() => setLoading(false));
+    getPostsByMetro(metroId)
+      .then(setPosts)
+      .finally(() => setLoading(false));
   }, [metroId]);
 
   return { posts, loading };

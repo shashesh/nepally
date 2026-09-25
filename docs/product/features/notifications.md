@@ -36,13 +36,13 @@ When loads overlap, only the latest answer is applied.
 
 ## Preferences (`/profile/notifications`)
 
-| Setting | Choices |
-|---|---|
-| Push notifications | on / off |
-| Chat messages | Every message, Batched (every 30 minutes), Off |
-| Comments | on / off |
-| Likes | Every like, When 5 or more likes arrive, Off |
-| Emergency alerts | always on |
+| Setting            | Choices                                        |
+| ------------------ | ---------------------------------------------- |
+| Push notifications | on / off                                       |
+| Chat messages      | Every message, Batched (every 30 minutes), Off |
+| Comments           | on / off                                       |
+| Likes              | Every like, When 5 or more likes arrive, Off   |
+| Emergency alerts   | always on                                      |
 
 - **Defaults.** A member who has never saved gets the table's column defaults. These are `DEFAULT_USER_SETTINGS` in `packages/shared`.
 - **A failed load** shows "Couldn't load your notification preferences." with Try again, and no form. Before PR 9b, the page showed the defaults, and Save wrote them over the member's real settings.

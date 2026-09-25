@@ -129,14 +129,14 @@ You won't see local posts until you set your location.
 
 ### 1. Screen Title
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text (Heading) | Text (Heading) |
-| **Content** | "Where are you located?" | "Where are you located?" |
-| **Font** | 34pt Bold, San Francisco | 34sp Medium, Roboto |
-| **Color** | #212121 (Almost Black) | #212121 (Almost Black) |
-| **Alignment** | Left | Left |
-| **Margin** | 16px from left edge, 24px from top | 16dp from left edge, 24dp from top |
+| Property      | iOS                                | Android                            |
+| ------------- | ---------------------------------- | ---------------------------------- |
+| **Type**      | Text (Heading)                     | Text (Heading)                     |
+| **Content**   | "Where are you located?"           | "Where are you located?"           |
+| **Font**      | 34pt Bold, San Francisco           | 34sp Medium, Roboto                |
+| **Color**     | #212121 (Almost Black)             | #212121 (Almost Black)             |
+| **Alignment** | Left                               | Left                               |
+| **Margin**    | 16px from left edge, 24px from top | 16dp from left edge, 24dp from top |
 
 - Semantic heading: H1
 - **a11y:** VoiceOver/TalkBack reads "Where are you located?"
@@ -145,14 +145,14 @@ You won't see local posts until you set your location.
 
 ### 2. Subtitle
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text (Body) | Text (Body) |
-| **Content** | "We'll show you posts in your metro area" | "We'll show you posts in your metro area" |
-| **Font** | 17pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Color** | #757575 (Medium Gray) | #757575 (Medium Gray) |
-| **Alignment** | Left | Left |
-| **Margin** | 16px from left edge, 8px below title | 16dp from left edge, 8dp below title |
+| Property      | iOS                                       | Android                                   |
+| ------------- | ----------------------------------------- | ----------------------------------------- |
+| **Type**      | Text (Body)                               | Text (Body)                               |
+| **Content**   | "We'll show you posts in your metro area" | "We'll show you posts in your metro area" |
+| **Font**      | 17pt Regular, San Francisco               | 16sp Regular, Roboto                      |
+| **Color**     | #757575 (Medium Gray)                     | #757575 (Medium Gray)                     |
+| **Alignment** | Left                                      | Left                                      |
+| **Margin**    | 16px from left edge, 8px below title      | 16dp from left edge, 8dp below title      |
 
 - Semantic role: Paragraph text
 - **a11y:** VoiceOver/TalkBack reads full sentence
@@ -161,23 +161,23 @@ You won't see local posts until you set your location.
 
 ### 3. ZIP Code Input Field
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text Input (Numeric) | Text Input (Numeric) |
-| **Label** | "Your ZIP Code" (13pt Regular, #757575) | "Your ZIP Code" (12sp floating label, #757575) |
-| **Placeholder** | Empty or "75080" as example | Empty or "75080" as example |
-| **Input Font** | 28pt Bold, San Francisco | 24sp Medium, Roboto |
-| **Input Color** | #212121 (Almost Black) | #212121 (Almost Black) |
-| **Alignment** | Center (large centered numbers) | Center (large centered numbers) |
-| **Height** | 56px | 56dp |
-| **Width** | Full width − 32px margins | Full width − 32dp margins |
-| **Corner Radius** | 8px | 8dp |
-| **Border (Default)** | 1px solid #E0E0E0 | Bottom underline 1dp #E0E0E0 |
-| **Border (Focused)** | 2px solid #1565C0 | Bottom underline 2dp #1565C0 |
-| **Border (Error)** | 2px solid #C62828 | Bottom underline 2dp #C62828 |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Input Style** | Rounded box with border | Material underline style |
-| **Keyboard** | Numeric only, "Done" button to dismiss | Numeric only, hardware back dismisses |
+| Property             | iOS                                     | Android                                        |
+| -------------------- | --------------------------------------- | ---------------------------------------------- |
+| **Type**             | Text Input (Numeric)                    | Text Input (Numeric)                           |
+| **Label**            | "Your ZIP Code" (13pt Regular, #757575) | "Your ZIP Code" (12sp floating label, #757575) |
+| **Placeholder**      | Empty or "75080" as example             | Empty or "75080" as example                    |
+| **Input Font**       | 28pt Bold, San Francisco                | 24sp Medium, Roboto                            |
+| **Input Color**      | #212121 (Almost Black)                  | #212121 (Almost Black)                         |
+| **Alignment**        | Center (large centered numbers)         | Center (large centered numbers)                |
+| **Height**           | 56px                                    | 56dp                                           |
+| **Width**            | Full width − 32px margins               | Full width − 32dp margins                      |
+| **Corner Radius**    | 8px                                     | 8dp                                            |
+| **Border (Default)** | 1px solid #E0E0E0                       | Bottom underline 1dp #E0E0E0                   |
+| **Border (Focused)** | 2px solid #1565C0                       | Bottom underline 2dp #1565C0                   |
+| **Border (Error)**   | 2px solid #C62828                       | Bottom underline 2dp #C62828                   |
+| **Background**       | White (#FFFFFF)                         | White (#FFFFFF)                                |
+| **Input Style**      | Rounded box with border                 | Material underline style                       |
+| **Keyboard**         | Numeric only, "Done" button to dismiss  | Numeric only, hardware back dismisses          |
 
 **Input Constraints:**
 
@@ -214,14 +214,14 @@ You won't see local posts until you set your location.
 
 ### 4. Helper Text
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text (Caption) | Text (Caption) |
-| **Content** | "e.g., 75080" | "e.g., 75080" |
-| **Font** | 13pt Regular, San Francisco | 12sp Regular, Roboto |
-| **Color** | #757575 (Medium Gray) | #757575 (Medium Gray) |
-| **Alignment** | Left | Left |
-| **Position** | 8px below input field | 8dp below input field |
+| Property      | iOS                         | Android               |
+| ------------- | --------------------------- | --------------------- |
+| **Type**      | Text (Caption)              | Text (Caption)        |
+| **Content**   | "e.g., 75080"               | "e.g., 75080"         |
+| **Font**      | 13pt Regular, San Francisco | 12sp Regular, Roboto  |
+| **Color**     | #757575 (Medium Gray)       | #757575 (Medium Gray) |
+| **Alignment** | Left                        | Left                  |
+| **Position**  | 8px below input field       | 8dp below input field |
 
 - Purpose: Provide example format for users who are unsure
 - **a11y:** Not announced by screen reader (decorative)
@@ -230,17 +230,17 @@ You won't see local posts until you set your location.
 
 ### 5. Info Box (Privacy Reassurance)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Information callout | Information callout |
-| **Background** | Light blue (#E3F2FD) | Light blue (#E3F2FD) |
-| **Border** | None or 1px solid #BBDEFB | None or 1px solid #BBDEFB |
-| **Corner Radius** | 8px | 8dp |
-| **Padding** | 16px all around | 16dp all around |
-| **Icon** | Info icon (ℹ️), 16px, #1565C0 | Material "info" icon, 16dp, #1565C0 |
-| **Text Font** | 13pt Regular, San Francisco | 12sp Regular, Roboto |
-| **Text Color** | #1565C0 (Primary Blue) | #1565C0 (Primary Blue) |
-| **Alignment** | Left | Left |
+| Property          | iOS                           | Android                             |
+| ----------------- | ----------------------------- | ----------------------------------- |
+| **Type**          | Information callout           | Information callout                 |
+| **Background**    | Light blue (#E3F2FD)          | Light blue (#E3F2FD)                |
+| **Border**        | None or 1px solid #BBDEFB     | None or 1px solid #BBDEFB           |
+| **Corner Radius** | 8px                           | 8dp                                 |
+| **Padding**       | 16px all around               | 16dp all around                     |
+| **Icon**          | Info icon (ℹ️), 16px, #1565C0 | Material "info" icon, 16dp, #1565C0 |
+| **Text Font**     | 13pt Regular, San Francisco   | 12sp Regular, Roboto                |
+| **Text Color**    | #1565C0 (Primary Blue)        | #1565C0 (Primary Blue)              |
+| **Alignment**     | Left                          | Left                                |
 
 **Content:** "ℹ️ We use US Census Metro Areas to show you local content. Your exact address is never shared."
 
@@ -260,18 +260,18 @@ You won't see local posts until you set your location.
 
 ### 6. Continue Button (Primary)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Button (Primary) | Button (Primary) |
-| **Label** | "Continue" (Title case) | "CONTINUE" (ALL CAPS) |
-| **Height** | 48px | 56dp |
-| **Width** | Full width − 32px margins | Full width − 32dp margins |
-| **Corner Radius** | 8px | 8dp |
-| **Background (Enabled)** | #1565C0 (Primary Blue) | #1565C0 (Primary Blue) |
-| **Background (Disabled)** | #BDBDBD (Gray) | #BDBDBD (Gray) |
-| **Background (Pressed)** | #104D99 (Darker Blue) | #104D99 (Darker Blue) |
-| **Text Font** | 17pt Semibold, White | 14sp Medium, White |
-| **Touch Target** | Full button size | Full button size |
+| Property                  | iOS                       | Android                   |
+| ------------------------- | ------------------------- | ------------------------- |
+| **Type**                  | Button (Primary)          | Button (Primary)          |
+| **Label**                 | "Continue" (Title case)   | "CONTINUE" (ALL CAPS)     |
+| **Height**                | 48px                      | 56dp                      |
+| **Width**                 | Full width − 32px margins | Full width − 32dp margins |
+| **Corner Radius**         | 8px                       | 8dp                       |
+| **Background (Enabled)**  | #1565C0 (Primary Blue)    | #1565C0 (Primary Blue)    |
+| **Background (Disabled)** | #BDBDBD (Gray)            | #BDBDBD (Gray)            |
+| **Background (Pressed)**  | #104D99 (Darker Blue)     | #104D99 (Darker Blue)     |
+| **Text Font**             | 17pt Semibold, White      | 14sp Medium, White        |
+| **Touch Target**          | Full button size          | Full button size          |
 
 **States:**
 
@@ -300,15 +300,15 @@ You won't see local posts until you set your location.
 
 ### 7. Skip Link
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text Button (Link style) | Text Button (Link style) |
-| **Label** | "Skip for now" (Title case) | "SKIP FOR NOW" (ALL CAPS) |
-| **Font** | 17pt Regular, San Francisco | 14sp Regular, Roboto |
-| **Color** | #1565C0 (Primary Blue) | #1565C0 (Primary Blue) |
-| **Alignment** | Center | Center |
-| **Position** | 16px below Continue button | 16dp below Continue button |
-| **Underline** | On press only | Always shown |
+| Property      | iOS                         | Android                    |
+| ------------- | --------------------------- | -------------------------- |
+| **Type**      | Text Button (Link style)    | Text Button (Link style)   |
+| **Label**     | "Skip for now" (Title case) | "SKIP FOR NOW" (ALL CAPS)  |
+| **Font**      | 17pt Regular, San Francisco | 14sp Regular, Roboto       |
+| **Color**     | #1565C0 (Primary Blue)      | #1565C0 (Primary Blue)     |
+| **Alignment** | Center                      | Center                     |
+| **Position**  | 16px below Continue button  | 16dp below Continue button |
+| **Underline** | On press only               | Always shown               |
 
 **Interaction:**
 
@@ -327,20 +327,20 @@ You won't see local posts until you set your location.
 
 ### Vertical Stack (Top to Bottom)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / Status bar | Auto | — |
-| 2 | Top padding | 24px/dp | — |
-| 3 | Title | ~40px | 8px/dp |
-| 4 | Subtitle | ~50px | 48px/dp |
-| 5 | Input label | ~20px | — |
-| 6 | Input field | 56px/dp | — |
-| 7 | Helper text | ~20px | 24px/dp |
-| 8 | Info box | ~80px | 48px/dp |
-| 9 | Continue button | 48px / 56dp | 16px/dp |
-| 10 | Skip link | ~30px | Flex |
-| 11 | Bottom padding | 24px/dp | — |
-| 12 | Numeric keyboard (overlay) | ~260px/dp | — |
+| #   | Element                    | Height      | Spacing After |
+| --- | -------------------------- | ----------- | ------------- |
+| 1   | Safe area / Status bar     | Auto        | —             |
+| 2   | Top padding                | 24px/dp     | —             |
+| 3   | Title                      | ~40px       | 8px/dp        |
+| 4   | Subtitle                   | ~50px       | 48px/dp       |
+| 5   | Input label                | ~20px       | —             |
+| 6   | Input field                | 56px/dp     | —             |
+| 7   | Helper text                | ~20px       | 24px/dp       |
+| 8   | Info box                   | ~80px       | 48px/dp       |
+| 9   | Continue button            | 48px / 56dp | 16px/dp       |
+| 10  | Skip link                  | ~30px       | Flex          |
+| 11  | Bottom padding             | 24px/dp     | —             |
+| 12  | Numeric keyboard (overlay) | ~260px/dp   | —             |
 
 **Total Height (without keyboard):** ~550px
 **With Keyboard:** Screen scrolls to keep input visible
@@ -382,18 +382,18 @@ You won't see local posts until you set your location.
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Input Style** | Rounded box with border | Material underline style |
-| **Keyboard Dismiss** | "Done" button on keyboard | Hardware back dismisses |
-| **Button Text** | Title case ("Continue") | ALL CAPS ("CONTINUE") |
-| **Typography** | San Francisco, 28pt input | Roboto, 24sp input |
-| **Auto-Focus** | Input focused on load, keyboard appears | Input focused on load, keyboard appears |
-| **Validation Timing** | On 5th digit typed | On 5th digit typed |
-| **Error Indication** | Red 2px border + text below | Red underline + text below |
-| **Press Feedback** | Scale 0.98 + haptic | Scale 0.98 + ripple |
-| **Screen Transition** | Slide in from right (300ms) | Slide up from bottom (300ms) |
-| **Skip Link Underline** | On press only | Always shown |
+| Aspect                  | iOS                                     | Android                                 |
+| ----------------------- | --------------------------------------- | --------------------------------------- |
+| **Input Style**         | Rounded box with border                 | Material underline style                |
+| **Keyboard Dismiss**    | "Done" button on keyboard               | Hardware back dismisses                 |
+| **Button Text**         | Title case ("Continue")                 | ALL CAPS ("CONTINUE")                   |
+| **Typography**          | San Francisco, 28pt input               | Roboto, 24sp input                      |
+| **Auto-Focus**          | Input focused on load, keyboard appears | Input focused on load, keyboard appears |
+| **Validation Timing**   | On 5th digit typed                      | On 5th digit typed                      |
+| **Error Indication**    | Red 2px border + text below             | Red underline + text below              |
+| **Press Feedback**      | Scale 0.98 + haptic                     | Scale 0.98 + ripple                     |
+| **Screen Transition**   | Slide in from right (300ms)             | Slide up from bottom (300ms)            |
+| **Skip Link Underline** | On press only                           | Always shown                            |
 
 ---
 
@@ -426,7 +426,7 @@ You won't see local posts until you set your location.
 **Trigger:** After tapping "Continue" and API returns 404
 **Behavior:**
 
-- Show error banner at top: "We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nepally.us"
+- Show error banner at top: "We don't have coverage in this area yet. Please try a nearby ZIP code or contact <support@nepally.us>"
 - Banner: Red background (#C62828), white text, dismissible
 - Input field remains editable
 - "Contact Support" link in banner opens email client
@@ -533,13 +533,13 @@ You won't see local posts until you set your location.
 
 ### Color Contrast (WCAG)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Title (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Body text (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
-| Input text (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Info box text (#1565C0 on #E3F2FD) | 6.5:1 | AA ✓ |
-| Error text (#C62828 on #FFFFFF) | 7.8:1 | AAA ✓ |
+| Element                            | Ratio  | Level |
+| ---------------------------------- | ------ | ----- |
+| Title (#212121 on #FFFFFF)         | 16.9:1 | AAA ✓ |
+| Body text (#757575 on #FFFFFF)     | 4.6:1  | AA ✓  |
+| Input text (#212121 on #FFFFFF)    | 16.9:1 | AAA ✓ |
+| Info box text (#1565C0 on #E3F2FD) | 6.5:1  | AA ✓  |
+| Error text (#C62828 on #FFFFFF)    | 7.8:1  | AAA ✓ |
 
 ### Focus Indicators
 
@@ -553,30 +553,30 @@ You won't see local posts until you set your location.
 
 ### Screen Entry
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Screen | 0ms | 300ms | iOS: Slide in from right / Android: Slide up from bottom |
-| 2 | Input field | 0ms | — | Auto-focused, keyboard slides up simultaneously |
+| Step | Element     | Delay | Duration | Effect                                                   |
+| ---- | ----------- | ----- | -------- | -------------------------------------------------------- |
+| 1    | Screen      | 0ms   | 300ms    | iOS: Slide in from right / Android: Slide up from bottom |
+| 2    | Input field | 0ms   | —        | Auto-focused, keyboard slides up simultaneously          |
 
 ### Input Validation Success
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Checkmark icon | 0ms | 200ms | Fade in + scale 0.8→1.0, right side of input, #2E7D32 |
+| Step | Element        | Delay | Duration | Effect                                                |
+| ---- | -------------- | ----- | -------- | ----------------------------------------------------- |
+| 1    | Checkmark icon | 0ms   | 200ms    | Fade in + scale 0.8→1.0, right side of input, #2E7D32 |
 
 ### Continue Button Enable
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Button background | 0ms | 200ms | Color fade from gray (#BDBDBD) to blue (#1565C0) |
-| 2 | Button | 200ms | 150ms | Subtle pulse to draw attention |
+| Step | Element           | Delay | Duration | Effect                                           |
+| ---- | ----------------- | ----- | -------- | ------------------------------------------------ |
+| 1    | Button background | 0ms   | 200ms    | Color fade from gray (#BDBDBD) to blue (#1565C0) |
+| 2    | Button            | 200ms | 150ms    | Subtle pulse to draw attention                   |
 
 ### Error State
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Input border | 0ms | 300ms | Color fade from gray/blue to red (#C62828) |
-| 2 | Error text | 100ms | 200ms | Slide down from input field |
+| Step | Element      | Delay | Duration | Effect                                     |
+| ---- | ------------ | ----- | -------- | ------------------------------------------ |
+| 1    | Input border | 0ms   | 300ms    | Color fade from gray/blue to red (#C62828) |
+| 2    | Error text   | 100ms | 200ms    | Slide down from input field                |
 
 ### Loading State
 
@@ -603,17 +603,17 @@ You won't see local posts until you set your location.
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `zipcode_title` | Where are you located? |
-| `zipcode_subtitle` | We'll show you posts in your metro area |
-| `zipcode_label` | Your ZIP Code |
-| `zipcode_helper` | e.g., 75080 |
-| `zipcode_info` | We use US Census Metro Areas to show you local content. Your exact address is never shared. |
-| `zipcode_button` | Continue |
-| `zipcode_skip` | Skip for now |
-| `zipcode_error_invalid` | This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code. |
-| `zipcode_error_no_coverage` | We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nepally.us |
+| Key                         | Value                                                                                                 |
+| --------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `zipcode_title`             | Where are you located?                                                                                |
+| `zipcode_subtitle`          | We'll show you posts in your metro area                                                               |
+| `zipcode_label`             | Your ZIP Code                                                                                         |
+| `zipcode_helper`            | e.g., 75080                                                                                           |
+| `zipcode_info`              | We use US Census Metro Areas to show you local content. Your exact address is never shared.           |
+| `zipcode_button`            | Continue                                                                                              |
+| `zipcode_skip`              | Skip for now                                                                                          |
+| `zipcode_error_invalid`     | This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code.                                |
+| `zipcode_error_no_coverage` | We don't have coverage in this area yet. Please try a nearby ZIP code or contact <support@nepally.us> |
 
 ### Tone & Voice
 
@@ -634,13 +634,13 @@ You won't see local posts until you set your location.
 
 ### State Management
 
-| State | Type | Description |
-|-------|------|-------------|
-| `zipCode` | `string` | 5-digit user input |
-| `isValid` | `boolean` | True if ZIP exists in database |
-| `isLoading` | `boolean` | During API call |
-| `errorMessage` | `string \| null` | Current error message |
-| `showCheckmark` | `boolean` | True if validation passed |
+| State           | Type             | Description                    |
+| --------------- | ---------------- | ------------------------------ |
+| `zipCode`       | `string`         | 5-digit user input             |
+| `isValid`       | `boolean`        | True if ZIP exists in database |
+| `isLoading`     | `boolean`        | During API call                |
+| `errorMessage`  | `string \| null` | Current error message          |
+| `showCheckmark` | `boolean`        | True if validation passed      |
 
 **Validation Logic:**
 
@@ -659,13 +659,13 @@ function validateZipCode(zip) {
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | From Screen 02 after successful OAuth/signup | This screen |
-| Entry | Deep link `nepally://onboarding/zip-code` (authenticated, no metro) | This screen |
-| Exit | Tap "Continue" (valid ZIP) | `/metro-confirmation` (Screen 04) |
-| Exit | Tap "Skip Anyway" in dialog | `/onboarding/tutorial` (Screen 05), metro_area_id = null |
-| Back | Back button (if shown) | Previous screen |
+| Direction | Trigger                                                             | Destination                                              |
+| --------- | ------------------------------------------------------------------- | -------------------------------------------------------- |
+| Entry     | From Screen 02 after successful OAuth/signup                        | This screen                                              |
+| Entry     | Deep link `nepally://onboarding/zip-code` (authenticated, no metro) | This screen                                              |
+| Exit      | Tap "Continue" (valid ZIP)                                          | `/metro-confirmation` (Screen 04)                        |
+| Exit      | Tap "Skip Anyway" in dialog                                         | `/onboarding/tutorial` (Screen 05), metro_area_id = null |
+| Back      | Back button (if shown)                                              | Previous screen                                          |
 
 ### API Integration
 
@@ -828,12 +828,12 @@ WHERE id = 'user_id';
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | [02-signup-method-selection.md](../02-signup-method-selection/02-signup-method-selection.md) |
-| Next (Success) | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md) |
-| Next (Skip) | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md) |
-| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 8 |
+| Relation       | Screen                                                                                          |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Previous       | [02-signup-method-selection.md](../02-signup-method-selection/02-signup-method-selection.md)    |
+| Next (Success) | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md)                   |
+| Next (Skip)    | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md)                |
+| Journey        | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 8 |
 
 ---
 

@@ -25,7 +25,7 @@
 **Must Complete First:**
 
 - **Journey #01: Signup and Onboarding** — must have an account and be in a metro area
-- **Journey #02: Trust Level Verification** — must be Level 1+ to *initiate* a conversation (post authors can reply at any level)
+- **Journey #02: Trust Level Verification** — must be Level 1+ to _initiate_ a conversation (post authors can reply at any level)
 
 **Should Have:**
 
@@ -60,7 +60,7 @@
 - Author's avatar (photo or initials), masked name ("Ramesh T."), trust badge
 - Action bar at the bottom: Like · Comments · **Contact Author** button (blue, prominent)
 - If Sanjay is the author: Contact Author button is hidden
-**Duration:** ~30 seconds reading
+  **Duration:** ~30 seconds reading
 
 **User Thoughts:**
 
@@ -83,8 +83,8 @@
 - If no conversation exists: creates a new `conversations` record + two `conversation_participants` records
 - If conversation already exists with this author: returns the existing conversation ID
 - Navigates to `MessageThreadScreen` with `{ conversationId, otherUserId, otherUserName, otherUserTrustLevel, otherUserPhotoUrl }`
-**User Sees:** `MessageThreadScreen` opens. Header shows: author's avatar (left), masked name ("Ramesh T."), trust badge. Kebab menu (⋮) top right. Empty message list if new.
-**Duration:** < 1 second (navigation is instant; conversation created in background)
+  **User Sees:** `MessageThreadScreen` opens. Header shows: author's avatar (left), masked name ("Ramesh T."), trust badge. Kebab menu (⋮) top right. Empty message list if new.
+  **Duration:** < 1 second (navigation is instant; conversation created in background)
 
 **User Thoughts:**
 
@@ -114,7 +114,7 @@
 - Multi-line `ChatInput` with placeholder "Message..."
 - Send button (→) appears once text is entered, greyed out when empty
 - Keyboard pushes the input up (iOS: keyboard avoidance; Android: adjustResize)
-**Duration:** ~30 seconds to compose
+  **Duration:** ~30 seconds to compose
 
 **User Thoughts:**
 
@@ -138,11 +138,11 @@
 - Updates `conversations.last_message` and `conversations.last_message_time`
 - Updates `conversation_participants.unread_count` for the recipient
 - Supabase Realtime publishes the message to the recipient's subscription
-**User Sees:**
+  **User Sees:**
 - Message appears as a blue right-aligned bubble with a single grey checkmark (✓ = sent, not yet read)
 - Input field clears, ready for more messages
 - If send fails silently: message remains visible but no error is shown (known limitation — no retry UI)
-**Duration:** < 0.5 seconds to appear (optimistic)
+  **Duration:** < 0.5 seconds to appear (optimistic)
 
 **User Thoughts:**
 
@@ -154,13 +154,13 @@
 
 #### Step 5: Receive a Push Notification (Background)
 
-*(This step occurs on Ramesh's device — the post author receiving the message)*
+_(This step occurs on Ramesh's device — the post author receiving the message)_
 
 **System Response:**
 
 - Supabase Realtime notifies Ramesh's active subscription, or (once push delivery is deployed) sends an Expo push notification to Ramesh's device
 - Ramesh's Messages tab badge updates (unread count + 1, polled every 30s on iOS/Android)
-**Note:** Push notification delivery is scaffolded but not yet live. Currently, the author only sees the message if they open the app and check the Messages tab.
+  **Note:** Push notification delivery is scaffolded but not yet live. Currently, the author only sees the message if they open the app and check the Messages tab.
 
 ---
 
@@ -171,7 +171,7 @@
 **User Sees:**
 
 - Red badge on the Messages tab icon in the bottom nav
-**Duration:** Instant on app open (polled every 30s)
+  **Duration:** Instant on app open (polled every 30s)
 
 ---
 
@@ -191,7 +191,7 @@
   - Blue unread badge with count if unread
 - Pull-to-refresh available
 - Empty state with "Browse Posts" CTA if no conversations
-**Duration:** < 1 second
+  **Duration:** < 1 second
 
 **User Thoughts:**
 
@@ -207,12 +207,12 @@
 - Navigates to `MessageThreadScreen`
 - Calls `getMessages(supabase, conversationId)` + `markAsRead(supabase, conversationId, userId)`
 - Subscribes to `subscribeToMessages(supabase, conversationId, callback)` for real-time updates
-**User Sees:**
+  **User Sees:**
 - Full message thread, scrolled to bottom
 - Sanjay's sent message: right-aligned blue bubble, now showing double checkmark (✓✓ = read) if Ramesh has opened it
 - Ramesh's reply: left-aligned grey bubble, with Ramesh's avatar (Messenger-style) to the left of the bubble
 - Date separators between messages from different days
-**Duration:** < 1 second
+  **Duration:** < 1 second
 
 **User Thoughts:**
 
@@ -231,7 +231,7 @@
 - New messages appear in real time at the bottom of the list
 - Auto-scrolls to bottom when a new message arrives (if already near bottom)
 - Ramesh's avatar only shown on the first bubble in a consecutive group (Messenger-style grouping)
-**Duration:** As long as needed
+  **Duration:** As long as needed
 
 **Pain Points:**
 
@@ -299,15 +299,15 @@ User taps "Contact Author" or chat icon
 
 ## Touchpoints
 
-| Step | Touchpoint | Channel | Data Required | Data Stored |
-|------|------------|---------|---------------|-------------|
-| 1 | View post detail | Mobile / Web | Post ID | None |
-| 2 | Tap Contact Author | Mobile / Web | `userId`, `authorId` | `conversations`, `conversation_participants` |
-| 3 | Compose message | Mobile / Web | Message text | None (draft in UI state) |
-| 4 | Send message | Mobile / Web | `conversationId`, `senderId`, `text` | `messages` record |
-| 5 | Push notification | Push (Expo) | `recipientId`, message preview | `device_tokens` (for future push) |
-| 7 | Open conversation list | Mobile / Web | `userId` | None (read only) |
-| 8 | Open thread | Mobile / Web | `conversationId`, `userId` | `unread_count` reset to 0 |
+| Step | Touchpoint             | Channel      | Data Required                        | Data Stored                                  |
+| ---- | ---------------------- | ------------ | ------------------------------------ | -------------------------------------------- |
+| 1    | View post detail       | Mobile / Web | Post ID                              | None                                         |
+| 2    | Tap Contact Author     | Mobile / Web | `userId`, `authorId`                 | `conversations`, `conversation_participants` |
+| 3    | Compose message        | Mobile / Web | Message text                         | None (draft in UI state)                     |
+| 4    | Send message           | Mobile / Web | `conversationId`, `senderId`, `text` | `messages` record                            |
+| 5    | Push notification      | Push (Expo)  | `recipientId`, message preview       | `device_tokens` (for future push)            |
+| 7    | Open conversation list | Mobile / Web | `userId`                             | None (read only)                             |
+| 8    | Open thread            | Mobile / Web | `conversationId`, `userId`           | `unread_count` reset to 0                    |
 
 ---
 
@@ -320,28 +320,28 @@ User taps "Contact Author" or chat icon
 
 ### Platform Differences
 
-| Step | Mobile Behavior | Web Behavior | Notes |
-|------|----------------|--------------|-------|
-| Step 2 (initiate) | "Contact Author" button in PostDetailScreen | "Contact" button in `/posts/[id]` page | Same API call |
-| Step 3 (compose) | Native keyboard avoidance (iOS: padding; Android: adjustResize) | Browser text input, no keyboard avoidance needed | Mobile has more complexity |
-| Step 4 (send) | Tap send icon (→) | Click send button or press Enter | Same API |
-| Step 6 (badge) | Tab bar unread badge, polled every 30s | Browser tab title shows unread count (or badge in sidebar nav) | |
-| Step 7 (list) | `ConversationListScreen` (dedicated screen) | `/messages` page | Same shared `getConversations` API |
-| Step 8 (thread) | `MessageThreadScreen` with native keyboard handling | `/messages/[id]` page | Same shared `getMessages` + `subscribeToMessages` |
-| Avatar menu | Long-tap or tap avatar → context menu popup | Click avatar → contextual menu | |
+| Step              | Mobile Behavior                                                 | Web Behavior                                                   | Notes                                             |
+| ----------------- | --------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------- |
+| Step 2 (initiate) | "Contact Author" button in PostDetailScreen                     | "Contact" button in `/posts/[id]` page                         | Same API call                                     |
+| Step 3 (compose)  | Native keyboard avoidance (iOS: padding; Android: adjustResize) | Browser text input, no keyboard avoidance needed               | Mobile has more complexity                        |
+| Step 4 (send)     | Tap send icon (→)                                               | Click send button or press Enter                               | Same API                                          |
+| Step 6 (badge)    | Tab bar unread badge, polled every 30s                          | Browser tab title shows unread count (or badge in sidebar nav) |                                                   |
+| Step 7 (list)     | `ConversationListScreen` (dedicated screen)                     | `/messages` page                                               | Same shared `getConversations` API                |
+| Step 8 (thread)   | `MessageThreadScreen` with native keyboard handling             | `/messages/[id]` page                                          | Same shared `getMessages` + `subscribeToMessages` |
+| Avatar menu       | Long-tap or tap avatar → context menu popup                     | Click avatar → contextual menu                                 |                                                   |
 
 ---
 
 ## Emotions & Experience
 
-| Phase | Emotion | Confidence Level | Friction Level | Notes |
-|-------|---------|------------------|----------------|-------|
-| Finding post | Hopeful | Medium | Low | Post is there, CTA is clear |
-| Initiating chat | Nervous | High | Low | One tap, immediate navigation |
-| Composing first message | Thoughtful | Medium | Low | Open text, no structure required |
-| Waiting for reply | Uncertain | Low | Medium | No push notifications yet |
-| Receiving reply | Excited | High | Low | Real-time delivery feels instant |
-| Ongoing exchange | Engaged | High | Low | Natural conversation rhythm |
+| Phase                   | Emotion    | Confidence Level | Friction Level | Notes                            |
+| ----------------------- | ---------- | ---------------- | -------------- | -------------------------------- |
+| Finding post            | Hopeful    | Medium           | Low            | Post is there, CTA is clear      |
+| Initiating chat         | Nervous    | High             | Low            | One tap, immediate navigation    |
+| Composing first message | Thoughtful | Medium           | Low            | Open text, no structure required |
+| Waiting for reply       | Uncertain  | Low              | Medium         | No push notifications yet        |
+| Receiving reply         | Excited    | High             | Low            | Real-time delivery feels instant |
+| Ongoing exchange        | Engaged    | High             | Low            | Natural conversation rhythm      |
 
 ---
 
@@ -432,15 +432,15 @@ User taps "Contact Author" or chat icon
 
 ## Error & Edge Cases
 
-| Scenario | Expected Behavior | Recovery Path | User Message |
-|----------|------------------|---------------|--------------|
-| No internet on send | Message appears optimistically but write fails silently | Retry not currently shown; message state unclear | (None currently — improvement needed) |
-| Network drops mid-conversation | Real-time subscription disconnects; no new messages received | Re-subscribe on reconnect (Supabase handles this automatically) | No visible indicator |
-| Session timeout while in thread | Auth context refreshes session; if refresh fails, user is signed out | Re-authenticate, return to thread | Standard auth error handling |
-| Messaging a banned user | `blockUser` or trust-level policies prevent send | API error returned; navigate back | "Unable to send message" |
-| Conversation not found (invalid ID) | `getMessages` returns error | Navigate back to Conversation List | Silently fails — improvement needed |
-| User attempts to message themselves | "Contact Author" button hidden on own posts | Not possible via UI | N/A |
-| 1000 char limit reached | Send button remains disabled; text stops being accepted | User shortens message | Character counter visible in ChatInput |
+| Scenario                            | Expected Behavior                                                    | Recovery Path                                                   | User Message                           |
+| ----------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------- |
+| No internet on send                 | Message appears optimistically but write fails silently              | Retry not currently shown; message state unclear                | (None currently — improvement needed)  |
+| Network drops mid-conversation      | Real-time subscription disconnects; no new messages received         | Re-subscribe on reconnect (Supabase handles this automatically) | No visible indicator                   |
+| Session timeout while in thread     | Auth context refreshes session; if refresh fails, user is signed out | Re-authenticate, return to thread                               | Standard auth error handling           |
+| Messaging a banned user             | `blockUser` or trust-level policies prevent send                     | API error returned; navigate back                               | "Unable to send message"               |
+| Conversation not found (invalid ID) | `getMessages` returns error                                          | Navigate back to Conversation List                              | Silently fails — improvement needed    |
+| User attempts to message themselves | "Contact Author" button hidden on own posts                          | Not possible via UI                                             | N/A                                    |
+| 1000 char limit reached             | Send button remains disabled; text stops being accepted              | User shortens message                                           | Character counter visible in ChatInput |
 
 ---
 

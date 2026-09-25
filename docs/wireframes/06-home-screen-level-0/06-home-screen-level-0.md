@@ -38,7 +38,7 @@ This is the success state of the onboarding journey - the main home screen (loca
 :::
 
 ::: nav
-[*All*] &nbsp; [Housing] &nbsp; [Jobs] &nbsp; [Help] &nbsp; [More ▼]
+[_All_] &nbsp; [Housing] &nbsp; [Jobs] &nbsp; [Help] &nbsp; [More ▼]
 :::
 
 ::: card
@@ -132,12 +132,12 @@ You need to verify your phone number to create posts and message others.
 
 ### 1. Top Navigation Bar
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Navigation bar | App bar |
-| **Height** | 44–56px (flexible for 2-line location) | 56–72dp (flexible for 2-line location) |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px bottom border #E0E0E0 | elevation 2dp |
+| Property       | iOS                                    | Android                                |
+| -------------- | -------------------------------------- | -------------------------------------- |
+| **Type**       | Navigation bar                         | App bar                                |
+| **Height**     | 44–56px (flexible for 2-line location) | 56–72dp (flexible for 2-line location) |
+| **Background** | White (#FFFFFF)                        | White (#FFFFFF)                        |
+| **Border**     | 1px bottom border #E0E0E0              | elevation 2dp                          |
 
 **Components (left to right):**
 
@@ -192,13 +192,13 @@ You need to verify your phone number to create posts and message others.
 
 ### 2. Level 0 Banner (Verification Prompt)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Dismissible banner | Dismissible banner |
-| **Height** | 64px | 72dp |
-| **Background** | #FFF3E0 (Light Amber) | #FFF3E0 (Light Amber) |
-| **Padding** | 12px all around | 16dp all around |
-| **Border** | None or 1px bottom #F57C00 | None or 1px bottom #F57C00 |
+| Property       | iOS                        | Android                    |
+| -------------- | -------------------------- | -------------------------- |
+| **Type**       | Dismissible banner         | Dismissible banner         |
+| **Height**     | 64px                       | 72dp                       |
+| **Background** | #FFF3E0 (Light Amber)      | #FFF3E0 (Light Amber)      |
+| **Padding**    | 12px all around            | 16dp all around            |
+| **Border**     | None or 1px bottom #F57C00 | None or 1px bottom #F57C00 |
 
 **Components (left to right):**
 
@@ -255,13 +255,13 @@ You need to verify your phone number to create posts and message others.
 
 ### 3. Tag Filter Chips
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Non-scrollable chip bar | Non-scrollable chip bar |
-| **Height** | 48px | 48dp |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px bottom border #E0E0E0 | elevation on Android |
-| **Layout** | Flexbox row, no horizontal scroll | Flexbox row, no horizontal scroll |
+| Property       | iOS                               | Android                           |
+| -------------- | --------------------------------- | --------------------------------- |
+| **Type**       | Non-scrollable chip bar           | Non-scrollable chip bar           |
+| **Height**     | 48px                              | 48dp                              |
+| **Background** | White (#FFFFFF)                   | White (#FFFFFF)                   |
+| **Border**     | 1px bottom border #E0E0E0         | elevation on Android              |
+| **Layout**     | Flexbox row, no horizontal scroll | Flexbox row, no horizontal scroll |
 
 **Visible Chips (4-5 based on screen width):**
 
@@ -326,12 +326,12 @@ You need to verify your phone number to create posts and message others.
 
 ### 4. Post Feed (Scrollable List)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | UITableView / UICollectionView | RecyclerView |
-| **Background** | #F5F5F5 (Light Gray) | #F5F5F5 (Light Gray) |
-| **Padding** | 16px on sides, 12px between cards | 16dp on sides, 12dp between cards |
-| **Pull-to-Refresh** | Native iOS refresh control | Material SwipeRefreshLayout |
+| Property            | iOS                               | Android                           |
+| ------------------- | --------------------------------- | --------------------------------- |
+| **Type**            | UITableView / UICollectionView    | RecyclerView                      |
+| **Background**      | #F5F5F5 (Light Gray)              | #F5F5F5 (Light Gray)              |
+| **Padding**         | 16px on sides, 12px between cards | 16dp on sides, 12dp between cards |
+| **Pull-to-Refresh** | Native iOS refresh control        | Material SwipeRefreshLayout       |
 
 **Empty State:**
 
@@ -348,15 +348,15 @@ You need to verify your phone number to create posts and message others.
 
 ### 5. Post Card (Enhanced — with Author, Description, Tags, Badge, Social Actions)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Card component (tappable) | Material Card (tappable) |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px solid #E0E0E0 | elevation 2dp |
-| **Corner Radius** | 12px | 12dp |
-| **Padding** | 16px all around | 16dp all around |
-| **Margin** | 16px L/R, 12px between cards | 16dp L/R, 12dp between cards |
-| **Shadow** | 0 2px 4px rgba(0,0,0,0.1) | elevation 2dp |
+| Property          | iOS                          | Android                      |
+| ----------------- | ---------------------------- | ---------------------------- |
+| **Type**          | Card component (tappable)    | Material Card (tappable)     |
+| **Background**    | White (#FFFFFF)              | White (#FFFFFF)              |
+| **Border**        | 1px solid #E0E0E0            | elevation 2dp                |
+| **Corner Radius** | 12px                         | 12dp                         |
+| **Padding**       | 16px all around              | 16dp all around              |
+| **Margin**        | 16px L/R, 12px between cards | 16dp L/R, 12dp between cards |
+| **Shadow**        | 0 2px 4px rgba(0,0,0,0.1)    | elevation 2dp                |
 
 **Card Layout (top to bottom):**
 
@@ -391,14 +391,14 @@ You need to verify your phone number to create posts and message others.
 
 #### Local/Global Badge
 
-| Property | Local | Global |
-|----------|-------|--------|
-| **Content** | 📍 Local | 🌐 Global |
-| **Typography** | 12pt/11sp Medium | 12pt/11sp Medium |
-| **Text Color** | #388E3C | #1565C0 |
-| **Background** | #E8F5E9 | #E3F2FD |
-| **Shape** | Pill (border-radius: 12px) | Pill (border-radius: 12px) |
-| **Padding** | 6px H, 2px V | 6px H, 2px V |
+| Property       | Local                      | Global                     |
+| -------------- | -------------------------- | -------------------------- |
+| **Content**    | 📍 Local                   | 🌐 Global                  |
+| **Typography** | 12pt/11sp Medium           | 12pt/11sp Medium           |
+| **Text Color** | #388E3C                    | #1565C0                    |
+| **Background** | #E8F5E9                    | #E3F2FD                    |
+| **Shape**      | Pill (border-radius: 12px) | Pill (border-radius: 12px) |
+| **Padding**    | 6px H, 2px V               | 6px H, 2px V               |
 
 - **Position:** Below title, left-aligned
 - **Margin:** 4px/dp from title
@@ -449,13 +449,13 @@ You need to verify your phone number to create posts and message others.
 
 #### Action Bar (NEW — Social Engagement)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Height** | 36px | 36dp |
-| **Background** | Transparent (part of card) | Transparent (part of card) |
-| **Border** | 1px top border #E0E0E0 | 1px top border #E0E0E0 |
-| **Padding** | 8px vertical | 8dp vertical |
-| **Layout** | Horizontal row, 2 actions, evenly spaced | Horizontal row, 2 actions, evenly spaced |
+| Property       | iOS                                      | Android                                  |
+| -------------- | ---------------------------------------- | ---------------------------------------- |
+| **Height**     | 36px                                     | 36dp                                     |
+| **Background** | Transparent (part of card)               | Transparent (part of card)               |
+| **Border**     | 1px top border #E0E0E0                   | 1px top border #E0E0E0                   |
+| **Padding**    | 8px vertical                             | 8dp vertical                             |
+| **Layout**     | Horizontal row, 2 actions, evenly spaced | Horizontal row, 2 actions, evenly spaced |
 
 **Action 1: Like Button**
 
@@ -534,20 +534,20 @@ You need to verify your phone number to create posts and message others.
 
 ### 5a. Avatar Tap Menu
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Popup menu anchored to avatar | Popup menu anchored to avatar |
-| **Background** | #FFFFFF (White) | #FFFFFF (White) |
-| **Corner Radius** | 8px | 8dp |
-| **Shadow** | 0 2px 8px rgba(0,0,0,0.15) | elevation 4dp |
-| **Padding** | 8px vertical | 8dp vertical |
+| Property          | iOS                           | Android                       |
+| ----------------- | ----------------------------- | ----------------------------- |
+| **Type**          | Popup menu anchored to avatar | Popup menu anchored to avatar |
+| **Background**    | #FFFFFF (White)               | #FFFFFF (White)               |
+| **Corner Radius** | 8px                           | 8dp                           |
+| **Shadow**        | 0 2px 8px rgba(0,0,0,0.15)    | elevation 4dp                 |
+| **Padding**       | 8px vertical                  | 8dp vertical                  |
 
 **Menu Options:**
 
-| Option | Icon | Action |
-|--------|------|--------|
-| View Profile | person-outline, 20px/dp, #212121 | Navigate to user profile screen |
-| Chat | chat-bubble-outline, 20px/dp, #212121 | Open/create 1:1 conversation |
+| Option       | Icon                                  | Action                          |
+| ------------ | ------------------------------------- | ------------------------------- |
+| View Profile | person-outline, 20px/dp, #212121      | Navigate to user profile screen |
+| Chat         | chat-bubble-outline, 20px/dp, #212121 | Open/create 1:1 conversation    |
 
 **Option Row Styling:**
 
@@ -571,14 +571,14 @@ You need to verify your phone number to create posts and message others.
 
 ### 6. Floating Action Button (FAB) — Create Post
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Floating Action Button | Material FAB (standard) |
-| **Dimensions** | 56x56px circle | 56x56dp circle |
-| **Position** | Bottom-right, 16px from edges | Bottom-right, 16dp from edges |
+| Property       | iOS                              | Android                          |
+| -------------- | -------------------------------- | -------------------------------- |
+| **Type**       | Floating Action Button           | Material FAB (standard)          |
+| **Dimensions** | 56x56px circle                   | 56x56dp circle                   |
+| **Position**   | Bottom-right, 16px from edges    | Bottom-right, 16dp from edges    |
 | **Background** | #1565C0 at 50% opacity (Level 0) | #1565C0 at 50% opacity (Level 0) |
-| **Icon** | + (plus), 24x24px, white | + (plus), 24x24dp, white |
-| **Shadow** | 0 4px 8px rgba(0,0,0,0.2) | elevation 6dp |
+| **Icon**       | + (plus), 24x24px, white         | + (plus), 24x24dp, white         |
+| **Shadow**     | 0 4px 8px rgba(0,0,0,0.2)        | elevation 6dp                    |
 
 **States:**
 
@@ -609,23 +609,23 @@ You need to verify your phone number to create posts and message others.
 
 ### 7. Bottom Navigation Bar
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Tab bar | Bottom navigation |
-| **Height** | 56px + safe area | 56dp |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px top border #E0E0E0 | elevation 8dp |
-| **Position** | Fixed at bottom | Fixed at bottom |
+| Property       | iOS                    | Android           |
+| -------------- | ---------------------- | ----------------- |
+| **Type**       | Tab bar                | Bottom navigation |
+| **Height**     | 56px + safe area       | 56dp              |
+| **Background** | White (#FFFFFF)        | White (#FFFFFF)   |
+| **Border**     | 1px top border #E0E0E0 | elevation 8dp     |
+| **Position**   | Fixed at bottom        | Fixed at bottom   |
 
 **Tabs (left to right):**
 
-| Tab | Icon (Active) | Icon (Inactive) | Label | Active Color | Inactive Color | Notes |
-|-----|---------------|-----------------|-------|-------------|----------------|-------|
-| Home | Home filled | Home outline | "Home" | #1565C0 | #757575 | — |
-| Create Post | Add circle | Add circle | "Post" | #1565C0 | #757575 | FAB provides same functionality |
-| Events (NEW) | Calendar filled | Calendar outline | "Events" | #1565C0 | #757575 | Coming Soon placeholder in Phase 1 |
-| Marketplace (NEW) | Storefront filled | Storefront outline | "Marketplace" | #1565C0 | #757575 | Coming Soon placeholder in Phase 1 |
-| Profile | Person filled | Person outline | "Profile" | #1565C0 | #757575 | — |
+| Tab               | Icon (Active)     | Icon (Inactive)    | Label         | Active Color | Inactive Color | Notes                              |
+| ----------------- | ----------------- | ------------------ | ------------- | ------------ | -------------- | ---------------------------------- |
+| Home              | Home filled       | Home outline       | "Home"        | #1565C0      | #757575        | —                                  |
+| Create Post       | Add circle        | Add circle         | "Post"        | #1565C0      | #757575        | FAB provides same functionality    |
+| Events (NEW)      | Calendar filled   | Calendar outline   | "Events"      | #1565C0      | #757575        | Coming Soon placeholder in Phase 1 |
+| Marketplace (NEW) | Storefront filled | Storefront outline | "Marketplace" | #1565C0      | #757575        | Coming Soon placeholder in Phase 1 |
+| Profile           | Person filled     | Person outline     | "Profile"     | #1565C0      | #757575        | —                                  |
 
 **Note:** Search and Messages have been moved to the top navigation bar. Messages icon in top nav shows unread badge.
 
@@ -635,18 +635,18 @@ You need to verify your phone number to create posts and message others.
 
 ### Vertical Layout (Top to Bottom)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Top safe area | Auto | — |
-| 2 | Top nav bar | 44px / 56dp | — |
-| 3 | Level 0 banner | 64px / 72dp (dismissible) | — |
-| 4 | Tag filter chips | 48px/dp | — |
-| 5 | Feed padding | — | 12px/dp top |
-| 6 | Post card 1 | ~400px (with photo, tags, badge) | 12px/dp |
-| 7 | Post card 2 | ~400px | 12px/dp |
-| 8 | Post card 3 | ~400px | 12px/dp |
-| 9 | Continue scrolling | Infinite scroll or pagination | — |
-| 10 | Bottom padding | 80px/dp (FAB clearance) | — |
+| #   | Element            | Height                           | Spacing After |
+| --- | ------------------ | -------------------------------- | ------------- |
+| 1   | Top safe area      | Auto                             | —             |
+| 2   | Top nav bar        | 44px / 56dp                      | —             |
+| 3   | Level 0 banner     | 64px / 72dp (dismissible)        | —             |
+| 4   | Tag filter chips   | 48px/dp                          | —             |
+| 5   | Feed padding       | —                                | 12px/dp top   |
+| 6   | Post card 1        | ~400px (with photo, tags, badge) | 12px/dp       |
+| 7   | Post card 2        | ~400px                           | 12px/dp       |
+| 8   | Post card 3        | ~400px                           | 12px/dp       |
+| 9   | Continue scrolling | Infinite scroll or pagination    | —             |
+| 10  | Bottom padding     | 80px/dp (FAB clearance)          | —             |
 
 **Total Visible Height:** ~800px (fits 2-2.5 cards on screen at once)
 
@@ -696,15 +696,15 @@ You need to verify your phone number to create posts and message others.
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Top Bar** | Navigation bar, 44px | App bar, 56dp |
-| **Tab Labels** | Title case ("Housing") | ALL CAPS ("HOUSING") |
-| **Post Card Shadow** | 0 2px 4px rgba shadow | Material elevation 2dp |
-| **FAB** | iOS doesn't have official FAB pattern, but we'll use it for consistency | Material FAB (standard) |
-| **Pull-to-Refresh** | Native iOS refresh control | Material SwipeRefreshLayout |
-| **Scroll Behavior** | Smooth momentum scroll | Material scroll with edge glow |
-| **Banner Dismiss** | Fade out animation | Fade out + swipe away |
+| Aspect               | iOS                                                                     | Android                        |
+| -------------------- | ----------------------------------------------------------------------- | ------------------------------ |
+| **Top Bar**          | Navigation bar, 44px                                                    | App bar, 56dp                  |
+| **Tab Labels**       | Title case ("Housing")                                                  | ALL CAPS ("HOUSING")           |
+| **Post Card Shadow** | 0 2px 4px rgba shadow                                                   | Material elevation 2dp         |
+| **FAB**              | iOS doesn't have official FAB pattern, but we'll use it for consistency | Material FAB (standard)        |
+| **Pull-to-Refresh**  | Native iOS refresh control                                              | Material SwipeRefreshLayout    |
+| **Scroll Behavior**  | Smooth momentum scroll                                                  | Material scroll with edge glow |
+| **Banner Dismiss**   | Fade out animation                                                      | Fade out + swipe away          |
 
 ---
 
@@ -824,13 +824,13 @@ You need to verify your phone number to create posts and message others.
 
 ### Color Contrast
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Nav text (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Banner text (#E65100 on #FFF3E0) | 5.8:1 | AA ✓ |
-| Tab text (active #1565C0 on #FFFFFF) | 7.2:1 | AAA ✓ |
-| Post card text (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Post metadata (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
+| Element                              | Ratio  | Level |
+| ------------------------------------ | ------ | ----- |
+| Nav text (#212121 on #FFFFFF)        | 16.9:1 | AAA ✓ |
+| Banner text (#E65100 on #FFF3E0)     | 5.8:1  | AA ✓  |
+| Tab text (active #1565C0 on #FFFFFF) | 7.2:1  | AAA ✓ |
+| Post card text (#212121 on #FFFFFF)  | 16.9:1 | AAA ✓ |
+| Post metadata (#757575 on #FFFFFF)   | 4.6:1  | AA ✓  |
 
 ### Focus Indicators
 
@@ -844,10 +844,10 @@ You need to verify your phone number to create posts and message others.
 
 ### Screen Entry (from Tutorial)
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Screen | 0ms | 300ms | iOS: Slide in from right; Android: Slide up from bottom |
-| 2 | Feed cards | 100ms stagger per card | 200ms each | Fade in |
+| Step | Element    | Delay                  | Duration   | Effect                                                  |
+| ---- | ---------- | ---------------------- | ---------- | ------------------------------------------------------- |
+| 1    | Screen     | 0ms                    | 300ms      | iOS: Slide in from right; Android: Slide up from bottom |
+| 2    | Feed cards | 100ms stagger per card | 200ms each | Fade in                                                 |
 
 ---
 
@@ -903,18 +903,18 @@ You need to verify your phone number to create posts and message others.
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `home_nav_location` | {metro_name} |
-| `home_banner_level0` | You're viewing only. Verify phone to post and message. |
-| `home_banner_verify_btn` | Verify Now |
-| `home_chip_all` | All |
-| `home_chip_{tag_slug}` | Dynamic from tags table |
-| `home_fab_hint` | Create post |
-| `home_empty_tags` | No posts matching your filters in this area. Try different tags! |
-| `home_error_network` | Could not load posts. Please check your connection and try again. |
-| `home_badge_local` | Local |
-| `home_badge_global` | Global |
+| Key                      | Value                                                             |
+| ------------------------ | ----------------------------------------------------------------- |
+| `home_nav_location`      | {metro_name}                                                      |
+| `home_banner_level0`     | You're viewing only. Verify phone to post and message.            |
+| `home_banner_verify_btn` | Verify Now                                                        |
+| `home_chip_all`          | All                                                               |
+| `home_chip_{tag_slug}`   | Dynamic from tags table                                           |
+| `home_fab_hint`          | Create post                                                       |
+| `home_empty_tags`        | No posts matching your filters in this area. Try different tags!  |
+| `home_error_network`     | Could not load posts. Please check your connection and try again. |
+| `home_badge_local`       | Local                                                             |
+| `home_badge_global`      | Global                                                            |
 
 ### Tone & Voice
 
@@ -974,16 +974,16 @@ You need to verify your phone number to create posts and message others.
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | From Screen 05 (Onboarding Tutorial) — "Get Started" | This screen |
-| Entry | App launch (if user already onboarded) | This screen |
-| Entry | Deep link `nepally://home` or `nepally://feed` | This screen |
-| Exit | Tap "Verify Now" | Journey #02 (Trust Level Verification) |
-| Exit | Tap post card | Post Detail screen |
-| Exit | Tap Search icon | Search screen |
-| Exit | Tap Notifications | Notifications screen |
-| Modal | Tap FAB (Level 0) | Verification modal → Journey #02 |
+| Direction | Trigger                                              | Destination                            |
+| --------- | ---------------------------------------------------- | -------------------------------------- |
+| Entry     | From Screen 05 (Onboarding Tutorial) — "Get Started" | This screen                            |
+| Entry     | App launch (if user already onboarded)               | This screen                            |
+| Entry     | Deep link `nepally://home` or `nepally://feed`       | This screen                            |
+| Exit      | Tap "Verify Now"                                     | Journey #02 (Trust Level Verification) |
+| Exit      | Tap post card                                        | Post Detail screen                     |
+| Exit      | Tap Search icon                                      | Search screen                          |
+| Exit      | Tap Notifications                                    | Notifications screen                   |
+| Modal     | Tap FAB (Level 0)                                    | Verification modal → Journey #02       |
 
 ---
 
@@ -1153,13 +1153,13 @@ You need to verify your phone number to create posts and message others.
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md) |
-| Next | Post Detail Screen (out of scope for this journey) |
-| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 13 (Success State) |
-| Related | Journey #02: Trust Level Verification (user will likely proceed here next) |
-| Related | Journey #07: Browse and Search Posts (user is already browsing) |
+| Relation | Screen                                                                                                           |
+| -------- | ---------------------------------------------------------------------------------------------------------------- |
+| Previous | [05-onboarding-tutorial.md](../05-onboarding-tutorial/05-onboarding-tutorial.md)                                 |
+| Next     | Post Detail Screen (out of scope for this journey)                                                               |
+| Journey  | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 13 (Success State) |
+| Related  | Journey #02: Trust Level Verification (user will likely proceed here next)                                       |
+| Related  | Journey #07: Browse and Search Posts (user is already browsing)                                                  |
 
 ---
 

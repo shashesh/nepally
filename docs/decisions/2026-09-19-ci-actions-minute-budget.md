@@ -12,12 +12,12 @@ GitHub bills each job rounded up to a whole minute, so the number of jobs matter
 
 Measured on PR #76 (2026-09-18), every push to a code PR cost:
 
-| Workflow | Jobs | Billed minutes |
-|---|---|---|
-| CI | 8 (PR gate, Lint, Lint guards, Type check, Unit tests, Coverage, Web E2E, Web visual) | ~21 |
-| Docs | 2 | 2 |
-| Vercel preview | 1 | ~2 (one hung upload billed 34; the job had no timeout) |
-| Copilot code review | 1 | ~4 |
+| Workflow            | Jobs                                                                                  | Billed minutes                                         |
+| ------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| CI                  | 8 (PR gate, Lint, Lint guards, Type check, Unit tests, Coverage, Web E2E, Web visual) | ~21                                                    |
+| Docs                | 2                                                                                     | 2                                                      |
+| Vercel preview      | 1                                                                                     | ~2 (one hung upload billed 34; the job had no timeout) |
+| Copilot code review | 1                                                                                     | ~4                                                     |
 
 Merging then ran CI again on master (~21) plus the dev deploy (~2).
 
@@ -56,11 +56,11 @@ Two more facts shaped the decision:
 
 - **Billed minutes per push**, estimated from the 2026-09-18 timings. Copilot's review is extra, ~4 each time it runs.
 
-  | Push | Before | After |
-  |---|---|---|
-  | Draft PR | up to ~25 | 0 |
-  | Docs-only PR | ~23 | 1 |
-  | Code PR, ready for review | up to ~25 | ~15 |
+  | Push                      | Before    | After |
+  | ------------------------- | --------- | ----- |
+  | Draft PR                  | up to ~25 | 0     |
+  | Docs-only PR              | ~23       | 1     |
+  | Code PR, ready for review | up to ~25 | ~15   |
 
   "Up to" means the preview and Docs ran too because web code or docs changed.
 

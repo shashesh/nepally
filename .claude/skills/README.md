@@ -2,15 +2,15 @@
 
 ## Available Skills
 
-| Skill | Purpose |
-|-------|---------|
-| `/design-feature [name]` | Create feature specification |
-| `/user-journey [name]` | Document user flow |
-| `/wireframe [name]` | Create screen wireframe (WireMD format) |
+| Skill                       | Purpose                                       |
+| --------------------------- | --------------------------------------------- |
+| `/design-feature [name]`    | Create feature specification                  |
+| `/user-journey [name]`      | Document user flow                            |
+| `/wireframe [name]`         | Create screen wireframe (WireMD format)       |
 | `/implement-feature [name]` | Implement feature with full context gathering |
-| `/shared-first-check` | Audit shared-first architecture compliance |
-| `/break-features [phase]` | Break roadmap phase into small features |
-| `/refine-roadmap [section]` | Analyze and improve roadmap sections |
+| `/shared-first-check`       | Audit shared-first architecture compliance    |
+| `/break-features [phase]`   | Break roadmap phase into small features       |
+| `/refine-roadmap [section]` | Analyze and improve roadmap sections          |
 
 ## Recommended Workflow
 

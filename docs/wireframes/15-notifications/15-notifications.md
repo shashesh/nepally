@@ -43,7 +43,7 @@ Tap to view full emergency post →
 ::: card
 :speech_balloon: **New Message** · 14m ago
 **Rajan Thapa** sent you a message:
-*"Hey, is the room still availab..."*
+_"Hey, is the room still availab..."_
 [View Conversation]
 :::
 
@@ -51,8 +51,8 @@ Tap to view full emergency post →
 
 ::: card
 :speech_balloon: **Comment** · 1h ago
-**Priya Sharma** commented on your post *"2BR room in Queens..."*:
-*"Is this still available?"*
+**Priya Sharma** commented on your post _"2BR room in Queens..."_:
+_"Is this still available?"_
 [View Post]
 :::
 
@@ -60,7 +60,7 @@ Tap to view full emergency post →
 
 ::: card
 :heart: **Likes** · 3h ago
-**3 people** liked your post *"Looking for travel buddy..."*
+**3 people** liked your post _"Looking for travel buddy..."_
 [View Post]
 :::
 
@@ -73,7 +73,7 @@ Your account has been verified. You can now post freely.
 
 ---
 
-[Mark all as read]  [See all notifications →]*
+[Mark all as read] [See all notifications →]*
 
 :::
 
@@ -94,7 +94,7 @@ Your account has been verified. You can now post freely.
 
 ---
 
-*All caught up! No new notifications.*
+_All caught up! No new notifications._
 
 [See all notifications →]*
 :::
@@ -112,7 +112,7 @@ Your account has been verified. You can now post freely.
 
 # :bell: Notifications
 
-[Mark all as read]  [:gear: Preferences]{.outline}
+[Mark all as read] [:gear: Preferences]{.outline}
 
 ---
 
@@ -134,9 +134,9 @@ A community moderator has verified this emergency. Stay safe and follow official
 **Unread**
 
 :speech_balloon: **Rajan Thapa** sent you a message · 14 minutes ago
-*"Hey, is the room still available? I'm looking to move in next month..."*
+_"Hey, is the room still available? I'm looking to move in next month..."_
 
-[Open Chat]*  [Dismiss]
+[Open Chat]* [Dismiss]
 :::
 
 ---
@@ -145,10 +145,10 @@ A community moderator has verified this emergency. Stay safe and follow official
 **Unread**
 
 :speech_balloon: **Priya Sharma** commented on your post · 1 hour ago
-*"2BR room in Queens, near subway — $950/mo"*
-Comment: *"Is this still available? Can we schedule a visit?"*
+_"2BR room in Queens, near subway — $950/mo"_
+Comment: _"Is this still available? Can we schedule a visit?"_
 
-[View Post]*  [Dismiss]
+[View Post]* [Dismiss]
 :::
 
 ---
@@ -159,7 +159,7 @@ Comment: *"Is this still available? Can we schedule a visit?"*
 
 ::: card
 :heart: **3 people** liked your post · 3 hours ago
-*"Looking for travel buddy to Nepal — December 2026"*
+_"Looking for travel buddy to Nepal — December 2026"_
 
 [View Post]*
 :::
@@ -168,8 +168,8 @@ Comment: *"Is this still available? Can we schedule a visit?"*
 
 ::: card
 :speech_balloon: **Suman KC** commented on your post · 5 hours ago
-*"Looking for travel buddy to Nepal — December 2026"*
-Comment: *"I'm interested! What dates are you thinking?"*
+_"Looking for travel buddy to Nepal — December 2026"_
+Comment: _"I'm interested! What dates are you thinking?"_
 
 [View Post]*
 :::
@@ -221,7 +221,7 @@ When someone messages you, comments on your post, or an emergency alert is issue
 
 ---
 
-**Notifications**  [:gear:]{.outline}
+**Notifications** [:gear:]{.outline}
 
 ---
 
@@ -243,7 +243,7 @@ Verified by community moderator · 2 min ago
 
 :speech_balloon: **New Message**
 Rajan Thapa · 14 min ago
-*"Hey, is the room still availab..."*
+_"Hey, is the room still availab..."_
 
 [Open]*
 :::
@@ -255,8 +255,8 @@ Rajan Thapa · 14 min ago
 
 :speech_balloon: **New Comment**
 Priya Sharma commented on your post
-*"2BR room in Queens, near subway — $950/mo"*
-*"Is this still available?"* · 1 hr ago
+_"2BR room in Queens, near subway — $950/mo"_
+_"Is this still available?"_ · 1 hr ago
 
 [View Post]*
 :::
@@ -269,7 +269,7 @@ Priya Sharma commented on your post
 
 ::: card
 :heart: **Likes** · 3 hr ago
-3 people liked *"Looking for travel buddy to Nepal..."*
+3 people liked _"Looking for travel buddy to Nepal..."_
 
 [View]*
 :::
@@ -278,8 +278,8 @@ Priya Sharma commented on your post
 
 ::: card
 :speech_balloon: **Comment** · 5 hr ago
-Suman KC commented on *"Looking for travel buddy..."*
-*"I'm interested! What dates are you thinking?"*
+Suman KC commented on _"Looking for travel buddy..."_
+_"I'm interested! What dates are you thinking?"_
 
 [View]*
 :::
@@ -303,7 +303,7 @@ Your account is now Level 1 Verified. Full posting rights unlocked.
 
 ---
 
-**Notifications**  [:gear:]{.outline}
+**Notifications** [:gear:]{.outline}
 
 ---
 
@@ -348,7 +348,7 @@ Get notified when someone messages you, comments on your post, or when there's a
 :warning: **Notifications are disabled**
 Enable them in Settings → Nepally to receive messages and emergency alerts.
 
-[Open Settings]  [Dismiss]
+[Open Settings] [Dismiss]
 :::
 
 ---
@@ -364,9 +364,9 @@ Nepally wants to send you push notifications for:
 - Chat messages when the app is closed
 - Emergency alerts in your metro area
 
-*(Your browser will ask for permission.)*
+_(Your browser will ask for permission.)_
 
-[Enable Push]*  [No thanks]{.outline}
+[Enable Push]* [No thanks]{.outline}
 :::
 
 ---
@@ -423,7 +423,7 @@ Get notified when people like your posts.
 
 **Emergency Alerts**
 Metro-wide alerts verified by community moderators.
-*(Cannot be disabled while push is enabled — for your safety)*
+_(Cannot be disabled while push is enabled — for your safety)_
 
 - [x] Emergency alerts (required)
 
@@ -431,7 +431,7 @@ Metro-wide alerts verified by community moderators.
 
 ---
 
-[:floppy_disk: Save Preferences]*  [Cancel]{.outline}
+[:floppy_disk: Save Preferences]* [Cancel]{.outline}
 
 :::
 
@@ -452,7 +452,7 @@ Receive alerts when app is in background
 
 - [x] Enabled
 
-*(Tap to open device settings if permissions are denied)*
+_(Tap to open device settings if permissions are denied)_
 [Open iOS/Android Settings]{.outline}
 
 :::
@@ -493,7 +493,7 @@ When people like your posts
 
 **:shield: Emergency Alerts**
 Verified metro-wide emergency broadcasts
-*(Required — cannot be disabled)*
+_(Required — cannot be disabled)_
 
 - [x] Emergency alerts
 
@@ -509,15 +509,15 @@ Verified metro-wide emergency broadcasts
 
 ### 1. Bell Icon + Unread Badge (Web Nav)
 
-| Property | Value |
-|----------|-------|
-| **Icon** | Bell (outline → filled when unread) |
-| **Badge** | Red circle, 18px diameter, white text |
-| **Badge count** | Shows 1–9, then "9+" |
-| **Position** | Top-right corner of bell icon |
-| **Click** | Toggle dropdown open/close |
-| **Dropdown width** | 360px |
-| **Dropdown max-height** | 480px, scrollable |
+| Property                | Value                                 |
+| ----------------------- | ------------------------------------- |
+| **Icon**                | Bell (outline → filled when unread)   |
+| **Badge**               | Red circle, 18px diameter, white text |
+| **Badge count**         | Shows 1–9, then "9+"                  |
+| **Position**            | Top-right corner of bell icon         |
+| **Click**               | Toggle dropdown open/close            |
+| **Dropdown width**      | 360px                                 |
+| **Dropdown max-height** | 480px, scrollable                     |
 
 **States:**
 
@@ -529,80 +529,80 @@ Verified metro-wide emergency broadcasts
 
 ### 2. Bell Tab Icon + Unread Dot (Mobile Tab Bar)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Icon** | SF Symbol bell | Material Icons notifications |
-| **Unread dot** | Red circle 8px, top-right of icon | Same |
-| **Tab label** | "Alerts" | "Alerts" |
-| **Tab active color** | #1565C0 | #1565C0 |
+| Property             | iOS                               | Android                      |
+| -------------------- | --------------------------------- | ---------------------------- |
+| **Icon**             | SF Symbol bell                    | Material Icons notifications |
+| **Unread dot**       | Red circle 8px, top-right of icon | Same                         |
+| **Tab label**        | "Alerts"                          | "Alerts"                     |
+| **Tab active color** | #1565C0                           | #1565C0                      |
 
 ---
 
 ### 3. Notification List Item (Both Platforms)
 
-| Property | Web | Mobile |
-|----------|-----|--------|
-| **Height** | Auto (min 72px) | Auto (min 72dp) |
-| **Unread background** | #F0F4FF (light blue tint) | #F0F4FF |
-| **Read background** | #FFFFFF | #FFFFFF |
-| **Unread indicator** | Blue left border (4px) | Blue dot (8px) left |
-| **Avatar/Icon** | 40px circle or emoji icon | 40dp circle or emoji |
-| **Title font** | 14px Semibold | 15sp Medium |
-| **Body font** | 14px Regular, max 2 lines | 14sp Regular, max 2 lines |
-| **Timestamp** | 12px, #757575 | 12sp, #757575 |
-| **Tap action** | Navigate to source content | Navigate to source content |
-| **Swipe/dismiss** | — (web: Dismiss button) | Swipe left → dismiss |
+| Property              | Web                        | Mobile                     |
+| --------------------- | -------------------------- | -------------------------- |
+| **Height**            | Auto (min 72px)            | Auto (min 72dp)            |
+| **Unread background** | #F0F4FF (light blue tint)  | #F0F4FF                    |
+| **Read background**   | #FFFFFF                    | #FFFFFF                    |
+| **Unread indicator**  | Blue left border (4px)     | Blue dot (8px) left        |
+| **Avatar/Icon**       | 40px circle or emoji icon  | 40dp circle or emoji       |
+| **Title font**        | 14px Semibold              | 15sp Medium                |
+| **Body font**         | 14px Regular, max 2 lines  | 14sp Regular, max 2 lines  |
+| **Timestamp**         | 12px, #757575              | 12sp, #757575              |
+| **Tap action**        | Navigate to source content | Navigate to source content |
+| **Swipe/dismiss**     | — (web: Dismiss button)    | Swipe left → dismiss       |
 
 ---
 
 ### 4. Emergency Alert Item
 
-| Property | Value |
-|----------|-------|
-| **Background** | #FFEBEE (light red) |
-| **Left border** | 4px #DC143C (accent red) |
-| **Icon** | :shield: |
-| **Title** | Bold, #C62828 |
-| **Priority** | Always first in list, above "Today" group |
+| Property        | Value                                     |
+| --------------- | ----------------------------------------- |
+| **Background**  | #FFEBEE (light red)                       |
+| **Left border** | 4px #DC143C (accent red)                  |
+| **Icon**        | :shield:                                  |
+| **Title**       | Bold, #C62828                             |
+| **Priority**    | Always first in list, above "Today" group |
 
 ---
 
 ### 5. Notification Type Icons
 
-| Type | Icon | Color |
-|------|------|-------|
+| Type         | Icon             | Color   |
+| ------------ | ---------------- | ------- |
 | Chat message | :speech_balloon: | #1565C0 |
-| Comment | :speech_balloon: | #1565C0 |
-| Like | :heart: | #DC143C |
-| Emergency | :shield: | #DC143C |
-| System | :envelope: | #757575 |
+| Comment      | :speech_balloon: | #1565C0 |
+| Like         | :heart:          | #DC143C |
+| Emergency    | :shield:         | #DC143C |
+| System       | :envelope:       | #757575 |
 
 ---
 
 ### 6. Web Dropdown Notification Row
 
-| Property | Value |
-|----------|-------|
-| **Padding** | 12px horizontal, 10px vertical |
-| **Separator** | 1px #EEEEEE |
-| **Hover state** | #F5F5F5 background |
-| **Max lines body** | 2 lines, ellipsis |
-| **Footer row** | "Mark all as read" (left) + "See all →" button (right) |
+| Property           | Value                                                  |
+| ------------------ | ------------------------------------------------------ |
+| **Padding**        | 12px horizontal, 10px vertical                         |
+| **Separator**      | 1px #EEEEEE                                            |
+| **Hover state**    | #F5F5F5 background                                     |
+| **Max lines body** | 2 lines, ellipsis                                      |
+| **Footer row**     | "Mark all as read" (left) + "See all →" button (right) |
 
 ---
 
 ## Spacing & Layout (Mobile Notification Screen)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Status bar (safe area) | 44pt | — |
-| 2 | Screen title "Notifications" | 28pt | 8pt |
-| 3 | Section header ("Today") | 16pt | 8pt |
-| 4 | Emergency alert card | Auto | 8pt |
-| 5 | Notification list item | Min 72dp | 8pt |
-| 6 | Section header ("Yesterday") | 16pt | 8pt |
-| 7 | Notification list items | Min 72dp each | 8pt |
-| 8 | Bottom tab bar | 83pt (safe area) | — |
+| #   | Element                      | Height           | Spacing After |
+| --- | ---------------------------- | ---------------- | ------------- |
+| 1   | Status bar (safe area)       | 44pt             | —             |
+| 2   | Screen title "Notifications" | 28pt             | 8pt           |
+| 3   | Section header ("Today")     | 16pt             | 8pt           |
+| 4   | Emergency alert card         | Auto             | 8pt           |
+| 5   | Notification list item       | Min 72dp         | 8pt           |
+| 6   | Section header ("Yesterday") | 16pt             | 8pt           |
+| 7   | Notification list items      | Min 72dp each    | 8pt           |
+| 8   | Bottom tab bar               | 83pt (safe area) | —             |
 
 ---
 
@@ -670,30 +670,30 @@ Verified metro-wide emergency broadcasts
 
 ## Platform-Specific Differences
 
-| Aspect | Web | Mobile |
-|--------|-----|--------|
-| **Push delivery** | Web Push API + Service Worker | Expo Push (APNs + FCM) |
-| **Dismiss gesture** | Dismiss button | Swipe left |
-| **Badge count** | Bell icon badge in nav | Native app badge on app icon |
-| **Permission prompt** | In-app soft prompt → browser dialog | In-app modal → OS dialog |
-| **Notification entry** | Bell icon in nav bar | "Alerts" tab in bottom tab bar |
-| **Full list route** | `/notifications` page | Dedicated tab screen |
+| Aspect                 | Web                                 | Mobile                         |
+| ---------------------- | ----------------------------------- | ------------------------------ |
+| **Push delivery**      | Web Push API + Service Worker       | Expo Push (APNs + FCM)         |
+| **Dismiss gesture**    | Dismiss button                      | Swipe left                     |
+| **Badge count**        | Bell icon badge in nav              | Native app badge on app icon   |
+| **Permission prompt**  | In-app soft prompt → browser dialog | In-app modal → OS dialog       |
+| **Notification entry** | Bell icon in nav bar                | "Alerts" tab in bottom tab bar |
+| **Full list route**    | `/notifications` page               | Dedicated tab screen           |
 
 ---
 
 ## Error States & Edge Cases
 
-| Scenario | Behavior |
-|----------|----------|
-| Push permission denied | In-app banner with "Open Settings" link |
-| Push token expired | Silent re-registration on next app open |
-| User views active conversation | Do NOT send push for new messages in that thread |
-| Emergency alert | Always delivered regardless of preferences |
-| Notification for deleted post | Show "This post has been removed" on tap |
-| Notification for deleted message | Show "Message deleted" in chat thread |
-| No internet (mobile) | Cached list shown, "Offline — notifications may be delayed" banner |
-| Backend error loading list | "Couldn't load notifications. Try again." with retry button |
-| 9+ unread | Badge shows "9+" cap |
+| Scenario                         | Behavior                                                           |
+| -------------------------------- | ------------------------------------------------------------------ |
+| Push permission denied           | In-app banner with "Open Settings" link                            |
+| Push token expired               | Silent re-registration on next app open                            |
+| User views active conversation   | Do NOT send push for new messages in that thread                   |
+| Emergency alert                  | Always delivered regardless of preferences                         |
+| Notification for deleted post    | Show "This post has been removed" on tap                           |
+| Notification for deleted message | Show "Message deleted" in chat thread                              |
+| No internet (mobile)             | Cached list shown, "Offline — notifications may be delayed" banner |
+| Backend error loading list       | "Couldn't load notifications. Try again." with retry button        |
+| 9+ unread                        | Badge shows "9+" cap                                               |
 
 ---
 
@@ -714,13 +714,13 @@ Verified metro-wide emergency broadcasts
 
 ### Color Contrast (WCAG AA)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Title text on white | 7:1 | AAA ✓ |
-| Body text on white | 5.2:1 | AA ✓ |
-| Body text on #F0F4FF | 4.8:1 | AA ✓ |
-| Emergency text on #FFEBEE | 6.2:1 | AA ✓ |
-| Timestamp (#757575) on white | 4.6:1 | AA ✓ |
+| Element                      | Ratio | Level |
+| ---------------------------- | ----- | ----- |
+| Title text on white          | 7:1   | AAA ✓ |
+| Body text on white           | 5.2:1 | AA ✓  |
+| Body text on #F0F4FF         | 4.8:1 | AA ✓  |
+| Emergency text on #FFEBEE    | 6.2:1 | AA ✓  |
+| Timestamp (#757575) on white | 4.6:1 | AA ✓  |
 
 ### Additional A11y
 
@@ -732,14 +732,14 @@ Verified metro-wide emergency broadcasts
 
 ## Animations & Transitions
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Web dropdown open | 0ms | 150ms | Fade in + slide down 8px |
-| 2 | Web dropdown close | 0ms | 100ms | Fade out |
-| 3 | Mark as read | 0ms | 300ms | Background color transition to white |
-| 4 | Dismiss item (mobile) | 0ms | 250ms | Slide left + fade out, list collapses |
-| 5 | New notification arrives (realtime) | 0ms | 200ms | Slide in from top of list |
-| 6 | Badge count update | 0ms | 200ms | Bounce scale animation on badge |
+| Step | Element                             | Delay | Duration | Effect                                |
+| ---- | ----------------------------------- | ----- | -------- | ------------------------------------- |
+| 1    | Web dropdown open                   | 0ms   | 150ms    | Fade in + slide down 8px              |
+| 2    | Web dropdown close                  | 0ms   | 100ms    | Fade out                              |
+| 3    | Mark as read                        | 0ms   | 300ms    | Background color transition to white  |
+| 4    | Dismiss item (mobile)               | 0ms   | 250ms    | Slide left + fade out, list collapses |
+| 5    | New notification arrives (realtime) | 0ms   | 200ms    | Slide in from top of list             |
+| 6    | Badge count update                  | 0ms   | 200ms    | Bounce scale animation on badge       |
 
 ---
 
@@ -747,11 +747,11 @@ Verified metro-wide emergency broadcasts
 
 ### Routes & Identifiers
 
-| Platform | Route / Screen |
-|----------|---------------|
-| Web list page | `/notifications` |
-| Web preferences | `/settings/notifications` |
-| Mobile screen | `NotificationsScreen` (tab) |
+| Platform           | Route / Screen                                  |
+| ------------------ | ----------------------------------------------- |
+| Web list page      | `/notifications`                                |
+| Web preferences    | `/settings/notifications`                       |
+| Mobile screen      | `NotificationsScreen` (tab)                     |
 | Mobile preferences | `NotificationPreferencesScreen` (from Settings) |
 
 ### Data Requirements
@@ -780,15 +780,15 @@ created_at, last_used_at
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry (Web) | Click bell icon | Dropdown appears |
-| Entry (Web) | Click "See all" | `/notifications` |
-| Entry (Mobile) | Tap "Alerts" tab | NotificationsScreen |
-| Exit — Chat | Tap message notification | MessageThreadScreen |
-| Exit — Post | Tap comment/like notification | PostDetailScreen |
-| Exit — Emergency | Tap emergency notification | PostDetailScreen (emergency post) |
-| Exit — Preferences | Tap gear icon | NotificationPreferencesScreen / `/settings/notifications` |
+| Direction          | Trigger                       | Destination                                               |
+| ------------------ | ----------------------------- | --------------------------------------------------------- |
+| Entry (Web)        | Click bell icon               | Dropdown appears                                          |
+| Entry (Web)        | Click "See all"               | `/notifications`                                          |
+| Entry (Mobile)     | Tap "Alerts" tab              | NotificationsScreen                                       |
+| Exit — Chat        | Tap message notification      | MessageThreadScreen                                       |
+| Exit — Post        | Tap comment/like notification | PostDetailScreen                                          |
+| Exit — Emergency   | Tap emergency notification    | PostDetailScreen (emergency post)                         |
+| Exit — Preferences | Tap gear icon                 | NotificationPreferencesScreen / `/settings/notifications` |
 
 ### Push Delivery Architecture
 
@@ -862,12 +862,12 @@ created_at, last_used_at
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
+| Relation                  | Screen                                                                  |
+| ------------------------- | ----------------------------------------------------------------------- |
 | Entry (chat notification) | [07 Conversation List](../07-conversation-list/07-conversation-list.md) |
-| Entry (post notification) | [09 Post Detail](../09-post-detail/09-post-detail.md) |
-| Settings entry | Profile / Settings screen |
-| Phase 2 dependency | Red Alert emergency broadcast system |
+| Entry (post notification) | [09 Post Detail](../09-post-detail/09-post-detail.md)                   |
+| Settings entry            | Profile / Settings screen                                               |
+| Phase 2 dependency        | Red Alert emergency broadcast system                                    |
 
 ---
 

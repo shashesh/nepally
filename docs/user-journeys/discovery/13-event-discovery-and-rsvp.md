@@ -62,7 +62,7 @@
 - "All" chip selected by default (highlighted)
 - Loading skeleton: 3 placeholder event cards
 - "Create Event" pill button top-right (visible to Level 1+)
-**Duration:** < 1 second to navigate; 1–2 seconds to load events
+  **Duration:** < 1 second to navigate; 1–2 seconds to load events
 
 **User Thoughts:**
 
@@ -91,7 +91,7 @@ Each **EventCard** shows:
 - Organizer: avatar + masked name ("Binita S.") + trust badge
 - RSVP count (e.g., "42 going")
 - RSVP button state: "RSVP" (not going) or "Going ✓" (already going)
-**Duration:** 30–60 seconds browsing
+  **Duration:** 30–60 seconds browsing
 
 **User Thoughts:**
 
@@ -108,7 +108,7 @@ Each **EventCard** shows:
 - "Cultural" chip highlighted, "All" deselected
 - List updates instantly to show only Cultural events
 - Chips are single-select (tapping a new one replaces the current filter; tapping "All" resets)
-**Duration:** Instant (< 100ms)
+  **Duration:** Instant (< 100ms)
 
 **User Thoughts:**
 
@@ -138,7 +138,7 @@ Each **EventCard** shows:
 - **Organizer section:** Binita S.'s avatar + masked name + trust badge + "Message Organizer" button (Level 1+)
 - **Attendance section:** avatar stack (up to 5 overlapping) + "42 people going" + "View all attendees" button
 - Large **RSVP button** at the bottom: "RSVP — I'm Going" (blue, prominent)
-**Duration:** ~30 seconds reading
+  **Duration:** ~30 seconds reading
 
 **User Thoughts:**
 
@@ -155,7 +155,7 @@ Each **EventCard** shows:
 
 - List of attendees: avatar + masked name ("Sanjay T.", "Asha K.", etc.) + trust badge per row
 - If organizer set `rsvp_visibility = 'private'`: shows only "42 people going" count, no names/avatars
-**Duration:** 10 seconds
+  **Duration:** 10 seconds
 
 **User Thoughts:**
 
@@ -174,11 +174,11 @@ Each **EventCard** shows:
 - RSVP count increments by 1 in the UI (e.g., "42 going" → "43 going")
 - Calls `rsvpToEvent(supabase, eventId, userId)` in the background — inserts a row into `event_rsvps`
 - If the API call fails: button reverts to "RSVP — I'm Going" with a brief toast/error
-**User Sees:**
+  **User Sees:**
 - Button state: green "Going ✓"
 - Updated RSVP count
 - Their avatar appears in the attendee stack (on next load)
-**Duration:** Instant (< 100ms for optimistic update)
+  **Duration:** Instant (< 100ms for optimistic update)
 
 **User Thoughts:**
 
@@ -201,8 +201,8 @@ Each **EventCard** shows:
 - Optimistic UI: button reverts to "RSVP — I'm Going"
 - RSVP count decrements by 1
 - Calls `unrsvpFromEvent(supabase, eventId, userId)` — deletes the `event_rsvps` row
-**User Sees:** Button back to blue "RSVP — I'm Going"
-**Duration:** Instant
+  **User Sees:** Button back to blue "RSVP — I'm Going"
+  **Duration:** Instant
 
 ---
 
@@ -216,7 +216,7 @@ Each **EventCard** shows:
 
 - Event card in the list now shows "Going ✓" (green) button
 - No other changes
-**Duration:** Instant
+  **Duration:** Instant
 
 ---
 
@@ -266,15 +266,15 @@ User opens Events tab
 
 ## Touchpoints
 
-| Step | Touchpoint | Channel | Data Required | Data Stored |
-|------|------------|---------|---------------|-------------|
-| 1 | Open Events tab | Mobile / Web | `metro_area_id` | None |
-| 2 | Browse feed | Mobile / Web | None | None |
-| 3 | Filter by type | Mobile / Web | `event_type` filter | None (client-side) |
-| 4 | Open event detail | Mobile / Web | `event_id` | None |
-| 5 | View attendees | Mobile / Web | `event_id` | None |
-| 6 | RSVP | Mobile / Web | `event_id`, `user_id` | `event_rsvps` row, `events.rsvp_count` |
-| 7 | Cancel RSVP | Mobile / Web | `event_id`, `user_id` | Delete `event_rsvps` row, decrement `rsvp_count` |
+| Step | Touchpoint        | Channel      | Data Required         | Data Stored                                      |
+| ---- | ----------------- | ------------ | --------------------- | ------------------------------------------------ |
+| 1    | Open Events tab   | Mobile / Web | `metro_area_id`       | None                                             |
+| 2    | Browse feed       | Mobile / Web | None                  | None                                             |
+| 3    | Filter by type    | Mobile / Web | `event_type` filter   | None (client-side)                               |
+| 4    | Open event detail | Mobile / Web | `event_id`            | None                                             |
+| 5    | View attendees    | Mobile / Web | `event_id`            | None                                             |
+| 6    | RSVP              | Mobile / Web | `event_id`, `user_id` | `event_rsvps` row, `events.rsvp_count`           |
+| 7    | Cancel RSVP       | Mobile / Web | `event_id`, `user_id` | Delete `event_rsvps` row, decrement `rsvp_count` |
 
 ---
 
@@ -287,28 +287,28 @@ User opens Events tab
 
 ### Platform Differences
 
-| Step | Mobile Behavior | Web Behavior | Notes |
-|------|----------------|--------------|-------|
-| Step 1 (entry) | Events tab in bottom nav (2nd icon) | "Events" link in sidebar nav | Same API call |
-| Step 2 (browse) | Vertical `FlatList` of `EventCard` | Vertical feed on right, sidebar filters on left (≥1024px) | Web uses radio buttons for filter sidebar |
-| Step 3 (filter) | Horizontal scrollable chip bar (single-select) | Sidebar radio filter group (All, Cultural, Religious, Social, Career, Other) | Same client-side filter logic |
-| Step 4 (detail) | `EventDetailScreen` full-screen | `/events/[id]` two-column layout on desktop | Same data, different layout |
-| Step 5 (attendees) | Bottom sheet | Modal dialog | |
-| Step 6 (RSVP) | Full-width blue button at bottom | Button in right-column action panel | Same `rsvpToEvent` shared API |
+| Step               | Mobile Behavior                                | Web Behavior                                                                 | Notes                                     |
+| ------------------ | ---------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------- |
+| Step 1 (entry)     | Events tab in bottom nav (2nd icon)            | "Events" link in sidebar nav                                                 | Same API call                             |
+| Step 2 (browse)    | Vertical `FlatList` of `EventCard`             | Vertical feed on right, sidebar filters on left (≥1024px)                    | Web uses radio buttons for filter sidebar |
+| Step 3 (filter)    | Horizontal scrollable chip bar (single-select) | Sidebar radio filter group (All, Cultural, Religious, Social, Career, Other) | Same client-side filter logic             |
+| Step 4 (detail)    | `EventDetailScreen` full-screen                | `/events/[id]` two-column layout on desktop                                  | Same data, different layout               |
+| Step 5 (attendees) | Bottom sheet                                   | Modal dialog                                                                 |                                           |
+| Step 6 (RSVP)      | Full-width blue button at bottom               | Button in right-column action panel                                          | Same `rsvpToEvent` shared API             |
 
 ---
 
 ## Emotions & Experience
 
-| Phase | Emotion | Confidence Level | Friction Level | Notes |
-|-------|---------|------------------|----------------|-------|
-| Opening feed | Curious | Medium | Low | Clear tab, fast load |
-| Browsing | Engaged | Medium | Low | Visual cards are scannable |
-| Filtering | Focused | High | Low | Instant client-side filter |
-| Reading detail | Interested | High | Low | Full info available |
-| Viewing attendees | Reassured | High | None | Social proof |
-| RSVP tap | Decisive | High | None | One tap, instant feedback |
-| Post-RSVP | Excited | High | None | Clear confirmation state |
+| Phase             | Emotion    | Confidence Level | Friction Level | Notes                      |
+| ----------------- | ---------- | ---------------- | -------------- | -------------------------- |
+| Opening feed      | Curious    | Medium           | Low            | Clear tab, fast load       |
+| Browsing          | Engaged    | Medium           | Low            | Visual cards are scannable |
+| Filtering         | Focused    | High             | Low            | Instant client-side filter |
+| Reading detail    | Interested | High             | Low            | Full info available        |
+| Viewing attendees | Reassured  | High             | None           | Social proof               |
+| RSVP tap          | Decisive   | High             | None           | One tap, instant feedback  |
+| Post-RSVP         | Excited    | High             | None           | Clear confirmation state   |
 
 ---
 
@@ -392,15 +392,15 @@ User opens Events tab
 
 ## Error & Edge Cases
 
-| Scenario | Expected Behavior | Recovery Path | User Message |
-|----------|------------------|---------------|--------------|
-| No events in metro area | Empty state with illustration and "No upcoming events" | "Be the first to create one!" CTA | N/A |
-| No events matching filter | Empty state: "No [Cultural] events right now" | "Clear filter" link | N/A |
-| RSVP API call fails | Optimistic update reverts to original state | User can retry by tapping RSVP again | Brief error toast |
-| Network error on load | Error state with retry button | Tap "Try Again" | "Couldn't load events. Check your connection." |
-| Event deleted after user opens detail | `getEventById` returns error | Navigate back to feed | "This event is no longer available." |
-| Already RSVP'd (duplicate attempt) | DB unique constraint prevents duplicate | No action needed — UI already shows "Going ✓" | N/A (idempotent) |
-| Session timeout mid-journey | Auth context refreshes; if fails, redirects to login | Re-authenticate → return to events | Standard auth error |
+| Scenario                              | Expected Behavior                                      | Recovery Path                                 | User Message                                   |
+| ------------------------------------- | ------------------------------------------------------ | --------------------------------------------- | ---------------------------------------------- |
+| No events in metro area               | Empty state with illustration and "No upcoming events" | "Be the first to create one!" CTA             | N/A                                            |
+| No events matching filter             | Empty state: "No [Cultural] events right now"          | "Clear filter" link                           | N/A                                            |
+| RSVP API call fails                   | Optimistic update reverts to original state            | User can retry by tapping RSVP again          | Brief error toast                              |
+| Network error on load                 | Error state with retry button                          | Tap "Try Again"                               | "Couldn't load events. Check your connection." |
+| Event deleted after user opens detail | `getEventById` returns error                           | Navigate back to feed                         | "This event is no longer available."           |
+| Already RSVP'd (duplicate attempt)    | DB unique constraint prevents duplicate                | No action needed — UI already shows "Going ✓" | N/A (idempotent)                               |
+| Session timeout mid-journey           | Auth context refreshes; if fails, redirects to login   | Re-authenticate → return to events            | Standard auth error                            |
 
 ---
 

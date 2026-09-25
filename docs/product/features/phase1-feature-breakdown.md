@@ -558,7 +558,7 @@ Build the structured post engine.
   - Update comment counter on post cards in real-time
 - **Dependencies:** 5.4 (Post Detail), 4.1 (Trust Levels), 3.5 (Profile Photos for avatars)
 - **Estimated Effort:** 4-5 days
--  **Database:** Adds `post_comments` table, `posts.comments_count` column, triggers
+- **Database:** Adds `post_comments` table, `posts.comments_count` column, triggers
 
 **5.12 Post Sorting** (formerly 5.9)
 

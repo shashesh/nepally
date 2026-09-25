@@ -3,6 +3,7 @@
 **Last Updated:** 2026-09-24 (web UI overhaul PR 9b)
 
 What the moderator queue at `/moderation` does on web today. Access and the server-side rules come from `supabase/migrations/035_emergency_post_moderation.sql`:
+
 - Emergency posts start as `pending`.
 - Three or more reports auto-hide a post.
 - Bans go through the `moderate_user()` RPC.

@@ -30,7 +30,11 @@ For `useCallback` + `useEffect` (shared fetch function called from multiple effe
 
 ```typescript
 const mountedRef = useRef(true);
-useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+useEffect(() => {
+  return () => {
+    mountedRef.current = false;
+  };
+}, []);
 
 const fetchData = useCallback(async () => {
   const result = await fetchSomething(supabase, id);
@@ -47,7 +51,9 @@ useEffect(() => {
     const result = await fetchSomething(supabase, id);
     if (!cancelled) setData(result.data);
   })();
-  return () => { cancelled = true; };
+  return () => {
+    cancelled = true;
+  };
 }, [id]);
 ```
 

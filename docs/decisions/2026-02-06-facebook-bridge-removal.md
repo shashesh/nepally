@@ -16,6 +16,7 @@ The "Facebook Bridge" feature (automated ingestion of Nepally Facebook group pos
 ## Context
 
 The original Phase 1 roadmap included:
+
 > "FB-to-App Sync: Automated ingestion of current Nepally Facebook posts to ensure the app is 'full' on Day 1"
 
 This was intended to solve the cold-start problem by leveraging existing Facebook community content, providing immediate value to early users.

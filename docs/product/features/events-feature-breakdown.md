@@ -396,20 +396,20 @@ Milestone 3 (detail) and Milestone 5 (RSVP) block each other sequentially but ar
 
 The following code placement decisions apply:
 
-| Code Unit | Location |
-|-----------|----------|
-| `Event`, `EventRsvp`, `EventType`, `EventStatus` types | `packages/shared/src/types/events.ts` |
-| `createEventSchema`, `updateEventSchema` Zod schemas | `packages/shared/src/validation/events.ts` |
-| All API functions (getMetroEventsPage, createEvent, setEventResponse, etc.) | `packages/shared/src/api/events.ts` |
-| EventCard component (mobile) | `apps/mobile/src/components/events/EventCard.tsx` |
-| EventCard component (web) | `apps/web/src/components/events/EventCard.tsx` |
-| EventsScreen (mobile) | `apps/mobile/src/screens/EventsScreen.tsx` |
-| Events page (web) | `apps/web/src/pages/events/index.tsx` |
-| EventDetailScreen (mobile) | `apps/mobile/src/screens/EventDetailScreen.tsx` |
-| Event detail page (web) | `apps/web/src/pages/events/[id].tsx` |
-| CreateEventScreen (mobile) | `apps/mobile/src/screens/CreateEventScreen.tsx` |
-| Create event page (web) | `apps/web/src/pages/events/create.tsx` |
-| Edge Function for reminder notifications | `supabase/functions/event-reminders/` |
+| Code Unit                                                                   | Location                                          |
+| --------------------------------------------------------------------------- | ------------------------------------------------- |
+| `Event`, `EventRsvp`, `EventType`, `EventStatus` types                      | `packages/shared/src/types/events.ts`             |
+| `createEventSchema`, `updateEventSchema` Zod schemas                        | `packages/shared/src/validation/events.ts`        |
+| All API functions (getMetroEventsPage, createEvent, setEventResponse, etc.) | `packages/shared/src/api/events.ts`               |
+| EventCard component (mobile)                                                | `apps/mobile/src/components/events/EventCard.tsx` |
+| EventCard component (web)                                                   | `apps/web/src/components/events/EventCard.tsx`    |
+| EventsScreen (mobile)                                                       | `apps/mobile/src/screens/EventsScreen.tsx`        |
+| Events page (web)                                                           | `apps/web/src/pages/events/index.tsx`             |
+| EventDetailScreen (mobile)                                                  | `apps/mobile/src/screens/EventDetailScreen.tsx`   |
+| Event detail page (web)                                                     | `apps/web/src/pages/events/[id].tsx`              |
+| CreateEventScreen (mobile)                                                  | `apps/mobile/src/screens/CreateEventScreen.tsx`   |
+| Create event page (web)                                                     | `apps/web/src/pages/events/create.tsx`            |
+| Edge Function for reminder notifications                                    | `supabase/functions/event-reminders/`             |
 
 Run `/shared-first-check` after implementation to verify compliance.
 
@@ -445,14 +445,14 @@ CREATE OR REPLACE FUNCTION decrement_rsvp_count() RETURNS trigger ...
 
 ## Success Criteria
 
-| Metric | Target |
-|--------|--------|
-| Events tab loads < 1s (cached or fast query) | Yes |
-| All filter chips correctly narrow the list | Yes |
-| RSVP toggles correctly (optimistic UI, no double-RSVP) | Yes |
-| Event creation validates all fields before submit | Yes |
-| No PII exposed on event detail (organizer name masked) | Yes |
-| Tests pass: `packages/shared` + `apps/mobile` + `apps/web` | Yes |
+| Metric                                                     | Target |
+| ---------------------------------------------------------- | ------ |
+| Events tab loads < 1s (cached or fast query)               | Yes    |
+| All filter chips correctly narrow the list                 | Yes    |
+| RSVP toggles correctly (optimistic UI, no double-RSVP)     | Yes    |
+| Event creation validates all fields before submit          | Yes    |
+| No PII exposed on event detail (organizer name masked)     | Yes    |
+| Tests pass: `packages/shared` + `apps/mobile` + `apps/web` | Yes    |
 
 ---
 

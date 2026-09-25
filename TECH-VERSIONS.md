@@ -8,70 +8,71 @@ This document serves as the single source of truth for all technology versions u
 
 ### Frontend (Mobile & Web)
 
-| Package | Version | Location | Notes |
-|---------|---------|----------|-------|
-| **react** | 19.2.3 | Both mobile & web | Unified version across platforms; exact match required by React Native 0.86.3 |
-| **react-dom** | 19.2.3 | Web only | Matches React version |
+| Package       | Version | Location          | Notes                                                                         |
+| ------------- | ------- | ----------------- | ----------------------------------------------------------------------------- |
+| **react**     | 19.2.3  | Both mobile & web | Unified version across platforms; exact match required by React Native 0.86.3 |
+| **react-dom** | 19.2.3  | Web only          | Matches React version                                                         |
 
 ### Mobile App (`apps/mobile`)
 
-| Package | Version | Notes |
-|---------|---------|-------|
-| **react-native** | 0.86.3 | Ships with Expo SDK 57 |
-| **expo** | ~57.0.23 | Latest stable (SDK 57) |
-| **@react-navigation/native** | 7.x | Navigation library |
-| **@react-navigation/bottom-tabs** | 7.x | Tab navigation |
-| **@react-navigation/native-stack** | 7.x | Stack navigation |
+| Package                            | Version  | Notes                  |
+| ---------------------------------- | -------- | ---------------------- |
+| **react-native**                   | 0.86.3   | Ships with Expo SDK 57 |
+| **expo**                           | ~57.0.23 | Latest stable (SDK 57) |
+| **@react-navigation/native**       | 7.x      | Navigation library     |
+| **@react-navigation/bottom-tabs**  | 7.x      | Tab navigation         |
+| **@react-navigation/native-stack** | 7.x      | Stack navigation       |
 
 ### Web App (`apps/web`)
 
-| Package | Version | Notes |
-|---------|---------|-------|
-| **next** | 16.3.x | Turbopack; works with React 19.2.3 |
-| **eslint-config-next** | 16.x | Flat config, exported as a config array; requires ESLint >= 9 |
-| **@mantine/core / hooks / form / notifications / modals / dropzone** | 8.3.x | All on one version; 9.x is unblocked by React 19.2.3 but ships as its own PR (see Deferred Upgrades). `dropzone` arrived with the web UI overhaul's `ImageUploader` and pulls in `react-dropzone` 15 |
+| Package                                                              | Version | Notes                                                                                                                                                                                                |
+| -------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **next**                                                             | 16.3.x  | Turbopack; works with React 19.2.3                                                                                                                                                                   |
+| **eslint-config-next**                                               | 16.x    | Flat config, exported as a config array; requires ESLint >= 9                                                                                                                                        |
+| **@mantine/core / hooks / form / notifications / modals / dropzone** | 8.3.x   | All on one version; 9.x is unblocked by React 19.2.3 but ships as its own PR (see Deferred Upgrades). `dropzone` arrived with the web UI overhaul's `ImageUploader` and pulls in `react-dropzone` 15 |
 
 ### Shared Package (`packages/shared`)
 
-| Package | Version | Notes |
-|---------|---------|-------|
-| **typescript** | 7.0.x | Shared across monorepo; installed side by side with 6.0 (see Development Tools) |
-| **zod** | 4.x | Schema validation |
+| Package        | Version | Notes                                                                           |
+| -------------- | ------- | ------------------------------------------------------------------------------- |
+| **typescript** | 7.0.x   | Shared across monorepo; installed side by side with 6.0 (see Development Tools) |
+| **zod**        | 4.x     | Schema validation                                                               |
 
 ## Backend & Services
 
-| Service | Version/Plan | Notes |
-|---------|--------------|-------|
-| **Supabase** | Latest | Backend, database, auth, storage |
-| **@supabase/supabase-js** | ^2.x (2.116+) | Client SDK |
-| **PostgreSQL** | 17.6.x | Via Supabase (remote on 17 GA; local `config.toml` `major_version` synced to 17 on 2026-06-07) |
-| **Node.js** | ^22.13.0 \|\| ^24.3.0 \|\| >=25.0.0 | The 22 floor dates from 2026-09-11 (@supabase/supabase-js 2.116 declares `engines.node >=22`). React Native 0.86.3 and Metro 0.84 (Expo SDK 57) accept only `^20.19.4 \|\| ^22.13.0 \|\| ^24.3.0 \|\| >=25`, so 22.0–22.12, 23.x and 24.0–24.2 are out. CI and `.nvmrc` run 24. |
-| **npm** | >=10.0.0 | Package manager |
+| Service                   | Version/Plan                        | Notes                                                                                                                                                                                                                                                                           |
+| ------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Supabase**              | Latest                              | Backend, database, auth, storage                                                                                                                                                                                                                                                |
+| **@supabase/supabase-js** | ^2.x (2.116+)                       | Client SDK                                                                                                                                                                                                                                                                      |
+| **PostgreSQL**            | 17.6.x                              | Via Supabase (remote on 17 GA; local `config.toml` `major_version` synced to 17 on 2026-06-07)                                                                                                                                                                                  |
+| **Node.js**               | ^22.13.0 \|\| ^24.3.0 \|\| >=25.0.0 | The 22 floor dates from 2026-09-11 (@supabase/supabase-js 2.116 declares `engines.node >=22`). React Native 0.86.3 and Metro 0.84 (Expo SDK 57) accept only `^20.19.4 \|\| ^22.13.0 \|\| ^24.3.0 \|\| >=25`, so 22.0–22.12, 23.x and 24.0–24.2 are out. CI and `.nvmrc` run 24. |
+| **npm**                   | >=10.0.0                            | Package manager                                                                                                                                                                                                                                                                 |
 
 ## Development Tools
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| **TypeScript** | 7.0.x | Type checking. TS 7 is installed as the npm alias `@typescript/native` → `typescript@^7`. The `typescript` package name is aliased to `@typescript/typescript6` (6.0.x) because 7.0 ships no JS compiler API, and typescript-eslint and the Expo CLI still `require('typescript')`. That wrapper hoists real TypeScript 6 into the root `node_modules`, and its `tsc` bin collides with TS 7's, so the `type-check`/`build`/`dev` scripts call `node ../../node_modules/@typescript/native/bin/tsc` directly. Use `npm run type-check`, not a bare `npx tsc` (which may be 6.0). `next build` type-checks with `tsc6`. Drop both aliases and restore plain `tsc` once those tools support TS 7 (expected with 7.1). |
-| **ESLint** | 10.x | Linting, flat config (`eslint.config.mjs`). 8 and 9 are both EOL |
-| **Prettier** | 3.x | Code formatting |
-| **eslint-config-prettier** | 10.x | Disables formatting-related ESLint rules |
+| Tool                       | Version | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **TypeScript**             | 7.0.x   | Type checking. TS 7 is installed as the npm alias `@typescript/native` → `typescript@^7`. The `typescript` package name is aliased to `@typescript/typescript6` (6.0.x) because 7.0 ships no JS compiler API, and typescript-eslint and the Expo CLI still `require('typescript')`. That wrapper hoists real TypeScript 6 into the root `node_modules`, and its `tsc` bin collides with TS 7's, so the `type-check`/`build`/`dev` scripts call `node ../../node_modules/@typescript/native/bin/tsc` directly. Use `npm run type-check`, not a bare `npx tsc` (which may be 6.0). `next build` type-checks with `tsc6`. Drop both aliases and restore plain `tsc` once those tools support TS 7 (expected with 7.1). |
+| **ESLint**                 | 10.x    | Linting, flat config (`eslint.config.mjs`). 8 and 9 are both EOL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Prettier**               | 3.x     | Code and Markdown formatting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **eslint-config-prettier** | 10.x    | Disables formatting-related ESLint rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **markdownlint-cli2**      | 0.23.x  | Markdown lint (`npm run lint:md`, `.markdownlint-cli2.jsonc`); extends markdownlint's Prettier style                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## Testing Stack
 
-| Tool | Version | Location | Notes |
-|------|---------|----------|-------|
-| **vitest** | ^4.1.8 | Root / web / shared | Unit test runner for web and shared |
-| **@vitest/coverage-v8** | ^4.1.8 | Root | Coverage provider for Vitest |
-| **jest** | ^29.7.0 | apps/mobile | Unit test runner for mobile (jest-expo 57 still depends on jest 29) |
-| **jest-expo** | ~57.0.5 | apps/mobile | Expo preset for Jest |
-| **@testing-library/react-native** | ^13.3.3 | apps/mobile | Hook/component testing utilities |
-| **@testing-library/react** | ^16.2.0 | apps/web | Hook/component testing utilities |
-| **@testing-library/dom** | ^10.4.1 | apps/web | Required peer of @testing-library/react 16 |
-| **jsdom** | ^29.1.1 | apps/web | Browser-like test environment for web |
-| **@playwright/test** | ^1.49.0 | apps/web | E2E (runs against a production build — see playwright.config.ts) |
-| **@axe-core/playwright** | ^4.13.0 | apps/web | Axe scans in the visual projects; known violations in `e2e/visual/a11y-baseline.json` |
-| **culori** | ^4.0.2 | apps/web | Colour maths for token contrast and theme-sync tests |
+| Tool                              | Version | Location            | Notes                                                                                 |
+| --------------------------------- | ------- | ------------------- | ------------------------------------------------------------------------------------- |
+| **vitest**                        | ^4.1.8  | Root / web / shared | Unit test runner for web and shared                                                   |
+| **@vitest/coverage-v8**           | ^4.1.8  | Root                | Coverage provider for Vitest                                                          |
+| **jest**                          | ^29.7.0 | apps/mobile         | Unit test runner for mobile (jest-expo 57 still depends on jest 29)                   |
+| **jest-expo**                     | ~57.0.5 | apps/mobile         | Expo preset for Jest                                                                  |
+| **@testing-library/react-native** | ^13.3.3 | apps/mobile         | Hook/component testing utilities                                                      |
+| **@testing-library/react**        | ^16.2.0 | apps/web            | Hook/component testing utilities                                                      |
+| **@testing-library/dom**          | ^10.4.1 | apps/web            | Required peer of @testing-library/react 16                                            |
+| **jsdom**                         | ^29.1.1 | apps/web            | Browser-like test environment for web                                                 |
+| **@playwright/test**              | ^1.49.0 | apps/web            | E2E (runs against a production build — see playwright.config.ts)                      |
+| **@axe-core/playwright**          | ^4.13.0 | apps/web            | Axe scans in the visual projects; known violations in `e2e/visual/a11y-baseline.json` |
+| **culori**                        | ^4.0.2  | apps/web            | Colour maths for token contrast and theme-sync tests                                  |
 
 ## Why These Versions?
 
@@ -100,11 +101,11 @@ This document serves as the single source of truth for all technology versions u
 
   The two files do **not** share a lifecycle, so deleting them is not symmetric:
 
-  | Deleted | What the next `next dev` does |
-  |---|---|
-  | Both | Recreates both — `AGENTS.md` with the block, `CLAUDE.md` with `@AGENTS.md` |
+  | Deleted          | What the next `next dev` does                                                                  |
+  | ---------------- | ---------------------------------------------------------------------------------------------- |
+  | Both             | Recreates both — `AGENTS.md` with the block, `CLAUDE.md` with `@AGENTS.md`                     |
   | `CLAUDE.md` only | Leaves it deleted. `AGENTS.md` exists, so the shim is skipped and Claude Code loses the import |
-  | `AGENTS.md` only | Leaves it deleted, and writes the block **into `CLAUDE.md`** instead |
+  | `AGENTS.md` only | Leaves it deleted, and writes the block **into `CLAUDE.md`** instead                           |
 
   So deleting only `CLAUDE.md` is a silent, non-self-healing loss, and deleting only
   `AGENTS.md` relocates the block rather than restoring it. Delete both or neither.
@@ -165,10 +166,10 @@ This document serves as the single source of truth for all technology versions u
 
 These are intentionally held and should be done as dedicated efforts:
 
-| Upgrade | Blocked by / Reason |
-|---------|---------------------|
-| **Mantine 9** | Unblocked by React 19.2.3; ships as its own PR after the web UI overhaul (see that plan's "After the overhaul — Mantine 9") |
-| **jest / @types/jest 30** | jest-expo 57 still depends on jest 29 (`babel-jest`, `@jest/globals` `^29.2.1`); moves when a jest-expo release does |
+| Upgrade                   | Blocked by / Reason                                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Mantine 9**             | Unblocked by React 19.2.3; ships as its own PR after the web UI overhaul (see that plan's "After the overhaul — Mantine 9") |
+| **jest / @types/jest 30** | jest-expo 57 still depends on jest 29 (`babel-jest`, `@jest/globals` `^29.2.1`); moves when a jest-expo release does        |
 
 ## Version Update Policy
 

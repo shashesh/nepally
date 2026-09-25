@@ -52,11 +52,11 @@ No internet connection. Please check your connection and try again.
 
 ### 1. Nepally Logo
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Image | Image |
-| **Dimensions** | 80×80px | 80×80dp |
-| **Position** | Centered, 48px from top | Centered, 48dp from top |
+| Property       | iOS                     | Android                 |
+| -------------- | ----------------------- | ----------------------- |
+| **Type**       | Image                   | Image                   |
+| **Dimensions** | 80×80px                 | 80×80dp                 |
+| **Position**   | Centered, 48px from top | Centered, 48dp from top |
 
 - Transparent background, full-color
 - Recognizable at small size
@@ -67,12 +67,12 @@ No internet connection. Please check your connection and try again.
 
 ### 2. App Tagline
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font** | 28pt Bold, San Francisco | 28sp Medium, Roboto |
-| **Color** | #212121 (Almost Black) | #212121 |
-| **Alignment** | Center | Center |
-| **Max Width** | 320px | 320dp |
+| Property      | iOS                      | Android             |
+| ------------- | ------------------------ | ------------------- |
+| **Font**      | 28pt Bold, San Francisco | 28sp Medium, Roboto |
+| **Color**     | #212121 (Almost Black)   | #212121             |
+| **Alignment** | Center                   | Center              |
+| **Max Width** | 320px                    | 320dp               |
 
 - Semantic heading: H1
 - **a11y:** VoiceOver/TalkBack reads full text
@@ -81,13 +81,13 @@ No internet connection. Please check your connection and try again.
 
 ### 3. Value Proposition
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font** | 17pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Color** | #757575 (Medium Gray) | #757575 |
-| **Alignment** | Center | Center |
-| **Max Width** | 340px | 340dp |
-| **Line Height** | 1.5× | 1.5× |
+| Property        | iOS                         | Android              |
+| --------------- | --------------------------- | -------------------- |
+| **Font**        | 17pt Regular, San Francisco | 16sp Regular, Roboto |
+| **Color**       | #757575 (Medium Gray)       | #757575              |
+| **Alignment**   | Center                      | Center               |
+| **Max Width**   | 340px                       | 340dp                |
+| **Line Height** | 1.5×                        | 1.5×                 |
 
 - **a11y:** Semantic paragraph, screen reader reads full sentence
 
@@ -95,13 +95,13 @@ No internet connection. Please check your connection and try again.
 
 ### 4. Sign Up Button (Primary)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Height** | 48px | 56dp |
-| **Width** | Full width − 32px margins | match_parent − 32dp margins |
-| **Corner Radius** | 8px | 8dp |
-| **Background** | #1565C0 (Primary Blue) | #1565C0 |
-| **Text** | 17pt Semibold, White, "Sign Up" | 14sp Medium, White, "SIGN UP" |
+| Property          | iOS                             | Android                       |
+| ----------------- | ------------------------------- | ----------------------------- |
+| **Height**        | 48px                            | 56dp                          |
+| **Width**         | Full width − 32px margins       | match_parent − 32dp margins   |
+| **Corner Radius** | 8px                             | 8dp                           |
+| **Background**    | #1565C0 (Primary Blue)          | #1565C0                       |
+| **Text**          | 17pt Semibold, White, "Sign Up" | 14sp Medium, White, "SIGN UP" |
 
 **States:**
 
@@ -116,12 +116,12 @@ No internet connection. Please check your connection and try again.
 
 ### 5. Log In Button (Outline)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Height** | 48px | 56dp |
-| **Background** | Transparent | Transparent |
-| **Border** | 2px solid #1565C0 | 2px solid #1565C0 |
-| **Text** | 17pt Regular, #1565C0, "Log In" | 14sp Medium, #1565C0, "LOG IN" |
+| Property       | iOS                             | Android                        |
+| -------------- | ------------------------------- | ------------------------------ |
+| **Height**     | 48px                            | 56dp                           |
+| **Background** | Transparent                     | Transparent                    |
+| **Border**     | 2px solid #1565C0               | 2px solid #1565C0              |
+| **Text**       | 17pt Regular, #1565C0, "Log In" | 14sp Medium, #1565C0, "LOG IN" |
 
 **States:**
 
@@ -136,13 +136,13 @@ No internet connection. Please check your connection and try again.
 
 ### 6. Terms of Service Footer
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font** | 13pt Regular, San Francisco | 12sp Regular, Roboto |
-| **Text Color** | #757575 | #757575 |
-| **Link Color** | #1565C0 (Blue) | #1565C0 |
-| **Position** | 24px from bottom | 24dp from bottom |
-| **Max Width** | 320px | 320dp |
+| Property       | iOS                         | Android              |
+| -------------- | --------------------------- | -------------------- |
+| **Font**       | 13pt Regular, San Francisco | 12sp Regular, Roboto |
+| **Text Color** | #757575                     | #757575              |
+| **Link Color** | #1565C0 (Blue)              | #1565C0              |
+| **Position**   | 24px from bottom            | 24dp from bottom     |
+| **Max Width**  | 320px                       | 320dp                |
 
 **Links:** "Terms of Service" and "Privacy Policy" — open in-app web view (iOS modal sheet / Android custom tab)
 **States:** Links default blue underlined, pressed #104D99
@@ -154,17 +154,17 @@ No internet connection. Please check your connection and try again.
 
 ### Vertical Stack (Top to Bottom)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / Status bar | Auto | — |
-| 2 | Top padding | 48px/dp | — |
-| 3 | Nepally Logo | 80px/dp | 24px/dp |
-| 4 | Tagline | ~60px (2 lines) | 16px/dp |
-| 5 | Value proposition | ~75px (3 lines) | 48px/dp |
-| 6 | Sign Up button | 48px / 56dp | 16px/dp |
-| 7 | Log In button | 48px / 56dp | Flex |
-| 8 | Terms footer | ~40px | 24px/dp |
-| 9 | Bottom safe area (iOS) | Auto | — |
+| #   | Element                | Height          | Spacing After |
+| --- | ---------------------- | --------------- | ------------- |
+| 1   | Safe area / Status bar | Auto            | —             |
+| 2   | Top padding            | 48px/dp         | —             |
+| 3   | Nepally Logo           | 80px/dp         | 24px/dp       |
+| 4   | Tagline                | ~60px (2 lines) | 16px/dp       |
+| 5   | Value proposition      | ~75px (3 lines) | 48px/dp       |
+| 6   | Sign Up button         | 48px / 56dp     | 16px/dp       |
+| 7   | Log In button          | 48px / 56dp     | Flex          |
+| 8   | Terms footer           | ~40px           | 24px/dp       |
+| 9   | Bottom safe area (iOS) | Auto            | —             |
 
 **Total Minimum Height:** ~540px (fits iPhone SE and small Android)
 
@@ -190,16 +190,16 @@ No internet connection. Please check your connection and try again.
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Button Height** | 48px | 56dp (Material Design) |
-| **Button Text** | Title case ("Sign Up") | ALL CAPS ("SIGN UP") |
-| **Typography** | San Francisco (17pt body, 28pt H1) | Roboto (16sp body, 28sp H1) |
-| **Press Feedback** | Scale 0.98 + haptic | Scale 0.98 + ripple |
-| **Status Bar** | Hidden or light | Translucent with icon color |
-| **Safe Area** | Respect notch insets | Respect status bar height |
-| **Link Underline** | Shown on press only | Always shown |
-| **Screen Transition** | Slide from right (300ms) | Slide up from bottom (300ms) |
+| Aspect                | iOS                                | Android                      |
+| --------------------- | ---------------------------------- | ---------------------------- |
+| **Button Height**     | 48px                               | 56dp (Material Design)       |
+| **Button Text**       | Title case ("Sign Up")             | ALL CAPS ("SIGN UP")         |
+| **Typography**        | San Francisco (17pt body, 28pt H1) | Roboto (16sp body, 28sp H1)  |
+| **Press Feedback**    | Scale 0.98 + haptic                | Scale 0.98 + ripple          |
+| **Status Bar**        | Hidden or light                    | Translucent with icon color  |
+| **Safe Area**         | Respect notch insets               | Respect status bar height    |
+| **Link Underline**    | Shown on press only                | Always shown                 |
+| **Screen Transition** | Slide from right (300ms)           | Slide up from bottom (300ms) |
 
 ---
 
@@ -252,12 +252,12 @@ No internet connection. Please check your connection and try again.
 
 ### Color Contrast (WCAG)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Tagline (#212121 on #F5F5F5) | 16.9:1 | AAA ✓ |
-| Body text (#757575 on #F5F5F5) | 4.6:1 | AA ✓ |
-| Button text (White on #1565C0) | 7.2:1 | AAA ✓ |
-| Links (#1565C0 on #F5F5F5) | 7.2:1 | AAA ✓ |
+| Element                        | Ratio  | Level |
+| ------------------------------ | ------ | ----- |
+| Tagline (#212121 on #F5F5F5)   | 16.9:1 | AAA ✓ |
+| Body text (#757575 on #F5F5F5) | 4.6:1  | AA ✓  |
+| Button text (White on #1565C0) | 7.2:1  | AAA ✓ |
+| Links (#1565C0 on #F5F5F5)     | 7.2:1  | AAA ✓ |
 
 ### Focus Indicators
 
@@ -271,12 +271,12 @@ No internet connection. Please check your connection and try again.
 
 ### On Screen Load
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Logo | 0ms | 300ms | Opacity 0→1, scale 0.9→1.0 (ease-out) |
-| 2 | Tagline | 300ms | 200ms | Fade in (ease-out) |
-| 3 | Value prop | 400ms | 200ms | Fade in (ease-out) |
-| 4 | Buttons | 500ms | 200ms | Fade in (ease-out) |
+| Step | Element    | Delay | Duration | Effect                                |
+| ---- | ---------- | ----- | -------- | ------------------------------------- |
+| 1    | Logo       | 0ms   | 300ms    | Opacity 0→1, scale 0.9→1.0 (ease-out) |
+| 2    | Tagline    | 300ms | 200ms    | Fade in (ease-out)                    |
+| 3    | Value prop | 400ms | 200ms    | Fade in (ease-out)                    |
+| 4    | Buttons    | 500ms | 200ms    | Fade in (ease-out)                    |
 
 **Total:** ~600ms
 
@@ -299,13 +299,13 @@ No internet connection. Please check your connection and try again.
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `welcome_tagline` | Your Local Nepali Community in the USA |
+| Key                  | Value                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| `welcome_tagline`    | Your Local Nepali Community in the USA                                                     |
 | `welcome_value_prop` | Find housing, jobs, and emergency help from verified community members in your metro area. |
-| `button_signup` | Sign Up |
-| `button_login` | Log In |
-| `footer_terms` | By continuing, you agree to Terms of Service and Privacy Policy |
+| `button_signup`      | Sign Up                                                                                    |
+| `button_login`       | Log In                                                                                     |
+| `footer_terms`       | By continuing, you agree to Terms of Service and Privacy Policy                            |
 
 ### Tone
 
@@ -330,13 +330,13 @@ No internet connection. Please check your connection and try again.
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | App launch (unauthenticated) | This screen |
-| Entry | Deep link `nepally://welcome` | This screen |
-| Exit | Tap "Sign Up" | `/signup-method` (Screen 02) |
-| Exit | Tap "Log In" | `/login` (out of scope) |
-| Modal | Tap Terms/Privacy | Web view (returns here on close) |
+| Direction | Trigger                       | Destination                      |
+| --------- | ----------------------------- | -------------------------------- |
+| Entry     | App launch (unauthenticated)  | This screen                      |
+| Entry     | Deep link `nepally://welcome` | This screen                      |
+| Exit      | Tap "Sign Up"                 | `/signup-method` (Screen 02)     |
+| Exit      | Tap "Log In"                  | `/login` (out of scope)          |
+| Modal     | Tap Terms/Privacy             | Web view (returns here on close) |
 
 ### Performance
 
@@ -393,11 +393,11 @@ No internet connection. Please check your connection and try again.
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | None (entry point) |
-| Next | [02-signup-method-selection.md](../02-signup-method-selection/02-signup-method-selection.md) |
-| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 4 |
+| Relation | Screen                                                                                          |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| Previous | None (entry point)                                                                              |
+| Next     | [02-signup-method-selection.md](../02-signup-method-selection/02-signup-method-selection.md)    |
+| Journey  | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 4 |
 
 ---
 

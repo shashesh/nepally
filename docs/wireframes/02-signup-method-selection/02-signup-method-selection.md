@@ -65,7 +65,7 @@ Signup cancelled. Please choose a method to continue.
 :warning: **Google signup failed**
 Something went wrong with Google signup. Please try again or use a different method.
 
-[Try Again]  [Dismiss]
+[Try Again] [Dismiss]
 :::
 
 ::: alert error
@@ -79,7 +79,7 @@ No internet connection. Please check your connection and try again.
 :warning: **Already registered**
 This email is already registered. Please log in or use a different account.
 
-[Log In Instead]  [Dismiss]
+[Log In Instead] [Dismiss]
 :::
 
 ---
@@ -88,13 +88,13 @@ This email is already registered. Please log in or use a different account.
 
 ### 1. Navigation Bar / Top App Bar
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Navigation Bar | Top App Bar |
-| **Height** | 44px | 56dp |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
+| Property         | iOS                          | Android                                 |
+| ---------------- | ---------------------------- | --------------------------------------- |
+| **Type**         | Navigation Bar               | Top App Bar                             |
+| **Height**       | 44px                         | 56dp                                    |
+| **Background**   | White (#FFFFFF)              | White (#FFFFFF)                         |
 | **Back Control** | "< Back" text, 17pt, #1565C0 | Material arrow_back icon, 24dp, #212121 |
-| **Tap Area** | 44×44pt minimum | 48×48dp minimum |
+| **Tap Area**     | 44×44pt minimum              | 48×48dp minimum                         |
 
 **Interaction:**
 
@@ -108,14 +108,14 @@ This email is already registered. Please log in or use a different account.
 
 ### 2. Screen Title
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text (Heading) | Text (Heading) |
-| **Content** | "Create Your Account" | "Create Your Account" |
-| **Font** | 34pt Bold, San Francisco | 34sp Medium, Roboto |
-| **Color** | #212121 (Almost Black) | #212121 |
-| **Alignment** | Left | Left |
-| **Margin** | 16px from left edge | 16dp from left edge |
+| Property      | iOS                      | Android               |
+| ------------- | ------------------------ | --------------------- |
+| **Type**      | Text (Heading)           | Text (Heading)        |
+| **Content**   | "Create Your Account"    | "Create Your Account" |
+| **Font**      | 34pt Bold, San Francisco | 34sp Medium, Roboto   |
+| **Color**     | #212121 (Almost Black)   | #212121               |
+| **Alignment** | Left                     | Left                  |
+| **Margin**    | 16px from left edge      | 16dp from left edge   |
 
 - Semantic heading: H1
 - **a11y:** VoiceOver/TalkBack reads "Create Your Account"
@@ -124,14 +124,14 @@ This email is already registered. Please log in or use a different account.
 
 ### 3. Subtitle
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text (Body) | Text (Body) |
-| **Content** | "Join the Nepali community in your area" | "Join the Nepali community in your area" |
-| **Font** | 17pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Color** | #757575 (Medium Gray) | #757575 |
-| **Alignment** | Left | Left |
-| **Margin** | 16px from left edge | 16dp from left edge |
+| Property      | iOS                                      | Android                                  |
+| ------------- | ---------------------------------------- | ---------------------------------------- |
+| **Type**      | Text (Body)                              | Text (Body)                              |
+| **Content**   | "Join the Nepali community in your area" | "Join the Nepali community in your area" |
+| **Font**      | 17pt Regular, San Francisco              | 16sp Regular, Roboto                     |
+| **Color**     | #757575 (Medium Gray)                    | #757575                                  |
+| **Alignment** | Left                                     | Left                                     |
+| **Margin**    | 16px from left edge                      | 16dp from left edge                      |
 
 - **a11y:** Semantic paragraph; screen reader reads full sentence
 
@@ -139,20 +139,20 @@ This email is already registered. Please log in or use a different account.
 
 ### 4. Google Signup Option
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Button (Large, card-style) | Button (Large, card-style) |
-| **Label** | "Continue with Google" | "Continue with Google" |
-| **Height** | 56px (includes padding) | 64dp |
-| **Width** | match_parent − 32px margins | match_parent − 32dp margins |
-| **Corner Radius** | 12px | 12dp |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px solid #E0E0E0 | 1dp solid #E0E0E0 |
-| **Elevation** | Subtle shadow (0 2px 4px rgba(0,0,0,0.1)) | 1dp Material elevation |
-| **Padding** | 16px all around | 16dp all around |
-| **Main Text** | 17pt Semibold, #212121 | 16sp Semibold, #212121 |
-| **Benefit Text** | 13pt Regular, #757575 | 12sp Regular, #757575 |
-| **Icon** | Google "G" logo (multicolor), 24×24px | Google "G" logo (multicolor), 24×24dp |
+| Property          | iOS                                       | Android                               |
+| ----------------- | ----------------------------------------- | ------------------------------------- |
+| **Type**          | Button (Large, card-style)                | Button (Large, card-style)            |
+| **Label**         | "Continue with Google"                    | "Continue with Google"                |
+| **Height**        | 56px (includes padding)                   | 64dp                                  |
+| **Width**         | match_parent − 32px margins               | match_parent − 32dp margins           |
+| **Corner Radius** | 12px                                      | 12dp                                  |
+| **Background**    | White (#FFFFFF)                           | White (#FFFFFF)                       |
+| **Border**        | 1px solid #E0E0E0                         | 1dp solid #E0E0E0                     |
+| **Elevation**     | Subtle shadow (0 2px 4px rgba(0,0,0,0.1)) | 1dp Material elevation                |
+| **Padding**       | 16px all around                           | 16dp all around                       |
+| **Main Text**     | 17pt Semibold, #212121                    | 16sp Semibold, #212121                |
+| **Benefit Text**  | 13pt Regular, #757575                     | 12sp Regular, #757575                 |
+| **Icon**          | Google "G" logo (multicolor), 24×24px     | Google "G" logo (multicolor), 24×24dp |
 
 **Content Layout:**
 
@@ -174,13 +174,13 @@ This email is already registered. Please log in or use a different account.
 
 ### 5. Phone Number Signup Option
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Button (Large, card-style) | Button (Large, card-style) |
-| **Label** | "Continue with Phone Number" | "Continue with Phone Number" |
-| **Dimensions** | Same as Google option | Same as Google option |
-| **Styling** | Same as Google option | Same as Google option |
-| **Icon** | 📱 or system phone icon, 24×24px, #1565C0 | Material "phone" icon, 24×24dp, #1565C0 |
+| Property       | iOS                                       | Android                                 |
+| -------------- | ----------------------------------------- | --------------------------------------- |
+| **Type**       | Button (Large, card-style)                | Button (Large, card-style)              |
+| **Label**      | "Continue with Phone Number"              | "Continue with Phone Number"            |
+| **Dimensions** | Same as Google option                     | Same as Google option                   |
+| **Styling**    | Same as Google option                     | Same as Google option                   |
+| **Icon**       | 📱 or system phone icon, 24×24px, #1565C0 | Material "phone" icon, 24×24dp, #1565C0 |
 
 **Content Layout:**
 
@@ -196,13 +196,13 @@ This email is already registered. Please log in or use a different account.
 
 ### 6. Email Signup Option
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Button (Large, card-style) | Button (Large, card-style) |
-| **Label** | "Continue with Email" | "Continue with Email" |
-| **Dimensions** | Same as Google option | Same as Google option |
-| **Styling** | Same as Google option | Same as Google option |
-| **Icon** | ✉ or system mail icon, 24×24px, #1565C0 | Material "email" icon, 24×24dp, #1565C0 |
+| Property       | iOS                                     | Android                                 |
+| -------------- | --------------------------------------- | --------------------------------------- |
+| **Type**       | Button (Large, card-style)              | Button (Large, card-style)              |
+| **Label**      | "Continue with Email"                   | "Continue with Email"                   |
+| **Dimensions** | Same as Google option                   | Same as Google option                   |
+| **Styling**    | Same as Google option                   | Same as Google option                   |
+| **Icon**       | ✉ or system mail icon, 24×24px, #1565C0 | Material "email" icon, 24×24dp, #1565C0 |
 
 **Content Layout:**
 
@@ -218,15 +218,15 @@ This email is already registered. Please log in or use a different account.
 
 ### 7. Privacy Reassurance Text
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text with icon | Text with icon |
-| **Content** | "🔒 We'll never post without your permission" | "🔒 We'll never post without your permission" |
-| **Font** | 13pt Regular, San Francisco | 12sp Regular, Roboto |
-| **Color** | #757575 (Medium Gray) | #757575 |
-| **Alignment** | Center | Center |
-| **Icon** | Lock emoji or lock icon, 16px | Lock emoji or lock icon, 16dp |
-| **Position** | Below signup options, 24px spacing | Below signup options, 24dp spacing |
+| Property      | iOS                                           | Android                                       |
+| ------------- | --------------------------------------------- | --------------------------------------------- |
+| **Type**      | Text with icon                                | Text with icon                                |
+| **Content**   | "🔒 We'll never post without your permission" | "🔒 We'll never post without your permission" |
+| **Font**      | 13pt Regular, San Francisco                   | 12sp Regular, Roboto                          |
+| **Color**     | #757575 (Medium Gray)                         | #757575                                       |
+| **Alignment** | Center                                        | Center                                        |
+| **Icon**      | Lock emoji or lock icon, 16px                 | Lock emoji or lock icon, 16dp                 |
+| **Position**  | Below signup options, 24px spacing            | Below signup options, 24dp spacing            |
 
 - **a11y:** Label "We'll never post without your permission"; icon has alt text "Lock icon"
 
@@ -234,16 +234,16 @@ This email is already registered. Please log in or use a different account.
 
 ### 8. Log In Link (Footer)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Text with link | Text with link |
-| **Content** | "Already have an account? Log In" | "Already have an account? LOG IN" |
-| **Font** | 13pt Regular, San Francisco | 12sp Regular, Roboto |
-| **Text Color** | #757575 (regular text) | #757575 (regular text) |
-| **Link Color** | #1565C0 | #1565C0 |
-| **Alignment** | Center | Center |
-| **Position** | 24px from bottom | 24dp from bottom |
-| **Link Style** | Underline on press only | Always underlined, ALL CAPS |
+| Property       | iOS                               | Android                           |
+| -------------- | --------------------------------- | --------------------------------- |
+| **Type**       | Text with link                    | Text with link                    |
+| **Content**    | "Already have an account? Log In" | "Already have an account? LOG IN" |
+| **Font**       | 13pt Regular, San Francisco       | 12sp Regular, Roboto              |
+| **Text Color** | #757575 (regular text)            | #757575 (regular text)            |
+| **Link Color** | #1565C0                           | #1565C0                           |
+| **Alignment**  | Center                            | Center                            |
+| **Position**   | 24px from bottom                  | 24dp from bottom                  |
+| **Link Style** | Underline on press only           | Always underlined, ALL CAPS       |
 
 **Interaction:** Tap "Log In" → Navigate to Login Screen (out of scope)
 **a11y:** Full text "Already have an account? Log In"; link has clear focus indicator; VoiceOver/TalkBack announces "Link, Log In"
@@ -254,18 +254,18 @@ This email is already registered. Please log in or use a different account.
 
 ### Vertical Stack (Top to Bottom)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / Status bar | Auto | — |
-| 2 | Nav bar | 44px / 56dp | 24px/dp |
-| 3 | Title | ~40px | 8px/dp |
-| 4 | Subtitle | ~50px | 32px/dp |
-| 5 | Google option | 56px / 64dp | 16px/dp |
-| 6 | Phone option | 56px / 64dp | 16px/dp |
-| 7 | Email option | 56px / 64dp | 24px/dp |
-| 8 | Privacy text | ~20px | Flex |
-| 9 | Log In link | ~30px | 24px/dp |
-| 10 | Bottom safe area | Auto | — |
+| #   | Element                | Height      | Spacing After |
+| --- | ---------------------- | ----------- | ------------- |
+| 1   | Safe area / Status bar | Auto        | —             |
+| 2   | Nav bar                | 44px / 56dp | 24px/dp       |
+| 3   | Title                  | ~40px       | 8px/dp        |
+| 4   | Subtitle               | ~50px       | 32px/dp       |
+| 5   | Google option          | 56px / 64dp | 16px/dp       |
+| 6   | Phone option           | 56px / 64dp | 16px/dp       |
+| 7   | Email option           | 56px / 64dp | 24px/dp       |
+| 8   | Privacy text           | ~20px       | Flex          |
+| 9   | Log In link            | ~30px       | 24px/dp       |
+| 10  | Bottom safe area       | Auto        | —             |
 
 **Total Minimum Height:** ~520px (fits small devices)
 
@@ -302,16 +302,16 @@ This email is already registered. Please log in or use a different account.
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Back Navigation** | "< Back" text button | Back arrow icon |
-| **Option Card Height** | 56px | 64dp (slightly taller) |
-| **Typography** | San Francisco, 17pt body | Roboto, 16sp body |
-| **Card Shadow** | Subtle iOS shadow (0 2px 4px rgba(0,0,0,0.1)) | Material elevation 1dp |
-| **Button Pressed State** | Scale 0.99 + haptic | Scale 0.99 + ripple effect |
-| **Link Style** | Underline on press only | Always underlined |
-| **Log In Text** | "Log In" (title case) | "LOG IN" (ALL CAPS) |
-| **Hardware Back Button** | N/A (swipe gesture) | Goes to previous screen |
+| Aspect                   | iOS                                           | Android                    |
+| ------------------------ | --------------------------------------------- | -------------------------- |
+| **Back Navigation**      | "< Back" text button                          | Back arrow icon            |
+| **Option Card Height**   | 56px                                          | 64dp (slightly taller)     |
+| **Typography**           | San Francisco, 17pt body                      | Roboto, 16sp body          |
+| **Card Shadow**          | Subtle iOS shadow (0 2px 4px rgba(0,0,0,0.1)) | Material elevation 1dp     |
+| **Button Pressed State** | Scale 0.99 + haptic                           | Scale 0.99 + ripple effect |
+| **Link Style**           | Underline on press only                       | Always underlined          |
+| **Log In Text**          | "Log In" (title case)                         | "LOG IN" (ALL CAPS)        |
+| **Hardware Back Button** | N/A (swipe gesture)                           | Goes to previous screen    |
 
 ---
 
@@ -378,12 +378,12 @@ This email is already registered. Please log in or use a different account.
 
 ### Color Contrast (WCAG)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Title (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Body text (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
-| Card text (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Privacy text (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
+| Element                           | Ratio  | Level |
+| --------------------------------- | ------ | ----- |
+| Title (#212121 on #FFFFFF)        | 16.9:1 | AAA ✓ |
+| Body text (#757575 on #FFFFFF)    | 4.6:1  | AA ✓  |
+| Card text (#212121 on #FFFFFF)    | 16.9:1 | AAA ✓ |
+| Privacy text (#757575 on #FFFFFF) | 4.6:1  | AA ✓  |
 
 ### Focus Indicators
 
@@ -397,12 +397,12 @@ This email is already registered. Please log in or use a different account.
 
 ### Screen Entry
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Screen slide | 0ms | 300ms | Slide from right (iOS) / Slide up (Android), ease-in-out |
-| 2 | Google card | 0ms | 200ms | Fade in (ease-out) |
-| 3 | Phone card | 100ms | 200ms | Fade in (ease-out), staggered |
-| 4 | Email card | 200ms | 200ms | Fade in (ease-out), staggered |
+| Step | Element      | Delay | Duration | Effect                                                   |
+| ---- | ------------ | ----- | -------- | -------------------------------------------------------- |
+| 1    | Screen slide | 0ms   | 300ms    | Slide from right (iOS) / Slide up (Android), ease-in-out |
+| 2    | Google card  | 0ms   | 200ms    | Fade in (ease-out)                                       |
+| 3    | Phone card   | 100ms | 200ms    | Fade in (ease-out), staggered                            |
+| 4    | Email card   | 200ms | 200ms    | Fade in (ease-out), staggered                            |
 
 ### Option Card Press
 
@@ -434,16 +434,16 @@ This email is already registered. Please log in or use a different account.
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `signup_title` | Create Your Account |
-| `signup_subtitle` | Join the Nepali community in your area |
-| `signup_google` | Continue with Google |
-| `signup_phone` | Continue with Phone Number |
-| `signup_email` | Continue with Email |
-| `signup_benefit` | Quick signup • Verification required later |
-| `signup_privacy` | We'll never post without your permission |
-| `signup_login_link` | Already have an account? Log In |
+| Key                 | Value                                      |
+| ------------------- | ------------------------------------------ |
+| `signup_title`      | Create Your Account                        |
+| `signup_subtitle`   | Join the Nepali community in your area     |
+| `signup_google`     | Continue with Google                       |
+| `signup_phone`      | Continue with Phone Number                 |
+| `signup_email`      | Continue with Email                        |
+| `signup_benefit`    | Quick signup • Verification required later |
+| `signup_privacy`    | We'll never post without your permission   |
+| `signup_login_link` | Already have an account? Log In            |
 
 ### Tone
 
@@ -464,25 +464,25 @@ This email is already registered. Please log in or use a different account.
 
 ### State Management
 
-| Variable | Type | Description |
-|----------|------|-------------|
+| Variable         | Type                                     | Description                      |
+| ---------------- | ---------------------------------------- | -------------------------------- |
 | `selectedMethod` | `null \| 'google' \| 'phone' \| 'email'` | Currently selected signup method |
-| `isLoading` | `boolean` | Whether OAuth is in progress |
-| `errorMessage` | `string \| null` | Active error message to display |
+| `isLoading`      | `boolean`                                | Whether OAuth is in progress     |
+| `errorMessage`   | `string \| null`                         | Active error message to display  |
 
 No persistent state across sessions.
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | Tap "Sign Up" on Screen 01 | This screen |
-| Entry | Deep link `nepally://signup` | This screen |
-| Exit | Google option | Google OAuth → Screen 03 (ZIP Code Entry) |
-| Exit | Phone option | Phone entry screen (future) |
-| Exit | Email option | Email entry screen (future) |
-| Exit | Back button | Screen 01 (Welcome Screen) |
-| Exit | Log In link | Login Screen (out of scope) |
+| Direction | Trigger                      | Destination                               |
+| --------- | ---------------------------- | ----------------------------------------- |
+| Entry     | Tap "Sign Up" on Screen 01   | This screen                               |
+| Entry     | Deep link `nepally://signup` | This screen                               |
+| Exit      | Google option                | Google OAuth → Screen 03 (ZIP Code Entry) |
+| Exit      | Phone option                 | Phone entry screen (future)               |
+| Exit      | Email option                 | Email entry screen (future)               |
+| Exit      | Back button                  | Screen 01 (Welcome Screen)                |
+| Exit      | Log In link                  | Login Screen (out of scope)               |
 
 ### API Integration — Google OAuth Flow
 
@@ -569,11 +569,11 @@ No persistent state across sessions.
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | [01-welcome-screen.md](../01-welcome-screen/01-welcome-screen.md) |
-| Next | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md) (after successful signup) |
-| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 5 |
+| Relation | Screen                                                                                          |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| Previous | [01-welcome-screen.md](../01-welcome-screen/01-welcome-screen.md)                               |
+| Next     | [03-zip-code-entry.md](../03-zip-code-entry/03-zip-code-entry.md) (after successful signup)     |
+| Journey  | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Step 5 |
 
 ---
 

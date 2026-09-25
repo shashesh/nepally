@@ -26,7 +26,7 @@ To maintain relevance and prevent "feed fatigue," the app is built on a location
 ### How It Works
 
 - **Content Tagging:** Every piece of content is tagged with a **Metro Area ID** (local posts) or marked as **Global** (premium feature)
-- **Onboarding Flow:** Users enter their ZIP Code → App maps it to the official **US Census Metro Area** (e.g., *Dallas-Fort Worth-Arlington*)
+- **Onboarding Flow:** Users enter their ZIP Code → App maps it to the official **US Census Metro Area** (e.g., _Dallas-Fort Worth-Arlington_)
 - **Default View:** The home feed shows local posts from the user's metro area **plus** global posts, with a badge distinguishing 📍 Local vs 🌐 Global
 - **Premium Users:** Can create global posts visible across all metro areas and save up to 5 locations
 
@@ -40,10 +40,10 @@ To maintain relevance and prevent "feed fatigue," the app is built on a location
 
 To prevent spam, accounts have "Trust Levels":
 
-| Level | Name | Capabilities |
-|-------|------|-------------|
-| **0** | New | View-only or limited to 1 post/day |
-| **1** | Verified | Email/Google verified; full posting rights |
+| Level | Name        | Capabilities                                             |
+| ----- | ----------- | -------------------------------------------------------- |
+| **0** | New         | View-only or limited to 1 post/day                       |
+| **1** | Verified    | Email/Google verified; full posting rights               |
 | **2** | Contributor | High engagement/vouched for by others; higher visibility |
 
 **Trust Level Progression Rules:**
@@ -67,15 +67,15 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 
 **Available Tags:**
 
-| Tag | Icon | Description | Special Behavior |
-|-----|------|-------------|------------------|
-| 🏠 Housing | home | Rent, roommates, apartments, housing questions | None |
-| 💼 Jobs | briefcase | Job postings, hiring, career questions | None |
-| 🆘 Help | hand | Requests for help, assistance, favors | None |
-| ❓ Question | question | General questions about life in the US | None |
-| 🏛️ Politics | building | Community politics, policy discussions | None |
-| 💬 Discussion | chat | Open discussions, opinions, community topics | None |
-| 🚨 Emergency | warning | Emergencies requiring community coordination | Requires moderator approval; post starts as `pending` |
+| Tag           | Icon      | Description                                    | Special Behavior                                      |
+| ------------- | --------- | ---------------------------------------------- | ----------------------------------------------------- |
+| 🏠 Housing    | home      | Rent, roommates, apartments, housing questions | None                                                  |
+| 💼 Jobs       | briefcase | Job postings, hiring, career questions         | None                                                  |
+| 🆘 Help       | hand      | Requests for help, assistance, favors          | None                                                  |
+| ❓ Question   | question  | General questions about life in the US         | None                                                  |
+| 🏛️ Politics   | building  | Community politics, policy discussions         | None                                                  |
+| 💬 Discussion | chat      | Open discussions, opinions, community topics   | None                                                  |
+| 🚨 Emergency  | warning   | Emergencies requiring community coordination   | Requires moderator approval; post starts as `pending` |
 
 **Tag System Architecture:**
 
@@ -113,13 +113,13 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 
 **Premium Model:** Users can upgrade to premium for enhanced features.
 
-| Feature | Free User | Premium User |
-|---------|-----------|-------------|
-| Create local posts | ✅ (Level 1+) | ✅ |
-| Create global posts | ❌ | ✅ (toggle on create post) |
-| Saved locations | 1 (Home only) | Up to 5 (Home, Work, custom) |
-| Location switching | ❌ | ✅ |
-| All other features | ✅ | ✅ |
+| Feature             | Free User     | Premium User                 |
+| ------------------- | ------------- | ---------------------------- |
+| Create local posts  | ✅ (Level 1+) | ✅                           |
+| Create global posts | ❌            | ✅ (toggle on create post)   |
+| Saved locations     | 1 (Home only) | Up to 5 (Home, Work, custom) |
+| Location switching  | ❌            | ✅                           |
+| All other features  | ✅            | ✅                           |
 
 **Global Posts:**
 
@@ -496,15 +496,15 @@ Before first emergency post submission, users must acknowledge:
 
 ## Technical Stack
 
-| Component | Technology | Rationale |
-|-----------|-----------|-----------|
-| **Mobile** | React Native + Expo | Native performance, fast development, shared code |
-| **Web** | Next.js (TypeScript) | SSR for SEO, React 19 support |
-| **Backend** | Supabase (PostgreSQL) | Real-time subscriptions, RLS, generous free tier |
-| **Auth** | Supabase Auth | Email + Google OAuth (phone SMS removed 2026-03-25) |
-| **Storage** | Supabase Storage | Built-in CDN, RLS for files |
-| **Location** | Static ZIP-to-Metro dataset | HUD USPS Crosswalk, zero API costs |
-| **Admin Dashboard** | Web-based interface | For moderators to approve alerts and manage content |
+| Component           | Technology                  | Rationale                                           |
+| ------------------- | --------------------------- | --------------------------------------------------- |
+| **Mobile**          | React Native + Expo         | Native performance, fast development, shared code   |
+| **Web**             | Next.js (TypeScript)        | SSR for SEO, React 19 support                       |
+| **Backend**         | Supabase (PostgreSQL)       | Real-time subscriptions, RLS, generous free tier    |
+| **Auth**            | Supabase Auth               | Email + Google OAuth (phone SMS removed 2026-03-25) |
+| **Storage**         | Supabase Storage            | Built-in CDN, RLS for files                         |
+| **Location**        | Static ZIP-to-Metro dataset | HUD USPS Crosswalk, zero API costs                  |
+| **Admin Dashboard** | Web-based interface         | For moderators to approve alerts and manage content |
 
 See [TECH-VERSIONS.md](../../TECH-VERSIONS.md) for exact versions.
 

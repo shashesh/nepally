@@ -1,10 +1,10 @@
-# <Feature Name> — Implementation Plan
+# \<Feature Name> — Implementation Plan
 
 **Plan Version:** v1
-**Date:** <YYYY-MM-DD>
-**Owner:** <name>
+**Date:** \<YYYY-MM-DD>
+**Owner:** \<name>
 **Status:** Planned
-**Primary Spec/Wireframe:** <path>
+**Primary Spec/Wireframe:** \<path>
 
 ---
 
@@ -25,11 +25,11 @@ Use this plan as a live tracker during execution.
 
 ### Live Step Tracker
 
-| Step | Title | Owner | Status | Last Updated | Notes |
-|------|-------|-------|--------|--------------|-------|
-| 1 | <Step title> | <name> | Not Started | <YYYY-MM-DD> | <optional> |
-| 2 | <Step title> | <name> | Not Started | <YYYY-MM-DD> | <optional> |
-| 3 | <Step title> | <name> | Not Started | <YYYY-MM-DD> | <optional> |
+| Step | Title         | Owner   | Status      | Last Updated  | Notes       |
+| ---- | ------------- | ------- | ----------- | ------------- | ----------- |
+| 1    | \<Step title> | \<name> | Not Started | \<YYYY-MM-DD> | \<optional> |
+| 2    | \<Step title> | \<name> | Not Started | \<YYYY-MM-DD> | \<optional> |
+| 3    | \<Step title> | \<name> | Not Started | \<YYYY-MM-DD> | \<optional> |
 
 ---
 
@@ -43,21 +43,21 @@ Describe the user-facing outcome this implementation must deliver.
 
 ### In Scope
 
-- <item>
-- <item>
+- \<item>
+- \<item>
 
 ### Out of Scope
 
-- <item>
-- <item>
+- \<item>
+- \<item>
 
 ---
 
 ## 3) Preconditions / Findings
 
-1. <critical finding>
-2. <critical finding>
-3. <dependency or constraint>
+1. \<critical finding>
+2. \<critical finding>
+3. \<dependency or constraint>
 
 ### Pre-Implementation Freshness Gate (Required)
 
@@ -84,27 +84,27 @@ Before coding, verify source docs are current and aligned:
 
 > Preferred format per step: **Goal → Deliverables → File Changes → Tests → Exit Criteria**
 
-### Step 1 — <Layer/Area>
+### Step 1 — \<Layer/Area>
 
 **Goal**
 
-- <goal>
+- \<goal>
 
 **Deliverables**
 
-- <deliverable>
+- \<deliverable>
 
 **File Changes**
 
-- <path>
+- \<path>
 
 **Tests / Validation**
 
-- <command>
+- \<command>
 
 **Exit Criteria**
 
-- <clear measurable completion>
+- \<clear measurable completion>
 
 **Status Update Rule**
 
@@ -113,27 +113,27 @@ Before coding, verify source docs are current and aligned:
 
 ---
 
-### Step 2 — <Layer/Area>
+### Step 2 — \<Layer/Area>
 
 **Goal**
 
-- <goal>
+- \<goal>
 
 **Deliverables**
 
-- <deliverable>
+- \<deliverable>
 
 **File Changes**
 
-- <path>
+- \<path>
 
 **Tests / Validation**
 
-- <command>
+- \<command>
 
 **Exit Criteria**
 
-- <clear measurable completion>
+- \<clear measurable completion>
 
 **Status Update Rule**
 
@@ -142,27 +142,27 @@ Before coding, verify source docs are current and aligned:
 
 ---
 
-### Step 3 — <Layer/Area>
+### Step 3 — \<Layer/Area>
 
 **Goal**
 
-- <goal>
+- \<goal>
 
 **Deliverables**
 
-- <deliverable>
+- \<deliverable>
 
 **File Changes**
 
-- <path>
+- \<path>
 
 **Tests / Validation**
 
-- <command>
+- \<command>
 
 **Exit Criteria**
 
-- <clear measurable completion>
+- \<clear measurable completion>
 
 **Status Update Rule**
 
@@ -181,12 +181,12 @@ Before coding, verify source docs are current and aligned:
 
 ### Test Plan Matrix
 
-| Area | Change Type | Required Tests | File Targets |
-|------|-------------|----------------|--------------|
-| Shared logic/API | New | Unit tests (must add) | `packages/shared/src/**/*.test.ts` |
-| Shared logic/API | Update | Unit tests (must update/add) | `packages/shared/src/**/*.test.ts` |
-| Web UI/logic | New or update | Unit + e2e (if flow changes) | `apps/web/src/**/*.test.ts(x)`, `apps/web/e2e/**` |
-| Mobile UI/logic | New or update | Unit + e2e (if available/flow changes) | `apps/mobile/src/**/*.test.ts(x)` |
+| Area             | Change Type   | Required Tests                         | File Targets                                      |
+| ---------------- | ------------- | -------------------------------------- | ------------------------------------------------- |
+| Shared logic/API | New           | Unit tests (must add)                  | `packages/shared/src/**/*.test.ts`                |
+| Shared logic/API | Update        | Unit tests (must update/add)           | `packages/shared/src/**/*.test.ts`                |
+| Web UI/logic     | New or update | Unit + e2e (if flow changes)           | `apps/web/src/**/*.test.ts(x)`, `apps/web/e2e/**` |
+| Mobile UI/logic  | New or update | Unit + e2e (if available/flow changes) | `apps/mobile/src/**/*.test.ts(x)`                 |
 
 ### Coverage and Quality Gates
 
@@ -201,8 +201,8 @@ Before coding, verify source docs are current and aligned:
 
 Use when schema/types or payload shapes are added/changed.
 
-- <table/type>: <field>: <type/default/constraints>
-- <table/type>: <field>: <type/default/constraints>
+- \<table/type>: \<field>: \<type/default/constraints>
+- \<table/type>: \<field>: \<type/default/constraints>
 
 ---
 
@@ -210,13 +210,13 @@ Use when schema/types or payload shapes are added/changed.
 
 ### New Files
 
-- <path>
-- <path>
+- \<path>
+- \<path>
 
 ### Modified Files
 
-- <path>
-- <path>
+- \<path>
+- \<path>
 
 ---
 
@@ -232,9 +232,9 @@ Use when schema/types or payload shapes are added/changed.
 
 ### Manual
 
-- [ ] <user flow 1>
-- [ ] <user flow 2>
-- [ ] <edge case>
+- [ ] \<user flow 1>
+- [ ] \<user flow 2>
+- [ ] \<edge case>
 
 ### Plan Hygiene
 
@@ -245,10 +245,10 @@ Use when schema/types or payload shapes are added/changed.
 
 ## 10) Risks + Mitigations
 
-- **Risk:** <risk>
-  - **Mitigation:** <mitigation>
-- **Risk:** <risk>
-  - **Mitigation:** <mitigation>
+- **Risk:** \<risk>
+  - **Mitigation:** \<mitigation>
+- **Risk:** \<risk>
+  - **Mitigation:** \<mitigation>
 
 ---
 
@@ -264,8 +264,8 @@ Use when schema/types or payload shapes are added/changed.
 
 ## 12) Open Questions
 
-- <question>
-- <question>
+- \<question>
+- \<question>
 
 ---
 
