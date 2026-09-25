@@ -20,11 +20,15 @@ import { useAuth } from '../../hooks/useAuth';
 import { useMetroArea } from '../../hooks/useMetroArea';
 import {
   updateUserProfile,
-  uploadProfilePhoto,
+  setProfilePhoto,
   removeProfilePhoto,
+  userMessage,
   APP_CONFIG,
   BIO_MAX_LENGTH,
+  FULL_NAME_MAX_LENGTH,
+  PROFILE_PHOTO_SIZE_PX,
   bioSchema,
+  fullNameSchema,
 } from '@nepally/shared';
 import { saveMetroArea } from '../../utils/storage';
 import { supabase } from '../../config/supabase';
@@ -35,9 +39,9 @@ import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
+const PHOTO_UPDATE_FAILED = "Couldn't update your photo. Please try again.";
+const PHOTO_REMOVE_FAILED = "Couldn't remove your photo. Please try again.";
+const PROFILE_UPDATE_FAILED = "Couldn't update your profile. Please try again.";
 
 export function EditProfileScreen() {
   const navigation = useNavigation();
@@ -125,10 +129,10 @@ export function EditProfileScreen() {
     setPhotoStatus(null);
 
     try {
-      // Resize to 500x500 JPEG 80%
+      // Resize to the shared avatar size, JPEG 80%
       const manipulated = await ImageManipulator.manipulateAsync(
         uri,
-        [{ resize: { width: 500, height: 500 } }],
+        [{ resize: { width: PROFILE_PHOTO_SIZE_PX, height: PROFILE_PHOTO_SIZE_PX } }],
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
 
@@ -136,24 +140,24 @@ export function EditProfileScreen() {
       const file = new File(manipulated.uri);
       const arrayBuffer = await file.arrayBuffer();
 
-      // Upload to Supabase Storage
-      const { url, error: uploadError } = await uploadProfilePhoto(supabase, user.id, arrayBuffer);
-      if (uploadError) throw uploadError;
+      // Upload, then point the profile at the new file
+      const { url, error: photoError } = await setProfilePhoto(supabase, user.id, arrayBuffer);
+      if (photoError) throw photoError;
 
-      // Update user profile with new photo URL
-      const { error: profileError } = await updateUserProfile(supabase, user.id, {
-        profile_photo: url,
-      });
-      if (profileError) throw profileError;
-
-      setLocalPhotoUri(url!);
+      setLocalPhotoUri(url ?? null);
       await refreshUser();
       if (mountedRef.current) {
         setPhotoStatus({ type: 'success', message: 'Photo updated' });
       }
     } catch (error: unknown) {
       if (mountedRef.current) {
-        setPhotoStatus({ type: 'error', message: getErrorMessage(error, 'Failed to upload photo') });
+        setPhotoStatus({
+          type: 'error',
+          message: userMessage(error, PHOTO_UPDATE_FAILED, 'profile_photo_update_failed', {
+            platform: 'mobile',
+            userId: user.id,
+          }),
+        });
       }
     } finally {
       if (mountedRef.current) {
@@ -210,7 +214,13 @@ export function EditProfileScreen() {
       }
     } catch (error: unknown) {
       if (mountedRef.current) {
-        setPhotoStatus({ type: 'error', message: getErrorMessage(error, 'Failed to remove photo') });
+        setPhotoStatus({
+          type: 'error',
+          message: userMessage(error, PHOTO_REMOVE_FAILED, 'profile_photo_remove_failed', {
+            platform: 'mobile',
+            userId: user.id,
+          }),
+        });
       }
     } finally {
       if (mountedRef.current) {
@@ -234,11 +244,13 @@ export function EditProfileScreen() {
     Alert.alert('Profile Photo', undefined, options);
   };
 
-  const validate = (): boolean => {
+  /** Returns the parsed name when every field is valid, else null. */
+  const validate = (): string | null => {
     const newErrors: Record<string, string> = {};
 
-    if (fullName.trim().length < 2) {
-      newErrors.fullName = 'Name must be at least 2 characters';
+    const parsedName = fullNameSchema.safeParse(fullName);
+    if (!parsedName.success) {
+      newErrors.fullName = parsedName.error.issues[0]?.message ?? 'Enter your name';
     }
 
     if (bio.length > BIO_MAX_LENGTH) {
@@ -254,11 +266,12 @@ export function EditProfileScreen() {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return parsedName.success && Object.keys(newErrors).length === 0 ? parsedName.data : null;
   };
 
   const handleSave = async () => {
-    if (!validate() || !user) return;
+    const parsedFullName = validate();
+    if (parsedFullName === null || !user) return;
     setSaving(true);
 
     try {
@@ -273,8 +286,9 @@ export function EditProfileScreen() {
       }
 
       const profileResult = await updateUserProfile(supabase, user.id, {
-        full_name: fullName.trim(),
-        phone: phone.trim() || undefined,
+        full_name: parsedFullName,
+        // null, not undefined: JSON drops undefined keys, so a cleared phone would never clear.
+        phone: phone.trim() || null,
         bio: parsedBio.data,
         hometown_district: aboutYou.hometown_district,
         college: aboutYou.college,
@@ -306,7 +320,13 @@ export function EditProfileScreen() {
       }
     } catch (error: unknown) {
       if (mountedRef.current) {
-        Alert.alert('Error', getErrorMessage(error, 'Failed to update profile'));
+        Alert.alert(
+          'Error',
+          userMessage(error, PROFILE_UPDATE_FAILED, 'profile_update_failed', {
+            platform: 'mobile',
+            userId: user.id,
+          })
+        );
       }
     } finally {
       if (mountedRef.current) {
@@ -367,6 +387,7 @@ export function EditProfileScreen() {
             onChangeText={setFullName}
             autoCapitalize="words"
             autoComplete="name"
+            maxLength={FULL_NAME_MAX_LENGTH}
           />
           {errors.fullName && (
             <Text style={styles.errorText}>{errors.fullName}</Text>
