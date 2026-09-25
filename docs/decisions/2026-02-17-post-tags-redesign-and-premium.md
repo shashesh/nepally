@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-17  
 **Status:** Proposed  
-**Impact:** High — affects database schema, shared types, create post flow, home feed, product roadmap, wireframes, and user journeys  
+**Impact:** High — affects database schema, shared types, create post flow, home feed, product roadmap, wireframes, and user journeys
 
 ---
 
@@ -215,10 +215,10 @@ Emergency remains as a tag with `requires_moderation = true`. When a user select
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|-----------|
+| Risk                                                          | Mitigation                                                                             |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Losing structured data quality (no mandatory rent/pay fields) | Users self-describe in body text; can add optional structured fields per-tag in future |
-| Emergency posts without contact fields | Body text serves as free-form description; moderator reviews before publishing |
-| Tag spam (users selecting irrelevant tags) | Moderator reporting system; future: auto-moderation |
-| Premium gating confusion | Clear UI differentiation; premium badge; upsell prompts |
-| Migration breaks existing posts | Careful SQL migration with rollback; test on staging first |
+| Emergency posts without contact fields                        | Body text serves as free-form description; moderator reviews before publishing         |
+| Tag spam (users selecting irrelevant tags)                    | Moderator reporting system; future: auto-moderation                                    |
+| Premium gating confusion                                      | Clear UI differentiation; premium badge; upsell prompts                                |
+| Migration breaks existing posts                               | Careful SQL migration with rollback; test on staging first                             |

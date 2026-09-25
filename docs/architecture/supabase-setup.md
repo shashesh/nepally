@@ -183,10 +183,7 @@ Create a script to populate metro areas:
 // scripts/seedMetroAreas.ts
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 // Metro areas are now seeded automatically from Census + HUD APIs.
 // See scripts/seed-metro-data.ts for the full implementation.
@@ -217,11 +214,11 @@ npm run seed:metro
 
 The migrations create every bucket, so there is nothing to set up by hand in **Storage**. All four buckets are public: the apps show photos through their public object URLs (`getPublicUrl`), and the storage API serves those without checking RLS.
 
-| Bucket | Created in | Object path | Shared API (`packages/shared/src/api/storage.ts`) |
-|---|---|---|---|
-| `avatars` | `003_storage.sql` | `<userId>.jpg` at the bucket root | `uploadProfilePhoto` (upsert), `deleteProfilePhoto` |
-| `post-photos` | `003_storage.sql` | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadPostPhoto(s)`, `deletePostPhotos` |
-| `event-photos` | `006_events.sql` | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadEventPhoto` (no delete yet) |
+| Bucket           | Created in                       | Object path                                  | Shared API (`packages/shared/src/api/storage.ts`)              |
+| ---------------- | -------------------------------- | -------------------------------------------- | -------------------------------------------------------------- |
+| `avatars`        | `003_storage.sql`                | `<userId>.jpg` at the bucket root            | `uploadProfilePhoto` (upsert), `deleteProfilePhoto`            |
+| `post-photos`    | `003_storage.sql`                | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadPostPhoto(s)`, `deletePostPhotos`                       |
+| `event-photos`   | `006_events.sql`                 | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadEventPhoto` (no delete yet)                             |
 | `listing-photos` | `015_listing_photos_storage.sql` | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadListingPhoto(s)`, `deleteListingPhotos` (no caller yet) |
 
 The migrations set no `file_size_limit` or `allowed_mime_types` on the buckets. The shared API checks type and size for post, event and listing photos before uploading. Bucket-level limits are on the SEC-06 hardening backlog in the [production launch plan](../plans/active/2026-09-18-production-launch.md).
@@ -233,24 +230,24 @@ Every policy on `storage.objects` is owner-only. Through the Storage API (list, 
 - `avatars`: `name = auth.uid()::text || '.jpg'`. The INSERT policy also requires the object to sit at the bucket root.
 - `post-photos`, `event-photos`, `listing-photos`: the first folder of the path is the member's id, `(storage.foldername(name))[1] = auth.uid()::text`.
 
-| Command | Policies | Migrations |
-|---|---|---|
-| SELECT | "Users can view own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `039_storage_owner_select_policies.sql` |
-| INSERT | "Users can upload own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015` |
-| UPDATE | "Users can update own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015` |
-| DELETE | "Users can delete own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015` |
+| Command | Policies                                                                                            | Migrations                              |
+| ------- | --------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| SELECT  | "Users can view own avatar" / "… own post photos" / "… own event photos" / "… own listing photos"   | `039_storage_owner_select_policies.sql` |
+| INSERT  | "Users can upload own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015`                     |
+| UPDATE  | "Users can update own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015`                     |
+| DELETE  | "Users can delete own avatar" / "… own post photos" / "… own event photos" / "… own listing photos" | `003`, `006`, `015`                     |
 
 The SELECT policies matter even though the apps never download through RLS. Several storage operations read the row under RLS as well as writing it:
 
-| Storage call | `storage.objects` permissions it needs |
-|---|---|
-| `upload()` (`upsert: false`) | INSERT |
-| `upload()` with `upsert: true` | INSERT + SELECT, plus UPDATE when the object already exists |
-| `remove()` | SELECT and DELETE |
-| `list()`, `download()`, `createSignedUrl()` | SELECT |
-| `move()` | SELECT and UPDATE |
-| `copy()` | SELECT and INSERT |
-| `getPublicUrl()` and public URL reads | none |
+| Storage call                                | `storage.objects` permissions it needs                      |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| `upload()` (`upsert: false`)                | INSERT                                                      |
+| `upload()` with `upsert: true`              | INSERT + SELECT, plus UPDATE when the object already exists |
+| `remove()`                                  | SELECT and DELETE                                           |
+| `list()`, `download()`, `createSignedUrl()` | SELECT                                                      |
+| `move()`                                    | SELECT and UPDATE                                           |
+| `copy()`                                    | SELECT and INSERT                                           |
+| `getPublicUrl()` and public URL reads       | none                                                        |
 
 The upsert row applies even when the object doesn't exist yet. The storage API checks an upsert with `INSERT … ON CONFLICT … DO UPDATE … RETURNING *`, and with `RETURNING` Postgres checks the new row against the SELECT policies.
 
@@ -266,15 +263,13 @@ Supabase supports image transformations on the fly:
 
 ```typescript
 // Get optimized image
-const { data } = supabase.storage
-  .from('avatars')
-  .getPublicUrl(`${userId}.jpg`, {
-    transform: {
-      width: 200,
-      height: 200,
-      resize: 'cover'
-    }
-  });
+const { data } = supabase.storage.from('avatars').getPublicUrl(`${userId}.jpg`, {
+  transform: {
+    width: 200,
+    height: 200,
+    resize: 'cover',
+  },
+});
 ```
 
 ## Edge Functions Setup
@@ -350,10 +345,10 @@ The invocation path is:
 
 The trigger function reads two PostgreSQL custom settings that must be configured before push delivery will work. Without them the trigger skips the HTTP call and logs a warning (it will not error or block notification inserts).
 
-| Setting | Description |
-|---|---|
-| `app.settings.supabase_url` | Full Supabase project URL, e.g. `https://<project-ref>.supabase.co` |
-| `app.settings.service_role_key` | Service-role secret key from **Project → API → service_role** |
+| Setting                         | Description                                                         |
+| ------------------------------- | ------------------------------------------------------------------- |
+| `app.settings.supabase_url`     | Full Supabase project URL, e.g. `https://<project-ref>.supabase.co` |
+| `app.settings.service_role_key` | Service-role secret key from **Project → API → service_role**       |
 
 Set them via the Supabase SQL editor or `psql`:
 
@@ -538,7 +533,7 @@ Realtime subscriptions respect RLS:
 ```typescript
 const subscription = supabase
   .from('posts')
-  .on('INSERT', payload => {
+  .on('INSERT', (payload) => {
     // Only receives posts user has access to
     console.log(payload);
   })
@@ -633,9 +628,7 @@ Available on Pro plan:
 
 ```typescript
 // Export all users
-const { data, error } = await supabase
-  .from('users')
-  .select('*');
+const { data, error } = await supabase.from('users').select('*');
 
 if (data) {
   fs.writeFileSync('users_backup.json', JSON.stringify(data, null, 2));
@@ -748,18 +741,22 @@ Implement caching at application level:
 // Use SWR or React Query for client-side caching
 import useSWR from 'swr';
 
-const { data, error } = useSWR('posts', async () => {
-  const { data } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('metro_area_id', '19100')
-    .limit(20);
-  return data;
-}, {
-  revalidateOnFocus: false,
-  revalidateOnReconnect: false,
-  refreshInterval: 30000 // 30 seconds
-});
+const { data, error } = useSWR(
+  'posts',
+  async () => {
+    const { data } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('metro_area_id', '19100')
+      .limit(20);
+    return data;
+  },
+  {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    refreshInterval: 30000, // 30 seconds
+  }
+);
 ```
 
 ## Scaling Considerations

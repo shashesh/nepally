@@ -40,4 +40,5 @@ jobs:
         status=0
         npm run docs:test || status=1
         npm run docs:check || status=1
+        npm run lint:md || status=1
         exit $status

@@ -40,5 +40,5 @@ Replace these with actual Nepally branded assets before production.
 You can use:
 
 - Figma: Design and export at required sizes
-- https://www.appicon.co/ - Generate all sizes from one image
-- https://icon.kitchen/ - Create Android adaptive icons
+- <https://www.appicon.co/> - Generate all sizes from one image
+- <https://icon.kitchen/> - Create Android adaptive icons

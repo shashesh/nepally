@@ -36,15 +36,15 @@ For detailed setup instructions, see [Setup & Testing Guide](./docs/guides/setup
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| **Mobile App** | React Native (Expo 57) |
-| **Web App** | Next.js 16 |
-| **Backend** | Supabase (PostgreSQL, Realtime, Auth, Storage) |
-| **Auth** | Supabase Auth (email + Google OAuth; phone SMS removed 2026-03-25) |
-| **Language** | TypeScript |
-| **React** | 19.2.3 (unified) |
-| **Node** | >=22 (CI runs 24) |
+| Component      | Technology                                                         |
+| -------------- | ------------------------------------------------------------------ |
+| **Mobile App** | React Native (Expo 57)                                             |
+| **Web App**    | Next.js 16                                                         |
+| **Backend**    | Supabase (PostgreSQL, Realtime, Auth, Storage)                     |
+| **Auth**       | Supabase Auth (email + Google OAuth; phone SMS removed 2026-03-25) |
+| **Language**   | TypeScript                                                         |
+| **React**      | 19.2.3 (unified)                                                   |
+| **Node**       | >=22 (CI runs 24)                                                  |
 
 See [TECH-VERSIONS.md](./TECH-VERSIONS.md) for full version details.
 
@@ -112,13 +112,13 @@ Actions minutes are limited, so CI only runs on code that is ready to merge ([wh
 - **Docs-only changes skip CI.** A change that only touches `**/*.md` or `docs/**` runs just the Docs check.
 - **A new push, or converting the PR back to draft, cancels its older runs.**
 
-| Job | Command |
-|-----|---------|
-| Static checks | `npm run lint`, `npm run lint:guards`, `npm run type-check` (all run, then the job fails if any did) |
-| Unit tests | `npm run test:coverage:ci` (guard tests, then every workspace with coverage) |
-| Web E2E tests | `npm run test:e2e --workspace=apps/web` |
-| Web visual regression | Playwright `visual-desktop` and `visual-phone` projects, in the Playwright container |
-| Docs check (Docs workflow) | `npm run docs:test`, `npm run docs:check` |
+| Job                        | Command                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Static checks              | `npm run lint`, `npm run lint:guards`, `npm run type-check` (all run, then the job fails if any did) |
+| Unit tests                 | `npm run test:coverage:ci` (guard tests, then every workspace with coverage)                         |
+| Web E2E tests              | `npm run test:e2e --workspace=apps/web`                                                              |
+| Web visual regression      | Playwright `visual-desktop` and `visual-phone` projects, in the Playwright container                 |
+| Docs check (Docs workflow) | `npm run docs:test`, `npm run docs:check`                                                            |
 
 Web E2E tests use Playwright and inject Supabase env vars from GitHub repository secrets/variables. Run `npm run ci:local` before marking a PR ready, so the first CI run is also the last.
 

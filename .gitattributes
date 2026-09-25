@@ -1,0 +1,3 @@
+# LF everywhere, including Windows checkouts with core.autocrlf=true. Prettier writes LF,
+# so CRLF files fail `prettier --check` (`npm run lint:md`).
+* text=auto eol=lf

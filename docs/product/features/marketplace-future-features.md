@@ -16,7 +16,7 @@ These recommendations build on Phase 1 (implemented) and inform prioritization f
 
 ## User Journey 1: The Casual Browser
 
-*Goal: Reduce time-to-discovery and minimize the "cold start" anxiety of a new marketplace.*
+_Goal: Reduce time-to-discovery and minimize the "cold start" anxiety of a new marketplace._
 
 ### 1.1 Metro-Radius Feed with Visual Price Heat Maps
 
@@ -52,7 +52,7 @@ A shelf showing listings that other users in the same metro area have recently v
 
 ## User Journey 2: The Individual Seller
 
-*Goal: Make listing creation fast, optimize for inquiry rates, and reduce ghosting.*
+_Goal: Make listing creation fast, optimize for inquiry rates, and reduce ghosting._
 
 ### 2.1 AI Listing Assistant
 
@@ -90,7 +90,7 @@ A one-tap action from My Listings that re-ranks a listing to the top of the metr
 
 ## User Journey 3: The Business Advertiser
 
-*Goal: Give businesses measurable ROI and tools to build community credibility, not just ad reach.*
+_Goal: Give businesses measurable ROI and tools to build community credibility, not just ad reach._
 
 ### 3.1 Sponsored Metro Banner (CPM)
 
@@ -130,12 +130,12 @@ Businesses that sponsor local events or contribute to Emergency-tagged posts rec
 
 Extend the existing trust level model to marketplace listing visibility:
 
-| Trust Level | Listing Scope |
-|---|---|
-| Level 0 (New) | Browse only — cannot create listings |
-| Level 1 (Verified) | Listings visible in local metro feed |
+| Trust Level           | Listing Scope                                             |
+| --------------------- | --------------------------------------------------------- |
+| Level 0 (New)         | Browse only — cannot create listings                      |
+| Level 1 (Verified)    | Listings visible in local metro feed                      |
 | Level 2 (Contributor) | Listings visible metro-wide; eligible for Community Picks |
-| Level 2 + Premium | Global toggle enabled (Phase 3) |
+| Level 2 + Premium     | Global toggle enabled (Phase 3)                           |
 
 **Value proposition:** Creates a natural upgrade path for sellers and keeps marketplace quality high as the platform scales. Consistent with the trust model already governing the post system.
 
@@ -145,12 +145,12 @@ Extend the existing trust level model to marketplace listing visibility:
 
 Features recommended for earliest implementation based on current codebase readiness:
 
-| Feature | Why Now |
-|---|---|
+| Feature                            | Why Now                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------- |
 | Photo Checklist + Reorder UI (2.2) | `listing-photos` storage bucket already built in migration `015` — pure UI work |
-| Saved Search Alerts (1.3) | Notification scaffold (mobile screens + preferences) already exists |
-| Listing Performance Nudges (2.4) | Low backend cost; high impact on seller retention |
-| Inquiry Response Templates (2.3) | In-app chat already implemented; templates are a chat UI addition |
+| Saved Search Alerts (1.3)          | Notification scaffold (mobile screens + preferences) already exists             |
+| Listing Performance Nudges (2.4)   | Low backend cost; high impact on seller retention                               |
+| Inquiry Response Templates (2.3)   | In-app chat already implemented; templates are a chat UI addition               |
 
 ---
 

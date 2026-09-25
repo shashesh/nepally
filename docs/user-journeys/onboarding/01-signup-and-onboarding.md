@@ -270,7 +270,7 @@
 - Show loading indicator: "Creating your account..."
 - Create user record in Supabase with:
   - Auth UID from Google
-  - Email: priya.sharma@gmail.com
+  - Email: <priya.sharma@gmail.com>
   - Name: Priya Sharma
   - Profile photo: Google profile picture
   - Trust Level: 0 (New)
@@ -567,7 +567,7 @@
 
 - User record created in `users` table:
   - id: [UUID from Supabase Auth]
-  - email: priya.sharma@gmail.com
+  - email: <priya.sharma@gmail.com>
   - name: Priya Sharma
   - metro_area_id: dallas-fort-worth-arlington
   - zip_code: 75080
@@ -662,35 +662,35 @@ At Home Screen:
 
 ## Touchpoints
 
-| Step | Touchpoint | Channel | Data Required | Data Stored |
-|------|------------|---------|---------------|-------------|
-| 1 | Facebook post discovery | Facebook (external) | None | None |
-| 2 | App Store search | iOS App Store | None | None |
-| 3 | Download app | iOS App Store | Apple ID auth | App installed |
-| 4 | First launch | Nepally app | Device info | Session started |
-| 5 | Signup method selection | Nepally app | User choice | None yet |
-| 6 | Google OAuth | Google (external) | Gmail account | OAuth token |
-| 7 | Account created | Supabase | Email, name, photo | User record created |
-| 8 | ZIP code entry | Nepally app | User input (5 digits) | ZIP in draft |
-| 9 | Metro mapping | Supabase function | ZIP → Metro query | metro_area_id saved |
-| 10-12 | Tutorial cards | Nepally app | Swipe/tap actions | Onboarding completed |
-| 13 | Home screen (success) | Nepally app | Metro area posts query | Session active |
+| Step  | Touchpoint              | Channel             | Data Required          | Data Stored          |
+| ----- | ----------------------- | ------------------- | ---------------------- | -------------------- |
+| 1     | Facebook post discovery | Facebook (external) | None                   | None                 |
+| 2     | App Store search        | iOS App Store       | None                   | None                 |
+| 3     | Download app            | iOS App Store       | Apple ID auth          | App installed        |
+| 4     | First launch            | Nepally app         | Device info            | Session started      |
+| 5     | Signup method selection | Nepally app         | User choice            | None yet             |
+| 6     | Google OAuth            | Google (external)   | Gmail account          | OAuth token          |
+| 7     | Account created         | Supabase            | Email, name, photo     | User record created  |
+| 8     | ZIP code entry          | Nepally app         | User input (5 digits)  | ZIP in draft         |
+| 9     | Metro mapping           | Supabase function   | ZIP → Metro query      | metro_area_id saved  |
+| 10-12 | Tutorial cards          | Nepally app         | Swipe/tap actions      | Onboarding completed |
+| 13    | Home screen (success)   | Nepally app         | Metro area posts query | Session active       |
 
 ---
 
 ## Emotions & Experience
 
-| Phase | Emotion | Confidence Level | Friction Level | Notes |
-|-------|---------|------------------|----------------|-------|
-| Discovery (Steps 1-3) | Curious, Hopeful | Low | Low | Intrigued by Facebook recommendation |
-| Download (Step 3) | Slightly anxious | Medium | Low | Standard app download, no issues |
-| First launch (Step 4) | Cautious | Medium | Low | Evaluating if app meets expectations |
-| Signup (Steps 5-7) | Focused | Medium | Medium | Decision paralysis on method, but Google is familiar |
-| OAuth flow (Steps 6-7) | Trusting | High | Low | Google OAuth is familiar and trusted |
-| ZIP entry (Steps 8-9) | Confident | High | Low | Clear purpose, easy input |
-| Metro confirmation (Step 9) | Relieved | High | None | System correctly identified her location |
-| Tutorial (Steps 10-12) | Engaged | High | Medium | Useful info but slightly impatient |
-| Home screen (Step 13) | Excited, Motivated | Very High | None | Seeing actual Dallas posts = success! |
+| Phase                       | Emotion            | Confidence Level | Friction Level | Notes                                                |
+| --------------------------- | ------------------ | ---------------- | -------------- | ---------------------------------------------------- |
+| Discovery (Steps 1-3)       | Curious, Hopeful   | Low              | Low            | Intrigued by Facebook recommendation                 |
+| Download (Step 3)           | Slightly anxious   | Medium           | Low            | Standard app download, no issues                     |
+| First launch (Step 4)       | Cautious           | Medium           | Low            | Evaluating if app meets expectations                 |
+| Signup (Steps 5-7)          | Focused            | Medium           | Medium         | Decision paralysis on method, but Google is familiar |
+| OAuth flow (Steps 6-7)      | Trusting           | High             | Low            | Google OAuth is familiar and trusted                 |
+| ZIP entry (Steps 8-9)       | Confident          | High             | Low            | Clear purpose, easy input                            |
+| Metro confirmation (Step 9) | Relieved           | High             | None           | System correctly identified her location             |
+| Tutorial (Steps 10-12)      | Engaged            | High             | Medium         | Useful info but slightly impatient                   |
+| Home screen (Step 13)       | Excited, Motivated | Very High        | None           | Seeing actual Dallas posts = success!                |
 
 **Overall Journey Emotion Arc:**
 
@@ -878,20 +878,20 @@ At Home Screen:
 
 ## Error & Edge Cases
 
-| Scenario | Expected Behavior | Recovery Path | User Message |
-|----------|------------------|---------------|--------------|
-| No internet during signup | Show error banner at top | "Retry" button + offline indicator | "No internet connection. Please check your connection and try again." |
-| Google OAuth cancelled | Return to signup method selection | User can try again or choose different method | "Signup cancelled. Please choose a signup method to continue." |
-| Google OAuth error/timeout | Show error, suggest retry or alternative | "Try Again" or "Use Phone Instead" buttons | "Something went wrong with Google signup. Please try again or use phone number." |
-| Email already registered | Show error immediately | "Log In Instead" button | "This email is already registered. Please log in or use a different email." |
-| Invalid ZIP code (e.g., 00000) | Show inline error, prevent continue | Clear error when user edits | "This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code." |
-| ZIP not in database | Show apologetic error | "Enter different ZIP" or "Contact support" | "We don't have coverage in this area yet. Please try a nearby ZIP code or contact support@nepally.us" |
-| Metro mapping API error | Retry automatically 2x, then show error | "Retry" button or "Skip for now" option | "We're having trouble finding your metro area. Please try again." |
-| App crashes during onboarding | Restart app, resume from last completed step | Auto-resume (e.g., if ZIP saved, skip to tutorial) | None (seamless resume) |
-| User closes app mid-onboarding | On next launch, resume from last step | Show "Continue where you left off" or "Start over" | "Welcome back! Continue setting up your account?" |
-| User denies location permission (if we add GPS) | Fallback to manual ZIP entry | Show ZIP entry form | "We need your location to show local posts. Please enter your ZIP code." |
-| Slow network (timeout) | Show loading state with spinner | After 10 seconds, show "Taking longer than usual" message with "Cancel" option | "Still loading... This is taking longer than usual." |
-| Tutorial card load failure | Skip failed card, proceed to next | Log error, user sees remaining cards | None (graceful degradation) |
+| Scenario                                        | Expected Behavior                            | Recovery Path                                                                  | User Message                                                                                            |
+| ----------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| No internet during signup                       | Show error banner at top                     | "Retry" button + offline indicator                                             | "No internet connection. Please check your connection and try again."                                   |
+| Google OAuth cancelled                          | Return to signup method selection            | User can try again or choose different method                                  | "Signup cancelled. Please choose a signup method to continue."                                          |
+| Google OAuth error/timeout                      | Show error, suggest retry or alternative     | "Try Again" or "Use Phone Instead" buttons                                     | "Something went wrong with Google signup. Please try again or use phone number."                        |
+| Email already registered                        | Show error immediately                       | "Log In Instead" button                                                        | "This email is already registered. Please log in or use a different email."                             |
+| Invalid ZIP code (e.g., 00000)                  | Show inline error, prevent continue          | Clear error when user edits                                                    | "This ZIP code doesn't exist. Please enter a valid 5-digit US ZIP code."                                |
+| ZIP not in database                             | Show apologetic error                        | "Enter different ZIP" or "Contact support"                                     | "We don't have coverage in this area yet. Please try a nearby ZIP code or contact <support@nepally.us>" |
+| Metro mapping API error                         | Retry automatically 2x, then show error      | "Retry" button or "Skip for now" option                                        | "We're having trouble finding your metro area. Please try again."                                       |
+| App crashes during onboarding                   | Restart app, resume from last completed step | Auto-resume (e.g., if ZIP saved, skip to tutorial)                             | None (seamless resume)                                                                                  |
+| User closes app mid-onboarding                  | On next launch, resume from last step        | Show "Continue where you left off" or "Start over"                             | "Welcome back! Continue setting up your account?"                                                       |
+| User denies location permission (if we add GPS) | Fallback to manual ZIP entry                 | Show ZIP entry form                                                            | "We need your location to show local posts. Please enter your ZIP code."                                |
+| Slow network (timeout)                          | Show loading state with spinner              | After 10 seconds, show "Taking longer than usual" message with "Cancel" option | "Still loading... This is taking longer than usual."                                                    |
+| Tutorial card load failure                      | Skip failed card, proceed to next            | Log error, user sees remaining cards                                           | None (graceful degradation)                                                                             |
 
 ---
 

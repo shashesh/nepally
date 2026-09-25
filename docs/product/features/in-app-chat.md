@@ -44,15 +44,15 @@ Users who find relevant housing, job, travel, or emergency posts need a private,
 
 ## Scope (Features 8.1–8.7)
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| 8.1 Chat Data Model | DB tables for conversations and messages | Must-have |
-| 8.2 Initiate Chat from Avatar | Avatar tap menu → Chat option → opens/creates conversation | Must-have |
-| 8.3 Conversation List | Messages tab showing all active chats | Must-have |
-| 8.4 Message Thread View | Chronological message display with real-time updates | Must-have |
-| 8.5 Send Message | Text input, send, real-time delivery | Must-have |
-| 8.6 Read Receipts | Mark messages as read, show read status | Should-have |
-| 8.7 Block User | Block abusive users from messaging | Should-have |
+| Feature                       | Description                                                | Priority    |
+| ----------------------------- | ---------------------------------------------------------- | ----------- |
+| 8.1 Chat Data Model           | DB tables for conversations and messages                   | Must-have   |
+| 8.2 Initiate Chat from Avatar | Avatar tap menu → Chat option → opens/creates conversation | Must-have   |
+| 8.3 Conversation List         | Messages tab showing all active chats                      | Must-have   |
+| 8.4 Message Thread View       | Chronological message display with real-time updates       | Must-have   |
+| 8.5 Send Message              | Text input, send, real-time delivery                       | Must-have   |
+| 8.6 Read Receipts             | Mark messages as read, show read status                    | Should-have |
+| 8.7 Block User                | Block abusive users from messaging                         | Should-have |
 
 **Out of scope (this iteration):**
 
@@ -237,17 +237,17 @@ Enable Supabase Realtime on `messages` table for the `INSERT` event so new messa
 
 ## Edge Cases & Error States
 
-| Scenario | Expected Behavior |
-|----------|------------------|
-| No internet during send | Show error toast, keep message in input, retry on reconnect |
-| Post deleted while chatting | Conversation persists (no post association) |
-| Other user blocked you | Cannot send message, show "Unable to send message" |
-| Conversation with yourself | Chat option hidden on own posts |
-| Level 0 user taps Chat in avatar menu | Show "Verify to Message" alert with verify CTA |
-| Empty conversation list | Show empty state illustration + "No messages yet" |
-| Very long message (>1000 chars) | Truncate at 1000, show character counter |
-| Rapid message sending | Rate limit: max 30 messages/minute |
-| User deleted their account | Show "[Deleted User]" in conversation list, messages preserved |
+| Scenario                              | Expected Behavior                                              |
+| ------------------------------------- | -------------------------------------------------------------- |
+| No internet during send               | Show error toast, keep message in input, retry on reconnect    |
+| Post deleted while chatting           | Conversation persists (no post association)                    |
+| Other user blocked you                | Cannot send message, show "Unable to send message"             |
+| Conversation with yourself            | Chat option hidden on own posts                                |
+| Level 0 user taps Chat in avatar menu | Show "Verify to Message" alert with verify CTA                 |
+| Empty conversation list               | Show empty state illustration + "No messages yet"              |
+| Very long message (>1000 chars)       | Truncate at 1000, show character counter                       |
+| Rapid message sending                 | Rate limit: max 30 messages/minute                             |
+| User deleted their account            | Show "[Deleted User]" in conversation list, messages preserved |
 
 ---
 

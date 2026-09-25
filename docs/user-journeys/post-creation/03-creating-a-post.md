@@ -439,31 +439,31 @@
 
 ## Edge Cases
 
-| Scenario | Expected Behavior |
-|----------|------------------|
-| User taps Cancel with content entered | Discard confirmation: "You have unsaved changes. Discard?" |
-| User taps Cancel with no content | Navigate back immediately (no confirmation) |
-| Network error on submit | Error toast, content preserved, Post button re-enabled |
-| Photo upload fails | Red border on failed thumbnail, retry icon, other photos keep uploading |
-| User selects 3 tags, tries to select 4th | Remaining chips become 50% opacity (disabled), no error toast |
-| User removes all tags after selecting | Post button becomes disabled again |
-| Edit mode: user reorders photos then saves | Persisted photo order matches edited sequence |
-| Edit mode: update fails after uploading new photos | Newly uploaded files cleaned up to avoid orphan storage |
-| Edit mode: remove existing photo then cancel | No storage deletion occurs until successful save |
-| Title exceeds 150 chars | Character counter shown, input stops at 150 |
-| Body exceeds 5000 chars | Character counter shown, input stops at 5000 |
-| Session expires during creation | Error on submit, redirect to login, content lost (acceptable) |
-| Non-premium user tries to find global toggle | Toggle is hidden entirely, no upsell |
+| Scenario                                           | Expected Behavior                                                       |
+| -------------------------------------------------- | ----------------------------------------------------------------------- |
+| User taps Cancel with content entered              | Discard confirmation: "You have unsaved changes. Discard?"              |
+| User taps Cancel with no content                   | Navigate back immediately (no confirmation)                             |
+| Network error on submit                            | Error toast, content preserved, Post button re-enabled                  |
+| Photo upload fails                                 | Red border on failed thumbnail, retry icon, other photos keep uploading |
+| User selects 3 tags, tries to select 4th           | Remaining chips become 50% opacity (disabled), no error toast           |
+| User removes all tags after selecting              | Post button becomes disabled again                                      |
+| Edit mode: user reorders photos then saves         | Persisted photo order matches edited sequence                           |
+| Edit mode: update fails after uploading new photos | Newly uploaded files cleaned up to avoid orphan storage                 |
+| Edit mode: remove existing photo then cancel       | No storage deletion occurs until successful save                        |
+| Title exceeds 150 chars                            | Character counter shown, input stops at 150                             |
+| Body exceeds 5000 chars                            | Character counter shown, input stops at 5000                            |
+| Session expires during creation                    | Error on submit, redirect to login, content lost (acceptable)           |
+| Non-premium user tries to find global toggle       | Toggle is hidden entirely, no upsell                                    |
 
 ---
 
 ## API Interactions
 
-| Action | Endpoint | Payload |
-|--------|----------|---------|
-| Fetch tags | `GET /tags` | N/A |
-| Upload photo | `POST /storage/photos` | FormData (image file) |
-| Create post | `POST /posts` | `{ title, description, tag_ids[], photos[], is_global, metro_area_id, location_* }` |
+| Action       | Endpoint               | Payload                                                                             |
+| ------------ | ---------------------- | ----------------------------------------------------------------------------------- |
+| Fetch tags   | `GET /tags`            | N/A                                                                                 |
+| Upload photo | `POST /storage/photos` | FormData (image file)                                                               |
+| Create post  | `POST /posts`          | `{ title, description, tag_ids[], photos[], is_global, metro_area_id, location_* }` |
 
 ---
 

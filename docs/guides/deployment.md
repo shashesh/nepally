@@ -153,7 +153,7 @@ View deployment logs in Vercel dashboard:
 
 ### 11. Test Production Site
 
-1. Visit https://nepally.us
+1. Visit <https://nepally.us>
 2. Test key features:
    - Sign up / Login
    - View posts
@@ -181,51 +181,51 @@ Rollback options:
 
 1. **`Error: No existing credentials found` or token failures**
 
-  - Confirm `VERCEL_TOKEN` is set in the correct GitHub environment (`dev` or `production`).
-  - Regenerate the token in Vercel if it was rotated or revoked.
+   - Confirm `VERCEL_TOKEN` is set in the correct GitHub environment (`dev` or `production`).
+   - Regenerate the token in Vercel if it was rotated or revoked.
 
 2. **`Project not found` during `vercel pull`/`vercel deploy`**
 
-  - Verify `VERCEL_ORG_ID` and project ID variables match the target Vercel team/project.
-  - Ensure `VERCEL_PROJECT_ID` is set correctly in the repository variables (single project ID used by both dev and production workflows).
+   - Verify `VERCEL_ORG_ID` and project ID variables match the target Vercel team/project.
+   - Ensure `VERCEL_PROJECT_ID` is set correctly in the repository variables (single project ID used by both dev and production workflows).
 
 3. **Production workflow starts but cannot deploy**
 
-  - Check `production` GitHub environment protection rules for pending approvals.
-  - Confirm the workflow was dispatched from `master`.
+   - Check `production` GitHub environment protection rules for pending approvals.
+   - Confirm the workflow was dispatched from `master`.
 
 4. **Build passes locally but fails in Actions**
 
-  - Confirm lockfile is committed and `npm ci` is used.
-  - Check Node version parity (workflows run Node 24).
-  - Verify required env vars are present in Vercel for the target environment.
+   - Confirm lockfile is committed and `npm ci` is used.
+   - Check Node version parity (workflows run Node 24).
+   - Verify required env vars are present in Vercel for the target environment.
 
 5. **Dev deploy did not trigger after a merge**
 
-  - Dev deploy uses `workflow_run` — it fires after CI completes on `master`.
-  - Confirm CI ran successfully on the merge commit (check Actions → CI workflow).
-  - If the merge only changed `**/*.md` or `docs/**`, CI skipped it, so there was nothing new to deploy.
+   - Dev deploy uses `workflow_run` — it fires after CI completes on `master`.
+   - Confirm CI ran successfully on the merge commit (check Actions → CI workflow).
+   - If the merge only changed `**/*.md` or `docs/**`, CI skipped it, so there was nothing new to deploy.
 
 6. **Production deploy blocked: "CI has not passed on master"**
 
-  - Code changed on `master` after the last commit CI passed on, and CI hasn't passed on the newer code yet.
-  - Wait for the CI run on `master` to finish, or merge a fix if it failed, then retrigger the production workflow.
-  - Check CI status at Actions → CI, filtered to `master`.
+   - Code changed on `master` after the last commit CI passed on, and CI hasn't passed on the newer code yet.
+   - Wait for the CI run on `master` to finish, or merge a fix if it failed, then retrigger the production workflow.
+   - Check CI status at Actions → CI, filtered to `master`.
 
 7. **Production deploy blocked: "not an ancestor", "Too many files", or "No successful CI run"**
 
-  - The guard can't prove from earlier CI runs that `master` is tested.
-  - Run Actions → CI → **Run workflow** on `master`. When it passes, retrigger the production workflow.
+   - The guard can't prove from earlier CI runs that `master` is tested.
+   - Run Actions → CI → **Run workflow** on `master`. When it passes, retrigger the production workflow.
 
 8. **Wrong environment values in runtime**
 
-  - Verify Vercel environment variable scopes (Preview vs Production).
-  - Redeploy after env-var updates; Vercel does not retroactively apply new env values to old deployments.
+   - Verify Vercel environment variable scopes (Preview vs Production).
+   - Redeploy after env-var updates; Vercel does not retroactively apply new env values to old deployments.
 
 9. **Need urgent rollback**
 
-  - Fastest path: redeploy the last known good production deployment from Vercel dashboard.
-  - Controlled path: revert `master` and run the manual production workflow again.
+   - Fastest path: redeploy the last known good production deployment from Vercel dashboard.
+   - Controlled path: revert `master` and run the manual production workflow again.
 
 ### Vercel CLI (Optional)
 
@@ -261,12 +261,12 @@ eas login
 
 `apps/mobile/eas.json` is committed with three build profiles (`development`, `preview`, `production`) and remote app-version management (`autoIncrement` on production). `apps/mobile/app.json` carries the store identity:
 
-| Field | Value |
-|-------|-------|
-| `slug` | `nepally` |
+| Field                                  | Value                                 |
+| -------------------------------------- | ------------------------------------- |
+| `slug`                                 | `nepally`                             |
 | `scheme` (deep links / OAuth callback) | `nepally` → `nepally://auth/callback` |
-| `ios.bundleIdentifier` | `us.nepally.app` |
-| `android.package` | `us.nepally.app` |
+| `ios.bundleIdentifier`                 | `us.nepally.app`                      |
+| `android.package`                      | `us.nepally.app`                      |
 
 One-time setup, in this order:
 
@@ -279,13 +279,13 @@ The AsyncStorage keys still use the historical `@nusa:` prefix on purpose — re
 
 ### 4. Build iOS App
 
-#### Prerequisites for iOS:
+#### Prerequisites for iOS
 
 - **Apple Developer Account** ($99/year)
 - **App Store Connect** app registered
 - **Certificates and profiles** (EAS handles this automatically)
 
-#### Build Command:
+#### Build Command
 
 ```bash
 cd apps/mobile
@@ -302,7 +302,7 @@ This:
 
 **Build time:** ~15-20 minutes
 
-#### Submit to App Store:
+#### Submit to App Store
 
 ```bash
 eas submit --platform ios
@@ -316,12 +316,12 @@ You'll need:
 
 ### 5. Build Android App
 
-#### Prerequisites for Android:
+#### Prerequisites for Android
 
 - **Google Play Developer Account** ($25 one-time)
 - **Keystore** for signing (EAS generates automatically)
 
-#### Build Command:
+#### Build Command
 
 ```bash
 cd apps/mobile
@@ -332,7 +332,7 @@ This creates an `.aab` (Android App Bundle) file.
 
 **Build time:** ~15-20 minutes
 
-#### Submit to Google Play:
+#### Submit to Google Play
 
 ```bash
 eas submit --platform android
@@ -358,8 +358,8 @@ You'll need:
    - **Screenshots:** (1242x2208 for iPhone, 2048x2732 for iPad)
    - **Description:** (see template below)
    - **Keywords:** nepal, nepalese, community, help, housing, jobs
-   - **Support URL:** https://nepally.us/help
-   - **Privacy Policy URL:** https://nepally.us/privacy
+   - **Support URL:** <https://nepally.us/help>
+   - **Privacy Policy URL:** <https://nepally.us/privacy>
 4. Pricing: **Free**
 5. Submit for review
 
@@ -377,7 +377,7 @@ You'll need:
    - **Category:** Social
    - **Screenshots:** (1080x1920, need 2-8 screenshots)
    - **Description:** (see template below)
-   - **Privacy Policy URL:** https://nepally.us/privacy
+   - **Privacy Policy URL:** <https://nepally.us/privacy>
 4. Content rating questionnaire
 5. Submit for review
 

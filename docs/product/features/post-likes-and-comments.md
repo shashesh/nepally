@@ -68,12 +68,12 @@ This creates friction in discovery and reduces community trust signals.
 
 ## Scope (Features)
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| **5.9** Enhanced Post Card UI | Redesign feed post cards with author info, description preview, engagement actions | Must-have |
-| **5.10** Post Likes (Helpful Votes) | Users can like posts; like counter and individual tracking | Must-have |
-| **5.11** Post Comments (Public Replies) | Public comment threads on posts | Must-have |
-| **3.5** Profile Photo Display | Show user avatars throughout app (already in roadmap, now prioritized) | Must-have |
+| Feature                                 | Description                                                                        | Priority  |
+| --------------------------------------- | ---------------------------------------------------------------------------------- | --------- |
+| **5.9** Enhanced Post Card UI           | Redesign feed post cards with author info, description preview, engagement actions | Must-have |
+| **5.10** Post Likes (Helpful Votes)     | Users can like posts; like counter and individual tracking                         | Must-have |
+| **5.11** Post Comments (Public Replies) | Public comment threads on posts                                                    | Must-have |
+| **3.5** Profile Photo Display           | Show user avatars throughout app (already in roadmap, now prioritized)             | Must-have |
 
 **Out of scope (this iteration):**
 
@@ -287,7 +287,7 @@ CREATE TABLE post_likes (
   post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
+
   -- Ensure one like per user per post
   UNIQUE(post_id, user_id)
 );
@@ -298,14 +298,14 @@ CREATE TABLE post_comments (
   post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   content TEXT NOT NULL CHECK (LENGTH(content) >= 1 AND LENGTH(content) <= 1000),
-  
+
   -- Optional: support for nested replies (unused in Phase 1)
   parent_comment_id UUID REFERENCES post_comments(id) ON DELETE CASCADE,
-  
+
   -- Status
   is_deleted BOOLEAN NOT NULL DEFAULT false,
   is_flagged BOOLEAN NOT NULL DEFAULT false,
-  
+
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -512,27 +512,27 @@ See detailed wireframe updates:
 **`services/api/likes.ts`**
 
 ```typescript
-export async function likePost(postId: string, userId: string)
-export async function unlikePost(postId: string, userId: string)
-export async function getUserLikedPosts(userId: string): Promise<string[]>
-export async function isPostLikedByUser(postId: string, userId: string): Promise<boolean>
+export async function likePost(postId: string, userId: string);
+export async function unlikePost(postId: string, userId: string);
+export async function getUserLikedPosts(userId: string): Promise<string[]>;
+export async function isPostLikedByUser(postId: string, userId: string): Promise<boolean>;
 ```
 
 **`services/api/comments.ts`**
 
 ```typescript
-export async function getPostComments(postId: string): Promise<Comment[]>
-export async function createComment(postId: string, authorId: string, content: string)
-export async function deleteComment(commentId: string, userId: string)
-export async function subscribeToComments(postId: string, callback: (comment: Comment) => void)
+export async function getPostComments(postId: string): Promise<Comment[]>;
+export async function createComment(postId: string, authorId: string, content: string);
+export async function deleteComment(commentId: string, userId: string);
+export async function subscribeToComments(postId: string, callback: (comment: Comment) => void);
 ```
 
 **`services/api/storage.ts`**
 
 ```typescript
-export async function uploadProfilePhoto(userId: string, imageUri: string): Promise<string>
-export async function deleteProfilePhoto(userId: string)
-export async function getProfilePhotoUrl(userId: string): Promise<string | null>
+export async function uploadProfilePhoto(userId: string, imageUri: string): Promise<string>;
+export async function deleteProfilePhoto(userId: string);
+export async function getProfilePhotoUrl(userId: string): Promise<string | null>;
 ```
 
 ---
@@ -560,13 +560,13 @@ export async function getProfilePhotoUrl(userId: string): Promise<string | null>
 
 ## Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| **Spam comments** | High | RLS restricts to Level 1+, add reporting system, moderator review |
-| **Like manipulation** | Medium | One like per user per post (DB constraint), track suspicious patterns |
-| **Storage costs for photos** | Low | Auto-compress to 500KB, 500x500px; estimate $10-20/month for 1000 users |
-| **Abuse via comments** | High | Delete own comment, report function, moderator tools |
-| **Performance (loading photos)** | Medium | Use CDN (Supabase Storage), lazy load images, cache aggressively |
+| Risk                             | Impact | Mitigation                                                              |
+| -------------------------------- | ------ | ----------------------------------------------------------------------- |
+| **Spam comments**                | High   | RLS restricts to Level 1+, add reporting system, moderator review       |
+| **Like manipulation**            | Medium | One like per user per post (DB constraint), track suspicious patterns   |
+| **Storage costs for photos**     | Low    | Auto-compress to 500KB, 500x500px; estimate $10-20/month for 1000 users |
+| **Abuse via comments**           | High   | Delete own comment, report function, moderator tools                    |
+| **Performance (loading photos)** | Medium | Use CDN (Supabase Storage), lazy load images, cache aggressively        |
 
 ---
 

@@ -30,7 +30,7 @@
 
 - Read docs first: `docs/guides/code-sharing.md`, `docs/architecture/monorepo-structure.md`, then relevant `docs/product/features/*`, `docs/user-journeys/*`, `docs/wireframes/*`.
 - Implement in this order for cross-platform changes:
-  1) shared layer, 2) web/mobile adapters, 3) route/screen wiring.
+  1. shared layer, 2) web/mobile adapters, 3) route/screen wiring.
 - Keep edits surgical; preserve existing UX and file structure unless spec requires change.
 
 ## Testing Requirement (Non-Negotiable)

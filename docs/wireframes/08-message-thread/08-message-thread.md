@@ -128,64 +128,64 @@ You can't message this user.
 
 ### 1. Header Bar
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Navigation bar with user info | Navigation bar with user info |
-| **Height** | 44px | 56dp |
-| **Background** | #FFFFFF | #FFFFFF |
-| **Border** | 1px bottom #E0E0E0 | 1px bottom #E0E0E0 |
+| Property       | iOS                           | Android                       |
+| -------------- | ----------------------------- | ----------------------------- |
+| **Type**       | Navigation bar with user info | Navigation bar with user info |
+| **Height**     | 44px                          | 56dp                          |
+| **Background** | #FFFFFF                       | #FFFFFF                       |
+| **Border**     | 1px bottom #E0E0E0            | 1px bottom #E0E0E0            |
 
 #### Back Button
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Icon** | ← chevron-left, 24px | ← arrow-left, 24dp |
-| **Color** | #1565C0 (Primary Blue) | #1565C0 |
-| **Touch Target** | 44×44px | 48×48dp |
+| Property         | iOS                    | Android            |
+| ---------------- | ---------------------- | ------------------ |
+| **Icon**         | ← chevron-left, 24px   | ← arrow-left, 24dp |
+| **Color**        | #1565C0 (Primary Blue) | #1565C0            |
+| **Touch Target** | 44×44px                | 48×48dp            |
 
 **Action:** Navigate back to ConversationListScreen
 
 #### User Info
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Name Font** | 17pt Semibold, San Francisco | 17sp Medium, Roboto |
-| **Name Color** | #212121 | #212121 |
-| **Trust Badge** | ✓ 16px, #2E7D32 (green) for Level 1+ | ✓ 16dp, #2E7D32 |
+| Property        | iOS                                  | Android             |
+| --------------- | ------------------------------------ | ------------------- |
+| **Name Font**   | 17pt Semibold, San Francisco         | 17sp Medium, Roboto |
+| **Name Color**  | #212121                              | #212121             |
+| **Trust Badge** | ✓ 16px, #2E7D32 (green) for Level 1+ | ✓ 16dp, #2E7D32     |
 
 **Touch target:** Tap name → navigate to user profile (future)
 
 #### Kebab Menu (⋮)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Icon** | Three dots vertical, 24px | Three dots vertical, 24dp |
-| **Color** | #757575 | #757575 |
-| **Touch Target** | 44×44px | 48×48dp |
+| Property         | iOS                       | Android                   |
+| ---------------- | ------------------------- | ------------------------- |
+| **Icon**         | Three dots vertical, 24px | Three dots vertical, 24dp |
+| **Color**        | #757575                   | #757575                   |
+| **Touch Target** | 44×44px                   | 48×48dp                   |
 
 **Action:** Open dropdown menu
 
 **Menu Items:**
 
-| Item | Icon | Color | Action |
-|------|------|-------|--------|
-| View Profile | person-outline | #212121 | Navigate to public profile (future) |
-| Block User | close-circle | #C62828 (Error Red) | Show block confirmation |
+| Item         | Icon           | Color               | Action                              |
+| ------------ | -------------- | ------------------- | ----------------------------------- |
+| View Profile | person-outline | #212121             | Navigate to public profile (future) |
+| Block User   | close-circle   | #C62828 (Error Red) | Show block confirmation             |
 
 ---
 
 ### 2. Date Separator
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Inline divider with date label | Inline divider with date label |
-| **Height** | 32px | 32dp |
-| **Margin** | 16px top, 8px bottom | 16dp top, 8dp bottom |
-| **Line** | 1px #E0E0E0 | 1px #E0E0E0 |
-| **Label Font** | 12pt Regular, San Francisco | 12sp Regular, Roboto |
-| **Label Color** | #757575 | #757575 |
+| Property             | iOS                                           | Android                                       |
+| -------------------- | --------------------------------------------- | --------------------------------------------- |
+| **Type**             | Inline divider with date label                | Inline divider with date label                |
+| **Height**           | 32px                                          | 32dp                                          |
+| **Margin**           | 16px top, 8px bottom                          | 16dp top, 8dp bottom                          |
+| **Line**             | 1px #E0E0E0                                   | 1px #E0E0E0                                   |
+| **Label Font**       | 12pt Regular, San Francisco                   | 12sp Regular, Roboto                          |
+| **Label Color**      | #757575                                       | #757575                                       |
 | **Label Background** | Rounded pill, #F5F5F5, 8px padding horizontal | Rounded pill, #F5F5F5, 8dp padding horizontal |
-| **Alignment** | Center | Center |
+| **Alignment**        | Center                                        | Center                                        |
 
 **Date format rules:**
 
@@ -199,20 +199,20 @@ You can't message this user.
 
 ### 3. Message Bubble — Received
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Alignment** | Left-aligned | Left-aligned |
-| **Max Width** | 75% screen width | 75% screen width |
-| **Background** | #F0F0F0 (Light Gray) | #F0F0F0 |
-| **Corner Radius** | 16px (top-left: 4px for tail) | 16dp (top-left: 4dp for tail) |
-| **Padding** | 12px horizontal, 8px vertical | 12dp horizontal, 8dp vertical |
-| **Margin** | 16px left, 64px right (min), 4px between consecutive | 16dp left, 64dp right (min), 4dp between consecutive |
-| **Text Font** | 16pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Text Color** | #212121 | #212121 |
-| **Max Lines** | Unlimited (wraps) | Unlimited (wraps) |
-| **Timestamp Font** | 11pt Regular | 11sp Regular |
-| **Timestamp Color** | #757575 | #757575 |
-| **Timestamp Position** | Bottom-right of bubble, inline if space | Bottom-right of bubble, inline if space |
+| Property               | iOS                                                  | Android                                              |
+| ---------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
+| **Alignment**          | Left-aligned                                         | Left-aligned                                         |
+| **Max Width**          | 75% screen width                                     | 75% screen width                                     |
+| **Background**         | #F0F0F0 (Light Gray)                                 | #F0F0F0                                              |
+| **Corner Radius**      | 16px (top-left: 4px for tail)                        | 16dp (top-left: 4dp for tail)                        |
+| **Padding**            | 12px horizontal, 8px vertical                        | 12dp horizontal, 8dp vertical                        |
+| **Margin**             | 16px left, 64px right (min), 4px between consecutive | 16dp left, 64dp right (min), 4dp between consecutive |
+| **Text Font**          | 16pt Regular, San Francisco                          | 16sp Regular, Roboto                                 |
+| **Text Color**         | #212121                                              | #212121                                              |
+| **Max Lines**          | Unlimited (wraps)                                    | Unlimited (wraps)                                    |
+| **Timestamp Font**     | 11pt Regular                                         | 11sp Regular                                         |
+| **Timestamp Color**    | #757575                                              | #757575                                              |
+| **Timestamp Position** | Bottom-right of bubble, inline if space              | Bottom-right of bubble, inline if space              |
 
 **a11y:** "Ram K. said: Hi! I saw your post about the room. Is it still available? 10:30 AM."
 
@@ -220,18 +220,18 @@ You can't message this user.
 
 ### 4. Message Bubble — Sent
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Alignment** | Right-aligned | Right-aligned |
-| **Max Width** | 75% screen width | 75% screen width |
-| **Background** | #1565C0 (Primary Blue) | #1565C0 |
-| **Corner Radius** | 16px (top-right: 4px for tail) | 16dp (top-right: 4dp for tail) |
-| **Padding** | 12px horizontal, 8px vertical | 12dp horizontal, 8dp vertical |
-| **Margin** | 64px left (min), 16px right | 64dp left (min), 16dp right |
-| **Text Font** | 16pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Text Color** | #FFFFFF (White) | #FFFFFF |
-| **Timestamp Font** | 11pt Regular | 11sp Regular |
-| **Timestamp Color** | rgba(255,255,255,0.7) | rgba(255,255,255,0.7) |
+| Property            | iOS                            | Android                        |
+| ------------------- | ------------------------------ | ------------------------------ |
+| **Alignment**       | Right-aligned                  | Right-aligned                  |
+| **Max Width**       | 75% screen width               | 75% screen width               |
+| **Background**      | #1565C0 (Primary Blue)         | #1565C0                        |
+| **Corner Radius**   | 16px (top-right: 4px for tail) | 16dp (top-right: 4dp for tail) |
+| **Padding**         | 12px horizontal, 8px vertical  | 12dp horizontal, 8dp vertical  |
+| **Margin**          | 64px left (min), 16px right    | 64dp left (min), 16dp right    |
+| **Text Font**       | 16pt Regular, San Francisco    | 16sp Regular, Roboto           |
+| **Text Color**      | #FFFFFF (White)                | #FFFFFF                        |
+| **Timestamp Font**  | 11pt Regular                   | 11sp Regular                   |
+| **Timestamp Color** | rgba(255,255,255,0.7)          | rgba(255,255,255,0.7)          |
 
 **Read Receipt Icon (after timestamp):**
 
@@ -245,42 +245,42 @@ You can't message this user.
 
 ### 5. Message Input Bar
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Fixed bottom bar | Fixed bottom bar |
-| **Height** | 56px min (grows, max 120px) | 56dp min (grows, max 120dp) |
-| **Background** | #FFFFFF | #FFFFFF |
-| **Border** | 1px top #E0E0E0 | 1px top #E0E0E0 |
-| **Padding** | 8px horizontal, 8px vertical | 8dp horizontal, 8dp vertical |
-| **Safe Area** | Respects bottom safe area (notch) | Respects navigation bar |
+| Property       | iOS                               | Android                      |
+| -------------- | --------------------------------- | ---------------------------- |
+| **Type**       | Fixed bottom bar                  | Fixed bottom bar             |
+| **Height**     | 56px min (grows, max 120px)       | 56dp min (grows, max 120dp)  |
+| **Background** | #FFFFFF                           | #FFFFFF                      |
+| **Border**     | 1px top #E0E0E0                   | 1px top #E0E0E0              |
+| **Padding**    | 8px horizontal, 8px vertical      | 8dp horizontal, 8dp vertical |
+| **Safe Area**  | Respects bottom safe area (notch) | Respects navigation bar      |
 
 #### Text Input
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Placeholder** | "Type a message..." | "Type a message..." |
-| **Placeholder Color** | #BDBDBD | #BDBDBD |
-| **Text Font** | 16pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Text Color** | #212121 | #212121 |
-| **Background** | #F5F5F5 | #F5F5F5 |
-| **Corner Radius** | 24px (pill shape) | 24dp (pill shape) |
-| **Padding** | 12px horizontal, 10px vertical | 12dp horizontal, 10dp vertical |
-| **Height** | 40px default, max 104px (4 lines) | 40dp default, max 104dp (4 lines) |
-| **Max Chars** | 1000 | 1000 |
-| **Multi-line** | Yes, auto-grows | Yes, auto-grows |
-| **Keyboard** | Default text | Default text |
-| **Return Key** | New line (not send) | New line (not send) |
+| Property              | iOS                               | Android                           |
+| --------------------- | --------------------------------- | --------------------------------- |
+| **Placeholder**       | "Type a message..."               | "Type a message..."               |
+| **Placeholder Color** | #BDBDBD                           | #BDBDBD                           |
+| **Text Font**         | 16pt Regular, San Francisco       | 16sp Regular, Roboto              |
+| **Text Color**        | #212121                           | #212121                           |
+| **Background**        | #F5F5F5                           | #F5F5F5                           |
+| **Corner Radius**     | 24px (pill shape)                 | 24dp (pill shape)                 |
+| **Padding**           | 12px horizontal, 10px vertical    | 12dp horizontal, 10dp vertical    |
+| **Height**            | 40px default, max 104px (4 lines) | 40dp default, max 104dp (4 lines) |
+| **Max Chars**         | 1000                              | 1000                              |
+| **Multi-line**        | Yes, auto-grows                   | Yes, auto-grows                   |
+| **Keyboard**          | Default text                      | Default text                      |
+| **Return Key**        | New line (not send)               | New line (not send)               |
 
 **a11y:** "Message input field. Type a message."
 
 #### Send Button
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Icon** | Arrow up in circle (➤), 36×36px | Arrow up in circle (➤), 36×36dp |
-| **Icon Color** | #FFFFFF | #FFFFFF |
-| **Touch Target** | 44×44px | 48×48dp |
-| **Position** | Right of text input, 8px gap | Right of text input, 8dp gap |
+| Property         | iOS                             | Android                         |
+| ---------------- | ------------------------------- | ------------------------------- |
+| **Icon**         | Arrow up in circle (➤), 36×36px | Arrow up in circle (➤), 36×36dp |
+| **Icon Color**   | #FFFFFF                         | #FFFFFF                         |
+| **Touch Target** | 44×44px                         | 48×48dp                         |
+| **Position**     | Right of text input, 8px gap    | Right of text input, 8dp gap    |
 
 **States:**
 
@@ -301,12 +301,12 @@ You can't message this user.
 
 ### 6. New Message Floating Pill
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Shape** | Pill | Pill |
-| **Background** | #1565C0 | #1565C0 |
-| **Text** | "New message ↓", 12pt, White | "New message ↓", 12sp, White |
-| **Position** | Floating above input bar | Floating above input bar |
+| Property       | iOS                          | Android                      |
+| -------------- | ---------------------------- | ---------------------------- |
+| **Shape**      | Pill                         | Pill                         |
+| **Background** | #1565C0                      | #1565C0                      |
+| **Text**       | "New message ↓", 12pt, White | "New message ↓", 12sp, White |
+| **Position**   | Floating above input bar     | Floating above input bar     |
 
 **Action:** Tap → scroll to bottom
 **Auto-dismiss:** When user scrolls to bottom
@@ -317,13 +317,13 @@ You can't message this user.
 
 ### Vertical Stack (Top to Bottom)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / Status bar | Auto | — |
-| 2 | Header bar | 44px / 56dp | 0 |
-| 3 | Message list (scrollable) | Flex | 0 |
-| 4 | Input bar | 56px min / 56dp min | 0 |
-| 5 | Bottom safe area (iOS) | Auto | — |
+| #   | Element                   | Height              | Spacing After |
+| --- | ------------------------- | ------------------- | ------------- |
+| 1   | Safe area / Status bar    | Auto                | —             |
+| 2   | Header bar                | 44px / 56dp         | 0             |
+| 3   | Message list (scrollable) | Flex                | 0             |
+| 4   | Input bar                 | 56px min / 56dp min | 0             |
+| 5   | Bottom safe area (iOS)    | Auto                | —             |
 
 **Horizontal:** Messages have 16px/dp edge margin. Bubbles max 75% screen width. Input bar has 8px/dp padding.
 
@@ -372,16 +372,16 @@ You can't message this user.
 
 ## Error States & Edge Cases
 
-| Scenario | Expected Behavior |
-|----------|------------------|
-| Message send fails (network) | Show red ⚠️ icon on bubble, "Tap to retry" tooltip |
-| Other user blocked you | Input bar replaced with: "You can't message this user." |
-| Very long message (>1000 chars) | Character counter appears at 900+, input stops at 1000 |
-| Empty thread (just created) | Show system message: "Send a message to start the conversation" |
-| 500+ messages in thread | Paginate: load latest 50, "Load earlier messages" at top |
-| Rapid send (spam) | Rate limit: 30 msgs/min, show "Slow down" toast if exceeded |
-| Other user offline | Messages still sent (they'll see them when online). No presence indicator in V1 |
-| Keyboard covers messages | KeyboardAvoidingView moves input up, scroll adjusts |
+| Scenario                        | Expected Behavior                                                               |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| Message send fails (network)    | Show red ⚠️ icon on bubble, "Tap to retry" tooltip                              |
+| Other user blocked you          | Input bar replaced with: "You can't message this user."                         |
+| Very long message (>1000 chars) | Character counter appears at 900+, input stops at 1000                          |
+| Empty thread (just created)     | Show system message: "Send a message to start the conversation"                 |
+| 500+ messages in thread         | Paginate: load latest 50, "Load earlier messages" at top                        |
+| Rapid send (spam)               | Rate limit: 30 msgs/min, show "Slow down" toast if exceeded                     |
+| Other user offline              | Messages still sent (they'll see them when online). No presence indicator in V1 |
+| Keyboard covers messages        | KeyboardAvoidingView moves input up, scroll adjusts                             |
 
 ---
 
@@ -399,19 +399,28 @@ LIMIT 50 OFFSET (total - 50);
 **Real-time Subscription:**
 
 ```typescript
-supabase.channel('messages:conversation_id')
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'messages',
-    filter: `conversation_id=eq.${conversationId}`
-  }, handleNewMessage)
-  .on('postgres_changes', {
-    event: 'UPDATE',
-    schema: 'public',
-    table: 'messages',
-    filter: `conversation_id=eq.${conversationId}`
-  }, handleMessageUpdate)
+supabase
+  .channel('messages:conversation_id')
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `conversation_id=eq.${conversationId}`,
+    },
+    handleNewMessage
+  )
+  .on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messages',
+      filter: `conversation_id=eq.${conversationId}`,
+    },
+    handleMessageUpdate
+  )
   .subscribe();
 ```
 
@@ -429,13 +438,15 @@ await supabase.from('messages').insert({
 **Mark as Read (on thread open):**
 
 ```typescript
-await supabase.from('messages')
+await supabase
+  .from('messages')
   .update({ read: true, read_at: new Date().toISOString() })
   .eq('conversation_id', conversationId)
   .neq('sender_id', currentUser.id)
   .eq('read', false);
 
-await supabase.from('conversation_participants')
+await supabase
+  .from('conversation_participants')
   .update({ unread_count: 0 })
   .eq('conversation_id', conversationId)
   .eq('user_id', currentUser.id);
@@ -478,11 +489,11 @@ await supabase.from('conversation_participants')
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md) |
-| Related | [09-post-detail.md](../09-post-detail/09-post-detail.md) (avatar menu Chat entry) |
-| Feature | [in-app-chat.md](../../product/features/in-app-chat.md) |
+| Relation | Screen                                                                            |
+| -------- | --------------------------------------------------------------------------------- |
+| Previous | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md)        |
+| Related  | [09-post-detail.md](../09-post-detail/09-post-detail.md) (avatar menu Chat entry) |
+| Feature  | [in-app-chat.md](../../product/features/in-app-chat.md)                           |
 
 ---
 

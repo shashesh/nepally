@@ -37,6 +37,8 @@ Filing rules:
 
 Run `npm run docs:check` before opening a PR.
 
+Markdown is formatted by Prettier and linted by markdownlint (`.markdownlint-cli2.jsonc`). After editing `.md` files, run `npm run format` then `npm run lint:md`. Don't hand-align tables; Prettier does it. Details: [documentation-workflow.md](./docs/guides/documentation-workflow.md#markdown-formatting-and-lint).
+
 ## Core Architecture Principles
 
 ### Metro-First Location Model

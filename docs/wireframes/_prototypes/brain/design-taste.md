@@ -62,15 +62,15 @@ This document defines the aesthetic principles, style tokens, and quality standa
 
 Use these tokens for consumer-facing features — things end-users interact with directly.
 
-| Token | Value |
-|-------|-------|
-| **Palette** | Warm stone: `#1a1a1a` (text), `#6b5b4f` (secondary), `#d4a574` (accent), `#f5f0eb` (surface), `#faf8f5` (background) |
-| **Spacing** | Generous — 24px container padding, 16px element gaps, 48px section gaps |
-| **Border radius** | Soft — 8px for cards, 6px for buttons, 12px for modals |
-| **Shadows** | Soft and warm — `0 2px 8px rgba(107,91,79,0.08)` |
-| **Typography** | Inter or system sans-serif, 16px base, generous line-height (1.6) |
-| **Buttons** | Filled primary with rounded corners, ghost secondary, subtle hover lift |
-| **Icons** | Rounded stroke style, 20px default size |
+| Token             | Value                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Palette**       | Warm stone: `#1a1a1a` (text), `#6b5b4f` (secondary), `#d4a574` (accent), `#f5f0eb` (surface), `#faf8f5` (background) |
+| **Spacing**       | Generous — 24px container padding, 16px element gaps, 48px section gaps                                              |
+| **Border radius** | Soft — 8px for cards, 6px for buttons, 12px for modals                                                               |
+| **Shadows**       | Soft and warm — `0 2px 8px rgba(107,91,79,0.08)`                                                                     |
+| **Typography**    | Inter or system sans-serif, 16px base, generous line-height (1.6)                                                    |
+| **Buttons**       | Filled primary with rounded corners, ghost secondary, subtle hover lift                                              |
+| **Icons**         | Rounded stroke style, 20px default size                                                                              |
 
 ---
 
@@ -78,15 +78,15 @@ Use these tokens for consumer-facing features — things end-users interact with
 
 Use these tokens for admin panels, dashboards, settings pages, and internal tools.
 
-| Token | Value |
-|-------|-------|
-| **Palette** | Cool slate: `#0f172a` (text), `#475569` (secondary), `#3b82f6` (accent), `#f1f5f9` (surface), `#f8fafc` (background) |
-| **Spacing** | Compact — 16px container padding, 8px element gaps, 24px section gaps |
-| **Border radius** | Sharp — 4px for cards, 4px for buttons, 8px for modals |
-| **Shadows** | Minimal — prefer 1px borders (`#e2e8f0`) over shadows |
-| **Typography** | System fonts (`-apple-system, ...`), 14px base, tight line-height (1.4) |
-| **Buttons** | Compact with clear borders, icon+label combos, keyboard shortcut hints |
-| **Data density** | Tables with 32px row height, inline status badges, compact form fields |
+| Token             | Value                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Palette**       | Cool slate: `#0f172a` (text), `#475569` (secondary), `#3b82f6` (accent), `#f1f5f9` (surface), `#f8fafc` (background) |
+| **Spacing**       | Compact — 16px container padding, 8px element gaps, 24px section gaps                                                |
+| **Border radius** | Sharp — 4px for cards, 4px for buttons, 8px for modals                                                               |
+| **Shadows**       | Minimal — prefer 1px borders (`#e2e8f0`) over shadows                                                                |
+| **Typography**    | System fonts (`-apple-system, ...`), 14px base, tight line-height (1.4)                                              |
+| **Buttons**       | Compact with clear borders, icon+label combos, keyboard shortcut hints                                               |
+| **Data density**  | Tables with 32px row height, inline status badges, compact form fields                                               |
 
 ---
 
@@ -120,4 +120,4 @@ Avoid these patterns that make UIs feel AI-generated and templated:
 
 ## Key Principle
 
-Every variant needs a clear aesthetic direction — bold, minimal, warm, cool, brutalist, playful all work. **Generic doesn't.** Each of the 2 color variants (Clean, Polished) must feel like a deliberate design decision, not a random theme swap. The Wireframe proves structure; the color variants prove it can work *emotionally*.
+Every variant needs a clear aesthetic direction — bold, minimal, warm, cool, brutalist, playful all work. **Generic doesn't.** Each of the 2 color variants (Clean, Polished) must feel like a deliberate design decision, not a random theme swap. The Wireframe proves structure; the color variants prove it can work _emotionally_.

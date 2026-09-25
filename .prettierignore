@@ -1,0 +1,13 @@
+# Keep the Markdown entries in sync with .markdownlint-cli2.jsonc `ignores`.
+package-lock.json
+
+# Archived docs are frozen.
+docs/archive/
+
+# Test inputs for scripts/docs; their exact bytes are what the tests check.
+scripts/docs/__fixtures__/
+
+# Installed third-party skill copies.
+.agents/
+.claude/skills/vercel-*/
+.claude/skills/frontend-*/

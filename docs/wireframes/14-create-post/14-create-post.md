@@ -35,12 +35,12 @@ A single-screen, Reddit-style post creation form. Users write a title and body, 
 ::: card
 **Tags (1-3 required)**
 
-[🏠 Housing]{.outline}  [💼 Jobs]{.outline}  [🤝 Help]{.outline}  [❓ Question]{.outline}
-[🏛 Politics]{.outline}  [💬 Discussion]{.outline}  [⚠️ Emergency]{.outline}
+[🏠 Housing]{.outline} [💼 Jobs]{.outline} [🤝 Help]{.outline} [❓ Question]{.outline}
+[🏛 Politics]{.outline} [💬 Discussion]{.outline} [⚠️ Emergency]{.outline}
 :::
 
 ::: card
-📷 [Add Photos (optional)]  **0/5**
+📷 [Add Photos (optional)] **0/5**
 :::
 
 ::: card {bg:#F5F5F5}
@@ -62,18 +62,18 @@ A single-screen, Reddit-style post creation form. Users write a title and body, 
 ::: card
 **Tags (1-3 required)**
 
-[🏠 Housing]{.outline}  [💼 Jobs]{.outline}  [🤝 Help]{.outline}  [❓ Question]{.outline}
-[🏛 Politics]{.outline}  [💬 Discussion]{.outline}  [⚠️ Emergency]{.outline}
+[🏠 Housing]{.outline} [💼 Jobs]{.outline} [🤝 Help]{.outline} [❓ Question]{.outline}
+[🏛 Politics]{.outline} [💬 Discussion]{.outline} [⚠️ Emergency]{.outline}
 :::
 
 ::: card
-📷 [Add Photos (optional)]  **0/5**
+📷 [Add Photos (optional)] **0/5**
 :::
 
 ::: card {bg:#F5F5F5}
 📍 Posting to: **Dallas-Fort Worth**
 
-🌐 Post Globally  `[OFF]`
+🌐 Post Globally `[OFF]`
 _Visible in all metro areas_
 :::
 
@@ -117,12 +117,12 @@ You need to verify your phone number before you can create posts.
 
 ### 1. Top Navigation Bar
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Navigation bar | App bar |
-| **Height** | 44px | 56dp |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px bottom #E0E0E0 | 1px bottom #E0E0E0 |
+| Property       | iOS                | Android            |
+| -------------- | ------------------ | ------------------ |
+| **Type**       | Navigation bar     | App bar            |
+| **Height**     | 44px               | 56dp               |
+| **Background** | White (#FFFFFF)    | White (#FFFFFF)    |
+| **Border**     | 1px bottom #E0E0E0 | 1px bottom #E0E0E0 |
 
 #### Cancel Button (Left)
 
@@ -159,16 +159,16 @@ You need to verify your phone number before you can create posts.
 
 ### 2. Title Input
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Single-line text input | Single-line text input |
-| **Padding** | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | None (borderless style) | None (borderless style) |
-| **Placeholder** | "What's this about?" | "What's this about?" |
-| **Placeholder Color** | #9E9E9E | #9E9E9E |
-| **Typography** | 20pt Semibold, #212121 | 18sp Semibold, #212121 |
-| **Max Length** | 150 characters | 150 characters |
+| Property              | iOS                            | Android                        |
+| --------------------- | ------------------------------ | ------------------------------ |
+| **Type**              | Single-line text input         | Single-line text input         |
+| **Padding**           | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
+| **Background**        | White (#FFFFFF)                | White (#FFFFFF)                |
+| **Border**            | None (borderless style)        | None (borderless style)        |
+| **Placeholder**       | "What's this about?"           | "What's this about?"           |
+| **Placeholder Color** | #9E9E9E                        | #9E9E9E                        |
+| **Typography**        | 20pt Semibold, #212121         | 18sp Semibold, #212121         |
+| **Max Length**        | 150 characters                 | 150 characters                 |
 
 - **Character Counter:** Shown at 120+ characters ("120/150"), right-aligned
 - **Counter Color:** #757575, turns #C62828 (Error Red) at 140+
@@ -189,18 +189,18 @@ You need to verify your phone number before you can create posts.
 
 ### 3. Body Textarea
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Multi-line text input (auto-expanding) | Multi-line text input (auto-expanding) |
-| **Padding** | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px top border #E0E0E0 | 1px top border #E0E0E0 |
-| **Min Height** | 120px | 120dp |
-| **Max Height** | Scrollable after 300px | Scrollable after 300dp |
-| **Placeholder** | "Write your post details here..." | "Write your post details here..." |
-| **Placeholder Color** | #9E9E9E | #9E9E9E |
-| **Typography** | 16pt Regular, #212121 | 15sp Regular, #212121 |
-| **Max Length** | 5000 characters | 5000 characters |
+| Property              | iOS                                    | Android                                |
+| --------------------- | -------------------------------------- | -------------------------------------- |
+| **Type**              | Multi-line text input (auto-expanding) | Multi-line text input (auto-expanding) |
+| **Padding**           | 16px horizontal, 12px vertical         | 16dp horizontal, 12dp vertical         |
+| **Background**        | White (#FFFFFF)                        | White (#FFFFFF)                        |
+| **Border**            | 1px top border #E0E0E0                 | 1px top border #E0E0E0                 |
+| **Min Height**        | 120px                                  | 120dp                                  |
+| **Max Height**        | Scrollable after 300px                 | Scrollable after 300dp                 |
+| **Placeholder**       | "Write your post details here..."      | "Write your post details here..."      |
+| **Placeholder Color** | #9E9E9E                                | #9E9E9E                                |
+| **Typography**        | 16pt Regular, #212121                  | 15sp Regular, #212121                  |
+| **Max Length**        | 5000 characters                        | 5000 characters                        |
 
 - **Character Counter:** Shown at 4500+ characters ("4500/5000")
 
@@ -219,27 +219,27 @@ You need to verify your phone number before you can create posts.
 
 ### 4. Tag Selection
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Wrapped grid of selectable tag chips | Wrapped grid of selectable tag chips |
-| **Padding** | 16px horizontal | 16dp horizontal |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px top border #E0E0E0 | 1px top border #E0E0E0 |
-| **Section Label** | 14pt Semibold, #757575 | 13sp Semibold, #757575 |
-| **Label Text** | "Tags (1-3 required)" | "Tags (1-3 required)" |
-| **Label Margin** | 12px bottom | 12dp bottom |
+| Property          | iOS                                  | Android                              |
+| ----------------- | ------------------------------------ | ------------------------------------ |
+| **Type**          | Wrapped grid of selectable tag chips | Wrapped grid of selectable tag chips |
+| **Padding**       | 16px horizontal                      | 16dp horizontal                      |
+| **Background**    | White (#FFFFFF)                      | White (#FFFFFF)                      |
+| **Border**        | 1px top border #E0E0E0               | 1px top border #E0E0E0               |
+| **Section Label** | 14pt Semibold, #757575               | 13sp Semibold, #757575               |
+| **Label Text**    | "Tags (1-3 required)"                | "Tags (1-3 required)"                |
+| **Label Margin**  | 12px bottom                          | 12dp bottom                          |
 
 **Tag Chips (loaded from `tags` table, sorted by `sort_order`):**
 
-| Tag | Icon | Color |
-|-----|------|-------|
-| Housing | 🏠 | #4CAF50 |
-| Jobs | 💼 | #2196F3 |
-| Help | 🤝 | #FF9800 |
-| Question | ❓ | #9C27B0 |
-| Politics | 🏛 | #607D8B |
-| Discussion | 💬 | #00BCD4 |
-| Emergency | ⚠️ | #F44336 |
+| Tag        | Icon | Color   |
+| ---------- | ---- | ------- |
+| Housing    | 🏠   | #4CAF50 |
+| Jobs       | 💼   | #2196F3 |
+| Help       | 🤝   | #FF9800 |
+| Question   | ❓   | #9C27B0 |
+| Politics   | 🏛    | #607D8B |
+| Discussion | 💬   | #00BCD4 |
+| Emergency  | ⚠️   | #F44336 |
 
 **Chip Styling:**
 
@@ -280,16 +280,16 @@ You need to verify your phone number before you can create posts.
 
 ### 5. Photo Attachment
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Horizontal photo picker row | Horizontal photo picker row |
-| **Padding** | 16px horizontal | 16dp horizontal |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px top border #E0E0E0 | 1px top border #E0E0E0 |
-| **Icon** | 📷 24x24px | 📷 24x24dp |
-| **Label** | "Add Photos (optional)", 15pt Regular, #757575 | "Add Photos (optional)", 14sp Regular, #757575 |
-| **Counter** | "0/5" right-aligned | "0/5" right-aligned |
-| **Touch Target** | Full row 48px | Full row 48dp |
+| Property         | iOS                                            | Android                                        |
+| ---------------- | ---------------------------------------------- | ---------------------------------------------- |
+| **Type**         | Horizontal photo picker row                    | Horizontal photo picker row                    |
+| **Padding**      | 16px horizontal                                | 16dp horizontal                                |
+| **Background**   | White (#FFFFFF)                                | White (#FFFFFF)                                |
+| **Border**       | 1px top border #E0E0E0                         | 1px top border #E0E0E0                         |
+| **Icon**         | 📷 24x24px                                     | 📷 24x24dp                                     |
+| **Label**        | "Add Photos (optional)", 15pt Regular, #757575 | "Add Photos (optional)", 14sp Regular, #757575 |
+| **Counter**      | "0/5" right-aligned                            | "0/5" right-aligned                            |
+| **Touch Target** | Full row 48px                                  | Full row 48dp                                  |
 
 - **Interaction:** Tap to open photo picker (camera or gallery)
 
@@ -311,14 +311,14 @@ You need to verify your phone number before you can create posts.
 
 ### 6. Location Info
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Read-only informational row | Read-only informational row |
-| **Padding** | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
-| **Background** | #F5F5F5 (Light Gray) | #F5F5F5 (Light Gray) |
-| **Border** | 1px top border #E0E0E0 | 1px top border #E0E0E0 |
-| **Icon** | 📍 20x20px | 📍 20x20dp |
-| **Typography** | 14pt Regular, #757575 | 13sp Regular, #757575 |
+| Property       | iOS                            | Android                        |
+| -------------- | ------------------------------ | ------------------------------ |
+| **Type**       | Read-only informational row    | Read-only informational row    |
+| **Padding**    | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
+| **Background** | #F5F5F5 (Light Gray)           | #F5F5F5 (Light Gray)           |
+| **Border**     | 1px top border #E0E0E0         | 1px top border #E0E0E0         |
+| **Icon**       | 📍 20x20px                     | 📍 20x20dp                     |
+| **Typography** | 14pt Regular, #757575          | 13sp Regular, #757575          |
 
 - **Content:** "Posting to: Dallas-Fort Worth" (user's current metro area)
 - **Note:** This is the user's active metro area. Not editable on this screen.
@@ -331,18 +331,18 @@ You need to verify your phone number before you can create posts.
 
 ### 7. Global Toggle (Premium Users Only)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Toggle switch row | Toggle switch row |
-| **Padding** | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px top border #E0E0E0 | 1px top border #E0E0E0 |
-| **Visibility** | Only if `user.is_premium === true` | Only if `user.is_premium === true` |
-| **Icon** | 🌐 20x20px | 🌐 20x20dp |
-| **Label** | 15pt Medium, #212121, "Post Globally" | 14sp Medium, #212121, "Post Globally" |
-| **Sublabel** | 12pt Regular, #757575, "Visible in all metro areas" | 11sp Regular, #757575, "Visible in all metro areas" |
-| **Toggle Off** | UISwitch, gray track (#E0E0E0) | Material Switch, gray track (#E0E0E0) |
-| **Toggle On** | UISwitch, blue track (#1565C0) | Material Switch, blue track (#1565C0) |
+| Property       | iOS                                                 | Android                                             |
+| -------------- | --------------------------------------------------- | --------------------------------------------------- |
+| **Type**       | Toggle switch row                                   | Toggle switch row                                   |
+| **Padding**    | 16px horizontal, 12px vertical                      | 16dp horizontal, 12dp vertical                      |
+| **Background** | White (#FFFFFF)                                     | White (#FFFFFF)                                     |
+| **Border**     | 1px top border #E0E0E0                              | 1px top border #E0E0E0                              |
+| **Visibility** | Only if `user.is_premium === true`                  | Only if `user.is_premium === true`                  |
+| **Icon**       | 🌐 20x20px                                          | 🌐 20x20dp                                          |
+| **Label**      | 15pt Medium, #212121, "Post Globally"               | 14sp Medium, #212121, "Post Globally"               |
+| **Sublabel**   | 12pt Regular, #757575, "Visible in all metro areas" | 11sp Regular, #757575, "Visible in all metro areas" |
+| **Toggle Off** | UISwitch, gray track (#E0E0E0)                      | Material Switch, gray track (#E0E0E0)               |
+| **Toggle On**  | UISwitch, blue track (#1565C0)                      | Material Switch, blue track (#1565C0)               |
 
 **Behavior:**
 
@@ -362,13 +362,13 @@ You need to verify your phone number before you can create posts.
 
 ## Form Validation Summary
 
-| Field | Required | Min | Max | Error Message |
-|-------|----------|-----|-----|---------------|
-| Title | Yes | 5 chars | 150 chars | "Title must be 5-150 characters" |
-| Body | Yes | 10 chars | 5000 chars | "Body must be at least 10 characters" |
-| Tags | Yes | 1 tag | 3 tags | "Select 1-3 tags" |
-| Photos | No | 0 | 5 | "Maximum 5 photos" |
-| Global | No | - | - | (Premium only toggle) |
+| Field  | Required | Min      | Max        | Error Message                         |
+| ------ | -------- | -------- | ---------- | ------------------------------------- |
+| Title  | Yes      | 5 chars  | 150 chars  | "Title must be 5-150 characters"      |
+| Body   | Yes      | 10 chars | 5000 chars | "Body must be at least 10 characters" |
+| Tags   | Yes      | 1 tag    | 3 tags     | "Select 1-3 tags"                     |
+| Photos | No       | 0        | 5          | "Maximum 5 photos"                    |
+| Global | No       | -        | -          | (Premium only toggle)                 |
 
 ---
 
@@ -420,14 +420,14 @@ You need to verify your phone number before you can create posts.
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Cancel Button** | Text "Cancel" | ✕ icon |
-| **Post Button** | Pill shape, right | Filled button, right |
-| **Keyboard** | iOS keyboard with Done bar | Android keyboard with action button |
-| **Photo Picker** | UIImagePickerController | Intent.ACTION_PICK |
-| **Toggle** | UISwitch | Material Switch |
-| **Discard Dialog** | UIAlertController | MaterialAlertDialog |
+| Aspect             | iOS                        | Android                             |
+| ------------------ | -------------------------- | ----------------------------------- |
+| **Cancel Button**  | Text "Cancel"              | ✕ icon                              |
+| **Post Button**    | Pill shape, right          | Filled button, right                |
+| **Keyboard**       | iOS keyboard with Done bar | Android keyboard with action button |
+| **Photo Picker**   | UIImagePickerController    | Intent.ACTION_PICK                  |
+| **Toggle**         | UISwitch                   | Material Switch                     |
+| **Discard Dialog** | UIAlertController          | MaterialAlertDialog                 |
 
 ---
 
@@ -503,12 +503,12 @@ You need to verify your phone number before you can create posts.
 
 ### Color Contrast
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Title text (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Placeholder text (#9E9E9E on #FFFFFF) | 3.4:1 | Informational only |
-| Tag text (various on white) | All meet 4.5:1 | AA ✓ |
-| Post button (#FFFFFF on #1565C0) | 7.2:1 | AAA ✓ |
+| Element                               | Ratio          | Level              |
+| ------------------------------------- | -------------- | ------------------ |
+| Title text (#212121 on #FFFFFF)       | 16.9:1         | AAA ✓              |
+| Placeholder text (#9E9E9E on #FFFFFF) | 3.4:1          | Informational only |
+| Tag text (various on white)           | All meet 4.5:1 | AA ✓               |
+| Post button (#FFFFFF on #1565C0)      | 7.2:1          | AAA ✓              |
 
 ---
 
@@ -626,27 +626,27 @@ Returns all tags sorted by `sort_order`. Cache locally for session duration.
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `create_post_title` | Create Post |
-| `create_post_cancel` | Cancel |
-| `create_post_submit` | Post |
-| `create_post_title_placeholder` | What's this about? |
-| `create_post_body_placeholder` | Write your post details here... |
-| `create_post_tags_label` | Tags (1-3 required) |
-| `create_post_photos_label` | Add Photos (optional) |
-| `create_post_photos_count` | {count}/5 |
-| `create_post_location` | Posting to: {metro_name} |
-| `create_post_global_label` | Post Globally |
-| `create_post_global_sublabel` | Visible in all metro areas |
-| `create_post_emergency_warning` | Emergency posts require moderator approval before becoming visible. |
-| `create_post_discard_title` | Discard Post? |
-| `create_post_discard_message` | You have unsaved changes. Are you sure you want to discard this post? |
-| `create_post_discard_confirm` | Discard |
-| `create_post_discard_cancel` | Keep Editing |
-| `create_post_error_network` | Could not create post. Please check your connection and try again. |
-| `create_post_success` | Post published! |
-| `create_post_emergency_success` | Your emergency post has been submitted for moderator review. |
+| Key                             | Value                                                                 |
+| ------------------------------- | --------------------------------------------------------------------- |
+| `create_post_title`             | Create Post                                                           |
+| `create_post_cancel`            | Cancel                                                                |
+| `create_post_submit`            | Post                                                                  |
+| `create_post_title_placeholder` | What's this about?                                                    |
+| `create_post_body_placeholder`  | Write your post details here...                                       |
+| `create_post_tags_label`        | Tags (1-3 required)                                                   |
+| `create_post_photos_label`      | Add Photos (optional)                                                 |
+| `create_post_photos_count`      | {count}/5                                                             |
+| `create_post_location`          | Posting to: {metro_name}                                              |
+| `create_post_global_label`      | Post Globally                                                         |
+| `create_post_global_sublabel`   | Visible in all metro areas                                            |
+| `create_post_emergency_warning` | Emergency posts require moderator approval before becoming visible.   |
+| `create_post_discard_title`     | Discard Post?                                                         |
+| `create_post_discard_message`   | You have unsaved changes. Are you sure you want to discard this post? |
+| `create_post_discard_confirm`   | Discard                                                               |
+| `create_post_discard_cancel`    | Keep Editing                                                          |
+| `create_post_error_network`     | Could not create post. Please check your connection and try again.    |
+| `create_post_success`           | Post published!                                                       |
+| `create_post_emergency_success` | Your emergency post has been submitted for moderator review.          |
 
 ---
 
@@ -697,12 +697,12 @@ Returns all tags sorted by `sort_order`. Cache locally for session duration.
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
+| Relation | Screen                                                                                     |
+| -------- | ------------------------------------------------------------------------------------------ |
 | Previous | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) (via FAB) |
-| Next | Home Screen (on success, post appears at top of feed) |
-| Related | [09-post-detail.md](../09-post-detail/09-post-detail.md) — View of the created post |
-| Related | Post Edit Screen (reuses same form with pre-filled data) |
+| Next     | Home Screen (on success, post appears at top of feed)                                      |
+| Related  | [09-post-detail.md](../09-post-detail/09-post-detail.md) — View of the created post        |
+| Related  | Post Edit Screen (reuses same form with pre-filled data)                                   |
 
 ---
 

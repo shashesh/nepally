@@ -88,14 +88,14 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### 1. Tutorial Cards (Horizontal Scroll Container)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | UIScrollView (pagingEnabled) | ViewPager2 / HorizontalPager |
-| **Count** | 3 cards | 3 cards |
-| **Dimensions** | Full screen width × height (minus safe areas) | Full screen width × height (minus system bars) |
-| **Snap** | Paging enabled (snap to card) | Page snap behavior |
-| **Swipe Left** | Next card (1→2→3) | Next card (1→2→3) |
-| **Swipe Right** | Previous card (3→2→1) | Previous card (3→2→1) |
+| Property        | iOS                                           | Android                                        |
+| --------------- | --------------------------------------------- | ---------------------------------------------- |
+| **Type**        | UIScrollView (pagingEnabled)                  | ViewPager2 / HorizontalPager                   |
+| **Count**       | 3 cards                                       | 3 cards                                        |
+| **Dimensions**  | Full screen width × height (minus safe areas) | Full screen width × height (minus system bars) |
+| **Snap**        | Paging enabled (snap to card)                 | Page snap behavior                             |
+| **Swipe Left**  | Next card (1→2→3)                             | Next card (1→2→3)                              |
+| **Swipe Right** | Previous card (3→2→1)                         | Previous card (3→2→1)                          |
 
 - Smooth momentum scrolling, no half-card states
 - Each card is vertically centered with content center-aligned
@@ -106,12 +106,12 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### 2. Illustration (Visual Aid)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Dimensions** | 120×120px | 120×120dp |
-| **Position** | Top center, below status bar | Top center, below status bar |
-| **Format** | SVG or 2×/3× PNG | SVG or vector drawable |
-| **Style** | Simple line-art, not photorealistic | Simple line-art, not photorealistic |
+| Property       | iOS                                 | Android                             |
+| -------------- | ----------------------------------- | ----------------------------------- |
+| **Dimensions** | 120×120px                           | 120×120dp                           |
+| **Position**   | Top center, below status bar        | Top center, below status bar        |
+| **Format**     | SVG or 2×/3× PNG                    | SVG or vector drawable              |
+| **Style**      | Simple line-art, not photorealistic | Simple line-art, not photorealistic |
 
 **Card 1 — Metro-First Feed:**
 
@@ -141,13 +141,13 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### 3. Card Title
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font** | 22pt Semibold, San Francisco | 22sp Regular, Roboto |
-| **Color** | #212121 (Almost Black) | #212121 |
-| **Alignment** | Center | Center |
-| **Max Width** | 320px | 320dp |
-| **Semantic** | H2 | H2 |
+| Property      | iOS                          | Android              |
+| ------------- | ---------------------------- | -------------------- |
+| **Font**      | 22pt Semibold, San Francisco | 22sp Regular, Roboto |
+| **Color**     | #212121 (Almost Black)       | #212121              |
+| **Alignment** | Center                       | Center               |
+| **Max Width** | 320px                        | 320dp                |
+| **Semantic**  | H2                           | H2                   |
 
 **Content:**
 
@@ -161,14 +161,14 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### 4. Card Description Text
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font** | 17pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Color** | #757575 (Medium Gray) | #757575 |
-| **Alignment** | Center | Center |
-| **Max Width** | 300px | 300dp |
-| **Line Height** | 1.5× | 1.5× |
-| **Max Lines** | 4 (truncate if longer) | 4 (truncate if longer) |
+| Property        | iOS                         | Android                |
+| --------------- | --------------------------- | ---------------------- |
+| **Font**        | 17pt Regular, San Francisco | 16sp Regular, Roboto   |
+| **Color**       | #757575 (Medium Gray)       | #757575                |
+| **Alignment**   | Center                      | Center                 |
+| **Max Width**   | 300px                       | 300dp                  |
+| **Line Height** | 1.5×                        | 1.5×                   |
+| **Max Lines**   | 4 (truncate if longer)      | 4 (truncate if longer) |
 
 **Content:**
 
@@ -179,11 +179,11 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 **Expiry Info (Card 3 only):**
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font** | 15pt Regular, San Francisco | 14sp Regular, Roboto |
-| **Color** | #757575 | #757575 |
-| **Content** | "Housing & Jobs: 30 days" / "Emergency: 7 days · Travel: 2 days" | Same |
+| Property    | iOS                                                              | Android              |
+| ----------- | ---------------------------------------------------------------- | -------------------- |
+| **Font**    | 15pt Regular, San Francisco                                      | 14sp Regular, Roboto |
+| **Color**   | #757575                                                          | #757575              |
+| **Content** | "Housing & Jobs: 30 days" / "Emergency: 7 days · Travel: 2 days" | Same                 |
 
 **a11y:** Semantic paragraph, screen reader reads full description
 
@@ -191,16 +191,16 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### 5. Progress Dots
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Count** | 3 dots | 3 dots |
-| **Size** | 8px diameter | 8dp diameter |
-| **Spacing** | 8px between | 8dp between |
-| **Position** | Horizontally centered, below description | Horizontally centered, below description |
-| **Active Color** | #1565C0 (Primary Blue) | #1565C0 |
-| **Inactive Color** | #E0E0E0 (Light Gray) | #E0E0E0 |
-| **Implementation** | UIPageControl | Custom dots or TabLayout indicator |
-| **Tappable** | No (standard UIPageControl) | Optional (tap to jump) |
+| Property           | iOS                                      | Android                                  |
+| ------------------ | ---------------------------------------- | ---------------------------------------- |
+| **Count**          | 3 dots                                   | 3 dots                                   |
+| **Size**           | 8px diameter                             | 8dp diameter                             |
+| **Spacing**        | 8px between                              | 8dp between                              |
+| **Position**       | Horizontally centered, below description | Horizontally centered, below description |
+| **Active Color**   | #1565C0 (Primary Blue)                   | #1565C0                                  |
+| **Inactive Color** | #E0E0E0 (Light Gray)                     | #E0E0E0                                  |
+| **Implementation** | UIPageControl                            | Custom dots or TabLayout indicator       |
+| **Tappable**       | No (standard UIPageControl)              | Optional (tap to jump)                   |
 
 **Animation:** Active dot slides to next position (200ms, ease-in-out). Optional: scale active dot to 10px.
 
@@ -210,14 +210,14 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### 6. Next / Get Started Button (Primary)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Height** | 48px | 56dp |
-| **Width** | Full width − 32px margins | match_parent − 32dp margins |
-| **Corner Radius** | 8px | 8dp |
-| **Background** | #1565C0 (Primary Blue) | #1565C0 |
-| **Text (Cards 1-2)** | 17pt Semibold, White, "Next" | 14sp Medium, White, "NEXT" |
-| **Text (Card 3)** | 17pt Semibold, White, "Get Started" | 14sp Medium, White, "GET STARTED" |
+| Property             | iOS                                 | Android                           |
+| -------------------- | ----------------------------------- | --------------------------------- |
+| **Height**           | 48px                                | 56dp                              |
+| **Width**            | Full width − 32px margins           | match_parent − 32dp margins       |
+| **Corner Radius**    | 8px                                 | 8dp                               |
+| **Background**       | #1565C0 (Primary Blue)              | #1565C0                           |
+| **Text (Cards 1-2)** | 17pt Semibold, White, "Next"        | 14sp Medium, White, "NEXT"        |
+| **Text (Card 3)**    | 17pt Semibold, White, "Get Started" | 14sp Medium, White, "GET STARTED" |
 
 **States:**
 
@@ -237,14 +237,14 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### 7. Skip Link
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font** | 17pt Regular, San Francisco | 14sp Regular, Roboto |
-| **Color** | #757575 (Medium Gray) | #757575 |
-| **Text** | "Skip" (title case) | "SKIP" (ALL CAPS) |
-| **Alignment** | Center | Center |
-| **Position** | Below Next button, 12px spacing | Below Next button, 12dp spacing |
-| **Underline** | On press only | Always underlined |
+| Property       | iOS                                 | Android                             |
+| -------------- | ----------------------------------- | ----------------------------------- |
+| **Font**       | 17pt Regular, San Francisco         | 14sp Regular, Roboto                |
+| **Color**      | #757575 (Medium Gray)               | #757575                             |
+| **Text**       | "Skip" (title case)                 | "SKIP" (ALL CAPS)                   |
+| **Alignment**  | Center                              | Center                              |
+| **Position**   | Below Next button, 12px spacing     | Below Next button, 12dp spacing     |
+| **Underline**  | On press only                       | Always underlined                   |
 | **Visibility** | Cards 1-2: Visible / Card 3: Hidden | Cards 1-2: Visible / Card 3: Hidden |
 
 **Interaction:**
@@ -260,21 +260,21 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### Vertical Stack (per card, top to bottom)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / Status bar | Auto | — |
-| 2 | Flexible space | Flex | — |
-| 3 | Illustration | 120px/dp | 24px/dp |
-| 4 | Title | ~30px | 12px/dp |
-| 5 | Description | ~80–100px (3-4 lines) | — |
-| 6 | Expiry info (Card 3 only) | ~40px | — |
-| 7 | Spacing | — | 24px/dp |
-| 8 | Progress dots | 8px | 24px/dp |
-| 9 | Next / Get Started button | 48px / 56dp | 12px/dp |
-| 10 | Skip link (Cards 1-2) | ~30px | — |
-| 11 | Flexible space | Flex | — |
-| 12 | Bottom padding | 24px/dp | — |
-| 13 | Bottom safe area | Auto | — |
+| #   | Element                   | Height                | Spacing After |
+| --- | ------------------------- | --------------------- | ------------- |
+| 1   | Safe area / Status bar    | Auto                  | —             |
+| 2   | Flexible space            | Flex                  | —             |
+| 3   | Illustration              | 120px/dp              | 24px/dp       |
+| 4   | Title                     | ~30px                 | 12px/dp       |
+| 5   | Description               | ~80–100px (3-4 lines) | —             |
+| 6   | Expiry info (Card 3 only) | ~40px                 | —             |
+| 7   | Spacing                   | —                     | 24px/dp       |
+| 8   | Progress dots             | 8px                   | 24px/dp       |
+| 9   | Next / Get Started button | 48px / 56dp           | 12px/dp       |
+| 10  | Skip link (Cards 1-2)     | ~30px                 | —             |
+| 11  | Flexible space            | Flex                  | —             |
+| 12  | Bottom padding            | 24px/dp               | —             |
+| 13  | Bottom safe area          | Auto                  | —             |
 
 **Total Minimum Height:** ~550px (fits small devices)
 
@@ -313,17 +313,17 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Scroll Behavior** | UIScrollView with pagingEnabled | ViewPager2 or HorizontalPager |
-| **Swipe Gesture** | Native scroll momentum | Material page transition |
-| **Button Text** | Title case ("Next", "Get Started") | ALL CAPS ("NEXT", "GET STARTED") |
-| **Typography** | San Francisco, 22pt Semibold title | Roboto, 22sp Regular title |
-| **Page Indicator** | UIPageControl (dots below) | Custom dots or TabLayout indicator |
-| **Skip Link** | Underline on press | Always underlined, ALL CAPS |
-| **Button Height** | 48px | 56dp (Material Design) |
-| **Press Feedback** | Scale 0.98 + haptic | Scale 0.98 + ripple |
-| **Screen Transition** | Slide from right (300ms) | Slide up from bottom (300ms) |
+| Aspect                | iOS                                | Android                            |
+| --------------------- | ---------------------------------- | ---------------------------------- |
+| **Scroll Behavior**   | UIScrollView with pagingEnabled    | ViewPager2 or HorizontalPager      |
+| **Swipe Gesture**     | Native scroll momentum             | Material page transition           |
+| **Button Text**       | Title case ("Next", "Get Started") | ALL CAPS ("NEXT", "GET STARTED")   |
+| **Typography**        | San Francisco, 22pt Semibold title | Roboto, 22sp Regular title         |
+| **Page Indicator**    | UIPageControl (dots below)         | Custom dots or TabLayout indicator |
+| **Skip Link**         | Underline on press                 | Always underlined, ALL CAPS        |
+| **Button Height**     | 48px                               | 56dp (Material Design)             |
+| **Press Feedback**    | Scale 0.98 + haptic                | Scale 0.98 + ripple                |
+| **Screen Transition** | Slide from right (300ms)           | Slide up from bottom (300ms)       |
 
 ---
 
@@ -377,19 +377,19 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### Touch Targets
 
-| Element | iOS | Android | Meets Min |
-|---------|-----|---------|-----------|
-| Next / Get Started button | 48px | 56dp | ✓ |
-| Skip link | 44pt (invisible padding) | 48dp (invisible padding) | ✓ |
-| Progress dots | Not tappable | Not tappable | N/A |
+| Element                   | iOS                      | Android                  | Meets Min |
+| ------------------------- | ------------------------ | ------------------------ | --------- |
+| Next / Get Started button | 48px                     | 56dp                     | ✓         |
+| Skip link                 | 44pt (invisible padding) | 48dp (invisible padding) | ✓         |
+| Progress dots             | Not tappable             | Not tappable             | N/A       |
 
 ### Color Contrast (WCAG)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Title (#212121 on #FFFFFF) | 16.9:1 | AAA ✓ |
-| Description (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
-| Button text (White on #1565C0) | 7.2:1 | AAA ✓ |
+| Element                          | Ratio  | Level |
+| -------------------------------- | ------ | ----- |
+| Title (#212121 on #FFFFFF)       | 16.9:1 | AAA ✓ |
+| Description (#757575 on #FFFFFF) | 4.6:1  | AA ✓  |
+| Button text (White on #1565C0)   | 7.2:1  | AAA ✓ |
 
 ---
 
@@ -397,10 +397,10 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### Screen Entry (from Screen 04)
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Screen | 0ms | 300ms | Slide in from right (iOS) / Slide up (Android) |
-| 2 | Card 1 content | 300ms | 200ms | Fade in (ease-out) |
+| Step | Element        | Delay | Duration | Effect                                         |
+| ---- | -------------- | ----- | -------- | ---------------------------------------------- |
+| 1    | Screen         | 0ms   | 300ms    | Slide in from right (iOS) / Slide up (Android) |
+| 2    | Card 1 content | 300ms | 200ms    | Fade in (ease-out)                             |
 
 ### Card Swipe Animation
 
@@ -440,18 +440,18 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `tutorial_card1_title` | Metro-First Local Feed |
-| `tutorial_card1_desc` | See only housing, jobs, and emergencies in {metro_name}. No noise from other cities. |
-| `tutorial_card2_title` | Verified Community Members |
-| `tutorial_card2_desc` | Level 1 users are phone-verified. Level 2 users are highly trusted by the community. You're Level 0 right now. |
-| `tutorial_card3_title` | Four Main Categories |
-| `tutorial_card3_desc` | Browse housing, jobs, emergencies, and travel coordination. All posts expire automatically to keep content fresh. |
-| `tutorial_card3_expiry` | Housing & Jobs: 30 days\nEmergency: 7 days · Travel: 2 days |
-| `tutorial_button_next` | Next |
-| `tutorial_button_start` | Get Started |
-| `tutorial_skip` | Skip |
+| Key                     | Value                                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `tutorial_card1_title`  | Metro-First Local Feed                                                                                            |
+| `tutorial_card1_desc`   | See only housing, jobs, and emergencies in {metro_name}. No noise from other cities.                              |
+| `tutorial_card2_title`  | Verified Community Members                                                                                        |
+| `tutorial_card2_desc`   | Level 1 users are phone-verified. Level 2 users are highly trusted by the community. You're Level 0 right now.    |
+| `tutorial_card3_title`  | Four Main Categories                                                                                              |
+| `tutorial_card3_desc`   | Browse housing, jobs, emergencies, and travel coordination. All posts expire automatically to keep content fresh. |
+| `tutorial_card3_expiry` | Housing & Jobs: 30 days\nEmergency: 7 days · Travel: 2 days                                                       |
+| `tutorial_button_next`  | Next                                                                                                              |
+| `tutorial_button_start` | Get Started                                                                                                       |
+| `tutorial_skip`         | Skip                                                                                                              |
 
 **Dynamic placeholder:** `{metro_name}` — User's metro area name (e.g., "Dallas-Fort Worth")
 
@@ -499,12 +499,12 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | From Screen 04 (Metro Confirmation) after "Continue" | This screen |
-| Entry | Skipped ZIP entry | This screen (generic metro name) |
-| Exit | Tap "Get Started" (Card 3) | `/home` (Screen 06) |
-| Exit | Tap "Skip" (Cards 1-2) | `/home` (Screen 06) |
+| Direction | Trigger                                              | Destination                      |
+| --------- | ---------------------------------------------------- | -------------------------------- |
+| Entry     | From Screen 04 (Metro Confirmation) after "Continue" | This screen                      |
+| Entry     | Skipped ZIP entry                                    | This screen (generic metro name) |
+| Exit      | Tap "Get Started" (Card 3)                           | `/home` (Screen 06)              |
+| Exit      | Tap "Skip" (Cards 1-2)                               | `/home` (Screen 06)              |
 
 **On exit:** `UPDATE users SET onboarding_completed = true, tutorial_skipped = [true/false], onboarding_completed_at = NOW() WHERE id = 'user_id';`
 
@@ -587,11 +587,11 @@ Emergency: 7 days · Travel: 2 days {.caption}
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md) |
-| Next | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) |
-| Journey | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Steps 10-12 |
+| Relation | Screen                                                                                               |
+| -------- | ---------------------------------------------------------------------------------------------------- |
+| Previous | [04-metro-confirmation.md](../04-metro-confirmation/04-metro-confirmation.md)                        |
+| Next     | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md)                     |
+| Journey  | [01-signup-and-onboarding](../../user-journeys/onboarding/01-signup-and-onboarding.md) - Steps 10-12 |
 
 ---
 

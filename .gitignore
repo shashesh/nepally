@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# IDE
-.vscode/
+# IDE (extensions.json is shared: it recommends the Prettier and markdownlint extensions)
+.vscode/*
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo

@@ -20,12 +20,12 @@ Signed-in members can search community posts, marketplace listings and people fr
 
 ## Behaviour
 
-| Surface | Behaviour |
-|---|---|
-| Top bar (≥48em) | Combobox. Suggestions after 2+ characters and a 250ms pause: Posts (3), Listings (2), People (3). Each group links "N more …" to its results tab. "See all results" and Enter (with nothing highlighted) open `/search`. ↑/↓, Enter and Esc work from the keyboard |
-| Phone (<48em) | A search icon opens a full-screen overlay with the same suggestions |
-| No local matches | "No matches in {metro}" with a **Search all metros** option |
-| `/search?q=&tab=&scope=` | Tabs All · Posts · Listings · People with counts. "All" previews each type; type tabs scroll infinitely. Tab and scope live in the URL (shareable, Back-safe). Matching words are highlighted |
+| Surface                  | Behaviour                                                                                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Top bar (≥48em)          | Combobox. Suggestions after 2+ characters and a 250ms pause: Posts (3), Listings (2), People (3). Each group links "N more …" to its results tab. "See all results" and Enter (with nothing highlighted) open `/search`. ↑/↓, Enter and Esc work from the keyboard |
+| Phone (<48em)            | A search icon opens a full-screen overlay with the same suggestions                                                                                                                                                                                                |
+| No local matches         | "No matches in {metro}" with a **Search all metros** option                                                                                                                                                                                                        |
+| `/search?q=&tab=&scope=` | Tabs All · Posts · Listings · People with counts. "All" previews each type; type tabs scroll infinitely. Tab and scope live in the URL (shareable, Back-safe). Matching words are highlighted                                                                      |
 
 **Scope rules:**
 

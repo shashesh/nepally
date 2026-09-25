@@ -83,73 +83,73 @@ Tap any user's avatar on a post to start chatting.
 
 ### 1. Header
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Navigation bar | App bar |
-| **Height** | 44px | 56dp |
-| **Background** | #FFFFFF (White) | #FFFFFF |
-| **Border** | 1px bottom #E0E0E0 | 1px bottom #E0E0E0 |
-| **Title Text** | 34pt Bold, San Francisco | 22sp Medium, Roboto |
-| **Title Color** | #212121 | #212121 |
-| **Alignment** | Left (large title style) | Left |
+| Property        | iOS                      | Android             |
+| --------------- | ------------------------ | ------------------- |
+| **Type**        | Navigation bar           | App bar             |
+| **Height**      | 44px                     | 56dp                |
+| **Background**  | #FFFFFF (White)          | #FFFFFF             |
+| **Border**      | 1px bottom #E0E0E0       | 1px bottom #E0E0E0  |
+| **Title Text**  | 34pt Bold, San Francisco | 22sp Medium, Roboto |
+| **Title Color** | #212121                  | #212121             |
+| **Alignment**   | Left (large title style) | Left                |
 
 ---
 
 ### 2. Conversation Row
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Type** | Tappable list item | Tappable list item |
-| **Height** | 72px | 72dp |
-| **Background** | #FFFFFF (White) | #FFFFFF |
-| **Padding** | 16px horizontal, 12px vertical | 16dp horizontal, 12dp vertical |
-| **Divider** | 1px #E0E0E0, inset 72px from left | 1px #E0E0E0, inset 72dp from left |
+| Property       | iOS                               | Android                           |
+| -------------- | --------------------------------- | --------------------------------- |
+| **Type**       | Tappable list item                | Tappable list item                |
+| **Height**     | 72px                              | 72dp                              |
+| **Background** | #FFFFFF (White)                   | #FFFFFF                           |
+| **Padding**    | 16px horizontal, 12px vertical    | 16dp horizontal, 12dp vertical    |
+| **Divider**    | 1px #E0E0E0, inset 72px from left | 1px #E0E0E0, inset 72dp from left |
 
 #### Avatar (Initials)
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Shape** | Circle | Circle |
-| **Size** | 48×48px | 48×48dp |
-| **Background** | #1565C0 at 15% opacity | #1565C0 at 15% opacity |
-| **Text** | First + last initial (e.g., "RK") | First + last initial |
-| **Font** | 16pt Semibold, #1565C0 | 16sp Semibold, #1565C0 |
-| **Position** | Left, vertically centered | Left, vertically centered |
+| Property       | iOS                               | Android                   |
+| -------------- | --------------------------------- | ------------------------- |
+| **Shape**      | Circle                            | Circle                    |
+| **Size**       | 48×48px                           | 48×48dp                   |
+| **Background** | #1565C0 at 15% opacity            | #1565C0 at 15% opacity    |
+| **Text**       | First + last initial (e.g., "RK") | First + last initial      |
+| **Font**       | 16pt Semibold, #1565C0            | 16sp Semibold, #1565C0    |
+| **Position**   | Left, vertically centered         | Left, vertically centered |
 
 #### Line 1: Name + Timestamp
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Name Font (unread)** | 17pt Semibold, San Francisco | 16sp Semibold, Roboto |
-| **Name Font (read)** | 17pt Regular, San Francisco | 16sp Regular, Roboto |
-| **Name Color (unread)** | #212121 | #212121 |
-| **Name Color (read)** | #757575 | #757575 |
-| **Timestamp Font** | 13pt Regular | 12sp Regular |
-| **Timestamp Color** | #757575 | #757575 |
-| **Layout** | Name left-aligned, timestamp right-aligned | Same |
+| Property                | iOS                                        | Android               |
+| ----------------------- | ------------------------------------------ | --------------------- |
+| **Name Font (unread)**  | 17pt Semibold, San Francisco               | 16sp Semibold, Roboto |
+| **Name Font (read)**    | 17pt Regular, San Francisco                | 16sp Regular, Roboto  |
+| **Name Color (unread)** | #212121                                    | #212121               |
+| **Name Color (read)**   | #757575                                    | #757575               |
+| **Timestamp Font**      | 13pt Regular                               | 12sp Regular          |
+| **Timestamp Color**     | #757575                                    | #757575               |
+| **Layout**              | Name left-aligned, timestamp right-aligned | Same                  |
 
 #### Line 2: Last Message + Unread Badge
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Font (unread)** | 15pt Semibold | 14sp Semibold |
-| **Font (read)** | 15pt Regular | 14sp Regular |
-| **Color (unread)** | #212121 | #212121 |
-| **Color (read)** | #757575 | #757575 |
-| **Max Chars** | 35 (truncate with "...") | 35 |
-| **Own Msg Prefix** | "You: " in #757575 | Same |
+| Property           | iOS                      | Android       |
+| ------------------ | ------------------------ | ------------- |
+| **Font (unread)**  | 15pt Semibold            | 14sp Semibold |
+| **Font (read)**    | 15pt Regular             | 14sp Regular  |
+| **Color (unread)** | #212121                  | #212121       |
+| **Color (read)**   | #757575                  | #757575       |
+| **Max Chars**      | 35 (truncate with "...") | 35            |
+| **Own Msg Prefix** | "You: " in #757575       | Same          |
 
 #### Unread Badge
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Shape** | Circle | Circle |
-| **Size** | 24×24px | 24×24dp |
-| **Background** | #1565C0 (Primary Blue) | #1565C0 |
-| **Text** | Unread count (e.g., "2") | Same |
-| **Font** | 12pt Bold, #FFFFFF | 12sp Bold, #FFFFFF |
-| **Position** | Right, vertically centered with Line 3 | Same |
-| **Visibility** | Only when unread_count > 0 | Same |
+| Property       | iOS                                    | Android            |
+| -------------- | -------------------------------------- | ------------------ |
+| **Shape**      | Circle                                 | Circle             |
+| **Size**       | 24×24px                                | 24×24dp            |
+| **Background** | #1565C0 (Primary Blue)                 | #1565C0            |
+| **Text**       | Unread count (e.g., "2")               | Same               |
+| **Font**       | 12pt Bold, #FFFFFF                     | 12sp Bold, #FFFFFF |
+| **Position**   | Right, vertically centered with Line 3 | Same               |
+| **Visibility** | Only when unread_count > 0             | Same               |
 
 **States:**
 
@@ -164,30 +164,30 @@ Tap any user's avatar on a post to start chatting.
 
 ### 3. Empty State
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Icon** | 💬 chat bubble, 64×64px, #BDBDBD | 💬, 64×64dp, #BDBDBD |
-| **Title Font** | 22pt Semibold, San Francisco | 22sp Semibold, Roboto |
-| **Title Color** | #212121 | #212121 |
-| **Subtitle Font** | 15pt Regular, San Francisco | 14sp Regular, Roboto |
-| **Subtitle Color** | #757575 | #757575 |
-| **Alignment** | Center | Center |
-| **CTA Style** | Outline button, 200px wide | Outline button, 200dp wide |
-| **CTA Action** | Switch to Home tab | Switch to Home tab |
-| **Visibility** | When user has zero conversations | Same |
+| Property           | iOS                              | Android                    |
+| ------------------ | -------------------------------- | -------------------------- |
+| **Icon**           | 💬 chat bubble, 64×64px, #BDBDBD | 💬, 64×64dp, #BDBDBD       |
+| **Title Font**     | 22pt Semibold, San Francisco     | 22sp Semibold, Roboto      |
+| **Title Color**    | #212121                          | #212121                    |
+| **Subtitle Font**  | 15pt Regular, San Francisco      | 14sp Regular, Roboto       |
+| **Subtitle Color** | #757575                          | #757575                    |
+| **Alignment**      | Center                           | Center                     |
+| **CTA Style**      | Outline button, 200px wide       | Outline button, 200dp wide |
+| **CTA Action**     | Switch to Home tab               | Switch to Home tab         |
+| **Visibility**     | When user has zero conversations | Same                       |
 
 ---
 
 ### 4. Tab Bar Badge
 
-| Property | iOS | Android |
-|----------|-----|---------|
-| **Shape** | Red circle, min 18px diameter | Red circle, min 18dp diameter |
-| **Background** | #DC143C (Accent Red) | #DC143C |
-| **Font** | 10pt Bold, #FFFFFF | 10sp Bold, #FFFFFF |
-| **Position** | Top-right of Messages icon, offset (-4, -4) | Same |
-| **Max Display** | "99+" for counts over 99 | Same |
-| **Visibility** | Only when total unread > 0 | Same |
+| Property        | iOS                                         | Android                       |
+| --------------- | ------------------------------------------- | ----------------------------- |
+| **Shape**       | Red circle, min 18px diameter               | Red circle, min 18dp diameter |
+| **Background**  | #DC143C (Accent Red)                        | #DC143C                       |
+| **Font**        | 10pt Bold, #FFFFFF                          | 10sp Bold, #FFFFFF            |
+| **Position**    | Top-right of Messages icon, offset (-4, -4) | Same                          |
+| **Max Display** | "99+" for counts over 99                    | Same                          |
+| **Visibility**  | Only when total unread > 0                  | Same                          |
 
 ---
 
@@ -195,21 +195,21 @@ Tap any user's avatar on a post to start chatting.
 
 ### Vertical Stack (Top to Bottom)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Safe area / Status bar | Auto | — |
-| 2 | Header ("Messages") | 44px / 56dp | 0 |
-| 3 | Conversation Row × N | 72px/dp each | 0 (dividers only) |
-| 4 | Bottom safe area (iOS) | Auto | — |
+| #   | Element                | Height       | Spacing After     |
+| --- | ---------------------- | ------------ | ----------------- |
+| 1   | Safe area / Status bar | Auto         | —                 |
+| 2   | Header ("Messages")    | 44px / 56dp  | 0                 |
+| 3   | Conversation Row × N   | 72px/dp each | 0 (dividers only) |
+| 4   | Bottom safe area (iOS) | Auto         | —                 |
 
 ### Empty State Layout
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Chat icon | 64px/dp | 16px/dp |
-| 2 | Title "No messages yet" | ~28px | 8px/dp |
-| 3 | Subtitle text | ~40px | 24px/dp |
-| 4 | "Browse Posts" button | 48px / 56dp | — |
+| #   | Element                 | Height      | Spacing After |
+| --- | ----------------------- | ----------- | ------------- |
+| 1   | Chat icon               | 64px/dp     | 16px/dp       |
+| 2   | Title "No messages yet" | ~28px       | 8px/dp        |
+| 3   | Subtitle text           | ~40px       | 24px/dp       |
+| 4   | "Browse Posts" button   | 48px / 56dp | —             |
 
 **Horizontal:** 16px/dp margins. Content area centered vertically for empty state.
 
@@ -241,30 +241,30 @@ Tap any user's avatar on a post to start chatting.
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android |
-|--------|-----|---------|
-| **Header Height** | 44px (large title) | 56dp (Material app bar) |
-| **Header Title** | 34pt Bold, left-aligned large title | 22sp Medium, Roboto |
-| **Row Press Feedback** | Background #F5F5F5 | Ripple effect from tap point |
-| **Typography** | San Francisco | Roboto |
-| **Tab Bar** | iOS tab bar | Material bottom navigation |
-| **Status Bar** | Light content | Translucent |
-| **Safe Area** | Respect notch insets | Respect status bar height |
-| **Pull-to-Refresh** | UIRefreshControl spinner | SwipeRefreshLayout |
-| **Screen Transition** | Slide from right (300ms) | Slide up (300ms) |
+| Aspect                 | iOS                                 | Android                      |
+| ---------------------- | ----------------------------------- | ---------------------------- |
+| **Header Height**      | 44px (large title)                  | 56dp (Material app bar)      |
+| **Header Title**       | 34pt Bold, left-aligned large title | 22sp Medium, Roboto          |
+| **Row Press Feedback** | Background #F5F5F5                  | Ripple effect from tap point |
+| **Typography**         | San Francisco                       | Roboto                       |
+| **Tab Bar**            | iOS tab bar                         | Material bottom navigation   |
+| **Status Bar**         | Light content                       | Translucent                  |
+| **Safe Area**          | Respect notch insets                | Respect status bar height    |
+| **Pull-to-Refresh**    | UIRefreshControl spinner            | SwipeRefreshLayout           |
+| **Screen Transition**  | Slide from right (300ms)            | Slide up (300ms)             |
 
 ---
 
 ## Error States & Edge Cases
 
-| Scenario | Expected Behavior |
-|----------|------------------|
-| No conversations | Show empty state with "Browse Posts" CTA |
-| Other user deleted account | Show "[Deleted User]" as name, gray avatar |
-| Network error on load | Show error banner: "Could not load messages. Pull to retry." |
-| 50+ conversations | Paginate: load 20 at a time, infinite scroll |
-| Very long user name | Truncate at 20 chars with "..." |
-| Message is from you | Prefix: "You: message text..." |
+| Scenario                   | Expected Behavior                                            |
+| -------------------------- | ------------------------------------------------------------ |
+| No conversations           | Show empty state with "Browse Posts" CTA                     |
+| Other user deleted account | Show "[Deleted User]" as name, gray avatar                   |
+| Network error on load      | Show error banner: "Could not load messages. Pull to retry." |
+| 50+ conversations          | Paginate: load 20 at a time, infinite scroll                 |
+| Very long user name        | Truncate at 20 chars with "..."                              |
+| Message is from you        | Prefix: "You: message text..."                               |
 
 ---
 
@@ -282,12 +282,12 @@ Tap any user's avatar on a post to start chatting.
 
 ### Color Contrast (WCAG)
 
-| Element | Ratio | Level |
-|---------|-------|-------|
-| Name unread (#212121 on #FFFFFF) | 17.2:1 | AAA ✓ |
-| Name read (#757575 on #FFFFFF) | 4.6:1 | AA ✓ |
-| Unread badge (#FFFFFF on #1565C0) | 7.2:1 | AAA ✓ |
-| Tab badge (#FFFFFF on #DC143C) | 4.5:1 | AA ✓ |
+| Element                           | Ratio  | Level |
+| --------------------------------- | ------ | ----- |
+| Name unread (#212121 on #FFFFFF)  | 17.2:1 | AAA ✓ |
+| Name read (#757575 on #FFFFFF)    | 4.6:1  | AA ✓  |
+| Unread badge (#FFFFFF on #1565C0) | 7.2:1  | AAA ✓ |
+| Tab badge (#FFFFFF on #DC143C)    | 4.5:1  | AA ✓  |
 
 ### Checklist
 
@@ -304,10 +304,10 @@ Tap any user's avatar on a post to start chatting.
 
 ### On Screen Load
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Header | 0ms | 0ms | Instant render |
-| 2 | Conversation rows | 0ms | 200ms | Fade in (ease-out) |
+| Step | Element           | Delay | Duration | Effect             |
+| ---- | ----------------- | ----- | -------- | ------------------ |
+| 1    | Header            | 0ms   | 0ms      | Instant render     |
+| 2    | Conversation rows | 0ms   | 200ms    | Fade in (ease-out) |
 
 ### Row Interaction
 
@@ -326,15 +326,15 @@ Tap any user's avatar on a post to start chatting.
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `messages_title` | Messages |
-| `messages_empty_title` | No messages yet |
+| Key                       | Value                                              |
+| ------------------------- | -------------------------------------------------- |
+| `messages_title`          | Messages                                           |
+| `messages_empty_title`    | No messages yet                                    |
 | `messages_empty_subtitle` | Tap any user's avatar on a post to start chatting. |
-| `messages_empty_cta` | Browse Posts |
-| `messages_error_load` | Could not load messages. Pull to retry. |
-| `messages_deleted_user` | [Deleted User] |
-| `messages_you_prefix` | You: |
+| `messages_empty_cta`      | Browse Posts                                       |
+| `messages_error_load`     | Could not load messages. Pull to retry.            |
+| `messages_deleted_user`   | [Deleted User]                                     |
+| `messages_you_prefix`     | You:                                               |
 
 ---
 
@@ -373,13 +373,13 @@ LIMIT 20;
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | Tap Messages tab in bottom nav | This screen |
-| Entry | Deep link `nepally://messages` | This screen |
-| Exit | Tap conversation row | `/message-thread` (Screen 08) with `conversation_id` |
-| Exit | Tap "Browse Posts" (empty state) | Home tab |
-| Exit | Tap other bottom tabs | Respective tab |
+| Direction | Trigger                          | Destination                                          |
+| --------- | -------------------------------- | ---------------------------------------------------- |
+| Entry     | Tap Messages tab in bottom nav   | This screen                                          |
+| Entry     | Deep link `nepally://messages`   | This screen                                          |
+| Exit      | Tap conversation row             | `/message-thread` (Screen 08) with `conversation_id` |
+| Exit      | Tap "Browse Posts" (empty state) | Home tab                                             |
+| Exit      | Tap other bottom tabs            | Respective tab                                       |
 
 ### State Management
 
@@ -440,11 +440,11 @@ LIMIT 20;
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
+| Relation | Screen                                                                                                             |
+| -------- | ------------------------------------------------------------------------------------------------------------------ |
 | Previous | [06-home-screen-level-0.md](../06-home-screen-level-0/06-home-screen-level-0.md) (Messages tab / Browse Posts CTA) |
-| Next | [08-message-thread.md](../08-message-thread/08-message-thread.md) (tap conversation) |
-| Feature | [in-app-chat.md](../../product/features/in-app-chat.md) |
+| Next     | [08-message-thread.md](../08-message-thread/08-message-thread.md) (tap conversation)                               |
+| Feature  | [in-app-chat.md](../../product/features/in-app-chat.md)                                                            |
 
 ---
 

@@ -6,31 +6,31 @@ Welcome. This folder holds all documentation for the Nepally monorepo.
 
 ## Folder layout
 
-| Folder | Contents |
-|---|---|
-| [guides/](guides/) | How-to docs — setup, code sharing, deployment, feature development, documentation workflow |
-| [architecture/](architecture/) | How the system is built — monorepo structure, database schema, Supabase setup |
-| [product/](product/) | Roadmap and feature specs |
-| [product/features/](product/features/) | **Evergreen** per-feature specs — what each feature is today |
-| [plans/active/](plans/active/) | In-flight implementation plans only |
-| [plans/_template.md](plans/_template.md) | Template for new implementation plans |
-| [specs/](specs/) | **Point-in-time** design specs — one change each, archived when it ships |
-| [user-journeys/](user-journeys/) | Documented user flows |
-| [wireframes/](wireframes/) | Screen-by-screen wireframes (`_prototypes/` holds HTML/CSS exploration) |
-| [decisions/](decisions/) | Architecture decision records (ADRs) |
-| [archive/](archive/) | Completed plans, shipped specs, historical progress docs |
+| Folder                                   | Contents                                                                                   |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [guides/](guides/)                       | How-to docs — setup, code sharing, deployment, feature development, documentation workflow |
+| [architecture/](architecture/)           | How the system is built — monorepo structure, database schema, Supabase setup              |
+| [product/](product/)                     | Roadmap and feature specs                                                                  |
+| [product/features/](product/features/)   | **Evergreen** per-feature specs — what each feature is today                               |
+| [plans/active/](plans/active/)           | In-flight implementation plans only                                                        |
+| [plans/_template.md](plans/_template.md) | Template for new implementation plans                                                      |
+| [specs/](specs/)                         | **Point-in-time** design specs — one change each, archived when it ships                   |
+| [user-journeys/](user-journeys/)         | Documented user flows                                                                      |
+| [wireframes/](wireframes/)               | Screen-by-screen wireframes (`_prototypes/` holds HTML/CSS exploration)                    |
+| [decisions/](decisions/)                 | Architecture decision records (ADRs)                                                       |
+| [archive/](archive/)                     | Completed plans, shipped specs, historical progress docs                                   |
 
 ### `product/features/` vs `specs/`
 
 Both describe features. Only one is kept current — this is the most common filing
 mistake.
 
-| | `product/features/<name>.md` | `specs/YYYY-MM-DD-<topic>-design.md` |
-|---|---|---|
-| **Tense** | Present — what the feature *is* | Past-dated — what one change *proposed* |
-| **Lifetime** | Evergreen; edited as behavior changes | Frozen at approval |
-| **On ship** | Updated | Archived to `archive/specs/` |
-| **Answers** | "How does marketplace work today?" | "Why did we redesign it in April?" |
+|              | `product/features/<name>.md`          | `specs/YYYY-MM-DD-<topic>-design.md`    |
+| ------------ | ------------------------------------- | --------------------------------------- |
+| **Tense**    | Present — what the feature _is_       | Past-dated — what one change _proposed_ |
+| **Lifetime** | Evergreen; edited as behavior changes | Frozen at approval                      |
+| **On ship**  | Updated                               | Archived to `archive/specs/`            |
+| **Answers**  | "How does marketplace work today?"    | "Why did we redesign it in April?"      |
 
 ## Canonical references at repo root
 

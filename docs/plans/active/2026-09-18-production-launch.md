@@ -64,14 +64,14 @@ It is monitored and supported by one person. Every kind of failure has a rehears
 
 All six exist in `metro_areas` with ZIP coverage on staging. Prod is seeded in W1. Assignment is by ZIP, so a user in a metro with no seeded content lands on an empty feed.
 
-| Market | Metro id | Name in DB | ZIPs (staging) | Beta wave |
-|---|---|---|---|---|
-| Dallas–Fort Worth | 19100 | Dallas-Fort Worth-Arlington | 384 | Wave 1 (Oct 26) |
-| New York | 35620 | New York-Newark-Jersey City | 1047 | Wave 1 (Oct 26) |
-| Atlanta | 12060 | Atlanta-Sandy Springs-Roswell | 308 | Wave 2 (Nov 9) |
-| Houston | 26420 | Houston-Pasadena-The Woodlands | 358 | Wave 2 (Nov 9) |
-| San Francisco Bay Area | 41860 (+ 41940?) | San Francisco-Oakland-Fremont (+ San Jose-Sunnyvale-Santa Clara) | 227 (+108) | Wave 2 (Nov 9) |
-| Los Angeles | 31080 | Los Angeles-Long Beach-Anaheim | 621 | Wave 2 (Nov 9) |
+| Market                 | Metro id         | Name in DB                                                       | ZIPs (staging) | Beta wave       |
+| ---------------------- | ---------------- | ---------------------------------------------------------------- | -------------- | --------------- |
+| Dallas–Fort Worth      | 19100            | Dallas-Fort Worth-Arlington                                      | 384            | Wave 1 (Oct 26) |
+| New York               | 35620            | New York-Newark-Jersey City                                      | 1047           | Wave 1 (Oct 26) |
+| Atlanta                | 12060            | Atlanta-Sandy Springs-Roswell                                    | 308            | Wave 2 (Nov 9)  |
+| Houston                | 26420            | Houston-Pasadena-The Woodlands                                   | 358            | Wave 2 (Nov 9)  |
+| San Francisco Bay Area | 41860 (+ 41940?) | San Francisco-Oakland-Fremont (+ San Jose-Sunnyvale-Santa Clara) | 227 (+108)     | Wave 2 (Nov 9)  |
+| Los Angeles            | 31080            | Los Angeles-Long Beach-Anaheim                                   | 621            | Wave 2 (Nov 9)  |
 
 **Open question:** does "San Francisco" include San Jose (41940)? South Bay users are assigned to San Jose, not San Francisco. Recommendation: treat both as the Bay Area market and seed both.
 
@@ -95,21 +95,21 @@ Boosting a listing is a digital service used inside the app. Apple (guideline 3.
 
 Only one week is `In Progress` at a time. Update the row when a week starts and when it ends.
 
-| Week | Dates | Theme | Status | Notes |
-|---|---|---|---|---|
-| W0 | Sep 18–20 | Long-lead accounts and paperwork | In Progress | |
-| W1 | Sep 21–27 | Production environment | Not Started | |
-| W2 | Sep 28–Oct 4 | Observability | Not Started | |
-| W3 | Oct 5–11 | Store compliance | Not Started | |
-| W4 | Oct 12–18 | Mobile polish, builds, closed test starts | Not Started | Play 14-day clock must start by Oct 18 |
-| W5 | Oct 19–25 | Web feed polish, payments live, store listings | Not Started | |
-| W6 | Oct 26–Nov 1 | Beta wave 1 (DFW, NYC) | Not Started | |
-| W7 | Nov 2–8 | Beta fixes, web create flows | Not Started | Tihar season |
-| W8 | Nov 9–15 | Beta wave 2, App Store submission | Not Started | Submit iOS by Nov 13 |
-| W9 | Nov 16–22 | Hardening, runbook drills | Not Started | |
-| W10 | Nov 23–29 | Release candidate, go/no-go | Not Started | Thanksgiving Nov 26 |
-| W11 | Nov 30–Dec 6 | **Public launch Dec 1** | Not Started | |
-| W12 | Dec 7–13 | Hypercare | Not Started | Dec 14–20 is buffer |
+| Week | Dates        | Theme                                          | Status      | Notes                                  |
+| ---- | ------------ | ---------------------------------------------- | ----------- | -------------------------------------- |
+| W0   | Sep 18–20    | Long-lead accounts and paperwork               | In Progress |                                        |
+| W1   | Sep 21–27    | Production environment                         | Not Started |                                        |
+| W2   | Sep 28–Oct 4 | Observability                                  | Not Started |                                        |
+| W3   | Oct 5–11     | Store compliance                               | Not Started |                                        |
+| W4   | Oct 12–18    | Mobile polish, builds, closed test starts      | Not Started | Play 14-day clock must start by Oct 18 |
+| W5   | Oct 19–25    | Web feed polish, payments live, store listings | Not Started |                                        |
+| W6   | Oct 26–Nov 1 | Beta wave 1 (DFW, NYC)                         | Not Started |                                        |
+| W7   | Nov 2–8      | Beta fixes, web create flows                   | Not Started | Tihar season                           |
+| W8   | Nov 9–15     | Beta wave 2, App Store submission              | Not Started | Submit iOS by Nov 13                   |
+| W9   | Nov 16–22    | Hardening, runbook drills                      | Not Started |                                        |
+| W10  | Nov 23–29    | Release candidate, go/no-go                    | Not Started | Thanksgiving Nov 26                    |
+| W11  | Nov 30–Dec 6 | **Public launch Dec 1**                        | Not Started |                                        |
+| W12  | Dec 7–13     | Hypercare                                      | Not Started | Dec 14–20 is buffer                    |
 
 ## Week by week
 
@@ -154,9 +154,11 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   An avatar whose removal silently failed will not show up as an orphan. Before the PR that added 039, removing an avatar never cleared `users.profile_photo`, so the old URL still points at the file.
 
   Review the list, then delete the orphans through the Storage API: `remove()` with the service role. Never use SQL `DELETE` on `storage.objects`. Storage's `protect_objects_delete` trigger raises on it, and a SQL delete that got through would still leave the files in the storage backend.
+
 - [ ] **Code:** Make the shared storage deletes report partial failure. `deletePostPhotos`, `deleteListingPhotos` and `deleteProfilePhoto` check only `error` and ignore `data`, so a `remove()` that deleted nothing looked like success. Treat `data.length < paths.length` as an error, or at least a logged warning. That check would have caught the 027 regression.
 
   Callers must also check the returned `{ error }` — today several don't, so a real delete failure is silently swallowed one layer up and the UI reports success while the file stays public at its URL. Known call sites: web `apps/web/src/pages/profile.page.tsx` photo removal (`deleteProfilePhoto`); mobile `apps/mobile/src/screens/profile/EditProfileScreen.tsx` photo removal; `apps/web/src/lib/postSubmit.ts`'s `deletePostPhotos` calls; and the shared `removeProfilePhoto` that the web UI overhaul's PR 6 adds, which deliberately ignores the file-delete error today.
+
 - [ ] **Code:** Migration `040`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
@@ -305,14 +307,14 @@ See [Monitoring](#monitoring) for the full spec.
 
 ## Monitoring
 
-| Question | Tool | Cost |
-|---|---|---|
-| Is something broken? Errors, crashes, slow calls on web, mobile and edge functions | Sentry | Free (Developer plan) |
-| What do people do? Funnels, retention, paths, session replay, feature flags, surveys | PostHog | Free up to about 1M events/month |
-| Is it up? Plus a public status page | Better Stack or UptimeRobot | Free |
-| Is the database healthy? | Supabase reports, logs, advisors | Pro plan |
-| Web performance (Core Web Vitals) | Vercel Speed Insights | Vercel Pro |
-| Crash rate and ANRs as the stores see them | App Store Connect, Play Console vitals | Free |
+| Question                                                                             | Tool                                   | Cost                             |
+| ------------------------------------------------------------------------------------ | -------------------------------------- | -------------------------------- |
+| Is something broken? Errors, crashes, slow calls on web, mobile and edge functions   | Sentry                                 | Free (Developer plan)            |
+| What do people do? Funnels, retention, paths, session replay, feature flags, surveys | PostHog                                | Free up to about 1M events/month |
+| Is it up? Plus a public status page                                                  | Better Stack or UptimeRobot            | Free                             |
+| Is the database healthy?                                                             | Supabase reports, logs, advisors       | Pro plan                         |
+| Web performance (Core Web Vitals)                                                    | Vercel Speed Insights                  | Vercel Pro                       |
+| Crash rate and ANRs as the stores see them                                           | App Store Connect, Play Console vitals | Free                             |
 
 **Rules**
 
@@ -371,24 +373,24 @@ promotion_purchased {promotion_id, type, days, amount_cents, metro_id, platform,
 
 **Severity**
 
-| Level | Examples | Response |
-|---|---|---|
-| P0 | Site down, signup broken, data exposure, payments failing | Drop everything |
-| P1 | A major feature broken for many users | Same day |
-| P2 | A bug with a workaround | Weekly batch |
-| P3 | Polish, ideas | Backlog |
+| Level | Examples                                                  | Response        |
+| ----- | --------------------------------------------------------- | --------------- |
+| P0    | Site down, signup broken, data exposure, payments failing | Drop everything |
+| P1    | A major feature broken for many users                     | Same day        |
+| P2    | A bug with a workaround                                   | Weekly batch    |
+| P3    | Polish, ideas                                             | Backlog         |
 
 Track work as GitHub issues labelled `p0`–`p3`.
 
 **Rollback toolkit** (each one rehearsed in W9)
 
-| Failure | Path | Speed |
-|---|---|---|
-| Bad web deploy | Vercel Instant Rollback | Seconds |
-| Mobile JS bug | EAS Update to the `production` channel; no store review. Needs the W3 `expo-updates` setup. | Minutes |
-| Mobile native bug | Containment, not rollback: turn the feature off with its PostHog flag or ship a JS workaround through EAS Update. Then ship a fixed build and request an expedited Apple review. | Minutes to contain, days to fix |
-| Feature misbehaving | PostHog feature flags around chat, marketplace, promotions and push | Seconds |
-| Bad migration or data loss | Every migration goes to staging first. Restore the managed daily backup (rehearsed on staging in W9). You can lose up to 24 hours of data, and Storage files are not included. | Hours |
+| Failure                    | Path                                                                                                                                                                             | Speed                           |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Bad web deploy             | Vercel Instant Rollback                                                                                                                                                          | Seconds                         |
+| Mobile JS bug              | EAS Update to the `production` channel; no store review. Needs the W3 `expo-updates` setup.                                                                                      | Minutes                         |
+| Mobile native bug          | Containment, not rollback: turn the feature off with its PostHog flag or ship a JS workaround through EAS Update. Then ship a fixed build and request an expedited Apple review. | Minutes to contain, days to fix |
+| Feature misbehaving        | PostHog feature flags around chat, marketplace, promotions and push                                                                                                              | Seconds                         |
+| Bad migration or data loss | Every migration goes to staging first. Restore the managed daily backup (rehearsed on staging in W9). You can lose up to 24 hours of data, and Storage files are not included.   | Hours                           |
 
 **Rhythm**
 
@@ -412,16 +414,16 @@ Track work as GitHub issues labelled `p0`–`p3`.
 
 ## Budget
 
-| Item | Cost |
-|---|---|
-| Supabase Pro (two projects on Micro compute) | about $35/month |
-| Vercel Pro | $20/month |
-| SMTP (Resend or Postmark) | free tier to start, about $15–20/month once signups grow |
-| Sentry, PostHog, uptime | free tiers |
-| Apple Developer | $99/year |
-| Google Play | $25 once |
-| Domain | about $15/year |
-| Lawyer review | quote-dependent |
+| Item                                         | Cost                                                     |
+| -------------------------------------------- | -------------------------------------------------------- |
+| Supabase Pro (two projects on Micro compute) | about $35/month                                          |
+| Vercel Pro                                   | $20/month                                                |
+| SMTP (Resend or Postmark)                    | free tier to start, about $15–20/month once signups grow |
+| Sentry, PostHog, uptime                      | free tiers                                               |
+| Apple Developer                              | $99/year                                                 |
+| Google Play                                  | $25 once                                                 |
+| Domain                                       | about $15/year                                           |
+| Lawyer review                                | quote-dependent                                          |
 
 ## Go/no-go checklist
 
@@ -441,44 +443,44 @@ Track work as GitHub issues labelled `p0`–`p3`.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| App Review rejects 1.0 | Submit by Nov 13; review notes for UGC, deletion and Apple sign-in; web and Android launch regardless (Decision 5) |
-| Play production access delayed | Start the closed test by Oct 18; recruit extra testers |
-| Empty feeds in six markets | Two beta waves, metro champions, seed content before each wave |
-| One person on call | Few, loud alerts; two daily windows; kill switches; volunteer moderators |
-| Moderator role is global | Give it only to vetted people; metro scoping after launch |
-| Auth email throttled on launch day | Custom SMTP in W1; watch the email-verification step of the funnel |
-| Schema change breaks prod | Staging first; nightly smoke tests on staging; backups plus a rehearsed restore |
+| Risk                               | Mitigation                                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| App Review rejects 1.0             | Submit by Nov 13; review notes for UGC, deletion and Apple sign-in; web and Android launch regardless (Decision 5) |
+| Play production access delayed     | Start the closed test by Oct 18; recruit extra testers                                                             |
+| Empty feeds in six markets         | Two beta waves, metro champions, seed content before each wave                                                     |
+| One person on call                 | Few, loud alerts; two daily windows; kill switches; volunteer moderators                                           |
+| Moderator role is global           | Give it only to vetted people; metro scoping after launch                                                          |
+| Auth email throttled on launch day | Custom SMTP in W1; watch the email-verification step of the funnel                                                 |
+| Schema change breaks prod          | Staging first; nightly smoke tests on staging; backups plus a rehearsed restore                                    |
 
 ## Folded-in items
 
 Open items from [`phase1-remediation-checklist.md`](phase1-remediation-checklist.md) (as of 2026-09-18) and where they now live:
 
-| Item | What | Where |
-|---|---|---|
-| SEC-06 | Storage bucket limits, cron-function shared secret, `expo-secure-store`, prod `enable_confirmations`, pgTAP negative RLS tests | W1 (pgTAP: after launch) |
-| NOTIF-02 | Live push delivery | W3 |
-| AUTH-01 | Mobile Google sign-in end to end | W3, validated in store builds |
-| UX-01 | Chat avatar "Coming Soon" | W4 |
-| UX-02 | Mobile search | W4 |
-| TEST-01 | Coverage gates for notifications, moderation, auth | W9 |
-| DOC-01 | Status lines in sync with reality | `README.md` and roadmap refresh in W12. `PROGRESS.md` is already archived and frozen (superseded by the roadmap), so it needs no sync. |
-| ARCH-01 | Shared metro-lookup helper | After launch |
-| AUTH-02 | Phone OTP onboarding | Not in this plan (deferred since 2026-03-25) |
+| Item     | What                                                                                                                           | Where                                                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| SEC-06   | Storage bucket limits, cron-function shared secret, `expo-secure-store`, prod `enable_confirmations`, pgTAP negative RLS tests | W1 (pgTAP: after launch)                                                                                                               |
+| NOTIF-02 | Live push delivery                                                                                                             | W3                                                                                                                                     |
+| AUTH-01  | Mobile Google sign-in end to end                                                                                               | W3, validated in store builds                                                                                                          |
+| UX-01    | Chat avatar "Coming Soon"                                                                                                      | W4                                                                                                                                     |
+| UX-02    | Mobile search                                                                                                                  | W4                                                                                                                                     |
+| TEST-01  | Coverage gates for notifications, moderation, auth                                                                             | W9                                                                                                                                     |
+| DOC-01   | Status lines in sync with reality                                                                                              | `README.md` and roadmap refresh in W12. `PROGRESS.md` is already archived and frozen (superseded by the roadmap), so it needs no sync. |
+| ARCH-01  | Shared metro-lookup helper                                                                                                     | After launch                                                                                                                           |
+| AUTH-02  | Phone OTP onboarding                                                                                                           | Not in this plan (deferred since 2026-03-25)                                                                                           |
 
 All five steps of [`mobile-usability-security-hardening.md`](mobile-usability-security-hardening.md) (every one `Not Started` as of 2026-09-18):
 
-| Step | What | Where |
-|---|---|---|
-| 1 Security foundations | Secure storage | W1 (SEC-06) |
-| 1 Security foundations | User-safe errors | W2 |
-| 1 Security foundations | OAuth callback state, media URL validation, confirming identity before sensitive actions | W3 |
-| 1 Security foundations | 30-minute inactivity timeout, 30-day maximum session age | Dropped; replaced by Decision 6 |
-| 2 Reliability and lifecycle | Realtime cleanup, location timeouts, `LocationContext` races | W4 (check against current code first) |
-| 3 UX and accessibility | Touch targets, recoverable states, screen-reader labels | W7 |
-| 4 Proactive enhancements | Realtime over polling, post-draft recovery, contextual nudges | After launch |
-| 5 Tests and release verification | Missing critical tests, full validation pass | W9 (with TEST-01) |
+| Step                             | What                                                                                     | Where                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------- |
+| 1 Security foundations           | Secure storage                                                                           | W1 (SEC-06)                           |
+| 1 Security foundations           | User-safe errors                                                                         | W2                                    |
+| 1 Security foundations           | OAuth callback state, media URL validation, confirming identity before sensitive actions | W3                                    |
+| 1 Security foundations           | 30-minute inactivity timeout, 30-day maximum session age                                 | Dropped; replaced by Decision 6       |
+| 2 Reliability and lifecycle      | Realtime cleanup, location timeouts, `LocationContext` races                             | W4 (check against current code first) |
+| 3 UX and accessibility           | Touch targets, recoverable states, screen-reader labels                                  | W7                                    |
+| 4 Proactive enhancements         | Realtime over polling, post-draft recovery, contextual nudges                            | After launch                          |
+| 5 Tests and release verification | Missing critical tests, full validation pass                                             | W9 (with TEST-01)                     |
 
 ## After launch
 

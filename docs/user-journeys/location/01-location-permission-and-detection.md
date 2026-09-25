@@ -419,17 +419,17 @@
 
 ## Edge Cases & Error Handling
 
-| Scenario | Behavior |
-|----------|----------|
-| GPS disabled at OS level | Treat as permission denied — use stored location + reminder banner |
-| GPS returns coordinates in non-US location | Show: "Nepally is currently available in the US only. Showing your saved location." |
-| Network error during reverse geocode | Silently fail — use cached/stored location, retry on next app open |
-| User has 5 saved locations and tries to add more | "You've reached the maximum of 5 saved locations. Remove one to add a new location." |
-| User's only saved location is deleted (shouldn't happen) | Create a new default from their `users.metro_area_id` |
-| Two saved locations point to the same metro (shouldn't happen) | Prevented by UNIQUE constraint on `(user_id, metro_area_id)` |
-| User changes metro via onboarding ZIP retroactively | Update the "Home" (default) saved location to match |
-| App opened in airplane mode | No GPS available — use cached location, no prompt |
-| Reverse geocode returns a valid ZIP but no matching metro area | Show: "We couldn't find a metro area for your location. [Search manually]" |
+| Scenario                                                       | Behavior                                                                             |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| GPS disabled at OS level                                       | Treat as permission denied — use stored location + reminder banner                   |
+| GPS returns coordinates in non-US location                     | Show: "Nepally is currently available in the US only. Showing your saved location."  |
+| Network error during reverse geocode                           | Silently fail — use cached/stored location, retry on next app open                   |
+| User has 5 saved locations and tries to add more               | "You've reached the maximum of 5 saved locations. Remove one to add a new location." |
+| User's only saved location is deleted (shouldn't happen)       | Create a new default from their `users.metro_area_id`                                |
+| Two saved locations point to the same metro (shouldn't happen) | Prevented by UNIQUE constraint on `(user_id, metro_area_id)`                         |
+| User changes metro via onboarding ZIP retroactively            | Update the "Home" (default) saved location to match                                  |
+| App opened in airplane mode                                    | No GPS available — use cached location, no prompt                                    |
+| Reverse geocode returns a valid ZIP but no matching metro area | Show: "We couldn't find a metro area for your location. [Search manually]"           |
 
 ---
 
@@ -497,14 +497,14 @@
 
 ## API Requirements Summary
 
-| API Call | Method | Shared Package Location |
-|----------|--------|------------------------|
-| Get metro by ZIP | `getMetroByZip()` | `packages/shared/src/api/metroArea.ts` (exists) |
-| Get metro by coordinates | `getMetroByCoordinates()` | `packages/shared/src/api/metroArea.ts` (new) |
-| Search metro areas | `searchMetroAreas()` | `packages/shared/src/api/metroArea.ts` (new) |
-| Get saved locations | `getSavedLocations()` | `packages/shared/src/api/savedLocations.ts` (new) |
-| Add saved location | `addSavedLocation()` | `packages/shared/src/api/savedLocations.ts` (new) |
-| Update saved location | `updateSavedLocation()` | `packages/shared/src/api/savedLocations.ts` (new) |
-| Delete saved location | `deleteSavedLocation()` | `packages/shared/src/api/savedLocations.ts` (new) |
-| Set default location | `setDefaultLocation()` | `packages/shared/src/api/savedLocations.ts` (new) |
-| Update user metro area | `updateUserLocation()` | `packages/shared/src/api/users.ts` (exists) |
+| API Call                 | Method                    | Shared Package Location                           |
+| ------------------------ | ------------------------- | ------------------------------------------------- |
+| Get metro by ZIP         | `getMetroByZip()`         | `packages/shared/src/api/metroArea.ts` (exists)   |
+| Get metro by coordinates | `getMetroByCoordinates()` | `packages/shared/src/api/metroArea.ts` (new)      |
+| Search metro areas       | `searchMetroAreas()`      | `packages/shared/src/api/metroArea.ts` (new)      |
+| Get saved locations      | `getSavedLocations()`     | `packages/shared/src/api/savedLocations.ts` (new) |
+| Add saved location       | `addSavedLocation()`      | `packages/shared/src/api/savedLocations.ts` (new) |
+| Update saved location    | `updateSavedLocation()`   | `packages/shared/src/api/savedLocations.ts` (new) |
+| Delete saved location    | `deleteSavedLocation()`   | `packages/shared/src/api/savedLocations.ts` (new) |
+| Set default location     | `setDefaultLocation()`    | `packages/shared/src/api/savedLocations.ts` (new) |
+| Update user metro area   | `updateUserLocation()`    | `packages/shared/src/api/users.ts` (exists)       |

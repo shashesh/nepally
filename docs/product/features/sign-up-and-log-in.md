@@ -38,20 +38,20 @@ A signed-in member gets the feed at `/`. A visitor gets the landing page:
 
 A failed auth request shows one sentence in an alert above the form, keyed on Supabase's error `code`. The raw Supabase message is never shown. It goes to `logClientEvent` instead (`auth_log_in_failed`, `auth_sign_up_failed`, `auth_google_failed`, `auth_resend_failed`).
 
-| When | The member sees |
-|---|---|
-| Wrong email or password (`invalid_credentials`) | That email and password don't match. Check them and try again. |
-| Email not confirmed (`email_not_confirmed`) | Confirm your email first. Use the link we sent when you signed up. |
-| Rate limited (`over_email_send_rate_limit`, `over_request_rate_limit`) | Too many attempts. Please wait a minute and try again. |
-| Password rejected by the server (`weak_password`) | Choose a stronger password. |
-| No connection, or a 5xx from Supabase | Couldn't reach Nepally. Check your connection and try again. |
-| Anything else | Couldn't log you in. / Couldn't create your account. / Couldn't continue with Google. / Couldn't resend the email. (each followed by "Please try again.") |
+| When                                                                   | The member sees                                                                                                                                           |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Wrong email or password (`invalid_credentials`)                        | That email and password don't match. Check them and try again.                                                                                            |
+| Email not confirmed (`email_not_confirmed`)                            | Confirm your email first. Use the link we sent when you signed up.                                                                                        |
+| Rate limited (`over_email_send_rate_limit`, `over_request_rate_limit`) | Too many attempts. Please wait a minute and try again.                                                                                                    |
+| Password rejected by the server (`weak_password`)                      | Choose a stronger password.                                                                                                                               |
+| No connection, or a 5xx from Supabase                                  | Couldn't reach Nepally. Check your connection and try again.                                                                                              |
+| Anything else                                                          | Couldn't log you in. / Couldn't create your account. / Couldn't continue with Google. / Couldn't resend the email. (each followed by "Please try again.") |
 
 The sentences live in shared `getAuthErrorMessage`, so mobile can show the same ones.
 
 ## Verify your email (`/verify-email`)
 
-- **"Check your email"**, with the address masked ("b\*\*\*l@example.com"), and "Already have an account? Log in. If you signed up with Google, use Continue with Google there."
+- **"Check your email"**, with the address masked (`b***l@example.com`), and "Already have an account? Log in. If you signed up with Google, use Continue with Google there."
 - **Resend email** can be pressed 60 seconds after arriving, with "You can resend in 42s" beside it. It stays focusable during the wait and while sending. Success shows "Email sent. Check your inbox." and starts the wait again. A failure shows its sentence from the table.
 - **Without an address in the link**, the page says "We sent a verification link to your email address." and offers no resend, only Log in.
 

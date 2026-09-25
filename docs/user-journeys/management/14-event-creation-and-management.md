@@ -56,7 +56,7 @@
 - ✕ Cancel button (top-left), inactive "Create" button (top-right, greyed out until form is valid)
 - Empty form fields below
 - "Posting to: San Jose-Sunnyvale-Santa Clara" footer card (local by default)
-**Duration:** Instant
+  **Duration:** Instant
 
 **User Thoughts:**
 
@@ -78,7 +78,7 @@
 - Text appears as typed
 - No error shown while typing (validation on blur)
 - After tapping away: green checkmark if valid (5–150 chars)
-**Duration:** ~20 seconds
+  **Duration:** ~20 seconds
 
 **Validation/Constraints:**
 
@@ -96,7 +96,7 @@
 - Type chips: Cultural · Religious · Social · Career · Other
 - "Cultural" chip selected (orange filled)
 - Single-select — tapping another deselects the current
-**Duration:** ~5 seconds
+  **Duration:** ~5 seconds
 
 **Validation/Constraints:**
 
@@ -175,8 +175,8 @@
 - Image picker opens (expo-image-picker on mobile; `<input type="file">` on web)
 - Photo selected → `uploadEventPhoto(supabase, { file, eventId? })` called → uploads to Supabase Storage `event-photos/` bucket
 - Returns `photo_url` stored with the event
-**User Sees:** Thumbnail preview of the uploaded photo with a ✕ remove button.
-**Duration:** ~20 seconds including upload
+  **User Sees:** Thumbnail preview of the uploaded photo with a ✕ remove button.
+  **Duration:** ~20 seconds including upload
 
 **Validation/Constraints:**
 
@@ -220,8 +220,8 @@
 - Calls `createEvent(supabase, { title, description, event_type, start_date, end_date, location_name, location_address, photo_url, rsvp_visibility, is_global, organizer_id, metro_area_id })`
 - On success: navigates to the new event's `EventDetailScreen`
 - On failure: error toast, form remains filled
-**User Sees:** Brief loading state → transitions to the live event detail screen
-**Duration:** 1–2 seconds
+  **User Sees:** Brief loading state → transitions to the live event detail screen
+  **Duration:** 1–2 seconds
 
 **User Thoughts:**
 
@@ -240,7 +240,7 @@
 - Three-dot menu (⋮) in the top-right header: Edit Event / Cancel Event / Delete Event
 - RSVP count: 0 (newly created)
 - "Message Organizer" button not shown (it's her own event)
-**Duration:** 30 seconds review
+  **Duration:** 30 seconds review
 
 **User Thoughts:**
 
@@ -341,15 +341,15 @@ User taps "Create Event"
 
 ## Touchpoints
 
-| Step | Touchpoint | Channel | Data Required | Data Stored |
-|------|------------|---------|---------------|-------------|
-| 1 | Tap "Create Event" | Mobile / Web | `trust_level ≥ 1` | None |
-| 2–10 | Fill event form | Mobile / Web | All event fields | None (form state only) |
-| 8 | Upload photo | Mobile / Web | Image file | `event-photos/` Storage bucket |
-| 11 | Submit | Mobile / Web | Complete event payload | `events` row created |
-| 13 | Edit event | Mobile / Web | Changed fields | `events` row updated |
-| 14 | Cancel event | Mobile / Web | `event_id` | `events.status = 'cancelled'` |
-| 15 | Delete event | Mobile / Web | `event_id` | `events.status = 'removed'` |
+| Step | Touchpoint         | Channel      | Data Required          | Data Stored                    |
+| ---- | ------------------ | ------------ | ---------------------- | ------------------------------ |
+| 1    | Tap "Create Event" | Mobile / Web | `trust_level ≥ 1`      | None                           |
+| 2–10 | Fill event form    | Mobile / Web | All event fields       | None (form state only)         |
+| 8    | Upload photo       | Mobile / Web | Image file             | `event-photos/` Storage bucket |
+| 11   | Submit             | Mobile / Web | Complete event payload | `events` row created           |
+| 13   | Edit event         | Mobile / Web | Changed fields         | `events` row updated           |
+| 14   | Cancel event       | Mobile / Web | `event_id`             | `events.status = 'cancelled'`  |
+| 15   | Delete event       | Mobile / Web | `event_id`             | `events.status = 'removed'`    |
 
 ---
 
@@ -362,33 +362,33 @@ User taps "Create Event"
 
 ### Platform Differences
 
-| Step | Mobile Behavior | Web Behavior | Notes |
-|------|----------------|--------------|-------|
-| Entry | "Create Event" pill in EventsScreen header | Same button on `/events` | |
-| Step 1 (modal) | Modal presentation (iOS: slide-up; Android: full-screen) | Full-page route `/events/create` | |
-| Step 4–5 (dates) | Native iOS/Android date wheel picker | `<input type="date">` + `<input type="time">` HTML elements | Web inputs may vary by browser |
-| Step 8 (photo) | `expo-image-picker` (camera + library) | `<input type="file" accept="image/*">` | Same upload pipeline |
-| Step 9 (visibility) | Radio-style touch controls | HTML radio buttons | |
-| Step 11 (submit) | "Create" nav bar button | "Create Event" form submit button | Same API call |
-| Step 12 (edit mode) | `CreateEventScreen` with `editEventId` param | `/events/create?edit=<eventId>` query param | Same pre-fill logic |
-| Step 14–15 (cancel/delete) | Native `Alert.alert` confirmation | Web `confirm()` dialog or custom modal | |
+| Step                       | Mobile Behavior                                          | Web Behavior                                                | Notes                          |
+| -------------------------- | -------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------ |
+| Entry                      | "Create Event" pill in EventsScreen header               | Same button on `/events`                                    |                                |
+| Step 1 (modal)             | Modal presentation (iOS: slide-up; Android: full-screen) | Full-page route `/events/create`                            |                                |
+| Step 4–5 (dates)           | Native iOS/Android date wheel picker                     | `<input type="date">` + `<input type="time">` HTML elements | Web inputs may vary by browser |
+| Step 8 (photo)             | `expo-image-picker` (camera + library)                   | `<input type="file" accept="image/*">`                      | Same upload pipeline           |
+| Step 9 (visibility)        | Radio-style touch controls                               | HTML radio buttons                                          |                                |
+| Step 11 (submit)           | "Create" nav bar button                                  | "Create Event" form submit button                           | Same API call                  |
+| Step 12 (edit mode)        | `CreateEventScreen` with `editEventId` param             | `/events/create?edit=<eventId>` query param                 | Same pre-fill logic            |
+| Step 14–15 (cancel/delete) | Native `Alert.alert` confirmation                        | Web `confirm()` dialog or custom modal                      |                                |
 
 ---
 
 ## Emotions & Experience
 
-| Phase | Emotion | Confidence Level | Friction Level | Notes |
-|-------|---------|------------------|----------------|-------|
-| Opening form | Motivated | High | Low | Clear, familiar form pattern |
-| Event name & type | Focused | High | Low | Simple required fields |
-| Date/time | Careful | Medium | Medium | Date picker UX varies by platform |
-| Location | Neutral | High | Medium | Manual text entry, no autocomplete |
-| Description | Creative | High | Low | Open text, familiar |
-| Photo upload | Cautious | Medium | Medium | Technical step, network dependent |
-| Submit | Confident | High | Low | One-tap once all fields valid |
-| Viewing published event | Proud | High | None | Immediate gratification |
-| Editing | Familiar | High | Low | Same form, pre-filled |
-| Cancelling | Reluctant | High | Low | Clear confirmation prevents accidents |
+| Phase                   | Emotion   | Confidence Level | Friction Level | Notes                                 |
+| ----------------------- | --------- | ---------------- | -------------- | ------------------------------------- |
+| Opening form            | Motivated | High             | Low            | Clear, familiar form pattern          |
+| Event name & type       | Focused   | High             | Low            | Simple required fields                |
+| Date/time               | Careful   | Medium           | Medium         | Date picker UX varies by platform     |
+| Location                | Neutral   | High             | Medium         | Manual text entry, no autocomplete    |
+| Description             | Creative  | High             | Low            | Open text, familiar                   |
+| Photo upload            | Cautious  | Medium           | Medium         | Technical step, network dependent     |
+| Submit                  | Confident | High             | Low            | One-tap once all fields valid         |
+| Viewing published event | Proud     | High             | None           | Immediate gratification               |
+| Editing                 | Familiar  | High             | Low            | Same form, pre-filled                 |
+| Cancelling              | Reluctant | High             | Low            | Clear confirmation prevents accidents |
 
 ---
 
@@ -480,15 +480,15 @@ User taps "Create Event"
 
 ## Error & Edge Cases
 
-| Scenario | Expected Behavior | Recovery Path | User Message |
-|----------|------------------|---------------|--------------|
-| Photo upload fails | Error toast; event creation can continue without photo | Retry upload or skip | "Photo upload failed. You can add one later by editing the event." |
-| Network error on submit | Error toast; form remains filled | User retries submit | "Couldn't create event. Check your connection and try again." |
-| Session timeout mid-form | Auth context attempts silent refresh | Re-authenticate; form state may be lost | Standard auth error handling |
-| Start date set in the past | Inline validation error on blur | User corrects date | "Start date must be in the future." |
-| End date before start date | Inline validation error | User corrects end date | "End date must be after start date." |
-| Duplicate event (same organizer, same title, same date) | No duplicate detection in Phase 1 — event is created regardless | N/A — organizer can delete duplicate | N/A |
-| Organizer account banned mid-event | Event status remains; RLS prevents further organizer actions | Moderation handles | N/A (admin action) |
+| Scenario                                                | Expected Behavior                                               | Recovery Path                           | User Message                                                       |
+| ------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
+| Photo upload fails                                      | Error toast; event creation can continue without photo          | Retry upload or skip                    | "Photo upload failed. You can add one later by editing the event." |
+| Network error on submit                                 | Error toast; form remains filled                                | User retries submit                     | "Couldn't create event. Check your connection and try again."      |
+| Session timeout mid-form                                | Auth context attempts silent refresh                            | Re-authenticate; form state may be lost | Standard auth error handling                                       |
+| Start date set in the past                              | Inline validation error on blur                                 | User corrects date                      | "Start date must be in the future."                                |
+| End date before start date                              | Inline validation error                                         | User corrects end date                  | "End date must be after start date."                               |
+| Duplicate event (same organizer, same title, same date) | No duplicate detection in Phase 1 — event is created regardless | N/A — organizer can delete duplicate    | N/A                                                                |
+| Organizer account banned mid-event                      | Event status remains; RLS prevents further organizer actions    | Moderation handles                      | N/A (admin action)                                                 |
 
 ---
 
@@ -605,18 +605,18 @@ All in `packages/shared/src/api/events.ts` + `storage.ts`:
 
 ### Data Validations (from `createEventSchema`)
 
-| Field | Required | Constraints |
-|-------|----------|-------------|
-| `title` | Yes | 5–150 chars |
-| `event_type` | Yes | One of: cultural, religious, social, career, other |
-| `start_date` | Yes | Future datetime |
-| `end_date` | No | Must be after `start_date` if provided |
-| `location_name` | Yes | 5–100 chars |
-| `location_address` | No | ≤200 chars |
-| `description` | Yes | 10–3000 chars |
-| `photo_url` | No | URL string (set after upload) |
-| `rsvp_visibility` | Yes | `'public'` or `'private'` (default: `'public'`) |
-| `is_global` | Yes | Boolean (default: `false`; premium gate in UI) |
+| Field              | Required | Constraints                                        |
+| ------------------ | -------- | -------------------------------------------------- |
+| `title`            | Yes      | 5–150 chars                                        |
+| `event_type`       | Yes      | One of: cultural, religious, social, career, other |
+| `start_date`       | Yes      | Future datetime                                    |
+| `end_date`         | No       | Must be after `start_date` if provided             |
+| `location_name`    | Yes      | 5–100 chars                                        |
+| `location_address` | No       | ≤200 chars                                         |
+| `description`      | Yes      | 10–3000 chars                                      |
+| `photo_url`        | No       | URL string (set after upload)                      |
+| `rsvp_visibility`  | Yes      | `'public'` or `'private'` (default: `'public'`)    |
+| `is_global`        | Yes      | Boolean (default: `false`; premium gate in UI)     |
 
 ### Permissions Required
 

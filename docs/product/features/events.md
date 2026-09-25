@@ -53,30 +53,30 @@ Nepally's metro-first location model makes it uniquely positioned to surface the
 
 ### In Scope (MVP)
 
-| Feature | Description |
-|---------|-------------|
-| Events list screen | Chronological feed of upcoming events, filter chips by type |
-| Event detail screen | Full event info, organizer, RSVP button, attendee section |
-| Event creation form | Level 1+ can create local events (premium can toggle global) |
-| Event editing | Organizer can edit title, description, date, location, type |
-| Event cancellation | Organizer can cancel event (remains visible with "Cancelled" banner) |
-| RSVP toggle | Level 1+ can RSVP / un-RSVP; optimistic UI |
-| RSVP privacy | Organizer sets public (show names) or private (count only) |
-| Past events | Events remain visible after end date, marked "Past", RSVP disabled |
-| Events in profile | Organizer's created events visible on their public profile |
-| Global events (premium) | Premium users can create events visible in all metro feeds |
+| Feature                 | Description                                                          |
+| ----------------------- | -------------------------------------------------------------------- |
+| Events list screen      | Chronological feed of upcoming events, filter chips by type          |
+| Event detail screen     | Full event info, organizer, RSVP button, attendee section            |
+| Event creation form     | Level 1+ can create local events (premium can toggle global)         |
+| Event editing           | Organizer can edit title, description, date, location, type          |
+| Event cancellation      | Organizer can cancel event (remains visible with "Cancelled" banner) |
+| RSVP toggle             | Level 1+ can RSVP / un-RSVP; optimistic UI                           |
+| RSVP privacy            | Organizer sets public (show names) or private (count only)           |
+| Past events             | Events remain visible after end date, marked "Past", RSVP disabled   |
+| Events in profile       | Organizer's created events visible on their public profile           |
+| Global events (premium) | Premium users can create events visible in all metro feeds           |
 
 ### Out of Scope (Future)
 
-| Feature | Reason Deferred |
-|---------|----------------|
-| Recurring events | Complexity; deferred to post-MVP |
-| Calendar view | Deferred; feed-first approach sufficient for MVP |
-| Event photo galleries | Single photo supported; full gallery deferred |
-| External calendar sync (Google/Apple) | API integration complexity |
-| Event capacity / waitlist | No pressing user need identified yet |
-| Event comments/discussion | Chat with organizer covers this for now |
-| Co-organizers | Single organizer model sufficient for MVP |
+| Feature                               | Reason Deferred                                  |
+| ------------------------------------- | ------------------------------------------------ |
+| Recurring events                      | Complexity; deferred to post-MVP                 |
+| Calendar view                         | Deferred; feed-first approach sufficient for MVP |
+| Event photo galleries                 | Single photo supported; full gallery deferred    |
+| External calendar sync (Google/Apple) | API integration complexity                       |
+| Event capacity / waitlist             | No pressing user need identified yet             |
+| Event comments/discussion             | Chat with organizer covers this for now          |
+| Co-organizers                         | Single organizer model sufficient for MVP        |
 
 ---
 
@@ -176,10 +176,10 @@ Each event card displays:
 
 **RSVP Attendee List (Privacy-Controlled):**
 
-| Privacy Setting | Non-Organizer View | Organizer View |
-|----------------|-------------------|---------------|
-| Public | RSVP count + full attendee list (avatar stack → expand to full names list) | Count + full list |
-| Private | RSVP count only ("34 going"); attendee list section hidden | Count + full list in organizer's event management view |
+| Privacy Setting | Non-Organizer View                                                         | Organizer View                                         |
+| --------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Public          | RSVP count + full attendee list (avatar stack → expand to full names list) | Count + full list                                      |
+| Private         | RSVP count only ("34 going"); attendee list section hidden                 | Count + full list in organizer's event management view |
 
 - Attendee list (when public): avatar stack showing up to 5 attendee photos/initials; tap → sheet/modal with scrollable full list (masked names + trust badges)
 - Attendee list fetched on demand (not on page load), and again each time it opens on web, so it always agrees with the count; the previous list stays on screen while it reloads
@@ -236,22 +236,22 @@ Each event card displays:
 
 ## Edge Cases & Error States
 
-| Scenario | Expected Behavior |
-|----------|------------------|
-| No upcoming events in metro | Empty state illustration + "No upcoming events in [City]. Check back soon!" |
-| Event has ended | "Past Event" label; RSVP disabled; event appears below "Past Events" divider |
-| Event cancelled | Red "Cancelled" banner on detail; RSVP button removed; still visible in feed with visual indicator |
-| User RSVP's then organizer cancels | RSVP record preserved in DB; RSVP button replaced with "Event Cancelled" label for that user |
-| Level 0 taps RSVP | Disabled state; tap shows verification prompt toast |
-| Level 0 taps Create Event | Button hidden or redirected to verification prompt |
-| Network error on RSVP | Optimistic UI reverted; error toast "Couldn't update RSVP. Try again." |
-| Organizer taps RSVP button on own event | Button replaced with "You're the organizer" label (non-interactive) |
-| Premium user creates global event | Event appears in all metro feeds with 🌐 badge |
-| Non-premium user views global toggle | Toggle not shown (or shown as disabled with "Upgrade to Premium" tooltip) |
-| Event photo fails to upload | Toast error; event can still be submitted without photo |
-| Start date in the past (on create) | Validation error: "Start date must be in the future" |
-| End date before start date | Validation error: "End date must be after start date" |
-| User has no metro area set | Events tab shows prompt to set location in profile |
+| Scenario                                | Expected Behavior                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| No upcoming events in metro             | Empty state illustration + "No upcoming events in [City]. Check back soon!"                        |
+| Event has ended                         | "Past Event" label; RSVP disabled; event appears below "Past Events" divider                       |
+| Event cancelled                         | Red "Cancelled" banner on detail; RSVP button removed; still visible in feed with visual indicator |
+| User RSVP's then organizer cancels      | RSVP record preserved in DB; RSVP button replaced with "Event Cancelled" label for that user       |
+| Level 0 taps RSVP                       | Disabled state; tap shows verification prompt toast                                                |
+| Level 0 taps Create Event               | Button hidden or redirected to verification prompt                                                 |
+| Network error on RSVP                   | Optimistic UI reverted; error toast "Couldn't update RSVP. Try again."                             |
+| Organizer taps RSVP button on own event | Button replaced with "You're the organizer" label (non-interactive)                                |
+| Premium user creates global event       | Event appears in all metro feeds with 🌐 badge                                                     |
+| Non-premium user views global toggle    | Toggle not shown (or shown as disabled with "Upgrade to Premium" tooltip)                          |
+| Event photo fails to upload             | Toast error; event can still be submitted without photo                                            |
+| Start date in the past (on create)      | Validation error: "Start date must be in the future"                                               |
+| End date before start date              | Validation error: "End date must be after start date"                                              |
+| User has no metro area set              | Events tab shows prompt to set location in profile                                                 |
 
 ---
 
@@ -398,8 +398,8 @@ export interface Event {
   title: string;
   description: string;
   event_type: EventType;
-  start_date: string;       // ISO 8601
-  end_date?: string;        // ISO 8601, optional
+  start_date: string; // ISO 8601
+  end_date?: string; // ISO 8601, optional
   location_name: string;
   location_address?: string;
   metro_area_id: string;

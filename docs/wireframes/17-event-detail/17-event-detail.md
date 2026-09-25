@@ -46,9 +46,9 @@ The Event Detail screen shows the complete information for a single event and is
 
 ---
 
-*Teej is a celebrated festival observed by Hindu women and girls. Join our community for an evening of traditional songs, dance, and feasting. All are welcome — bring the whole family! Traditional attire encouraged.*
+_Teej is a celebrated festival observed by Hindu women and girls. Join our community for an evening of traditional songs, dance, and feasting. All are welcome — bring the whole family! Traditional attire encouraged._
 
-*Activities include: group singing of Teej songs, folk dance performances, traditional food (sel roti, dahi, fruits), and cultural games.*
+_Activities include: group singing of Teej songs, folk dance performances, traditional food (sel roti, dahi, fruits), and cultural games._
 
 ---
 
@@ -98,7 +98,7 @@ The Event Detail screen shows the complete information for a single event and is
 
 ---
 
-*Teej is a celebrated festival observed by Hindu women and girls...*
+_Teej is a celebrated festival observed by Hindu women and girls..._
 
 ---
 
@@ -136,7 +136,7 @@ The Event Detail screen shows the complete information for a single event and is
 
 **34 going**
 
-> *(Attendee list is private. Organizer controls visibility.)*
+> _(Attendee list is private. Organizer controls visibility.)_
 
 ---
 
@@ -166,13 +166,13 @@ The Event Detail screen shows the complete information for a single event and is
 
 ---
 
-*Teej is a celebrated festival...*
+_Teej is a celebrated festival..._
 
 ---
 
 **Organizer**
 
-**[AK]** &nbsp; Asha K. ✓ &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; *You*
+**[AK]** &nbsp; Asha K. ✓ &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; _You_
 
 ---
 
@@ -231,7 +231,7 @@ The Event Detail screen shows the complete information for a single event and is
 
 ---
 
-*Teej is a celebrated festival...*
+_Teej is a celebrated festival..._
 
 ---
 
@@ -270,13 +270,13 @@ The Event Detail screen shows the complete information for a single event and is
 ## Teej Festival 2026
 
 📅 ~~Saturday, August 29, 2026~~
-*(Ended)*
+_(Ended)_
 
 📍 Dallas Convention Center
 
 ---
 
-*Teej is a celebrated festival...*
+_Teej is a celebrated festival..._
 
 ---
 
@@ -322,7 +322,7 @@ The Event Detail screen shows the complete information for a single event and is
 
 ---
 
-*Teej is a celebrated festival...*
+_Teej is a celebrated festival..._
 
 ---
 
@@ -370,7 +370,7 @@ The Event Detail screen shows the complete information for a single event and is
 
 **[AM]** &nbsp; Anita M.
 
-*... and 28 more*
+_... and 28 more_
 
 [Close]
 :::
@@ -385,7 +385,7 @@ The Event Detail screen shows the complete information for a single event and is
 
 Attendees will see this event as cancelled. Their RSVPs will be preserved.
 
-*This action cannot be undone.*
+_This action cannot be undone._
 
 [Keep Event]{.outline} &emsp; [Yes, Cancel It]{variant:danger}
 :::
@@ -400,7 +400,7 @@ Attendees will see this event as cancelled. Their RSVPs will be preserved.
 
 This will permanently remove the event from all feeds. Attendees will not be notified.
 
-*This action cannot be undone.*
+_This action cannot be undone._
 
 [Keep Event]{.outline} &emsp; [Delete]{variant:danger}
 :::
@@ -447,7 +447,7 @@ Remove your RSVP for **Teej Festival 2026**?
 
 ---
 
-*Teej is a celebrated festival observed by Hindu women and girls. Join our community for an evening of traditional songs, dance, and feasting...*
+_Teej is a celebrated festival observed by Hindu women and girls. Join our community for an evening of traditional songs, dance, and feasting..._
 
 ### Right Column — Actions & Organizer
 
@@ -481,12 +481,12 @@ Remove your RSVP for **Teej Festival 2026**?
 
 ### 1. Back Navigation Bar
 
-| Property | iOS | Android | Web |
-|----------|-----|---------|-----|
-| **Type** | Navigation bar | App bar | Breadcrumb |
-| **Height** | 44px | 56dp | 48px |
-| **Background** | White (#FFFFFF) | White (#FFFFFF) | White (#FFFFFF) |
-| **Border** | 1px bottom #E0E0E0 | elevation 2dp | 1px bottom #E0E0E0 |
+| Property       | iOS                | Android         | Web                |
+| -------------- | ------------------ | --------------- | ------------------ |
+| **Type**       | Navigation bar     | App bar         | Breadcrumb         |
+| **Height**     | 44px               | 56dp            | 48px               |
+| **Background** | White (#FFFFFF)    | White (#FFFFFF) | White (#FFFFFF)    |
+| **Border**     | 1px bottom #E0E0E0 | elevation 2dp   | 1px bottom #E0E0E0 |
 
 **Left:** Back arrow (←) — taps to pop screen, returns to Events List
 **Right:** Report button (:flag: icon, 24px, #757575) — opens report flow
@@ -503,12 +503,12 @@ Remove your RSVP for **Teej Festival 2026**?
 
 ### 2. Hero Image
 
-| Property | iOS | Android | Web |
-|----------|-----|---------|-----|
-| **Width** | Full screen width | Full screen width | Full left column |
-| **Height** | 220px | 220dp | 280px |
-| **Corner Radius** | 0 (edge-to-edge) | 0 | 8px (within column) |
-| **Object Fit** | Cover | centerCrop | Cover |
+| Property          | iOS               | Android           | Web                 |
+| ----------------- | ----------------- | ----------------- | ------------------- |
+| **Width**         | Full screen width | Full screen width | Full left column    |
+| **Height**        | 220px             | 220dp             | 280px               |
+| **Corner Radius** | 0 (edge-to-edge)  | 0                 | 8px (within column) |
+| **Object Fit**    | Cover             | centerCrop        | Cover               |
 
 **Fallback (no photo uploaded):**
 
@@ -530,15 +530,15 @@ Below hero image, horizontal row:
 - **Left:** Event type badge (same color scheme as events list)
 - **Right:** 📍 Local or 🌐 Global badge
 
-| Badge | Text Color | Background |
-|-------|-----------|-----------|
-| Cultural | #E65100 | #FFF3E0 |
-| Religious | #6A1B9A | #F3E5F5 |
-| Social | #1B5E20 | #E8F5E9 |
-| Career | #0D47A1 | #E3F2FD |
-| Other | #424242 | #F5F5F5 |
-| Local | #388E3C | #E8F5E9 |
-| Global | #1565C0 | #E3F2FD |
+| Badge     | Text Color | Background |
+| --------- | ---------- | ---------- |
+| Cultural  | #E65100    | #FFF3E0    |
+| Religious | #6A1B9A    | #F3E5F5    |
+| Social    | #1B5E20    | #E8F5E9    |
+| Career    | #0D47A1    | #E3F2FD    |
+| Other     | #424242    | #F5F5F5    |
+| Local     | #388E3C    | #E8F5E9    |
+| Global    | #1565C0    | #E3F2FD    |
 
 Margin: 16px top, 8px bottom
 
@@ -546,11 +546,11 @@ Margin: 16px top, 8px bottom
 
 ### 4. Event Title
 
-| Property | Value |
-|----------|-------|
-| **Typography** | 24pt/22sp Bold, #212121 |
-| **Max Lines** | Unlimited (no truncation on detail screen) |
-| **Margin** | 8px top |
+| Property       | Value                                      |
+| -------------- | ------------------------------------------ |
+| **Typography** | 24pt/22sp Bold, #212121                    |
+| **Max Lines**  | Unlimited (no truncation on detail screen) |
+| **Margin**     | 8px top                                    |
 
 For **cancelled** events: title in strikethrough style, #757575
 
@@ -568,7 +568,7 @@ For **cancelled** events: title in strikethrough style, #757575
 - Margin: 12px top, 4px bottom
 
 For **cancelled** events: date row in strikethrough, #BDBDBD
-For **past** events: "*(Ended)*" appended, #757575
+For **past** events: "_(Ended)_" appended, #757575
 
 ---
 
@@ -595,19 +595,19 @@ For **past** events: "*(Ended)*" appended, #757575
 
 ### 8. Organizer Section
 
-| Property | Value |
-|----------|-------|
-| **Avatar** | 40×40px circle, profile photo or initials |
-| **Name** | Masked: "Firstname L.", 15pt/14sp Medium, #212121 |
-| **Trust badge** | ✓ checkmark, 16px, #2E7D32 (Level 1+) |
-| **Layout** | [Avatar] [Name] [✓] ........... [Message Organizer] |
+| Property        | Value                                               |
+| --------------- | --------------------------------------------------- |
+| **Avatar**      | 40×40px circle, profile photo or initials           |
+| **Name**        | Masked: "Firstname L.", 15pt/14sp Medium, #212121   |
+| **Trust badge** | ✓ checkmark, 16px, #2E7D32 (Level 1+)               |
+| **Layout**      | [Avatar] [Name] [✓] ........... [Message Organizer] |
 
 **"Message Organizer" button:**
 
 - Outline style, 13pt/12sp Semibold, #1565C0
 - Level 1+: taps to open/create chat with organizer
 - Level 0: button hidden; replaced with "Verify to message" text link
-- Own event (organizer): "Message Organizer" hidden; replaced with "*You*" text label
+- Own event (organizer): "Message Organizer" hidden; replaced with "_You_" text label
 
 **Tap organizer name/avatar:** Navigates to organizer's public profile (reuses `PublicProfileScreen` / `/users/[id]`)
 
@@ -617,7 +617,7 @@ For **past** events: "*(Ended)*" appended, #757575
 
 **Section header:** "Attendance" (15pt/14sp Semibold, #212121)
 
-#### When RSVP is Public:
+#### When RSVP is Public
 
 - Avatar stack: up to 5 circular avatars (24px each, overlapping by 8px)
   - Photos or initials, same avatar component used app-wide
@@ -627,14 +627,14 @@ For **past** events: "*(Ended)*" appended, #757575
   - Taps to open Attendee List modal/sheet
 - Empty state: "Be the first to RSVP!"
 
-#### When RSVP is Private:
+#### When RSVP is Private
 
 - No avatar stack shown
 - Only: "[N] going" text, center or left aligned
 - No "View all attendees" button
 - Empty state: "No RSVPs yet"
 
-#### Organizer View (regardless of privacy):
+#### Organizer View (regardless of privacy)
 
 - Section header: "Attendance — [N] RSVPs"
 - Always shows full avatar stack and "View all attendees" button
@@ -644,15 +644,15 @@ For **past** events: "*(Ended)*" appended, #757575
 
 ### 10. RSVP Button
 
-| State | Label | Style | Trigger |
-|-------|-------|-------|---------|
-| Not going (default) | "RSVP — I'm Going 📅" | Primary filled (#1565C0) | Level 1+ tap → RSVP |
-| Going | "Going ✓" | Success filled (#2E7D32) | — |
-| Going (un-RSVP) | "Can't make it" | Outline (#C62828) | Shows alongside Going button |
-| Past event | "Event Has Passed" | Disabled gray | Non-interactive |
-| Cancelled | Hidden | — | Not shown |
-| Own event | "You're the organizer" | Disabled text label | Non-interactive |
-| Level 0 | "Verify to RSVP" | Disabled outline | Tap → verification prompt |
+| State               | Label                  | Style                    | Trigger                      |
+| ------------------- | ---------------------- | ------------------------ | ---------------------------- |
+| Not going (default) | "RSVP — I'm Going 📅"  | Primary filled (#1565C0) | Level 1+ tap → RSVP          |
+| Going               | "Going ✓"              | Success filled (#2E7D32) | —                            |
+| Going (un-RSVP)     | "Can't make it"        | Outline (#C62828)        | Shows alongside Going button |
+| Past event          | "Event Has Passed"     | Disabled gray            | Non-interactive              |
+| Cancelled           | Hidden                 | —                        | Not shown                    |
+| Own event           | "You're the organizer" | Disabled text label      | Non-interactive              |
+| Level 0             | "Verify to RSVP"       | Disabled outline         | Tap → verification prompt    |
 
 **Going state layout:** Two buttons side by side: [Going ✓] (success, left) + [Can't make it] (outline, right)
 
@@ -690,25 +690,25 @@ For **past** events: "*(Ended)*" appended, #757575
 
 ## Spacing & Layout (Mobile)
 
-| # | Element | Height | Spacing After |
-|---|---------|--------|---------------|
-| 1 | Status bar / safe area | Auto | — |
-| 2 | Navigation bar | 44px | — |
-| 3 | Hero image | 220px | — |
-| 4 | Type badge + scope badge row | 32px | 12px |
-| 5 | Event title | Variable | 12px |
-| 6 | Date/time row | 40px | 4px |
-| 7 | Location row | 40–60px (2 lines) | 16px |
-| 8 | Horizontal divider | 1px | 16px |
-| 9 | Description | Variable | 16px |
-| 10 | Horizontal divider | 1px | 16px |
-| 11 | Organizer section | 56px | 16px |
-| 12 | Horizontal divider | 1px | 16px |
-| 13 | Attendance header | 24px | 8px |
-| 14 | Avatar stack + count | 32px | 8px |
-| 15 | "View all" button (if public) | 36px | 16px |
-| 16 | RSVP button(s) | 48px | 24px |
-| 17 | Bottom safe area + tab bar | 56px + safe | — |
+| #   | Element                       | Height            | Spacing After |
+| --- | ----------------------------- | ----------------- | ------------- |
+| 1   | Status bar / safe area        | Auto              | —             |
+| 2   | Navigation bar                | 44px              | —             |
+| 3   | Hero image                    | 220px             | —             |
+| 4   | Type badge + scope badge row  | 32px              | 12px          |
+| 5   | Event title                   | Variable          | 12px          |
+| 6   | Date/time row                 | 40px              | 4px           |
+| 7   | Location row                  | 40–60px (2 lines) | 16px          |
+| 8   | Horizontal divider            | 1px               | 16px          |
+| 9   | Description                   | Variable          | 16px          |
+| 10  | Horizontal divider            | 1px               | 16px          |
+| 11  | Organizer section             | 56px              | 16px          |
+| 12  | Horizontal divider            | 1px               | 16px          |
+| 13  | Attendance header             | 24px              | 8px           |
+| 14  | Avatar stack + count          | 32px              | 8px           |
+| 15  | "View all" button (if public) | 36px              | 16px          |
+| 16  | RSVP button(s)                | 48px              | 24px          |
+| 17  | Bottom safe area + tab bar    | 56px + safe       | —             |
 
 **Total scrollable content:** approximately 700–900px depending on description length
 
@@ -770,42 +770,42 @@ For **past** events: "*(Ended)*" appended, #757575
 
 ## Platform-Specific Differences
 
-| Aspect | iOS | Android | Web |
-|--------|-----|---------|-----|
-| **Navigation** | Navigation bar + back arrow | App bar + back arrow | Breadcrumb trail |
-| **Back gesture** | Swipe right | System back | Browser back |
-| **Three-dot menu** | Action Sheet from bottom | Overflow menu (top-right) | Dropdown |
-| **Attendee modal** | Bottom sheet | Bottom sheet | Modal dialog |
-| **Confirmation dialogs** | Alert (native iOS) | AlertDialog | Modal overlay |
-| **Hero image** | Full bleed, edge-to-edge | Full bleed, edge-to-edge | Constrained to left column |
-| **RSVP button** | Full width, 48px tall | Full width, 56dp tall | Fixed width in right column |
-| **Layout** | Single column, scroll | Single column, scroll | Two-column (info left, actions right) |
-| **Report link** | Icon only in nav bar | Icon only in nav bar | "Report Event" text link in right column |
+| Aspect                   | iOS                         | Android                   | Web                                      |
+| ------------------------ | --------------------------- | ------------------------- | ---------------------------------------- |
+| **Navigation**           | Navigation bar + back arrow | App bar + back arrow      | Breadcrumb trail                         |
+| **Back gesture**         | Swipe right                 | System back               | Browser back                             |
+| **Three-dot menu**       | Action Sheet from bottom    | Overflow menu (top-right) | Dropdown                                 |
+| **Attendee modal**       | Bottom sheet                | Bottom sheet              | Modal dialog                             |
+| **Confirmation dialogs** | Alert (native iOS)          | AlertDialog               | Modal overlay                            |
+| **Hero image**           | Full bleed, edge-to-edge    | Full bleed, edge-to-edge  | Constrained to left column               |
+| **RSVP button**          | Full width, 48px tall       | Full width, 56dp tall     | Fixed width in right column              |
+| **Layout**               | Single column, scroll       | Single column, scroll     | Two-column (info left, actions right)    |
+| **Report link**          | Icon only in nav bar        | Icon only in nav bar      | "Report Event" text link in right column |
 
 ---
 
 ## Error States & Edge Cases
 
-| Scenario | Behavior |
-|----------|----------|
-| Event not found (deleted) | Error screen: "This event no longer exists." + "Back to Events" button |
-| Network error on load | Retry prompt with cached data if available |
-| RSVP fails (network error) | Optimistic UI reverted; error toast: "Couldn't update RSVP. Try again." |
-| RSVP fails (already RSVP'd in another session) | Sync state; show "Going ✓" without error |
-| User views own event (no RSVP action) | "You're the organizer" label; three-dot menu for management |
-| Cancelled event | Red "Cancelled" banner; strikethrough on title/date; RSVP button hidden |
-| Past event | Blue "This event has passed" banner; RSVP button shows "Event Has Passed" (disabled) |
-| Event has no photo | Type-specific illustration shown as hero (Cultural → dhaka pattern, etc.) |
-| Event has no end time | Show only start time: "6:00 PM" (no dash or end) |
-| Event has no location address | Show only location name (no second line) |
-| Very long description | Fully scrollable; no "read more" truncation on detail screen |
-| Organizer is Level 0 | Trust badge hidden; "Asha K." shown without ✓ |
-| Private RSVP, organizer viewing | Organizer sees full attendee list with "View all attendees" button |
-| 0 RSVPs, public | "Be the first to RSVP!" — no avatar stack |
-| 1 RSVP | "1 going" (singular) |
-| 1000+ RSVPs | "1,000 going" (comma formatted) |
-| Global event | 🌐 Global badge shown instead of 📍 Local |
-| Report from Level 0 | Report button visible; report flow doesn't require Level 1 |
+| Scenario                                       | Behavior                                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Event not found (deleted)                      | Error screen: "This event no longer exists." + "Back to Events" button               |
+| Network error on load                          | Retry prompt with cached data if available                                           |
+| RSVP fails (network error)                     | Optimistic UI reverted; error toast: "Couldn't update RSVP. Try again."              |
+| RSVP fails (already RSVP'd in another session) | Sync state; show "Going ✓" without error                                             |
+| User views own event (no RSVP action)          | "You're the organizer" label; three-dot menu for management                          |
+| Cancelled event                                | Red "Cancelled" banner; strikethrough on title/date; RSVP button hidden              |
+| Past event                                     | Blue "This event has passed" banner; RSVP button shows "Event Has Passed" (disabled) |
+| Event has no photo                             | Type-specific illustration shown as hero (Cultural → dhaka pattern, etc.)            |
+| Event has no end time                          | Show only start time: "6:00 PM" (no dash or end)                                     |
+| Event has no location address                  | Show only location name (no second line)                                             |
+| Very long description                          | Fully scrollable; no "read more" truncation on detail screen                         |
+| Organizer is Level 0                           | Trust badge hidden; "Asha K." shown without ✓                                        |
+| Private RSVP, organizer viewing                | Organizer sees full attendee list with "View all attendees" button                   |
+| 0 RSVPs, public                                | "Be the first to RSVP!" — no avatar stack                                            |
+| 1 RSVP                                         | "1 going" (singular)                                                                 |
+| 1000+ RSVPs                                    | "1,000 going" (comma formatted)                                                      |
+| Global event                                   | 🌐 Global badge shown instead of 📍 Local                                            |
+| Report from Level 0                            | Report button visible; report flow doesn't require Level 1                           |
 
 ---
 
@@ -821,7 +821,7 @@ For **past** events: "*(Ended)*" appended, #757575
 6. "Teej Festival 2026. Heading."
 7. "Saturday August 29 2026. 6:00 PM to 10:00 PM."
 8. "Location: Dallas Convention Center. 650 S Griffin St, Dallas TX."
-9. "Description: Teej is a celebrated festival..." *(full text)*
+9. "Description: Teej is a celebrated festival..." _(full text)_
 10. "Organizer: Asha K., verified."
 11. "Message Organizer, button."
 12. "34 people going. View all attendees, button."
@@ -838,31 +838,31 @@ For **past** events: "*(Ended)*" appended, #757575
 
 ### Color Contrast (WCAG)
 
-| Element | Foreground | Background | Ratio | Level |
-|---------|-----------|-----------|-------|-------|
-| Event title | #212121 | #FFFFFF | 16.9:1 | AAA ✓ |
-| Date/location | #424242 | #FFFFFF | 10.7:1 | AAA ✓ |
-| Description | #424242 | #FFFFFF | 10.7:1 | AAA ✓ |
-| Organizer name | #212121 | #FFFFFF | 16.9:1 | AAA ✓ |
-| RSVP button text | #FFFFFF | #1565C0 | 7.2:1 | AAA ✓ |
-| Going button text | #FFFFFF | #2E7D32 | 5.9:1 | AA ✓ |
-| Cultural badge | #E65100 | #FFF3E0 | 4.5:1 | AA ✓ |
+| Element           | Foreground | Background | Ratio  | Level |
+| ----------------- | ---------- | ---------- | ------ | ----- |
+| Event title       | #212121    | #FFFFFF    | 16.9:1 | AAA ✓ |
+| Date/location     | #424242    | #FFFFFF    | 10.7:1 | AAA ✓ |
+| Description       | #424242    | #FFFFFF    | 10.7:1 | AAA ✓ |
+| Organizer name    | #212121    | #FFFFFF    | 16.9:1 | AAA ✓ |
+| RSVP button text  | #FFFFFF    | #1565C0    | 7.2:1  | AAA ✓ |
+| Going button text | #FFFFFF    | #2E7D32    | 5.9:1  | AA ✓  |
+| Cultural badge    | #E65100    | #FFF3E0    | 4.5:1  | AA ✓  |
 
 ---
 
 ## Animations & Transitions
 
-| Step | Element | Delay | Duration | Effect |
-|------|---------|-------|----------|--------|
-| 1 | Screen enter (from list) | 0ms | 300ms | Slide in from right (iOS) / fade+slide (Android) |
-| 2 | Hero image | 0ms | 400ms | Fade in |
-| 3 | Content below hero | 100ms | 250ms | Fade in |
-| 4 | RSVP button tap | 0ms | 150ms | Scale 0.97 → 1.0, color transition |
-| 5 | RSVP success alert | 0ms | 250ms | Slide down from above button |
-| 6 | Attendee modal open | 0ms | 300ms | Slide up from bottom |
-| 7 | Three-dot menu open | 0ms | 200ms | Expand from anchor point |
-| 8 | Cancel/delete modal | 0ms | 250ms | Fade in overlay + modal |
-| 9 | Screen exit (back) | 0ms | 250ms | Slide out to right |
+| Step | Element                  | Delay | Duration | Effect                                           |
+| ---- | ------------------------ | ----- | -------- | ------------------------------------------------ |
+| 1    | Screen enter (from list) | 0ms   | 300ms    | Slide in from right (iOS) / fade+slide (Android) |
+| 2    | Hero image               | 0ms   | 400ms    | Fade in                                          |
+| 3    | Content below hero       | 100ms | 250ms    | Fade in                                          |
+| 4    | RSVP button tap          | 0ms   | 150ms    | Scale 0.97 → 1.0, color transition               |
+| 5    | RSVP success alert       | 0ms   | 250ms    | Slide down from above button                     |
+| 6    | Attendee modal open      | 0ms   | 300ms    | Slide up from bottom                             |
+| 7    | Three-dot menu open      | 0ms   | 200ms    | Expand from anchor point                         |
+| 8    | Cancel/delete modal      | 0ms   | 250ms    | Fade in overlay + modal                          |
+| 9    | Screen exit (back)       | 0ms   | 250ms    | Slide out to right                               |
 
 ---
 
@@ -870,39 +870,39 @@ For **past** events: "*(Ended)*" appended, #757575
 
 ### String Keys
 
-| Key | Value |
-|-----|-------|
-| `event_detail_back` | Back |
-| `event_detail_report` | Report event |
-| `event_detail_more` | More options |
-| `event_detail_organizer` | Organizer |
-| `event_detail_attendance` | Attendance |
-| `event_detail_you_organizer` | You're the organizer |
-| `event_detail_message_organizer` | Message Organizer |
-| `event_detail_view_attendees` | View all attendees |
-| `event_detail_going_count` | {n} going |
-| `event_detail_went_count` | {n} went |
-| `event_detail_going_singular` | 1 going |
-| `event_detail_first_rsvp` | Be the first to RSVP! |
-| `event_detail_rsvp_btn` | RSVP — I'm Going |
-| `event_detail_going_btn` | Going ✓ |
-| `event_detail_cancel_rsvp_btn` | Can't make it |
-| `event_detail_past_btn` | Event Has Passed |
-| `event_detail_verify_rsvp` | Verify to RSVP |
-| `event_detail_cancelled_banner` | This event has been cancelled. |
-| `event_detail_past_banner` | This event has passed. |
-| `event_detail_rsvp_success` | You're going! We'll remind you before the event. |
-| `event_detail_rsvp_error` | Couldn't update RSVP. Try again. |
-| `event_detail_edit` | Edit Event |
-| `event_detail_cancel_event` | Cancel Event |
-| `event_detail_delete_event` | Delete Event |
-| `event_detail_cancel_confirm` | Cancel this event? Attendees will see this event as cancelled. |
-| `event_detail_delete_confirm` | Delete this event? This permanently removes the event. |
-| `event_detail_confirm_keep` | Keep Event |
-| `event_detail_confirm_cancel` | Yes, Cancel It |
-| `event_detail_confirm_delete` | Delete |
-| `event_detail_not_found` | This event no longer exists. |
-| `event_detail_attendees_title` | {n} Going |
+| Key                              | Value                                                          |
+| -------------------------------- | -------------------------------------------------------------- |
+| `event_detail_back`              | Back                                                           |
+| `event_detail_report`            | Report event                                                   |
+| `event_detail_more`              | More options                                                   |
+| `event_detail_organizer`         | Organizer                                                      |
+| `event_detail_attendance`        | Attendance                                                     |
+| `event_detail_you_organizer`     | You're the organizer                                           |
+| `event_detail_message_organizer` | Message Organizer                                              |
+| `event_detail_view_attendees`    | View all attendees                                             |
+| `event_detail_going_count`       | {n} going                                                      |
+| `event_detail_went_count`        | {n} went                                                       |
+| `event_detail_going_singular`    | 1 going                                                        |
+| `event_detail_first_rsvp`        | Be the first to RSVP!                                          |
+| `event_detail_rsvp_btn`          | RSVP — I'm Going                                               |
+| `event_detail_going_btn`         | Going ✓                                                        |
+| `event_detail_cancel_rsvp_btn`   | Can't make it                                                  |
+| `event_detail_past_btn`          | Event Has Passed                                               |
+| `event_detail_verify_rsvp`       | Verify to RSVP                                                 |
+| `event_detail_cancelled_banner`  | This event has been cancelled.                                 |
+| `event_detail_past_banner`       | This event has passed.                                         |
+| `event_detail_rsvp_success`      | You're going! We'll remind you before the event.               |
+| `event_detail_rsvp_error`        | Couldn't update RSVP. Try again.                               |
+| `event_detail_edit`              | Edit Event                                                     |
+| `event_detail_cancel_event`      | Cancel Event                                                   |
+| `event_detail_delete_event`      | Delete Event                                                   |
+| `event_detail_cancel_confirm`    | Cancel this event? Attendees will see this event as cancelled. |
+| `event_detail_delete_confirm`    | Delete this event? This permanently removes the event.         |
+| `event_detail_confirm_keep`      | Keep Event                                                     |
+| `event_detail_confirm_cancel`    | Yes, Cancel It                                                 |
+| `event_detail_confirm_delete`    | Delete                                                         |
+| `event_detail_not_found`         | This event no longer exists.                                   |
+| `event_detail_attendees_title`   | {n} Going                                                      |
 
 ---
 
@@ -942,21 +942,21 @@ For **past** events: "*(Ended)*" appended, #757575
 
 ### Navigation
 
-| Direction | Trigger | Destination |
-|-----------|---------|-------------|
-| Entry | Tap event card (Events List) | This screen |
-| Entry | Tap event in organizer's profile | This screen |
-| Entry | Deep link `/events/[id]` | This screen |
-| Exit | Back button / swipe | Events List (or back stack) |
-| Exit | Tap organizer avatar/name | Public Profile (`/users/[id]`) |
-| Exit | Tap "Message Organizer" | Message Thread screen |
-| Exit | Tap "Edit Event" | Create Event screen (pre-filled) |
-| Exit | Delete confirmed | Events List (event removed) |
-| Exit | "Back to Events" (not-found) | Events List |
-| Modal | Tap "View all attendees" | Attendee List modal |
-| Modal | Tap "Cancel Event" | Cancel confirmation modal |
-| Modal | Tap "Delete Event" | Delete confirmation modal |
-| Modal | Tap "Can't make it" | Un-RSVP confirmation modal |
+| Direction | Trigger                          | Destination                      |
+| --------- | -------------------------------- | -------------------------------- |
+| Entry     | Tap event card (Events List)     | This screen                      |
+| Entry     | Tap event in organizer's profile | This screen                      |
+| Entry     | Deep link `/events/[id]`         | This screen                      |
+| Exit      | Back button / swipe              | Events List (or back stack)      |
+| Exit      | Tap organizer avatar/name        | Public Profile (`/users/[id]`)   |
+| Exit      | Tap "Message Organizer"          | Message Thread screen            |
+| Exit      | Tap "Edit Event"                 | Create Event screen (pre-filled) |
+| Exit      | Delete confirmed                 | Events List (event removed)      |
+| Exit      | "Back to Events" (not-found)     | Events List                      |
+| Modal     | Tap "View all attendees"         | Attendee List modal              |
+| Modal     | Tap "Cancel Event"               | Cancel confirmation modal        |
+| Modal     | Tap "Delete Event"               | Delete confirmation modal        |
+| Modal     | Tap "Can't make it"              | Un-RSVP confirmation modal       |
 
 ---
 
@@ -1028,14 +1028,14 @@ For **past** events: "*(Ended)*" appended, #757575
 
 ## Related Screens
 
-| Relation | Screen |
-|----------|--------|
-| Previous | [16-events-list.md](../16-events-list/16-events-list.md) |
-| Next | Create Event Screen (wireframe TBD) |
-| Feature Spec | [events.md](../../product/features/events.md) |
-| Related | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md) — Message Organizer navigates here |
-| Related | Public Profile Screen — organizer tap navigates here |
-| Design System | [00-design-system-foundation.md](../00-design-system-foundation/00-design-system-foundation.md) |
+| Relation      | Screen                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| Previous      | [16-events-list.md](../16-events-list/16-events-list.md)                                                      |
+| Next          | Create Event Screen (wireframe TBD)                                                                           |
+| Feature Spec  | [events.md](../../product/features/events.md)                                                                 |
+| Related       | [07-conversation-list.md](../07-conversation-list/07-conversation-list.md) — Message Organizer navigates here |
+| Related       | Public Profile Screen — organizer tap navigates here                                                          |
+| Design System | [00-design-system-foundation.md](../00-design-system-foundation/00-design-system-foundation.md)               |
 
 ---
 
