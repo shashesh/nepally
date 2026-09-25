@@ -444,9 +444,13 @@ npx supabase functions deploy
 
 This deploys all Edge Functions:
 
-- `expire-posts`
+- `send-push-notification`
+- `create-promotion-checkout`
+- `stripe-webhook`
 - `verify-emergency-post`
 - `get-metro-by-zip`
+
+Scheduled jobs (promotion expiry) run on `pg_cron` inside the database and ship with the migrations, not as functions. See [supabase-setup.md](../architecture/supabase-setup.md#5-scheduled-jobs).
 
 ### 3. Verify RLS Policies
 
@@ -461,7 +465,7 @@ Compare local policies with remote to ensure they match.
 ### 4. Deploy Individual Functions (Optional)
 
 ```bash
-npx supabase functions deploy expire-posts
+npx supabase functions deploy stripe-webhook
 npx supabase functions deploy verify-emergency-post
 npx supabase functions deploy get-metro-by-zip
 ```
