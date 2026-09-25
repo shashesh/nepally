@@ -60,13 +60,12 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
 - [plans/active/2026-09-18-production-launch.md](plans/active/2026-09-18-production-launch.md) — 12-week production launch (public launch Dec 1, 2026): prod environment, store compliance, monitoring, support operations, six launch markets, week-by-week tracker
-- [plans/active/2026-09-14-web-ui-overhaul.md](plans/active/2026-09-14-web-ui-overhaul.md) — web UI overhaul: PRs 0–10b task by task (safety net, tokens + Mantine theme, responsive shell, global search and its follow-ups, feed, post detail, create flows, profile, events, marketplace, messages, notifications and moderation, auth and static pages, web consistency and a11y), PR 10c scoped
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 
 ## Specs (point-in-time designs — archived when the work ships)
 
-- [specs/2026-09-14-web-ui-overhaul-design.md](specs/2026-09-14-web-ui-overhaul-design.md) — web UI overhaul: H1 Ink & Marigold tokens, Mantine-8 component library (v9-ready), responsive shell with phone bottom tabs, global search, PR rollout
+_None active._
 
 Shipped designs live in [archive/specs/](archive/specs/).
 
@@ -127,5 +126,5 @@ See [archive/](archive/):
 
 - `archive/PROGRESS.md` — historical implementation tracker (superseded by roadmap)
 - `archive/marketplace-category-consolidation-plan.md` — shipped as migration 016
-- `archive/plans/` — 19 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, the Postgres 15→17 sync, the Expo SDK 54→57 migration, and the React Compiler lint cleanup
-- `archive/specs/` — 7 design specs for shipped features
+- `archive/plans/` — 20 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, the Postgres 15→17 sync, the Expo SDK 54→57 migration, the React Compiler lint cleanup, and the web UI overhaul (PRs 0–10c; its "Open follow-ups (after the overhaul)" section is the post-overhaul backlog, and "After the overhaul — Mantine 9" is the next step)
+- `archive/specs/` — 8 design specs for shipped features, including the web UI overhaul design
