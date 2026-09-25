@@ -17,7 +17,13 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../config/supabase';
-import { APP_CONFIG } from '@nepally/shared';
+import {
+  APP_CONFIG,
+  FULL_NAME_MAX_LENGTH,
+  fullNameSchema,
+  getAuthErrorMessage,
+  logClientEvent,
+} from '@nepally/shared';
 import { AuthContext } from '../../contexts/AuthContext';
 import { markOnboardingComplete } from '../../utils/storage';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
@@ -27,10 +33,6 @@ import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
 
 type Mode = 'signup' | 'login';
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
 
 export function EmailSignupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'EmailSignup'>>();
@@ -47,11 +49,18 @@ export function EmailSignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const validate = (): boolean => {
+  /** Returns the parsed name (empty when logging in) when every field is valid, else null. */
+  const validate = (): { fullName: string } | null => {
     const newErrors: Record<string, string> = {};
 
-    if (mode === 'signup' && fullName.trim().length < 2) {
-      newErrors.fullName = 'Name must be at least 2 characters';
+    let parsedFullName = '';
+    if (mode === 'signup') {
+      const parsedName = fullNameSchema.safeParse(fullName);
+      if (parsedName.success) {
+        parsedFullName = parsedName.data;
+      } else {
+        newErrors.fullName = parsedName.error.issues[0]?.message ?? 'Enter your name';
+      }
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,11 +77,12 @@ export function EmailSignupScreen() {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).length === 0 ? { fullName: parsedFullName } : null;
   };
 
   const handleSignup = async () => {
-    if (!validate()) return;
+    const valid = validate();
+    if (!valid) return;
     setLoading(true);
 
     try {
@@ -80,7 +90,7 @@ export function EmailSignupScreen() {
         email: email.trim(),
         password,
         options: {
-          data: { full_name: fullName.trim() },
+          data: { full_name: valid.fullName },
         },
       });
 
@@ -91,10 +101,11 @@ export function EmailSignupScreen() {
       navigation.navigate('EmailVerification', {
         email: email.trim(),
         userId: data.user.id,
-        fullName: fullName.trim(),
+        fullName: valid.fullName,
       });
     } catch (error: unknown) {
-      Alert.alert('Signup Failed', getErrorMessage(error, 'Something went wrong'));
+      logClientEvent({ event: 'auth_sign_up_failed', context: { platform: 'mobile' }, error });
+      Alert.alert('Signup Failed', getAuthErrorMessage(error, 'sign-up'));
     } finally {
       setLoading(false);
     }
@@ -128,7 +139,8 @@ export function EmailSignupScreen() {
         navigation.navigate('LocationPermission', { userId: data.user.id });
       }
     } catch (error: unknown) {
-      Alert.alert('Login Failed', getErrorMessage(error, 'Invalid credentials'));
+      logClientEvent({ event: 'auth_log_in_failed', context: { platform: 'mobile' }, error });
+      Alert.alert('Login Failed', getAuthErrorMessage(error, 'log-in'));
     } finally {
       setLoading(false);
     }
@@ -172,6 +184,7 @@ export function EmailSignupScreen() {
                   onChangeText={setFullName}
                   autoCapitalize="words"
                   autoComplete="name"
+                  maxLength={FULL_NAME_MAX_LENGTH}
                 />
                 {errors.fullName && (
                   <Text style={styles.errorText}>{errors.fullName}</Text>

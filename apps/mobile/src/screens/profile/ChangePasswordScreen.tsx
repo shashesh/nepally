@@ -15,14 +15,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
-import { APP_CONFIG } from '@nepally/shared';
+import { APP_CONFIG, userMessage } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, borderRadius } from '../../styles/spacing';
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
+const CHANGE_PASSWORD_FAILED = "Couldn't change your password. Please try again.";
 
 export function ChangePasswordScreen() {
   const navigation = useNavigation();
@@ -93,7 +91,10 @@ export function ChangePasswordScreen() {
       navigation.goBack();
       Alert.alert('Password Changed', 'Your password has been updated successfully.');
     } catch (error: unknown) {
-      Alert.alert('Error', getErrorMessage(error, 'Failed to change password'));
+      Alert.alert(
+        'Error',
+        userMessage(error, CHANGE_PASSWORD_FAILED, 'password_change_failed', { platform: 'mobile' })
+      );
     } finally {
       setSaving(false);
       resumeAuthListener();

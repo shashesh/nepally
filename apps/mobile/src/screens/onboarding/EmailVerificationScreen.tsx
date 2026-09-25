@@ -16,7 +16,12 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../../types/navigation';
 import { supabase } from '../../config/supabase';
-import { createUserProfile, markEmailVerified } from '@nepally/shared';
+import {
+  createUserProfile,
+  markEmailVerified,
+  getAuthErrorMessage,
+  logClientEvent,
+} from '@nepally/shared';
 import { AuthContext } from '../../contexts/AuthContext';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { TextButton } from '../../components/buttons/TextButton';
@@ -142,8 +147,8 @@ export function EmailVerificationScreen() {
       setOtp('');
       startCooldown();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to resend';
-      Alert.alert('Resend Failed', message);
+      logClientEvent({ event: 'auth_resend_failed', context: { platform: 'mobile' }, error: err });
+      Alert.alert('Resend Failed', getAuthErrorMessage(err, 'resend'));
     } finally {
       setResendLoading(false);
     }
