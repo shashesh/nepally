@@ -94,35 +94,6 @@ export async function getMetroEventsPage(
 }
 
 /**
- * Get a metro area's events (local + global), by start date ascending,
- * past ones included. Excludes removed events. Includes cancelled events
- * (shown with banner). Mobile's EventsScreen still pages with this; web uses
- * getMetroEventsPage, which puts upcoming events first.
- */
-export async function getEventsByMetro(
-  supabase: SupabaseClient,
-  metroId: string,
-  limit = 20,
-  offset = 0
-): Promise<EventsResult> {
-  try {
-    const { data, error } = await supabase
-      .from('events')
-      .select(EVENT_SELECT)
-      .neq('status', 'removed')
-      .or(`metro_area_id.eq.${metroId},is_global.eq.true`)
-      .order('start_date', { ascending: true })
-      .range(offset, offset + limit - 1);
-
-    if (error) throw error;
-    const rows = (data || []) as Event[];
-    return { data: rows, hasMore: rows.length === limit };
-  } catch (error) {
-    return { error: toApiError(error, 'Failed to fetch events') };
-  }
-}
-
-/**
  * Get only future/upcoming events for a metro area (local + global), ascending by start_date.
  * Excludes removed and past events.
  */
