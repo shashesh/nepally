@@ -8,7 +8,7 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
-  phone?: string;
+  phone?: string | null;
   profile_photo?: string | null;
   bio?: string | null;
 

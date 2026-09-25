@@ -614,5 +614,19 @@ describe('users api', () => {
         })
       );
     });
+
+    it('clears the phone number with null', async () => {
+      const query = { update: vi.fn(), eq: vi.fn() };
+      query.update.mockReturnValue(query);
+      query.eq.mockResolvedValue({ error: null });
+      const { rpc } = mockOwnProfileRpc({ id: 'u-3', phone: null });
+      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+
+      const result = await updateUserProfile(supabase, 'u-3', { phone: null });
+
+      expect(result.error).toBeUndefined();
+      expect(result.data?.phone).toBeNull();
+      expect(query.update).toHaveBeenCalledWith(expect.objectContaining({ phone: null }));
+    });
   });
 });
