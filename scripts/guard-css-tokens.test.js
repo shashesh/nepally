@@ -168,3 +168,39 @@ test('checkFiles reports undefined properties when given the token names', () =>
   );
   assert.deepEqual(errors, ['apps/web/src/e.module.css:1 undefined property: --text-9']);
 });
+
+test('reads a var() split across lines, reporting the line the name is on', () => {
+  assert.deepEqual(findUndefinedProperties('.a { color: var(\n  --nope\n); }', new Set()), [
+    { line: 2, kind: 'undefined property', text: '--nope' },
+  ]);
+});
+
+test('reads var() in any case, while property names stay case-sensitive', () => {
+  const tokens = new Set(['--surface-0']);
+  assert.deepEqual(
+    findUndefinedProperties('.a { color: VAR(--nope); background: Var(--nope); }', tokens).map((violation) => violation.text),
+    ['--nope', '--nope']
+  );
+  assert.deepEqual(
+    findUndefinedProperties('.a { color: var(--Surface-0); }', tokens).map((violation) => violation.text),
+    ['--Surface-0']
+  );
+});
+
+test('flags legacy and primitive tokens behind an uppercase VAR(', () => {
+  assert.deepEqual(
+    findViolations('.a { color: VAR(--color-primary); }').map((violation) => violation.kind),
+    ['legacy token']
+  );
+  assert.deepEqual(
+    findViolations('.a { color: VAR(--ink-900); }').map((violation) => violation.kind),
+    ['primitive token']
+  );
+});
+
+test("flags a legacy token whose var( is split across lines, on the name's line", () => {
+  assert.deepEqual(
+    findViolations('.a {\n  color: var(\n--color-primary);\n}').map((violation) => [violation.line, violation.kind]),
+    [[3, 'legacy token']]
+  );
+});

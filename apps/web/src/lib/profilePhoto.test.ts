@@ -9,7 +9,13 @@ const { cropToSquare, setProfilePhoto, logClientEvent } = vi.hoisted(() => ({
 }));
 
 vi.mock('./resizeImage', () => ({ cropToSquare }));
-vi.mock('@nepally/shared', () => ({ setProfilePhoto, logClientEvent }));
+vi.mock('@nepally/shared', async () => ({
+  ...(await vi.importActual<object>('@nepally/shared')),
+  setProfilePhoto,
+  logClientEvent,
+}));
+
+const UPDATE_FAILED = "Couldn't update your photo. Please try again.";
 
 const supabase = {} as SupabaseClient;
 
@@ -48,13 +54,18 @@ describe('replaceProfilePhoto', () => {
     expect(new TextDecoder().decode(bytes)).toBe('actually-cropped');
   });
 
-  it("passes the shared API's error message straight through", async () => {
-    setProfilePhoto.mockResolvedValue({ error: new Error('Storage is full') });
+  it("shows our copy for the shared API's error, never its text, and logs it", async () => {
+    const error = new Error('new row violates row-level security policy');
+    setProfilePhoto.mockResolvedValue({ error });
 
     const result = await replaceProfilePhoto(supabase, 'user-1', pickedFile());
 
-    expect(result).toEqual({ error: 'Storage is full' });
-    expect(logClientEvent).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: UPDATE_FAILED });
+    expect(logClientEvent).toHaveBeenCalledWith({
+      event: 'profile_photo_update_failed',
+      context: { platform: 'web', userId: 'user-1' },
+      error,
+    });
   });
 
   it('turns a crop failure into copy a member can act on, and logs the raw detail', async () => {
@@ -83,15 +94,17 @@ describe('replaceProfilePhoto', () => {
     );
   });
 
-  it('falls back to a generic message for an unexpected non-Error failure after a successful crop', async () => {
+  it('shows our copy and logs an unexpected failure after a successful crop', async () => {
     cropToSquare.mockResolvedValue({
-      arrayBuffer: () => Promise.reject('boom'),
+      arrayBuffer: () => Promise.reject(new Error('socket hang up')),
     } as unknown as File);
 
     const result = await replaceProfilePhoto(supabase, 'user-1', pickedFile());
 
     expect(setProfilePhoto).not.toHaveBeenCalled();
-    expect(result).toEqual({ error: 'Failed to upload photo' });
-    expect(logClientEvent).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: UPDATE_FAILED });
+    expect(logClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_photo_update_failed' })
+    );
   });
 });

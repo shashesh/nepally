@@ -62,6 +62,8 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, className }, children),
 }));
 
+const RLS_TEXT = 'new row violates row-level security policy';
+
 const mockUser = {
   id: 'user-1',
   full_name: 'Bikal Shrestha',
@@ -130,7 +132,7 @@ describe('ProfilePage', () => {
     mockSignedIn();
     // clearAllMocks keeps implementations, so reset the ones tests override.
     mockPush.mockResolvedValue(true);
-    mockSignOut.mockResolvedValue(undefined);
+    mockSignOut.mockResolvedValue({});
     mockRefreshUser.mockResolvedValue(undefined);
     profileMocks.getPostsByAuthorIdMock.mockResolvedValue({ data: [] });
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({ data: [] });
@@ -259,45 +261,41 @@ describe('ProfilePage', () => {
     render(<ProfilePage />);
     await waitFor(() => expect(screen.getByLabelText('Open profile menu')).toBeDefined());
     fireEvent.click(screen.getByLabelText('Open profile menu'));
-    expect(await screen.findByRole('menuitem', { name: 'Logout' })).toBeDefined();
+    expect(await screen.findByRole('menuitem', { name: 'Log out' })).toBeDefined();
     expect(screen.getByRole('menuitem', { name: 'Change Password' })).toBeDefined();
     // Close by clicking the trigger again
     fireEvent.click(screen.getByLabelText('Open profile menu'));
-    await waitFor(() => expect(screen.queryByRole('menuitem', { name: 'Logout' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('menuitem', { name: 'Log out' })).toBeNull());
   });
 
-  it('calls signOut and redirects to / on Logout', async () => {
-    mockSignOut.mockResolvedValue(undefined);
-    render(<ProfilePage />);
-    await waitFor(() => expect(screen.getByLabelText('Open profile menu')).toBeDefined());
-    fireEvent.click(screen.getByLabelText('Open profile menu'));
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Logout' }));
-    await waitFor(() => {
-      expect(mockSignOut).toHaveBeenCalled();
-      expect(mockPush).toHaveBeenCalledWith('/');
-    });
-  });
-
-  it('leaves for / before signing out, so a remount under the signed-out shell has nothing to redirect', async () => {
-    // Layout swaps to PublicShell once the user clears, which remounts the
-    // page; only leaving first keeps its /login redirect out of the race.
+  it('logs out from the profile menu', async () => {
     await renderPage();
 
-    await chooseProfileMenuItem('Logout');
+    await chooseProfileMenuItem('Log out');
 
-    expect(mockPush).toHaveBeenCalledWith('/');
     expect(mockSignOut).toHaveBeenCalledTimes(1);
-    expect(mockPush.mock.invocationCallOrder[0]).toBeLessThan(mockSignOut.mock.invocationCallOrder[0]);
+    expect(profileMocks.notificationsShowMock).not.toHaveBeenCalled();
   });
 
-  it('toasts the error when logging out fails', async () => {
-    mockSignOut.mockRejectedValue(new Error('Network down'));
+  it('logs out from the Settings list', async () => {
     await renderPage();
 
-    await chooseProfileMenuItem('Logout');
+    const settings = screen.getByRole('navigation', { name: 'Settings & more' });
+    await act(async () => {
+      fireEvent.click(within(settings).getByRole('button', { name: 'Log out' }));
+    });
+
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('toasts the failure sentence when logging out fails', async () => {
+    mockSignOut.mockResolvedValue({ error: "Couldn't log you out. Please try again." });
+    await renderPage();
+
+    await chooseProfileMenuItem('Log out');
 
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Network down', color: 'red' })
+      expect.objectContaining({ message: "Couldn't log you out. Please try again.", color: 'red' })
     );
   });
 
@@ -320,7 +318,7 @@ describe('ProfilePage', () => {
     for (const name of ['Edit Name', 'Edit Bio', 'Change Password']) {
       expect(((await screen.findByRole('menuitem', { name })) as HTMLButtonElement).disabled).toBe(true);
     }
-    expect((screen.getByRole('menuitem', { name: 'Logout' }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole('menuitem', { name: 'Log out' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   // ─── Profile photo ───────────────────────────────────────
@@ -372,7 +370,7 @@ describe('ProfilePage', () => {
     expect(mockRefreshUser).not.toHaveBeenCalled();
   });
 
-  it('logs and toasts "Failed to update photo" when a photo change throws, then clears busy', async () => {
+  it('logs and toasts our copy when a photo change throws, then clears busy', async () => {
     profileMocks.replaceProfilePhotoMock.mockRejectedValue(new Error('boom'));
     await renderPage();
 
@@ -382,7 +380,7 @@ describe('ProfilePage', () => {
       expect.objectContaining({ event: 'profile_photo_change_failed', context: { platform: 'web', userId: 'user-1' } })
     );
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Failed to update photo', color: 'red' })
+      expect.objectContaining({ message: "Couldn't update your photo. Please try again.", color: 'red' })
     );
     expect(screen.getByRole('button', { name: 'Add Photo' }).getAttribute('aria-disabled')).toBeNull();
   });
@@ -413,8 +411,9 @@ describe('ProfilePage', () => {
     );
   });
 
-  it('toasts the error when removing the photo fails, without refreshing', async () => {
-    profileMocks.removeProfilePhotoMock.mockResolvedValue({ error: new Error('Storage offline') });
+  it('toasts our copy, never the raw error, when removing the photo fails, without refreshing', async () => {
+    const error = new Error(RLS_TEXT);
+    profileMocks.removeProfilePhotoMock.mockResolvedValue({ error });
     mockSignedIn({ profile_photo: 'https://example.com/photo.jpg' });
     await renderPage();
 
@@ -423,7 +422,11 @@ describe('ProfilePage', () => {
     });
 
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Storage offline', color: 'red' })
+      expect.objectContaining({ message: "Couldn't remove your photo. Please try again.", color: 'red' })
+    );
+    expect(JSON.stringify(profileMocks.notificationsShowMock.mock.calls)).not.toContain('row-level security');
+    expect(profileMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_photo_remove_failed', error })
     );
     expect(mockRefreshUser).not.toHaveBeenCalled();
   });
@@ -440,18 +443,18 @@ describe('ProfilePage', () => {
 
   it('shows error when posts fail to load', async () => {
     profileMocks.getPostsByAuthorIdMock.mockResolvedValue({
-      error: new Error('DB error'),
+      error: new Error(RLS_TEXT),
       data: null,
     });
     render(<ProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText('DB error')).toBeDefined();
+      expect(screen.getByText('Failed to load your posts')).toBeDefined();
     });
   });
 
   it('refetches a list that failed to load when "Try again" is pressed', async () => {
     profileMocks.getPostsByAuthorIdMock
-      .mockResolvedValueOnce({ error: new Error('DB error'), data: null })
+      .mockResolvedValueOnce({ error: new Error(RLS_TEXT), data: null })
       .mockResolvedValueOnce({
         data: [
           {
@@ -466,14 +469,14 @@ describe('ProfilePage', () => {
         ],
       });
     await renderPage();
-    expect(screen.getByText('DB error')).toBeDefined();
+    expect(screen.getByText('Failed to load your posts')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     });
 
     expect(profileMocks.getPostsByAuthorIdMock).toHaveBeenCalledTimes(2);
-    expect(screen.queryByText('DB error')).toBeNull();
+    expect(screen.queryByText('Failed to load your posts')).toBeNull();
     expect(screen.getByText('My Post')).toBeDefined();
   });
 
@@ -611,7 +614,7 @@ describe('ProfilePage', () => {
 
   it('shows error when saved posts fail to load', async () => {
     profileMocks.getSavedPostsByUserIdMock.mockResolvedValue({
-      error: new Error('Saved posts DB error'),
+      error: new Error(RLS_TEXT),
       data: null,
     });
     render(<ProfilePage />);
@@ -620,7 +623,7 @@ describe('ProfilePage', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Saved Posts' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Saved posts DB error')).toBeDefined();
+      expect(screen.getByText('Failed to load saved posts')).toBeDefined();
     });
   });
 
@@ -677,7 +680,26 @@ describe('ProfilePage', () => {
     });
   });
 
-  it('logs and toasts "Failed to save" when saving About You throws, and re-enables Save', async () => {
+  it('toasts our copy, never the raw error, and logs it when saving About You fails', async () => {
+    const error = new Error(RLS_TEXT);
+    profileMocks.updateUserProfileMock.mockResolvedValue({ error });
+    await renderPage();
+    await openTab('About');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save About You' }));
+    });
+
+    expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Couldn't save About You. Please try again.", color: 'red' })
+    );
+    expect(JSON.stringify(profileMocks.notificationsShowMock.mock.calls)).not.toContain('row-level security');
+    expect(profileMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'profile_about_you_save_failed', error })
+    );
+  });
+
+  it('logs and toasts our copy when saving About You throws, and re-enables Save', async () => {
     profileMocks.updateUserProfileMock.mockRejectedValue(new Error('offline'));
     await renderPage();
     await openTab('About');
@@ -690,7 +712,7 @@ describe('ProfilePage', () => {
       expect.objectContaining({ event: 'profile_about_you_save_failed', context: { platform: 'web', userId: 'user-1' } })
     );
     expect(profileMocks.notificationsShowMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Failed to save', color: 'red' })
+      expect.objectContaining({ message: "Couldn't save About You. Please try again.", color: 'red' })
     );
     expect((screen.getByRole('button', { name: 'Save About You' }) as HTMLButtonElement).disabled).toBe(false);
   });

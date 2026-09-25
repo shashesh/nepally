@@ -5,11 +5,15 @@ import {
   BIO_MAX_LENGTH,
   fullNameSchema,
   FULL_NAME_MAX_LENGTH,
-  logClientEvent,
 } from '@nepally/shared';
 import type { User } from '@nepally/shared';
 import { usePrompt, notify } from '../components/ui';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
+
+const NAME_FAILED = "Couldn't update your name. Please try again.";
+const BIO_FAILED = "Couldn't update your bio. Please try again.";
+const RESET_FAILED = "Couldn't send the reset email. Please try again.";
 
 export interface ProfileEditing {
   editName: () => Promise<void>;
@@ -43,6 +47,7 @@ export function useProfileEditing(
 
   async function editName(): Promise<void> {
     if (!user) return;
+    const context = { platform: 'web', userId: user.id };
 
     const value = await prompt({
       title: 'Edit name',
@@ -63,19 +68,14 @@ export function useProfileEditing(
       });
 
       if (error) {
-        notify.error(error.message || 'Failed to update profile');
+        notify.error(userMessage(error, NAME_FAILED, 'profile_name_update_failed', context));
         return;
       }
 
       await refreshUser();
       notify.success('Profile updated');
     } catch (error) {
-      logClientEvent({
-        event: 'profile_name_update_failed',
-        context: { platform: 'web', userId: user.id },
-        error,
-      });
-      notify.error('Failed to update profile');
+      notify.error(userMessage(error, NAME_FAILED, 'profile_name_update_failed', context));
     } finally {
       setSaving(false);
     }
@@ -83,6 +83,7 @@ export function useProfileEditing(
 
   async function editBio(): Promise<void> {
     if (!user) return;
+    const context = { platform: 'web', userId: user.id };
 
     const value = await prompt({
       title: 'Edit bio',
@@ -102,19 +103,14 @@ export function useProfileEditing(
       const { error } = await updateUserProfile(supabase, user.id, { bio });
 
       if (error) {
-        notify.error(error.message || 'Failed to update bio');
+        notify.error(userMessage(error, BIO_FAILED, 'profile_bio_update_failed', context));
         return;
       }
 
       await refreshUser();
       notify.success(bio ? 'Bio updated' : 'Bio cleared');
     } catch (error) {
-      logClientEvent({
-        event: 'profile_bio_update_failed',
-        context: { platform: 'web', userId: user.id },
-        error,
-      });
-      notify.error('Failed to update bio');
+      notify.error(userMessage(error, BIO_FAILED, 'profile_bio_update_failed', context));
     } finally {
       setSaving(false);
     }
@@ -122,6 +118,7 @@ export function useProfileEditing(
 
   async function changePassword(): Promise<void> {
     if (!user) return;
+    const context = { platform: 'web', userId: user.id };
 
     setSaving(true);
     try {
@@ -130,18 +127,13 @@ export function useProfileEditing(
       });
 
       if (error) {
-        notify.error(error.message || 'Failed to send password reset email');
+        notify.error(userMessage(error, RESET_FAILED, 'password_reset_request_failed', context));
         return;
       }
 
       notify.success('Password reset email sent');
     } catch (error) {
-      logClientEvent({
-        event: 'password_reset_request_failed',
-        context: { platform: 'web', userId: user.id },
-        error,
-      });
-      notify.error('Failed to send password reset email');
+      notify.error(userMessage(error, RESET_FAILED, 'password_reset_request_failed', context));
     } finally {
       setSaving(false);
     }

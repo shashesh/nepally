@@ -11,10 +11,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { logClientEvent, setProfilePhoto } from '@nepally/shared';
 import { cropToSquare } from './resizeImage';
+import { userMessage } from './userMessage';
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
+const UPDATE_FAILED = "Couldn't update your photo. Please try again.";
 
 export async function replaceProfilePhoto(
   supabase: SupabaseClient,
@@ -38,11 +37,12 @@ export async function replaceProfilePhoto(
     return { error: "We couldn't process that image. Try a different JPEG or PNG." };
   }
 
+  const context = { platform: 'web', userId };
   try {
     const arrayBuffer = await cropped.arrayBuffer();
     const { error } = await setProfilePhoto(supabase, userId, arrayBuffer);
-    return { error: error ? error.message : null };
+    return { error: error ? userMessage(error, UPDATE_FAILED, 'profile_photo_update_failed', context) : null };
   } catch (error: unknown) {
-    return { error: getErrorMessage(error, 'Failed to upload photo') };
+    return { error: userMessage(error, UPDATE_FAILED, 'profile_photo_update_failed', context) };
   }
 }

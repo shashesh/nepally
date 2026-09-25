@@ -178,7 +178,9 @@ export function SavedLocationRow({
               <IconPencil size={16} aria-hidden="true" />
             </ActionIcon>
           )}
-          {canRemove && (
+          {/* Without Remove, a spacer keeps its slot, so every row's pencil
+              sits in the same column. */}
+          {canRemove ? (
             <ActionIcon
               variant="subtle"
               color="red"
@@ -187,6 +189,8 @@ export function SavedLocationRow({
             >
               <IconTrash size={16} aria-hidden="true" />
             </ActionIcon>
+          ) : (
+            <span aria-hidden="true" />
           )}
         </div>
       </div>

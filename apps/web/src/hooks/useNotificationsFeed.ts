@@ -64,6 +64,22 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
   // also drops it.
   const latestRequestRef = useRef(0);
 
+  // The items on screen, for the realtime handler: a row a load already
+  // brought in is neither prepended nor counted again. A load writes it as
+  // its answer lands, not after the render, so an INSERT for the same row
+  // arriving in between is not counted on top of the loaded count.
+  const itemsRef = useRef<Notification[]>([]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  // Realtime rows the bell accepted, numbered in arrival order. A load's
+  // snapshot can predate a row that arrived while it was in flight, so the
+  // load merges back every row numbered after it started instead of dropping
+  // it until the next poll.
+  const acceptedRef = useRef<{ seq: number; row: Notification }[]>([]);
+  const acceptedSeqRef = useRef(0);
+
   // Every load — first, polling back on, announcement, focus, poll — goes through this.
   const load = useCallback(() => {
     // Advance even with no member, so a request for the one who just signed
@@ -71,10 +87,26 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
     latestRequestRef.current += 1;
     const request = latestRequestRef.current;
     if (!userId) return;
+    const startedAfter = acceptedSeqRef.current;
     void fetchBellFeed(userId).then((feed) => {
       if (request !== latestRequestRef.current) return;
-      setUnreadCount(feed.unreadCount);
-      if (feed.items) setItems(feed.items);
+      // Older rows are in any snapshot from now on; only newer ones need merging.
+      acceptedRef.current = acceptedRef.current.filter((accepted) => accepted.seq > startedAfter);
+      if (!feed.items) {
+        // The list failed, so the items on screen stay, and so does whatever
+        // they hold that the count can't be shown to include.
+        setUnreadCount(feed.unreadCount);
+        return;
+      }
+      const loaded = feed.items;
+      const missed = acceptedRef.current
+        .map((accepted) => accepted.row)
+        .filter((row) => !loaded.some((item) => item.id === row.id))
+        .reverse();
+      const merged = [...missed, ...loaded].slice(0, BELL_LIMIT);
+      setUnreadCount(feed.unreadCount + missed.filter((row) => !row.read).length);
+      itemsRef.current = merged;
+      setItems(merged);
     });
   }, [userId]);
 
@@ -116,6 +148,11 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
     // /notifications owns its own subscription, so staying out avoids a second
     // channel for the same INSERTs and a badge that page does not control.
     if (!userId || !pollingEnabled) return;
+    // Ids this channel has delivered. Updated at once, unlike itemsRef, which
+    // only catches up after a render: a redelivered event (a reconnect, two
+    // events in one flush) must not be counted twice.
+    const delivered = new Set<string>();
+    acceptedRef.current = [];
     const channel = supabase
       .channel(uniqueChannelTopic(`notifications:${userId}`))
       .on(
@@ -125,9 +162,17 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
           const notification = payload.new as Notification;
           // getNotifications and getUnreadNotificationCount both exclude chat
           // notifications, so one accepted here would disappear on reload.
-          if (notification.type === 'message') return;
-          setUnreadCount((count) => count + 1);
-          setItems((previous) => [notification, ...previous].slice(0, BELL_LIMIT));
+          if (notification.type === 'message' || delivered.has(notification.id)) return;
+          delivered.add(notification.id);
+          if (itemsRef.current.some((item) => item.id === notification.id)) return;
+          acceptedSeqRef.current += 1;
+          acceptedRef.current = [...acceptedRef.current, { seq: acceptedSeqRef.current, row: notification }];
+          if (!notification.read) setUnreadCount((count) => count + 1);
+          setItems((previous) =>
+            previous.some((item) => item.id === notification.id)
+              ? previous
+              : [notification, ...previous].slice(0, BELL_LIMIT)
+          );
         }
       )
       .subscribe();
@@ -145,7 +190,10 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
       return;
     }
     setUnreadCount((count) => Math.max(0, count - 1));
-    setItems((previous) => previous.map((item) => (item.id === notification.id ? { ...item, read: true } : item)));
+    const markOne = (item: Notification) => (item.id === notification.id ? { ...item, read: true } : item);
+    // A row still waiting to be merged into a load comes back read, not unread.
+    acceptedRef.current = acceptedRef.current.map((accepted) => ({ ...accepted, row: markOne(accepted.row) }));
+    setItems((previous) => previous.map(markOne));
   }, []);
 
   const markAllRead = useCallback(async () => {
@@ -156,6 +204,7 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
       return;
     }
     setUnreadCount(0);
+    acceptedRef.current = acceptedRef.current.map((accepted) => ({ ...accepted, row: { ...accepted.row, read: true } }));
     setItems((previous) => previous.map((item) => ({ ...item, read: true })));
   }, [userId]);
 
@@ -165,6 +214,8 @@ export function useNotificationsFeed({ userId, pollingEnabled }: UseNotification
       console.error('Failed to delete notification:', result.error);
       return false;
     }
+    // A deleted row must not come back with a load that started before it arrived.
+    acceptedRef.current = acceptedRef.current.filter((accepted) => accepted.row.id !== notification.id);
     setItems((previous) => previous.filter((item) => item.id !== notification.id));
     if (!notification.read) setUnreadCount((count) => Math.max(0, count - 1));
     return true;

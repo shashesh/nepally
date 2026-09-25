@@ -60,12 +60,12 @@ describe('useListingDetail', () => {
 
   // recon 6: a failed read used to render as "Listing not found."
   it('tells a failed read apart from a missing listing', async () => {
-    mockGetListing.mockResolvedValue({ error: new Error('network down') });
+    mockGetListing.mockResolvedValue({ error: new Error('new row violates row-level security policy') });
 
     const { result } = renderHook(() => useListingDetail('listing-1', VIEWER));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.error).toBe('network down');
+    expect(result.current.error).toBe("Couldn't load this listing.");
     expect(result.current.notFound).toBe(false);
     expect(result.current.listing).toBeNull();
   });
@@ -121,7 +121,7 @@ describe('useListingDetail', () => {
     mockGetListing.mockResolvedValue({ error: new Error('network down') });
     rerender({ id: 'listing-2' });
 
-    await waitFor(() => expect(result.current.error).toBe('network down'));
+    await waitFor(() => expect(result.current.error).toBe("Couldn't load this listing."));
     // The previous listing must not still be on screen under the new id.
     expect(result.current.listing).toBeNull();
   });

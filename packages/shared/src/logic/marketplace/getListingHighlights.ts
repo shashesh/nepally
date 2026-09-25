@@ -56,23 +56,8 @@ export function getListingHighlights(
     return chips;
   }
 
-  // individual
-  if (listing.item_condition) {
-    chips.push({
-      key: 'condition',
-      icon: '✨',
-      label: 'Condition',
-      value: listing.item_condition === 'new' ? 'New' : 'Used',
-    });
-  }
-  if (listing.category?.name) {
-    chips.push({
-      key: 'category',
-      icon: listing.category.emoji ?? '🏷️',
-      label: 'Category',
-      value: listing.category.name,
-    });
-  }
+  // individual: condition and category are already the detail screens'
+  // badges, so a chip for either would show it twice.
   chips.push({
     key: 'posted',
     icon: '🗓️',

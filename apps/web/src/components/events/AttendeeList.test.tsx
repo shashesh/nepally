@@ -12,8 +12,12 @@ vi.mock('@nepally/shared', () => ({
 }));
 
 vi.mock('../Avatar', () => ({
-  default: ({ name }: { name: string }) =>
-    React.createElement('div', { 'data-testid': `avatar-${name}` }),
+  default: ({ name, toneKey, decorative }: { name: string; toneKey?: string; decorative?: boolean }) =>
+    React.createElement('div', {
+      'data-testid': `avatar-${name}`,
+      'data-tone-key': toneKey,
+      'data-decorative': decorative ? 'true' : undefined,
+    }),
 }));
 
 import AttendeeList, { type AttendeeListProps } from './AttendeeList';
@@ -72,9 +76,15 @@ describe('AttendeeList (web)', () => {
     expect(screen.getByText('Rohan S.')).toBeDefined();
   });
 
-  it('renders an avatar for each attendee', () => {
+  it('names each avatar with the public name, never the full one, keeping its tone', () => {
     renderList({ attendees: [makeRsvp('1', 'Asha Kumar')] });
-    expect(screen.getByTestId('avatar-Asha Kumar')).toBeDefined();
+    expect(screen.getByTestId('avatar-Asha K.').getAttribute('data-tone-key')).toBe('Asha Kumar');
+    expect(screen.queryByTestId('avatar-Asha Kumar')).toBeNull();
+  });
+
+  it('keeps the avatar decorative, since the name is written beside it', () => {
+    renderList({ attendees: [makeRsvp('1', 'Asha Kumar')] });
+    expect(screen.getByTestId('avatar-Asha K.').getAttribute('data-decorative')).toBe('true');
   });
 
   it('calls onClose when close button is clicked', () => {

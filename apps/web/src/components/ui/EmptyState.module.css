@@ -21,10 +21,6 @@
   color: var(--accent-ink);
 }
 
-.title {
-  font-size: var(--font-size-xl);
-}
-
 .description {
   max-width: 42ch;
   color: var(--text-2);

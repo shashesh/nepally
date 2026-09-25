@@ -389,7 +389,7 @@ describe('PostDetailPage', () => {
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: null });
     render(<PostDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Post not found')).toBeDefined();
+      expect(screen.getByRole('heading', { level: 1, name: 'Post not found' })).toBeDefined();
     });
   });
 
@@ -665,8 +665,8 @@ describe('PostDetailPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
     fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
-    fireEvent.click(screen.getByRole('button', { name: 'Unsave post' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Save post', pressed: true }));
 
     expect(postDetailMocks.savePostMock).toHaveBeenCalledTimes(1);
     expect(postDetailMocks.unsavePostMock).not.toHaveBeenCalled();
@@ -774,7 +774,7 @@ describe('PostDetailPage', () => {
         settleSaved({ data: [] });
       });
 
-      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined();
     });
   });
 
@@ -835,7 +835,7 @@ describe('PostDetailPage', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
       fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
-      await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined());
 
       await act(async () => {
         settleSaved({ data: ['post-1'] });
@@ -844,7 +844,7 @@ describe('PostDetailPage', () => {
         settleSave({ error: new Error('duplicate key value violates unique constraint') });
       });
 
-      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined();
     });
   });
 
@@ -891,13 +891,13 @@ describe('PostDetailPage', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
 
       fireEvent.click(screen.getByRole('button', { name: 'Save post' }));
-      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post' })).toBeDefined());
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save post', pressed: false })).toBeDefined());
 
       await act(async () => {
         settleSaved({ data: ['post-1'] });
       });
 
-      expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined();
     });
   });
 
@@ -1069,6 +1069,60 @@ describe('PostDetailPage', () => {
     });
   });
 
+  it('shows our copy, never the raw error, when a report fails', async () => {
+    postDetailMocks.createReportMock.mockResolvedValue({
+      error: new Error('new row violates row-level security policy'),
+    });
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Post options')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Report Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Report Post'));
+    await waitFor(() => expect(screen.getByText('Report post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Harassment or hate'));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+
+    expect(await screen.findByText("Couldn't submit your report. Please try again.")).toBeDefined();
+    expect(screen.queryByText(/row-level security/)).toBeNull();
+  });
+
+  it('toasts our copy, never the raw error, and logs it when deleting a comment fails', async () => {
+    const error = new Error('new row violates row-level security policy');
+    postDetailMocks.useAuthMock.mockReturnValue({ user: { id: 'comment-user-1', full_name: 'Bikal' } });
+    postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
+    postDetailMocks.deleteCommentMock.mockResolvedValue({ error });
+    postDetailMocks.buildSingleLevelCommentThreadsMock.mockReturnValue([
+      {
+        parent: {
+          id: 'comment-1',
+          content: 'Interested!',
+          author_id: 'comment-user-1',
+          created_at: '2026-02-24T11:00:00Z',
+          author: { full_name: 'Comment User', profile_photo: null, trust_level: 1 },
+        },
+        replies: [],
+      },
+    ]);
+
+    render(<PostDetailPage />);
+    await waitFor(() => expect(screen.getByText('Interested!')).toBeDefined());
+    fireEvent.click(screen.getByLabelText('Delete comment'));
+    await screen.findByText('Delete comment', { selector: '*:not([aria-label])' });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await act(async () => {});
+
+    expect(postDetailMocks.notificationsShowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Couldn't delete the comment. Please try again.", color: 'red' })
+    );
+    expect(JSON.stringify(postDetailMocks.notificationsShowMock.mock.calls)).not.toContain('row-level security');
+    expect(postDetailMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'comment_delete_failed', error })
+    );
+  });
+
   // ─── Save feature tests ───────────────────────────────────
 
   it('renders Save action button for non-own post', async () => {
@@ -1139,9 +1193,9 @@ describe('PostDetailPage', () => {
     postDetailMocks.getUserSavedPostIdsMock.mockResolvedValue({ data: ['post-1'] });
     postDetailMocks.getPostByIdMock.mockResolvedValue({ data: mockPost });
     render(<PostDetailPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Unsave post' })).toBeDefined());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save post', pressed: true })).toBeDefined());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Unsave post' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save post', pressed: true }));
 
     await waitFor(() => {
       expect(postDetailMocks.unsavePostMock).toHaveBeenCalledWith(expect.anything(), 'post-1');

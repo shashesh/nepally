@@ -1,0 +1,47 @@
+/*
+ * AboutPanel — the public profile's About tab. The label/value rows are
+ * components/ui/DetailList; this file holds the card, the bio block and the
+ * divider between the member's details and their activity counts.
+ * Semantic tokens only (scripts/guard-css-tokens.js).
+ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+}
+
+.bioBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-1);
+}
+
+.bioLabel {
+  font-size: var(--font-size-sm);
+  color: var(--text-3);
+  font-weight: var(--font-weight-medium);
+}
+
+/* pre-line: keep the line breaks the member typed, as the own profile's bio does. */
+.bio {
+  font-size: var(--font-size-base);
+  color: var(--text-2);
+  line-height: var(--leading-normal);
+  max-width: 48ch;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.divider {
+  height: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  margin: var(--space-1) 0;
+}

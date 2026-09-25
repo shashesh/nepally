@@ -38,7 +38,7 @@ export function AccountMenu({ user, onSignOut }: AccountMenuProps) {
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item color="red" onClick={onSignOut} leftSection={<IconLogout size={16} aria-hidden="true" />}>
-          Sign Out
+          Log out
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

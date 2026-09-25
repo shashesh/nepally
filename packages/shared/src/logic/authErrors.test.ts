@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getAuthErrorMessage, isExistingAccountError, type AuthAction } from './authErrors';
+import {
+  CONNECTION_ERROR_MESSAGE,
+  getAuthErrorMessage,
+  isConnectionError,
+  isExistingAccountError,
+  type AuthAction,
+} from './authErrors';
 
 const ACTIONS: AuthAction[] = ['log-in', 'sign-up', 'google', 'resend'];
 
@@ -63,6 +69,35 @@ describe('getAuthErrorMessage', () => {
 
   it('gives the resend fallback for a string', () => {
     expect(getAuthErrorMessage('Email rate limit exceeded', 'resend')).toBe(FALLBACKS.resend);
+  });
+});
+
+describe('isConnectionError', () => {
+  it('is true for AuthRetryableFetchError', () => {
+    expect(isConnectionError({ name: 'AuthRetryableFetchError' })).toBe(true);
+  });
+
+  it.each([0, 500, 503])('is true for status %i', (status) => {
+    expect(isConnectionError({ status })).toBe(true);
+  });
+
+  it.each([400, 401, 404, 499])('is false for status %i', (status) => {
+    expect(isConnectionError({ status })).toBe(false);
+  });
+
+  it('is false for a plain Error, whatever its message', () => {
+    expect(isConnectionError(new Error('new row violates row-level security policy'))).toBe(false);
+  });
+
+  it.each([null, undefined, 'Failed to fetch', { code: '42501' }])('is false for %p', (error) => {
+    expect(isConnectionError(error)).toBe(false);
+  });
+});
+
+describe('CONNECTION_ERROR_MESSAGE', () => {
+  it('is the sentence getAuthErrorMessage gives for a network failure', () => {
+    expect(CONNECTION_ERROR_MESSAGE).toBe("Couldn't reach Nepally. Check your connection and try again.");
+    expect(getAuthErrorMessage({ status: 0 }, 'google')).toBe(CONNECTION_ERROR_MESSAGE);
   });
 });
 

@@ -38,13 +38,6 @@ export function validatePassword(password: string): {
 }
 
 /**
- * Validate full name (at least 2 characters, letters and spaces only)
- */
-export function validateFullName(name: string): boolean {
-  return name.trim().length >= 2 && /^[a-zA-Z\s]+$/.test(name);
-}
-
-/**
  * Clean and format ZIP code input (digits only, max 5)
  */
 export function cleanZipCode(input: string): string {

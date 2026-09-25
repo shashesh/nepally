@@ -1,6 +1,7 @@
-import React, { useId, type ReactNode } from 'react';
+import React, { useId } from 'react';
 import { Button } from '@mantine/core';
 import type { User } from '@nepally/shared';
+import { DetailList, DetailRow } from '../ui';
 import styles from './AccountDetails.module.css';
 
 export interface AccountDetailsProps {
@@ -29,20 +30,12 @@ function formatMemberSince(createdAt: string): string {
   });
 }
 
-function DetailRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className={styles.row}>
-      <dt className={styles.label}>{label}</dt>
-      <dd className={styles.value}>{children}</dd>
-    </div>
-  );
-}
-
 /**
  * Bio, Account Info and Activity — the profile page's About-tab sections: an
  * editable bio up top, then the member's read-only account fields and
- * activity counts. Account Info and Activity share the public profile's
- * About panel's dt/dd row styling (`pages/users/[id].page.tsx` AboutPanel).
+ * activity counts. Account Info and Activity are `DetailList`s, as the
+ * public profile's About panel is (components/users/AboutPanel). An unset
+ * phone has no row: phone sign-in is deferred, so most members have none.
  * Bio is prose rather than a label/value pair, so it renders as a paragraph
  * under its own h2 instead of a dl row.
  */
@@ -81,20 +74,20 @@ export function AccountDetails({ user, onEditBio, editBioBusy }: AccountDetailsP
 
       <section aria-labelledby={infoTitleId}>
         <h2 id={infoTitleId} className={styles.title}>Account Info</h2>
-        <dl className={styles.list}>
+        <DetailList divided>
           <DetailRow label="Email">{user.email}</DetailRow>
-          <DetailRow label="Phone">{user.phone || NOT_SET}</DetailRow>
+          {user.phone ? <DetailRow label="Phone">{user.phone}</DetailRow> : null}
           <DetailRow label="ZIP Code">{user.zip_code || NOT_SET}</DetailRow>
           <DetailRow label="Member Since">{formatMemberSince(user.created_at)}</DetailRow>
-        </dl>
+        </DetailList>
       </section>
 
       <section aria-labelledby={activityTitleId}>
         <h2 id={activityTitleId} className={styles.title}>Activity</h2>
-        <dl className={styles.list}>
+        <DetailList divided>
           <DetailRow label="Posts">{user.posts_count ?? 0}</DetailRow>
           <DetailRow label="Helpful Votes">{user.helpful_votes_received ?? 0}</DetailRow>
-        </dl>
+        </DetailList>
       </section>
     </div>
   );

@@ -75,6 +75,9 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--mantine-color-default-border': 'var(--border-solid)',
     '--mantine-color-anchor': 'var(--action-bg)',
     '--mantine-color-error': 'var(--danger)',
+    '--mantine-color-disabled': 'var(--surface-2)',
+    '--mantine-color-disabled-color': 'var(--text-3)',
+    '--mantine-color-disabled-border': 'var(--border-subtle)',
   },
   dark: {},
 });

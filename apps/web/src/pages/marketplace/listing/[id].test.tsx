@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '../../../test-utils';
+import { fireEvent, render, screen, waitFor, within } from '../../../test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   getListingById,
@@ -157,12 +157,12 @@ describe('ListingDetailPage', () => {
     });
   });
 
-  it('renders listing price', async () => {
+  it('renders listing price once, in the actions panel', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('$15-25').length).toBeGreaterThanOrEqual(1);
-    });
+    const actions = await screen.findByRole('complementary', { name: 'Listing actions' });
+    expect(within(actions).getByText('$15-25')).toBeDefined();
+    expect(screen.getAllByText('$15-25')).toHaveLength(1);
   });
 
   it('renders business details', async () => {
@@ -206,7 +206,7 @@ describe('ListingDetailPage', () => {
     mockGetListingById.mockResolvedValue({ error: new Error('Listing not found'), notFound: true });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('Listing not found')).toBeDefined();
+      expect(screen.getByRole('heading', { level: 1, name: 'Listing not found' })).toBeDefined();
     });
     expect(
       screen.getByRole('link', { name: 'Back to Marketplace' }).getAttribute('href')
@@ -216,22 +216,26 @@ describe('ListingDetailPage', () => {
   // recon 6: a failed read used to render as "Listing not found."
   it('shows a failed read as an error with a retry, not as not-found', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    mockGetListingById.mockResolvedValue({ error: new Error('network down') });
+    mockGetListingById.mockResolvedValue({ error: new Error('new row violates row-level security policy') });
     render(React.createElement(ListingDetailPage));
     await waitFor(() => {
-      expect(screen.getByText('network down')).toBeDefined();
+      expect(screen.getByText("Couldn't load this listing")).toBeDefined();
+      expect(screen.queryByText(/row-level security/)).toBeNull();
     });
     expect(screen.queryByText('Listing not found')).toBeNull();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
   });
 
-  it('shows Contact and Save buttons when not owner', async () => {
+  it('renders the actions once, in one Listing actions panel, for a non-owner', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('Contact Seller').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('Save listing').length).toBeGreaterThanOrEqual(1);
-    });
+    const actions = await screen.findByRole('complementary', { name: 'Listing actions' });
+
+    expect(screen.getAllByRole('complementary', { name: 'Listing actions' })).toHaveLength(1);
+    expect(within(actions).getByRole('button', { name: 'Contact Seller' })).toBeDefined();
+    expect(within(actions).getByRole('button', { name: 'Save listing' })).toBeDefined();
+    expect(screen.getAllByRole('button', { name: 'Contact Seller' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Save listing' })).toHaveLength(1);
   });
 
   // The button used to push /messages?to=<owner>, which nothing read, so the
@@ -241,7 +245,7 @@ describe('ListingDetailPage', () => {
       user: { id: 'u1', full_name: 'Bikal Shrestha', trust_level: 1, metro_area_id: 'metro-1' },
     });
     render(React.createElement(ListingDetailPage));
-    const [contact] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+    const contact = await screen.findByRole('button', { name: 'Contact Seller' });
 
     fireEvent.click(contact);
 
@@ -262,12 +266,12 @@ describe('ListingDetailPage', () => {
       })
     );
     render(React.createElement(ListingDetailPage));
-    const [contact] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+    const contact = await screen.findByRole('button', { name: 'Contact Seller' });
 
     fireEvent.click(contact);
     fireEvent.click(contact);
 
-    const [busy] = await screen.findAllByRole('button', { name: 'Contact Seller' });
+    const busy = await screen.findByRole('button', { name: 'Contact Seller' });
     expect(busy.getAttribute('aria-disabled')).toBe('true');
     expect(incrementListingContacts).toHaveBeenCalledTimes(1);
 
@@ -276,12 +280,11 @@ describe('ListingDetailPage', () => {
     expect(getOrCreateConversation).toHaveBeenCalledTimes(1);
   });
 
-  it('shows Edit button when user is the owner', async () => {
+  it('shows one Edit Listing link when user is the owner', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'user-2', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('Edit Listing').length).toBeGreaterThanOrEqual(1);
-    });
+    const edit = await screen.findByRole('link', { name: 'Edit Listing' });
+    expect(edit.getAttribute('href')).toBe('/marketplace/create?edit=listing-1');
   });
 
   it('renders business hours', async () => {
@@ -305,6 +308,20 @@ describe('ListingDetailPage', () => {
     expect(
       screen.getByRole('link', { name: 'Food & Restaurants' }).getAttribute('href')
     ).toBe('/marketplace/food-restaurants');
+  });
+
+  it('marks the current crumb and keeps the separators out of the reading order', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(ListingDetailPage));
+    const nav = await screen.findByRole('navigation', { name: 'Breadcrumb' });
+
+    const current = within(nav).getByText(MOCK_LISTING.title);
+    expect(current.getAttribute('aria-current')).toBe('page');
+    const separators = within(nav).getAllByText('›');
+    expect(separators.length).toBeGreaterThan(0);
+    for (const separator of separators) {
+      expect(separator.closest('[aria-hidden="true"]')).not.toBeNull();
+    }
   });
 
   it('descends from h1 to h2 with no skipped level', async () => {
@@ -367,21 +384,14 @@ describe('ListingDetailPage', () => {
     });
   });
 
-  it('renders sidebar with Contact Seller and Save buttons for non-owner', async () => {
-    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
-    render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('Contact Seller').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('Save listing').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('renders Edit and Promote buttons in sidebar for owner', async () => {
+  it('renders Edit and Promote once, in the Listing actions panel, for the owner', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'user-2', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(ListingDetailPage));
-    await waitFor(() => {
-      expect(screen.getAllByText('Edit Listing').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('Promote').length).toBeGreaterThanOrEqual(1);
-    });
+    const actions = await screen.findByRole('complementary', { name: 'Listing actions' });
+
+    expect(within(actions).getByRole('link', { name: 'Edit Listing' })).toBeDefined();
+    expect(within(actions).getByRole('link', { name: 'Promote' })).toBeDefined();
+    expect(screen.getAllByRole('link', { name: 'Edit Listing' })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: 'Promote' })).toHaveLength(1);
   });
 });

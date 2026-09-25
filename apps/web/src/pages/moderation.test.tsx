@@ -105,8 +105,8 @@ describe('ModerationPage', () => {
     render(<ModerationPage />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Moderation' })).toBeDefined();
-    expect(screen.getByText('Moderator access required')).toBeDefined();
-    expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Moderator access required' })).toBeDefined();
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(1);
     expect(mocks.useModerationQueue).toHaveBeenCalledWith(null);
   });
 

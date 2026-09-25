@@ -1,6 +1,8 @@
 .root,
 .emergency {
   height: auto;
+  /* Mantine's badge line-height (--badge-lh) would make the chip ~32px. */
+  line-height: var(--leading-tight);
   padding: 3px var(--space-2);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);

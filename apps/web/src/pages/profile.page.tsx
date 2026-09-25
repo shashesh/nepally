@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, type ReactNode } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button, Loader, Stack, Tabs, UnstyledButton } from '@mantine/core';
 import { IconChevronRight } from '@tabler/icons-react';
 import Head from 'next/head';
@@ -7,17 +7,13 @@ import { useRouter } from 'next/router';
 import {
   extendedProfileUpdateSchema,
   getAboutYouFormValues,
-  logClientEvent,
   removeProfilePhoto,
   TrustLevel,
   updateUserProfile,
 } from '@nepally/shared';
-import type { AboutYouFormValues, MarketplaceListing } from '@nepally/shared';
+import type { AboutYouFormValues } from '@nepally/shared';
 import {
   ActionMenu,
-  EmptyState,
-  ErrorState,
-  LoadingState,
   PageHeader,
   TrustBadge,
   notify,
@@ -28,18 +24,20 @@ import {
 import { AboutYouSection } from '../components/profile/AboutYouSection';
 import { AccountDetails } from '../components/profile/AccountDetails';
 import { ProfilePhotoControl } from '../components/profile/ProfilePhotoControl';
-import { PostSummaryRow } from '../components/posts/PostSummaryRow';
-import { ListingSummaryRow } from '../components/marketplace/ListingSummaryRow';
+import { OwnListingsPanel, OwnPostsPanel, SavedPostsPanel } from '../components/profile/ProfileListPanels';
 import { getSettingsLinks } from '../components/layout/navItems';
 import { useAuth } from '../hooks/useAuth';
-import { useNow } from '../hooks/useNow';
-import { useOwnProfileContent, type ListResource } from '../hooks/useOwnProfileContent';
+import { useFocusAfterUpdate } from '../hooks/useFocusAfterUpdate';
+import { useOwnProfileContent } from '../hooks/useOwnProfileContent';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { replaceProfilePhoto } from '../lib/profilePhoto';
+import { userMessage } from '../lib/userMessage';
 import { supabase } from '../lib/supabase';
 import styles from '../styles/Profile.module.css';
 
 type ProfileTab = 'posts' | 'listings' | 'saved' | 'about';
+
+const ABOUT_YOU_SAVE_FAILED = "Couldn't save About You. Please try again.";
 
 const TABS: { value: ProfileTab; label: string }[] = [
   { value: 'posts', label: 'Posts' },
@@ -47,43 +45,6 @@ const TABS: { value: ProfileTab; label: string }[] = [
   { value: 'saved', label: 'Saved Posts' },
   { value: 'about', label: 'About' },
 ];
-
-interface ListPanelProps<T> {
-  list: ListResource<T>;
-  loadingLabel: string;
-  emptyTitle: string;
-  emptyAction?: ReactNode;
-  renderItem: (item: T) => ReactNode;
-}
-
-/** One tab's list: a skeleton while it loads, the error with a retry, an empty state, or the rows. */
-function ListPanel<T>({ list, loadingLabel, emptyTitle, emptyAction, renderItem }: ListPanelProps<T>) {
-  if (list.loading) return <LoadingState label={loadingLabel} />;
-  if (list.error) return <ErrorState message={list.error} onRetry={list.reload} />;
-  if (list.items.length === 0) return <EmptyState title={emptyTitle} action={emptyAction} />;
-  return <Stack gap="xs">{list.items.map(renderItem)}</Stack>;
-}
-
-/**
- * The Listings tab's rows. Its own component so useNow's interval runs only
- * while the tab is open: `keepMounted={false}` unmounts inactive panels.
- */
-function ListingsPanel({ list }: { list: ListResource<MarketplaceListing> }) {
-  const now = useNow();
-  return (
-    <ListPanel
-      list={list}
-      loadingLabel="Loading listings…"
-      emptyTitle="No marketplace listings yet."
-      emptyAction={
-        <Button component={Link} href="/marketplace/create">
-          Post a listing
-        </Button>
-      }
-      renderItem={(listing) => <ListingSummaryRow key={listing.id} listing={listing} owner={{ now }} />}
-    />
-  );
-}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -114,8 +75,9 @@ export default function ProfilePage() {
     }
   }
 
-  // Signing out leaves for / before the user clears (see handleSignOut), so
-  // this only ever catches a visitor who arrives signed out.
+  // Signing out never reaches this: Layout swaps in its loader while
+  // AuthContext signs out, unmounting this page before the user clears. So
+  // it only ever catches a visitor who arrives signed out.
   useEffect(() => {
     if (!user && typeof window !== 'undefined') {
       router.replace('/login');
@@ -127,15 +89,7 @@ export default function ProfilePage() {
   // the Saved panel instead, but only if it was lost: never steal it from
   // wherever the member has moved since (as ProfilePhotoControl does).
   const savedPanelRef = useRef<HTMLDivElement>(null);
-  const refocusSavedPanel = useRef(false);
-  useEffect(() => {
-    if (!refocusSavedPanel.current) return;
-    refocusSavedPanel.current = false;
-    const active = document.activeElement;
-    // preventScroll: the panel is often taller than the viewport, and a plain
-    // focus() would scroll its top into view, jumping the page.
-    if (!active || active === document.body) savedPanelRef.current?.focus({ preventScroll: true });
-  }, [saved.items]);
+  const armFocus = useFocusAfterUpdate(saved.items);
 
   if (!user) {
     return null;
@@ -146,15 +100,8 @@ export default function ProfilePage() {
   const canPost = (user.trust_level ?? TrustLevel.NEW) >= TrustLevel.VERIFIED;
 
   const handleSignOut = async (): Promise<void> => {
-    try {
-      // Leave first. Clearing the user swaps Layout to PublicShell, which
-      // remounts this page, and a fresh instance's redirect would take the
-      // member to /login instead of /. On /, Home just shows the landing page.
-      await router.push('/');
-      await signOut();
-    } catch (error: unknown) {
-      notify.error(error instanceof Error ? error.message : 'Failed to log out. Please try again.');
-    }
+    const { error } = await signOut();
+    if (error) notify.error(error);
   };
 
   /** Runs one photo change: busy while it and the follow-up refresh run, then a toast. */
@@ -169,8 +116,12 @@ export default function ProfilePage() {
       await refreshUser();
       notify.success(successMessage);
     } catch (error: unknown) {
-      logClientEvent({ event: 'profile_photo_change_failed', context: { platform: 'web', userId: user.id }, error });
-      notify.error('Failed to update photo');
+      notify.error(
+        userMessage(error, "Couldn't update your photo. Please try again.", 'profile_photo_change_failed', {
+          platform: 'web',
+          userId: user.id,
+        })
+      );
     } finally {
       setPhotoBusy(false);
     }
@@ -182,7 +133,12 @@ export default function ProfilePage() {
   const handlePhotoRemove = (): Promise<void> =>
     changePhoto(async () => {
       const { error } = await removeProfilePhoto(supabase, user.id);
-      return error ? error.message || 'Failed to remove photo' : null;
+      return error
+        ? userMessage(error, "Couldn't remove your photo. Please try again.", 'profile_photo_remove_failed', {
+            platform: 'web',
+            userId: user.id,
+          })
+        : null;
     }, 'Photo removed');
 
   const handleSaveAboutYou = async (): Promise<void> => {
@@ -190,6 +146,7 @@ export default function ProfilePage() {
     // aboutYouSaving is true, but a caller invoking this directly (or a
     // handler still attached mid-render) must not queue a second save.
     if (aboutYouSaving) return;
+    const aboutYouContext = { platform: 'web', userId: user.id };
     setAboutYouSaving(true);
     try {
       // Validate and normalize before it ever reaches the network: trims
@@ -215,7 +172,7 @@ export default function ProfilePage() {
       };
       const { error } = await updateUserProfile(supabase, user.id, nextAboutYou);
       if (error) {
-        notify.error(error.message || 'Failed to save');
+        notify.error(userMessage(error, ABOUT_YOU_SAVE_FAILED, 'profile_about_you_save_failed', aboutYouContext));
         return;
       }
       // The user object only re-seeds aboutYou when userId changes (see the
@@ -225,16 +182,17 @@ export default function ProfilePage() {
       await refreshUser();
       notify.success('Saved');
     } catch (error: unknown) {
-      logClientEvent({ event: 'profile_about_you_save_failed', context: { platform: 'web', userId: user.id }, error });
-      notify.error('Failed to save');
+      notify.error(userMessage(error, ABOUT_YOU_SAVE_FAILED, 'profile_about_you_save_failed', aboutYouContext));
     } finally {
       setAboutYouSaving(false);
     }
   };
 
   const handleUnsave = async (postId: string): Promise<void> => {
-    // The row unmounts on the next render; the effect above catches the focus.
-    refocusSavedPanel.current = true;
+    // The row unmounts on the next render, and focus with it. preventScroll:
+    // the panel is often taller than the viewport, and a plain focus() would
+    // scroll its top into view, jumping the page.
+    armFocus(() => savedPanelRef.current, { preventScroll: true });
     const { error } = await unsave(postId);
     if (error) {
       notify.error('Failed to unsave post.');
@@ -247,7 +205,7 @@ export default function ProfilePage() {
     { key: 'edit-name', label: 'Edit Name', onClick: editName, disabled: saving },
     { key: 'edit-bio', label: 'Edit Bio', onClick: editBio, disabled: saving },
     { key: 'change-password', label: 'Change Password', onClick: changePassword, disabled: saving },
-    { key: 'logout', label: 'Logout', onClick: handleSignOut, danger: true },
+    { key: 'logout', label: 'Log out', onClick: handleSignOut, danger: true },
   ];
 
   return (
@@ -292,43 +250,15 @@ export default function ProfilePage() {
 
             {/* tabIndex: with nothing focusable in a panel, Tab from the tab list would skip it. */}
             <Tabs.Panel value="posts" tabIndex={0}>
-              <ListPanel
-                list={posts}
-                loadingLabel="Loading posts…"
-                emptyTitle="You have not created any posts yet."
-                emptyAction={
-                  canPost ? (
-                    <Button component={Link} href="/posts/create">
-                      Start a post
-                    </Button>
-                  ) : undefined
-                }
-                renderItem={(post) => <PostSummaryRow key={post.id} post={post} />}
-              />
+              <OwnPostsPanel list={posts} canPost={canPost} />
             </Tabs.Panel>
 
             <Tabs.Panel value="listings" tabIndex={0}>
-              <ListingsPanel list={listings} />
+              <OwnListingsPanel list={listings} />
             </Tabs.Panel>
 
             <Tabs.Panel value="saved" tabIndex={0} ref={savedPanelRef}>
-              <ListPanel
-                list={saved}
-                loadingLabel="Loading saved posts…"
-                emptyTitle="No saved posts yet."
-                renderItem={(post) => (
-                  <PostSummaryRow
-                    key={post.id}
-                    post={post}
-                    menu={
-                      <ActionMenu
-                        label="Post options"
-                        items={[{ key: 'unsave', label: 'Unsave Post', onClick: () => handleUnsave(post.id) }]}
-                      />
-                    }
-                  />
-                )}
-              />
+              <SavedPostsPanel list={saved} onUnsave={handleUnsave} />
             </Tabs.Panel>
 
             <Tabs.Panel value="about" tabIndex={0}>
@@ -377,7 +307,7 @@ export default function ProfilePage() {
             ))}
             <li>
               <UnstyledButton className={`${styles.settingsLink} ${styles.settingsDanger}`} onClick={handleSignOut}>
-                Sign out
+                Log out
               </UnstyledButton>
             </li>
           </ul>

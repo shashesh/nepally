@@ -154,8 +154,9 @@ describe('useProfileEditing', () => {
       );
     });
 
-    it('toasts the error message when the write fails', async () => {
-      mocks.updateUserProfile.mockResolvedValue({ error: new Error('Network down') });
+    it('toasts our copy, never the raw error, and logs it when the write fails', async () => {
+      const error = new Error('new row violates row-level security policy');
+      mocks.updateUserProfile.mockResolvedValue({ error });
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Edit name' }));
@@ -166,26 +167,17 @@ describe('useProfileEditing', () => {
 
       expect(mockRefreshUser).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Network down', color: 'red' })
+        expect.objectContaining({ message: "Couldn't update your name. Please try again.", color: 'red' })
       );
+      expect(JSON.stringify(mocks.notificationsShow.mock.calls)).not.toContain('row-level security');
+      expect(mocks.logClientEvent).toHaveBeenCalledWith({
+        event: 'profile_name_update_failed',
+        context: { platform: 'web', userId: 'user-1' },
+        error,
+      });
     });
 
-    it('falls back to "Failed to update profile" when the error has no message', async () => {
-      mocks.updateUserProfile.mockResolvedValue({ error: new Error('') });
-      render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
-
-      fireEvent.click(screen.getByRole('button', { name: 'Edit name' }));
-      const input = await screen.findByLabelText('Full name');
-      fireEvent.change(input, { target: { value: 'Sita Gurung' } });
-      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-      await act(async () => {});
-
-      expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to update profile', color: 'red' })
-      );
-    });
-
-    it('toasts the fallback message and logs profile_name_update_failed when the write throws unexpectedly', async () => {
+    it('toasts our copy and logs profile_name_update_failed when the write throws unexpectedly', async () => {
       const thrown = new Error('boom');
       mocks.updateUserProfile.mockRejectedValue(thrown);
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
@@ -198,7 +190,7 @@ describe('useProfileEditing', () => {
 
       expect(mockRefreshUser).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to update profile', color: 'red' })
+        expect.objectContaining({ message: "Couldn't update your name. Please try again.", color: 'red' })
       );
       expect(mocks.logClientEvent).toHaveBeenCalledWith({
         event: 'profile_name_update_failed',
@@ -313,8 +305,9 @@ describe('useProfileEditing', () => {
       );
     });
 
-    it('toasts the error message when the write fails', async () => {
-      mocks.updateUserProfile.mockResolvedValue({ error: new Error('Bio write failed') });
+    it('toasts our copy, never the raw error, and logs it when the write fails', async () => {
+      const error = new Error('new row violates row-level security policy');
+      mocks.updateUserProfile.mockResolvedValue({ error });
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Edit bio' }));
@@ -325,26 +318,17 @@ describe('useProfileEditing', () => {
 
       expect(mockRefreshUser).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Bio write failed', color: 'red' })
+        expect.objectContaining({ message: "Couldn't update your bio. Please try again.", color: 'red' })
       );
+      expect(JSON.stringify(mocks.notificationsShow.mock.calls)).not.toContain('row-level security');
+      expect(mocks.logClientEvent).toHaveBeenCalledWith({
+        event: 'profile_bio_update_failed',
+        context: { platform: 'web', userId: 'user-1' },
+        error,
+      });
     });
 
-    it('falls back to "Failed to update bio" when the error has no message', async () => {
-      mocks.updateUserProfile.mockResolvedValue({ error: new Error('') });
-      render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
-
-      fireEvent.click(screen.getByRole('button', { name: 'Edit bio' }));
-      const textarea = await screen.findByLabelText(`Bio (up to ${BIO_MAX_LENGTH} characters)`);
-      fireEvent.change(textarea, { target: { value: 'Loves momo and hiking' } });
-      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-      await act(async () => {});
-
-      expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to update bio', color: 'red' })
-      );
-    });
-
-    it('toasts the fallback message and logs profile_bio_update_failed when the write throws unexpectedly', async () => {
+    it('toasts our copy and logs profile_bio_update_failed when the write throws unexpectedly', async () => {
       const thrown = new Error('boom');
       mocks.updateUserProfile.mockRejectedValue(thrown);
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
@@ -357,7 +341,7 @@ describe('useProfileEditing', () => {
 
       expect(mockRefreshUser).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to update bio', color: 'red' })
+        expect.objectContaining({ message: "Couldn't update your bio. Please try again.", color: 'red' })
       );
       expect(mocks.logClientEvent).toHaveBeenCalledWith({
         event: 'profile_bio_update_failed',
@@ -383,31 +367,26 @@ describe('useProfileEditing', () => {
       );
     });
 
-    it('toasts the error message when sending fails', async () => {
-      mocks.resetPasswordForEmail.mockResolvedValue({ error: new Error('Rate limited') });
+    it('toasts our copy, never the raw error, and logs it when sending fails', async () => {
+      const error = new Error('new row violates row-level security policy');
+      mocks.resetPasswordForEmail.mockResolvedValue({ error });
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
       await act(async () => {});
 
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Rate limited', color: 'red' })
+        expect.objectContaining({ message: "Couldn't send the reset email. Please try again.", color: 'red' })
       );
+      expect(JSON.stringify(mocks.notificationsShow.mock.calls)).not.toContain('row-level security');
+      expect(mocks.logClientEvent).toHaveBeenCalledWith({
+        event: 'password_reset_request_failed',
+        context: { platform: 'web', userId: 'user-1' },
+        error,
+      });
     });
 
-    it('falls back to "Failed to send password reset email" when the error has no message', async () => {
-      mocks.resetPasswordForEmail.mockResolvedValue({ error: new Error('') });
-      render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
-
-      fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
-      await act(async () => {});
-
-      expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to send password reset email', color: 'red' })
-      );
-    });
-
-    it('toasts the fallback message and logs password_reset_request_failed when the request throws unexpectedly', async () => {
+    it('toasts our copy and logs password_reset_request_failed when the request throws unexpectedly', async () => {
       const thrown = new Error('boom');
       mocks.resetPasswordForEmail.mockRejectedValue(thrown);
       render(<Harness user={mockUser} refreshUser={mockRefreshUser} />);
@@ -416,7 +395,7 @@ describe('useProfileEditing', () => {
       await act(async () => {});
 
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to send password reset email', color: 'red' })
+        expect.objectContaining({ message: "Couldn't send the reset email. Please try again.", color: 'red' })
       );
       expect(mocks.logClientEvent).toHaveBeenCalledWith({
         event: 'password_reset_request_failed',

@@ -33,23 +33,32 @@
   overflow-wrap: anywhere;
 }
 
+/* Two fixed slots, Rename then Remove (or its spacer), so the pencils line
+   up down the list whether or not a row can be removed. The track is the
+   ActionIcon's size, which this file also sets (below). */
 .actions {
-  display: flex;
+  --row-action-size: 28px; /* Mantine's default ActionIcon size, --ai-size-md */
+  display: grid;
+  grid-template-columns: repeat(2, var(--row-action-size));
   gap: var(--space-2);
 }
 
-/* Touch targets: Mantine's default ActionIcon size (--ai-size-md, 28px) is
-   below the ~44px minimum recommended for touch on phones. Below the sm
-   breakpoint (48em — PHONE_MEDIA_QUERY in components/layout/breakpoints.ts;
-   media queries can't consume that JS constant, so the value is repeated
-   here), widen just the size variable Mantine's own CSS reads. */
-@media (max-width: 47.99em) {
-  .actions :global(.mantine-ActionIcon-root) {
-    --ai-size: 44px;
+.actions :global(.mantine-ActionIcon-root) {
+  --ai-size: var(--row-action-size);
+}
+
+/* Touch targets: 28px is below the ~44px minimum recommended for touch on
+   phones, so below the sm breakpoint the slots and their icons widen. */
+@mixin smaller-than $mantine-breakpoint-sm {
+  .actions {
+    --row-action-size: 44px;
   }
 }
 
-/* Lines up with the label column: the star column's width plus itemRow's gap. */
+/* "Set as default" text starts on the label column: the star column's width
+   plus itemRow's gap, less the button's own inline padding, which is set
+   here rather than read from Mantine's compact-sm size. */
 .setDefault {
-  margin-left: calc(24px + var(--space-2));
+  padding-inline: var(--space-2);
+  margin-left: calc(24px + var(--space-2) - var(--space-2));
 }

@@ -84,15 +84,3 @@ export async function signInWithEmail(
     };
   }
 }
-
-export async function signOut(): Promise<{ error?: Error }> {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    return {};
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error : new Error('Sign out failed'),
-    };
-  }
-}

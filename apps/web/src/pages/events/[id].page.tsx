@@ -19,6 +19,7 @@ import { useEventDetail } from '../../hooks/useEventDetail';
 import { useNow } from '../../hooks/useNow';
 import { useStartConversation } from '../../hooks/useStartConversation';
 import { supabase } from '../../lib/supabase';
+import { userMessage } from '../../lib/userMessage';
 import AttendeeList from '../../components/events/AttendeeList';
 import { EventAttendanceCard, type EventResponseBlock } from '../../components/events/EventAttendanceCard';
 import { EventOrganizerCard } from '../../components/events/EventOrganizerCard';
@@ -76,14 +77,24 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
     setAttendeesLoading(true);
     setAttendeesError(null);
     const result = await getEventAttendees(supabase, event.id);
-    if (result.error) setAttendeesError(result.error.message);
-    else setAttendees(result.data ?? []);
+    if (result.error) {
+      setAttendeesError(
+        userMessage(result.error, "Couldn't load attendees.", 'event_attendees_load_failed', {
+          platform: 'web',
+          eventId: event.id,
+        })
+      );
+    } else {
+      setAttendees(result.data ?? []);
+    }
     setAttendeesLoading(false);
   }, [event]);
 
+  // Reloads on every open, so the list agrees with the count beside it (which
+  // moves as the viewer responds). The last list stays up while it loads.
   const handleShowAttendees = () => {
     setAttendeesOpen(true);
-    if (attendees === null && !attendeesLoading) void loadAttendees();
+    if (!attendeesLoading) void loadAttendees();
   };
 
   const handleMessage = () => {
@@ -136,6 +147,7 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
         {detail.notFound ? (
           <EmptyState
             title="Event not found"
+            titleOrder={1}
             description="It may have been deleted."
             action={
               <Button component={Link} href="/events">
@@ -264,7 +276,7 @@ function EventDetailView({ id, viewer }: EventDetailViewProps) {
       <AttendeeList
         opened={attendeesOpen}
         attendees={attendees ?? []}
-        loading={attendeesLoading}
+        loading={attendeesLoading && attendees === null}
         error={attendeesError}
         onRetry={() => void loadAttendees()}
         onClose={() => setAttendeesOpen(false)}

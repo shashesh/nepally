@@ -39,7 +39,7 @@ export function UserMenuTrigger({
       items={items}
       target={
         <UnstyledButton aria-label={`Options for ${name}`}>
-          <Avatar name={name} photoUrl={photoUrl} trustLevel={trustLevel} size={size} toneKey={toneKey} />
+          <Avatar name={name} photoUrl={photoUrl} trustLevel={trustLevel} size={size} toneKey={toneKey} decorative />
         </UnstyledButton>
       }
     />

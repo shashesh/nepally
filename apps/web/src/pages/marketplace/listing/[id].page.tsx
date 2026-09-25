@@ -92,6 +92,7 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
         <EmptyState
           icon={<IconBuildingStore size={40} />}
           title="Listing not found"
+          titleOrder={1}
           description="It may have been removed by its owner."
           action={<Anchor component={Link} href="/marketplace">Back to Marketplace</Anchor>}
         />
@@ -104,18 +105,6 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
   const highlights = getListingHighlights(listing, now);
   const slug = themeSlug(listing.category?.slug);
 
-  const actions = (
-    <ListingActionsPanel
-      listing={listing}
-      isOwner={isOwner}
-      isSaved={detail.isSaved}
-      saving={detail.saving}
-      contacting={contacting}
-      onContact={handleContact}
-      onToggleSave={detail.toggleSave}
-    />
-  );
-
   return (
     <>
       <Head>
@@ -123,7 +112,7 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
       </Head>
       <div className={styles.container} data-category={slug}>
         <nav aria-label="Breadcrumb">
-          <Breadcrumbs className={styles.breadcrumbs} separator="›">
+          <Breadcrumbs className={styles.breadcrumbs} separator={<span aria-hidden="true">›</span>}>
             <Anchor component={Link} href="/marketplace" className={styles.crumb}>
               Marketplace
             </Anchor>
@@ -136,14 +125,19 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
                 {listing.category.name}
               </Anchor>
             )}
-            <span className={styles.crumbCurrent}>{listing.title}</span>
+            <span aria-current="page" className={styles.crumbCurrent}>
+              {listing.title}
+            </span>
           </Breadcrumbs>
         </nav>
 
+        {/* One actions panel. The grid places it beside both blocks from md
+            up (sticky) and between them below, so it is reached once in tab
+            order at every width. */}
         <div className={styles.layout}>
-          <div className={styles.main}>
+          <div className={styles.top}>
             {listing.photos.length > 0 && (
-              <PhotoCarousel photos={listing.photos} alt={listing.title} />
+              <PhotoCarousel photos={listing.photos} alt={listing.title} priority />
             )}
 
             <section className={styles.section}>
@@ -180,11 +174,25 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
                   ))}
                 </ul>
               )}
-
-              <div className={styles.inlineActions}>{actions}</div>
-
-              <p className={styles.description}>{listing.description}</p>
             </section>
+          </div>
+
+          <aside className={styles.sidebar} aria-label="Listing actions">
+            <ListingActionsPanel
+              listing={listing}
+              isOwner={isOwner}
+              isSaved={detail.isSaved}
+              saving={detail.saving}
+              contacting={contacting}
+              onContact={handleContact}
+              onToggleSave={detail.toggleSave}
+            />
+          </aside>
+
+          <div className={styles.rest}>
+            <div className={styles.section}>
+              <p className={styles.description}>{listing.description}</p>
+            </div>
 
             {listing.listing_type === 'business' && hasBusinessDetails(listing) && (
               <section className={styles.section} aria-labelledby="listing-business">
@@ -223,10 +231,6 @@ function ListingDetailView({ id, viewer, ready }: ListingDetailViewProps) {
               <span>{listing.saves_count} saves</span>
             </p>
           </div>
-
-          <aside className={styles.sidebar} aria-label="Listing actions">
-            {actions}
-          </aside>
         </div>
       </div>
     </>

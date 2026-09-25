@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
 
 export interface ListState<T> {
   items: T[];
@@ -65,7 +66,15 @@ export function useUserList<T>(
       if (cancelled) return;
 
       if (result.error) {
-        setState({ items: [], loading: false, error: result.error.message || fallbackError });
+        setState({
+          items: [],
+          loading: false,
+          error: userMessage(result.error, fallbackError, 'user_list_load_failed', {
+            platform: 'web',
+            userId: currentUserId,
+            list: fetchList.name,
+          }),
+        });
       } else {
         setState({ items: result.data || [], loading: false, error: null });
       }

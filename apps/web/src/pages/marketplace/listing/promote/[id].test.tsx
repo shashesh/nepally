@@ -77,10 +77,11 @@ describe('PromoteListingPage', () => {
   });
 
   it('shows a failed read with a retry that works', async () => {
-    mockGetListing.mockResolvedValueOnce({ error: new Error('network down') });
+    mockGetListing.mockResolvedValueOnce({ error: new Error('new row violates row-level security policy') });
     render(<PromoteListingPage />);
 
-    expect(await screen.findByText('network down')).toBeDefined();
+    expect(await screen.findByText("Couldn't load this listing")).toBeDefined();
+    expect(screen.queryByText(/row-level security/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByRole('radiogroup', { name: 'Promotion type' })).toBeDefined();
@@ -90,7 +91,7 @@ describe('PromoteListingPage', () => {
     mockGetListing.mockResolvedValue({ error: new Error('Listing not found'), notFound: true });
     render(<PromoteListingPage />);
 
-    expect(await screen.findByRole('heading', { name: 'Listing not found' })).toBeDefined();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Listing not found' })).toBeDefined();
     expect(screen.queryByRole('radiogroup')).toBeNull();
   });
 

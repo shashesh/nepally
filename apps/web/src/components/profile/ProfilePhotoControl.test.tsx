@@ -184,7 +184,7 @@ describe('ProfilePhotoControl', () => {
     expect(props.onRemove).toHaveBeenCalledTimes(1);
   });
 
-  it('marks both buttons aria-disabled/data-disabled (not natively disabled) and announces "Updating photo…" while busy', () => {
+  it('marks both buttons aria-disabled (not natively disabled) and announces "Updating photo…" while busy', () => {
     renderControl({ photoUrl: 'https://example.com/me.jpg', busy: true });
 
     const addButton = screen.getByRole('button', { name: 'Change Photo' });
@@ -192,8 +192,6 @@ describe('ProfilePhotoControl', () => {
 
     expect(addButton.getAttribute('aria-disabled')).toBe('true');
     expect(removeButton.getAttribute('aria-disabled')).toBe('true');
-    expect(addButton.getAttribute('data-disabled')).toBe('true');
-    expect(removeButton.getAttribute('data-disabled')).toBe('true');
     expect(addButton.hasAttribute('disabled')).toBe(false);
     expect(removeButton.hasAttribute('disabled')).toBe(false);
 
@@ -245,6 +243,19 @@ describe('ProfilePhotoControl', () => {
 
     const addButton = screen.getByRole('button', { name: 'Add Photo' });
     expect(document.activeElement).toBe(addButton);
+  });
+
+  it('waits for the removal itself: a replaced photo does not spend the focus restore', () => {
+    const props = { name: 'Ram Sharma', busy: false, onPick: () => {}, onRemove: () => {} };
+    const { rerender } = render(<ProfilePhotoControl {...props} photoUrl="https://example.com/a.jpg" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    (document.activeElement as HTMLElement | null)?.blur();
+    rerender(<ProfilePhotoControl {...props} photoUrl="https://example.com/b.jpg" />);
+    expect(document.activeElement).toBe(document.body);
+
+    rerender(<ProfilePhotoControl {...props} photoUrl={null} />);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add Photo' }));
   });
 
   it('does not move focus when it was already elsewhere during the removal', () => {

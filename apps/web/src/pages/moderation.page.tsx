@@ -162,6 +162,7 @@ function ModerationView({ moderatorId }: { moderatorId: string | null }) {
   if (!moderatorId) {
     body = (
       <EmptyState
+        titleOrder={2}
         icon={<IconShieldLock size={40} />}
         title="Moderator access required"
         description="You need moderator access to view this page."

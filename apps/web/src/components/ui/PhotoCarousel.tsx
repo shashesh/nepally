@@ -12,13 +12,15 @@ export interface PhotoCarouselProps {
   alt: string;
   /** Usually opens a lightbox at the photo on screen. */
   onPhotoClick?: (index: number) => void;
+  /** Above the fold: the first photo loads with high priority (the page's LCP). */
+  priority?: boolean;
 }
 
 /**
  * One photo at a time, with wrap-around previous and next. The controls sit
  * beside the photo rather than inside it, so no control nests in another.
  */
-export function PhotoCarousel({ photos, alt, onPhotoClick }: PhotoCarouselProps) {
+export function PhotoCarousel({ photos, alt, onPhotoClick, priority = false }: PhotoCarouselProps) {
   const [index, setIndex] = useState(0);
   const touchStartXRef = useRef<number | null>(null);
   const hasMany = photos.length > 1;
@@ -62,12 +64,17 @@ export function PhotoCarousel({ photos, alt, onPhotoClick }: PhotoCarouselProps)
     step(delta > 0 ? -1 : 1);
   }
 
+  // next/image's `priority` only preloads (Next 16 sets no fetchpriority on the
+  // img), so the first photo also asks for high priority itself.
+  const isPriorityPhoto = priority && index === 0;
   const photo = (
     <Image
       src={photos[index]}
       alt={`${alt} ${index + 1}`}
       fill
       sizes="(max-width: 900px) 100vw, 720px"
+      priority={isPriorityPhoto}
+      fetchPriority={isPriorityPhoto ? 'high' : undefined}
       className={styles.image}
     />
   );

@@ -191,27 +191,36 @@ describe('PublicProfilePage', () => {
     render(<PublicProfilePage />);
     await act(async () => {});
 
-    expect(screen.getByRole('heading', { name: 'Member not found' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'Member not found' })).toBeDefined();
     expect(screen.getByRole('link', { name: 'Back to feed' }).getAttribute('href')).toBe('/');
   });
 
-  it('shows error message when getUserById returns an error', async () => {
+  it('shows "Member not found" when the lookup fails because there is no such row', async () => {
     profilePageMocks.getUserByIdMock.mockResolvedValue({
-      error: new Error('not found'),
-      data: null,
+      error: Object.assign(new Error('JSON object requested, multiple (or no) rows returned'), { code: 'PGRST116' }),
     });
     render(<PublicProfilePage />);
-    await waitFor(() => {
-      expect(screen.getByText(/couldn.t find this member/i)).toBeDefined();
-    });
+    await act(async () => {});
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Member not found' })).toBeDefined();
+    expect(screen.queryByText(/deleted their account/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 
-  it('shows error message when data is null (no data treated as error)', async () => {
-    profilePageMocks.getUserByIdMock.mockResolvedValue({ data: null });
+  it('shows a failed lookup as an error with a retry, not as a missing member', async () => {
+    profilePageMocks.getUserByIdMock.mockResolvedValueOnce({ error: new Error('Failed to fetch') });
     render(<PublicProfilePage />);
-    await waitFor(() => {
-      expect(screen.getByText(/couldn.t find this member/i)).toBeDefined();
-    });
+    await act(async () => {});
+
+    expect(screen.getByRole('alert').textContent).toContain('Couldn’t load this profile.');
+    expect(screen.queryByRole('heading', { name: 'Member not found' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await act(async () => {});
+
+    expect(profilePageMocks.getUserByIdMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Bikal S.')).toBeDefined();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('does not call getUserById when router query ID is not set', () => {
@@ -368,7 +377,6 @@ describe('PublicProfilePage', () => {
 
     const button = screen.getByRole('button', { name: 'Message Bikal S.' });
     expect(button.getAttribute('aria-disabled')).toBe('true');
-    expect(button.hasAttribute('data-disabled')).toBe(true);
     expect(screen.queryByText(/Opening conversation/i)).toBeNull();
   });
 
@@ -503,6 +511,52 @@ describe('PublicProfilePage', () => {
     await waitFor(() => {
       expect(screen.getByText(/Bikal.*hasn.t posted anything/i)).toBeDefined();
     });
+  });
+
+  it('shows a failed Posts request as an error with a retry, not as an empty list', async () => {
+    profilePageMocks.getPostsByAuthorIdMock.mockResolvedValueOnce({ error: new Error('boom') });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    const panel = within(screen.getByRole('tabpanel'));
+    expect(panel.getByRole('alert')).toBeDefined();
+    expect(panel.queryByText(/hasn.t posted anything/i)).toBeNull();
+
+    fireEvent.click(panel.getByRole('button', { name: 'Try again' }));
+    await act(async () => {});
+
+    expect(profilePageMocks.getPostsByAuthorIdMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Roommate needed')).toBeDefined();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('shows a failed Events request as an error in its own tab', async () => {
+    profilePageMocks.getEventsByOrganizerMock.mockResolvedValueOnce({ error: new Error('boom') });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: /^Events/ }));
+    await act(async () => {});
+
+    const panel = within(screen.getByRole('tabpanel'));
+    expect(panel.getByRole('alert')).toBeDefined();
+    expect(panel.queryByText(/hasn.t organized any events/i)).toBeNull();
+    expect(panel.getByRole('button', { name: 'Try again' })).toBeDefined();
+  });
+
+  it('shows a failed Listings request as an error in its own tab', async () => {
+    profilePageMocks.getActiveListingsBySellerMock.mockResolvedValueOnce({ error: new Error('boom') });
+    render(<PublicProfilePage />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Listings/ }));
+    await act(async () => {});
+
+    const panel = within(screen.getByRole('tabpanel'));
+    expect(panel.getByRole('alert')).toBeDefined();
+    expect(panel.queryByText(/has no active listings/i)).toBeNull();
+    expect(panel.getByRole('button', { name: 'Try again' })).toBeDefined();
   });
 
   it('renders a Local text chip for non-global post (no emoji)', async () => {

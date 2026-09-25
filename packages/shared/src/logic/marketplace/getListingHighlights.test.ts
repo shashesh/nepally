@@ -56,7 +56,7 @@ describe('getListingHighlights', () => {
     expect(chips.map((c) => c.key)).toEqual(['phone']);
   });
 
-  it('returns condition/category/posted chips for individual listing', () => {
+  it('returns only the posted chip for an individual listing: its badges show condition and category', () => {
     const chips = getListingHighlights(
       {
         ...BASE,
@@ -77,13 +77,11 @@ describe('getListingHighlights', () => {
       },
       NOW
     );
-    expect(chips.map((c) => c.key)).toEqual(['condition', 'category', 'posted']);
-    expect(chips[0].value).toBe('Used');
-    expect(chips[1].value).toBe('Electronics');
-    expect(chips[2].value).toBe('Posted 3d ago');
+    expect(chips.map((c) => c.key)).toEqual(['posted']);
+    expect(chips[0].value).toBe('Posted 3d ago');
   });
 
-  it('returns empty array for individual with no fields', () => {
+  it('returns the posted chip for an individual listing with no other fields', () => {
     const chips = getListingHighlights(
       { ...BASE, listing_type: 'individual' },
       NOW

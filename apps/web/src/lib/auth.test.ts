@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const authMocks = vi.hoisted(() => ({
   signUpMock: vi.fn(),
   signInWithPasswordMock: vi.fn(),
-  signOutMock: vi.fn(),
   signInWithOAuthMock: vi.fn(),
   resendMock: vi.fn(),
   createUserProfileMock: vi.fn(),
@@ -14,7 +13,6 @@ vi.mock('./supabase', () => ({
     auth: {
       signUp: authMocks.signUpMock,
       signInWithPassword: authMocks.signInWithPasswordMock,
-      signOut: authMocks.signOutMock,
       signInWithOAuth: authMocks.signInWithOAuthMock,
       resend: authMocks.resendMock,
     },
@@ -32,7 +30,6 @@ vi.mock('@nepally/shared', async () => {
 import {
   signUpWithEmail,
   signInWithEmail,
-  signOut,
   signInWithGoogle,
   resendSignupEmail,
 } from './auth';
@@ -202,31 +199,6 @@ describe('signInWithEmail', () => {
     const result = await signInWithEmail('test@example.com', 'pass');
 
     expect(result.error?.message).toBe('No user data returned');
-  });
-});
-
-describe('signOut', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('returns empty object on successful sign out', async () => {
-    authMocks.signOutMock.mockResolvedValue({ error: null });
-
-    const result = await signOut();
-
-    expect(result).toEqual({});
-    expect(result.error).toBeUndefined();
-  });
-
-  it('returns error when sign out fails', async () => {
-    authMocks.signOutMock.mockResolvedValue({
-      error: new Error('Sign out failed'),
-    });
-
-    const result = await signOut();
-
-    expect(result.error?.message).toBe('Sign out failed');
   });
 });
 

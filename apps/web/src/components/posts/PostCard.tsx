@@ -74,6 +74,7 @@ export function PostCard({
             photoUrl={post.author?.profile_photo}
             trustLevel={post.author?.trust_level}
             size="medium"
+            decorative
           />
         ) : (
           <UserMenuTrigger

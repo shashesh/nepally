@@ -7,12 +7,14 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
   background: var(--surface-1);
-  transition: box-shadow var(--duration-fast) ease-out;
+  transition: border-color var(--duration-fast) var(--ease-out);
 }
 
+/* Compact surfaces get a border change on interaction; --shadow-float is
+   reserved for floating layers (menus, popovers, dropdowns). */
 .root:hover,
 .root:focus-within {
-  box-shadow: var(--shadow-float);
+  border-color: var(--border-solid);
 }
 
 /* Controls sit above the stretched link's overlay so they stay clickable. */

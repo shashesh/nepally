@@ -652,6 +652,26 @@ describe('FeedPage', () => {
     });
   });
 
+  it('shows our copy, never the raw error, when a report fails', async () => {
+    feedMocks.createReportMock.mockResolvedValue({
+      error: new Error('new row violates row-level security policy'),
+    });
+    feedMocks.getPostsByMetroAreaMock.mockResolvedValue({ data: mockPosts });
+    render(<FeedPage />);
+    await waitFor(() => expect(screen.getByText('Roommate needed in Dallas')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Post options'));
+    await waitFor(() => expect(screen.getByText('Report Post')).toBeDefined());
+    fireEvent.click(screen.getByText('Report Post'));
+    await waitFor(() => expect(screen.getByText('Report post')).toBeDefined());
+
+    fireEvent.click(screen.getByLabelText('Scam or fraud'));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+
+    expect(await screen.findByText("Couldn't submit your report. Please try again.")).toBeDefined();
+    expect(screen.queryByText(/row-level security/)).toBeNull();
+  });
+
   // ─── Avatar dropdown: View Profile navigation ──────────────────────────────
 
   it('the author avatar opens a menu with View profile and Chat', async () => {

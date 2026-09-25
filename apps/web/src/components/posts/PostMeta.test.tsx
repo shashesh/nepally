@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Post } from '@nepally/shared';
-import { render, screen, fireEvent } from '../../test-utils';
+import { render, screen, fireEvent, within } from '../../test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { PostMeta } from './PostMeta';
 
@@ -59,5 +59,20 @@ describe('PostMeta', () => {
 
     render(<PostMeta post={{ ...post, is_global: true } as unknown as Post} metroLabel="Dallas" />);
     expect(screen.getByText('Global')).toBeDefined();
+  });
+
+  it('lists the tags and the scope together, so they wrap as one group', () => {
+    render(<PostMeta post={post} metroLabel="Dallas" />);
+
+    const list = screen.getByRole('list');
+    expect(within(list).getByText('Housing')).toBeDefined();
+    expect(within(list).getByText('Jobs')).toBeDefined();
+    expect(within(list).getByText('Local · Dallas')).toBeDefined();
+  });
+
+  it('still lists the scope when the post has no tags', () => {
+    render(<PostMeta post={{ ...post, tags: [] } as unknown as Post} metroLabel="Dallas" />);
+
+    expect(within(screen.getByRole('list')).getByText('Local · Dallas')).toBeDefined();
   });
 });

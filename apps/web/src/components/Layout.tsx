@@ -12,6 +12,7 @@ import { SearchEntry } from './layout/SearchEntry';
 import { SideRail } from './layout/SideRail';
 import { TopBar } from './layout/TopBar';
 import { getNotificationHref } from './notifications/notificationHref';
+import { notify } from './ui';
 import styles from './Layout.module.css';
 
 interface LayoutProps {
@@ -19,13 +20,15 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signingOut, signOut } = useAuth();
   const router = useRouter();
   const userId = user?.id ?? null;
   const unreadMessages = useUnreadMessageCount(userId);
   const notifications = useNotificationsFeed({ userId, pollingEnabled: router.pathname !== '/notifications' });
 
-  if (loading) {
+  // signingOut: the page unmounts before the user clears, so no protected
+  // page's signed-out redirect races AuthContext's replace to /.
+  if (loading || signingOut) {
     return (
       <Center mih="100vh">
         <Loader />
@@ -43,11 +46,8 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const handleSignOut = async () => {
-    // Leave first. Clearing the user swaps this AppShell for PublicShell,
-    // which remounts the page, and a protected page's fresh `!user` redirect
-    // would then win over the push, landing on /login instead of /.
-    await router.push('/');
-    await signOut();
+    const { error } = await signOut();
+    if (error) notify.error(error);
   };
 
   const showTabs = !isTaskRoute(router.pathname);

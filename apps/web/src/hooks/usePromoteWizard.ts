@@ -13,6 +13,7 @@ import {
   type PromotionViewer,
 } from '@nepally/shared';
 import { supabase } from '../lib/supabase';
+import { userMessage } from '../lib/userMessage';
 import { useNow } from './useNow';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -104,7 +105,14 @@ export function usePromoteWizard(
       } else {
         setListing(null);
         setNotFound(Boolean(result.notFound));
-        setError(result.notFound ? null : (result.error?.message ?? "Couldn't load this listing."));
+        setError(
+          result.notFound
+            ? null
+            : userMessage(result.error, "Couldn't load this listing.", 'promote_listing_load_failed', {
+                platform: 'web',
+                listingId,
+              })
+        );
       }
       setLoading(false);
     });
@@ -176,7 +184,13 @@ export function usePromoteWizard(
         'web'
       );
       if (result.error) {
-        setPayError(result.error.message);
+        setPayError(
+          userMessage(result.error, "Couldn't start checkout. Please try again.", 'promotion_checkout_failed', {
+            platform: 'web',
+            listingId,
+            promotionType: tier.type,
+          })
+        );
         return;
       }
       const url = result.data?.checkoutUrl;

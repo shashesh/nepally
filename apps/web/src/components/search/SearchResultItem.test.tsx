@@ -68,6 +68,13 @@ describe('SearchResultItem', () => {
     expect(screen.getByText(/In your metro/)).toBeDefined();
   });
 
+  it("keeps a person's avatar decorative, since the name is right beside it", () => {
+    render(
+      <SearchResultItem result={{ kind: 'person', person: { ...person, profile_photo: 'https://example.com/anjali.jpg' } }} query="thapa" />
+    );
+    expect(screen.queryByRole('img', { name: /Anjali/ })).toBeNull();
+  });
+
   it.each<[string, SearchResult]>([
     ['post', { kind: 'post', post }],
     ['listing', { kind: 'listing', listing: { ...listing, photos: ['https://example.com/desk.jpg'] } as MarketplaceListing }],

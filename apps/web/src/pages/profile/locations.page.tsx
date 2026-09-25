@@ -4,8 +4,10 @@ import { Button } from '@mantine/core';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
+import { useFocusAfterUpdate } from '../../hooks/useFocusAfterUpdate';
 import { useLocation } from '../../hooks/useLocation';
 import { supabase } from '../../lib/supabase';
+import { userMessage } from '../../lib/userMessage';
 import {
   updateSavedLocation,
   deleteSavedLocation,
@@ -18,12 +20,7 @@ import type { SavedLocation, MetroArea } from '@nepally/shared';
 import { PageHeader, useConfirm, notify } from '../../components/ui';
 import { SavedLocationRow } from '../../components/locations/SavedLocationRow';
 import { AddLocationForm } from '../../components/locations/AddLocationForm';
-import { isFocusStranded } from '../../lib/focus';
 import styles from '../../styles/ManageLocations.module.css';
-
-interface PendingAddFocus {
-  newLocationId: string | null;
-}
 
 export default function ManageLocationsPage() {
   const router = useRouter();
@@ -38,51 +35,18 @@ export default function ManageLocationsPage() {
   // focusable, and nothing should ever drop focus to <body>).
   const renameButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const addButtonRef = useRef<HTMLButtonElement>(null);
-  // Set by handleDelete/handleSetDefault right before an async call that
-  // refreshes savedLocations from the LocationContext; the effect below only
-  // acts once that refresh actually lands (a new savedLocations reference).
-  const pendingFocusIdRef = useRef<string | null>(null);
-  // Same idea for a successful add — see the effect below for why it needs
-  // its own ref rather than reusing pendingFocusIdRef's.
-  const pendingAddFocusRef = useRef<PendingAddFocus | null>(null);
-
-  // Removing or defaulting a location goes through the LocationContext's own
-  // async refresh, so the focus target only exists once savedLocations has
-  // actually re-rendered with it. isFocusStranded (not just "activeElement is
-  // body") also covers focus still sitting inside a closing confirm modal:
-  // Mantine's useFocusReturn schedules its own restore with a 10ms
-  // setTimeout, and the modal itself stays mounted for its ~200ms exit
-  // transition, so a DELETE that resolves in under 10ms can otherwise unmount
-  // the row before either has run, leaving focus stranded once the modal
-  // finally closes. Never steal focus that's legitimately elsewhere. Runs
-  // unconditionally, above the !user early return, because hooks must run in
-  // the same order on every render.
-  useEffect(() => {
-    const id = pendingFocusIdRef.current;
-    if (!id) return;
-    pendingFocusIdRef.current = null;
-    if (isFocusStranded()) {
-      renameButtonRefs.current[id]?.focus();
-    }
-  }, [savedLocations]);
-
-  // A successful add also goes through the same async refresh. Focus prefers
-  // the "＋ Add a Location" button — matching what closing the form used to
-  // do unconditionally — but that button doesn't render once the location
-  // cap is reached, which is exactly when this add just happened, so fall
-  // back to the newly created row's Rename button, or the first row's.
-  // Kept separate from the remove/set-default effect above: that one always
-  // has a specific row to target, but this one only knows to prefer the Add
-  // button once savedLocations (and so `showAdd`) have actually re-rendered.
-  useEffect(() => {
-    const pending = pendingAddFocusRef.current;
-    if (!pending || showAdd) return;
-    pendingAddFocusRef.current = null;
-    if (!isFocusStranded()) return;
-    const fallbackId = pending.newLocationId ?? savedLocations[0]?.id ?? null;
-    const target = addButtonRef.current ?? (fallbackId ? renameButtonRefs.current[fallbackId] : null);
-    target?.focus();
-  }, [savedLocations, showAdd]);
+  // Removing, defaulting or adding a location goes through the
+  // LocationContext's own async refresh, so the focus target only exists once
+  // savedLocations has re-rendered with it. Each action arms one restore; it
+  // runs when the list (ids and default) or the add form's visibility next
+  // changes, and only if focus was lost: to <body>, or still inside a closing
+  // confirm modal (isFocusStranded; Mantine's useFocusReturn waits 10ms and
+  // the modal stays mounted ~200ms, so a fast DELETE can unmount the row
+  // first). `is_default` is in the key because set-default keeps every id
+  // in place. Runs above the !user early return: hooks keep their order.
+  const armFocus = useFocusAfterUpdate(
+    `${savedLocations.map((location) => `${location.id}:${location.is_default}`).join()}|${showAdd}`
+  );
 
   // Leaves for /login rather than redirecting during render (the pattern
   // profile.page.tsx uses): a router.replace call during render is a side
@@ -122,11 +86,11 @@ export default function ManageLocationsPage() {
   }
 
   async function handleDelete(loc: SavedLocation) {
-    // Cleared first: a slow *earlier* refresh (refreshSavedLocations swallows
+    // Disarmed first: a slow *earlier* refresh (refreshSavedLocations swallows
     // its own errors, so nothing else clears a stale arm) must not later pull
     // focus out of whatever the member is doing now — including a dialog
     // this very click is about to open.
-    pendingFocusIdRef.current = null;
+    armFocus(() => null);
     if (loc.is_default || savedLocations.length <= 1) return;
     const confirmed = await confirm({
       title: 'Remove this location?',
@@ -138,11 +102,11 @@ export default function ManageLocationsPage() {
 
     const index = savedLocations.findIndex((entry) => entry.id === loc.id);
     const neighbor = savedLocations[index + 1] ?? savedLocations[index - 1] ?? null;
-    pendingFocusIdRef.current = neighbor?.id ?? null;
+    armFocus(() => (neighbor ? renameButtonRefs.current[neighbor.id] : null));
 
     const { error } = await deleteSavedLocation(supabase, loc.id);
     if (error) {
-      pendingFocusIdRef.current = null;
+      armFocus(() => null);
       logClientEvent({
         event: 'profile_location_remove_failed',
         context: { platform: 'web', userId, locationId: loc.id },
@@ -157,10 +121,10 @@ export default function ManageLocationsPage() {
   async function handleSetDefault(loc: SavedLocation) {
     // That row's "Set as default" button (the one just clicked) disappears
     // once it becomes the default, so focus moves to its Rename button.
-    pendingFocusIdRef.current = loc.id;
+    armFocus(() => renameButtonRefs.current[loc.id]);
     const { error } = await setDefaultSavedLocation(supabase, userId, loc.id);
     if (error) {
-      pendingFocusIdRef.current = null;
+      armFocus(() => null);
       logClientEvent({
         event: 'profile_location_set_default_failed',
         context: { platform: 'web', userId, locationId: loc.id },
@@ -179,22 +143,25 @@ export default function ManageLocationsPage() {
     addButtonRef.current?.focus();
   }
 
-  async function handleSaveNew(metro: MetroArea, label: string): Promise<{ error?: Error | null }> {
+  async function handleSaveNew(metro: MetroArea, label: string): Promise<{ error?: string | null }> {
     const { data, error } = await addSavedLocation(supabase, userId, metro.id, label);
     if (error) {
-      logClientEvent({
-        event: 'profile_location_add_failed',
-        context: { platform: 'web', userId },
-        error,
-      });
-      return { error };
+      return {
+        error: userMessage(error, "Couldn't add this location. Please try again.", 'profile_location_add_failed', {
+          platform: 'web',
+          userId,
+        }),
+      };
     }
-    pendingAddFocusRef.current = { newLocationId: data?.id ?? null };
     // Awaited here (not left for AddLocationForm to close early): Save stays
-    // busy for this whole call, and the effect above needs savedLocations to
-    // have actually refreshed before it decides where the Add button and the
-    // new row stand.
+    // busy for this whole call.
     await refreshSavedLocations();
+    // Armed only now, so the restore waits for the form to close (Save holds
+    // focus until then). Focus prefers "＋ Add a Location", as Cancel does, but
+    // that button is gone once the add reaches the location cap, so fall back
+    // to the new row's Rename button, or the first row's.
+    const fallbackId = data?.id ?? savedLocations[0]?.id ?? null;
+    armFocus(() => addButtonRef.current ?? (fallbackId ? renameButtonRefs.current[fallbackId] : null));
     setShowAdd(false);
     return {};
   }

@@ -185,7 +185,7 @@ describe('EventDetailPage', () => {
       vi.mocked(getEventById).mockResolvedValue({ error: new Error('Event not found'), notFound: true });
       await renderPage();
 
-      expect(screen.getByText('Event not found')).toBeDefined();
+      expect(screen.getByRole('heading', { level: 1, name: 'Event not found' })).toBeDefined();
       expect(screen.getByText('It may have been deleted.')).toBeDefined();
       expect(screen.getByRole('link', { name: 'Back to events' }).getAttribute('href')).toBe('/events');
     });
@@ -224,9 +224,45 @@ describe('EventDetailPage', () => {
       expect(within(dialog).getByText('Rohan S.')).toBeDefined();
     });
 
-    it('shows a failed attendee request with Try again', async () => {
+    it('reloads the people going on every open, keeping the last list while it loads', async () => {
+      const rsvp = (id: string, fullName: string) => ({
+        id, event_id: 'event-1', user_id: `user-${id}`, status: 'going' as const,
+        created_at: new Date().toISOString(),
+        user: { id: `user-${id}`, full_name: fullName, trust_level: 1, profile_photo: null },
+      });
+      let finishSecond: (value: { data: ReturnType<typeof rsvp>[] }) => void = () => {};
       vi.mocked(getEventAttendees)
-        .mockResolvedValueOnce({ error: new Error('Failed to fetch attendees') })
+        .mockResolvedValueOnce({ data: [rsvp('r1', 'Rohan Shrestha')] })
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            finishSecond = resolve;
+          })
+        );
+      await renderPage();
+
+      fireEvent.click(screen.getByRole('button', { name: '8 people going' }));
+      await settle();
+      fireEvent.click(within(screen.getByRole('dialog', { name: 'People going' })).getByRole('button', { name: 'Close' }));
+      await settle();
+
+      fireEvent.click(screen.getByRole('button', { name: '8 people going' }));
+      await settle();
+      expect(getEventAttendees).toHaveBeenCalledTimes(2);
+      expect(within(screen.getByRole('dialog', { name: 'People going' })).getByText('Rohan S.')).toBeDefined();
+
+      await act(async () => {
+        finishSecond({ data: [rsvp('r1', 'Rohan Shrestha'), rsvp('r2', 'Asha Kumar')] });
+      });
+      await settle();
+
+      const dialog = screen.getByRole('dialog', { name: 'People going' });
+      expect(within(dialog).getByText('Asha K.')).toBeDefined();
+      expect(within(dialog).getByText('Rohan S.')).toBeDefined();
+    });
+
+    it('shows a failed attendee request in our copy, with Try again', async () => {
+      vi.mocked(getEventAttendees)
+        .mockResolvedValueOnce({ error: new Error('new row violates row-level security policy') })
         .mockResolvedValue({ data: [] });
       await renderPage();
 
@@ -235,6 +271,7 @@ describe('EventDetailPage', () => {
 
       const dialog = screen.getByRole('dialog', { name: 'People going' });
       expect(within(dialog).getByText("Couldn't load attendees")).toBeDefined();
+      expect(within(dialog).queryByText(/row-level security/)).toBeNull();
       fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
       await settle();
 
@@ -327,7 +364,7 @@ describe('EventDetailPage', () => {
     });
 
     it('raises a toast when the delete fails', async () => {
-      vi.mocked(deleteEvent).mockResolvedValue({ error: new Error('Failed to delete event') });
+      vi.mocked(deleteEvent).mockResolvedValue({ error: new Error('new row violates row-level security policy') });
       await renderPage();
       fireEvent.click(screen.getByRole('button', { name: 'Delete Event' }));
       await settle();
@@ -341,7 +378,7 @@ describe('EventDetailPage', () => {
 
       expect(mockPush).not.toHaveBeenCalled();
       expect(mocks.notificationsShow).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to delete event' })
+        expect.objectContaining({ message: "Couldn't delete the event. Please try again." })
       );
     });
   });

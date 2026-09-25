@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { render, waitFor } from '../test-utils';
+import { act, render, waitFor } from '../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const authMocks = vi.hoisted(() => ({
@@ -10,7 +10,11 @@ const authMocks = vi.hoisted(() => ({
   getMyProfileMock: vi.fn(),
   requestWebPushPermissionMock: vi.fn(),
   unsubscribeMock: vi.fn(),
+  replaceMock: vi.fn(),
+  logClientEventMock: vi.fn(),
 }));
+
+vi.mock('next/router', () => ({ useRouter: () => ({ replace: authMocks.replaceMock }) }));
 
 vi.mock('../lib/supabase', () => ({
   supabase: {
@@ -28,6 +32,7 @@ vi.mock('@nepally/shared', async () => {
   return {
     ...actual,
     getMyProfile: authMocks.getMyProfileMock,
+    logClientEvent: authMocks.logClientEventMock,
   };
 });
 
@@ -62,6 +67,7 @@ describe('AuthProvider', () => {
       };
     });
     authMocks.signOutMock.mockResolvedValue({ error: null });
+    authMocks.replaceMock.mockResolvedValue(true);
   });
 
   it('loads initial session and user profile', async () => {
@@ -136,9 +142,8 @@ describe('AuthProvider', () => {
     });
   });
 
-  it('signOut clears user state and calls supabase signOut', async () => {
+  async function renderSignedIn() {
     const snapshots: Array<React.ContextType<typeof AuthContext>> = [];
-
     authMocks.getSessionMock.mockResolvedValue({
       data: { session: { user: { id: 'user-2' } } },
     });
@@ -155,15 +160,73 @@ describe('AuthProvider', () => {
       expect(latest.loading).toBe(false);
       expect(latest.user?.id).toBe('user-2');
     });
+    return snapshots;
+  }
 
-    await snapshots[snapshots.length - 1].signOut();
+  it('signOut is busy while it runs, clears the member, then replaces /', async () => {
+    const snapshots = await renderSignedIn();
+    let finishSignOut: (value: { error: null }) => void = () => {};
+    authMocks.signOutMock.mockReturnValue(
+      new Promise((resolve) => {
+        finishSignOut = resolve;
+      })
+    );
 
-    await waitFor(() => {
-      const latest = snapshots[snapshots.length - 1];
-      expect(authMocks.signOutMock).toHaveBeenCalled();
-      expect(latest.user).toBeNull();
-      expect(latest.supabaseUser).toBeNull();
+    let result: Promise<{ error?: string }> = Promise.resolve({});
+    act(() => {
+      result = snapshots[snapshots.length - 1].signOut();
     });
+    expect(snapshots[snapshots.length - 1].signingOut).toBe(true);
+    expect(snapshots[snapshots.length - 1].user?.id).toBe('user-2');
+
+    await act(async () => {
+      finishSignOut({ error: null });
+      await result;
+    });
+
+    await expect(result).resolves.toEqual({});
+    const latest = snapshots[snapshots.length - 1];
+    expect(authMocks.signOutMock).toHaveBeenCalledTimes(1);
+    expect(authMocks.replaceMock).toHaveBeenCalledWith('/');
+    expect(latest.user).toBeNull();
+    expect(latest.supabaseUser).toBeNull();
+    expect(latest.signingOut).toBe(false);
+  });
+
+  it('a failed signOut keeps the member, logs, and returns the sentence to show', async () => {
+    const snapshots = await renderSignedIn();
+    const failure = new Error('network down');
+    authMocks.signOutMock.mockResolvedValue({ error: failure });
+
+    let result: { error?: string } = {};
+    await act(async () => {
+      result = await snapshots[snapshots.length - 1].signOut();
+    });
+
+    expect(result).toEqual({ error: "Couldn't log you out. Please try again." });
+    const latest = snapshots[snapshots.length - 1];
+    expect(latest.user?.id).toBe('user-2');
+    expect(latest.signingOut).toBe(false);
+    expect(authMocks.replaceMock).not.toHaveBeenCalled();
+    expect(authMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'auth_sign_out_failed', error: failure })
+    );
+  });
+
+  it('a signOut that throws is handled the same way', async () => {
+    const snapshots = await renderSignedIn();
+    authMocks.signOutMock.mockRejectedValue(new Error('offline'));
+
+    let result: { error?: string } = {};
+    await act(async () => {
+      result = await snapshots[snapshots.length - 1].signOut();
+    });
+
+    expect(result.error).toBe("Couldn't log you out. Please try again.");
+    expect(snapshots[snapshots.length - 1].user?.id).toBe('user-2');
+    expect(authMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'auth_sign_out_failed' })
+    );
   });
 
   it('refreshUser resolves with the profile it loaded, or null when it loaded none', async () => {

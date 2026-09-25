@@ -21,6 +21,8 @@ vi.mock('@nepally/shared', async (importOriginal) => ({
 
 vi.mock('../lib/supabase', () => ({ supabase: {} }));
 
+const RLS_TEXT = 'new row violates row-level security policy';
+
 const mockGetByOwner = getListingsByOwner as ReturnType<typeof vi.fn>;
 const mockDeactivate = deactivateListing as ReturnType<typeof vi.fn>;
 const mockReactivate = reactivateListing as ReturnType<typeof vi.fn>;
@@ -62,21 +64,21 @@ describe('useMyListings', () => {
   });
 
   it('reports a failed first page with no rows and no more to load', async () => {
-    mockGetByOwner.mockResolvedValue({ error: new Error('network down') });
+    mockGetByOwner.mockResolvedValue({ error: new Error(RLS_TEXT) });
 
     const { result } = renderHook(() => useMyListings('user-1', fixedNow));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.error).toBe('network down');
+    expect(result.current.error).toBe("Couldn't load your listings.");
     expect(result.current.listings).toEqual([]);
     expect(result.current.hasMore).toBe(false);
   });
 
   it('reloads after a failure', async () => {
-    mockGetByOwner.mockResolvedValueOnce({ error: new Error('network down') }).mockResolvedValueOnce(page(['a']));
+    mockGetByOwner.mockResolvedValueOnce({ error: new Error(RLS_TEXT) }).mockResolvedValueOnce(page(['a']));
 
     const { result } = renderHook(() => useMyListings('user-1', fixedNow));
-    await waitFor(() => expect(result.current.error).toBe('network down'));
+    await waitFor(() => expect(result.current.error).toBe("Couldn't load your listings."));
 
     act(() => result.current.reload());
 
@@ -100,14 +102,14 @@ describe('useMyListings', () => {
   it('keeps the loaded rows when a page fails, and retries it', async () => {
     mockGetByOwner
       .mockResolvedValueOnce(page(['a'], true))
-      .mockResolvedValueOnce({ error: new Error('timeout') })
+      .mockResolvedValueOnce({ error: new Error(RLS_TEXT) })
       .mockResolvedValueOnce(page(['b']));
 
     const { result } = renderHook(() => useMyListings('user-1', fixedNow));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     act(() => result.current.loadMore());
-    await waitFor(() => expect(result.current.loadMoreError).toBe('timeout'));
+    await waitFor(() => expect(result.current.loadMoreError).toBe("Couldn't load more listings."));
     expect(result.current.listings.map((l) => l.id)).toEqual(['a']);
     expect(result.current.hasMore).toBe(false);
 

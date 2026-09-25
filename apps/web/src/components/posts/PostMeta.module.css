@@ -6,9 +6,11 @@
   min-width: 0;
 }
 
+/* The name and age take the whole first line; tags and scope wrap below. */
 .identity {
   display: flex;
   flex-direction: column;
+  flex-basis: 100%;
   min-width: 0;
 }
 
@@ -28,6 +30,7 @@
 .tags {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-1);
   margin: 0;
   padding: 0;

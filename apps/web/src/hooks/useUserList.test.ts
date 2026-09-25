@@ -66,18 +66,18 @@ describe('useUserList', () => {
     expect(fetchList).toHaveBeenCalledWith({}, 'user-1');
   });
 
-  it('reports the error message and clears items on failure', async () => {
-    fetchList.mockResolvedValue({ error: new Error('boom') });
+  it('reports its fallback, never the raw error, and clears items on failure', async () => {
+    fetchList.mockResolvedValue({ error: new Error('new row violates row-level security policy') });
     const { result } = renderHook(() =>
       useUserList<Item>('user-1', fetchList as ListFetcher<Item>, FALLBACK)
     );
 
-    await waitFor(() => expect(result.current.error).toBe('boom'));
+    await waitFor(() => expect(result.current.error).toBe(FALLBACK));
     expect(result.current.items).toEqual([]);
     expect(result.current.loading).toBe(false);
   });
 
-  it('falls back to the given message when the error has none', async () => {
+  it('reports its fallback when the error has no message', async () => {
     fetchList.mockResolvedValue({ error: new Error('') });
     const { result } = renderHook(() =>
       useUserList<Item>('user-1', fetchList as ListFetcher<Item>, FALLBACK)
@@ -92,7 +92,7 @@ describe('useUserList', () => {
       useUserList<Item>('user-1', fetchList as ListFetcher<Item>, FALLBACK)
     );
 
-    await waitFor(() => expect(result.current.error).toBe('boom'));
+    await waitFor(() => expect(result.current.error).toBe(FALLBACK));
 
     fetchList.mockResolvedValueOnce({ data: mockItems });
     act(() => result.current.reload());
@@ -118,7 +118,7 @@ describe('useUserList', () => {
     fetchList.mockResolvedValueOnce({ error: new Error('reload failed') });
     act(() => result.current.reload());
 
-    await waitFor(() => expect(result.current.error).toBe('reload failed'));
+    await waitFor(() => expect(result.current.error).toBe(FALLBACK));
     expect(result.current.items).toEqual([]);
   });
 
@@ -197,7 +197,7 @@ describe('useUserList', () => {
       { initialProps: { id: 'user-a' } }
     );
 
-    await waitFor(() => expect(result.current.error).toBe('user-a failed'));
+    await waitFor(() => expect(result.current.error).toBe(FALLBACK));
 
     rerender({ id: 'user-b' });
 

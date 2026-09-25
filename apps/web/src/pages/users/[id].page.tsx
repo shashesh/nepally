@@ -4,14 +4,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Badge, Button, Tabs } from '@mantine/core';
 import { formatPublicName, getFirstName, TrustLevel } from '@nepally/shared';
-import type { Event, PublicUser } from '@nepally/shared';
+import type { Event } from '@nepally/shared';
 import {
   EmptyState,
+  ErrorState,
+  ListStates,
   LoadingState,
-  TrustBadge,
   scrollFocusedTabIntoView,
   scrollingTabsClassNames,
 } from '../../components/ui';
+import { AboutPanel } from '../../components/users/AboutPanel';
 import { PublicProfileHeader } from '../../components/users/PublicProfileHeader';
 import { PostSummaryRow } from '../../components/posts/PostSummaryRow';
 import { EventSummaryRow } from '../../components/events/EventSummaryRow';
@@ -19,6 +21,7 @@ import { ListingSummaryRow } from '../../components/marketplace/ListingSummaryRo
 import { useAuth } from '../../hooks/useAuth';
 import { useNow } from '../../hooks/useNow';
 import { usePublicProfile } from '../../hooks/usePublicProfile';
+import type { ListResource } from '../../hooks/useUserList';
 import { useStartConversation } from '../../hooks/useStartConversation';
 import styles from '../../styles/PublicProfile.module.css';
 
@@ -51,68 +54,8 @@ function ProfileShell({ title, children, variant = 'default' }: ProfileShellProp
   );
 }
 
-interface RowListProps {
-  loading: boolean;
-  loadingLabel: string;
-  isEmpty: boolean;
-  emptyTitle: string;
-  emptyAction?: ReactNode;
-  children: ReactNode;
-}
-
-/** One tab's list: a skeleton while it loads, an empty state, or the rows. */
-function RowList({ loading, loadingLabel, isEmpty, emptyTitle, emptyAction, children }: RowListProps) {
-  if (loading) return <LoadingState label={loadingLabel} />;
-  if (isEmpty) return <EmptyState title={emptyTitle} action={emptyAction} />;
-  return <div className={styles.rowList}>{children}</div>;
-}
-
-function AboutRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className={styles.aboutRow}>
-      <dt className={styles.aboutLabel}>{label}</dt>
-      <dd className={styles.aboutValue}>{children}</dd>
-    </div>
-  );
-}
-
-interface AboutPanelProps {
-  profileUser: PublicUser;
-  metroName: string | null;
-  postCount: number;
-  eventCount: number;
-  listingCount: number;
-}
-
-function AboutPanel({ profileUser, metroName, postCount, eventCount, listingCount }: AboutPanelProps) {
-  return (
-    <div className={styles.aboutSection}>
-      <dl>
-        {profileUser.bio && (
-          <div className={styles.aboutBioBlock}>
-            <dt className={styles.aboutLabel}>Bio</dt>
-            <dd className={styles.aboutBio}>{profileUser.bio}</dd>
-          </div>
-        )}
-        <AboutRow label="Location">{metroName || 'Not set'}</AboutRow>
-        <AboutRow label="Member since">{new Date(profileUser.created_at).getFullYear()}</AboutRow>
-        <AboutRow label="Trust level">
-          <TrustBadge level={profileUser.trust_level} />
-        </AboutRow>
-      </dl>
-      <div className={styles.aboutDivider} aria-hidden="true" />
-      <dl>
-        <AboutRow label="Posts">{postCount}</AboutRow>
-        <AboutRow label="Events organized">{eventCount}</AboutRow>
-        <AboutRow label="Active listings">{listingCount}</AboutRow>
-      </dl>
-    </div>
-  );
-}
-
 interface EventsListProps {
-  events: Event[];
-  loading: boolean;
+  events: ListResource<Event>;
   emptyTitle: string;
   emptyAction?: ReactNode;
 }
@@ -121,20 +64,23 @@ interface EventsListProps {
  * The Events tab's rows. Its own component so useNow's interval runs only
  * while the tab is open: `keepMounted={false}` unmounts inactive panels.
  */
-function EventsList({ events, loading, emptyTitle, emptyAction }: EventsListProps) {
+function EventsList({ events, emptyTitle, emptyAction }: EventsListProps) {
   const now = useNow();
   return (
-    <RowList
-      loading={loading}
+    <ListStates
+      loading={events.loading}
       loadingLabel="Loading events…"
-      isEmpty={events.length === 0}
-      emptyTitle={emptyTitle}
-      emptyAction={emptyAction}
+      error={events.error}
+      onRetry={events.reload}
+      isEmpty={events.items.length === 0}
+      empty={<EmptyState title={emptyTitle} action={emptyAction} />}
     >
-      {events.map((event) => (
-        <EventSummaryRow key={event.id} event={event} now={now} />
-      ))}
-    </RowList>
+      <div className={styles.rowList}>
+        {events.items.map((event) => (
+          <EventSummaryRow key={event.id} event={event} now={now} />
+        ))}
+      </div>
+    </ListStates>
   );
 }
 
@@ -157,7 +103,7 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
 
   const { profileUser, posts, events, listings } = profile;
 
-  if (profile.loading) {
+  if (profile.status === 'loading') {
     return (
       <ProfileShell title="Profile · Nepally" variant="state">
         <LoadingState variant="detail" label="Loading profile…" />
@@ -165,12 +111,21 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
     );
   }
 
-  if (profile.error || !profileUser) {
+  if (profile.status === 'error') {
+    return (
+      <ProfileShell title="Profile · Nepally" variant="state">
+        <ErrorState message="Couldn’t load this profile." onRetry={profile.reload} />
+      </ProfileShell>
+    );
+  }
+
+  if (!profileUser) {
     return (
       <ProfileShell title="Profile · Nepally" variant="state">
         <EmptyState
           title="Member not found"
-          description={profile.error ?? undefined}
+          titleOrder={1}
+          description="The link may be wrong, or this member may have left Nepally."
           action={
             <Button component={Link} href="/">
               Back to feed
@@ -189,9 +144,9 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
     isOwnProfile && (currentUser?.trust_level ?? TrustLevel.NEW) >= TrustLevel.VERIFIED;
   const firstName = getFirstName(profileUser.full_name);
   const counts: Partial<Record<ProfileTab, number>> = {
-    posts: posts.length,
-    events: events.length,
-    listings: listings.length,
+    posts: posts.items.length,
+    events: events.items.length,
+    listings: listings.items.length,
   };
 
   return (
@@ -239,31 +194,38 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
 
           {/* tabIndex: with nothing focusable in a panel, Tab from the tab list would skip it. */}
           <Tabs.Panel value="posts" pt="md" tabIndex={0}>
-            <RowList
-              loading={profile.postsLoading}
+            <ListStates
+              loading={posts.loading}
               loadingLabel="Loading posts…"
-              isEmpty={posts.length === 0}
-              emptyTitle={
-                isOwnProfile ? 'You haven’t posted anything yet.' : `${firstName} hasn’t posted anything yet.`
-              }
-              emptyAction={
-                canPostAndOrganize ? (
-                  <Button component={Link} href="/posts/create">
-                    Start a post
-                  </Button>
-                ) : undefined
+              error={posts.error}
+              onRetry={posts.reload}
+              isEmpty={posts.items.length === 0}
+              empty={
+                <EmptyState
+                  title={
+                    isOwnProfile ? 'You haven’t posted anything yet.' : `${firstName} hasn’t posted anything yet.`
+                  }
+                  action={
+                    canPostAndOrganize ? (
+                      <Button component={Link} href="/posts/create">
+                        Start a post
+                      </Button>
+                    ) : undefined
+                  }
+                />
               }
             >
-              {posts.map((post) => (
-                <PostSummaryRow key={post.id} post={post} />
-              ))}
-            </RowList>
+              <div className={styles.rowList}>
+                {posts.items.map((post) => (
+                  <PostSummaryRow key={post.id} post={post} />
+                ))}
+              </div>
+            </ListStates>
           </Tabs.Panel>
 
           <Tabs.Panel value="events" pt="md" tabIndex={0}>
             <EventsList
               events={events}
-              loading={profile.eventsLoading}
               emptyTitle={
                 isOwnProfile ? 'You haven’t organized any events.' : `${firstName} hasn’t organized any events.`
               }
@@ -278,34 +240,40 @@ function PublicProfileView({ memberId }: { memberId: string | undefined }) {
           </Tabs.Panel>
 
           <Tabs.Panel value="listings" pt="md" tabIndex={0}>
-            <RowList
-              loading={profile.listingsLoading}
+            <ListStates
+              loading={listings.loading}
               loadingLabel="Loading listings…"
-              isEmpty={listings.length === 0}
-              emptyTitle={
-                isOwnProfile ? 'You haven’t listed anything yet.' : `${firstName} has no active listings.`
-              }
-              emptyAction={
-                isOwnProfile ? (
-                  <Button component={Link} href="/marketplace/create">
-                    Post a listing
-                  </Button>
-                ) : undefined
+              error={listings.error}
+              onRetry={listings.reload}
+              isEmpty={listings.items.length === 0}
+              empty={
+                <EmptyState
+                  title={isOwnProfile ? 'You haven’t listed anything yet.' : `${firstName} has no active listings.`}
+                  action={
+                    isOwnProfile ? (
+                      <Button component={Link} href="/marketplace/create">
+                        Post a listing
+                      </Button>
+                    ) : undefined
+                  }
+                />
               }
             >
-              {listings.map((listing) => (
-                <ListingSummaryRow key={listing.id} listing={listing} />
-              ))}
-            </RowList>
+              <div className={styles.rowList}>
+                {listings.items.map((listing) => (
+                  <ListingSummaryRow key={listing.id} listing={listing} />
+                ))}
+              </div>
+            </ListStates>
           </Tabs.Panel>
 
           <Tabs.Panel value="about" pt="md" tabIndex={0}>
             <AboutPanel
               profileUser={profileUser}
               metroName={profile.metroName}
-              postCount={posts.length}
-              eventCount={events.length}
-              listingCount={listings.length}
+              postCount={posts.items.length}
+              eventCount={events.items.length}
+              listingCount={listings.items.length}
             />
           </Tabs.Panel>
         </Tabs>

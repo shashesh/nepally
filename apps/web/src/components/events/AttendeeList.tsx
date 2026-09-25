@@ -34,10 +34,12 @@ export default function AttendeeList({ opened, attendees, loading, error, onRetr
           {attendees.map((rsvp) => (
             <Group key={rsvp.id} gap="sm" py={4}>
               <Avatar
-                name={rsvp.user?.full_name ?? '?'}
+                name={rsvp.user ? formatPublicName(rsvp.user.full_name) : '?'}
+                toneKey={rsvp.user?.full_name}
                 photoUrl={rsvp.user?.profile_photo}
                 trustLevel={rsvp.user?.trust_level}
                 size="small"
+                decorative
               />
               <Text size="sm">
                 {rsvp.user ? formatPublicName(rsvp.user.full_name) : 'User'}

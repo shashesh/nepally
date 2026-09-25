@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Loader } from '@mantine/core';
 import {
@@ -73,6 +73,15 @@ export function PublicProfileHeader({
   // under the member's focus. The Loader carries the progress cue instead.
   const messageLabel = viewerId ? `Message ${publicName}` : 'Sign in to message';
 
+  // profileUser holds the count as loaded; a follow or unfollow here moves
+  // it by one, so the count agrees with the button. Never below 0: an
+  // unfollow may undo a follow the loaded count didn't include yet.
+  const loadedFollowerCount = profileUser.follower_count ?? 0;
+  const [followerDelta, setFollowerDelta] = useState(0);
+  const followerCount = loadedFollowerCount + followerDelta;
+  const handleFollowChange = (nowFollowing: boolean): void =>
+    setFollowerDelta((delta) => Math.max(-loadedFollowerCount, delta + (nowFollowing ? 1 : -1)));
+
   const chips = buildIdentityChips(profileUser);
   const showNewMemberHint = profileUser.trust_level === 0 && !isOwnProfile;
   const showHelperBadge = typeof helperScore === 'number' && helperScore >= HELPER_SCORE_VISIBILITY_THRESHOLD;
@@ -126,9 +135,14 @@ export function PublicProfileHeader({
           </div>
 
           <div className={styles.socialRow}>
-            <FollowButton supabase={supabase} viewerId={viewerId} targetUserId={profileUser.id} />
+            <FollowButton
+              supabase={supabase}
+              viewerId={viewerId}
+              targetUserId={profileUser.id}
+              onChange={handleFollowChange}
+            />
             <span className={styles.counts}>
-              <span className={styles.followCount}>{pluralize(profileUser.follower_count ?? 0, 'follower')}</span>
+              <span className={styles.followCount}>{pluralize(followerCount, 'follower')}</span>
               <span className={styles.dot} aria-hidden="true">
                 &middot;
               </span>
@@ -176,6 +190,7 @@ export function PublicProfileHeader({
                 radius="var(--radius-full)"
                 className={styles.ctaButton}
                 aria-disabled={messaging || undefined}
+                aria-busy={messaging || undefined}
                 data-disabled={messaging || undefined}
                 leftSection={messaging ? <Loader size="xs" aria-hidden /> : undefined}
                 onClick={messaging ? undefined : onMessage}

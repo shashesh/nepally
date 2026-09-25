@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { uploadPhotosInOrder } from '../../lib/photoUploads';
+import { userMessage } from '../../lib/userMessage';
 import { resizeImage } from '../../lib/resizeImage';
 import { ImageUploader, ToggleChipGroup, notify, type UploaderPhoto } from '../../components/ui';
 import {
@@ -126,7 +127,12 @@ export default function CreateListingPage() {
         uploadListingPhotos(supabase, inputs)
       );
       if ('error' in uploaded) {
-        notify.error(uploaded.error.message);
+        notify.error(
+          userMessage(uploaded.error, "Couldn't upload your photos. Please try again.", 'listing_photos_upload_failed', {
+            platform: 'web',
+            userId: user.id,
+          })
+        );
         setSubmitting(false);
         return;
       }
@@ -136,7 +142,12 @@ export default function CreateListingPage() {
       if (isEditing && editId) {
         const result = await updateListing(supabase, editId, payload);
         if (result.error) {
-          notify.error(result.error.message);
+          notify.error(
+            userMessage(result.error, "Couldn't update your listing. Please try again.", 'listing_update_failed', {
+              platform: 'web',
+              listingId: editId,
+            })
+          );
         } else {
           router.push('/marketplace/my-listings');
         }
@@ -147,7 +158,12 @@ export default function CreateListingPage() {
           metro_area_id: user.metro_area_id,
         });
         if (result.error) {
-          notify.error(result.error.message);
+          notify.error(
+            userMessage(result.error, "Couldn't create your listing. Please try again.", 'listing_create_failed', {
+              platform: 'web',
+              userId: user.id,
+            })
+          );
         } else {
           router.push('/marketplace');
         }

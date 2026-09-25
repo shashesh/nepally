@@ -20,6 +20,9 @@ const TEXT_PAIRS: Array<[foreground: string, background: string]> = [
   // --text-3 on --surface-sunken is 4.25:1, under AA, so it is not a usable pair.
   ['--text-1', '--surface-sunken'],
   ['--text-2', '--surface-sunken'],
+  // Icons on the sunken surface beside same-meaning text.
+  ['--accent-ink', '--surface-sunken'],
+  ['--success', '--surface-sunken'],
   ['--action-fg', '--action-bg'],
   ['--action-fg', '--action-bg-hover'],
   ['--accent-ink', '--accent-tint'],

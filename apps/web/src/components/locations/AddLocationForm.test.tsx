@@ -210,8 +210,8 @@ describe('AddLocationForm', () => {
     expect(onSave).toHaveBeenCalledWith({ id: '41940', name: 'San Jose', state: 'CA' }, 'Family');
   });
 
-  it('shows the error message and does not close when onSave fails', async () => {
-    onSave.mockResolvedValue({ error: new Error("That name didn't save.") });
+  it('shows the message onSave returns and does not close when it fails', async () => {
+    onSave.mockResolvedValue({ error: "That name didn't save." });
     renderForm();
     await selectMetro();
     fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Family' } });
@@ -247,7 +247,7 @@ describe('AddLocationForm', () => {
   });
 
   it('stays busy (aria-disabled, not native disabled) on Save while onSave is in flight', async () => {
-    let resolveSave: (value: { error?: Error | null }) => void = () => {};
+    let resolveSave: (value: { error?: string | null }) => void = () => {};
     onSave.mockReturnValue(
       new Promise((resolve) => {
         resolveSave = resolve;
@@ -272,7 +272,7 @@ describe('AddLocationForm', () => {
   });
 
   it('keeps Cancel focusable but inert while onSave is in flight', async () => {
-    let resolveSave: (value: { error?: Error | null }) => void = () => {};
+    let resolveSave: (value: { error?: string | null }) => void = () => {};
     onSave.mockReturnValue(
       new Promise((resolve) => {
         resolveSave = resolve;
@@ -287,12 +287,11 @@ describe('AddLocationForm', () => {
     const cancelButton = screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement;
     expect(cancelButton.disabled).toBe(false);
     expect(cancelButton.getAttribute('aria-disabled')).toBe('true');
-    expect(cancelButton.hasAttribute('data-disabled')).toBe(true);
     fireEvent.click(cancelButton);
     expect(onCancel).not.toHaveBeenCalled();
 
     await act(async () => {
-      resolveSave({ error: new Error('Network down') });
+      resolveSave({ error: "Couldn't add this location. Please try again." });
     });
 
     // Once the save settles (here, failing), Cancel works again.

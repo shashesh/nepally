@@ -109,7 +109,7 @@ describe('CommentComposer', () => {
     const field = screen.getByLabelText('Write a comment') as HTMLInputElement;
     fireEvent.change(field, { target: { value: 'Great post' } });
 
-    expect(screen.getByRole('button', { name: 'Post' }).hasAttribute('data-loading')).toBe(true);
+    expect((screen.getByRole('button', { name: 'Post' }) as HTMLButtonElement).disabled).toBe(true);
     expect(field.value).toBe('Great post');
   });
 });

@@ -60,12 +60,14 @@ function PromoteWizardView({ listingId, viewer }: PromoteWizardViewProps) {
           <ErrorState title="Couldn't load this listing" message={wizard.error} onRetry={wizard.reload} />
         ) : wizard.notFound || !wizard.listing ? (
           <EmptyState
+            titleOrder={2}
             title="Listing not found"
             description="It may have been deleted."
             action={<GoToMyListings />}
           />
         ) : wizard.blocker ? (
           <EmptyState
+            titleOrder={2}
             icon={<IconRocket size={40} />}
             title={PROMOTION_BLOCKER_MESSAGES[wizard.blocker].title}
             description={PROMOTION_BLOCKER_MESSAGES[wizard.blocker].message}

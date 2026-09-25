@@ -35,7 +35,14 @@ const NAMED_COLOURS = [
   'silver', 'tan', 'teal', 'tomato', 'turquoise', 'violet', 'wheat', 'white', 'yellow',
 ];
 
-const RULES = [
+/**
+ * `var(` in any case (CSS function names are case-insensitive), then any
+ * whitespace, newlines included. Custom property names stay case-sensitive.
+ */
+const VAR_OPEN = String.raw`[vV][aA][rR]\(\s*`;
+
+/** Rules read one line at a time. */
+const LINE_RULES = [
   {
     // CSS function names are case-insensitive, so RGB(...) and OKLCH(...) must fail too.
     kind: 'colour literal',
@@ -47,15 +54,25 @@ const RULES = [
     kind: 'named colour',
     pattern: new RegExp(`(?<=:[^;{}]*)(?<![\\w-])(?:${NAMED_COLOURS.join('|')})(?![\\w.-])`, 'gi'),
   },
+];
+
+/**
+ * var()-based rules, read against a whole stylesheet so a var( split across
+ * lines still matches. A violation's line is the line its `--name` is on.
+ */
+const VAR_RULES = [
   {
     // Primitives live in tokens.css; CSS Modules consume the semantic layer only.
     kind: 'primitive token',
-    pattern: /var\(\s*--(?:ink|marigold|paper|moss|crimson|amber)-\d+\b/g,
+    pattern: new RegExp(VAR_OPEN + String.raw`--(?:ink|marigold|paper|moss|crimson|amber)-\d+\b`, 'g'),
   },
   {
     kind: 'legacy token',
-    pattern:
-      /var\(\s*--(?:color-|gradient-|glass-|ghost-border|font-family\b|font-size-(?:h1|h2|h3|body|small|caption)\b|font-weight-extrabold|line-height-|space-(?:xxs|xs|s|m|l|xl|xxl)\b|radius-(?:sm|md|lg|xl)\b|shadow-(?:sm|md|lg|glass)\b|max-width|content-width|sidebar-width|nav-height|input-height|button-height|surface-(?:rail|topbar|nav)-|dropdown-|transition-)/g,
+    pattern: new RegExp(
+      VAR_OPEN +
+        String.raw`--(?:color-|gradient-|glass-|ghost-border|font-family\b|font-size-(?:h1|h2|h3|body|small|caption)\b|font-weight-extrabold|line-height-|space-(?:xxs|xs|s|m|l|xl|xxl)\b|radius-(?:sm|md|lg|xl)\b|shadow-(?:sm|md|lg|glass)\b|max-width|content-width|sidebar-width|nav-height|input-height|button-height|surface-(?:rail|topbar|nav)-|dropdown-|transition-)`,
+      'g'
+    ),
   },
 ];
 
@@ -63,23 +80,45 @@ function stripComments(content) {
   return content.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '));
 }
 
-function findViolations(content) {
-  const violations = [];
-  stripComments(content)
-    .split(/\r?\n/)
-    .forEach((line, index) => {
-      for (const rule of RULES) {
-        for (const match of line.matchAll(rule.pattern)) {
-          violations.push({ line: index + 1, kind: rule.kind, text: match[0] });
-        }
-      }
-    });
-  return violations;
+/** The 1-based line that `offset` in `text` falls on. */
+function lineAt(text, offset) {
+  let line = 1;
+  for (let index = text.indexOf('\n'); index !== -1 && index < offset; index = text.indexOf('\n', index + 1)) {
+    line += 1;
+  }
+  return line;
 }
 
-const VAR_REFERENCE = /var\(\s*(--[\w-]+)/g;
+/** Every match of a var()-based `pattern` in `text`, with the line its `--name` is on. */
+function matchVarReferences(text, pattern) {
+  return [...text.matchAll(pattern)].map((match) => ({
+    match,
+    line: lineAt(text, match.index + match[0].indexOf('--')),
+  }));
+}
+
+function findViolations(content) {
+  const stripped = stripComments(content);
+  const violations = [];
+  stripped.split(/\r?\n/).forEach((line, index) => {
+    for (const rule of LINE_RULES) {
+      for (const match of line.matchAll(rule.pattern)) {
+        violations.push({ line: index + 1, kind: rule.kind, text: match[0] });
+      }
+    }
+  });
+  for (const rule of VAR_RULES) {
+    for (const { match, line } of matchVarReferences(stripped, rule.pattern)) {
+      violations.push({ line, kind: rule.kind, text: match[0].replace(/\s+/g, '') });
+    }
+  }
+  // A stable sort: within a line, violations keep the rule order above.
+  return violations.sort((a, b) => a.line - b.line);
+}
+
+const VAR_REFERENCE = new RegExp(VAR_OPEN + String.raw`(--[\w-]+)`, 'g');
 const PROPERTY_DECLARATION = /(--[\w-]+)\s*:/g;
-const LEGACY_RULE = RULES.find((rule) => rule.kind === 'legacy token');
+const LEGACY_RULE = VAR_RULES.find((rule) => rule.kind === 'legacy token');
 
 /** Every custom property a stylesheet declares. */
 function readTokenNames(css) {
@@ -99,18 +138,16 @@ function findUndefinedProperties(content, tokenNames) {
   const stripped = stripComments(content);
   const local = readTokenNames(stripped);
   const violations = [];
-  stripped.split(/\r?\n/).forEach((line, index) => {
-    for (const match of line.matchAll(VAR_REFERENCE)) {
-      const name = match[1];
-      const defined =
-        tokenNames.has(name) ||
-        local.has(name) ||
-        name.startsWith('--mantine-') ||
-        MANTINE_COMPONENT_PROPERTIES.includes(name) ||
-        isLegacyName(name);
-      if (!defined) violations.push({ line: index + 1, kind: 'undefined property', text: name });
-    }
-  });
+  for (const { match, line } of matchVarReferences(stripped, VAR_REFERENCE)) {
+    const name = match[1];
+    const defined =
+      tokenNames.has(name) ||
+      local.has(name) ||
+      name.startsWith('--mantine-') ||
+      MANTINE_COMPONENT_PROPERTIES.includes(name) ||
+      isLegacyName(name);
+    if (!defined) violations.push({ line, kind: 'undefined property', text: name });
+  }
   return violations;
 }
 

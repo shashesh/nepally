@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { toPhotoUploadInputs } from '../../lib/photoUploads';
+import { userMessage } from '../../lib/userMessage';
 import { ImageUploader, ToggleChipGroup, type UploaderPhoto } from '../../components/ui';
 import { DateTimeField } from '../../components/events/DateTimeField';
 import {
@@ -190,7 +191,12 @@ export default function CreateEventPage() {
         const uploadResult = await uploadEventPhoto(supabase, uploadInput);
         if (uploadResult.error || !uploadResult.url) {
           setSubmitting(false);
-          setFormError(uploadResult.error?.message || 'Failed to upload event photo. Please try again.');
+          const uploadFailed = "Couldn't upload the event photo. Please try again.";
+          setFormError(
+            uploadResult.error
+              ? userMessage(uploadResult.error, uploadFailed, 'event_photo_upload_failed', { platform: 'web', userId })
+              : uploadFailed
+          );
           return;
         }
         uploadedPhotoUrl = uploadResult.url;
@@ -221,7 +227,15 @@ export default function CreateEventPage() {
           is_global: form.is_global,
         });
         setSubmitting(false);
-        if (result.error) { setFormError(result.error.message); return; }
+        if (result.error) {
+          setFormError(
+            userMessage(result.error, "Couldn't update the event. Please try again.", 'event_update_failed', {
+              platform: 'web',
+              eventId: edit,
+            })
+          );
+          return;
+        }
         router.push(`/events/${edit}`);
       } else {
         const result = await createEvent(supabase, {
@@ -239,7 +253,15 @@ export default function CreateEventPage() {
           metro_area_id: metroId,
         });
         setSubmitting(false);
-        if (result.error) { setFormError(result.error.message); return; }
+        if (result.error) {
+          setFormError(
+            userMessage(result.error, "Couldn't create the event. Please try again.", 'event_create_failed', {
+              platform: 'web',
+              userId,
+            })
+          );
+          return;
+        }
         if (result.data) router.push(`/events/${result.data.id}`);
       }
     },

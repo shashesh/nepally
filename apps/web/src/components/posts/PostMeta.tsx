@@ -25,28 +25,28 @@ export function PostMeta({ post, metroLabel, onTagClick }: PostMetaProps) {
         </time>
       </div>
 
-      {tags.length > 0 && (
-        <ul className={styles.tags}>
-          {tags.map((tag) => (
-            <li key={tag.id}>
-              {onTagClick ? (
-                <UnstyledButton
-                  type="button"
-                  className={styles.tagButton}
-                  aria-label={`Filter by ${tag.name}`}
-                  onClick={() => onTagClick(tag.slug)}
-                >
-                  <TagChip slug={tag.slug} label={tag.name} />
-                </UnstyledButton>
-              ) : (
+      {/* Tags and scope share one list, so they wrap together below the name. */}
+      <ul className={styles.tags}>
+        {tags.map((tag) => (
+          <li key={tag.id}>
+            {onTagClick ? (
+              <UnstyledButton
+                type="button"
+                className={styles.tagButton}
+                aria-label={`Filter by ${tag.name}`}
+                onClick={() => onTagClick(tag.slug)}
+              >
                 <TagChip slug={tag.slug} label={tag.name} />
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <ScopeBadge isGlobal={post.is_global} metroLabel={metroLabel} />
+              </UnstyledButton>
+            ) : (
+              <TagChip slug={tag.slug} label={tag.name} />
+            )}
+          </li>
+        ))}
+        <li>
+          <ScopeBadge isGlobal={post.is_global} metroLabel={metroLabel} />
+        </li>
+      </ul>
     </div>
   );
 }

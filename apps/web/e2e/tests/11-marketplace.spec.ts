@@ -5,6 +5,7 @@ import {
   MOCK_MARKETPLACE_LISTING_OTHER_ACTIVE,
   MOCK_MARKETPLACE_LISTING_OWN_ACTIVE,
   MOCK_NEW_CONVERSATION_ID,
+  MOCK_USER_PROFILE,
 } from '../fixtures/mock-data';
 
 test.describe('Marketplace full feature flow', () => {
@@ -28,6 +29,26 @@ test.describe('Marketplace full feature flow', () => {
     // than a <Button> wrapped in a <Link> (recon 8).
     await expect(page.getByRole('link', { name: /create listing/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /my listings/i })).toBeVisible();
+  });
+
+  test('a member with no area is asked to set one, not shown a loading grid', async ({ page }) => {
+    // The member's own profile comes from get_my_profile, as one object or a one-row array.
+    const profile = { ...MOCK_USER_PROFILE, metro_area_id: null };
+    await page.route('**/rest/v1/rpc/get_my_profile**', async (route) => {
+      const wantsObject = (route.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
+      await route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(wantsObject ? profile : [profile]),
+      });
+    });
+    await page.goto('/marketplace');
+
+    await expect(page.getByRole('heading', { name: 'Choose your area to see listings' })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByRole('link', { name: 'Set your area' })).toHaveAttribute('href', '/onboarding/zip');
+    await expect(page.getByText('Loading listings…')).toHaveCount(0);
   });
 
   test('search from marketplace home navigates to search results route', async ({ page }) => {

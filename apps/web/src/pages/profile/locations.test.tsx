@@ -415,6 +415,25 @@ describe('ManageLocationsPage', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: /Add a Location/ }));
   });
 
+  it('returns focus to Add a Location when the add succeeds but the refresh brings no new list', async () => {
+    // LocationContext's refresh swallows its own failure: it resolves, and
+    // savedLocations stays as it was. Only the form closing changes the page.
+    mockRefreshSavedLocations.mockResolvedValue(undefined);
+    locationsMocks.addSavedLocationMock.mockResolvedValue({ data: { id: 'loc-3' } });
+    await renderPage();
+    await openAddAndSelectMetro();
+
+    fireEvent.change(screen.getByLabelText('Name this location'), { target: { value: 'Family' } });
+    const saveButton = screen.getByRole('button', { name: 'Save Location' });
+    saveButton.focus();
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
+
+    expect(screen.queryByLabelText('Name this location')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Add a Location/ }));
+  });
+
   it('shows error when saving a duplicate label, without calling addSavedLocation', async () => {
     await renderPage();
     await openAddAndSelectMetro();
@@ -428,8 +447,9 @@ describe('ManageLocationsPage', () => {
     expect(locationsMocks.addSavedLocationMock).not.toHaveBeenCalled();
   });
 
-  it('logs profile_location_add_failed when addSavedLocation fails', async () => {
-    locationsMocks.addSavedLocationMock.mockResolvedValue({ error: new Error('offline') });
+  it('shows our copy, never the raw error, and logs profile_location_add_failed when addSavedLocation fails', async () => {
+    const error = new Error('new row violates row-level security policy');
+    locationsMocks.addSavedLocationMock.mockResolvedValue({ error });
     await renderPage();
     await openAddAndSelectMetro();
 
@@ -439,8 +459,10 @@ describe('ManageLocationsPage', () => {
     });
 
     expect(locationsMocks.logClientEventMock).toHaveBeenCalledWith(
-      expect.objectContaining({ event: 'profile_location_add_failed' })
+      expect.objectContaining({ event: 'profile_location_add_failed', error })
     );
+    expect(screen.getByText("Couldn't add this location. Please try again.")).toBeDefined();
+    expect(screen.queryByText(/row-level security/)).toBeNull();
     expect(mockRefreshSavedLocations).not.toHaveBeenCalled();
   });
 

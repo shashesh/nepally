@@ -17,7 +17,8 @@ export interface AddLocationFormProps {
    * settles (see locations.page.tsx's handleSaveNew and the add-focus
    * effect) — this component only asks to close on a plain Cancel.
    */
-  onSave: (metro: MetroArea, label: string) => Promise<{ error?: Error | null }>;
+  /** Resolves with copy for the member on failure; the page logs the raw error. */
+  onSave: (metro: MetroArea, label: string) => Promise<{ error?: string | null }>;
   /** Cancel only. A successful save closes via the page re-rendering without this location's form. */
   onCancel: () => void;
 }
@@ -60,7 +61,7 @@ export function AddLocationForm({ usedLabels, userId, onSave, onCancel }: AddLoc
     setSaving(false);
 
     if (error) {
-      setAddError(error.message);
+      setAddError(error);
       return;
     }
 

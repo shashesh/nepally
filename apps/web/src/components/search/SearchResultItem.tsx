@@ -93,7 +93,13 @@ export function SearchResultItem({ result, query, compact = false }: SearchResul
   const { person } = result;
   return (
     <div className={rootClass}>
-      <Avatar name={person.full_name} photoUrl={person.profile_photo} trustLevel={person.trust_level} size={compact ? 'small' : 'medium'} />
+      <Avatar
+        name={person.full_name}
+        photoUrl={person.profile_photo}
+        trustLevel={person.trust_level}
+        size={compact ? 'small' : 'medium'}
+        decorative
+      />
       <div className={styles.body}>
         <span className={styles.title}>
           <Highlight text={person.full_name} query={query} />
