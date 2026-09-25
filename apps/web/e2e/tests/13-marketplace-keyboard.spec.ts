@@ -138,6 +138,9 @@ test.describe('Marketplace keyboard and layout', () => {
     await trigger.focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('menu')).toBeVisible();
+    // Mantine moves focus into the menu on a timer after it mounts; an arrow
+    // key pressed before then goes to the trigger instead.
+    await expect(page.locator('[role="menu"]:focus-within')).toHaveCount(1);
     await page.keyboard.press('ArrowDown');
     expect((await activeDescription(page))?.role).toBe('menuitem');
 
