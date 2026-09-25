@@ -6,6 +6,7 @@ const mockUseRoute = jest.fn();
 const mockGoBack = jest.fn();
 const mockGetMessages = jest.fn();
 const mockSubscribeToMessages = jest.fn();
+const mockRemoveChannel = jest.fn();
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: () => null,
@@ -21,7 +22,7 @@ jest.mock('../../hooks/useAuth', () => ({
 }));
 
 jest.mock('../../config/supabase', () => ({
-  supabase: {},
+  supabase: { removeChannel: (...args: unknown[]) => mockRemoveChannel(...args) },
 }));
 
 jest.mock('@nepally/shared', () => ({
@@ -95,5 +96,16 @@ describe('MessageThreadScreen avatar menu', () => {
     expect(screen.queryByText('Could not load messages. Please try again.')).toBeNull();
     expect(mockGetMessages).toHaveBeenCalledTimes(2);
     expect(mockSubscribeToMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes its realtime channel from the client on unmount', async () => {
+    const channel = { unsubscribe: jest.fn() };
+    mockSubscribeToMessages.mockReturnValue(channel);
+    const screen = render(<MessageThreadScreen />);
+    await act(async () => {});
+
+    screen.unmount();
+
+    expect(mockRemoveChannel).toHaveBeenCalledWith(channel);
   });
 });

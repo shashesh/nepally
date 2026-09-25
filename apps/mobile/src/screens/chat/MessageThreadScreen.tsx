@@ -142,7 +142,7 @@ export default function MessageThreadScreen() {
     );
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [conversationId, userId]);
 

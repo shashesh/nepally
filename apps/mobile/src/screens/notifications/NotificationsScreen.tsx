@@ -20,6 +20,7 @@ import {
   markAllNotificationsRead,
   deleteNotification,
   resolveNotificationRouteTarget,
+  uniqueChannelTopic,
 } from '@nepally/shared';
 import type { Notification } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
@@ -123,7 +124,7 @@ export function NotificationsScreen() {
   useEffect(() => {
     if (!user?.id) return;
     const channel = supabase
-      .channel(`notifications-mobile:${user.id}`)
+      .channel(uniqueChannelTopic(`notifications-mobile:${user.id}`))
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },

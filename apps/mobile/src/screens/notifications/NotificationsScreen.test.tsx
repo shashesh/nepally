@@ -63,6 +63,7 @@ jest.mock('@nepally/shared', () => ({
   markAllNotificationsRead: (...args: unknown[]) => mockMarkAllNotificationsRead(...args),
   deleteNotification: (...args: unknown[]) => mockDeleteNotification(...args),
   resolveNotificationRouteTarget: jest.requireActual('@nepally/shared').resolveNotificationRouteTarget,
+  uniqueChannelTopic: jest.requireActual('@nepally/shared').uniqueChannelTopic,
 }));
 
 function baseNotification(overrides: Record<string, unknown> = {}) {
@@ -96,6 +97,19 @@ describe('NotificationsScreen', () => {
     mockMarkNotificationRead.mockResolvedValue({});
     mockMarkAllNotificationsRead.mockResolvedValue({});
     mockDeleteNotification.mockResolvedValue({});
+  });
+
+  it('gives each mount its own realtime topic', async () => {
+    const { supabase } = jest.requireMock('../../config/supabase') as { supabase: { channel: jest.Mock } };
+    // A new key unmounts the first screen and mounts a second in its place.
+    const screen = await renderAndSettle();
+    screen.rerender(<NotificationsScreen key="second" />);
+    await act(async () => {});
+
+    const topics = supabase.channel.mock.calls.map(([topic]) => topic as string);
+    expect(topics).toHaveLength(2);
+    expect(topics.every((topic) => topic.startsWith('notifications-mobile:user-1:'))).toBe(true);
+    expect(new Set(topics).size).toBe(2);
   });
 
   it('routes message notifications to MessageThread when sender metadata exists', async () => {
