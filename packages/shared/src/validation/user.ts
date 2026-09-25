@@ -23,9 +23,27 @@ const BIDI_AND_INVISIBLE_CHARS =
   /[\u0080-\u009F\u200B\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
 
 /**
+ * The clean-up `fullNameSchema` runs before its length checks: trim, strip
+ * C0 controls and BIDI_AND_INVISIBLE_CHARS, collapse whitespace runs to one
+ * space, trim again. No length limit of its own; `createUserProfile` uses it
+ * on a provider's name, which never goes through the schema.
+ */
+export function normalizeFullName(value: string): string {
+  return (
+    value
+      .trim()
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '')
+      .replace(BIDI_AND_INVISIBLE_CHARS, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
+}
+
+/**
  * A member's display name. 001_schema.sql only constrains this column to
- * `NOT NULL` — no length limit, and no character restriction — so this is
- * the single source of truth both web and mobile should defer to.
+ * `NOT NULL` — no character restriction, and no length limit until 040 —
+ * so this is the single source of truth both web and mobile should defer to.
  * - trimmed, then C0 control characters, bidi/invisible formatting
  *   characters and C1 controls are stripped (see BIDI_AND_INVISIBLE_CHARS)
  * - any run of whitespace (including a stripped-to-nothing tab or newline)
@@ -40,11 +58,7 @@ const BIDI_AND_INVISIBLE_CHARS =
  */
 export const fullNameSchema = z
   .string()
-  .transform((value) => value.trim())
-  // eslint-disable-next-line no-control-regex
-  .transform((value) => value.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, ''))
-  .transform((value) => value.replace(BIDI_AND_INVISIBLE_CHARS, ''))
-  .transform((value) => value.replace(/\s+/g, ' ').trim())
+  .transform(normalizeFullName)
   .pipe(
     z
       .string()

@@ -26,6 +26,7 @@ import {
   updateUserProfile,
 } from './users';
 import { PUBLIC_USER_COLUMNS } from '../constants/users';
+import { FULL_NAME_MAX_LENGTH } from '../validation/user';
 
 /** Mocks the get_my_profile RPC: `supabase.rpc('get_my_profile').maybeSingle()`. */
 function mockOwnProfileRpc(row: Record<string, unknown> | null, error: Error | null = null) {
@@ -245,6 +246,46 @@ describe('users api', () => {
     });
     expect(query.select).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledWith('get_my_profile');
+  });
+
+  describe('createUserProfile stores a name that fits the full_name limit', () => {
+    function insertingClient() {
+      const query = { insert: vi.fn().mockResolvedValue({ error: null }) };
+      const { rpc } = mockOwnProfileRpc({ id: 'new-user' });
+      const supabase = { from: vi.fn().mockReturnValue(query), rpc } as unknown as SupabaseClient;
+      return { supabase, insert: query.insert };
+    }
+
+    function insertedName(insert: ReturnType<typeof vi.fn>): string {
+      return (insert.mock.calls[0][0] as { full_name: string }).full_name;
+    }
+
+    it('cuts a 150-character provider name to the limit', async () => {
+      const { supabase, insert } = insertingClient();
+
+      await createUserProfile(supabase, 'new-user', 'new@nusa.com', 'a'.repeat(150));
+
+      expect(insertedName(insert)).toBe('a'.repeat(FULL_NAME_MAX_LENGTH));
+    });
+
+    it('counts code points and never splits an emoji at the boundary', async () => {
+      const { supabase, insert } = insertingClient();
+      const name = `${'a'.repeat(FULL_NAME_MAX_LENGTH - 1)}😀😀${'b'.repeat(48)}`;
+
+      await createUserProfile(supabase, 'new-user', 'new@nusa.com', name);
+
+      const stored = insertedName(insert);
+      expect(stored).toBe(`${'a'.repeat(FULL_NAME_MAX_LENGTH - 1)}😀`);
+      expect(Array.from(stored)).toHaveLength(FULL_NAME_MAX_LENGTH);
+    });
+
+    it('normalises a bidi-laced name before storing it', async () => {
+      const { supabase, insert } = insertingClient();
+
+      await createUserProfile(supabase, 'new-user', 'new@nusa.com', '  Sita‮ ​Gurung\n');
+
+      expect(insertedName(insert)).toBe('Sita Gurung');
+    });
   });
 
   it('createUserProfile fails loudly when the read-back does not match the requested user', async () => {

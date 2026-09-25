@@ -14,6 +14,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { toApiError } from '../utils/apiError';
 import type { PublicUser, User } from '../types/user';
 import { PUBLIC_USER_COLUMNS } from '../constants/users';
+import { FULL_NAME_MAX_LENGTH, normalizeFullName } from '../validation/user';
 import { deleteProfilePhoto, uploadProfilePhoto } from './storage';
 
 export interface UserResult {
@@ -310,6 +311,16 @@ export async function markGoogleVerified(
 }
 
 /**
+ * A provider's name (Google, or the sign-up form before the schema ran) as
+ * the users table will take it: normalised as fullNameSchema does, then cut
+ * to FULL_NAME_MAX_LENGTH code points so it fits the 040 length check.
+ * Array.from walks code points, so a surrogate pair is never split.
+ */
+function toStoredFullName(fullName: string): string {
+  return Array.from(normalizeFullName(fullName)).slice(0, FULL_NAME_MAX_LENGTH).join('').trimEnd();
+}
+
+/**
  * Create user profile (called after email verification)
  */
 export async function createUserProfile(
@@ -324,7 +335,7 @@ export async function createUserProfile(
       .insert({
         id: userId,
         email,
-        full_name: fullName,
+        full_name: toStoredFullName(fullName),
         trust_level: 0, // Start at Level 0
       });
 
