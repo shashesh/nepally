@@ -21,6 +21,8 @@ import {
   deleteNotification,
   resolveNotificationRouteTarget,
   uniqueChannelTopic,
+  groupNotifications,
+  formatDayLabel,
 } from '@nepally/shared';
 import type { Notification } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
@@ -37,17 +39,6 @@ function notifIcon(type: Notification['type']): string {
     case 'emergency_alert': return '🛡️';
     default: return '📩';
   }
-}
-
-function dayLabel(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 86400000);
-  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  if (target.getTime() === today.getTime()) return 'Today';
-  if (target.getTime() === yesterday.getTime()) return 'Yesterday';
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 }
 
 function timeAgo(dateStr: string): string {
@@ -203,19 +194,16 @@ export function NotificationsScreen() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, [user]);
 
+  // Emergency alerts first, then one section per local calendar day, headed as web heads it.
   const sections: SectionData[] = useMemo(() => {
-    const emergency = notifications.filter((n) => n.type === 'emergency_alert');
-    const rest = notifications.filter((n) => n.type !== 'emergency_alert');
-    const result: SectionData[] = [];
-    if (emergency.length > 0) result.push({ title: '🛡️ Emergency Alerts', data: emergency });
-    const byDay = new Map<string, Notification[]>();
-    for (const n of rest) {
-      const label = dayLabel(n.sent_at);
-      if (!byDay.has(label)) byDay.set(label, []);
-      byDay.get(label)!.push(n);
-    }
-    for (const [label, items] of byDay) result.push({ title: label, data: items });
-    return result;
+    const now = new Date();
+    return groupNotifications(notifications).map((group) => ({
+      title:
+        group.kind === 'emergency'
+          ? '🛡️ Emergency Alerts'
+          : formatDayLabel(new Date(group.timestamp), now),
+      data: group.notifications,
+    }));
   }, [notifications]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;

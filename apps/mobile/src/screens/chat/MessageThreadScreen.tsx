@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import {
   markAsRead,
   subscribeToMessages,
   blockUser,
+  formatDayLabel,
   TrustLevel,
 } from '@nepally/shared';
 import type { ChatMessage } from '@nepally/shared';
@@ -281,38 +282,27 @@ export default function MessageThreadScreen() {
     </View>
   );
 
-  const formatDateLabel = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) return 'Today';
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  // Group messages by date for separators
-  const renderMessages = () => {
+  // A separator before each local calendar day's first message, labelled as web labels it.
+  const flatData = useMemo(() => {
+    const now = new Date();
     const items: Array<
       { type: 'date'; data: string } |
       { type: 'message'; data: ChatMessage }
     > = [];
-    let lastDate = '';
+    let lastDay = '';
 
     for (const msg of messages) {
-      const msgDate = new Date(msg.timestamp).toDateString();
-      if (msgDate !== lastDate) {
-        items.push({ type: 'date', data: msg.timestamp });
-        lastDate = msgDate;
+      const sentAt = new Date(msg.timestamp);
+      const day = sentAt.toDateString();
+      if (day !== lastDay) {
+        items.push({ type: 'date', data: formatDayLabel(sentAt, now) });
+        lastDay = day;
       }
       items.push({ type: 'message', data: msg });
     }
 
     return items;
-  };
-
-  const flatData = renderMessages();
+  }, [messages]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -425,7 +415,7 @@ export default function MessageThreadScreen() {
             data={flatData}
             renderItem={({ item, index }) => {
               if (item.type === 'date') {
-                return renderDateSeparator(formatDateLabel(item.data));
+                return renderDateSeparator(item.data);
               }
               const msg = item.data as ChatMessage;
               const isSent = msg.sender_id === user?.id;
