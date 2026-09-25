@@ -6,7 +6,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(data.title ?? 'Nepally', {
       body: data.body ?? '',
       icon: '/icon.png',
-      badge: '/icon.png',
+      badge: '/badge.png',
       data: { url: data.url ?? '/' },
     })
   );
