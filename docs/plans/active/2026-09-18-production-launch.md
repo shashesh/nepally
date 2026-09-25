@@ -51,7 +51,7 @@ It is monitored and supported by one person. Every kind of failure has a rehears
   - no Sign in with Apple, although iOS offers Google sign-in
 - **Mobile promotion purchase is incomplete.** `PromoteListingScreen` asks `create-promotion-checkout` for a PaymentIntent. But the app has no Stripe SDK, so it never collects payment. It then polls for an activation that can never happen.
 - **Mobile dead ends:** "Coming Soon" alerts in Home search (`HomeScreen.tsx`) and on chat avatars (`ConversationItem.tsx`, `MessageThreadScreen.tsx`).
-- **Web UI overhaul:** PRs 0–3b merged (#62–#66). PRs 3c (search follow-ups) and 4–10 not started ([plan](2026-09-14-web-ui-overhaul.md)).
+- **Web UI overhaul:** done (2026-09-25). PRs 0–10c merged (#62–#94), including mobile parity with its shared logic and migration 040. Its open follow-ups (none launch-blocking) are listed at the end of the archived [plan](../../archive/plans/2026-09-14-web-ui-overhaul.md).
 - **Supabase security advisors:**
   - Leaked-password protection is off.
   - About 30 `SECURITY DEFINER` functions are executable by `anon` through `/rest/v1/rpc`. Most are trigger functions and error when called directly. Two live exposures matter:

@@ -1,7 +1,7 @@
 # Web UI System
 
 **Last updated:** 2026-09-24
-**Applies to:** `apps/web` only. Design rationale: [../specs/2026-09-14-web-ui-overhaul-design.md](../specs/2026-09-14-web-ui-overhaul-design.md).
+**Applies to:** `apps/web` only. Design rationale: [../archive/specs/2026-09-14-web-ui-overhaul-design.md](../archive/specs/2026-09-14-web-ui-overhaul-design.md).
 
 The web app uses one design language, **H1 · Ink & Marigold**. It combines editorial type (Gambarino headings, Switzer body), warm paper neutrals and borders instead of shadows. Ink navy carries every action. Marigold is a sparing accent, and crimson is reserved for Emergency.
 

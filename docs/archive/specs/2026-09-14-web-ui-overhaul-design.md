@@ -1,8 +1,10 @@
 ---
 title: Web UI overhaul — H1 design system, component library, responsive shell, global search
-status: planned
+status: implemented
 created: 2026-09-14
 ---
+
+> **Shipped (2026-09-25):** delivered by PRs 0–10c; see the [implementation plan](../plans/2026-09-14-web-ui-overhaul.md) for what each PR did, the decisions made along the way, and the open follow-ups. What the web UI is today lives in [architecture/web-ui-system.md](../../architecture/web-ui-system.md).
 
 # Web UI Overhaul — Design
 
@@ -456,8 +458,8 @@ update `TECH-VERSIONS.md` (remove the React 19.2 / Mantine 9 deferred rows).
 
 ## 9. Documentation
 
-- This spec: `docs/specs/2026-09-14-web-ui-overhaul-design.md` (status `planned`).
-- Implementation plan: `docs/plans/active/2026-09-14-web-ui-overhaul.md`. It details
+- This spec: `docs/archive/specs/2026-09-14-web-ui-overhaul-design.md` (status `implemented`; it was `docs/specs/…` while in flight).
+- Implementation plan: `docs/archive/plans/2026-09-14-web-ui-overhaul.md` (was `docs/plans/active/…`). It details
   PRs 0–3b task by task; PRs 4–10 are listed with their scope and the §5 definition of
   done, and each gets a task-level breakdown appended to the plan when that PR starts
   (area internals depend on the primitives shipped in PR 2).
