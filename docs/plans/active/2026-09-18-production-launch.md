@@ -159,7 +159,7 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
 
   Callers must also check the returned `{ error }` — today several don't, so a real delete failure is silently swallowed one layer up and the UI reports success while the file stays public at its URL. Known call sites: web `apps/web/src/pages/profile.page.tsx` photo removal (`deleteProfilePhoto`); mobile `apps/mobile/src/screens/profile/EditProfileScreen.tsx` photo removal; `apps/web/src/lib/postSubmit.ts`'s `deletePostPhotos` calls; and the shared `removeProfilePhoto` that the web UI overhaul's PR 6 adds, which deliberately ignores the file-delete error today.
 
-- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Written; waiting to be applied:
+- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Applied to staging on 2026-09-25, where all six `test:security:*` smoke tests pass; prod gets it after `001`–`040`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.
