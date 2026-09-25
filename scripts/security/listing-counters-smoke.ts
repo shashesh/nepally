@@ -2,14 +2,15 @@
  * Live smoke test: a member counts at most once in a listing's views and
  * contacts.
  *
- * Verifies migrations 042 (dedupe_listing_counters) and 043
- * (lock_listing_before_counting) against a real Supabase project:
+ * Verifies migrations 042 (dedupe_listing_counters), 043
+ * (lock_listing_before_counting) and 044 (lock_member_before_listing)
+ * against a real Supabase project:
  *   1. Repeat views by one member on one day add 1 to views_count, even
  *      when the calls arrive at once.
  *   2. The same member counts again on a later day.
  *   3. Repeat contacts by one member add 1 to contacts_count, ever.
  *   4. The owner's own views and contacts never count.
- *   5. An inactive listing counts nothing and records no contact.
+ *   5. An inactive listing counts nothing and touches neither marker.
  *   6. Members cannot read or write listing_views / listing_contacts.
  *
  * Run: npm run test:security:listing-counters
@@ -255,20 +256,35 @@ async function main() {
       !markersError && markers?.length === 0,
       `An inactive listing should record no contact, got ${markersError?.message ?? markers?.length}`
     );
+    const { data: view, error: viewError } = await service
+      .from('listing_views')
+      .select('last_counted_on')
+      .eq('listing_id', listingId)
+      .eq('viewer_id', member.id)
+      .single();
+    assertCondition(
+      !viewError && view?.last_counted_on === '2000-01-01',
+      `An inactive listing should leave the view marker alone, got ${viewError?.message ?? view?.last_counted_on}`
+    );
 
-    // 6. The dedupe tables are internal.
-    for (const table of ['listing_views', 'listing_contacts']) {
+    // 6. The dedupe tables are internal: no reads, and no deleting your own
+    // marker to count again.
+    const markerTables = [
+      { table: 'listing_views', memberColumn: 'viewer_id' },
+      { table: 'listing_contacts', memberColumn: 'contacter_id' },
+    ];
+    for (const { table, memberColumn } of markerTables) {
       const read = await memberClient.from(table).select('*').limit(1);
       assertCondition(
         read.error?.code === PERMISSION_DENIED,
         `A member should not read ${table}, got ${read.error ? read.error.code : 'success'}`
       );
+      const forged = await memberClient.from(table).delete().eq(memberColumn, member.id);
+      assertCondition(
+        forged.error?.code === PERMISSION_DENIED,
+        `A member should not delete their ${table} row to count again, got ${forged.error ? forged.error.code : 'success'}`
+      );
     }
-    const forged = await memberClient.from('listing_views').delete().eq('viewer_id', member.id);
-    assertCondition(
-      forged.error?.code === PERMISSION_DENIED,
-      `A member should not delete their listing_views row to count again, got ${forged.error ? forged.error.code : 'success'}`
-    );
 
     console.log('PASS: listing counters smoke test verified.');
   } finally {

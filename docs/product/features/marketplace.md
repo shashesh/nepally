@@ -62,7 +62,7 @@ Consolidated from 12 original categories via `016_consolidate_marketplace_catego
 - Individual fields: `item_condition`
 - Contact: `phone`, `email`
 - Counters: `views_count`, `saves_count`, `contacts_count`
-  - `views_count`: one per member, per listing, per UTC day. `contacts_count`: one per member, per listing, ever. The owner never counts on their own listing, only active listings count, and signed-out calls count nothing. `increment_listing_views` / `increment_listing_contacts` enforce this through the internal `listing_views` / `listing_contacts` tables (migrations 042, 043), so repeat opens or taps can't inflate `trending_score` (`views + saves × 3 + contacts × 5`). `saves_count` is already one per member, because `saved_listings` is unique per member and listing.
+  - `views_count`: one per member, per listing, per UTC day. `contacts_count`: one per member, per listing, ever. The owner never counts on their own listing, only active listings count, and signed-out calls count nothing. `increment_listing_views` / `increment_listing_contacts` enforce this through the internal `listing_views` / `listing_contacts` tables (migrations 042–044), so repeat opens or taps can't inflate `trending_score` (`views + saves × 3 + contacts × 5`). `saves_count` is already one per member, because `saved_listings` is unique per member and listing.
 - `refreshed_at` — for soft expiry (90-day threshold)
 
 ### Migration
