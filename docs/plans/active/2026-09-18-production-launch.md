@@ -161,11 +161,11 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - Post photo cleanup on web (`apps/web/src/lib/postSubmit.ts`) and mobile (`CreatePostScreen.tsx`) goes through the shared `cleanUpPostPhotos`. It logs `post_photos_cleanup_failed` with only the paths left behind. The post write has already decided what the member sees, so the failure is logged rather than shown.
   - The shared `removeProfilePhoto` deletes the file first. It stops and returns the error if the delete fails, leaving `users.profile_photo` untouched. The web profile page and mobile `EditProfileScreen` show that error, so the member can try again.
 
-- [ ] **Code:** Migration `040`:
+- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Applied to staging on 2026-09-25, where all six `test:security:*` smoke tests pass; prod gets it after `001`–`040`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.
-  - Apply to staging, run the `test:security:*` smoke tests there, then apply to prod.
+  - Still to do: apply to prod after `001`–`040` and run the `test:security:*` smoke tests there. The staging tracker row still carries a timestamp version; the W1 reconcile realigns it.
 - [ ] **Code:** SEC-06 hardening backlog:
   - storage bucket `allowed_mime_types` and `file_size_limit` (avatars, post photos, listing photos)
   - a shared-secret header on the `expire-posts` and `expire-promotions` cron functions

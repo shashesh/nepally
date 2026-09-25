@@ -694,13 +694,14 @@ They are deliberately not part of `npm test`: they need real service-role creden
 and they talk to a real database, so they cannot run in the normal unit-test sweep or
 in CI without secrets.
 
-| Command                                 | Asserts                                                                                                                                                                                                  |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run test:security:chat-rls`        | Conversation RLS — a user cannot read or join a conversation they are not a participant in                                                                                                               |
-| `npm run test:security:users-privilege` | Migration 034's guard trigger on privileged `users` columns (`trust_level`, `is_moderator`, `is_premium`) cannot be self-escalated                                                                       |
-| `npm run test:security:emergency-post`  | Emergency-tagged posts stay invisible until a moderator approves them (migration 035)                                                                                                                    |
-| `npm run test:security:users-pii`       | `users` PII columns are not readable by anon or other members; the owner reads them through `get_my_profile()` (migration 036)                                                                           |
-| `npm run test:security:storage`         | Storage RLS is owner-only (migration 039): avatar upserts and plain uploads succeed, another member's `remove()` deletes nothing, anon cannot list any bucket, and the owner's `remove()` really deletes |
+| Command                                 | Asserts                                                                                                                                                                                                   |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run test:security:chat-rls`        | Conversation RLS — a user cannot read or join a conversation they are not a participant in                                                                                                                |
+| `npm run test:security:users-privilege` | Migration 034's guard trigger on privileged `users` columns (`trust_level`, `is_moderator`, `is_premium`) cannot be self-escalated                                                                        |
+| `npm run test:security:emergency-post`  | Emergency-tagged posts stay invisible until a moderator approves them (migration 035)                                                                                                                     |
+| `npm run test:security:users-pii`       | `users` PII columns are not readable by anon or other members; the owner reads them through `get_my_profile()` (migration 036)                                                                            |
+| `npm run test:security:storage`         | Storage RLS is owner-only (migration 039): avatar upserts and plain uploads succeed, another member's `remove()` deletes nothing, anon cannot list any bucket, and the owner's `remove()` really deletes  |
+| `npm run test:security:functions`       | Function EXECUTE grants (migration 041): anon cannot call the listing counters, soft-delete RPCs or internal helpers; members can call only the RPCs the apps use; `is_moderator` and triggers still work |
 
 **Credentials.** Every script reads `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
 `SUPABASE_SERVICE_ROLE_KEY` from the environment. The npm scripts do not load
@@ -708,7 +709,8 @@ in CI without secrets.
 RLS by design — never commit it, and never point these at production.
 
 **When to run them.** After any migration that touches RLS policies on `users`,
-`conversations`, `posts`, or `storage.objects`. A migration can pass `npm run test`
+`conversations`, `posts`, or `storage.objects`, and after any migration that adds a
+function or changes its grants (run `test:security:functions`). A migration can pass `npm run test`
 and still leave a table readable by the wrong user; only these scripts catch that.
 
 **Adding a new one.** Put it in `scripts/security/<area>-smoke.ts`, add a
