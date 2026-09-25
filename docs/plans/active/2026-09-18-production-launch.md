@@ -178,7 +178,7 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - redirect URLs, including the `nepally://**` mobile scheme
   - Google OAuth client IDs and redirects for prod
 - [ ] **Code:** Wire prod env vars into Vercel (production environment) and EAS (production profile). Deploy edge functions and set their secrets on prod.
-- [ ] **Code:** Web security headers in `next.config.js` (CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, frame-ancestors). Add the missing `/icon.png`.
+- [x] **Code:** Web security headers in `next.config.js` (CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, frame-ancestors). Add the missing `/icon.png`.
 - [ ] **Code:** First run of `deploy-vercel-prod.yml` against the prod project, with the custom domain attached.
 - [ ] **Code:** Retire the two March plans properly. Every open item from both is already mapped in [Folded-in items](#folded-in-items), so neither loses its tracker. For each file:
   - set its status to `abandoned`, with a pointer to this plan
