@@ -595,10 +595,13 @@ describe('EventDetailScreen', () => {
   // ─── RSVP Visibility ──────────────────────────────────────────────────
 
   describe('RSVP visibility', () => {
-    it('shows attendee count text when visibility is private', async () => {
+    it('shows a private event’s counts once, with no attendee list', async () => {
       setEvent({ rsvp_visibility: 'private' });
-      const { getByText } = await renderAndSettle();
-      expect(getByText('8 going')).toBeTruthy();
+      const { getByText, queryByText } = await renderAndSettle();
+      expect(getByText('15 interested · 8 going')).toBeTruthy();
+      // The going count used to appear a second time on its own line.
+      expect(queryByText('8 going')).toBeNull();
+      expect(queryByText('8 people going')).toBeNull();
     });
   });
 

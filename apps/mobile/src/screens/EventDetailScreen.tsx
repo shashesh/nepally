@@ -439,15 +439,14 @@ export default function EventDetailScreen() {
           <View style={styles.rsvpSection}>
             <Text style={styles.sectionLabel}>Attendance</Text>
 
-            {/* Attendee stack — only when rsvp_visibility is public or user is organizer */}
-            {(event.rsvp_visibility === 'public' || isOrganizer) ? (
+            {/* Private hides who is going, not how many: the stack of names shows only
+                when rsvp_visibility is public or the viewer organizes; the counts always show. */}
+            {(event.rsvp_visibility === 'public' || isOrganizer) && (
               <AttendeeAvatarStack
                 attendees={attendees}
                 totalCount={event.rsvp_count}
                 onPress={handleShowAttendees}
               />
-            ) : (
-              <Text style={styles.rsvpCountPrivate}>{event.rsvp_count} going</Text>
             )}
 
             <Text style={styles.responseCounts}>
@@ -655,11 +654,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     gap: 12,
-  },
-  rsvpCountPrivate: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontWeight: '600',
   },
   responseCounts: {
     ...typography.caption,
