@@ -31,6 +31,7 @@ import {
   subscribeToMessages,
   blockUser,
   formatDayLabel,
+  formatPublicName,
   TrustLevel,
 } from '@nepally/shared';
 import type { ChatMessage } from '@nepally/shared';
@@ -55,6 +56,8 @@ export default function MessageThreadScreen() {
     otherUserTrustLevel,
     otherUserPhotoUrl,
   } = route.params;
+  // Route params carry the full name; the thread shows the public form (decision 13).
+  const publicName = formatPublicName(otherUserName);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -257,7 +260,7 @@ export default function MessageThreadScreen() {
   const handleBlock = () => {
     setMenuVisible(false);
     Alert.alert(
-      `Block ${otherUserName}?`,
+      `Block ${publicName}?`,
       "They won't be able to message you. You can unblock them later in Settings.",
       [
         { text: 'Cancel', style: 'cancel' },
@@ -327,7 +330,7 @@ export default function MessageThreadScreen() {
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             <Avatar
-              name={otherUserName}
+              name={publicName}
               photoUrl={otherUserPhotoUrl}
               trustLevel={otherUserTrustLevel}
               size="small"
@@ -337,7 +340,7 @@ export default function MessageThreadScreen() {
 
         <View style={styles.headerInfo}>
           <Text style={styles.headerName} numberOfLines={1}>
-            {otherUserName}
+            {publicName}
           </Text>
           {otherUserTrustLevel >= TrustLevel.VERIFIED && (
             <Ionicons
@@ -353,6 +356,8 @@ export default function MessageThreadScreen() {
           style={styles.menuButton}
           onPress={() => setMenuVisible(!menuVisible)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Conversation options"
         >
           <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
         </TouchableOpacity>
@@ -431,7 +436,7 @@ export default function MessageThreadScreen() {
                   timestamp={msg.timestamp}
                   isSent={isSent}
                   isRead={msg.read}
-                  senderName={otherUserName}
+                  senderName={publicName}
                   senderPhotoUrl={otherUserPhotoUrl}
                   senderTrustLevel={otherUserTrustLevel}
                   showAvatar={isLastInGroup}

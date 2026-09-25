@@ -1,4 +1,5 @@
 import React from 'react';
+import { Alert } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import MessageThreadScreen from './MessageThreadScreen';
 
@@ -33,6 +34,7 @@ jest.mock('@nepally/shared', () => ({
   blockUser: jest.fn(async () => ({})),
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
   formatDayLabel: jest.requireActual('@nepally/shared').formatDayLabel,
+  formatPublicName: jest.requireActual('@nepally/shared').formatPublicName,
 }));
 
 describe('MessageThreadScreen avatar menu', () => {
@@ -161,6 +163,43 @@ describe('MessageThreadScreen avatar menu', () => {
 
       expect(screen.getByText('Mar 5, 2025')).toBeTruthy();
       expect(screen.getByText('Mar 5')).toBeTruthy();
+    });
+  });
+
+  describe('public names', () => {
+    beforeEach(() => {
+      jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      mockUseRoute.mockReturnValue({
+        params: {
+          conversationId: 'conv-1',
+          otherUserId: 'other-user',
+          otherUserName: 'Bikal Shrestha',
+          otherUserTrustLevel: 1,
+          otherUserPhotoUrl: null,
+        },
+      });
+    });
+
+    afterEach(() => {
+      (Alert.alert as jest.Mock).mockRestore();
+    });
+
+    it('heads the thread with the other member\'s public name', async () => {
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      expect(screen.getByText('Bikal S.')).toBeTruthy();
+      expect(screen.queryByText('Bikal Shrestha')).toBeNull();
+    });
+
+    it('asks to block the other member by public name', async () => {
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      fireEvent.press(screen.getByLabelText('Conversation options'));
+      fireEvent.press(screen.getByText('Block User'));
+
+      expect(Alert.alert).toHaveBeenCalledWith('Block Bikal S.?', expect.any(String), expect.any(Array));
     });
   });
 });
