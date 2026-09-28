@@ -57,13 +57,13 @@ import {
 } from '@nepally/shared';
 import type { Post, PostComment } from '@nepally/shared';
 import { Avatar } from '../components/Avatar';
-import { HomeStackParamList } from '../types/navigation';
+import { ProfileRoutesParamList } from '../types/navigation';
 import { supabase } from '../config/supabase';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
 import { spacing, borderRadius } from '../styles/spacing';
 
-type DetailRouteProp = RouteProp<HomeStackParamList, 'PostDetail'>;
+type DetailRouteProp = RouteProp<ProfileRoutesParamList, 'PostDetail'>;
 const DETAIL_LIGHTBOX_CHROME_HIDE_DELAY_MS = 1500;
 
 // Tracks whether the current Like interaction was triggered via long-press,
@@ -303,7 +303,7 @@ function PinchableLightboxImage({
 export default function PostDetailScreen() {
   const { user } = useAuth();
   const route = useRoute<DetailRouteProp>();
-  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList, 'PostDetail'>>();
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileRoutesParamList, 'PostDetail'>>();
   const { postId } = route.params;
   const scrollViewRef = useRef<ScrollView>(null);
   const commentsRef = useRef<View>(null);

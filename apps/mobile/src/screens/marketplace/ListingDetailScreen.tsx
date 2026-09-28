@@ -35,6 +35,8 @@ import {
   BUSINESS_HOURS_DAYS,
 } from '@nepally/shared';
 import { ReportPostSheet } from '../../components/sheets/ReportPostSheet';
+import { Avatar } from '../../components/Avatar';
+import { TrustBadge } from '../../components/badges/TrustBadge';
 import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import { useAuth } from '../../hooks/useAuth';
 import { useSavedListingIds } from '../../hooks/useSavedListingIds';
@@ -171,6 +173,17 @@ export default function ListingDetailScreen() {
     },
     [listingId, user]
   );
+
+  const handleOpenSeller = useCallback(() => {
+    const owner = listing?.owner;
+    if (!owner) return;
+    // Your own listing: your own profile, as a post's author link does.
+    if (owner.id === user?.id) {
+      navigation.getParent()?.navigate('Profile');
+      return;
+    }
+    navigation.navigate('PublicProfileView', { userId: owner.id });
+  }, [listing, navigation, user?.id]);
 
   if (loading) {
     return (
@@ -398,23 +411,33 @@ export default function ListingDetailScreen() {
           </View>
         )}
 
-        {/* Owner Info */}
+        {/* Seller card */}
         {listing.owner && (
           <View style={styles.ownerSection}>
             <Text style={styles.sectionTitle}>Posted by</Text>
-            <View style={styles.ownerRow}>
-              <View style={styles.ownerAvatar}>
-                <Text style={styles.ownerInitial}>
-                  {listing.owner.full_name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
+            <TouchableOpacity
+              style={styles.ownerRow}
+              onPress={handleOpenSeller}
+              accessibilityRole="button"
+              accessibilityLabel={`View ${listing.owner.full_name}'s profile`}
+            >
+              <Avatar
+                name={listing.owner.full_name}
+                photoUrl={listing.owner.profile_photo}
+                trustLevel={listing.owner.trust_level}
+                size="medium"
+              />
               <View style={styles.ownerInfo}>
-                <Text style={styles.ownerName}>{listing.owner.full_name}</Text>
+                <View style={styles.ownerNameRow}>
+                  <Text style={styles.ownerName}>{listing.owner.full_name}</Text>
+                  <TrustBadge level={badgeLevel(listing.owner.trust_level)} />
+                </View>
                 <Text style={styles.ownerMeta}>
                   {daysAgo === 0 ? 'Refreshed today' : `Refreshed ${daysAgo}d ago`}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -491,6 +514,12 @@ export default function ListingDetailScreen() {
       />
     </SafeAreaView>
   );
+}
+
+/** `TrustBadge` has a badge for levels 0 to 2. */
+function badgeLevel(trustLevel: number): 0 | 1 | 2 {
+  if (trustLevel >= 2) return 2;
+  return trustLevel >= 1 ? 1 : 0;
 }
 
 /** Opens the first URL something on the device handles, and says so when nothing does. */
@@ -714,20 +743,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.m,
   },
-  ownerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary.light,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  ownerInitial: {
-    ...typography.h3,
-    color: colors.primary.main,
-  },
   ownerInfo: {
     flex: 1,
+  },
+  ownerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
   ownerName: {
     ...typography.body,

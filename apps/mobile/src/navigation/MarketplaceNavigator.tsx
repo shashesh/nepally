@@ -10,6 +10,8 @@ import MyListingsScreen from '../screens/marketplace/MyListingsScreen';
 import BrowseCategoriesScreen from '../screens/marketplace/BrowseCategoriesScreen';
 import MarketplaceRulesScreen from '../screens/marketplace/MarketplaceRulesScreen';
 import SavedListingsScreen from '../screens/marketplace/SavedListingsScreen';
+import PublicProfileScreen from '../screens/profile/PublicProfileScreen';
+import PostDetailScreen from '../screens/PostDetailScreen';
 
 const Stack = createNativeStackNavigator<MarketplaceStackParamList>();
 
@@ -68,6 +70,13 @@ export function MarketplaceNavigator() {
         component={SavedListingsScreen}
         options={{ title: 'Saved' }}
       />
+      {/* A seller's profile, from a listing's seller card, and the posts it opens. */}
+      <Stack.Screen
+        name="PublicProfileView"
+        component={PublicProfileScreen}
+        options={{ title: 'Profile' }}
+      />
+      <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ title: '' }} />
     </Stack.Navigator>
   );
 }

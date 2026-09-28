@@ -10,6 +10,7 @@ import {
   incrementListingViews,
   saveListing,
 } from '@nepally/shared';
+import { Image } from 'expo-image';
 import ListingDetailScreen from './ListingDetailScreen';
 
 // ---------------------------------------------------------------------------
@@ -404,6 +405,54 @@ describe('ListingDetailScreen', () => {
       expect(screen.getByText('Asha Kumar')).toBeTruthy();
     });
     expect(screen.getByText('Posted by')).toBeTruthy();
+  });
+
+  // -- Seller card (4.6) -----------------------------------------------------
+
+  it("opens the seller's profile from the seller card", async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Asha Kumar')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByRole('button', { name: "View Asha Kumar's profile" }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('PublicProfileView', { userId: 'user-2' });
+  });
+
+  it("shows the seller's trust level on the card", async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Asha Kumar')).toBeTruthy();
+    });
+    expect(screen.getByText('Verified')).toBeTruthy();
+  });
+
+  it("shows the seller's profile photo", async () => {
+    const photo = 'https://cdn.example.com/avatars/user-2.jpg';
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, owner: { ...MOCK_LISTING.owner, profile_photo: photo } },
+    } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Asha Kumar')).toBeTruthy();
+    });
+    expect(screen.UNSAFE_getAllByType(Image).some((image) => image.props.source === photo)).toBe(true);
+  });
+
+  it('takes the owner to their own Profile tab from the seller card', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit Listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByRole('button', { name: "View Asha Kumar's profile" }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('Profile');
+    expect(mockNavigate).not.toHaveBeenCalledWith('PublicProfileView', expect.anything());
   });
 
   it('renders stats', async () => {

@@ -64,6 +64,8 @@ jest.mock('../screens/marketplace/MyListingsScreen', () => mockScreen('my listin
 jest.mock('../screens/marketplace/BrowseCategoriesScreen', () => mockScreen('browse'));
 jest.mock('../screens/marketplace/MarketplaceRulesScreen', () => mockScreen('rules'));
 jest.mock('../screens/marketplace/SavedListingsScreen', () => mockScreen('saved'));
+jest.mock('../screens/profile/PublicProfileScreen', () => mockScreen('profile'));
+jest.mock('../screens/PostDetailScreen', () => mockScreen('post'));
 
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
