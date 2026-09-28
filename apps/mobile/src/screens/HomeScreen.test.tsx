@@ -1,7 +1,9 @@
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
 import React from 'react';
+import { Alert } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
+  getOrCreateConversation,
   getTags,
   getTotalUnreadCount,
   getUnreadNotificationCount,
@@ -19,7 +21,9 @@ const mockCreateReport = jest.fn().mockResolvedValue({ data: { id: 'report-1' },
 const mockUseLocation = jest.fn();
 const mockUseAuth = jest.fn();
 const mockNavigate = jest.fn();
-const mockGetParent = jest.fn(() => ({ navigate: jest.fn() }));
+const mockParentNavigate = jest.fn();
+const mockGetParent = jest.fn(() => ({ navigate: mockParentNavigate }));
+const mockIsFocused = jest.fn(() => true);
 
 jest.mock('../config/supabase', () => ({
   supabase: {
@@ -90,12 +94,17 @@ jest.mock('../components/pulse/MetroPulseStrip', () => ({
   MetroPulseStrip: () => null,
 }));
 jest.mock('../components/cards/PostCard', () => ({
-  PostCard: ({ onMorePress }: { onMorePress?: () => void }) => {
+  PostCard: ({ onMorePress, onAvatarChat }: { onMorePress?: () => void; onAvatarChat?: () => void }) => {
     const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
     return (
-      <ReactNative.TouchableOpacity onPress={onMorePress} testID="mock-post-more-btn">
-        <ReactNative.Text>Open Post Menu</ReactNative.Text>
-      </ReactNative.TouchableOpacity>
+      <>
+        <ReactNative.TouchableOpacity onPress={onMorePress} testID="mock-post-more-btn">
+          <ReactNative.Text>Open Post Menu</ReactNative.Text>
+        </ReactNative.TouchableOpacity>
+        <ReactNative.TouchableOpacity onPress={onAvatarChat} testID="mock-post-chat-btn">
+          <ReactNative.Text>Chat with author</ReactNative.Text>
+        </ReactNative.TouchableOpacity>
+      </>
     );
   },
 }));
@@ -132,6 +141,7 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     navigate: mockNavigate,
     getParent: mockGetParent,
+    isFocused: mockIsFocused,
   }),
   useFocusEffect: (cb: () => void | (() => void)) => {
     const ReactActual = jest.requireActual('react') as typeof import('react');
@@ -253,6 +263,78 @@ describe('HomeScreen', () => {
     });
 
     expect(screen.getByText('↑ 1 new post')).toBeTruthy();
+  });
+
+  describe("chatting with a post's author", () => {
+    const POST = {
+      id: 'post-1',
+      title: 'Sample Post',
+      description: 'Sample Description',
+      created_at: '2026-03-23T00:00:00.000Z',
+      author_id: 'user-2',
+      author: { id: 'user-2', full_name: 'Someone Else', trust_level: 1, profile_photo: null },
+      tags: [],
+      photos: [],
+      is_global: false,
+      likes_count: 0,
+      comments_count: 0,
+      views_count: 0,
+    };
+    const mockGetOrCreateConversation = getOrCreateConversation as jest.MockedFunction<
+      typeof getOrCreateConversation
+    >;
+
+    afterEach(() => {
+      mockIsFocused.mockReturnValue(true);
+    });
+
+    async function pressChat({ leaveMeanwhile }: { leaveMeanwhile: boolean }, answer: unknown) {
+      let finish: (value: unknown) => void = () => {};
+      mockGetOrCreateConversation.mockReturnValueOnce(
+        new Promise((resolve) => {
+          finish = resolve;
+        }) as never
+      );
+      mockGetPostsByMetroArea.mockResolvedValue({ data: [POST], error: null });
+      const screen = render(<HomeScreen />);
+      await waitFor(() => {
+        expect(screen.getByTestId('mock-post-chat-btn')).toBeTruthy();
+      });
+      fireEvent.press(screen.getByTestId('mock-post-chat-btn'));
+      if (leaveMeanwhile) mockIsFocused.mockReturnValue(false);
+      await act(async () => {
+        finish(answer);
+      });
+    }
+
+    it('opens the chat with the author', async () => {
+      await pressChat({ leaveMeanwhile: false }, { data: { conversationId: 'conv-1' } });
+
+      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+        screen: 'MessageThread',
+        params: expect.objectContaining({ conversationId: 'conv-1', otherUserId: 'user-2' }),
+      });
+    });
+
+    // Opening the post, or switching tabs, keeps Home mounted underneath.
+    it("doesn't pull the member back into a chat after they moved on", async () => {
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+      await pressChat({ leaveMeanwhile: true }, { data: { conversationId: 'conv-1' } });
+
+      expect(mockParentNavigate).not.toHaveBeenCalled();
+      expect(alertSpy).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it("doesn't alert over another screen when it fails after they moved on", async () => {
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+      await pressChat({ leaveMeanwhile: true }, { data: null, error: new Error('boom') });
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
   });
 
   it('opens report sheet from post menu and closes it on cancel', async () => {

@@ -187,6 +187,9 @@ export default function PublicProfileScreen(): React.ReactElement {
     );
     if (!mountedRef.current) return;
     setMessagingLoading(false);
+    // Moved to another tab or screen meanwhile, with this one still mounted
+    // underneath: don't pull the member into a chat or alert over that screen.
+    if (!navigation.isFocused()) return;
 
     if (result.data) {
       navigation.getParent()?.navigate('Chat', {
