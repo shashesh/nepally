@@ -7,9 +7,12 @@
  *   2. The author can read their own pending post; a stranger cannot.
  *   3. The author cannot self-approve (status -> 'active').
  *   4. A moderator can read the pending post and approve it.
- *   5. Three reports auto-hide an active post (status -> 'pending') and bump
- *      posts.reports_count / users.reports_received; a duplicate open report
- *      from the same reporter is rejected.
+ *   5. Reports bump posts.reports_count / users.reports_received and
+ *      auto-hide an active post (status -> 'pending') at 100 (migration 047;
+ *      the count is seeded to stay within three reporters). The author cannot
+ *      reset the count or create a post with one already set, and a duplicate
+ *      open report from the same reporter is rejected, as is a report filed
+ *      already closed.
  *   6. Only moderators can ban; banning removes the user's posts and blocks
  *      further posting; unbanning restores posting.
  *
@@ -225,13 +228,48 @@ async function main(): Promise<void> {
     assertCondition(!approve.error, `Moderator approval should succeed: ${approve.error?.message}`);
     assertCondition(approve.data?.status === 'active', 'Approved post should be active');
 
-    // 5. Three reports auto-hide the post; duplicate open report is rejected.
+    // 5a. A post the author creates starts with no reports, whatever count they send (047).
+    const forged = await authorClient
+      .from('posts')
+      .insert({
+        author_id: author.id,
+        title: 'Forged count smoke',
+        description: 'Forged count smoke — smoke test body',
+        status: 'active',
+        photos: [],
+        is_global: false,
+        reports_count: -1000,
+        ...location,
+      })
+      .select('id')
+      .single();
+    assertCondition(!forged.error, `Author post insert should succeed: ${forged.error?.message}`);
+    createdPosts.push(forged.data!.id as string);
+    assertCondition(
+      (await readPostStatus(service, forged.data!.id as string)).reports_count === 0,
+      'A client-created post should start with reports_count 0, not the forged value'
+    );
+
+    // 5. The 100th report auto-hides the post (047); duplicate open report is rejected.
     const reportPayload = (reporterId: string) => ({
       reported_by: reporterId,
       target_type: 'post',
       target_id: pendingPostId,
       reason: 'Spam',
     });
+
+    // A report cannot be filed already closed (047): a closed row would escape
+    // the one-open-report index and let one account count again and again.
+    const filedClosed = await strangerClient
+      .from('reports')
+      .insert({ ...reportPayload(stranger.id), status: 'dismissed' })
+      .select('id')
+      .single();
+    assertCondition(!!filedClosed.error, 'A report filed as dismissed should be rejected');
+    assertCondition(
+      (await readPostStatus(service, pendingPostId)).reports_count === 0,
+      'A rejected closed report should not count'
+    );
 
     const report1 = await strangerClient.from('reports').insert(reportPayload(stranger.id)).select('id').single();
     assertCondition(!report1.error, `First report should succeed: ${report1.error?.message}`);
@@ -243,14 +281,30 @@ async function main(): Promise<void> {
     assertCondition(afterOne.reports_count === 1, `reports_count should be 1 after one report (got ${afterOne.reports_count})`);
     assertCondition(afterOne.status === 'active', 'Post should still be active after one report');
 
+    // The author cannot reset the counter to stay under the threshold.
+    const authorReset = await authorClient
+      .from('posts')
+      .update({ reports_count: 0 })
+      .eq('id', pendingPostId)
+      .select('id');
+    assertCondition(authorReset.error?.code === '42501', `Author reports_count reset should be rejected (got ${authorReset.error?.code ?? 'success'})`);
+    assertCondition((await readPostStatus(service, pendingPostId)).reports_count === 1, 'reports_count should still be 1 after the reset attempt');
+
+    // Stand in for 97 more reporters; the service role may set the counter.
+    const seed = await service.from('posts').update({ reports_count: 98 }).eq('id', pendingPostId);
+    assertCondition(!seed.error, `Seeding reports_count should succeed: ${seed.error?.message}`);
+
     const report2 = await reporter2Client.from('reports').insert(reportPayload(reporter2.id)).select('id').single();
     assertCondition(!report2.error, `Second report should succeed: ${report2.error?.message}`);
+    const after99 = await readPostStatus(service, pendingPostId);
+    assertCondition(after99.reports_count === 99, `reports_count should be 99 (got ${after99.reports_count})`);
+    assertCondition(after99.status === 'active', 'Post should still be active at 99 reports');
+
     const report3 = await reporter3Client.from('reports').insert(reportPayload(reporter3.id)).select('id').single();
     assertCondition(!report3.error, `Third report should succeed: ${report3.error?.message}`);
-
-    const afterThree = await readPostStatus(service, pendingPostId);
-    assertCondition(afterThree.reports_count === 3, `reports_count should be 3 (got ${afterThree.reports_count})`);
-    assertCondition(afterThree.status === 'pending', 'Post should be auto-hidden (pending) after 3 reports');
+    const after100 = await readPostStatus(service, pendingPostId);
+    assertCondition(after100.reports_count === 100, `reports_count should be 100 (got ${after100.reports_count})`);
+    assertCondition(after100.status === 'pending', 'Post should be auto-hidden (pending) at 100 reports');
 
     const { data: authorRow } = await service
       .from('users')

@@ -410,8 +410,9 @@ CREATE POLICY "Verified users can create posts"
 
 -- NOTE (035): trigger guard_post_status_transition (BEFORE UPDATE OF status)
 -- lets only moderators change a post's status; a non-moderator may only move
--- their own post to 'removed'. Three open reports auto-hide an active post
--- (status -> 'pending') via on_report_created(). The client's choice of
+-- their own post to 'removed'. 100 reports auto-hide an active post
+-- (status -> 'pending') via on_report_created() (3 until 047), and
+-- guard_report_counts (047) stops the author resetting or forging reports_count. The client's choice of
 -- status ('active' vs 'pending') is not trusted: enforce_moderated_tag_status
 -- (AFTER INSERT on post_tags) force-reverts an active post to 'pending' when
 -- a signed-in non-moderator attaches a requires_moderation tag (e.g.
@@ -799,10 +800,14 @@ CREATE UNIQUE INDEX idx_reports_one_open_per_reporter_target
   ON reports (reported_by, target_type, target_id)
   WHERE status = 'pending';
 
--- AFTER INSERT trigger on_report_created() bumps posts.reports_count and
--- users.reports_received, and auto-hides an active post at 3 reports (035).
+-- AFTER INSERT trigger on_report_created() bumps posts.reports_count or
+-- marketplace_listings.reports_count and the author's/owner's
+-- users.reports_received. At 100 reports an active post goes to 'pending' and
+-- an active or inactive listing becomes 'removed' (035; threshold and
+-- listings from 047). See "Report thresholds and guards (migration 047)".
 
--- Verified users can create reports
+-- Verified users can create reports, always open (the last four checks are 047's:
+-- a report filed already closed would escape the one-open-report index)
 CREATE POLICY "Verified users can create reports"
   ON reports FOR INSERT
   WITH CHECK (
@@ -810,6 +815,10 @@ CREATE POLICY "Verified users can create reports"
       SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1
     )
     AND reported_by = auth.uid()
+    AND status = 'pending'
+    AND reviewed_by IS NULL
+    AND reviewed_at IS NULL
+    AND action IS NULL
   );
 
 -- Only moderators can update reports
@@ -1376,6 +1385,15 @@ Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calli
 ### Expire paid promotions (migration 046)
 
 `expire_paid_promotions()` sets every `active` paid `listing_promotions` row whose `end_date` has passed to `expired`, and returns how many it changed. `premium_perk` rows have no `end_date` and are never touched. It is `SECURITY INVOKER` and executable by `service_role` only; the `pg_cron` job `expire-paid-promotions` runs it hourly as `postgres`. See [supabase-setup.md](supabase-setup.md#5-scheduled-jobs).
+
+### Report thresholds and guards (migration 047)
+
+- `marketplace_listings.reports_count integer NOT NULL DEFAULT 0` counts listing reports, as `posts.reports_count` counts post reports. It isn't in `marketplace_listings_view`, whose columns were fixed when the view was created. When 047 first adds the column, it backfills it, and the owners' `reports_received`, from open listing reports filed earlier.
+- `on_report_created()` counts only open (`pending`) reports and hides content at 100 (the constant `c_auto_hide_threshold`). A post moves `active → pending`; a listing moves `active` or `inactive` → `removed`.
+- The reports INSERT policy accepts only an open report (`status = 'pending'`, no review fields), so one account can't file closed reports past the one-open-report index to reach 100 alone.
+- `guard_listing_status_transition()` is a `BEFORE UPDATE OF status` trigger on `marketplace_listings`. A client that isn't a moderator can't move a listing out of `removed`. Privileged contexts (`service_role`, `postgres`, `SECURITY DEFINER` functions) pass.
+- `guard_report_counts()` is a `BEFORE INSERT OR UPDATE OF reports_count` trigger on `posts` and `marketplace_listings`. Only privileged contexts and moderators may change the counter, and a row a client creates starts at 0 whatever count it sends.
+- These are trigger functions, so no client role holds EXECUTE on them. Live checks: `npm run test:security:emergency-post` and `npm run test:security:listing-reports`.
 
 ---
 
