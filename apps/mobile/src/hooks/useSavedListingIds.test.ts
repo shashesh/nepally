@@ -109,6 +109,21 @@ describe('useSavedListingIds', () => {
     expect(result.current.savedIds.has('b')).toBe(true);
   });
 
+  it('unsaves when asked to, even before the saved ids have loaded', async () => {
+    mockGetIds.mockReturnValueOnce(new Promise(() => {}));
+    const { result } = await renderIds();
+    expect(result.current.savedIds.size).toBe(0);
+
+    let stuck: boolean | undefined;
+    await act(async () => {
+      stuck = await result.current.setSaved('a', false);
+    });
+
+    expect(mockUnsave).toHaveBeenCalledWith(expect.anything(), 'a');
+    expect(mockSave).not.toHaveBeenCalled();
+    expect(stuck).toBe(true);
+  });
+
   it('refetches on reload', async () => {
     const { result } = await renderIds();
     mockGetIds.mockResolvedValueOnce({ data: ['a', 'c'] });

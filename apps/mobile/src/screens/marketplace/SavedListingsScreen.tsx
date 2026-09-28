@@ -41,7 +41,7 @@ export default function SavedListingsScreen() {
   const { user } = useAuth();
   const userId = user?.id;
   const cardWidth = useGridCardWidth(GUTTER);
-  const { savedIds, toggle, reload: reloadSavedIds } = useSavedListingIds(userId);
+  const { setSaved, reload: reloadSavedIds } = useSavedListingIds(userId);
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,14 +97,15 @@ export default function SavedListingsScreen() {
     }, [refetch])
   );
 
-  const handleToggleSave = useCallback(
+  // Every card here is saved, so the heart always unsaves, even if the ids
+  // haven't loaded yet (a toggle would then save it again).
+  const handleUnsave = useCallback(
     async (listingId: string) => {
-      const wasSaved = savedIds.has(listingId);
-      const stuck = await toggle(listingId);
+      const stuck = await setSaved(listingId, false);
       // An unsaved listing leaves this screen; a failed unsave keeps it.
-      if (wasSaved && stuck) setListings((prev) => prev.filter((l) => l.id !== listingId));
+      if (stuck) setListings((prev) => prev.filter((l) => l.id !== listingId));
     },
-    [savedIds, toggle]
+    [setSaved]
   );
 
   if (loading) {
@@ -154,8 +155,8 @@ export default function SavedListingsScreen() {
             listing={item}
             width={cardWidth}
             onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
-            isSaved={savedIds.has(item.id)}
-            onToggleSave={handleToggleSave}
+            isSaved
+            onToggleSave={handleUnsave}
           />
         )}
       />

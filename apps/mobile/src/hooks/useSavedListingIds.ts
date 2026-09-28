@@ -12,6 +12,11 @@ export interface SavedListingIdsState {
    * the change stuck; on failure the heart goes back and an alert says so.
    */
   toggle: (listingId: string) => Promise<boolean>;
+  /**
+   * Like toggle, but says which way: for a screen that already knows, such as
+   * Saved, where every card is saved even before the ids have loaded.
+   */
+  setSaved: (listingId: string, saved: boolean) => Promise<boolean>;
   /** Refetches the ids, e.g. when a screen comes back into view. */
   reload: () => Promise<void>;
 }
@@ -46,27 +51,26 @@ export function useSavedListingIds(userId: string | undefined): SavedListingIdsS
     void reload();
   }, [reload]);
 
-  const toggle = useCallback(
-    async (listingId: string) => {
+  const setSaved = useCallback(
+    async (listingId: string, saved: boolean) => {
       if (!userId || pendingRef.current.has(listingId)) return false;
       pendingRef.current.add(listingId);
 
-      const wasSaved = savedIdsRef.current.has(listingId);
       const withChange = new Set(savedIdsRef.current);
-      if (wasSaved) withChange.delete(listingId);
-      else withChange.add(listingId);
+      if (saved) withChange.add(listingId);
+      else withChange.delete(listingId);
       apply(withChange);
 
-      const result = wasSaved
-        ? await unsaveListing(supabase, listingId)
-        : await saveListing(supabase, listingId);
+      const result = saved
+        ? await saveListing(supabase, listingId)
+        : await unsaveListing(supabase, listingId);
       pendingRef.current.delete(listingId);
       if (!result.error) return true;
 
       if (mountedRef.current) {
         const rolledBack = new Set(savedIdsRef.current);
-        if (wasSaved) rolledBack.add(listingId);
-        else rolledBack.delete(listingId);
+        if (saved) rolledBack.delete(listingId);
+        else rolledBack.add(listingId);
         apply(rolledBack);
         Alert.alert('Error', SAVE_FAILED);
       }
@@ -75,5 +79,10 @@ export function useSavedListingIds(userId: string | undefined): SavedListingIdsS
     [userId, apply]
   );
 
-  return { savedIds, toggle, reload };
+  const toggle = useCallback(
+    (listingId: string) => setSaved(listingId, !savedIdsRef.current.has(listingId)),
+    [setSaved]
+  );
+
+  return { savedIds, toggle, setSaved, reload };
 }
