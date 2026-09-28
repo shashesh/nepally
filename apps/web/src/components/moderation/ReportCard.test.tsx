@@ -102,6 +102,14 @@ describe('ReportCard', () => {
     expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Dismiss']);
   });
 
+  it('links a listing report to the listing and offers only Dismiss', () => {
+    renderCard({ report: { ...POST_REPORT, target_type: 'listing', target_id: 'listing-7' }, post: undefined });
+
+    expect(screen.getByRole('link', { name: 'View listing' }).getAttribute('href')).toBe('/marketplace/listing/listing-7');
+    expect(screen.queryByText(/Message content is private/)).toBeNull();
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Dismiss']);
+  });
+
   it('keeps every button focusable but inert while an action runs', () => {
     const props = renderCard({ locked: true, busyAction: 'ban' });
 

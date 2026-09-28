@@ -21,6 +21,7 @@ There are two sections:
   - **A post:** its title (or "Post no longer available"), a View post link, and Dismiss, Remove post and Ban author.
   - **A member:** a View member link, and Dismiss and Ban user.
   - **A chat message:** a note that the content is private, and Dismiss only.
+  - **A listing:** a View listing link, and Dismiss only. Removing a listing from the queue is not built yet.
 
 Each section shows how many cards it holds ("3 waiting", "2 open").
 
