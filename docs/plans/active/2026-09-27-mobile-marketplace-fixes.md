@@ -39,7 +39,7 @@ Each PR is one chunk, run the way PRs 7–10 of the [web UI overhaul](../../arch
 | 1   | `fix/mobile-marketplace-launch-blockers` | Crash, reporting, Promote removal, search focus (merged #102)                  |
 | 1b  | `feat/report-auto-hide-threshold`        | Reports hide a post or listing at 100, not 3 (migration 047; merged #103)      |
 | 2   | `fix/mobile-marketplace-browse`          | Home, Category and Saved: rows, refetch, errors, location, price (merged #104) |
-| 3   | `fix/mobile-marketplace-create-edit`     | Create and edit form                                                           |
+| 3   | `fix/mobile-marketplace-create-edit`     | Create and edit form (merged #105)                                             |
 | 4   | `fix/mobile-marketplace-detail`          | Listing detail and My Listings                                                 |
 
 PR 1 is broken into steps below. PRs 2–4 list their tasks, files and acceptance criteria. Each one gets its step breakdown at the start of that PR, against the code as it is then.
@@ -842,7 +842,58 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 ## PR 4 — Listing detail and My Listings
 
-Step breakdown to be written at the start of the PR.
+**How PR 4 runs.** Branch `fix/mobile-marketplace-detail`, off `master` after #105 merged. The PR runs as two chunks, each with its own gate and review. Chunk A is the detail screen; chunk B is the cards, My Listings and the photo viewer, which adds the PR's only native dependency.
+
+**Chunk A: the detail screen (4.1, 4.2, 4.5, 4.6, 4.8 on detail)**
+
+- [ ] **A1. Contact details do something (4.1).**
+  - Shared `logic/marketplace/contactLinks.ts`:
+    - `toTelUrl` keeps digits and a leading `+`, and returns null when there are no digits.
+    - `toMailtoUrl`.
+    - `toWebsiteUrl` adds `https://` when there's no scheme and allows only http and https.
+    - `toMapsUrls(address)` returns the Apple (`maps:?q=`), `geo:0,0?q=` and Google Maps search URLs.
+  - Detail: each contact row is a link (`accessibilityRole="link"`, a label such as "Call 555-0100") that calls `Linking.openURL`. The address tries `maps:` on iOS or `geo:` on Android, then the Google URL. If nothing opens, an alert says so.
+  - Values are `selectable` and no longer cut to 2 lines.
+- [ ] **A2. Contact Seller carries context (4.2).**
+  - Shared `listingInquiryDraft(title)` returns "Hi, is “{title}” still available?".
+  - `MessageThread` gains an optional `initialDraft` param, and `ChatInput` an `initialText` that seeds the input. Nothing is sent until the member taps Send.
+  - The button shows a spinner and `accessibilityState.busy` while the conversation is created. A ref guard makes a double tap start it once.
+  - `incrementListingContacts` runs only after the conversation exists.
+- [ ] **A3. Detail stays fresh (4.5).**
+  - Refetch on focus already shipped in PR 3 (`useListing`).
+  - Still to do: a new `listingId`. `ListingDetail` gets `getId={({ params }) => params.listingId}`, so each listing is its own screen, and a profile's listing link can't reuse the one below it.
+  - `useListing` resets to loading when `listingId` changes, so another listing is never shown under the new id.
+- [ ] **A4. Seller card (4.6).**
+  - Show the owner's `Avatar` (photo, trust ring) and `TrustBadge`.
+  - The card is one button, "View {name}'s profile", that opens `PublicProfileView`. On their own listing it goes to the Profile tab, as `PostDetailScreen` does.
+  - The marketplace stack registers `PublicProfileView` and `PostDetail`, since a profile opens posts. Both screens are typed against the routes the Home and Marketplace stacks share.
+- [ ] **A5. Consistency on detail (4.8).**
+  - Save is a heart, as on the grid.
+  - Counts use the shared `pluralize` ("1 view", "1 save").
+  - Hours read "9:00 AM – 5:00 PM" through a new shared `formatClockTime`.
+  - A header Share button calls `Share.share` with `${WEB_BASE_URL}/marketplace/listing/<id>`.
+- [ ] **Chunk A gate and review.**
+
+**Chunk B: cards, My Listings, photo viewer (4.3, 4.4, 4.8 on My Listings, 4.7)**
+
+- [ ] **B1. Screen-reader reachable (4.3).** A touchable inside an accessible card is invisible to VoiceOver, so:
+  - `ListingGridCard`: the label reads title, price and freshness. The heart becomes a custom accessibility action ("Save listing" or "Unsave listing") on the card and stays a visible touch target.
+  - `ListingCard`: a button label with title, category and price.
+  - `MyListingsScreen`: the card's photo and text are one button, and the action row sits outside it, so each action is its own element.
+  - Every icon-only button in these screens gets a label, including My Listings' back buttons.
+- [ ] **B2. My Listings actions fit (4.4, 4.8).**
+  - Edit and Refresh (active only) stay in the row, with 44pt targets.
+  - A labelled "More" button holds Deactivate or Reactivate, and Delete: `ActionSheetIOS` on iOS, an `Alert` with the same buttons on Android.
+  - Each mutation checks `{ error }`. A failure shows an alert through `userMessage`; Refresh confirms with "Listing refreshed". A listing with a mutation in flight ignores further taps.
+  - The empty state's Create button follows Home's `canCreate` (Level 1+). Level 0 members see "Verify your account to create listings."
+  - Counts and expiry use `pluralize` ("1 contact", "Expires in 1 day").
+- [ ] **B3. Full-screen photos (4.7), Galeria (decided 2026-09-28).**
+  - Install `@nandorojo/galeria` in `apps/mobile` with `npx npm@12`, since the lockfile is npm 12.
+  - New `components/marketplace/ListingPhotoGallery.tsx` takes over the detail carousel, with its counter and its reset when the photos change.
+  - Outside Expo Go it `require`s Galeria, as `services/notifications.ts` loads `expo-notifications`. A tap opens the native viewer: pinch-zoom, swipe between photos, swipe down to dismiss.
+  - In Expo Go and in Jest it renders the same carousel with photos that can't be tapped.
+  - `setup-and-testing.md` notes that the viewer needs a development build.
+- [ ] **Chunk B gate and review**, then push, open the draft PR, and request Copilot's review. Pinch-zoom can only be checked on a development build on a device, so the PR's test plan lists it for the user.
 
 | #   | Task                                                                                                                                                                                                                                                                                                  | Main files                                                                                        | Done when                                                    |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -870,7 +921,7 @@ Not in PRs 1–4. Some affect both platforms or need a migration.
 - **Blocked sellers' listings still show** in marketplace feeds. The shared queries don't consult `blocked_users`.
 - **No DB caps** on listing photos, title or description (`014_marketplace.sql:44-46`); they're zod-only.
 - **Pending promotions are never cleaned up**; 046 expires `active` rows only. The mobile branch of `create-promotion-checkout` is now unused.
-- **Web parity:** no report-listing UI, no saved-listings page, no marketplace rules page.
+- **Web parity:** no report-listing UI, no saved-listings page, no marketplace rules page. Web's `ListingBusinessDetails` shows phone, email, website and address as plain text and hours in 24-hour time; PR 4's shared `contactLinks` and `formatClockTime` fit it.
 - **Both platforms:** no share or deep links (the mobile app has no linking config), no price or condition filters, no business-hours input, no "mark as sold" status.
 - **Grid thumbnails load full 1200px photos**; use storage image transforms if the plan allows it.
 - **A post photo upload that fails part-way orphans the photos before it.** `uploadPostPhotos` stops at the first failure without returning the paths already uploaded. `uploadListingPhotos` returns them since PR 3; do the same for posts, and apply the listing rule of cleaning up after a failed write only when the server refused it.
@@ -882,3 +933,4 @@ Not in PRs 1–4. Some affect both platforms or need a migration.
 2. **Posts and listings hide at 100 reports, not 3.** A post goes to `pending`; a listing becomes `removed`, and only a moderator can restore it, from the dashboard for now (PR 1b, [#103](https://github.com/shashesh/nepally/pull/103)).
 3. **Home uses web-style rows** (Sponsored, Featured, Recent, Trending) above the All Listings grid (PR 2.1).
 4. **Contact Seller opens the chat with a prefilled draft** naming the listing (PR 4.2).
+5. **The full-screen photo viewer is Galeria**, loaded only outside Expo Go (decided 2026-09-28, PR 4.7). Galeria is native and doesn't run in Expo Go, so there the photos still show but don't open a viewer. Checking the viewer needs a development build, which the launch needs anyway.
