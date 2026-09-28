@@ -1,7 +1,7 @@
 # Feature: Marketplace
 
 **Status:** Phase 1 MVP Implemented
-**Last Updated:** 2026-04-13
+**Last Updated:** 2026-09-27 (mobile browsing, location, saved state and price formatting)
 **Priority:** High
 
 ---
@@ -78,11 +78,30 @@ Consolidated from 12 original categories via `016_consolidate_marketplace_catego
 
 All in `apps/mobile/src/screens/marketplace/`:
 
-- **MarketplaceHomeScreen** — Category grid, search bar, recent listings, FAB for creating
+- **MarketplaceHomeScreen** — Web-style rows: search, category tiles, then Sponsored, Featured, Recently Added and Trending strips (each hidden when empty) above the paged All listings grid; FAB for creating
 - **MarketplaceCategoryScreen** — Category-filtered listing list with search and pagination
 - **ListingDetailScreen** — Full listing view, photo carousel, structured fields, Contact/Save actions
 - **CreateListingScreen** — Create/edit form with Business/Individual toggle, Zod validation
 - **MyListingsScreen** — User's listings with status badges, refresh/deactivate/delete actions
+- **SavedListingsScreen** — The member's saved listings; the heart unsaves and removes the card
+- **BrowseCategoriesScreen**, **MarketplaceRulesScreen** — Category tiles; static marketplace rules
+
+**Browsing (mobile).** The home screen loads through `useMarketplaceFeed`, as web's `MarketplaceBrowse` does:
+
+- Nothing narrowing the view: the four strips plus the All listings grid.
+- A category: the grid and that category's featured strip. A search: the grid only.
+- "Nothing in your metro yet" appears only when the metro has no listings at all.
+- A failed load says "Couldn't load listings." with Try again, and a failed next page says so at the foot of the list. The category screen, My Listings, Saved and listing detail do the same; detail shows "Listing not found" only when the listing is really gone.
+- A failed pull-to-refresh keeps what is on screen and shows a compact "Couldn't refresh" note.
+- Coming back to the screen refreshes quietly, keeping the scroll position.
+
+**Location (mobile).** The marketplace follows the member's active location, a saved place or a visit, exactly as Home does (`useActiveMetro`). New listings go to that metro, as new posts do. The home header shows the metro, and tapping it, the menu's Change Location, or the empty state's Change location opens the location switcher in place.
+
+**Saved hearts and prices (mobile).**
+
+- Saving or unsaving shows at once everywhere (`useSavedListingIds`). A failure puts the heart back and says so.
+- Prices go through the shared `formatListingPrice`, so "80" reads "$80" and "Negotiable" stays as typed, as on web.
+- Sort options read "Price: low to high" and "Price: high to low".
 
 ### Web (Next.js)
 
