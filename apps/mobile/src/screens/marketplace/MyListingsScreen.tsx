@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  ActionSheetIOS,
   Alert,
+  Platform,
   StyleSheet,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -22,7 +24,10 @@ import {
   refreshListing,
   getDaysUntilSoftExpiry,
   formatListingPrice,
+  pluralize,
   userMessage,
+  LISTING_SOFT_EXPIRY_DAYS,
+  TrustLevel,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
@@ -43,6 +48,7 @@ const STATUS_CONFIG = {
 };
 
 const LOAD_FAILED = "Couldn't load your listings.";
+const TRY_AGAIN = 'Please try again.';
 
 /** The owner's listings, the failure to show instead, or null when signed out. */
 type OwnListingsResult = { data: MarketplaceListing[] } | { error: string } | null;
@@ -60,10 +66,79 @@ async function loadOwnListings(userId: string | undefined): Promise<OwnListingsR
   }
 }
 
+/** A change an owner makes to one listing, and what to tell them afterwards. */
+interface ListingMutation {
+  run: (client: typeof supabase, listingId: string) => Promise<{ error?: Error }>;
+  failureTitle: string;
+  event: string;
+  success?: { title: string; message: string };
+}
+
+const MUTATIONS = {
+  refresh: {
+    run: refreshListing,
+    failureTitle: "Couldn't refresh this listing",
+    event: 'my_listings_refresh_failed',
+    success: {
+      title: 'Listing refreshed',
+      message: `It stays visible for another ${LISTING_SOFT_EXPIRY_DAYS} days.`,
+    },
+  },
+  deactivate: {
+    run: deactivateListing,
+    failureTitle: "Couldn't deactivate this listing",
+    event: 'my_listings_deactivate_failed',
+  },
+  reactivate: {
+    run: reactivateListing,
+    failureTitle: "Couldn't reactivate this listing",
+    event: 'my_listings_reactivate_failed',
+  },
+  delete: {
+    run: deleteListing,
+    failureTitle: "Couldn't delete this listing",
+    event: 'my_listings_delete_failed',
+  },
+} satisfies Record<string, ListingMutation>;
+
+interface MenuAction {
+  label: string;
+  onPress: () => void;
+  destructive?: boolean;
+}
+
+/** A listing's More menu: an action sheet on iOS, an alert with the same buttons on Android. */
+// Android's Alert shows at most three buttons and drops the rest silently, so
+// the menu holds two actions plus Cancel. A third action needs another menu.
+function showMoreMenu(title: string, actions: MenuAction[]): void {
+  if (Platform.OS === 'ios') {
+    const destructiveIndex = actions.findIndex((action) => action.destructive);
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title,
+        options: [...actions.map((action) => action.label), 'Cancel'],
+        cancelButtonIndex: actions.length,
+        destructiveButtonIndex: destructiveIndex >= 0 ? destructiveIndex : undefined,
+      },
+      (index) => actions[index]?.onPress()
+    );
+    return;
+  }
+  Alert.alert(title, undefined, [
+    ...actions.map((action) => ({
+      text: action.label,
+      onPress: action.onPress,
+      style: action.destructive ? ('destructive' as const) : ('default' as const),
+    })),
+    { text: 'Cancel', style: 'cancel' as const },
+  ]);
+}
+
 export default function MyListingsScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
   const userId = user?.id;
+  const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +146,18 @@ export default function MyListingsScreen() {
   const [error, setError] = useState<string | null>(null);
   // Bumping this re-runs the fetch effect (screen focus, pull-to-refresh, after a mutation).
   const [reloadKey, setReloadKey] = useState(0);
+  // Listings with a change on its way; the ref stops a second tap before the state has rendered.
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set());
+  const pendingRef = useRef<ReadonlySet<string>>(new Set());
+  const mountedRef = useRef(true);
   const now = useNow();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,42 +197,66 @@ export default function MyListingsScreen() {
     reloadListings();
   }, [reloadListings]);
 
-  const handleDeactivate = useCallback(async (listingId: string) => {
-    Alert.alert('Deactivate Listing', 'This will hide your listing from the marketplace.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Deactivate',
-        onPress: async () => {
-          await deactivateListing(supabase, listingId);
-          reloadListings();
-        },
-      },
-    ]);
-  }, [reloadListings]);
+  const runMutation = useCallback(
+    async (listingId: string, mutation: ListingMutation) => {
+      if (pendingRef.current.has(listingId)) return;
+      pendingRef.current = new Set([...pendingRef.current, listingId]);
+      setPendingIds(pendingRef.current);
 
-  const handleReactivate = useCallback(async (listingId: string) => {
-    await reactivateListing(supabase, listingId);
-    reloadListings();
-  }, [reloadListings]);
+      let failure: unknown;
+      try {
+        failure = (await mutation.run(supabase, listingId)).error ?? null;
+      } catch (thrown) {
+        failure = thrown;
+      }
 
-  const handleDelete = useCallback(async (listingId: string) => {
-    Alert.alert('Delete Listing', 'This will permanently remove your listing. Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteListing(supabase, listingId);
-          reloadListings();
-        },
-      },
-    ]);
-  }, [reloadListings]);
+      pendingRef.current = new Set([...pendingRef.current].filter((id) => id !== listingId));
+      // Gone back meanwhile: nothing left to update.
+      if (!mountedRef.current) return;
+      setPendingIds(pendingRef.current);
+      const failureMessage = failure
+        ? userMessage(failure, TRY_AGAIN, mutation.event, { platform: 'mobile', listingId })
+        : null;
+      reloadListings();
+      // Moved on to Edit or a listing meanwhile, with this screen still mounted
+      // underneath: no alert over that screen. The list shows the outcome on return.
+      if (!navigation.isFocused()) return;
+      if (failureMessage) {
+        Alert.alert(mutation.failureTitle, failureMessage);
+      } else if (mutation.success) {
+        Alert.alert(mutation.success.title, mutation.success.message);
+      }
+    },
+    [navigation, reloadListings]
+  );
 
-  const handleRefresh = useCallback(async (listingId: string) => {
-    await refreshListing(supabase, listingId);
-    reloadListings();
-  }, [reloadListings]);
+  const openMoreMenu = useCallback(
+    (item: MarketplaceListing) => {
+      const confirmDeactivate = () =>
+        Alert.alert('Deactivate Listing', 'This will hide your listing from the marketplace.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Deactivate', onPress: () => void runMutation(item.id, MUTATIONS.deactivate) },
+        ]);
+      const confirmDelete = () =>
+        Alert.alert('Delete Listing', 'This will permanently remove your listing. Are you sure?', [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => void runMutation(item.id, MUTATIONS.delete),
+          },
+        ]);
+
+      const statusAction: MenuAction[] =
+        item.status === 'active'
+          ? [{ label: 'Deactivate', onPress: confirmDeactivate }]
+          : item.status === 'inactive'
+            ? [{ label: 'Reactivate', onPress: () => void runMutation(item.id, MUTATIONS.reactivate) }]
+            : [];
+      showMoreMenu(item.title, [...statusAction, { label: 'Delete', onPress: confirmDelete, destructive: true }]);
+    },
+    [runMutation]
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: MarketplaceListing }) => {
@@ -154,116 +264,101 @@ export default function MyListingsScreen() {
       const price = formatListingPrice(item.price);
       const daysUntilExpiry = getDaysUntilSoftExpiry(item.refreshed_at, now);
       const isExpiringSoon = daysUntilExpiry <= 14 && item.status === 'active';
+      const isPending = pendingIds.has(item.id);
 
       return (
-        <TouchableOpacity
-          style={styles.listingCard}
-          onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
-          activeOpacity={0.7}
-        >
-          {/* Photo thumbnail */}
-          {item.photos.length > 0 ? (
-            <Image source={item.photos[0]} style={styles.thumbnail} contentFit="cover" />
-          ) : (
-            <View style={[styles.thumbnailPlaceholder, { backgroundColor: (item.category?.color ?? '#9E9E9E') + '20' }]}>
-              <Text style={styles.thumbnailEmoji}>{item.category?.emoji ?? '📦'}</Text>
-            </View>
-          )}
-
-          <View style={styles.listingHeader}>
-            <Text style={styles.listingTitle} numberOfLines={1}>
-              {item.title}
-            </Text>
-            <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
-              <Text style={[styles.statusText, { color: statusConfig.color }]}>
-                {statusConfig.label}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.listingMeta}>
-            <Text style={styles.listingCategory}>
-              {item.category?.emoji} {item.category?.name}
-            </Text>
-            {price ? <Text style={styles.listingPrice}>{price}</Text> : null}
-          </View>
-
-          <View style={styles.listingStats}>
-            <Text style={styles.statText}>{item.views_count} views</Text>
-            <Text style={styles.statText}>{item.saves_count} saves</Text>
-            <Text style={styles.statText}>{item.contacts_count} contacts</Text>
-          </View>
-
-          {isExpiringSoon && (
-            <View style={styles.expiryWarning}>
-              <Ionicons name="time-outline" size={14} color={colors.warning} />
-              <Text style={styles.expiryText}>
-                Expires in {daysUntilExpiry} days — refresh to stay visible
-              </Text>
-            </View>
-          )}
-
-          {/* Actions */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('CreateListing', { editListingId: item.id })}
-            >
-              <Ionicons name="create-outline" size={18} color={colors.primary.main} />
-              <Text style={styles.actionText}>Edit</Text>
-            </TouchableOpacity>
-
-            {item.status === 'active' && (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleRefresh(item.id)}
-              >
-                <Ionicons name="refresh-outline" size={18} color={colors.success} />
-                <Text style={[styles.actionText, { color: colors.success }]}>Refresh</Text>
-              </TouchableOpacity>
+        <View style={styles.listingCard}>
+          {/* The card opens the listing; the actions sit outside it so a screen reader reaches each. */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
+            // While a change is on its way the listing may be about to vanish or change status.
+            disabled={isPending}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={[item.title, statusConfig.label, price].filter(Boolean).join(', ')}
+            accessibilityState={{ disabled: isPending }}
+          >
+            {item.photos.length > 0 ? (
+              <Image source={item.photos[0]} style={styles.thumbnail} contentFit="cover" />
+            ) : (
+              <View style={[styles.thumbnailPlaceholder, { backgroundColor: (item.category?.color ?? '#9E9E9E') + '20' }]}>
+                <Text style={styles.thumbnailEmoji}>{item.category?.emoji ?? '📦'}</Text>
+              </View>
             )}
 
-            {item.status === 'active' ? (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleDeactivate(item.id)}
-              >
-                <Ionicons name="pause-outline" size={18} color={colors.warning} />
-                <Text style={[styles.actionText, { color: colors.warning }]}>Deactivate</Text>
-              </TouchableOpacity>
-            ) : item.status === 'inactive' ? (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleReactivate(item.id)}
-              >
-                <Ionicons name="play-outline" size={18} color={colors.success} />
-                <Text style={[styles.actionText, { color: colors.success }]}>Reactivate</Text>
-              </TouchableOpacity>
-            ) : null}
+            <View style={styles.listingHeader}>
+              <Text style={styles.listingTitle} numberOfLines={1}>
+                {item.title}
+              </Text>
+              <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
+                <Text style={[styles.statusText, { color: statusConfig.color }]}>
+                  {statusConfig.label}
+                </Text>
+              </View>
+            </View>
 
+            <View style={styles.listingMeta}>
+              <Text style={styles.listingCategory}>
+                {item.category?.emoji} {item.category?.name}
+              </Text>
+              {price ? <Text style={styles.listingPrice}>{price}</Text> : null}
+            </View>
+
+            <View style={styles.listingStats}>
+              <Text style={styles.statText}>{pluralize(item.views_count, 'view')}</Text>
+              <Text style={styles.statText}>{pluralize(item.saves_count, 'save')}</Text>
+              <Text style={styles.statText}>{pluralize(item.contacts_count, 'contact')}</Text>
+            </View>
+
+            {isExpiringSoon && (
+              <View style={styles.expiryWarning}>
+                <Ionicons name="time-outline" size={14} color={colors.warning} />
+                <Text style={styles.expiryText}>
+                  Expires in {pluralize(daysUntilExpiry, 'day')} — refresh to stay visible
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.actionRow}>
+            <RowAction
+              icon="create-outline"
+              label="Edit"
+              listingTitle={item.title}
+              disabled={isPending}
+              onPress={() => navigation.navigate('CreateListing', { editListingId: item.id })}
+            />
+            {item.status === 'active' && (
+              <RowAction
+                icon="refresh-outline"
+                label="Refresh"
+                listingTitle={item.title}
+                tone="success"
+                busy={isPending}
+                onPress={() => void runMutation(item.id, MUTATIONS.refresh)}
+              />
+            )}
             <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleDelete(item.id)}
+              style={styles.moreButton}
+              onPress={() => openMoreMenu(item)}
+              disabled={isPending}
+              accessibilityRole="button"
+              accessibilityLabel={`More actions for ${item.title}`}
+              accessibilityState={{ disabled: isPending }}
             >
-              <Ionicons name="trash-outline" size={18} color={colors.error} />
-              <Text style={[styles.actionText, { color: colors.error }]}>Delete</Text>
+              <Ionicons name="ellipsis-horizontal" size={20} color={colors.text.secondary} />
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       );
     },
-    [navigation, now, handleDeactivate, handleReactivate, handleDelete, handleRefresh]
+    [navigation, now, pendingIds, runMutation, openMoreMenu]
   );
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Listings</Text>
-        </View>
+        <Header onBack={() => navigation.goBack()} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.main} />
         </View>
@@ -273,13 +368,7 @@ export default function MyListingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Listings</Text>
-      </View>
+      <Header onBack={() => navigation.goBack()} />
 
       <FlatList
         data={listings}
@@ -303,17 +392,84 @@ export default function MyListingsScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="storefront-outline" size={48} color={colors.text.tertiary} />
               <Text style={styles.emptyText}>You haven&apos;t created any listings yet</Text>
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => navigation.navigate('CreateListing')}
-              >
-                <Text style={styles.createButtonText}>Create your first listing</Text>
-              </TouchableOpacity>
+              {canCreate ? (
+                <TouchableOpacity
+                  style={styles.createButton}
+                  onPress={() => navigation.navigate('CreateListing')}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.createButtonText}>Create your first listing</Text>
+                </TouchableOpacity>
+              ) : (
+                // Creating needs Level 1, as on Marketplace Home.
+                <Text style={styles.verifyText}>Verify your account to create listings.</Text>
+              )}
             </View>
           )
         }
       />
     </SafeAreaView>
+  );
+}
+
+function Header({ onBack }: { onBack: () => void }) {
+  return (
+    <View style={styles.header}>
+      <TouchableOpacity
+        onPress={onBack}
+        style={styles.backButton}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle} accessibilityRole="header">
+        My Listings
+      </Text>
+    </View>
+  );
+}
+
+interface RowActionProps {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  /** Named in the screen-reader label, so each row's "Edit" says which listing. */
+  listingTitle: string;
+  onPress: () => void;
+  tone?: 'primary' | 'success';
+  /** This action is on its way: a spinner, and no more taps. */
+  busy?: boolean;
+  /** Another change to the listing is on its way. */
+  disabled?: boolean;
+}
+
+function RowAction({
+  icon,
+  label,
+  listingTitle,
+  onPress,
+  tone = 'primary',
+  busy = false,
+  disabled = false,
+}: RowActionProps) {
+  const color = tone === 'success' ? colors.success : colors.primary.main;
+  const isDisabled = busy || disabled;
+  return (
+    <TouchableOpacity
+      style={styles.actionButton}
+      onPress={onPress}
+      disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${listingTitle}`}
+      accessibilityState={{ busy, disabled: isDisabled }}
+    >
+      {busy ? (
+        <ActivityIndicator size="small" color={color} />
+      ) : (
+        <Ionicons name={icon} size={18} color={color} />
+      )}
+      <Text style={[styles.actionText, tone === 'success' && styles.actionTextSuccess]}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -431,23 +587,37 @@ const styles = StyleSheet.create({
   expiryText: {
     ...typography.caption,
     color: colors.warning,
+    flexShrink: 1,
   },
   actionRow: {
     flexDirection: 'row',
-    gap: spacing.m,
+    alignItems: 'center',
+    gap: spacing.s,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: spacing.s,
+    paddingTop: spacing.xs,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    minHeight: 44,
+    paddingHorizontal: spacing.s,
   },
   actionText: {
     ...typography.caption,
     color: colors.primary.main,
     fontWeight: '600',
+  },
+  actionTextSuccess: {
+    color: colors.success,
+  },
+  moreButton: {
+    marginLeft: 'auto',
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -457,6 +627,11 @@ const styles = StyleSheet.create({
   emptyText: {
     ...typography.body,
     color: colors.text.secondary,
+  },
+  verifyText: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   createButton: {
     backgroundColor: colors.primary.main,

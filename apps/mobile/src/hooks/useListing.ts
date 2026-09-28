@@ -33,6 +33,14 @@ export function useListing(listingId: string): ListingState {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadKey, setLoadKey] = useState(0);
   const hasListingRef = useRef(false);
+  // A new id starts over at once, so the previous listing never shows under it.
+  const [shownId, setShownId] = useState(listingId);
+  if (listingId !== shownId) {
+    setShownId(listingId);
+    setListing(null);
+    setLoading(true);
+    setLoadError(null);
+  }
 
   useEffect(() => {
     let cancelled = false;

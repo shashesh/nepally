@@ -57,6 +57,7 @@ export default function MessageThreadScreen() {
     otherUserName,
     otherUserTrustLevel,
     otherUserPhotoUrl,
+    initialDraft,
   } = route.params;
   // Route params carry the full name; the thread shows the public form (decision 13).
   const publicName = formatPublicName(otherUserName);
@@ -468,7 +469,7 @@ export default function MessageThreadScreen() {
           />
         )}
 
-        <ChatInput onSend={handleSend} />
+        <ChatInput onSend={handleSend} initialText={initialDraft} />
       </Animated.View>
     </SafeAreaView>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
-import { act, render, waitFor, fireEvent } from '@testing-library/react-native';
-import { Alert, RefreshControl } from 'react-native';
+import { act, render, waitFor, fireEvent, within } from '@testing-library/react-native';
+import { ActionSheetIOS, Alert, RefreshControl, StyleSheet } from 'react-native';
 import { getListingsByOwner, deactivateListing, reactivateListing, deleteListing, refreshListing } from '@nepally/shared';
 import MyListingsScreen from './MyListingsScreen';
 
@@ -19,6 +19,7 @@ jest.mock('react-native-safe-area-context', () => {
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
 const mockAddListener = jest.fn<jest.Mock, [string, () => void]>(() => jest.fn());
+const mockIsFocused = jest.fn(() => true);
 const mockUseAuth = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
@@ -26,6 +27,7 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
     goBack: mockGoBack,
     addListener: mockAddListener,
+    isFocused: mockIsFocused,
   }),
 }));
 
@@ -90,8 +92,32 @@ jest.mock('@nepally/shared', () => ({
   deleteListing: jest.fn(async () => ({ error: null })),
   refreshListing: jest.fn(async () => ({ error: null })),
   getDaysUntilSoftExpiry: jest.requireActual('@nepally/shared').getDaysUntilSoftExpiry,
+  pluralize: jest.requireActual('@nepally/shared').pluralize,
+  LISTING_SOFT_EXPIRY_DAYS: 90,
+  TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
   LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
 }));
+
+type Screen = ReturnType<typeof render>;
+
+/** Opens a listing's More menu and picks `choice` from the iOS action sheet. */
+function chooseFromMore(screen: Screen, choice: string) {
+  const sheet = jest
+    .spyOn(ActionSheetIOS, 'showActionSheetWithOptions')
+    .mockImplementation((options, callback) => {
+      callback(options.options.indexOf(choice));
+    });
+  fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
+  sheet.mockRestore();
+}
+
+/** Presses the button labelled `text` in the last alert shown. */
+function pressAlertButton(alertSpy: jest.SpyInstance, text: string) {
+  const buttons = alertSpy.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>;
+  act(() => {
+    buttons.find((button) => button.text === text)?.onPress?.();
+  });
+}
 
 const mockGetListingsByOwner = getListingsByOwner as jest.MockedFunction<typeof getListingsByOwner>;
 const mockDeactivateListing = deactivateListing as jest.MockedFunction<typeof deactivateListing>;
@@ -162,24 +188,102 @@ describe('MyListingsScreen', () => {
     });
   });
 
-  it('renders action buttons for active listings', async () => {
+  it('keeps Edit and Refresh in the row and the rest under More', async () => {
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
       expect(screen.getByText('Edit')).toBeTruthy();
     });
     expect(screen.getByText('Refresh')).toBeTruthy();
-    expect(screen.getByText('Deactivate')).toBeTruthy();
-    expect(screen.getByText('Delete')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'More actions for My Restaurant' })).toBeTruthy();
+    expect(screen.queryByText('Deactivate')).toBeNull();
+    expect(screen.queryByText('Delete')).toBeNull();
     expect(screen.queryByText('Promote')).toBeNull();
   });
 
-  it('shows Reactivate instead of Deactivate for inactive listings', async () => {
-    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'inactive' })] });
+  it('offers Deactivate and Delete under More for an active listing', async () => {
+    const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation(() => {});
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Reactivate')).toBeTruthy();
+      expect(screen.getByText('Edit')).toBeTruthy();
     });
-    expect(screen.queryByText('Deactivate')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
+
+    expect(sheet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'My Restaurant',
+        options: ['Deactivate', 'Delete', 'Cancel'],
+        destructiveButtonIndex: 1,
+        cancelButtonIndex: 2,
+      }),
+      expect.any(Function)
+    );
+    sheet.mockRestore();
+  });
+
+  it('offers Reactivate instead of Deactivate for an inactive listing', async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'inactive' })] });
+    const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Inactive')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
+
+    expect(sheet).toHaveBeenCalledWith(
+      expect.objectContaining({ options: ['Reactivate', 'Delete', 'Cancel'] }),
+      expect.any(Function)
+    );
+    sheet.mockRestore();
+  });
+
+  it('gives each row action a 44pt target', async () => {
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+    for (const name of ['Edit My Restaurant', 'Refresh My Restaurant', 'More actions for My Restaurant']) {
+      const style = StyleSheet.flatten(screen.getByRole('button', { name }).props.style);
+      expect(style.minHeight).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  it("keeps the actions out of the card's open button, so a screen reader reaches each", async () => {
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+    const card = screen.getByRole('button', { name: 'My Restaurant, Active, $15' });
+
+    expect(within(card).queryByText('Edit')).toBeNull();
+    fireEvent.press(card);
+    expect(mockNavigate).toHaveBeenCalledWith('ListingDetail', { listingId: 'listing-1' });
+  });
+
+  it('labels the back button', async () => {
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByRole('button', { name: 'Go back' }));
+    expect(mockGoBack).toHaveBeenCalled();
+  });
+
+  it('counts one of each in the singular', async () => {
+    const lastDay = new Date(Date.now() - 89 * 24 * 60 * 60 * 1000);
+    mockGetListingsByOwner.mockResolvedValue({
+      data: [
+        makeListing({ views_count: 1, saves_count: 1, contacts_count: 1, refreshed_at: lastDay.toISOString() }),
+      ],
+    });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('1 view')).toBeTruthy();
+    });
+    expect(screen.getByText('1 save')).toBeTruthy();
+    expect(screen.getByText('1 contact')).toBeTruthy();
+    expect(screen.getByText('Expires in 1 day — refresh to stay visible')).toBeTruthy();
   });
 
   it('renders inactive status badge', async () => {
@@ -364,60 +468,241 @@ describe('MyListingsScreen', () => {
     });
   });
 
-  it('calls deleteListing after confirming Delete alert', async () => {
+  it('calls deleteListing after confirming Delete', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeTruthy();
+      expect(screen.getByText('Edit')).toBeTruthy();
     });
-    fireEvent.press(screen.getByText('Delete'));
+    chooseFromMore(screen, 'Delete');
     expect(alertSpy).toHaveBeenCalledWith(
       'Delete Listing',
       expect.any(String),
       expect.any(Array)
     );
-    // Invoke the destructive confirm callback
-    const buttons = alertSpy.mock.calls[0][2] as Array<{ text: string; onPress?: () => void }>;
-    const confirmBtn = buttons.find(b => b.text === 'Delete');
-    confirmBtn?.onPress?.();
+    pressAlertButton(alertSpy, 'Delete');
     await waitFor(() => {
       expect(mockDeleteListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
     });
     alertSpy.mockRestore();
   });
 
-  it('calls deactivateListing after confirming Deactivate alert', async () => {
+  it('calls deactivateListing after confirming Deactivate', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Deactivate')).toBeTruthy();
+      expect(screen.getByText('Edit')).toBeTruthy();
     });
-    fireEvent.press(screen.getByText('Deactivate'));
+    chooseFromMore(screen, 'Deactivate');
     expect(alertSpy).toHaveBeenCalledWith(
       'Deactivate Listing',
       expect.any(String),
       expect.any(Array)
     );
-    // Invoke the confirm callback
-    const buttons = alertSpy.mock.calls[0][2] as Array<{ text: string; onPress?: () => void }>;
-    const confirmBtn = buttons.find(b => b.text === 'Deactivate');
-    confirmBtn?.onPress?.();
+    pressAlertButton(alertSpy, 'Deactivate');
     await waitFor(() => {
       expect(mockDeactivateListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
     });
     alertSpy.mockRestore();
   });
 
-  it('calls reactivateListing when Reactivate is pressed', async () => {
+  it('calls reactivateListing when Reactivate is chosen', async () => {
     mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ status: 'inactive' })] });
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
-      expect(screen.getByText('Reactivate')).toBeTruthy();
+      expect(screen.getByText('Inactive')).toBeTruthy();
     });
-    fireEvent.press(screen.getByText('Reactivate'));
+    chooseFromMore(screen, 'Reactivate');
     await waitFor(() => {
       expect(mockReactivateListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
     });
+  });
+
+  it('opens the same menu as an alert on Android', async () => {
+    const platform = jest.requireActual('react-native').Platform;
+    const originalOS = platform.OS;
+    platform.OS = 'android';
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    try {
+      const screen = render(<MyListingsScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Edit')).toBeTruthy();
+      });
+      fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
+
+      expect(alertSpy).toHaveBeenCalledWith('My Restaurant', undefined, [
+        expect.objectContaining({ text: 'Deactivate' }),
+        expect.objectContaining({ text: 'Delete', style: 'destructive' }),
+        expect.objectContaining({ text: 'Cancel', style: 'cancel' }),
+      ]);
+    } finally {
+      platform.OS = originalOS;
+      alertSpy.mockRestore();
+    }
+  });
+
+  it('says so when a delete fails', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockDeleteListing.mockResolvedValueOnce({ error: new Error('permission denied') });
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+    chooseFromMore(screen, 'Delete');
+    pressAlertButton(alertSpy, 'Delete');
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Couldn't delete this listing", 'Please try again.');
+    });
+    jest.restoreAllMocks();
+  });
+
+  it('says so when a refresh fails, and does not claim it worked', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockRefreshListing.mockResolvedValueOnce({ error: new Error('boom') });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Refresh'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Couldn't refresh this listing", 'Please try again.');
+    });
+    expect(alertSpy).not.toHaveBeenCalledWith('Listing refreshed', expect.anything());
+    jest.restoreAllMocks();
+  });
+
+  it('confirms a refresh worked', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Refresh'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Listing refreshed',
+        'It stays visible for another 90 days.'
+      );
+    });
+    alertSpy.mockRestore();
+  });
+
+  it("doesn't alert over the screen the member moved on to, but still reloads", async () => {
+    let finish: (value: unknown) => void = () => {};
+    mockRefreshListing.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Refresh'));
+
+    // The member opened Edit meanwhile; My Listings stays mounted underneath.
+    mockIsFocused.mockReturnValue(false);
+    await act(async () => {
+      finish({});
+    });
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockGetListingsByOwner).toHaveBeenCalledTimes(2);
+    });
+    mockIsFocused.mockReturnValue(true);
+    alertSpy.mockRestore();
+  });
+
+  it("keeps More closed for a listing whose change is still on its way", async () => {
+    let finish: (value: unknown) => void = () => {};
+    mockRefreshListing.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Refresh'));
+    fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
+
+    expect(sheet).not.toHaveBeenCalled();
+    await act(async () => {
+      finish({});
+    });
+    sheet.mockRestore();
+    alertSpy.mockRestore();
+  });
+
+  it("doesn't open or edit a listing whose change is still on its way", async () => {
+    let finish: (value: unknown) => void = () => {};
+    mockRefreshListing.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Refresh'));
+    const card = screen.getByRole('button', { name: 'My Restaurant, Active, $15' });
+    const edit = screen.getByRole('button', { name: 'Edit My Restaurant' });
+    fireEvent.press(card);
+    fireEvent.press(edit);
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(card.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+    expect(edit.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+
+    await act(async () => {
+      finish({});
+    });
+    fireEvent.press(screen.getByRole('button', { name: 'My Restaurant, Active, $15' }));
+    expect(mockNavigate).toHaveBeenCalledWith('ListingDetail', { listingId: 'listing-1' });
+    alertSpy.mockRestore();
+  });
+
+  it('ignores a second tap while a refresh is on its way', async () => {
+    let finish: (value: unknown) => void = () => {};
+    mockRefreshListing.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Refresh'));
+    fireEvent.press(screen.getByText('Refresh'));
+    expect(mockRefreshListing).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Refresh My Restaurant' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ busy: true })
+    );
+
+    await act(async () => {
+      finish({});
+    });
+    expect(screen.getByRole('button', { name: 'Refresh My Restaurant' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ busy: false })
+    );
+    alertSpy.mockRestore();
   });
 
   it('navigates to CreateListing on empty-state button press', async () => {
@@ -428,6 +713,16 @@ describe('MyListingsScreen', () => {
     });
     fireEvent.press(screen.getByText('Create your first listing'));
     expect(mockNavigate).toHaveBeenCalledWith('CreateListing');
+  });
+
+  it('asks a Level 0 member to verify instead of offering Create', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'user-1', trust_level: 0, metro_area_id: 'metro-1' } });
+    mockGetListingsByOwner.mockResolvedValue({ data: [] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Verify your account to create listings.')).toBeTruthy();
+    });
+    expect(screen.queryByText('Create your first listing')).toBeNull();
   });
 
   it('re-fetches listings after Refresh is pressed', async () => {

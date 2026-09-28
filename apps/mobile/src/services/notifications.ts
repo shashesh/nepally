@@ -1,17 +1,14 @@
 import type * as ExpoNotifications from 'expo-notifications';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { registerDeviceToken } from '@nepally/shared';
+import { isExpoGo } from '../utils/isExpoGo';
 
 /**
- * True when the app runs inside Expo Go, where remote (push) notifications are
- * unsupported as of SDK 53. Push registration is skipped in this environment
- * because importing expo-notifications throws in Expo Go on Android (SDK 55+);
- * it works in a development or standalone build.
- * @see https://docs.expo.dev/develop/development-builds/introduction/
+ * Remote (push) notifications are unsupported in Expo Go as of SDK 53, and
+ * importing expo-notifications throws there on Android (SDK 55+), so push
+ * registration is skipped in Expo Go.
  */
-export const isExpoGo =
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+export { isExpoGo };
 
 /**
  * Loads expo-notifications on first use. Never import it at module scope:

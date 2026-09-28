@@ -72,8 +72,45 @@ describe('ListingGridCard', () => {
     const screen = render(
       <ListingGridCard listing={mkListing()} width={180} onPress={onPress} isSaved={false} onToggleSave={() => {}} />
     );
-    fireEvent.press(screen.getByLabelText('Open listing: Cozy room near LIRR'));
+    fireEvent.press(screen.getByRole('button', { name: /^Cozy room near LIRR/ }));
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads title, price and seller to a screen reader', () => {
+    const screen = render(
+      <ListingGridCard listing={mkListing()} width={180} onPress={() => {}} isSaved={false} onToggleSave={() => {}} />
+    );
+    expect(
+      screen.getByRole('button', { name: /^Cozy room near LIRR, \$450, verified seller/ })
+    ).toBeTruthy();
+  });
+
+  it('reads Sponsored to a screen reader on a sponsored card', () => {
+    const screen = render(
+      <ListingGridCard listing={mkListing()} width={180} onPress={() => {}} isSaved={false} onToggleSave={() => {}} sponsored />
+    );
+    expect(screen.getByRole('button', { name: /, sponsored$/ })).toBeTruthy();
+  });
+
+  it('lets a screen reader save the listing from the card', () => {
+    const onToggleSave = jest.fn();
+    const screen = render(
+      <ListingGridCard listing={mkListing()} width={180} onPress={() => {}} isSaved={false} onToggleSave={onToggleSave} />
+    );
+    const card = screen.getByRole('button', { name: /^Cozy room near LIRR/ });
+
+    expect(card.props.accessibilityActions).toEqual([{ name: 'toggleSave', label: 'Save listing' }]);
+    fireEvent(card, 'accessibilityAction', { nativeEvent: { actionName: 'toggleSave' } });
+
+    expect(onToggleSave).toHaveBeenCalledWith('listing-1');
+  });
+
+  it('offers Unsave as the screen-reader action on a saved listing', () => {
+    const screen = render(
+      <ListingGridCard listing={mkListing()} width={180} onPress={() => {}} isSaved onToggleSave={() => {}} />
+    );
+    const card = screen.getByRole('button', { name: /^Cozy room near LIRR/ });
+    expect(card.props.accessibilityActions).toEqual([{ name: 'toggleSave', label: 'Unsave listing' }]);
   });
 
   it('calls onToggleSave with the listing id when heart is tapped', () => {
