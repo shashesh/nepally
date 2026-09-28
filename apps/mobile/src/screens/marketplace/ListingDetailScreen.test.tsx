@@ -62,6 +62,7 @@ jest.mock('@nepally/shared', () => ({
   getOrCreateConversation: jest.fn(async () => ({ data: null })),
   createReport: jest.fn(async () => ({ data: { id: 'report-1' } })),
   userMessage: jest.requireActual('@nepally/shared').userMessage,
+  formatListingPrice: jest.requireActual('@nepally/shared').formatListingPrice,
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
   LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
   ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
@@ -172,6 +173,14 @@ describe('ListingDetailScreen', () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getAllByText('$15-25').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('shows a plain-number price as dollars', async () => {
+    mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, price: '80' } } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getAllByText('$80').length).toBeGreaterThanOrEqual(1);
     });
   });
 

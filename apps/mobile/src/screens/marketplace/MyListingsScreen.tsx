@@ -21,6 +21,7 @@ import {
   deleteListing,
   refreshListing,
   getDaysUntilSoftExpiry,
+  formatListingPrice,
   userMessage,
   type MarketplaceListing,
 } from '@nepally/shared';
@@ -146,6 +147,7 @@ export default function MyListingsScreen() {
   const renderItem = useCallback(
     ({ item }: { item: MarketplaceListing }) => {
       const statusConfig = STATUS_CONFIG[item.status];
+      const price = formatListingPrice(item.price);
       const daysUntilExpiry = getDaysUntilSoftExpiry(item.refreshed_at, now);
       const isExpiringSoon = daysUntilExpiry <= 14 && item.status === 'active';
 
@@ -179,7 +181,7 @@ export default function MyListingsScreen() {
             <Text style={styles.listingCategory}>
               {item.category?.emoji} {item.category?.name}
             </Text>
-            {item.price && <Text style={styles.listingPrice}>{item.price}</Text>}
+            {price ? <Text style={styles.listingPrice}>{price}</Text> : null}
           </View>
 
           <View style={styles.listingStats}>

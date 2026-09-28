@@ -34,6 +34,7 @@ import {
   LANGUAGE_LABELS,
   getHelperScore,
   HELPER_SCORE_VISIBILITY_THRESHOLD,
+  formatListingPrice,
   type LanguageCode,
 } from '@nepally/shared';
 import type {
@@ -60,18 +61,6 @@ function getInitials(fullName: string): string {
 
 function pluralize(count: number, singular: string): string {
   return `${count} ${singular}${count === 1 ? '' : 's'}`;
-}
-
-function formatPrice(listing: MarketplaceListing): string | null {
-  if (listing.price === null || listing.price === undefined) return null;
-  const raw =
-    typeof listing.price === 'number' ? listing.price : Number(listing.price);
-  if (!Number.isFinite(raw)) return null;
-  return raw.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: raw % 1 === 0 ? 0 : 2,
-  });
 }
 
 /** Trust level badge colors matching the rest of the app */
@@ -460,7 +449,7 @@ export default function PublicProfileScreen(): React.ReactElement {
             listing.photos && listing.photos.length > 0
               ? listing.photos[0]
               : null;
-          const price = formatPrice(listing);
+          const price = formatListingPrice(listing.price);
           const categoryName = listing.category?.name || 'Marketplace';
           return (
             <TouchableOpacity

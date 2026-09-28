@@ -83,6 +83,7 @@ function makeListing(overrides: Record<string, unknown> = {}) {
 
 jest.mock('@nepally/shared', () => ({
   userMessage: jest.requireActual('@nepally/shared').userMessage,
+  formatListingPrice: jest.requireActual('@nepally/shared').formatListingPrice,
   getListingsByOwner: jest.fn(async () => ({ data: [] })),
   deactivateListing: jest.fn(async () => ({ error: null })),
   reactivateListing: jest.fn(async () => ({ error: null })),
@@ -259,6 +260,14 @@ describe('MyListingsScreen', () => {
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
       expect(screen.getByText('$15')).toBeTruthy();
+    });
+  });
+
+  it('shows a plain-number price as dollars', async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ price: '1200' })] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('$1,200')).toBeTruthy();
     });
   });
 

@@ -3,7 +3,12 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { formatListingFreshness, isVerifiedSeller, type MarketplaceListing } from '@nepally/shared';
+import {
+  formatListingFreshness,
+  formatListingPrice,
+  isVerifiedSeller,
+  type MarketplaceListing,
+} from '@nepally/shared';
 import { spacing } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 import {
@@ -36,6 +41,7 @@ export const ListingGridCard = React.memo(function ListingGridCard({
   const categoryColor = listing.category?.color ?? '#9E9E9E';
   const isVerified = isVerifiedSeller(listing);
   const freshness = useMemo(() => formatListingFreshness(listing.created_at), [listing.created_at]);
+  const price = useMemo(() => formatListingPrice(listing.price), [listing.price]);
 
   const handleToggleSave = useCallback(() => {
     onToggleSave(listing.id);
@@ -88,9 +94,9 @@ export const ListingGridCard = React.memo(function ListingGridCard({
       </View>
 
       <View style={styles.body}>
-        {listing.price ? (
+        {price ? (
           <View style={styles.priceRow}>
-            <Text style={styles.price}>{listing.price}</Text>
+            <Text style={styles.price}>{price}</Text>
             {isVerified && <Text style={styles.verifiedCheck}>✓</Text>}
           </View>
         ) : null}

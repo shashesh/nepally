@@ -22,6 +22,7 @@ import {
   getOrCreateConversation,
   getListingHighlights,
   getDaysSinceRefresh,
+  formatListingPrice,
   createReport,
   TrustLevel,
   userMessage,
@@ -209,6 +210,7 @@ export default function ListingDetailScreen() {
   const isOwner = user?.id === listing.owner_id;
   const daysAgo = getDaysSinceRefresh(listing.refreshed_at, now);
   const highlights = getListingHighlights(listing, now);
+  const price = formatListingPrice(listing.price);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -322,11 +324,11 @@ export default function ListingDetailScreen() {
           )}
 
           {/* Inline price card */}
-          {listing.price && (
+          {price ? (
             <View style={styles.inlinePriceCard}>
-              <Text style={styles.inlinePrice}>{listing.price}</Text>
+              <Text style={styles.inlinePrice}>{price}</Text>
             </View>
-          )}
+          ) : null}
 
           {/* Description */}
           <Text style={styles.description}>{listing.description}</Text>
@@ -408,11 +410,11 @@ export default function ListingDetailScreen() {
       {/* Sticky Bottom Bar — non-owner only */}
       {!isOwner && (
         <View style={styles.stickyBar}>
-          {listing.price && (
+          {price ? (
             <View style={styles.stickyBarPrice}>
-              <Text style={styles.stickyBarPriceText}>{listing.price}</Text>
+              <Text style={styles.stickyBarPriceText}>{price}</Text>
             </View>
-          )}
+          ) : null}
           <TouchableOpacity
             style={[styles.saveIconButton, isSaved && styles.saveButtonActive]}
             onPress={handleSave}

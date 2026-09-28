@@ -233,3 +233,29 @@ describe('ProfileScreen unsave toast', () => {
     expect(screen.queryByText('Failed to unsave post.')).toBeNull();
   });
 });
+
+describe('ProfileScreen listings tab', () => {
+  it('shows listing prices the way the marketplace does', async () => {
+    mockGetListingsByOwner.mockResolvedValue({
+      data: [
+        {
+          id: 'l1',
+          title: 'Rice cooker',
+          price: '75',
+          status: 'active',
+          photos: [],
+          views_count: 0,
+          saves_count: 0,
+          category: { name: 'Home', emoji: '🏠', color: '#9E9E9E' },
+        },
+      ],
+    });
+    const screen = render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('Listings'));
+
+    await waitFor(() => {
+      expect(screen.getByText('$75')).toBeTruthy();
+    });
+  });
+});
