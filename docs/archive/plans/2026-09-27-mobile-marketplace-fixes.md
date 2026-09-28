@@ -726,7 +726,7 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
   - `database-schema.md`: the column and the triggers
   - the `roadmap.md` status line
   - the smoke table in `setup-and-testing.md`
-- [x] **1b.5 Apply.** Applied to staging on 2026-09-28 on the user's request. The three smoke tests pass, plus `listing-counters` and `users-privilege`. The advisors show no new findings. The tracker row (`20260928120850`) still needs realigning to `047`.
+- [x] **1b.5 Apply.** Applied to staging on 2026-09-28 on the user's request. The three smoke tests pass, plus `listing-counters` and `users-privilege`. The advisors show no new findings. The tracker row, first recorded as `20260928120850`, was realigned to `047` the same day, so the tracker again mirrors the repo (`001`–`047`).
 
 ---
 
