@@ -171,7 +171,12 @@ async function readReportsReceived(service: SupabaseClient, userId: string): Pro
 function report(client: SupabaseClient, reporterId: string, listingId: string) {
   return client
     .from('reports')
-    .insert({ reported_by: reporterId, target_type: 'listing', target_id: listingId, reason: 'Scam' })
+    .insert({
+      reported_by: reporterId,
+      target_type: 'listing',
+      target_id: listingId,
+      reason: 'Scam',
+    })
     .select('id')
     .single();
 }
@@ -304,7 +309,10 @@ async function main() {
       .from('marketplace_listings')
       .update({ status: 'active' })
       .eq('id', listingId);
-    assertCondition(!restored.error, `The service role should restore it: ${restored.error?.message}`);
+    assertCondition(
+      !restored.error,
+      `The service role should restore it: ${restored.error?.message}`
+    );
     assertCondition(
       (await readListing(service, listingId)).status === 'active',
       'The restored listing should be active'
