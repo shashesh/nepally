@@ -99,8 +99,9 @@ The check runs against staging. Before 048 is applied, it fails because the func
  *      30 days out, returns the same date when repeated, and removes the
  *      member's device tokens.
  *   4. While deletion is pending, another member cannot see the profile,
- *      post, comment, like, follows, listing, event or RSVP. A moderator and
- *      the member themself still can.
+ *      post, comment, like, follows, listing, event or RSVP. A moderator
+ *      still sees all of it. The member themself still sees everything
+ *      except follow edges, which are hidden when either end is pending.
  *   5. cancel_account_deletion makes everything visible again.
  *
  * Run: npm run test:security:account-deletion
@@ -511,11 +512,7 @@ async function main(): Promise<void> {
       'moderator while pending'
     );
     const ownerView = await visibleCounts(ownerClient, owner.id, fixtures);
-    expectCounts(
-      ownerView,
-      { profile: 1, post: 1, comment: 1, like: 1, listing: 1, event: 1, rsvp: 1 },
-      'owner while pending'
-    );
+    expectCounts(ownerView, { ...ALL_VISIBLE, follows: 0 }, 'owner while pending');
 
     const { data: ownProfile, error: ownProfileError } = await ownerClient
       .rpc('get_my_profile')
@@ -1297,3 +1294,8 @@ Break this PR into steps when it starts. It needs PR 1 applied and PR 3 merged, 
 - A confirmation email when deletion is requested (needs custom SMTP).
 - Blocking a banned member from signing up again with the same email after the purge.
 - Data export before deletion.
+- From the PR 1 review:
+  - `amr_signed_in_within()` relies on the default `SECURITY INVOKER`. Sibling migrations such as 046 write it out. The re-created 034 guard keeps its original header on purpose.
+  - The `profile_not_found` branch of `request_account_deletion()` has no live-check coverage. Every signed-in member has a profile row, so it only guards against drift.
+  - On Windows, every `scripts/security/*.ts` failure path exits 127, not 1. `process.exit(1)` races the Supabase client's handles and trips a libuv assertion. Any non-zero exit still means FAIL. A shared fix, such as setting `process.exitCode` and letting the event loop drain, would touch all the checks.
+- Both PR 1 reviewers flagged the `users` policy as reading a column clients have no SELECT grant on. That is a false positive. A rolled-back probe on staging (2026-09-28) showed that Postgres doesn't check column privileges for columns used only inside a policy. `anon` and `authenticated` read the granted columns normally.

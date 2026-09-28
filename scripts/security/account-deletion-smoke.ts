@@ -10,8 +10,9 @@
  *      30 days out, returns the same date when repeated, and removes the
  *      member's device tokens.
  *   4. While deletion is pending, another member cannot see the profile,
- *      post, comment, like, follows, listing, event or RSVP. A moderator and
- *      the member themself still can.
+ *      post, comment, like, follows, listing, event or RSVP. A moderator
+ *      still sees all of it. The member themself still sees everything
+ *      except follow edges, which are hidden when either end is pending.
  *   5. cancel_account_deletion makes everything visible again.
  *
  * Run: npm run test:security:account-deletion
@@ -422,11 +423,7 @@ async function main(): Promise<void> {
       'moderator while pending'
     );
     const ownerView = await visibleCounts(ownerClient, owner.id, fixtures);
-    expectCounts(
-      ownerView,
-      { profile: 1, post: 1, comment: 1, like: 1, listing: 1, event: 1, rsvp: 1 },
-      'owner while pending'
-    );
+    expectCounts(ownerView, { ...ALL_VISIBLE, follows: 0 }, 'owner while pending');
 
     const { data: ownProfile, error: ownProfileError } = await ownerClient
       .rpc('get_my_profile')
