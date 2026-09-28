@@ -133,25 +133,17 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 ## Database Setup
 
-### 1. Run Initial Migration
+### 1. Run the Migrations
 
-Using Supabase CLI (recommended):
-
-```bash
-# Link to your project
-supabase link --project-ref your-project-ref
-
-# Push migration to Supabase
-supabase db push
-```
-
-Or manually via SQL Editor:
+Apply every file in `supabase/migrations/` in numeric order (`001`, `002`, … up to the latest). `001`–`003` drop and recreate their tables, so run them only on an empty database. Use the Supabase MCP `apply_migration` tool, or the dashboard:
 
 1. Go to **SQL Editor** in Supabase Dashboard
-2. Open `supabase/migrations/001_schema.sql`
+2. Open the next file, starting with `supabase/migrations/001_schema.sql`
 3. Copy entire content
 4. Paste into SQL Editor
-5. Click **Run**
+5. Click **Run**, then repeat with the next file
+
+Either way, realign each new tracker row to its `NNN` version afterwards. Do not use `supabase db push`: the repo uses numeric prefixes, not the CLI's timestamps. See [migration-workflow.md](migration-workflow.md).
 
 ### 2. Verify Tables
 
@@ -221,7 +213,16 @@ The migrations create every bucket, so there is nothing to set up by hand in **S
 | `event-photos`   | `006_events.sql`                 | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadEventPhoto` (no delete yet)                             |
 | `listing-photos` | `015_listing_photos_storage.sql` | `<userId>/<timestamp>-<random>-<name>.<ext>` | `uploadListingPhoto(s)`, `deleteListingPhotos` (no caller yet) |
 
-The migrations set no `file_size_limit` or `allowed_mime_types` on the buckets. The shared API checks type and size for post, event and listing photos before uploading. Bucket-level limits are on the SEC-06 hardening backlog in the [production launch plan](../plans/active/2026-09-18-production-launch.md).
+Each bucket's `file_size_limit` and `allowed_mime_types` (`045_storage_bucket_limits.sql`) match what the shared API checks before uploading, so the storage API refuses the same files even from a client that skips the apps:
+
+| Bucket           | Size limit | Allowed types                                        | App-side source           |
+| ---------------- | ---------- | ---------------------------------------------------- | ------------------------- |
+| `avatars`        | 1MB        | `image/jpeg`                                         | 500px JPEG from both apps |
+| `post-photos`    | 5MB        | `image/jpeg`, `image/jpg`, `image/png`, `image/webp` | `MAX_POST_PHOTO_BYTES`    |
+| `event-photos`   | 2MB        | `image/jpeg`, `image/jpg`, `image/png`, `image/webp` | `uploadEventPhoto`        |
+| `listing-photos` | 2MB        | `image/jpeg`, `image/jpg`, `image/png`, `image/webp` | `MAX_LISTING_PHOTO_BYTES` |
+
+Changing a limit means changing both sides in one PR: the app constant and a new migration for the bucket. `npm run test:security:storage-limits` checks the buckets.
 
 ### 2. Storage Policies
 
@@ -298,7 +299,9 @@ supabase init
 supabase functions deploy
 
 # Or deploy individual functions
-supabase functions deploy expire-posts
+supabase functions deploy send-push-notification
+supabase functions deploy create-promotion-checkout
+supabase functions deploy stripe-webhook
 supabase functions deploy verify-emergency-post
 supabase functions deploy get-metro-by-zip
 ```
@@ -371,8 +374,8 @@ ALTER DATABASE postgres SET "app.settings.service_role_key" = '<your-service-rol
 Deploy steps:
 
 ```bash
-# 1) Apply latest migration (includes push fanout trigger)
-supabase db push
+# 1) Apply the migrations through MCP apply_migration or the SQL editor,
+#    never `supabase db push` (see migration-workflow.md)
 
 # 2) Configure the required DB settings (see above)
 
@@ -401,29 +404,24 @@ Expected behavior:
 3. Expo and/or web push deliveries are attempted for available tokens.
 4. Function logs show sent/error counts.
 
-### 5. Configure Function Cron Jobs
+### 5. Scheduled Jobs
 
-For scheduled functions like `expire-posts`:
+Scheduled work runs in the database on `pg_cron` (enabled by `001_schema.sql`), not through edge functions, so there is no public endpoint to protect. Migrations create the jobs; nothing needs setting up by hand.
 
-1. Go to **Database** > **Extensions**
-2. Enable **pg_cron** extension
-3. Create cron job:
+| Job                      | Schedule            | Runs                                                                                     | Migration |
+| ------------------------ | ------------------- | ---------------------------------------------------------------------------------------- | --------- |
+| `expire-paid-promotions` | Hourly, at :05 past | `public.expire_paid_promotions()`: active paid promotions past `end_date` become expired | `046`     |
+
+Check the jobs and their recent runs:
 
 ```sql
--- Run expire-posts function daily at midnight
-SELECT cron.schedule(
-  'expire-posts-daily',
-  '0 0 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://xxxxx.supabase.co/functions/v1/expire-posts',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb
-  );
-  $$
-);
-```
+SELECT jobname, schedule, active FROM cron.job;
 
-Or use external cron service (like GitHub Actions, Vercel Cron, etc.).
+SELECT j.jobname, d.status, d.return_message, d.start_time
+  FROM cron.job_run_details d JOIN cron.job j USING (jobid)
+ ORDER BY d.start_time DESC
+ LIMIT 20;
+```
 
 ## Local Development with Supabase CLI
 
@@ -558,10 +556,10 @@ const subscription = supabase
 
 ```bash
 # View logs for specific function
-supabase functions logs expire-posts
+supabase functions logs send-push-notification
 
 # Stream logs
-supabase functions logs expire-posts --follow
+supabase functions logs send-push-notification --follow
 ```
 
 **API Logs:**

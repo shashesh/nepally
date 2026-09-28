@@ -29,6 +29,8 @@
     "test:security:storage": "tsx scripts/security/storage-rls-smoke.ts",
     "test:security:functions": "tsx scripts/security/function-execute-smoke.ts",
     "test:security:listing-counters": "tsx scripts/security/listing-counters-smoke.ts",
+    "test:security:storage-limits": "tsx scripts/security/storage-limits-smoke.ts",
+    "test:security:promotion-expiry": "tsx scripts/security/promotion-expiry-smoke.ts",
     "ci:local": "node scripts/run-ci-local.js",
     "lint": "npm run lint --workspaces && npm run lint:md",
     "lint:md": "markdownlint-cli2 && prettier --check \"**/*.md\"",

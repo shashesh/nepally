@@ -1373,6 +1373,10 @@ supabase
 
 Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calling the functions directly.
 
+### Expire paid promotions (migration 046)
+
+`expire_paid_promotions()` sets every `active` paid `listing_promotions` row whose `end_date` has passed to `expired`, and returns how many it changed. `premium_perk` rows have no `end_date` and are never touched. It is `SECURITY INVOKER` and executable by `service_role` only; the `pg_cron` job `expire-paid-promotions` runs it hourly as `postgres`. See [supabase-setup.md](supabase-setup.md#5-scheduled-jobs).
+
 ---
 
 ## Data Migration from Firestore

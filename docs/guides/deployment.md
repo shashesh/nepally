@@ -430,11 +430,7 @@ This pushes JavaScript changes without app store review.
 
 ### 1. Deploy Database Migrations
 
-```bash
-npx supabase db push
-```
-
-This applies all migrations from `supabase/migrations/` to your production database.
+Apply each new file in `supabase/migrations/` in numeric order, through the Supabase MCP `apply_migration` tool or the dashboard SQL editor, then realign its tracker row to `NNN`. Never use `npx supabase db push`: the repo uses numeric prefixes, not the CLI's timestamps, so the CLI would try to replay every migration. The full procedure is in [migration-workflow.md](../architecture/migration-workflow.md#adding-a-migration-going-forward).
 
 ### 2. Deploy Edge Functions
 
@@ -444,24 +440,22 @@ npx supabase functions deploy
 
 This deploys all Edge Functions:
 
-- `expire-posts`
+- `send-push-notification`
+- `create-promotion-checkout`
+- `stripe-webhook`
 - `verify-emergency-post`
 - `get-metro-by-zip`
 
+Scheduled jobs (promotion expiry) run on `pg_cron` inside the database and ship with the migrations, not as functions. See [supabase-setup.md](../architecture/supabase-setup.md#5-scheduled-jobs).
+
 ### 3. Verify RLS Policies
 
-Check that Row Level Security policies are active:
-
-```bash
-npx supabase db pull
-```
-
-Compare local policies with remote to ensure they match.
+Check that Row Level Security policies are active: run the Supabase security advisors (dashboard **Advisors**, or the MCP `get_advisors` tool) and confirm there are no new findings. On staging, also run the `test:security:*` smoke tests ([setup-and-testing.md](setup-and-testing.md#security-smoke-tests)). They create and delete users, so they never run against production.
 
 ### 4. Deploy Individual Functions (Optional)
 
 ```bash
-npx supabase functions deploy expire-posts
+npx supabase functions deploy stripe-webhook
 npx supabase functions deploy verify-emergency-post
 npx supabase functions deploy get-metro-by-zip
 ```

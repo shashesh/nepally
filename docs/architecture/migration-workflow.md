@@ -81,7 +81,9 @@ The pre-realignment tracker contents (31 rows), captured before the rewrite:
 
 ### After (current)
 
-37 rows, `version` `001`–`037`, `name` = repo file stem — an exact mirror of `supabase/migrations/*.sql`. The exception is the `036` row: its `name` is `036_restrict_user_pii_and_chat_participation`, keeping the repo's numeric prefix, unlike every other row.
+46 rows, `version` `001`–`046`, `name` = repo file stem without the numeric prefix — an exact mirror of `supabase/migrations/*.sql` (last checked on staging 2026-09-25).
+
+`038`–`046` were applied through MCP `apply_migration` between 2026-09-18 and 2026-09-25 and kept their timestamp versions until a single reconcile on 2026-09-25 realigned all nine to `NNN` and set each `statements` to the canonical-file pointer. The same pass dropped the numeric prefix that the `036` and `040` rows had kept in `name`, so every row now follows one convention.
 
 `034_guard_user_privileged_columns` and `035_emergency_post_moderation` were applied 2026-09-04 via MCP `apply_migration`. That tool records a **timestamp** version (e.g. `20260904162458`), so each row was realigned to its numeric version right after applying (see step 3 below). The reports SELECT-policy change in 035 was added to the file after the initial apply and applied as a delta with `execute_sql`; the tracker row already existed, so no new row was needed.
 
