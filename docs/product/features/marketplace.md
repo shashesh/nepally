@@ -121,7 +121,7 @@ All in `apps/web/src/pages/marketplace/`:
 - **index.page.tsx** — Marketplace home: the Featured, Recently Added and Trending strips, plus the grid
 - **[category].page.tsx** — Category filtered view, supports search mode
 - **listing/[id].page.tsx** — Full listing detail page
-- **create.page.tsx** — Create/edit listing form. It shows every field's error, adds `https://` to a website, saves nothing for the type not picked, and tidies photos as mobile does
+- **create.page.tsx** — Create/edit listing form. A new listing starts as Individual, as on mobile. It shows every field's error, adds `https://` to a website, saves nothing for the type not picked, and tidies photos as mobile does
 - **my-listings.page.tsx** — My listings management page
 
 Both browse routes are thin wrappers over one `MarketplaceBrowse` component, so `/marketplace?category=<slug>` and `/marketplace/<slug>` show the same thing; only the heading, the back link and where a filter change navigates differ. The grid names the active category rather than always reading "All Listings". See [web-ui-system.md](../../architecture/web-ui-system.md) for the components and hooks behind it.

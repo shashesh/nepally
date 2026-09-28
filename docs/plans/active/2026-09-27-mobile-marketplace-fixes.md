@@ -874,8 +874,6 @@ Not in PRs 1–4. Some affect both platforms or need a migration.
 - **Both platforms:** no share or deep links (the mobile app has no linking config), no price or condition filters, no business-hours input, no "mark as sold" status.
 - **Grid thumbnails load full 1200px photos**; use storage image transforms if the plan allows it.
 - **A post photo upload that fails part-way orphans the photos before it.** `uploadPostPhotos` stops at the first failure without returning the paths already uploaded. `uploadListingPhotos` returns them since PR 3; do the same for posts, and apply the listing rule of cleaning up after a failed write only when the server refused it.
-- **Web's create form still starts as Business**; mobile starts as Individual since PR 3.
-- **Mobile shows the server's own text when saving a listing fails** (`Alert.alert('Error', result.error.message)`); web uses `userMessage`.
 - **Visual consistency:** Category, Detail, Create and My Listings still use the pre-redesign palette. The 2026-04-14 redesign deferred them.
 
 ## Decisions (2026-09-27)

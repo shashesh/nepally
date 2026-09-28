@@ -611,17 +611,45 @@ describe('CreateListingScreen', () => {
     expect(mockGoBack).not.toHaveBeenCalled();
   });
 
-  it('shows alert when createListing fails', async () => {
+  it("says the listing couldn't be created, in our words rather than the server's", async () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
-    mockCreateListing.mockResolvedValue({ error: { message: 'Server error' } } as never);
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockCreateListing.mockResolvedValue({
+      error: { message: 'new row violates row-level security policy', code: '42501' },
+    } as never);
     const screen = await renderForm();
     fillValidForm(screen);
 
     await submit(screen);
 
-    expect(alertSpy).toHaveBeenCalledWith('Error', 'Server error');
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Error',
+      "Couldn't create your listing. Please try again."
+    );
+    expect(JSON.stringify(alertSpy.mock.calls)).not.toContain('row-level security');
     expect(mockDispatch).not.toHaveBeenCalled();
-    alertSpy.mockRestore();
+    jest.restoreAllMocks();
+  });
+
+  it("says the listing couldn't be updated when an edit fails", async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockRouteParams = { editListingId: 'edit-1' };
+    mockGetListingById.mockResolvedValue({ data: EXISTING_LISTING } as never);
+    mockUpdateListing.mockResolvedValue({
+      error: { message: 'Server error', code: '42501' },
+    } as never);
+    const screen = await renderForm();
+    fireEvent.changeText(screen.getByDisplayValue('Himalayan Kitchen'), 'Everest Kitchen');
+
+    await submit(screen, 'Update Listing');
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Error',
+      "Couldn't update your listing. Please try again."
+    );
+    expect(mockGoBack).not.toHaveBeenCalled();
+    jest.restoreAllMocks();
   });
 
   it('does not submit when there is no metro to post to', async () => {

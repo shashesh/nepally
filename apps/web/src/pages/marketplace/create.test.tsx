@@ -105,6 +105,12 @@ const mockGetListingById = getListingById as ReturnType<typeof vi.fn>;
 const mockUpdateListing = updateListing as ReturnType<typeof vi.fn>;
 const mockUploadPhotosInOrder = mocks.uploadPhotosInOrder;
 
+/** New listings start as Individual; this switches the form to Business. */
+async function chooseBusiness() {
+  fireEvent.click(await screen.findByText('Business'));
+  await waitFor(() => expect(screen.getByPlaceholderText('Your business name')).toBeDefined());
+}
+
 describe('CreateListingPage', () => {
   const mockReplace = vi.fn();
   const mockPush = vi.fn();
@@ -183,10 +189,18 @@ describe('CreateListingPage', () => {
     );
   });
 
+  it('starts a new listing as Individual, with the condition control', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+
+    await waitFor(() => expect(screen.getByRole('radiogroup', { name: 'Condition' })).toBeDefined());
+    expect(screen.queryByPlaceholderText('Your business name')).toBeNull();
+  });
+
   it('offers the condition control only for an individual listing', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(CreateListingPage));
-    await waitFor(() => expect(screen.getByPlaceholderText('Your business name')).toBeDefined());
+    await chooseBusiness();
 
     expect(screen.queryByRole('radiogroup', { name: 'Condition' })).toBeNull();
 
@@ -210,7 +224,7 @@ describe('CreateListingPage', () => {
       },
     });
     render(React.createElement(CreateListingPage));
-    await waitFor(() => expect(screen.getAllByText('Create Listing').length).toBe(2));
+    await chooseBusiness();
 
     fireEvent.click(screen.getAllByText('Create Listing')[1]);
 
@@ -223,7 +237,7 @@ describe('CreateListingPage', () => {
   it('checks and saves a website typed without https://', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(CreateListingPage));
-    await waitFor(() => expect(screen.getByPlaceholderText('https://...')).toBeDefined());
+    await chooseBusiness();
 
     fireEvent.change(screen.getByPlaceholderText('https://...'), { target: { value: 'www.mybiz.com' } });
     fireEvent.click(screen.getAllByText('Create Listing')[1]);
@@ -241,7 +255,7 @@ describe('CreateListingPage', () => {
   it("doesn't save the business fields of a listing switched to Individual", async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(CreateListingPage));
-    await waitFor(() => expect(screen.getByPlaceholderText('Your business name')).toBeDefined());
+    await chooseBusiness();
 
     fireEvent.change(screen.getByPlaceholderText('Your business name'), {
       target: { value: 'Himalayan Kitchen' },
@@ -283,9 +297,10 @@ describe('CreateListingPage', () => {
   it('shows business name field when type is business', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(CreateListingPage));
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Your business name')).toBeDefined();
-    });
+
+    await chooseBusiness();
+
+    expect(screen.getByPlaceholderText('Business address')).toBeDefined();
   });
 
   it('renders "Edit Listing" title in edit mode', async () => {

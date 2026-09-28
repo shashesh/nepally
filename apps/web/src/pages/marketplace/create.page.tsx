@@ -48,7 +48,8 @@ export default function CreateListingPage() {
   const [originalPhotoUrls, setOriginalPhotoUrls] = useState<string[]>([]);
 
   // Form state
-  const [listingType, setListingType] = useState<ListingType>('business');
+  // Most community sellers aren't businesses, so a new listing starts as Individual (as on mobile).
+  const [listingType, setListingType] = useState<ListingType>('individual');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -212,7 +213,7 @@ export default function CreateListingPage() {
               aria-label="Listing Type"
               value={listingType}
               onChange={(value) => setListingType(value as ListingType)}
-              data={(['business', 'individual'] as ListingType[]).map((type) => ({
+              data={(['individual', 'business'] as ListingType[]).map((type) => ({
                 value: type,
                 label: LISTING_TYPE_LABELS[type],
               }))}

@@ -24,7 +24,9 @@ import {
 } from '../../components/marketplace/listingPhotos';
 
 const UPLOAD_FAILED = "Couldn't upload your photos. Please try again.";
-const SAVE_FAILED = "Couldn't save your listing. Please try again.";
+// The same words web uses; never the server's own text.
+const CREATE_FAILED = "Couldn't create your listing. Please try again.";
+const UPDATE_FAILED = "Couldn't update your listing. Please try again.";
 
 export interface SubmitListingParams {
   userId: string;
@@ -81,7 +83,10 @@ export async function submitListing(
 
   if (result.error || !result.data) {
     await cleanUpAfterFailedListingWrite(supabase, result.error, uploaded.paths, context);
-    return { ok: false, title: 'Error', message: result.error?.message ?? SAVE_FAILED };
+    const message = params.listingId
+      ? userMessage(result.error, UPDATE_FAILED, 'listing_update_failed', context)
+      : userMessage(result.error, CREATE_FAILED, 'listing_create_failed', context);
+    return { ok: false, title: 'Error', message };
   }
 
   if (params.listingId) {
