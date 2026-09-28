@@ -34,13 +34,13 @@ Each PR is one chunk, run the way PRs 7–10 of the [web UI overhaul](../../arch
 - Then one code-review agent reviews the chunk's whole diff. CRITICAL and HIGH findings are fixed in one `fix: address PR N review` commit. Everything else goes to [Follow-ups](#follow-ups-not-scheduled), **never to new tasks**.
 - Push, open a **draft** PR, and request Copilot's review. The user marks it ready, which starts CI.
 
-| PR  | Branch                                   | Theme                                                            |
-| --- | ---------------------------------------- | ---------------------------------------------------------------- |
-| 1   | `fix/mobile-marketplace-launch-blockers` | Crash, reporting, Promote removal, search focus                  |
-| 1b  | `feat/report-auto-hide-threshold`        | Reports hide a post or listing at 100, not 3 (migration 047)     |
-| 2   | `fix/mobile-marketplace-browse`          | Home, Category and Saved: rows, refetch, errors, location, price |
-| 3   | `fix/mobile-marketplace-create-edit`     | Create and edit form                                             |
-| 4   | `fix/mobile-marketplace-detail`          | Listing detail and My Listings                                   |
+| PR  | Branch                                   | Theme                                                                          |
+| --- | ---------------------------------------- | ------------------------------------------------------------------------------ |
+| 1   | `fix/mobile-marketplace-launch-blockers` | Crash, reporting, Promote removal, search focus (merged #102)                  |
+| 1b  | `feat/report-auto-hide-threshold`        | Reports hide a post or listing at 100, not 3 (migration 047; merged #103)      |
+| 2   | `fix/mobile-marketplace-browse`          | Home, Category and Saved: rows, refetch, errors, location, price (merged #104) |
+| 3   | `fix/mobile-marketplace-create-edit`     | Create and edit form                                                           |
+| 4   | `fix/mobile-marketplace-detail`          | Listing detail and My Listings                                                 |
 
 PR 1 is broken into steps below. PRs 2–4 list their tasks, files and acceptance criteria. Each one gets its step breakdown at the start of that PR, against the code as it is then.
 
@@ -687,7 +687,7 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 ## PR 1b — Report thresholds (migration 047)
 
-**Decided 2026-09-27:** neither posts nor listings hide at 3 reports; both need at least 100. A listing that reaches 100 becomes `removed`. The branch is off `master` and doesn't depend on PR 1's code. Draft: [#103](https://github.com/shashesh/nepally/pull/103).
+**Decided 2026-09-27:** neither posts nor listings hide at 3 reports; both need at least 100. A listing that reaches 100 becomes `removed`. The branch is off `master` and doesn't depend on PR 1's code. Merged: [#103](https://github.com/shashesh/nepally/pull/103).
 
 **Migration `supabase/migrations/047_report_auto_hide_threshold.sql`:**
 
@@ -724,7 +724,7 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
   - `database-schema.md`: the column and the triggers
   - the `roadmap.md` status line
   - the smoke table in `setup-and-testing.md`
-- [ ] **1b.5 Apply.** Apply only on the user's direct request: "apply migration 047 and realign the tracker". Then run `test:security:emergency-post`, `test:security:listing-reports` and `test:security:functions` against staging.
+- [x] **1b.5 Apply.** Applied to staging on 2026-09-28 on the user's request. The three smoke tests pass, plus `listing-counters` and `users-privilege`. The advisors show no new findings. The tracker row (`20260928120850`) still needs realigning to `047`.
 
 ---
 
