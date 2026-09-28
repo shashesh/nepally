@@ -84,7 +84,7 @@ The check runs against staging. Before 048 is applied, it fails because the func
 - Create: `scripts/security/account-deletion-smoke.ts`
 - Modify: `package.json` (the `scripts` block, after `test:security:listing-reports`)
 
-- [ ] **Step 1: Write the check.**
+- [x] **Step 1: Write the check.**
 
 ```ts
 /**
@@ -554,18 +554,18 @@ main().catch((error: unknown) => {
 });
 ```
 
-- [ ] **Step 2: Add the npm script.** In `package.json`, after the `test:security:listing-reports` line:
+- [x] **Step 2: Add the npm script.** In `package.json`, after the `test:security:listing-reports` line:
 
 ```json
     "test:security:account-deletion": "tsx scripts/security/account-deletion-smoke.ts",
 ```
 
-- [ ] **Step 3: Run it and watch it fail.** Export the env first. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` come from `scripts/.env`. `SUPABASE_ANON_KEY` is `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `apps/web/.env.local`.
+- [x] **Step 3: Run it and watch it fail.** Export the env first. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` come from `scripts/.env`. `SUPABASE_ANON_KEY` is `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `apps/web/.env.local`.
 
 Run: `npm run test:security:account-deletion`
 Expected: exit code 1, and `FAIL: amr_signed_in_within (fresh password sign-in) failed: Could not find the function public.amr_signed_in_within…`
 
-- [ ] **Step 4: Format and commit.**
+- [x] **Step 4: Format and commit.**
 
 ```bash
 npx prettier --write scripts/security/account-deletion-smoke.ts
@@ -582,7 +582,7 @@ git commit -m "test: add live check for account deletion requests and hiding"
 
 - Create: `supabase/migrations/048_account_deletion.sql`
 
-- [ ] **Step 1: Write the migration.**
+- [x] **Step 1: Write the migration.**
 
 ```sql
 -- 048_account_deletion.sql
@@ -930,9 +930,9 @@ ALTER POLICY user_follows_select_all ON public.user_follows
   );
 ```
 
-- [ ] **Step 2: Check each policy against its live condition.** Compare every `ALTER POLICY` with its condition under [Verified while planning](#verified-while-planning-2026-09-28). The original condition must survive unchanged, apart from the added visibility clause. The one intended exception: moderators can now see a pending member's active listings. The migration is applied and the check turns green in Task 1.5.
+- [x] **Step 2: Check each policy against its live condition.** Compare every `ALTER POLICY` with its condition under [Verified while planning](#verified-while-planning-2026-09-28). The original condition must survive unchanged, apart from the added visibility clause. The one intended exception: moderators can now see a pending member's active listings. The migration is applied and the check turns green in Task 1.5.
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add supabase/migrations/048_account_deletion.sql
@@ -948,7 +948,7 @@ git commit -m "feat(db): add account deletion requests, restore and hiding (048)
 
 - Modify: `scripts/security/function-execute-smoke.ts:36-57` (the three `RpcCall` lists)
 
-- [ ] **Step 1: Add the new functions to the lists.** `cancel_account_deletion` comes straight after `request_account_deletion`, so the test member ends up active again.
+- [x] **Step 1: Add the new functions to the lists.** `cancel_account_deletion` comes straight after `request_account_deletion`, so the test member ends up active again.
 
 ```ts
 /** RPCs the apps call signed in; anon must be refused, authenticated let through. */
@@ -983,7 +983,7 @@ const INTERNAL_RPCS: RpcCall[] = [
 
 Also update the header comment's numbered list: item 1 names the RPCs anon can't call, item 2 the policy helpers. Add the new names to those sentences.
 
-- [ ] **Step 2: Commit.**
+- [x] **Step 2: Commit.**
 
 ```bash
 npx prettier --write scripts/security/function-execute-smoke.ts
@@ -1002,7 +1002,7 @@ git commit -m "test: cover account deletion functions in the function-execute ch
 - Modify: `docs/guides/setup-and-testing.md`: add `npm run test:security:account-deletion` to the list of security checks
 - Modify: this plan's PR table (mark PR 1 in progress)
 
-- [ ] **Step 1: Write the schema section.**
+- [x] **Step 1: Write the schema section.**
 
 ```markdown
 ### Account deletion (migration 048)
@@ -1017,7 +1017,7 @@ git commit -m "test: cover account deletion functions in the function-execute ch
 
 In the Users table section, add a row or bullet for the column in the same style as its neighbours.
 
-- [ ] **Step 2: Format, check and commit.**
+- [x] **Step 2: Format, check and commit.**
 
 ```bash
 npx prettier --write docs/architecture/database-schema.md docs/guides/setup-and-testing.md docs/plans/active/2026-09-28-account-deletion.md
