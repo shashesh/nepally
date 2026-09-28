@@ -27,6 +27,8 @@ const REPORT_REASONS: ReportReason[] = [
 interface ReportPostSheetProps {
   visible: boolean;
   submitting?: boolean;
+  /** Sheet heading. Defaults to "Report Post". */
+  title?: string;
   onClose: () => void;
   onSubmit: (reason: ReportReason, description?: string) => Promise<void>;
 }
@@ -34,6 +36,7 @@ interface ReportPostSheetProps {
 export function ReportPostSheet({
   visible,
   submitting = false,
+  title = 'Report Post',
   onClose,
   onSubmit,
 }: ReportPostSheetProps) {
@@ -87,7 +90,7 @@ export function ReportPostSheet({
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.title}>Report Post</Text>
+          <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>Choose a reason so moderators can review this quickly.</Text>
 
           <View style={styles.reasonList}>

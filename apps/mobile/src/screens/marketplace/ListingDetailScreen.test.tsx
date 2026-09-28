@@ -1,7 +1,8 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
+  createReport,
   getListingById,
   getUserSavedListingIds,
   incrementListingViews,
@@ -58,6 +59,8 @@ jest.mock('@nepally/shared', () => ({
   incrementListingViews: jest.fn(async () => {}),
   incrementListingContacts: jest.fn(async () => {}),
   getOrCreateConversation: jest.fn(async () => ({ data: null })),
+  createReport: jest.fn(async () => ({ data: { id: 'report-1' } })),
+  TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
   LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
   ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
   BUSINESS_HOURS_DAYS: [
@@ -250,6 +253,18 @@ describe('ListingDetailScreen', () => {
     });
   });
 
+  it('does not offer Promote to the owner', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit Listing')).toBeTruthy();
+    });
+    expect(screen.queryByText('Promote')).toBeNull();
+    expect(screen.queryByText('Promoted')).toBeNull();
+  });
+
   it('does not show Edit button for non-owner', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
@@ -281,6 +296,83 @@ describe('ListingDetailScreen', () => {
     alertSpy.mockRestore();
   });
 
+  it('files a listing report through createReport', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Report listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Report listing'));
+    expect(screen.getByText('Report Listing')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Reason Scam'));
+    fireEvent.press(screen.getByText('Submit Report'));
+
+    await waitFor(() => {
+      expect(createReport).toHaveBeenCalledWith(expect.anything(), {
+        reported_by: 'user-1',
+        target_type: 'listing',
+        target_id: 'listing-1',
+        reason: 'Scam',
+        description: undefined,
+      });
+    });
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Listing Reported',
+        'Thank you. Our moderation team will review this listing.'
+      );
+    });
+    alertSpy.mockRestore();
+  });
+
+  it('keeps the sheet open and shows the error when the report fails', async () => {
+    (createReport as jest.Mock).mockResolvedValueOnce({ error: new Error('You already reported this.') });
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Report listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Report listing'));
+    fireEvent.press(screen.getByLabelText('Reason Spam'));
+    fireEvent.press(screen.getByText('Submit Report'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith('Error', 'You already reported this.');
+    });
+    expect(screen.getByText('Report Listing')).toBeTruthy();
+    alertSpy.mockRestore();
+  });
+
+  it('asks an unverified member to verify instead of opening the sheet', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1', full_name: 'New User', trust_level: 0, metro_area_id: 'metro-1' },
+    });
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Report listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Report listing'));
+
+    expect(alertSpy).toHaveBeenCalledWith('Verify to Report', 'Please verify your account to report listings.');
+    expect(screen.queryByText('Report Listing')).toBeNull();
+    alertSpy.mockRestore();
+  });
+
+  it('does not offer the report button to the owner', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit Listing')).toBeTruthy();
+    });
+    expect(screen.queryByLabelText('Report listing')).toBeNull();
+  });
+
   // -- No user ---------------------------------------------------------------
 
   it('renders without crashing when user is null', async () => {
@@ -289,6 +381,22 @@ describe('ListingDetailScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
     });
+  });
+
+  it('asks a signed-out visitor to sign in instead of opening the report sheet', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Report listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Report listing'));
+
+    expect(alertSpy).toHaveBeenCalledWith('Sign In Required', 'Please sign in to report listings.');
+    expect(screen.queryByText('Report Listing')).toBeNull();
+    expect(createReport).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
   });
 
   // -- Individual listing type -----------------------------------------------

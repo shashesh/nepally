@@ -93,7 +93,6 @@ export type MarketplaceStackParamList = {
   ListingDetail: { listingId: string };
   CreateListing: { editListingId?: string } | undefined;
   MyListings: undefined;
-  PromoteListing: { listingId: string };
   // New in 2026-04-14 redesign:
   BrowseCategories: undefined;
   MarketplaceRules: undefined;

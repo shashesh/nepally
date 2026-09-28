@@ -4,7 +4,8 @@
  */
 import type { UserSummary } from './user';
 
-export type ReportTargetType = 'post' | 'user' | 'message';
+/** `listing` joined the DB enum in migration 014. */
+export type ReportTargetType = 'post' | 'user' | 'message' | 'listing';
 
 export type ReportStatus = 'pending' | 'reviewed' | 'dismissed' | 'actioned';
 

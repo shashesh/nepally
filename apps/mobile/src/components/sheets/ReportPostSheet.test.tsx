@@ -8,6 +8,18 @@ jest.mock('@expo/vector-icons', () => ({
 }));
 
 describe('ReportPostSheet', () => {
+  it('shows a custom title', () => {
+    const screen = render(
+      <ReportPostSheet
+        visible
+        title="Report Listing"
+        onClose={jest.fn()}
+        onSubmit={jest.fn().mockResolvedValue(undefined)}
+      />
+    );
+    expect(screen.getByText('Report Listing')).toBeTruthy();
+  });
+
   it('calls onClose when cancel is pressed', () => {
     const onClose = jest.fn();
     const screen = render(

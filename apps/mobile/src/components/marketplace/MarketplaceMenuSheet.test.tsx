@@ -16,13 +16,13 @@ describe('MarketplaceMenuSheet', () => {
     expect(screen.queryByText('My Listings')).toBeNull();
   });
 
-  it('renders all six rows when visible', () => {
+  it('renders the five rows when visible, with no Promote entry', () => {
     const screen = render(
       <MarketplaceMenuSheet visible={true} onClose={() => {}} onSelect={() => {}} />
     );
     expect(screen.getByText('My Listings')).toBeTruthy();
     expect(screen.getByText('Saved')).toBeTruthy();
-    expect(screen.getByText('Promote a Listing')).toBeTruthy();
+    expect(screen.queryByText('Promote a Listing')).toBeNull();
     expect(screen.getByText('Browse Categories')).toBeTruthy();
     expect(screen.getByText('Change Location')).toBeTruthy();
     expect(screen.getByText('Marketplace Rules')).toBeTruthy();

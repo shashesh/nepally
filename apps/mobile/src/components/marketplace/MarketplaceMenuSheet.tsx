@@ -9,7 +9,6 @@ import { warmBorder, warmRadius, warmSurface } from '../../styles/warmTokens';
 export type MarketplaceMenuKey =
   | 'my-listings'
   | 'saved'
-  | 'promote'
   | 'browse-categories'
   | 'change-location'
   | 'rules';
@@ -29,7 +28,6 @@ interface Row {
 const ROWS: Row[] = [
   { key: 'my-listings', icon: 'pricetag-outline', label: 'My Listings' },
   { key: 'saved', icon: 'heart-outline', label: 'Saved' },
-  { key: 'promote', icon: 'star-outline', label: 'Promote a Listing' },
   { key: 'browse-categories', icon: 'grid-outline', label: 'Browse Categories' },
   { key: 'change-location', icon: 'location-outline', label: 'Change Location' },
   { key: 'rules', icon: 'book-outline', label: 'Marketplace Rules' },

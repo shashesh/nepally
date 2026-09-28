@@ -104,6 +104,10 @@ Category colour comes from the `--category-<slug>` design tokens, for the five c
 
 **Promoting a listing (web).** `/marketplace/listing/promote/<id>` runs three steps — type, duration, review and pay — then hands off to Stripe Checkout. Before the first step it refuses, with the reason, a listing the member does not own, an inactive listing, and a member below Trust Level 1. The `create-promotion-checkout` edge function is the authority on all three: it refuses another member's listing (403), a listing that is not active (409) and a member below Level 1 (403). The wizard checks first so a member is not walked through three steps to be refused, and checks the listing again when the member presses Pay, so one deactivated or deleted in another tab meanwhile gets the refusal screen rather than a bare checkout error. Pay stays busy once checkout has a URL, so a second click cannot open a second checkout session. `/marketplace/listing/promote/success` then polls the promotion until it goes active.
 
+**Promoting a listing (mobile).** Not offered in the app for v1.0. Promotions are bought on the web (Apple 3.1.1), and promoted and sponsored listings still show in the app.
+
+**Reporting a listing (mobile).** The flag on a listing opens the report sheet (reason plus optional details) and files a `listing` report that moderators see in the queue. Owners don't see the flag, and members below Trust Level 1 are asked to verify first, because the reports policy requires Level 1.
+
 ### Profile Integration
 
 Both mobile and web profile pages include a "Listings" tab showing the user's marketplace listings alongside their posts and saved posts.

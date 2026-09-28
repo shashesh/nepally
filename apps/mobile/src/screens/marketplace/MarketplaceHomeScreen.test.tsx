@@ -1,5 +1,6 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { FlatList } from 'react-native';
 import MarketplaceHomeScreen from './MarketplaceHomeScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -51,9 +52,31 @@ jest.mock('../../components/marketplace/ListingGridCardSkeleton', () => ({
   ListingGridCardSkeleton: () => null,
 }));
 
-jest.mock('../../components/marketplace/MarketplaceSearchBar', () => ({
-  MarketplaceSearchBar: () => null,
-}));
+// Counts mounts so a test can prove the header isn't remounted on each keystroke
+// (a remount drops the input's focus and closes the keyboard).
+let mockSearchBarMounts = 0;
+jest.mock('../../components/marketplace/MarketplaceSearchBar', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { TextInput } = jest.requireActual('react-native');
+  return {
+    MarketplaceSearchBar: ({
+      value,
+      onChangeText,
+    }: {
+      value: string;
+      onChangeText: (text: string) => void;
+    }) => {
+      ReactLocal.useEffect(() => {
+        mockSearchBarMounts += 1;
+      }, []);
+      return ReactLocal.createElement(TextInput, {
+        accessibilityLabel: 'Search marketplace',
+        value,
+        onChangeText,
+      });
+    },
+  };
+});
 
 jest.mock('../../components/marketplace/CategoryTileRow', () => ({
   CategoryTileRow: () => null,
@@ -90,7 +113,6 @@ jest.mock('../../components/marketplace/MarketplaceMenuSheet', () => {
   const ROWS: { key: string; label: string }[] = [
     { key: 'my-listings', label: 'My Listings' },
     { key: 'saved', label: 'Saved' },
-    { key: 'promote', label: 'Promote a Listing' },
     { key: 'browse-categories', label: 'Browse Categories' },
     { key: 'change-location', label: 'Change Location' },
     { key: 'rules', label: 'Marketplace Rules' },
@@ -213,6 +235,24 @@ describe('MarketplaceHomeScreen (redesign)', () => {
     fireEvent.press(screen.getByLabelText('Open marketplace menu'));
     fireEvent.press(screen.getByText('My Listings'));
     expect(mockNavigate).toHaveBeenCalledWith('MyListings');
+  });
+
+  it('keeps the same search input mounted while the member types', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Warm winter jacket')).toBeTruthy();
+    });
+    const mountsBefore = mockSearchBarMounts;
+
+    fireEvent.changeText(screen.getByLabelText('Search marketplace'), 'j');
+    fireEvent.changeText(screen.getByLabelText('Search marketplace'), 'ja');
+
+    expect(mockSearchBarMounts).toBe(mountsBefore);
+  });
+
+  it('lets a tap land on the list while the keyboard is open', () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    expect(screen.UNSAFE_getByType(FlatList).props.keyboardShouldPersistTaps).toBe('handled');
   });
 
   it('routes the header heart directly to SavedListings', async () => {

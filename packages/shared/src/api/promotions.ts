@@ -16,8 +16,10 @@ import type { CreatePromotionInput } from '../validation/promotion';
 
 // Embeds are hinted by the FK column (listing_id) because PostgREST cannot
 // look up base-table FK constraint names when selecting from a view.
+// `!inner` makes the `listing.*` filters drop the promotion row itself; without
+// it PostgREST returns every metro's promotions with `listing: null`.
 const LISTING_SELECT_FOR_SPONSORED = `
-  listing:marketplace_listings!listing_id (
+  listing:marketplace_listings!listing_id!inner (
     id, title, description, photos, price, category_id, listing_type,
     business_name, views_count, saves_count, contacts_count,
     trending_score, status, metro_area_id, refreshed_at, created_at,
@@ -29,6 +31,19 @@ const LISTING_SELECT_FOR_SPONSORED = `
     )
   )
 `;
+
+type SponsoredRow = Omit<SponsoredListing, 'listing'> & {
+  listing: SponsoredListing['listing'] | null;
+};
+
+/**
+ * The `!inner` embed already makes the database drop promotions whose listing
+ * fails the metro or status filter. This guards the UI if one slips through
+ * anyway: a card with a null listing crashes on render.
+ */
+function withListing(rows: unknown[] | null): SponsoredListing[] {
+  return ((rows ?? []) as SponsoredRow[]).filter((row): row is SponsoredListing => row.listing != null);
+}
 
 // ─── Read ───────────────────────────────────────────────────────────────────
 
@@ -119,7 +134,7 @@ export async function getSponsoredFeedListings(
       .limit(limit);
 
     if (error) throw error;
-    return { data: (data ?? []) as unknown as SponsoredListing[] };
+    return { data: withListing(data) };
   } catch (error) {
     return { error: toApiError(error, 'Failed to fetch sponsored feed listings') };
   }
@@ -146,7 +161,7 @@ export async function getStickyBusinessListings(
       .limit(limit);
 
     if (error) throw error;
-    return { data: (data ?? []) as unknown as SponsoredListing[] };
+    return { data: withListing(data) };
   } catch (error) {
     return { error: toApiError(error, 'Failed to fetch sticky business listings') };
   }

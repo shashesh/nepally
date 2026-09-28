@@ -23,14 +23,16 @@ import {
   incrementListingViews,
   incrementListingContacts,
   getOrCreateConversation,
-  getActivePromotionForListing,
   getListingHighlights,
   getDaysSinceRefresh,
+  createReport,
+  TrustLevel,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   BUSINESS_HOURS_DAYS,
   type MarketplaceListing,
 } from '@nepally/shared';
+import { ReportPostSheet } from '../../components/sheets/ReportPostSheet';
 import { useAuth } from '../../hooks/useAuth';
 import { useNow } from '../../hooks/useNow';
 import { supabase } from '../../config/supabase';
@@ -57,7 +59,8 @@ export default function ListingDetailScreen() {
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [hasActivePromotion, setHasActivePromotion] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const now = useNow();
 
   useEffect(() => {
@@ -77,15 +80,6 @@ export default function ListingDetailScreen() {
         if (listingResult.data) {
           setListing(listingResult.data);
           void incrementListingViews(supabase, listingId);
-
-          // Check for active promotion (non-blocking)
-          if (listingResult.data.owner_id === userId) {
-            getActivePromotionForListing(supabase, listingId).then((promoResult) => {
-              if (!cancelled && promoResult.data) {
-                setHasActivePromotion(true);
-              }
-            });
-          }
         }
 
         if (savedResult.data) {
@@ -140,22 +134,43 @@ export default function ListingDetailScreen() {
   }, [listing, listingId, navigation, user]);
 
   const handleReport = useCallback(() => {
-    Alert.alert(
-      'Report Listing',
-      'Are you sure you want to report this listing?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Report',
-          style: 'destructive',
-          onPress: () => {
-            // Uses existing report system
-            Alert.alert('Reported', 'Thank you for reporting. We will review this listing.');
-          },
-        },
-      ]
-    );
-  }, []);
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in to report listings.');
+      return;
+    }
+    // The reports INSERT policy requires Level 1; say so instead of surfacing an RLS failure.
+    if ((user.trust_level ?? 0) < TrustLevel.VERIFIED) {
+      Alert.alert('Verify to Report', 'Please verify your account to report listings.');
+      return;
+    }
+    setReportOpen(true);
+  }, [user]);
+
+  const handleReportClose = useCallback(() => {
+    if (!reportSubmitting) setReportOpen(false);
+  }, [reportSubmitting]);
+
+  const handleReportSubmit = useCallback(
+    async (reason: string, description?: string) => {
+      if (!user) return;
+      setReportSubmitting(true);
+      const result = await createReport(supabase, {
+        reported_by: user.id,
+        target_type: 'listing',
+        target_id: listingId,
+        reason,
+        description,
+      });
+      setReportSubmitting(false);
+      if (result.error) {
+        Alert.alert('Error', result.error.message || 'Failed to report listing. Please try again.');
+        return;
+      }
+      setReportOpen(false);
+      Alert.alert('Listing Reported', 'Thank you. Our moderation team will review this listing.');
+    },
+    [listingId, user]
+  );
 
   if (loading) {
     return (
@@ -191,13 +206,23 @@ export default function ListingDetailScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityLabel="Go back"
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={handleReport} style={styles.headerButton}>
-            <Ionicons name="flag-outline" size={22} color={colors.text.secondary} />
-          </TouchableOpacity>
+          {!isOwner && (
+            <TouchableOpacity
+              onPress={handleReport}
+              style={styles.headerButton}
+              accessibilityLabel="Report listing"
+            >
+              <Ionicons name="flag-outline" size={22} color={colors.text.secondary} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -413,22 +438,16 @@ export default function ListingDetailScreen() {
             <Ionicons name="create-outline" size={20} color={colors.primary.main} />
             <Text style={styles.editButtonText}>Edit Listing</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.editButton, hasActivePromotion && styles.disabledButton]}
-            onPress={() => navigation.navigate('PromoteListing', { listingId: listing.id })}
-            disabled={hasActivePromotion}
-          >
-            <Ionicons
-              name="megaphone-outline"
-              size={20}
-              color={hasActivePromotion ? colors.text.disabled : '#FF9800'}
-            />
-            <Text style={[styles.editButtonText, hasActivePromotion && styles.disabledButtonText]}>
-              {hasActivePromotion ? 'Promoted' : 'Promote'}
-            </Text>
-          </TouchableOpacity>
         </View>
       )}
+
+      <ReportPostSheet
+        visible={reportOpen}
+        submitting={reportSubmitting}
+        title="Report Listing"
+        onClose={handleReportClose}
+        onSubmit={handleReportSubmit}
+      />
     </SafeAreaView>
   );
 }
@@ -679,12 +698,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary.main,
     fontWeight: '600',
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  disabledButtonText: {
-    color: colors.text.disabled,
   },
   breadcrumb: {
     flexDirection: 'row',

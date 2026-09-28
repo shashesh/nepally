@@ -53,6 +53,26 @@ describe('createReport', () => {
     );
   });
 
+  it('creates a listing report', async () => {
+    const query = {
+      insert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: { id: 'report-2' }, error: null }),
+    };
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    const result = await createReport(supabase, {
+      ...BASE_REPORT_INPUT,
+      target_type: 'listing',
+      target_id: 'listing-1',
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(query.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ target_type: 'listing', target_id: 'listing-1' })
+    );
+  });
+
   it('normalizes empty description to null', async () => {
     const row = {
       id: 'report-2',

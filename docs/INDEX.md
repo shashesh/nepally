@@ -61,6 +61,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
 - [plans/active/2026-09-18-production-launch.md](plans/active/2026-09-18-production-launch.md) — 12-week production launch (public launch Dec 1, 2026): prod environment, store compliance, monitoring, support operations, six launch markets, week-by-week tracker
+- [plans/active/2026-09-27-mobile-marketplace-fixes.md](plans/active/2026-09-27-mobile-marketplace-fixes.md) — fixes from the 2026-09-27 mobile marketplace audit: launch blockers (sponsored-listing crash, listing reports, Promote removal, search focus), then browsing, create/edit, and detail/My Listings
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 

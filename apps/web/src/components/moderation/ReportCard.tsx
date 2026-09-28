@@ -35,6 +35,13 @@ function ReportTarget({ report, post }: { report: ReportWithUsers; post: Post | 
       </Anchor>
     );
   }
+  if (report.target_type === 'listing') {
+    return (
+      <Anchor component={Link} href={`/marketplace/listing/${report.target_id}`} className={styles.targetLink}>
+        View listing
+      </Anchor>
+    );
+  }
   return (
     <Text className={styles.meta}>Chat message report. Message content is private; follow up with the reporter.</Text>
   );

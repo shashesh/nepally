@@ -221,7 +221,7 @@ See [Monitoring](#monitoring) for the full spec.
   - Confirm identity again before deleting the account or changing email or password: the password for email accounts, an emailed code through `supabase.auth.reauthenticate()` for Google and Apple accounts.
   - After a password change, sign out every other device (`signOut({ scope: 'others' })`).
   - A **Sign out of all devices** option in Settings (`signOut({ scope: 'global' })`) for a lost or stolen phone.
-- [ ] **Code:** Remove every mobile Promote entry point and unregister the `PromoteListing` route. Promoted and sponsored items keep displaying. The entry points are:
+- [x] **Code:** Remove every mobile Promote entry point and unregister the `PromoteListing` route. Promoted and sponsored items keep displaying. The entry points are:
   - the `promote` action in `MarketplaceHomeScreen`'s menu
   - the Promote button in `ListingDetailScreen`
   - the Promote action in `MyListingsScreen`
@@ -274,7 +274,7 @@ See [Monitoring](#monitoring) for the full spec.
 ### W8 — Beta wave 2 and App Store submission (Nov 9–15)
 
 - [ ] **You:** Open the beta to the other four markets.
-- [ ] **You:** **Submit iOS 1.0 to App Review by Nov 13.** That leaves room for two rejection rounds before Dec 1. Give App Review a test account and notes covering reporting, blocking, moderation and account deletion (guideline 1.2 for user-generated content).
+- [ ] **You:** **Submit iOS 1.0 to App Review by Nov 13.** That leaves room for two rejection rounds before Dec 1. Give App Review a test account and notes covering reporting, blocking, moderation and account deletion (guideline 1.2 for user-generated content). The test account must be verified (Trust Level 1): Level 0 members can't report, by decision on 2026-09-27.
 - [ ] **You:** Final legal text from the lawyer is live on the site.
 
 ### W9 — Hardening and drills (Nov 16–22)
