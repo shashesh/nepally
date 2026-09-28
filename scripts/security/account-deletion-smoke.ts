@@ -125,7 +125,7 @@ async function borrow(
   if (error || !data) {
     throw new Error(`Failed to borrow a ${table} row: ${error?.message || 'none on this project'}`);
   }
-  return data as Record<string, unknown>;
+  return data as unknown as Record<string, unknown>;
 }
 
 async function insertRow(
