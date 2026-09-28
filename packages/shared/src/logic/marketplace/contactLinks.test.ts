@@ -65,7 +65,7 @@ describe('toMapsUrls', () => {
   });
 
   it('encodes characters that would break the query', () => {
-    expect(toMapsUrls('Suite #4 & 5').google).toBe(
+    expect(toMapsUrls('Suite #4 & 5')?.google).toBe(
       'https://www.google.com/maps/search/?api=1&query=Suite%20%234%20%26%205'
     );
   });
