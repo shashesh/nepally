@@ -32,7 +32,10 @@ export async function cleanUpListingPhotos(
 }
 
 /** Storage paths of the listing's original photos that an edit no longer keeps. */
-export function droppedListingPhotoPaths(originalUrls: string[], keptUrls: string[]): string[] {
+export function droppedListingPhotoPaths(
+  originalUrls: readonly string[],
+  keptUrls: readonly string[]
+): string[] {
   const kept = new Set(keptUrls);
   return originalUrls
     .filter((url) => !kept.has(url))

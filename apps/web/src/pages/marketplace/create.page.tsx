@@ -17,6 +17,8 @@ import {
   createListingSchema,
   buildListingFormInput,
   listingFieldErrors,
+  cleanUpListingPhotos,
+  droppedListingPhotoPaths,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   ALLOWED_LISTING_PHOTO_MIME_TYPES,
@@ -41,6 +43,8 @@ export default function CreateListingPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [photos, setPhotos] = useState<UploaderPhoto[]>([]);
+  // The listing's photo URLs as loaded, so an edit can delete the ones dropped.
+  const [originalPhotoUrls, setOriginalPhotoUrls] = useState<string[]>([]);
 
   // Form state
   const [listingType, setListingType] = useState<ListingType>('business');
@@ -82,6 +86,7 @@ export default function CreateListingPage() {
           setWebsiteUrl(l.website_url ?? '');
           setItemCondition(l.item_condition ?? undefined);
           setPhotos((l.photos ?? []).map((url: string) => ({ kind: 'stored' as const, url })));
+          setOriginalPhotoUrls(l.photos ?? []);
         }
         setLoading(false);
       }
@@ -137,8 +142,10 @@ export default function CreateListingPage() {
       const payload = { ...formData, photos: uploaded.urls };
 
       if (isEditing && editId) {
+        const context = { platform: 'web', userId: user.id, listingId: editId };
         const result = await updateListing(supabase, editId, payload);
         if (result.error) {
+          await cleanUpListingPhotos(supabase, uploaded.paths, context);
           notify.error(
             userMessage(result.error, "Couldn't update your listing. Please try again.", 'listing_update_failed', {
               platform: 'web',
@@ -146,6 +153,8 @@ export default function CreateListingPage() {
             })
           );
         } else {
+          // Only now is it safe to let go of the photos the member removed.
+          await cleanUpListingPhotos(supabase, droppedListingPhotoPaths(originalPhotoUrls, uploaded.urls), context);
           router.push('/marketplace/my-listings');
         }
       } else {
@@ -155,6 +164,7 @@ export default function CreateListingPage() {
           metro_area_id: user.metro_area_id,
         });
         if (result.error) {
+          await cleanUpListingPhotos(supabase, uploaded.paths, { platform: 'web', userId: user.id });
           notify.error(
             userMessage(result.error, "Couldn't create your listing. Please try again.", 'listing_create_failed', {
               platform: 'web',
@@ -171,7 +181,7 @@ export default function CreateListingPage() {
     [
       user, listingType, title, description, categoryId, price,
       businessName, address, phone, email, websiteUrl, itemCondition,
-      photos, isEditing, editId, router,
+      photos, originalPhotoUrls, isEditing, editId, router,
     ]
   );
 

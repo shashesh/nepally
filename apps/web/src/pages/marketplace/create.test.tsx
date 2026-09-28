@@ -76,6 +76,8 @@ vi.mock('@nepally/shared', async () => {
     userMessage: actual.userMessage,
     buildListingFormInput: actual.buildListingFormInput,
     listingFieldErrors: actual.listingFieldErrors,
+    droppedListingPhotoPaths: actual.droppedListingPhotoPaths,
+    cleanUpListingPhotos: vi.fn(async () => {}),
     logClientEvent: vi.fn(),
     getCategories: vi.fn(async () => ({ data: [] })),
     getListingById: vi.fn(async () => ({ data: null })),
@@ -94,6 +96,7 @@ vi.mock('@nepally/shared', async () => {
 });
 
 import CreateListingPage from './create.page';
+import { cleanUpListingPhotos } from '@nepally/shared';
 
 const mockGetCategories = getCategories as ReturnType<typeof vi.fn>;
 const mockCreateListing = createListing as ReturnType<typeof vi.fn>;
@@ -364,6 +367,65 @@ describe('CreateListingPage', () => {
       );
       expectNoRawText();
       expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('deletes the photos it just uploaded when the create fails', async () => {
+      mocks.useAuth.mockReturnValue({ user: signedIn });
+      mockUploadPhotosInOrder.mockResolvedValue({ urls: ['u/a'], paths: ['p/a'] });
+      mockCreateListing.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+
+      await submit();
+
+      await waitFor(() =>
+        expect(cleanUpListingPhotos).toHaveBeenCalledWith(expect.anything(), ['p/a'], expect.any(Object))
+      );
+    });
+
+    describe('editing photos', () => {
+      const PUBLIC = 'https://abc.supabase.co/storage/v1/object/public/listing-photos';
+      const KEPT = `${PUBLIC}/u1/kept.jpg`;
+      const DROPPED = `${PUBLIC}/u1/dropped.jpg`;
+
+      function renderEdit() {
+        mocks.useAuth.mockReturnValue({ user: signedIn });
+        mocks.useRouter.mockReturnValue({ replace: mockReplace, push: mockPush, query: { edit: 'listing-1' } });
+        mockGetListingById.mockResolvedValueOnce({
+          data: {
+            id: 'listing-1',
+            listing_type: 'individual',
+            title: 'Rice cooker',
+            description: 'Barely used rice cooker',
+            category_id: 'cat-1',
+            photos: [KEPT, DROPPED],
+          },
+        });
+        // The member removed DROPPED and added one new photo.
+        mockUploadPhotosInOrder.mockResolvedValue({ urls: [KEPT, 'u/new'], paths: ['p/new'] });
+        render(React.createElement(CreateListingPage));
+      }
+
+      it('deletes the photos dropped from a listing once the edit saves', async () => {
+        renderEdit();
+        fireEvent.click(await screen.findByText('Update Listing'));
+
+        await waitFor(() => expect(mockPush).toHaveBeenCalled());
+        expect(cleanUpListingPhotos).toHaveBeenCalledTimes(1);
+        expect(cleanUpListingPhotos).toHaveBeenCalledWith(
+          expect.anything(),
+          ['u1/dropped.jpg'],
+          expect.objectContaining({ listingId: 'listing-1' })
+        );
+      });
+
+      it('keeps the original photos and deletes the new ones when the edit fails', async () => {
+        mockUpdateListing.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+        renderEdit();
+        fireEvent.click(await screen.findByText('Update Listing'));
+
+        await waitFor(() => expect(cleanUpListingPhotos).toHaveBeenCalled());
+        expect(cleanUpListingPhotos).toHaveBeenCalledTimes(1);
+        expect(cleanUpListingPhotos).toHaveBeenCalledWith(expect.anything(), ['p/new'], expect.any(Object));
+      });
     });
 
     it('goes to the marketplace when the listing saves', async () => {

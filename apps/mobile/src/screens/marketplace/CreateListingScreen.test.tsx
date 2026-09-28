@@ -1,7 +1,17 @@
 import React from 'react';
 import { AccessibilityInfo, Alert, ScrollView, TextInput } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { createListing, getCategories, getListingById, updateListing } from '@nepally/shared';
+import {
+  cleanUpListingPhotos,
+  createListing,
+  getCategories,
+  getListingById,
+  updateListing,
+  uploadListingPhotos,
+} from '@nepally/shared';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { File } from 'expo-file-system';
 import CreateListingScreen from './CreateListingScreen';
 
 // ---------------------------------------------------------------------------
@@ -23,8 +33,10 @@ jest.mock('react-native-safe-area-context', () => {
 });
 
 jest.mock('expo-image-picker', () => ({
-  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ granted: true })),
-  launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: [] })),
+  requestMediaLibraryPermissionsAsync: jest.fn(),
+  requestCameraPermissionsAsync: jest.fn(),
+  launchImageLibraryAsync: jest.fn(),
+  launchCameraAsync: jest.fn(),
 }));
 
 jest.mock('expo-image-manipulator', () => ({
@@ -79,7 +91,21 @@ jest.mock('@nepally/shared', () => ({
   createListing: jest.fn(async () => ({ data: { id: 'new-1' } })),
   updateListing: jest.fn(async () => ({ data: { id: 'edit-1' } })),
   uploadListingPhotos: jest.fn(async () => ({ urls: [], paths: [] })),
+  cleanUpListingPhotos: jest.fn(async () => {}),
 }));
+
+const mockLaunchLibrary = ImagePicker.launchImageLibraryAsync as jest.Mock;
+const mockLaunchCamera = ImagePicker.launchCameraAsync as jest.Mock;
+const mockRequestCamera = ImagePicker.requestCameraPermissionsAsync as jest.Mock;
+const mockManipulate = ImageManipulator.manipulateAsync as jest.Mock;
+const mockUpload = uploadListingPhotos as jest.Mock;
+const mockCleanUp = cleanUpListingPhotos as jest.Mock;
+
+/** Picker assets; each processes to file:///small-<name>, holding SIZES[name] bytes. */
+function assets(...names: string[]) {
+  return { canceled: false, assets: names.map((name) => ({ uri: 'file:///' + name })) };
+}
+const SIZES: Record<string, number> = { a: 10, b: 20, c: 30 };
 
 const mockGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
@@ -205,6 +231,19 @@ describe('CreateListingScreen', () => {
     mockCreateListing.mockResolvedValue({ data: { id: 'new-1' } } as never);
     mockUpdateListing.mockResolvedValue({ data: { id: 'edit-1' } } as never);
     mockUseLocation.mockReturnValue(NO_ACTIVE_LOCATION);
+    mockLaunchLibrary.mockResolvedValue({ canceled: true, assets: [] });
+    mockLaunchCamera.mockResolvedValue({ canceled: true, assets: [] });
+    mockRequestCamera.mockResolvedValue({ granted: true });
+    mockManipulate.mockImplementation(async (uri: string) => ({
+      uri: uri.replace('file:///', 'file:///small-'),
+    }));
+    (File as unknown as jest.Mock).mockImplementation((uri: string) => ({
+      arrayBuffer: async () => new ArrayBuffer(SIZES[uri.replace('file:///small-', '')] ?? 8),
+    }));
+    mockUpload.mockImplementation(async (_client: unknown, inputs: { size_bytes: number }[]) => ({
+      urls: inputs.map((input) => 'https://cdn/listing-photos/user-1/' + input.size_bytes + '.jpg'),
+      paths: inputs.map((input) => 'user-1/' + input.size_bytes + '.jpg'),
+    }));
   });
 
   // -- Rendering ----------------------------------------------------------------
@@ -225,6 +264,110 @@ describe('CreateListingScreen', () => {
   it('shows photo counter', async () => {
     const screen = await renderForm();
     expect(screen.getByText('0/5 photos added')).toBeTruthy();
+  });
+
+  // -- Photos ----------------------------------------------------------------------
+
+  async function addFromLibrary(screen: Screen, ...names: string[]) {
+    mockLaunchLibrary.mockResolvedValueOnce(assets(...names));
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Add photos' }));
+    });
+  }
+
+  it('adds photos from the library without asking for photo access', async () => {
+    const screen = await renderForm();
+    await addFromLibrary(screen, 'a', 'b');
+
+    expect(screen.getByText('2/5 photos added')).toBeTruthy();
+    expect(ImagePicker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+    expect(mockLaunchLibrary).toHaveBeenCalledWith(expect.objectContaining({ selectionLimit: 5 }));
+  });
+
+  it('takes a photo with the camera once camera access is given', async () => {
+    const screen = await renderForm();
+    mockLaunchCamera.mockResolvedValueOnce(assets('c'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Take photo' }));
+    });
+
+    expect(mockRequestCamera).toHaveBeenCalled();
+    expect(screen.getByText('1/5 photos added')).toBeTruthy();
+  });
+
+  it('explains how to allow the camera when access is refused', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    mockRequestCamera.mockResolvedValueOnce({ granted: false });
+    const screen = await renderForm();
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Take photo' }));
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Camera access needed',
+      expect.any(String),
+      expect.any(Array)
+    );
+    expect(mockLaunchCamera).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it("says how many photos couldn't be added", async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    mockManipulate.mockImplementation(async (uri: string) => {
+      if (uri.endsWith('b')) throw new Error('corrupt');
+      return { uri: uri.replace('file:///', 'file:///small-') };
+    });
+    const screen = await renderForm();
+
+    await addFromLibrary(screen, 'a', 'b');
+
+    expect(screen.getByText('1/5 photos added')).toBeTruthy();
+    expect(alertSpy).toHaveBeenCalledWith("1 photo couldn't be added", expect.any(String));
+    alertSpy.mockRestore();
+  });
+
+  it('removes a photo', async () => {
+    const screen = await renderForm();
+    await addFromLibrary(screen, 'a', 'b');
+
+    fireEvent.press(screen.getByRole('button', { name: 'Remove photo 1' }));
+
+    expect(screen.getByText('1/5 photos added')).toBeTruthy();
+  });
+
+  it('makes a photo the cover and saves the photos in that order', async () => {
+    const screen = await renderForm();
+    await addFromLibrary(screen, 'a', 'b');
+    expect(screen.getByText('Cover')).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Make photo 2 the cover' }));
+    fillValidForm(screen);
+    await submit(screen);
+
+    const inputs = mockUpload.mock.calls[0][1] as { size_bytes: number }[];
+    expect(inputs.map((input) => input.size_bytes)).toEqual([20, 10]);
+    expect(lastCreatePayload().photos).toEqual([
+      'https://cdn/listing-photos/user-1/20.jpg',
+      'https://cdn/listing-photos/user-1/10.jpg',
+    ]);
+  });
+
+  it('deletes the photos it just uploaded when the save fails', async () => {
+    mockCreateListing.mockResolvedValue({ error: { message: 'Server error' } } as never);
+    const screen = await renderForm();
+    await addFromLibrary(screen, 'a');
+    fillValidForm(screen);
+
+    await submit(screen);
+
+    expect(mockCleanUp).toHaveBeenCalledWith(
+      expect.anything(),
+      ['user-1/10.jpg'],
+      expect.any(Object)
+    );
   });
 
   // -- Listing type --------------------------------------------------------------
@@ -557,6 +700,53 @@ describe('CreateListingScreen', () => {
       expect.objectContaining({ title: 'Everest Kitchen', business_name: 'Himalayan Kitchen LLC' })
     );
     await waitFor(() => expect(mockGoBack).toHaveBeenCalled());
+  });
+
+  describe('editing photos', () => {
+    const PUBLIC = 'https://abc.supabase.co/storage/v1/object/public/listing-photos';
+    const OLD_A = PUBLIC + '/user-1/old-a.jpg';
+    const OLD_B = PUBLIC + '/user-1/old-b.jpg';
+
+    beforeEach(() => {
+      mockRouteParams = { editListingId: 'edit-1' };
+      mockGetListingById.mockResolvedValue({
+        data: { ...EXISTING_LISTING, photos: [OLD_A, OLD_B] },
+      } as never);
+    });
+
+    it('deletes the files of the photos an edit dropped once it saves', async () => {
+      const screen = await renderForm();
+      expect(screen.getByText('2/5 photos added')).toBeTruthy();
+
+      fireEvent.press(screen.getByRole('button', { name: 'Remove photo 2' }));
+      expect(mockPreventRemove).toBe(true);
+      await submit(screen, 'Update Listing');
+
+      expect(mockUpdateListing).toHaveBeenCalledWith(
+        expect.anything(),
+        'edit-1',
+        expect.objectContaining({ photos: [OLD_A] })
+      );
+      expect(mockCleanUp).toHaveBeenCalledTimes(1);
+      expect(mockCleanUp).toHaveBeenCalledWith(
+        expect.anything(),
+        ['user-1/old-b.jpg'],
+        expect.objectContaining({ listingId: 'edit-1' })
+      );
+    });
+
+    it('keeps every original photo when the edit fails', async () => {
+      mockUpdateListing.mockResolvedValue({ error: { message: 'Server error' } } as never);
+      const screen = await renderForm();
+
+      fireEvent.press(screen.getByRole('button', { name: 'Remove photo 2' }));
+      await submit(screen, 'Update Listing');
+
+      // Nothing new was uploaded, and the dropped photo's file stays.
+      for (const [, paths] of mockCleanUp.mock.calls) {
+        expect(paths).not.toContain('user-1/old-b.jpg');
+      }
+    });
   });
 
   // -- Leaving with unsaved changes ---------------------------------------------

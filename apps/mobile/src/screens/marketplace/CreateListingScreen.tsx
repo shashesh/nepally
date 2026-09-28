@@ -8,27 +8,19 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
-  Linking,
   KeyboardAvoidingView,
   Platform,
   AccessibilityInfo,
   type LayoutChangeEvent,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackActions, useNavigation, usePreventRemove, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
-import { File } from 'expo-file-system';
 import {
   getCategories,
   getListingById,
-  createListing,
-  updateListing,
-  uploadListingPhotos,
   createListingSchema,
   buildListingFormInput,
   isSameListingForm,
@@ -40,16 +32,25 @@ import {
   type MarketplaceCategory,
   type MarketplaceListing,
   type ListingFormFields,
-  type ListingPhotoUploadInput,
   type ListingResult,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { useActiveMetro } from '../../hooks/useActiveMetro';
+import { usePickListingPhotos } from '../../hooks/usePickListingPhotos';
 import { supabase } from '../../config/supabase';
 import { ListingFormField } from '../../components/marketplace/ListingFormField';
 import { ChoiceToggle } from '../../components/marketplace/ChoiceToggle';
 import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import { ListingCategoryPicker } from '../../components/marketplace/ListingCategoryPicker';
+import { ListingPhotoEditor } from '../../components/marketplace/ListingPhotoEditor';
+import {
+  makeCover,
+  photoKeys,
+  removePhoto,
+  type ListingPhoto,
+  type PickedListingPhoto,
+} from '../../components/marketplace/listingPhotos';
+import { submitListing } from './submitListing';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
@@ -57,13 +58,6 @@ import type { MarketplaceStackParamList } from '../../types/navigation';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
 type Route = RouteProp<MarketplaceStackParamList, 'CreateListing'>;
-
-type NewPhoto = {
-  uri: string;
-  fileData: ArrayBuffer;
-  mimeType: string;
-  sizeBytes: number;
-};
 
 /** Where to go once saved: a new listing opens, an edit returns to its listing. */
 type Saved = { kind: 'created'; listingId: string } | { kind: 'edited' };
@@ -155,10 +149,8 @@ export default function CreateListingScreen() {
   const [initialForm, setInitialForm] = useState<ListingFormFields>(EMPTY_FORM);
   const [initialPhotoUrls, setInitialPhotoUrls] = useState<string[]>([]);
 
-  // Photo state: existing remote URLs (edit mode) + newly picked local photos
-  const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]);
-  const [newPhotos, setNewPhotos] = useState<NewPhoto[]>([]);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  // Saved and newly picked photos in display order; the first is the cover.
+  const [photos, setPhotos] = useState<ListingPhoto[]>([]);
 
   const scrollRef = useRef<ScrollView>(null);
   const fieldYRef = useRef<Partial<Record<FormField, number>>>({});
@@ -181,11 +173,14 @@ export default function CreateListingScreen() {
   }, []);
 
   const isBusiness = form.listing_type === 'business';
-  const totalPhotos = existingPhotoUrls.length + newPhotos.length;
+  // A picked photo's key is never a saved URL, so adding, removing or reordering all count.
   const isDirty =
-    !isSameListingForm(form, initialForm) ||
-    newPhotos.length > 0 ||
-    !sameUrls(existingPhotoUrls, initialPhotoUrls);
+    !isSameListingForm(form, initialForm) || !sameUrls(photoKeys(photos), initialPhotoUrls);
+
+  const addPicked = useCallback((picked: PickedListingPhoto[]) => {
+    setPhotos((prev) => [...prev, ...picked].slice(0, MAX_PHOTOS_PER_LISTING));
+  }, []);
+  const picker = usePickListingPhotos(MAX_PHOTOS_PER_LISTING - photos.length, addPicked);
 
   // Swipe-down, ✕ and Android back all ask first while there is something to lose.
   usePreventRemove(isDirty && !submitting && !saved, ({ data }) => {
@@ -247,11 +242,11 @@ export default function CreateListingScreen() {
         setCategories(catResult.data);
         if (editResult.data) {
           const fields = toFormFields(editResult.data);
-          const photos = editResult.data.photos ?? [];
+          const photoUrls = editResult.data.photos ?? [];
           setForm(fields);
           setInitialForm(fields);
-          setExistingPhotoUrls(photos);
-          setInitialPhotoUrls(photos);
+          setPhotos(photoUrls.map((url) => ({ kind: 'stored', key: url, url })));
+          setInitialPhotoUrls(photoUrls);
         }
       } catch (error) {
         if (!cancelled) setLoadError(loadFailed(error));
@@ -315,78 +310,6 @@ export default function CreateListingScreen() {
     }
   }, []);
 
-  const requestLibraryPermission = async (): Promise<boolean> => {
-    const result = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!result.granted) {
-      Alert.alert(
-        'Photo Library Access Required',
-        'Nepally needs photo library access to add listing photos. Please enable it in Settings.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() },
-        ]
-      );
-      return false;
-    }
-    return true;
-  };
-
-  const handleAddPhoto = useCallback(async () => {
-    if (totalPhotos >= MAX_PHOTOS_PER_LISTING) {
-      Alert.alert('Photo Limit', `You can add up to ${MAX_PHOTOS_PER_LISTING} photos per listing.`);
-      return;
-    }
-
-    const granted = await requestLibraryPermission();
-    if (!granted) return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      allowsMultipleSelection: true,
-      selectionLimit: MAX_PHOTOS_PER_LISTING - totalPhotos,
-      quality: 1,
-    });
-
-    if (result.canceled || !result.assets.length) return;
-
-    setUploadingPhotos(true);
-    const picked: NewPhoto[] = [];
-
-    for (const asset of result.assets) {
-      try {
-        const manipulated = await ImageManipulator.manipulateAsync(
-          asset.uri,
-          [{ resize: { width: 1200 } }],
-          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-        );
-        const file = new File(manipulated.uri);
-        const fileData = await file.arrayBuffer();
-        picked.push({
-          uri: manipulated.uri,
-          fileData,
-          mimeType: 'image/jpeg',
-          sizeBytes: fileData.byteLength,
-        });
-      } catch {
-        // Skip photos that fail to process
-      }
-    }
-
-    setNewPhotos((prev) =>
-      [...prev, ...picked].slice(0, MAX_PHOTOS_PER_LISTING - existingPhotoUrls.length)
-    );
-    setUploadingPhotos(false);
-  }, [totalPhotos, existingPhotoUrls.length]);
-
-  const handleRemoveExistingPhoto = useCallback((index: number) => {
-    setExistingPhotoUrls((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const handleRemoveNewPhoto = useCallback((index: number) => {
-    setNewPhotos((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
   const handleSubmit = useCallback(async () => {
     if (!user || !metroAreaId) return;
 
@@ -403,51 +326,29 @@ export default function CreateListingScreen() {
     setErrors({});
     setSubmitting(true);
 
-    // Upload any new photos first
-    let allPhotoUrls = [...existingPhotoUrls];
-    if (newPhotos.length > 0) {
-      const uploadInputs: ListingPhotoUploadInput[] = newPhotos.map((p) => ({
-        user_id: user.id,
-        file_data: p.fileData,
-        mime_type: p.mimeType,
-        size_bytes: p.sizeBytes,
-      }));
-      const uploadResult = await uploadListingPhotos(supabase, uploadInputs);
-      if (uploadResult.error) {
-        if (!mountedRef.current) return;
-        Alert.alert('Upload Failed', uploadResult.error.message);
-        setSubmitting(false);
-        return;
-      }
-      allPhotoUrls = [...allPhotoUrls, ...(uploadResult.urls ?? [])];
-    }
+    const result = await submitListing(supabase, {
+      userId: user.id,
+      metroAreaId,
+      listingId: editListingId,
+      input,
+      photos,
+      originalPhotoUrls: initialPhotoUrls,
+    });
 
-    const payload = { ...input, photos: allPhotoUrls };
-    const result =
-      isEditing && editListingId
-        ? await updateListing(supabase, editListingId, payload)
-        : await createListing(supabase, {
-            ...payload,
-            owner_id: user.id,
-            metro_area_id: metroAreaId,
-          });
-
+    // The save finished without the screen if the member left mid-way.
     if (!mountedRef.current) return;
     setSubmitting(false);
-    if (result.error || !result.data) {
-      Alert.alert(
-        'Error',
-        result.error?.message ?? "Couldn't save your listing. Please try again."
-      );
+    if (!result.ok) {
+      Alert.alert(result.title, result.message);
       return;
     }
-    setSaved(isEditing ? { kind: 'edited' } : { kind: 'created', listingId: result.data.id });
+    setSaved(isEditing ? { kind: 'edited' } : { kind: 'created', listingId: result.listingId });
   }, [
     user,
     metroAreaId,
     form,
-    existingPhotoUrls,
-    newPhotos,
+    photos,
+    initialPhotoUrls,
     isEditing,
     editListingId,
     revealFirstError,
@@ -513,56 +414,15 @@ export default function CreateListingScreen() {
             />
           </View>
 
-          {/* Photos */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Photos (up to {MAX_PHOTOS_PER_LISTING})</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoStrip}>
-              {/* Existing photos (edit mode) */}
-              {existingPhotoUrls.map((url, index) => (
-                <View key={`existing-${index}`} style={styles.photoThumb}>
-                  <Image source={url} style={styles.photoThumbImage} contentFit="cover" />
-                  <TouchableOpacity
-                    style={styles.photoRemoveBtn}
-                    onPress={() => handleRemoveExistingPhoto(index)}
-                  >
-                    <Ionicons name="close-circle" size={20} color={colors.white} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              {/* Newly picked photos */}
-              {newPhotos.map((photo, index) => (
-                <View key={`new-${index}`} style={styles.photoThumb}>
-                  <Image source={photo.uri} style={styles.photoThumbImage} contentFit="cover" />
-                  <TouchableOpacity
-                    style={styles.photoRemoveBtn}
-                    onPress={() => handleRemoveNewPhoto(index)}
-                  >
-                    <Ionicons name="close-circle" size={20} color={colors.white} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              {/* Add photo button */}
-              {totalPhotos < MAX_PHOTOS_PER_LISTING && (
-                <TouchableOpacity
-                  style={styles.addPhotoBtn}
-                  onPress={handleAddPhoto}
-                  disabled={uploadingPhotos}
-                >
-                  {uploadingPhotos ? (
-                    <ActivityIndicator color={colors.primary.main} />
-                  ) : (
-                    <>
-                      <Ionicons name="camera-outline" size={24} color={colors.primary.main} />
-                      <Text style={styles.addPhotoBtnText}>Add Photo</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
-            </ScrollView>
-            <Text style={styles.photoHint}>
-              {totalPhotos}/{MAX_PHOTOS_PER_LISTING} photos added
-            </Text>
-          </View>
+          <ListingPhotoEditor
+            photos={photos}
+            max={MAX_PHOTOS_PER_LISTING}
+            busy={picker.processing}
+            onAddFromLibrary={() => void picker.fromLibrary()}
+            onTakePhoto={() => void picker.fromCamera()}
+            onRemove={(key) => setPhotos((prev) => removePhoto(prev, key))}
+            onMakeCover={(key) => setPhotos((prev) => makeCover(prev, key))}
+          />
 
           <ListingCategoryPicker
             categories={categories}
@@ -719,7 +579,8 @@ export default function CreateListingScreen() {
           <TouchableOpacity
             style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
-            disabled={submitting}
+            // Photos still being processed would be left out of the save.
+            disabled={submitting || picker.processing}
             accessibilityRole="button"
             accessibilityLabel={submitLabel}
             accessibilityState={{ disabled: submitting, busy: submitting }}
@@ -782,53 +643,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     marginBottom: spacing.xs,
-  },
-  photoStrip: {
-    flexGrow: 0,
-  },
-  photoThumb: {
-    width: 88,
-    height: 88,
-    borderRadius: borderRadius.input,
-    marginRight: spacing.s,
-    position: 'relative',
-    overflow: 'visible',
-  },
-  photoThumbImage: {
-    width: 88,
-    height: 88,
-    borderRadius: borderRadius.input,
-    resizeMode: 'cover',
-  },
-  photoRemoveBtn: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: colors.text.primary,
-    borderRadius: 10,
-  },
-  addPhotoBtn: {
-    width: 88,
-    height: 88,
-    borderRadius: borderRadius.input,
-    borderWidth: 1,
-    borderColor: colors.primary.main,
-    borderStyle: 'dashed',
-    backgroundColor: colors.primary.light,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.s,
-    gap: 4,
-  },
-  addPhotoBtnText: {
-    ...typography.caption,
-    color: colors.primary.main,
-    fontWeight: '600',
-  },
-  photoHint: {
-    ...typography.caption,
-    color: colors.text.tertiary,
-    marginTop: spacing.xs,
   },
   submitButton: {
     backgroundColor: colors.primary.main,
