@@ -1,5 +1,11 @@
 import React, { useCallback, useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  type AccessibilityActionEvent,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +13,7 @@ import {
   formatListingFreshness,
   formatListingPrice,
   isVerifiedSeller,
+  listingCardLabel,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { spacing } from '../../styles/spacing';
@@ -47,13 +54,34 @@ export const ListingGridCard = React.memo(function ListingGridCard({
     onToggleSave(listing.id);
   }, [listing.id, onToggleSave]);
 
+  // VoiceOver can't reach the heart inside the card, so the card offers saving
+  // as an action of its own.
+  const accessibilityActions = useMemo(
+    () => [{ name: 'toggleSave', label: isSaved ? 'Unsave listing' : 'Save listing' }],
+    [isSaved]
+  );
+  const handleAccessibilityAction = useCallback(
+    (event: AccessibilityActionEvent) => {
+      if (event.nativeEvent.actionName === 'toggleSave') handleToggleSave();
+    },
+    [handleToggleSave]
+  );
+
   return (
     <TouchableOpacity
       style={[styles.card, { width }]}
       onPress={onPress}
       activeOpacity={0.85}
-      accessibilityLabel={`Open listing: ${listing.title}`}
+      accessibilityLabel={listingCardLabel({
+        title: listing.title,
+        price,
+        isVerifiedSeller: isVerified,
+        freshness,
+        sponsored,
+      })}
       accessibilityRole="button"
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={handleAccessibilityAction}
     >
       <View style={[styles.imageWrap, { height: imageHeight }]}>
         {firstPhoto ? (

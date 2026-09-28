@@ -1,4 +1,5 @@
 import type { BusinessHours } from '../../types/marketplace';
+import { parseTimeToMinutes } from './clockTime';
 
 export interface OpenStatus {
   isOpen: boolean;
@@ -14,15 +15,6 @@ const DAY_KEYS = [
   'friday',
   'saturday',
 ] as const;
-
-function parseTimeToMinutes(hhmm: string): number | null {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
-  if (!match) return null;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-  return hours * 60 + minutes;
-}
 
 function formatTimeLabel(minutes: number): string {
   const h24 = Math.floor(minutes / 60);

@@ -1,6 +1,6 @@
 # Nepally Technology Versions
 
-**Last Updated:** 2026-09-25
+**Last Updated:** 2026-09-28
 
 This document serves as the single source of truth for all technology versions used in the Nepally project.
 
@@ -15,13 +15,14 @@ This document serves as the single source of truth for all technology versions u
 
 ### Mobile App (`apps/mobile`)
 
-| Package                            | Version  | Notes                  |
-| ---------------------------------- | -------- | ---------------------- |
-| **react-native**                   | 0.86.3   | Ships with Expo SDK 57 |
-| **expo**                           | ~57.0.23 | Latest stable (SDK 57) |
-| **@react-navigation/native**       | 7.x      | Navigation library     |
-| **@react-navigation/bottom-tabs**  | 7.x      | Tab navigation         |
-| **@react-navigation/native-stack** | 7.x      | Stack navigation       |
+| Package                            | Version  | Notes                                                                       |
+| ---------------------------------- | -------- | --------------------------------------------------------------------------- |
+| **react-native**                   | 0.86.3   | Ships with Expo SDK 57                                                      |
+| **expo**                           | ~57.0.23 | Latest stable (SDK 57)                                                      |
+| **@react-navigation/native**       | 7.x      | Navigation library                                                          |
+| **@react-navigation/bottom-tabs**  | 7.x      | Tab navigation                                                              |
+| **@react-navigation/native-stack** | 7.x      | Stack navigation                                                            |
+| **@nandorojo/galeria**             | ^3.0.3   | Full-screen photo viewer. Native: not in Expo Go, needs a development build |
 
 ### Web App (`apps/web`)
 

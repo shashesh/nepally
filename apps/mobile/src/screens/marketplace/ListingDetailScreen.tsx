@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
+  Linking,
+  Platform,
+  Share,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,12 +24,23 @@ import {
   getDaysSinceRefresh,
   formatListingPrice,
   createReport,
+  formatClockTime,
+  listingInquiryDraft,
+  listingWebUrl,
+  pluralize,
+  toMailtoUrl,
+  toMapsUrls,
+  toTelUrl,
+  toWebsiteUrl,
   TrustLevel,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   BUSINESS_HOURS_DAYS,
 } from '@nepally/shared';
 import { ReportPostSheet } from '../../components/sheets/ReportPostSheet';
+import { Avatar } from '../../components/Avatar';
+import { TrustBadge } from '../../components/badges/TrustBadge';
+import { ListingPhotoGallery } from '../../components/marketplace/ListingPhotoGallery';
 import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import { useAuth } from '../../hooks/useAuth';
 import { useSavedListingIds } from '../../hooks/useSavedListingIds';
@@ -42,7 +55,8 @@ import type { MarketplaceStackParamList } from '../../types/navigation';
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
 type Route = RouteProp<MarketplaceStackParamList, 'ListingDetail'>;
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+/** The photo carousel's height; the photos fill the screen's width. */
+const PHOTO_HEIGHT = 250;
 
 export default function ListingDetailScreen() {
   const navigation = useNavigation<Nav>();
@@ -56,18 +70,20 @@ export default function ListingDetailScreen() {
   const { savedIds, toggle: toggleSaved } = useSavedListingIds(userId);
   const isSaved = savedIds.has(listingId);
   const [saving, setSaving] = useState(false);
-  const [photoIndex, setPhotoIndex] = useState(0);
-  // Coming back from an edit can change the photos: start the carousel over
-  // (its key remounts it at the first photo) so the count never reads "3 / 1".
-  const photoSet = listing?.photos.join(' ') ?? '';
-  const [shownPhotoSet, setShownPhotoSet] = useState(photoSet);
-  if (photoSet !== shownPhotoSet) {
-    setShownPhotoSet(photoSet);
-    setPhotoIndex(0);
-  }
+  const { width: windowWidth } = useWindowDimensions();
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [contacting, setContacting] = useState(false);
+  const contactingRef = useRef(false);
+  const mountedRef = useRef(true);
   const now = useNow();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -76,29 +92,44 @@ export default function ListingDetailScreen() {
   }, [toggleSaved, listingId]);
 
   const handleContact = useCallback(async () => {
-    if (!listing?.owner || !user) return;
-    void incrementListingContacts(supabase, listingId);
-    const result = await getOrCreateConversation(
-      supabase,
-      user.id,
-      user.full_name,
-      listing.owner.id,
-      listing.owner.full_name
-    );
-    if (result.data) {
-      navigation.getParent()?.navigate('Chat', {
-        screen: 'MessageThread',
-        params: {
-          conversationId: result.data.conversationId,
-          otherUserId: listing.owner.id,
-          otherUserName: listing.owner.full_name,
-          otherUserTrustLevel: listing.owner.trust_level,
-          otherUserPhotoUrl: listing.owner.profile_photo ?? null,
-        },
-      });
-    } else {
-      Alert.alert('Error', 'Failed to start conversation. Please try again.');
+    // The ref stops a second tap before the busy state has rendered.
+    if (!listing?.owner || !user || contactingRef.current) return;
+    const owner = listing.owner;
+    contactingRef.current = true;
+    setContacting(true);
+    let conversationId: string | null;
+    try {
+      const result = await getOrCreateConversation(
+        supabase,
+        user.id,
+        user.full_name,
+        owner.id,
+        owner.full_name
+      );
+      conversationId = result.data?.conversationId ?? null;
+    } catch {
+      conversationId = null;
     }
+    contactingRef.current = false;
+    // Gone back meanwhile: don't pull the member into a chat or alert over another screen.
+    if (!mountedRef.current) return;
+    setContacting(false);
+    if (!conversationId) {
+      Alert.alert('Error', 'Failed to start conversation. Please try again.');
+      return;
+    }
+    void incrementListingContacts(supabase, listingId);
+    navigation.getParent()?.navigate('Chat', {
+      screen: 'MessageThread',
+      params: {
+        conversationId,
+        otherUserId: owner.id,
+        otherUserName: owner.full_name,
+        otherUserTrustLevel: owner.trust_level,
+        otherUserPhotoUrl: owner.profile_photo ?? null,
+        initialDraft: listingInquiryDraft(listing.title),
+      },
+    });
   }, [listing, listingId, navigation, user]);
 
   const handleReport = useCallback(() => {
@@ -139,6 +170,28 @@ export default function ListingDetailScreen() {
     },
     [listingId, user]
   );
+
+  const handleOpenSeller = useCallback(() => {
+    const owner = listing?.owner;
+    if (!owner) return;
+    // Your own listing: your own profile, as a post's author link does.
+    if (owner.id === user?.id) {
+      navigation.getParent()?.navigate('Profile');
+      return;
+    }
+    navigation.navigate('PublicProfileView', { userId: owner.id });
+  }, [listing, navigation, user?.id]);
+
+  const handleShare = useCallback(() => {
+    if (!listing) return;
+    const url = listingWebUrl(listing.id);
+    // iOS shares the URL as a link of its own; Android shares only the message.
+    Share.share(
+      Platform.OS === 'ios' ? { message: listing.title, url } : { message: `${listing.title}\n${url}` }
+    ).catch(() => {
+      Alert.alert("Couldn't share", 'Please try again.');
+    });
+  }, [listing]);
 
   if (loading) {
     return (
@@ -191,6 +244,14 @@ export default function ListingDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={handleShare}
+            style={styles.headerButton}
+            accessibilityRole="button"
+            accessibilityLabel="Share listing"
+          >
+            <Ionicons name="share-outline" size={22} color={colors.text.secondary} />
+          </TouchableOpacity>
           {!isOwner && (
             <TouchableOpacity
               onPress={handleReport}
@@ -206,28 +267,7 @@ export default function ListingDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Photos */}
         {listing.photos.length > 0 ? (
-          <View>
-            <ScrollView
-              key={photoSet}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={(e) => {
-                setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH));
-              }}
-            >
-              {listing.photos.map((photo, index) => (
-                <Image key={index} source={photo} style={styles.photo} contentFit="cover" />
-              ))}
-            </ScrollView>
-            {listing.photos.length > 1 && (
-              <View style={styles.photoIndicator}>
-                <Text style={styles.photoIndicatorText}>
-                  {photoIndex + 1} / {listing.photos.length}
-                </Text>
-              </View>
-            )}
-          </View>
+          <ListingPhotoGallery photos={listing.photos} width={windowWidth} height={PHOTO_HEIGHT} />
         ) : (
           <View style={[styles.photoPlaceholder, { backgroundColor: categoryColor + '20' }]}>
             <Text style={styles.photoPlaceholderEmoji}>{listing.category?.emoji ?? '📦'}</Text>
@@ -310,16 +350,40 @@ export default function ListingDetailScreen() {
               <DetailRow icon="business-outline" label="Business" value={listing.business_name} />
             )}
             {listing.address && (
-              <DetailRow icon="location-outline" label="Address" value={listing.address} />
+              <DetailRow
+                icon="location-outline"
+                label="Address"
+                value={listing.address}
+                urls={mapsUrls(listing.address)}
+                linkLabel={`Open ${listing.address} in Maps`}
+              />
             )}
             {listing.phone && (
-              <DetailRow icon="call-outline" label="Phone" value={listing.phone} />
+              <DetailRow
+                icon="call-outline"
+                label="Phone"
+                value={listing.phone}
+                urls={asUrls(toTelUrl(listing.phone))}
+                linkLabel={`Call ${listing.phone}`}
+              />
             )}
             {listing.email && (
-              <DetailRow icon="mail-outline" label="Email" value={listing.email} />
+              <DetailRow
+                icon="mail-outline"
+                label="Email"
+                value={listing.email}
+                urls={asUrls(toMailtoUrl(listing.email))}
+                linkLabel={`Email ${listing.email}`}
+              />
             )}
             {listing.website_url && (
-              <DetailRow icon="globe-outline" label="Website" value={listing.website_url} />
+              <DetailRow
+                icon="globe-outline"
+                label="Website"
+                value={listing.website_url}
+                urls={asUrls(toWebsiteUrl(listing.website_url))}
+                linkLabel={`Open ${listing.website_url}`}
+              />
             )}
             {listing.business_hours && (
               <View style={styles.hoursSection}>
@@ -333,7 +397,9 @@ export default function ListingDetailScreen() {
                   return (
                     <View key={day} style={styles.hoursRow}>
                       <Text style={styles.hoursDay}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
-                      <Text style={styles.hoursTime}>{hours.open} - {hours.close}</Text>
+                      <Text style={styles.hoursTime}>
+                        {`${formatClockTime(hours.open)} – ${formatClockTime(hours.close)}`}
+                      </Text>
                     </View>
                   );
                 })}
@@ -342,23 +408,33 @@ export default function ListingDetailScreen() {
           </View>
         )}
 
-        {/* Owner Info */}
+        {/* Seller card */}
         {listing.owner && (
           <View style={styles.ownerSection}>
             <Text style={styles.sectionTitle}>Posted by</Text>
-            <View style={styles.ownerRow}>
-              <View style={styles.ownerAvatar}>
-                <Text style={styles.ownerInitial}>
-                  {listing.owner.full_name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
+            <TouchableOpacity
+              style={styles.ownerRow}
+              onPress={handleOpenSeller}
+              accessibilityRole="button"
+              accessibilityLabel={`View ${listing.owner.full_name}'s profile`}
+            >
+              <Avatar
+                name={listing.owner.full_name}
+                photoUrl={listing.owner.profile_photo}
+                trustLevel={listing.owner.trust_level}
+                size="medium"
+              />
               <View style={styles.ownerInfo}>
-                <Text style={styles.ownerName}>{listing.owner.full_name}</Text>
+                <View style={styles.ownerNameRow}>
+                  <Text style={styles.ownerName}>{listing.owner.full_name}</Text>
+                  <TrustBadge level={badgeLevel(listing.owner.trust_level)} />
+                </View>
                 <Text style={styles.ownerMeta}>
                   {daysAgo === 0 ? 'Refreshed today' : `Refreshed ${daysAgo}d ago`}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -366,11 +442,11 @@ export default function ListingDetailScreen() {
         <View style={styles.statsSection}>
           <View style={styles.stat}>
             <Ionicons name="eye-outline" size={16} color={colors.text.tertiary} />
-            <Text style={styles.statText}>{listing.views_count} views</Text>
+            <Text style={styles.statText}>{pluralize(listing.views_count, 'view')}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="bookmark-outline" size={16} color={colors.text.tertiary} />
-            <Text style={styles.statText}>{listing.saves_count} saves</Text>
+            <Ionicons name="heart-outline" size={16} color={colors.text.tertiary} />
+            <Text style={styles.statText}>{pluralize(listing.saves_count, 'save')}</Text>
           </View>
         </View>
       </ScrollView>
@@ -391,17 +467,24 @@ export default function ListingDetailScreen() {
             accessibilityLabel={isSaved ? 'Unsave listing' : 'Save listing'}
           >
             <Ionicons
-              name={isSaved ? 'bookmark' : 'bookmark-outline'}
+              name={isSaved ? 'heart' : 'heart-outline'}
               size={22}
               color={isSaved ? colors.primary.main : colors.text.secondary}
             />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.stickyBarButton}
+            style={[styles.stickyBarButton, contacting && styles.stickyBarButtonBusy]}
             onPress={handleContact}
+            disabled={contacting}
             accessibilityRole="button"
+            accessibilityLabel="Contact Seller"
+            accessibilityState={{ busy: contacting, disabled: contacting }}
           >
-            <Text style={styles.stickyBarButtonText}>Contact Seller</Text>
+            {contacting ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.stickyBarButtonText}>Contact Seller</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -430,13 +513,67 @@ export default function ListingDetailScreen() {
   );
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string }) {
-  return (
-    <View style={styles.detailRow}>
+/** `TrustBadge` has a badge for levels 0 to 2. */
+function badgeLevel(trustLevel: number): 0 | 1 | 2 {
+  if (trustLevel >= 2) return 2;
+  return trustLevel >= 1 ? 1 : 0;
+}
+
+/** Opens the first URL something on the device handles, and says so when nothing does. */
+async function openFirst(urls: string[]): Promise<void> {
+  for (const url of urls) {
+    try {
+      await Linking.openURL(url);
+      return;
+    } catch {
+      // Nothing handles this one; try the next.
+    }
+  }
+  Alert.alert("Couldn't open that", 'No app on this device can open it.');
+}
+
+function asUrls(url: string | null): string[] | null {
+  return url ? [url] : null;
+}
+
+/** Maps for the address: the platform's own app first, then Google Maps in the browser. */
+function mapsUrls(address: string): string[] | null {
+  const maps = toMapsUrls(address);
+  if (!maps) return null;
+  return [Platform.OS === 'ios' ? maps.apple : maps.geo, maps.google];
+}
+
+interface DetailRowProps {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value: string;
+  /** URLs to try in turn on a tap. Without any, the value is plain text. */
+  urls?: string[] | null;
+  /** What a screen reader announces for the link, e.g. "Call 555-0100". */
+  linkLabel?: string;
+}
+
+function DetailRow({ icon, label, value, urls, linkLabel }: DetailRowProps) {
+  const content = (
+    <>
       <Ionicons name={icon} size={18} color={colors.text.secondary} />
       <Text style={styles.detailLabel}>{label}:</Text>
-      <Text style={styles.detailValue} numberOfLines={2}>{value}</Text>
-    </View>
+      {/* Only plain values are selectable: on Android a selectable Text swallows the row's tap. */}
+      <Text style={[styles.detailValue, urls && styles.detailLinkValue]} selectable={!urls}>
+        {value}
+      </Text>
+    </>
+  );
+  if (!urls) return <View style={styles.detailRow}>{content}</View>;
+  return (
+    <TouchableOpacity
+      style={[styles.detailRow, styles.detailLinkRow]}
+      onPress={() => void openFirst(urls)}
+      accessibilityRole="link"
+      accessibilityLabel={linkLabel}
+    >
+      {content}
+    </TouchableOpacity>
   );
 }
 
@@ -477,32 +614,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  photo: {
-    width: SCREEN_WIDTH,
-    height: 250,
-    resizeMode: 'cover',
-  },
   photoPlaceholder: {
-    width: SCREEN_WIDTH,
+    width: '100%',
     height: 200,
     justifyContent: 'center',
     alignItems: 'center',
   },
   photoPlaceholderEmoji: {
     fontSize: 64,
-  },
-  photoIndicator: {
-    position: 'absolute',
-    bottom: spacing.s,
-    right: spacing.m,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: spacing.s,
-    paddingVertical: 4,
-    borderRadius: borderRadius.button,
-  },
-  photoIndicatorText: {
-    ...typography.caption,
-    color: colors.white,
   },
   contentSection: {
     backgroundColor: colors.white,
@@ -556,9 +675,12 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.s,
     marginBottom: spacing.s,
+  },
+  detailLinkRow: {
+    minHeight: 44,
   },
   detailLabel: {
     ...typography.caption,
@@ -569,6 +691,9 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.primary,
     flex: 1,
+  },
+  detailLinkValue: {
+    color: colors.primary.main,
   },
   hoursSection: {
     marginTop: spacing.xs,
@@ -598,20 +723,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.m,
   },
-  ownerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary.light,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  ownerInitial: {
-    ...typography.h3,
-    color: colors.primary.main,
-  },
   ownerInfo: {
     flex: 1,
+  },
+  ownerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
   ownerName: {
     ...typography.body,
@@ -758,6 +877,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.s,
     borderRadius: borderRadius.input,
     alignItems: 'center',
+  },
+  stickyBarButtonBusy: {
+    opacity: 0.7,
   },
   stickyBarButtonText: {
     ...typography.body,

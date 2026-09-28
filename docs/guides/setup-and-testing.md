@@ -184,6 +184,8 @@ npm start
 > **Expo Go must match the project's Expo SDK (57).** The stores only carry Expo Go for the newest SDK. If Expo Go reports "Project is incompatible with this version of Expo Go", the phone and the project are on different SDKs. Either upgrade the project, or install the matching Expo Go from <https://expo.dev/go> and turn off store auto-update for it until the project catches up.
 >
 > **Push notifications do not work in Expo Go.** On Android, even importing `expo-notifications` throws there. So the app loads it lazily and skips push registration in Expo Go (`apps/mobile/src/services/notifications.ts`). Test push in a development or preview build.
+>
+> **The listing photo viewer does not work in Expo Go either.** Galeria (`@nandorojo/galeria`) is a native module Expo Go lacks, so the app loads it only outside Expo Go (`apps/mobile/src/utils/isExpoGo.ts`). In Expo Go, listing photos show but a tap doesn't open them full screen. Test pinch-zoom and swiping in a development build.
 
 ### Test on iOS Simulator (macOS only)
 

@@ -19,7 +19,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { FollowButton } from '../../components/FollowButton';
-import type { HomeStackParamList } from '../../types/navigation';
+import type { ProfileRoutesParamList } from '../../types/navigation';
 import {
   TrustLevel,
   getUserById,
@@ -48,8 +48,8 @@ import { typography, fontFamily } from '../../styles/typography';
 import { spacing, borderRadius, shadows } from '../../styles/spacing';
 import { sanitizeMediaUri } from '../../utils/mediaUrl';
 
-type Navigation = NativeStackNavigationProp<HomeStackParamList, 'PublicProfileView'>;
-type Route = RouteProp<HomeStackParamList, 'PublicProfileView'>;
+type Navigation = NativeStackNavigationProp<ProfileRoutesParamList, 'PublicProfileView'>;
+type Route = RouteProp<ProfileRoutesParamList, 'PublicProfileView'>;
 type ProfileTab = 'posts' | 'events' | 'listings' | 'about';
 
 function getInitials(fullName: string): string {

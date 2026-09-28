@@ -80,9 +80,9 @@ All in `apps/mobile/src/screens/marketplace/`:
 
 - **MarketplaceHomeScreen** — Web-style rows: search, category tiles, then Sponsored, Featured, Recently Added and Trending strips (each hidden when empty) above the paged All listings grid; FAB for creating
 - **MarketplaceCategoryScreen** — Category-filtered listing list with search and pagination
-- **ListingDetailScreen** — Full listing view, photo carousel, structured fields, Contact/Save actions
+- **ListingDetailScreen** — Full listing view: photo carousel with a full-screen viewer, contact links, seller card, Contact/Save/Share actions
 - **CreateListingScreen** — Create/edit form: Individual/Business toggle, photos with a cover, Zod validation
-- **MyListingsScreen** — User's listings with status badges, refresh/deactivate/delete actions
+- **MyListingsScreen** — User's listings with status badges; Edit and Refresh in each row, Deactivate/Reactivate and Delete under More
 - **SavedListingsScreen** — The member's saved listings; the heart unsaves and removes the card
 - **BrowseCategoriesScreen**, **MarketplaceRulesScreen** — Category tiles; static marketplace rules
 
@@ -113,6 +113,19 @@ All in `apps/mobile/src/screens/marketplace/`:
 - If the categories or the listing being edited fail to load, the form says so with Try again rather than showing empty fields.
 - Photos come from the system picker, which needs no photo permission, or from the camera. The first photo is the cover (badged Cover), and "Make cover" moves another to the front. Photos that fail to process are counted in an alert.
 - A failed save deletes the photos it just uploaded, but only when the server refused it; if the connection dropped, the listing may have saved, so they stay. A saved edit deletes the files of photos it dropped. Deleting a listing keeps its photos, since moderators can restore it.
+
+**Listing detail (mobile).**
+
+- Phone, email, website and address are links: they open the dialer, mail, the browser, and Maps (Apple Maps on iOS, the `geo:` handler on Android, else Google Maps in the browser). The shared `contactLinks` builds the URLs and allows only http and https websites. Plain values, such as the business name, can be selected.
+- Contact Seller opens the chat with an editable draft, "Hi, is “{title}” still available?", so the seller knows which listing it's about. The button is busy while the conversation starts, and the contact count goes up only once the chat opens.
+- The seller card shows the seller's photo and trust badge, and opens their public profile (your own Profile tab on your own listing). The marketplace stack carries `PublicProfileView` and `PostDetail` for this.
+- Tapping a photo opens Galeria's full-screen viewer: pinch and double-tap to zoom, swipe between photos, swipe down to close. Galeria is native, so it's loaded only outside Expo Go; in Expo Go the photos show but don't open.
+- Save is a heart, as on the grid. Counts read "1 view", hours read "9:00 AM – 5:00 PM", and Share sends the listing's web page (`listingWebUrl`) until the app has deep links.
+- Each listing is its own screen (`getId`), so opening another listing from a profile pushes it rather than replacing the one below.
+
+**My Listings (mobile).** Edit and Refresh stay in each row with 44pt targets; Deactivate or Reactivate and Delete sit under More (an action sheet on iOS, an alert on Android). Each change says when it failed, Refresh confirms it worked, and a listing ignores taps while a change is on its way. The empty state offers Create only from Trust Level 1, as Home does.
+
+**Screen readers (mobile).** Listing cards read their title, category, price, seller and freshness. VoiceOver can't reach the heart inside a grid card, so the card offers Save or Unsave as a custom action. On My Listings the card's open button doesn't wrap the actions, so each is its own element, and each names its listing ("Edit Rice cooker", "More actions for Rice cooker").
 
 ### Web (Next.js)
 

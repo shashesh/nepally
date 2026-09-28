@@ -49,12 +49,19 @@ export type ProfileStackParamList = {
 };
 
 /**
- * Home stack parameter list (for post detail navigation)
+ * Routes that both the Home and Marketplace stacks have, for the screens that
+ * live in either: a seller's profile opens from a listing, and a profile opens posts.
  */
-export type HomeStackParamList = {
-  HomeMain: undefined;
+export type ProfileRoutesParamList = {
   PostDetail: { postId: string };
   PublicProfileView: { userId: string };
+};
+
+/**
+ * Home stack parameter list (for post detail navigation)
+ */
+export type HomeStackParamList = ProfileRoutesParamList & {
+  HomeMain: undefined;
   ManageLocations: undefined;
   AddLocation: undefined;
   Notifications: undefined;
@@ -72,6 +79,8 @@ export type ChatStackParamList = {
     otherUserName: string;
     otherUserTrustLevel: number;
     otherUserPhotoUrl?: string | null;
+    /** Text the message box starts with, e.g. which listing a buyer is asking about. Not sent until the member taps Send. */
+    initialDraft?: string;
   };
 };
 
@@ -87,7 +96,7 @@ export type EventsStackParamList = {
 /**
  * Marketplace stack parameter list
  */
-export type MarketplaceStackParamList = {
+export type MarketplaceStackParamList = ProfileRoutesParamList & {
   MarketplaceHome: undefined;
   MarketplaceCategory: { categorySlug: string; categoryName: string };
   ListingDetail: { listingId: string };

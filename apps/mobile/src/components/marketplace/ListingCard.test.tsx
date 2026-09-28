@@ -62,6 +62,26 @@ function makeListing(overrides: Record<string, unknown> = {}) {
 }
 
 describe('ListingCard', () => {
+  it('reads title, category and price to a screen reader', () => {
+    const onPress = jest.fn();
+    const screen = render(<ListingCard listing={makeListing()} onPress={onPress} />);
+
+    fireEvent.press(
+      screen.getByRole('button', { name: 'Himalayan Kitchen, Food & Restaurants, $15-25, verified seller' })
+    );
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads Sponsored to a screen reader on a sponsored card', () => {
+    const screen = render(
+      <ListingCard listing={makeListing({ price: null })} onPress={jest.fn()} sponsored />
+    );
+    expect(
+      screen.getByRole('button', { name: 'Himalayan Kitchen, Food & Restaurants, verified seller, sponsored' })
+    ).toBeTruthy();
+  });
+
   it('renders the listing title', () => {
     const { getByText } = render(
       <ListingCard listing={makeListing()} onPress={jest.fn()} />

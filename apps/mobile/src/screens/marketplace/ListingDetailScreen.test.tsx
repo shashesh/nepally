@@ -1,13 +1,17 @@
 import React from 'react';
-import { Alert, Dimensions, ScrollView } from 'react-native';
+import { Alert, Dimensions, Linking, ScrollView, Share } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
   createReport,
   getListingById,
+  getOrCreateConversation,
   getUserSavedListingIds,
+  incrementListingContacts,
   incrementListingViews,
   saveListing,
 } from '@nepally/shared';
+import { Image } from 'expo-image';
+import { Galeria } from '@nandorojo/galeria';
 import ListingDetailScreen from './ListingDetailScreen';
 
 // ---------------------------------------------------------------------------
@@ -86,6 +90,14 @@ jest.mock('@nepally/shared', () => ({
   ]),
   isBusinessOpenNow: jest.fn(() => ({ isOpen: true, nextChangeLabel: 'Closes 5p' })),
   getDaysSinceRefresh: jest.requireActual('@nepally/shared').getDaysSinceRefresh,
+  toTelUrl: jest.requireActual('@nepally/shared').toTelUrl,
+  toMailtoUrl: jest.requireActual('@nepally/shared').toMailtoUrl,
+  toWebsiteUrl: jest.requireActual('@nepally/shared').toWebsiteUrl,
+  toMapsUrls: jest.requireActual('@nepally/shared').toMapsUrls,
+  listingInquiryDraft: jest.requireActual('@nepally/shared').listingInquiryDraft,
+  pluralize: jest.requireActual('@nepally/shared').pluralize,
+  formatClockTime: jest.requireActual('@nepally/shared').formatClockTime,
+  listingWebUrl: jest.requireActual('@nepally/shared').listingWebUrl,
 }));
 
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
@@ -236,6 +248,15 @@ describe('ListingDetailScreen', () => {
     expect(screen.getByText('1 / 2')).toBeTruthy();
   });
 
+  it("opens the listing's photos in the full-screen viewer", async () => {
+    const photos = ['https://cdn/listing-photos/u/a.jpg', 'https://cdn/listing-photos/u/b.jpg'];
+    mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, photos } } as never);
+    const screen = render(<ListingDetailScreen />);
+    await act(async () => {});
+
+    expect(screen.UNSAFE_getByType(Galeria).props.urls).toEqual(photos);
+  });
+
   it('keeps the listing on screen when the refetch on return fails', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
@@ -292,12 +313,164 @@ describe('ListingDetailScreen', () => {
     expect(screen.getByText('555-1234')).toBeTruthy();
   });
 
+  // -- Contact details (4.1) -------------------------------------------------
+
+  describe('contact details', () => {
+    let openURL: jest.SpyInstance;
+
+    beforeEach(() => {
+      openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    });
+
+    afterEach(() => {
+      openURL.mockRestore();
+    });
+
+    async function renderLoaded() {
+      const screen = render(<ListingDetailScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Business Details')).toBeTruthy();
+      });
+      return screen;
+    }
+
+    it('calls the phone number', async () => {
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Call 555-1234' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenCalledWith('tel:5551234');
+      });
+    });
+
+    it('writes to the email address', async () => {
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Email info@himalayan.com' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenCalledWith('mailto:info@himalayan.com');
+      });
+    });
+
+    it('opens a website typed without a scheme over https', async () => {
+      mockGetListingById.mockResolvedValue({
+        data: { ...MOCK_LISTING, website_url: 'www.himalayan.com' },
+      } as never);
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Open www.himalayan.com' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenCalledWith('https://www.himalayan.com');
+      });
+    });
+
+    it('opens the address in Apple Maps on iOS', async () => {
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Open 123 Main St in Maps' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenCalledWith('maps:?q=123%20Main%20St');
+      });
+    });
+
+    it('falls back to Google Maps when no maps app opens', async () => {
+      openURL.mockRejectedValueOnce(new Error('no handler'));
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Open 123 Main St in Maps' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenLastCalledWith(
+          'https://www.google.com/maps/search/?api=1&query=123%20Main%20St'
+        );
+      });
+    });
+
+    it('says so when nothing on the device can open the link', async () => {
+      openURL.mockRejectedValue(new Error('no handler'));
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Call 555-1234' }));
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(
+          "Couldn't open that",
+          'No app on this device can open it.'
+        );
+      });
+      alertSpy.mockRestore();
+    });
+
+    it('shows a value that makes no link as plain text', async () => {
+      mockGetListingById.mockResolvedValue({
+        data: { ...MOCK_LISTING, website_url: 'ftp://himalayan.com' },
+      } as never);
+      const screen = await renderLoaded();
+      expect(screen.getByText('ftp://himalayan.com')).toBeTruthy();
+      expect(screen.queryByRole('link', { name: 'Open ftp://himalayan.com' })).toBeNull();
+    });
+
+    it('shows a long address in full', async () => {
+      const address = '4567 Very Long Boulevard Name, Building C, Suite 1200, Jackson Heights, NY 11372';
+      mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, address } } as never);
+      const screen = await renderLoaded();
+      expect(screen.getByText(address).props.numberOfLines).toBeUndefined();
+    });
+
+    it('lets a plain value be selected, but not a link, whose tap selection would swallow on Android', async () => {
+      const screen = await renderLoaded();
+      expect(screen.getByText('Himalayan Kitchen LLC').props.selectable).toBe(true);
+      expect(screen.getByText('123 Main St').props.selectable).toBeFalsy();
+    });
+  });
+
   it('renders owner info', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getByText('Asha Kumar')).toBeTruthy();
     });
     expect(screen.getByText('Posted by')).toBeTruthy();
+  });
+
+  // -- Seller card (4.6) -----------------------------------------------------
+
+  it("opens the seller's profile from the seller card", async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Asha Kumar')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByRole('button', { name: "View Asha Kumar's profile" }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('PublicProfileView', { userId: 'user-2' });
+  });
+
+  it("shows the seller's trust level on the card", async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Asha Kumar')).toBeTruthy();
+    });
+    expect(screen.getByText('Verified')).toBeTruthy();
+  });
+
+  it("shows the seller's profile photo", async () => {
+    const photo = 'https://cdn.example.com/avatars/user-2.jpg';
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, owner: { ...MOCK_LISTING.owner, profile_photo: photo } },
+    } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Asha Kumar')).toBeTruthy();
+    });
+    expect(screen.UNSAFE_getAllByType(Image).some((image) => image.props.source === photo)).toBe(true);
+  });
+
+  it('takes the owner to their own Profile tab from the seller card', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit Listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByRole('button', { name: "View Asha Kumar's profile" }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('Profile');
+    expect(mockNavigate).not.toHaveBeenCalledWith('PublicProfileView', expect.anything());
   });
 
   it('renders stats', async () => {
@@ -308,13 +481,64 @@ describe('ListingDetailScreen', () => {
     expect(screen.getByText('3 saves')).toBeTruthy();
   });
 
-  it('renders business hours', async () => {
+  it('renders business hours in 12-hour time', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getByText('Hours')).toBeTruthy();
     });
     expect(screen.getByText('Monday')).toBeTruthy();
-    expect(screen.getByText('9:00 - 17:00')).toBeTruthy();
+    expect(screen.getByText('9:00 AM – 5:00 PM')).toBeTruthy();
+  });
+
+  // -- Consistency (4.8) -----------------------------------------------------
+
+  it('counts one view and one save in the singular', async () => {
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, views_count: 1, saves_count: 1 },
+    } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('1 view')).toBeTruthy();
+    });
+    expect(screen.getByText('1 save')).toBeTruthy();
+  });
+
+  it('saves with a heart, as the grid does', async () => {
+    mockGetUserSavedListingIds.mockResolvedValue({ data: ['listing-1'] });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Unsave listing')).toBeTruthy();
+    });
+    expect(screen.UNSAFE_queryAllByProps({ name: 'heart' }).length).toBeGreaterThan(0);
+    expect(screen.UNSAFE_queryAllByProps({ name: 'bookmark' })).toHaveLength(0);
+    expect(screen.UNSAFE_queryAllByProps({ name: 'bookmark-outline' })).toHaveLength(0);
+  });
+
+  it("shares the listing's web page", async () => {
+    const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Share listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Share listing'));
+
+    expect(shareSpy).toHaveBeenCalledWith({
+      message: 'Himalayan Kitchen',
+      url: 'https://nepally.us/marketplace/listing/listing-1',
+    });
+    shareSpy.mockRestore();
+  });
+
+  it('offers Share to the owner too', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit Listing')).toBeTruthy();
+    });
+    expect(screen.getByLabelText('Share listing')).toBeTruthy();
   });
 
   it('renders category placeholder emoji when no photos', async () => {
@@ -380,6 +604,93 @@ describe('ListingDetailScreen', () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getByText('Contact Seller')).toBeTruthy();
+    });
+  });
+
+  // -- Contact Seller (4.2) --------------------------------------------------
+
+  describe('Contact Seller', () => {
+    const mockGetOrCreateConversation = getOrCreateConversation as jest.MockedFunction<
+      typeof getOrCreateConversation
+    >;
+
+    afterEach(() => {
+      mockGetOrCreateConversation.mockResolvedValue({ data: null } as never);
+    });
+
+    async function renderLoaded() {
+      const screen = render(<ListingDetailScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Contact Seller')).toBeTruthy();
+      });
+      return screen;
+    }
+
+    it('opens the chat with a draft naming the listing', async () => {
+      mockGetOrCreateConversation.mockResolvedValue({ data: { conversationId: 'conv-9' } } as never);
+      const screen = await renderLoaded();
+
+      fireEvent.press(screen.getByRole('button', { name: 'Contact Seller' }));
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('Chat', {
+          screen: 'MessageThread',
+          params: {
+            conversationId: 'conv-9',
+            otherUserId: 'user-2',
+            otherUserName: 'Asha Kumar',
+            otherUserTrustLevel: 1,
+            otherUserPhotoUrl: null,
+            initialDraft: 'Hi, is “Himalayan Kitchen” still available?',
+          },
+        });
+      });
+      expect(incrementListingContacts).toHaveBeenCalledWith(expect.anything(), 'listing-1');
+    });
+
+    it("doesn't count a contact when the conversation can't be started", async () => {
+      mockGetOrCreateConversation.mockResolvedValue({ data: null } as never);
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      const screen = await renderLoaded();
+
+      fireEvent.press(screen.getByRole('button', { name: 'Contact Seller' }));
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(
+          'Error',
+          'Failed to start conversation. Please try again.'
+        );
+      });
+      expect(incrementListingContacts).not.toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('starts one conversation for a double tap and shows it is busy meanwhile', async () => {
+      let finish: (value: unknown) => void = () => {};
+      mockGetOrCreateConversation.mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        }) as never
+      );
+      const screen = await renderLoaded();
+      const button = screen.getByRole('button', { name: 'Contact Seller' });
+
+      fireEvent.press(button);
+      fireEvent.press(button);
+
+      expect(mockGetOrCreateConversation).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Contact Seller' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ busy: true, disabled: true })
+      );
+
+      await act(async () => {
+        finish({ data: { conversationId: 'conv-9' } });
+      });
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Contact Seller' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ busy: false, disabled: false })
+      );
     });
   });
 
