@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -277,7 +277,10 @@ export default function MarketplaceHomeScreen() {
     [handleCardPress, handleToggleSave, savedIds]
   );
 
-  const renderHeader = useCallback(
+  // An element, not a component function: FlatList renders a function as
+  // <ListHeaderComponent />, so a new function per keystroke would remount the
+  // header and drop the search input's focus.
+  const listHeader = useMemo(
     () => (
       <View>
         <MarketplaceSearchBar value={searchInput} onChangeText={setSearchInput} />
@@ -362,8 +365,9 @@ export default function MarketplaceHomeScreen() {
         keyExtractor={(item) => item.id}
         numColumns={2}
         renderItem={renderGridItem}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={renderEmpty}
+        keyboardShouldPersistTaps="handled"
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
         refreshControl={
