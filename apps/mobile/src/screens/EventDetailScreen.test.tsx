@@ -30,6 +30,7 @@ const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
 const mockParentNavigate = jest.fn();
 const mockGetParent = jest.fn(() => ({ navigate: mockParentNavigate }));
+const mockIsFocused = jest.fn(() => true);
 const mockUseAuth = jest.fn();
 // Mutable so a test can navigate the mounted screen to another event, as a notification tap does.
 const mockRouteParams = { eventId: 'event-1' };
@@ -39,6 +40,7 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
     goBack: mockGoBack,
     getParent: mockGetParent,
+    isFocused: mockIsFocused,
   }),
   useRoute: () => ({ params: mockRouteParams }),
 }));
@@ -397,6 +399,46 @@ describe('EventDetailScreen', () => {
 
       expect(Alert.alert).toHaveBeenCalledWith('Error', 'Failed to start conversation. Please try again.');
       expect(mockParentNavigate).not.toHaveBeenCalled();
+    });
+
+    // Switching tabs, or opening the organizer's profile, keeps this screen
+    // mounted underneath, so a late answer must not pull the member back.
+    describe('when the member has moved on before the conversation starts', () => {
+      afterEach(() => {
+        mockIsFocused.mockReturnValue(true);
+      });
+
+      async function pressMessageThenLeave(answer: unknown) {
+        let finish: (value: unknown) => void = () => {};
+        mockGetOrCreateConversation.mockReturnValueOnce(
+          new Promise((resolve) => {
+            finish = resolve;
+          }) as never
+        );
+        const screen = await renderAndSettle();
+        fireEvent.press(screen.getByText('Message'));
+        mockIsFocused.mockReturnValue(false);
+        await act(async () => {
+          finish(answer);
+        });
+        return screen;
+      }
+
+      it("doesn't open the chat", async () => {
+        const screen = await pressMessageThenLeave({ data: { conversationId: 'conv-7' } });
+
+        expect(mockParentNavigate).not.toHaveBeenCalled();
+        // Back on the event, Message works again.
+        expect(screen.getByRole('button', { name: 'Message' }).props.accessibilityState).toEqual(
+          expect.objectContaining({ busy: false, disabled: false })
+        );
+      });
+
+      it("doesn't alert over the other screen when it fails", async () => {
+        await pressMessageThenLeave({ data: null, error: new Error('boom') });
+
+        expect(Alert.alert).not.toHaveBeenCalled();
+      });
     });
 
     it('starts one conversation for a double tap', async () => {

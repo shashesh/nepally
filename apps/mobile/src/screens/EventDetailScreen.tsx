@@ -274,9 +274,12 @@ function EventDetailView({ eventId }: { eventId: string }) {
       conversationId = null;
     }
     messagingRef.current = false;
-    // Gone back meanwhile: don't pull the member into a chat or alert over another screen.
+    // Gone back meanwhile: nothing left to update.
     if (!mountedRef.current) return;
     setMessaging(false);
+    // Moved to another tab or screen meanwhile, with this one still mounted
+    // underneath: don't pull the member into a chat or alert over that screen.
+    if (!navigation.isFocused()) return;
     if (!conversationId) {
       Alert.alert('Error', 'Failed to start conversation. Please try again.');
       return;
