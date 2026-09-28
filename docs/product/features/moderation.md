@@ -8,7 +8,7 @@ What the moderator queue at `/moderation` does on web today. Access and the serv
 - 100 reports auto-hide a post (it goes to `pending`). It was 3 until migration 047.
 - 100 reports remove a listing (`removed`), even a deactivated one. The owner can't bring a removed listing back; for now a moderator restores it from the Supabase dashboard.
 - Only members at Trust Level 1 or above can report.
-- An author or owner can't reset a post's or listing's report count.
+- An author or owner can't reset a post's or listing's report count, or create one with a count already set.
 - Bans go through the `moderate_user()` RPC.
 
 ## Who sees it

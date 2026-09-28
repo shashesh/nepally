@@ -10,8 +10,8 @@
  *   5. Reports bump posts.reports_count / users.reports_received and
  *      auto-hide an active post (status -> 'pending') at 100 (migration 047;
  *      the count is seeded to stay within three reporters). The author cannot
- *      reset the count, and a duplicate open report from the same reporter
- *      is rejected.
+ *      reset the count or create a post with one already set, and a duplicate
+ *      open report from the same reporter is rejected.
  *   6. Only moderators can ban; banning removes the user's posts and blocks
  *      further posting; unbanning restores posting.
  *
@@ -226,6 +226,28 @@ async function main(): Promise<void> {
       .single();
     assertCondition(!approve.error, `Moderator approval should succeed: ${approve.error?.message}`);
     assertCondition(approve.data?.status === 'active', 'Approved post should be active');
+
+    // 5a. A post the author creates starts with no reports, whatever count they send (047).
+    const forged = await authorClient
+      .from('posts')
+      .insert({
+        author_id: author.id,
+        title: 'Forged count smoke',
+        description: 'Forged count smoke — smoke test body',
+        status: 'active',
+        photos: [],
+        is_global: false,
+        reports_count: -1000,
+        ...location,
+      })
+      .select('id')
+      .single();
+    assertCondition(!forged.error, `Author post insert should succeed: ${forged.error?.message}`);
+    createdPosts.push(forged.data!.id as string);
+    assertCondition(
+      (await readPostStatus(service, forged.data!.id as string)).reports_count === 0,
+      'A client-created post should start with reports_count 0, not the forged value'
+    );
 
     // 5. The 100th report auto-hides the post (047); duplicate open report is rejected.
     const reportPayload = (reporterId: string) => ({

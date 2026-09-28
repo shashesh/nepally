@@ -4,6 +4,7 @@
  *
  * Verifies migration 047 (report_auto_hide_threshold) against a real
  * Supabase project:
+ *   0. A listing the owner creates starts at reports_count 0, whatever it sends.
  *   1. A Trust Level 0 member cannot report a listing (reports INSERT policy).
  *   2. A report bumps marketplace_listings.reports_count and the owner's
  *      users.reports_received; the listing stays active.
@@ -116,8 +117,8 @@ async function createUser(
   return { id: data.user.id, email, password };
 }
 
-/** Insert an active listing as the service role, borrowing a real listing's metro and category. */
-async function insertListing(service: SupabaseClient, ownerId: string): Promise<string> {
+/** A real listing's metro, category and type, so fixtures satisfy the foreign keys. */
+async function borrowListingFields(service: SupabaseClient) {
   const { data: template, error: templateError } = await service
     .from('marketplace_listings')
     .select('metro_area_id, category_id, listing_type')
@@ -128,6 +129,12 @@ async function insertListing(service: SupabaseClient, ownerId: string): Promise<
       `Failed to borrow listing fields: ${templateError?.message || 'no listings to borrow from'}`
     );
   }
+  return template;
+}
+
+/** Insert an active listing as the service role. */
+async function insertListing(service: SupabaseClient, ownerId: string): Promise<string> {
+  const template = await borrowListingFields(service);
 
   const { data, error } = await service
     .from('marketplace_listings')
@@ -189,6 +196,7 @@ async function main() {
   const service = createClient(url, serviceKey, { auth: NO_SESSION_AUTH });
   const createdUsers: string[] = [];
   let listingId: string | null = null;
+  let forgedListingId: string | null = null;
 
   try {
     const owner = await createUser(service, 'lr-owner', 1);
@@ -209,6 +217,29 @@ async function main() {
     );
 
     listingId = await insertListing(service, owner.id);
+
+    // 0. A listing the owner creates starts with no reports, whatever count they send.
+    const forged = await ownerClient
+      .from('marketplace_listings')
+      .insert({
+        ...(await borrowListingFields(service)),
+        owner_id: owner.id,
+        status: 'active',
+        title: 'Forged count listing',
+        description: 'Forged count listing body',
+        reports_count: -1000,
+      })
+      .select('id')
+      .single();
+    assertCondition(
+      !forged.error,
+      `The owner's listing insert should succeed: ${forged.error?.message}`
+    );
+    forgedListingId = forged.data!.id as string;
+    assertCondition(
+      (await readListing(service, forgedListingId)).reports_count === 0,
+      'A client-created listing should start with reports_count 0, not the forged value'
+    );
 
     // 1. Level 0 cannot report.
     const newcomerReport = await report(newcomerClient, newcomer.id, listingId);
@@ -323,6 +354,9 @@ async function main() {
     if (listingId) {
       await service.from('reports').delete().eq('target_id', listingId);
       await service.from('marketplace_listings').delete().eq('id', listingId);
+    }
+    if (forgedListingId) {
+      await service.from('marketplace_listings').delete().eq('id', forgedListingId);
     }
     for (const userId of createdUsers) {
       await service.from('users').delete().eq('id', userId);

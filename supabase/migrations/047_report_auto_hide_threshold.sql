@@ -27,9 +27,11 @@
 --   (service_role) until the moderation queue gets a listing action.
 --
 --   Report counter guard: posts' and listings' reports_count were writable
---   by their author/owner, who could reset it to stay under the threshold.
---   guard_report_counts() lets only privileged contexts (on_report_created
---   runs as its owner) and moderators change it.
+--   by their author/owner, who could reset it to stay under the threshold,
+--   or create the row with a forged count (a large negative one would keep
+--   it under 100 for good). guard_report_counts() lets only privileged
+--   contexts (on_report_created runs as its owner) and moderators change it,
+--   and starts every client-inserted row at 0.
 --
 --   Privileged contexts: the guards follow 035's
 --   guard_post_status_transition(). SECURITY INVOKER, and any current_user
@@ -162,7 +164,8 @@ CREATE TRIGGER trg_guard_listing_status_transition
   EXECUTE FUNCTION public.guard_listing_status_transition();
 
 -- ---------------------------------------------------------------------------
--- 4) Report counters change only through the report trigger or a moderator
+-- 4) Report counters change only through the report trigger or a moderator,
+--    and a client-created row starts at 0
 -- ---------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.guard_report_counts()
@@ -172,7 +175,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NEW.reports_count IS NOT DISTINCT FROM OLD.reports_count THEN
+  IF TG_OP = 'UPDATE' AND NEW.reports_count IS NOT DISTINCT FROM OLD.reports_count THEN
     RETURN NEW;
   END IF;
 
@@ -185,6 +188,13 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  -- A new post or listing has no reports, whatever count the client sent.
+  -- Normalised rather than rejected: the apps never send one.
+  IF TG_OP = 'INSERT' THEN
+    NEW.reports_count := 0;
+    RETURN NEW;
+  END IF;
+
   RAISE EXCEPTION 'reports_count can only be changed by the report trigger'
     USING ERRCODE = '42501';
 END;
@@ -194,12 +204,12 @@ REVOKE ALL ON FUNCTION public.guard_report_counts() FROM PUBLIC, anon, authentic
 
 DROP TRIGGER IF EXISTS trg_guard_post_reports_count ON public.posts;
 CREATE TRIGGER trg_guard_post_reports_count
-  BEFORE UPDATE OF reports_count ON public.posts
+  BEFORE INSERT OR UPDATE OF reports_count ON public.posts
   FOR EACH ROW
   EXECUTE FUNCTION public.guard_report_counts();
 
 DROP TRIGGER IF EXISTS trg_guard_listing_reports_count ON public.marketplace_listings;
 CREATE TRIGGER trg_guard_listing_reports_count
-  BEFORE UPDATE OF reports_count ON public.marketplace_listings
+  BEFORE INSERT OR UPDATE OF reports_count ON public.marketplace_listings
   FOR EACH ROW
   EXECUTE FUNCTION public.guard_report_counts();

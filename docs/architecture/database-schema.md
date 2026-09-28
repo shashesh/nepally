@@ -412,7 +412,7 @@ CREATE POLICY "Verified users can create posts"
 -- lets only moderators change a post's status; a non-moderator may only move
 -- their own post to 'removed'. 100 reports auto-hide an active post
 -- (status -> 'pending') via on_report_created() (3 until 047), and
--- guard_report_counts (047) stops the author resetting reports_count. The client's choice of
+-- guard_report_counts (047) stops the author resetting or forging reports_count. The client's choice of
 -- status ('active' vs 'pending') is not trusted: enforce_moderated_tag_status
 -- (AFTER INSERT on post_tags) force-reverts an active post to 'pending' when
 -- a signed-in non-moderator attaches a requires_moderation tag (e.g.
@@ -1386,7 +1386,7 @@ Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calli
 - `marketplace_listings.reports_count integer NOT NULL DEFAULT 0` counts listing reports, as `posts.reports_count` counts post reports. It isn't in `marketplace_listings_view`, whose columns were fixed when the view was created.
 - `on_report_created()` hides content at 100 reports (the constant `c_auto_hide_threshold`). A post moves `active → pending`; a listing moves `active` or `inactive` → `removed`.
 - `guard_listing_status_transition()` is a `BEFORE UPDATE OF status` trigger on `marketplace_listings`. A client that isn't a moderator can't move a listing out of `removed`. Privileged contexts (`service_role`, `postgres`, `SECURITY DEFINER` functions) pass.
-- `guard_report_counts()` is a `BEFORE UPDATE OF reports_count` trigger on `posts` and `marketplace_listings`. Only privileged contexts and moderators may change the counter.
+- `guard_report_counts()` is a `BEFORE INSERT OR UPDATE OF reports_count` trigger on `posts` and `marketplace_listings`. Only privileged contexts and moderators may change the counter, and a row a client creates starts at 0 whatever count it sends.
 - These are trigger functions, so no client role holds EXECUTE on them. Live checks: `npm run test:security:emergency-post` and `npm run test:security:listing-reports`.
 
 ---
