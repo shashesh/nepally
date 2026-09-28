@@ -17,6 +17,7 @@ import {
   getCategories,
   getListingsByMetro,
   getFeaturedListings,
+  userMessage,
   type MarketplaceCategory,
   type MarketplaceListing,
 } from '@nepally/shared';
@@ -29,15 +30,29 @@ import type { MarketplaceStackParamList } from '../../types/navigation';
 import { ListingCard } from '../../components/marketplace/ListingCard';
 import { ListingStrip } from '../../components/marketplace/ListingStrip';
 import { FilterBar, type FilterBarValue } from '../../components/marketplace/FilterBar';
+import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
 type Route = RouteProp<MarketplaceStackParamList, 'MarketplaceCategory'>;
 
 const PAGE_SIZE = 20;
+const LOAD_FAILED = "Couldn't load listings.";
+const LOAD_MORE_FAILED = "Couldn't load more listings.";
 
 interface ListingsPage {
-  listings: MarketplaceListing[] | null;
+  listings: MarketplaceListing[];
   featured: MarketplaceListing[];
+  hasMore: boolean;
+}
+
+/** A fetched page, the failure to show in its place, or nothing (no metro yet). */
+type PageResult = { page: ListingsPage } | { error: string } | null;
+
+/** Adds a page, skipping ids already on screen. */
+function appendPage(current: MarketplaceListing[], rows: MarketplaceListing[]) {
+  const seen = new Set(current.map((listing) => listing.id));
+  const fresh = rows.filter((listing) => !seen.has(listing.id));
+  return fresh.length ? [...current, ...fresh] : current;
 }
 
 export default function MarketplaceCategoryScreen() {
@@ -61,9 +76,21 @@ export default function MarketplaceCategoryScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [featuredListings, setFeaturedListings] = useState<MarketplaceListing[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  /**
+   * Where the next page starts, counted in rows the API consumed: the category
+   * filter drops rows after the query, so rows on screen can undercount.
+   */
+  const [nextOffset, setNextOffset] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const metroId = user?.metro_area_id ?? '';
   const mountedRef = useRef(true);
+  // One page request at a time, checked before state catches up with a fast second call.
+  const loadingMoreRef = useRef(false);
+  // Bumped by each first-page load; a next page requested under an older one is dropped.
+  const generationRef = useRef(0);
 
   // A new metro / filter set / search mode means a fresh first page: show the
   // full-screen spinner until it lands (adjusted during render, not in an effect).
@@ -75,9 +102,12 @@ export default function MarketplaceCategoryScreen() {
   ) {
     setPageQuery({ metroId, filters, isSearchMode });
     setLoading(true);
+    setError(null);
+    setLoadMoreError(null);
   }
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
@@ -101,83 +131,127 @@ export default function MarketplaceCategoryScreen() {
     [navigation]
   );
 
-  // Pure fetch — resolves to null when there is no metro or the request fails.
   const fetchPage = useCallback(
-    async (offset: number): Promise<ListingsPage | null> => {
+    async (offset: number): Promise<PageResult> => {
       if (!metroId) return null;
 
-      try {
-        const [result, featuredResult] = await Promise.all([
-          getListingsByMetro(supabase, metroId, {
-            categorySlug: filters.category || undefined,
-            searchQuery: filters.query || undefined,
-            sortBy: filters.sort,
-            limit: PAGE_SIZE,
-            offset,
-          }),
-          offset === 0 && !isSearchMode
-            ? getFeaturedListings(supabase, metroId, {
-                categorySlug: filters.category || undefined,
-                limit: 10,
-              })
-            : Promise.resolve({ data: [] as MarketplaceListing[] }),
-        ]);
-        return { listings: result.data ?? null, featured: featuredResult.data ?? [] };
-      } catch {
-        // Silently handle — empty listings will surface in the UI.
-        return null;
+      const [result, featuredResult] = await Promise.all([
+        getListingsByMetro(supabase, metroId, {
+          categorySlug: filters.category || undefined,
+          searchQuery: filters.query || undefined,
+          sortBy: filters.sort,
+          limit: PAGE_SIZE,
+          offset,
+        }),
+        offset === 0 && !isSearchMode
+          ? getFeaturedListings(supabase, metroId, {
+              categorySlug: filters.category || undefined,
+              limit: 10,
+            })
+          : Promise.resolve({ data: [] as MarketplaceListing[] }),
+      ]);
+
+      if (result.error) {
+        const firstPage = offset === 0;
+        return {
+          error: userMessage(
+            result.error,
+            firstPage ? LOAD_FAILED : LOAD_MORE_FAILED,
+            firstPage ? 'listings_load_failed' : 'listings_load_more_failed',
+            { platform: 'mobile', metroId, category: filters.category, offset }
+          ),
+        };
       }
+
+      const rows = result.data ?? [];
+      return {
+        page: {
+          listings: rows,
+          featured: featuredResult.data ?? [],
+          hasMore: result.hasMore ?? rows.length === PAGE_SIZE,
+        },
+      };
     },
     [metroId, filters, isSearchMode]
   );
 
-  // Applies a fetched page (if any) and clears every loading indicator.
-  const applyPage = useCallback((page: ListingsPage | null, offset: number) => {
-    if (page?.listings) {
-      const pageListings = page.listings;
-      if (offset === 0) {
-        setListings(pageListings);
-      } else {
-        setListings((prev) => [...prev, ...pageListings]);
-      }
-      setHasMore(pageListings.length === PAGE_SIZE);
+  // Applies a first page (or its failure) and clears every first-page indicator.
+  const applyFirstPage = useCallback((result: PageResult) => {
+    if (result && 'error' in result) {
+      setListings([]);
+      setFeaturedListings([]);
+      setHasMore(false);
+      setError(result.error);
+    } else if (result) {
+      setListings(result.page.listings);
+      // Always reset featured state on a fresh fetch. In search mode the parallel
+      // fetch short-circuits to an empty array, which clears any stale strip.
+      setFeaturedListings(result.page.featured);
+      setHasMore(result.page.hasMore);
+      setNextOffset(PAGE_SIZE);
+      setError(null);
     }
-
-    // Always reset featured state on a fresh fetch. In search mode the parallel
-    // fetch short-circuits to an empty array, which clears any stale strip
-    // carried over from a previous category load.
-    if (page && offset === 0) {
-      setFeaturedListings(page.featured);
-    }
-
+    loadingMoreRef.current = false;
+    setLoadMoreError(null);
+    setLoadingMore(false);
     setLoading(false);
     setRefreshing(false);
-    setLoadingMore(false);
   }, []);
 
   useEffect(() => {
+    const generation = ++generationRef.current;
     let cancelled = false;
-    fetchPage(0).then((page) => {
-      if (!cancelled) applyPage(page, 0);
+    fetchPage(0).then((result) => {
+      if (!cancelled && generation === generationRef.current) applyFirstPage(result);
     });
     return () => {
       cancelled = true;
     };
-  }, [fetchPage, applyPage]);
+  }, [fetchPage, applyFirstPage, reloadKey]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    const page = await fetchPage(0);
-    if (mountedRef.current) applyPage(page, 0);
-  }, [fetchPage, applyPage]);
+    const generation = ++generationRef.current;
+    const result = await fetchPage(0);
+    if (mountedRef.current && generation === generationRef.current) applyFirstPage(result);
+  }, [fetchPage, applyFirstPage]);
 
-  const onEndReached = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    setReloadKey((key) => key + 1);
+  }, []);
+
+  const requestNextPage = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
-    const offset = listings.length;
-    const page = await fetchPage(offset);
-    if (mountedRef.current) applyPage(page, offset);
-  }, [loadingMore, hasMore, listings.length, fetchPage, applyPage]);
+    const generation = generationRef.current;
+    const offset = nextOffset;
+    const result = await fetchPage(offset);
+    if (!mountedRef.current || generation !== generationRef.current) return;
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
+    if (!result) return;
+    if ('error' in result) {
+      // Paging stops rather than retrying in a loop while the list end is on screen.
+      setLoadMoreError(result.error);
+      return;
+    }
+    setListings((prev) => appendPage(prev, result.page.listings));
+    setHasMore(result.page.hasMore);
+    setNextOffset((current) => current + PAGE_SIZE);
+  }, [fetchPage, nextOffset]);
+
+  const onEndReached = useCallback(() => {
+    if (!hasMore || loading || refreshing || loadMoreError) return;
+    void requestNextPage();
+  }, [hasMore, loading, refreshing, loadMoreError, requestNextPage]);
+
+  const retryLoadMore = useCallback(() => {
+    setLoadMoreError(null);
+    void requestNextPage();
+  }, [requestNextPage]);
 
   const handleFilterChange = useCallback(
     (next: FilterBarValue) => {
@@ -252,17 +326,23 @@ export default function MarketplaceCategoryScreen() {
           onEndReachedThreshold={0.5}
           contentContainerStyle={styles.listContent}
           ListFooterComponent={
-            loadingMore ? (
+            loadMoreError ? (
+              <MarketplaceErrorState message={loadMoreError} onRetry={retryLoadMore} compact />
+            ) : loadingMore ? (
               <ActivityIndicator style={styles.loadingMore} color={colors.primary.main} />
             ) : null
           }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="search-outline" size={48} color={colors.text.tertiary} />
-              <Text style={styles.emptyText}>
-                {filters.query ? 'No listings match your search' : 'No listings in this category yet'}
-              </Text>
-            </View>
+            error ? (
+              <MarketplaceErrorState message={error} onRetry={reload} />
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="search-outline" size={48} color={colors.text.tertiary} />
+                <Text style={styles.emptyText}>
+                  {filters.query ? 'No listings match your search' : 'No listings in this category yet'}
+                </Text>
+              </View>
+            )
           }
         />
       )}
