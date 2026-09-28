@@ -11,6 +11,7 @@ import {
   saveListing,
 } from '@nepally/shared';
 import { Image } from 'expo-image';
+import { Galeria } from '@nandorojo/galeria';
 import ListingDetailScreen from './ListingDetailScreen';
 
 // ---------------------------------------------------------------------------
@@ -245,6 +246,15 @@ describe('ListingDetailScreen', () => {
     });
 
     expect(screen.getByText('1 / 2')).toBeTruthy();
+  });
+
+  it("opens the listing's photos in the full-screen viewer", async () => {
+    const photos = ['https://cdn/listing-photos/u/a.jpg', 'https://cdn/listing-photos/u/b.jpg'];
+    mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, photos } } as never);
+    const screen = render(<ListingDetailScreen />);
+    await act(async () => {});
+
+    expect(screen.UNSAFE_getByType(Galeria).props.urls).toEqual(photos);
   });
 
   it('keeps the listing on screen when the refetch on return fails', async () => {

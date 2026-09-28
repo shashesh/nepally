@@ -41,6 +41,21 @@ jest.mock('@expo/vector-icons', () => {
   };
 });
 
+// Galeria, the full-screen photo viewer, is a native module (and ships untranspiled
+// ESM). Tests get stand-ins that render their children, so a test can find them
+// by type and read the props they were given.
+jest.mock('@nandorojo/galeria', () => {
+  const React = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
+
+  const Galeria = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(View, null, children);
+  Galeria.Image = function GaleriaImage({ children }: { children?: React.ReactNode }) {
+    return React.createElement(View, null, children);
+  };
+  return { Galeria };
+});
+
 beforeEach(() => {
   // Ensure one suite cannot leak fake timers into the next suite.
   jest.useRealTimers();

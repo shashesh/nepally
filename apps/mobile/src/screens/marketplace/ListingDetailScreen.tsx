@@ -7,12 +7,11 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
   Linking,
   Platform,
   Share,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,6 +40,7 @@ import {
 import { ReportPostSheet } from '../../components/sheets/ReportPostSheet';
 import { Avatar } from '../../components/Avatar';
 import { TrustBadge } from '../../components/badges/TrustBadge';
+import { ListingPhotoGallery } from '../../components/marketplace/ListingPhotoGallery';
 import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import { useAuth } from '../../hooks/useAuth';
 import { useSavedListingIds } from '../../hooks/useSavedListingIds';
@@ -55,7 +55,8 @@ import type { MarketplaceStackParamList } from '../../types/navigation';
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
 type Route = RouteProp<MarketplaceStackParamList, 'ListingDetail'>;
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+/** The photo carousel's height; the photos fill the screen's width. */
+const PHOTO_HEIGHT = 250;
 
 export default function ListingDetailScreen() {
   const navigation = useNavigation<Nav>();
@@ -69,15 +70,7 @@ export default function ListingDetailScreen() {
   const { savedIds, toggle: toggleSaved } = useSavedListingIds(userId);
   const isSaved = savedIds.has(listingId);
   const [saving, setSaving] = useState(false);
-  const [photoIndex, setPhotoIndex] = useState(0);
-  // Coming back from an edit can change the photos: start the carousel over
-  // (its key remounts it at the first photo) so the count never reads "3 / 1".
-  const photoSet = listing?.photos.join(' ') ?? '';
-  const [shownPhotoSet, setShownPhotoSet] = useState(photoSet);
-  if (photoSet !== shownPhotoSet) {
-    setShownPhotoSet(photoSet);
-    setPhotoIndex(0);
-  }
+  const { width: windowWidth } = useWindowDimensions();
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [contacting, setContacting] = useState(false);
@@ -274,28 +267,7 @@ export default function ListingDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Photos */}
         {listing.photos.length > 0 ? (
-          <View>
-            <ScrollView
-              key={photoSet}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={(e) => {
-                setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH));
-              }}
-            >
-              {listing.photos.map((photo, index) => (
-                <Image key={index} source={photo} style={styles.photo} contentFit="cover" />
-              ))}
-            </ScrollView>
-            {listing.photos.length > 1 && (
-              <View style={styles.photoIndicator}>
-                <Text style={styles.photoIndicatorText}>
-                  {photoIndex + 1} / {listing.photos.length}
-                </Text>
-              </View>
-            )}
-          </View>
+          <ListingPhotoGallery photos={listing.photos} width={windowWidth} height={PHOTO_HEIGHT} />
         ) : (
           <View style={[styles.photoPlaceholder, { backgroundColor: categoryColor + '20' }]}>
             <Text style={styles.photoPlaceholderEmoji}>{listing.category?.emoji ?? '📦'}</Text>
@@ -642,32 +614,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  photo: {
-    width: SCREEN_WIDTH,
-    height: 250,
-    resizeMode: 'cover',
-  },
   photoPlaceholder: {
-    width: SCREEN_WIDTH,
+    width: '100%',
     height: 200,
     justifyContent: 'center',
     alignItems: 'center',
   },
   photoPlaceholderEmoji: {
     fontSize: 64,
-  },
-  photoIndicator: {
-    position: 'absolute',
-    bottom: spacing.s,
-    right: spacing.m,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: spacing.s,
-    paddingVertical: 4,
-    borderRadius: borderRadius.button,
-  },
-  photoIndicatorText: {
-    ...typography.caption,
-    color: colors.white,
   },
   contentSection: {
     backgroundColor: colors.white,
