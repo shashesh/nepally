@@ -215,23 +215,33 @@ export function getListingPhotoPathFromUrl(url: string): string | null {
   return getPathFromPublicUrl(url, LISTING_PHOTOS_BUCKET);
 }
 
-/** The storage path in a bucket's public URL: what follows `/<bucket>/`, decoded, without the query. */
-function getPathFromPublicUrl(url: string, bucket: string): string | null {
-  if (!url) return null;
+/**
+ * An http(s) URL's path, without its query or fragment. A regex rather than
+ * `new URL()`, so Node, browsers and Hermes (whose `URL` is partial) agree.
+ */
+const URL_PATH = /^https?:\/\/[^/?#]+(\/[^?#]*)/i;
 
-  const marker = `/${bucket}/`;
-  const markerIndex = url.indexOf(marker);
+/**
+ * The storage path in a bucket's public URL (what `getPublicUrl` returns):
+ * what follows `/storage/v1/object/public/<bucket>/` in the URL's path,
+ * decoded. Null for anything else, including a URL that only mentions the
+ * bucket in its query or fragment.
+ */
+function getPathFromPublicUrl(url: string, bucket: string): string | null {
+  const pathname = url.match(URL_PATH)?.[1];
+  if (!pathname) return null;
+
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const markerIndex = pathname.indexOf(marker);
   if (markerIndex === -1) return null;
 
-  const startIndex = markerIndex + marker.length;
-  const rawPath = url.slice(startIndex);
-  const pathWithoutQuery = rawPath.split('?')[0];
-  if (!pathWithoutQuery) return null;
+  const rawPath = pathname.slice(markerIndex + marker.length);
+  if (!rawPath) return null;
 
   try {
-    return decodeURIComponent(pathWithoutQuery);
+    return decodeURIComponent(rawPath);
   } catch {
-    return pathWithoutQuery;
+    return rawPath;
   }
 }
 

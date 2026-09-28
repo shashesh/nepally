@@ -516,6 +516,16 @@ describe('getListingPhotoPathFromUrl', () => {
     );
   });
 
+  it('returns null when the bucket name is only in the query or fragment', () => {
+    expect(getListingPhotoPathFromUrl('https://example.com/?next=/listing-photos/user-1/a.jpg')).toBeNull();
+    expect(getListingPhotoPathFromUrl('https://example.com/page#/listing-photos/user-1/a.jpg')).toBeNull();
+  });
+
+  it('returns null for a path outside Supabase public storage', () => {
+    expect(getListingPhotoPathFromUrl('https://example.com/listing-photos/user-1/a.jpg')).toBeNull();
+    expect(getListingPhotoPathFromUrl('not a url /storage/v1/object/public/listing-photos/a.jpg')).toBeNull();
+  });
+
   it('returns null for another bucket, an empty path or no URL', () => {
     expect(getListingPhotoPathFromUrl(`${PUBLIC}/post-photos/user-1/a.jpg`)).toBeNull();
     expect(getListingPhotoPathFromUrl(`${PUBLIC}/listing-photos/`)).toBeNull();
@@ -527,5 +537,6 @@ describe('getPostPhotoPathFromUrl', () => {
   it('reads post photo paths and ignores listing photos', () => {
     expect(getPostPhotoPathFromUrl(`${PUBLIC}/post-photos/user-1/a.jpg`)).toBe('user-1/a.jpg');
     expect(getPostPhotoPathFromUrl(`${PUBLIC}/listing-photos/user-1/a.jpg`)).toBeNull();
+    expect(getPostPhotoPathFromUrl('https://example.com/?next=/post-photos/user-1/a.jpg')).toBeNull();
   });
 });
