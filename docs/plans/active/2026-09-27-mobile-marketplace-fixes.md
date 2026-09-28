@@ -794,40 +794,40 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 **Chunk A: the form (3.1–3.4, 3.6, 3.7)**
 
-- [ ] **A1. No silent validation failures (3.1).**
+- [x] **A1. No silent validation failures (3.1).**
   - Show the message for every schema field: title, description, category, business name, price, address, phone, email and website.
   - Inputs get the schema's `maxLength` (price 50, business name 100, address 200, phone 20).
   - A website typed without a scheme gets `https://` before validation.
   - On failure the form scrolls to the first invalid field, measured with `onLayout`.
-- [ ] **A2. Keyboard (3.2).**
+- [x] **A2. Keyboard (3.2).**
   - `KeyboardAvoidingView` (`padding` on iOS) around the scroll view, as `CreatePostScreen` does, plus `keyboardShouldPersistTaps="handled"`.
   - Each field's "next" moves to the following field.
   - `autoComplete` and `textContentType` for phone, email and URL.
-- [ ] **A3. No accidental data loss (3.3).** While the form differs from what it started with and isn't submitting, `usePreventRemove` asks "Discard this listing?" or "Discard your changes?" before swipe-down, ✕ or Android back. There's no prompt once a save succeeds.
-- [ ] **A4. After saving, show the result (3.4).**
+- [x] **A3. No accidental data loss (3.3).** While the form differs from what it started with and isn't submitting, `usePreventRemove` asks "Discard this listing?" or "Discard your changes?" before swipe-down, ✕ or Android back. There's no prompt once a save succeeds.
+- [x] **A4. After saving, show the result (3.4).**
   - Create replaces the form with the new listing's detail (`StackActions.replace`).
   - Edit goes back, and `ListingDetailScreen` refetches when it regains focus, skipping the first focus, so the edits show.
-- [ ] **A5. Type defaults and hidden fields (3.6).** Default to Individual. On submit, the type not selected sends `undefined` for its fields, which `updateListing` stores as `null`: business name, address and website for Individual; condition for Business.
-- [ ] **A6. Form accessibility (3.7).**
+- [x] **A5. Type defaults and hidden fields (3.6).** Default to Individual. On submit, the type not selected sends `undefined` for its fields, which `updateListing` stores as `null`: business name, address and website for Individual; condition for Business.
+- [x] **A6. Form accessibility (3.7).**
   - Every input has an `accessibilityLabel`.
   - The type and condition toggles are radios with a selected state, and category chips report selection.
   - The close button has a label.
-- [ ] **Chunk A gate and review.**
+- [x] **Chunk A gate and review.** The review found that a failed edit load showed an empty form whose save would blank the listing, and that leaving mid-save could pop an alert over another screen; both fixed, with the refocus-race and screen-reader-focus findings.
 
 **Chunk B: photos (3.5, 3.8)**
 
-- [ ] **B1. Picking photos (3.5).**
+- [x] **B1. Picking photos (3.5).**
   - Drop the library-permission request: the system picker needs none, and a member who once denied it can never add photos today.
   - Add "Take photo" (`launchCameraAsync`, with the camera permission request).
   - Say how many photos failed to process.
   - The remove ✕ gets a 44pt target and a label.
-- [ ] **B2. Order and cover (3.5).** One ordered photo list (existing and new, as `CreatePostScreen` keeps them). The first photo is badged Cover, and each other photo has "Make cover". New photos upload in that order, so `photos[0]` is the cover everywhere.
-- [ ] **B3. No orphaned photos (3.8).**
+- [x] **B2. Order and cover (3.5).** One ordered photo list (existing and new, as `CreatePostScreen` keeps them). The first photo is badged Cover, and each other photo has "Make cover". New photos upload in that order, so `photos[0]` is the cover everywhere.
+- [x] **B3. No orphaned photos (3.8).**
   - Shared: `getListingPhotoPathFromUrl` (with the post version, sharing one parser) and `cleanUpListingPhotos`, as `cleanUpPostPhotos` does.
   - Mobile and web: a failed create or update deletes the photos it just uploaded, and a successful edit deletes the files for the photos it dropped.
   - **Not** on delete. `deleteListing` is a soft delete to `removed`, which moderators can restore from the dashboard and which keeps evidence for a report, so its photos stay. This supersedes the "on delete" line in the table below.
-- [ ] **B4. Permission prompts.** The iOS camera and photo prompts in `app.json` say "profile photo"; they should cover profile, posts and listings, since App Review checks that prompts match use. This needs a new native build (not an OTA update).
-- [ ] **Chunk B gate and review**, then push, open the draft PR, and request Copilot's review.
+- [x] **B4. Permission prompts.** The iOS camera and photo prompts in `app.json` say "profile photo"; they should cover profile, posts and listings, since App Review checks that prompts match use. This needs a new native build (not an OTA update).
+- [x] **Chunk B gate and review**, then push, open the draft PR, and request Copilot's review. The review found that an upload failing part-way orphaned the photos before it, and that deleting photos after any failed write could break a listing the server had saved before the connection dropped. Now `uploadListingPhotos` returns what it uploaded, and `cleanUpAfterFailedListingWrite` deletes only when the server refused the write. The photo picker also stops once the screen is gone, and "Make cover" has a 44pt target.
 
 | #   | Task                                                                                                                                                                                                                                                                                                                                                                                      | Main files                                                                                                                                   | Done when                                                                                            |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -873,6 +873,9 @@ Not in PRs 1–4. Some affect both platforms or need a migration.
 - **Web parity:** no report-listing UI, no saved-listings page, no marketplace rules page.
 - **Both platforms:** no share or deep links (the mobile app has no linking config), no price or condition filters, no business-hours input, no "mark as sold" status.
 - **Grid thumbnails load full 1200px photos**; use storage image transforms if the plan allows it.
+- **A post photo upload that fails part-way orphans the photos before it.** `uploadPostPhotos` stops at the first failure without returning the paths already uploaded. `uploadListingPhotos` returns them since PR 3; do the same for posts, and apply the listing rule of cleaning up after a failed write only when the server refused it.
+- **Web's create form still starts as Business**; mobile starts as Individual since PR 3.
+- **Mobile shows the server's own text when saving a listing fails** (`Alert.alert('Error', result.error.message)`); web uses `userMessage`.
 - **Visual consistency:** Category, Detail, Create and My Listings still use the pre-redesign palette. The 2026-04-14 redesign deferred them.
 
 ## Decisions (2026-09-27)

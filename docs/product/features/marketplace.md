@@ -81,7 +81,7 @@ All in `apps/mobile/src/screens/marketplace/`:
 - **MarketplaceHomeScreen** — Web-style rows: search, category tiles, then Sponsored, Featured, Recently Added and Trending strips (each hidden when empty) above the paged All listings grid; FAB for creating
 - **MarketplaceCategoryScreen** — Category-filtered listing list with search and pagination
 - **ListingDetailScreen** — Full listing view, photo carousel, structured fields, Contact/Save actions
-- **CreateListingScreen** — Create/edit form with Business/Individual toggle, Zod validation
+- **CreateListingScreen** — Create/edit form: Individual/Business toggle, photos with a cover, Zod validation
 - **MyListingsScreen** — User's listings with status badges, refresh/deactivate/delete actions
 - **SavedListingsScreen** — The member's saved listings; the heart unsaves and removes the card
 - **BrowseCategoriesScreen**, **MarketplaceRulesScreen** — Category tiles; static marketplace rules
@@ -103,6 +103,17 @@ All in `apps/mobile/src/screens/marketplace/`:
 - Prices go through the shared `formatListingPrice`, so "80" reads "$80" and "Negotiable" stays as typed, as on web.
 - Sort options read "Price: low to high" and "Price: high to low".
 
+**Creating and editing a listing (mobile).**
+
+- A new listing starts as Individual. The type not picked saves nothing for its fields, so switching Business to Individual doesn't keep the business name.
+- Every field shows its own error, and a failed submit scrolls to the first one and moves the screen reader there. A website typed without `https://` gets it.
+- The return key moves to the next field. Phone, email, address and website autofill.
+- Swipe-down, ✕ or Android back on a changed form asks "Discard this listing?" or "Discard your changes?" first.
+- Creating opens the new listing. Saving an edit goes back to the listing, which refetches so the edits show.
+- If the categories or the listing being edited fail to load, the form says so with Try again rather than showing empty fields.
+- Photos come from the system picker, which needs no photo permission, or from the camera. The first photo is the cover (badged Cover), and "Make cover" moves another to the front. Photos that fail to process are counted in an alert.
+- A failed save deletes the photos it just uploaded, but only when the server refused it; if the connection dropped, the listing may have saved, so they stay. A saved edit deletes the files of photos it dropped. Deleting a listing keeps its photos, since moderators can restore it.
+
 ### Web (Next.js)
 
 All in `apps/web/src/pages/marketplace/`:
@@ -110,7 +121,7 @@ All in `apps/web/src/pages/marketplace/`:
 - **index.page.tsx** — Marketplace home: the Featured, Recently Added and Trending strips, plus the grid
 - **[category].page.tsx** — Category filtered view, supports search mode
 - **listing/[id].page.tsx** — Full listing detail page
-- **create.page.tsx** — Create/edit listing form
+- **create.page.tsx** — Create/edit listing form. It shows every field's error, adds `https://` to a website, saves nothing for the type not picked, and tidies photos as mobile does
 - **my-listings.page.tsx** — My listings management page
 
 Both browse routes are thin wrappers over one `MarketplaceBrowse` component, so `/marketplace?category=<slug>` and `/marketplace/<slug>` show the same thing; only the heading, the back link and where a filter change navigates differ. The grid names the active category rather than always reading "All Listings". See [web-ui-system.md](../../architecture/web-ui-system.md) for the components and hooks behind it.
@@ -140,6 +151,7 @@ All business logic in `packages/shared/`:
 - **Types:** `src/types/marketplace.ts`
 - **Constants:** `src/constants/marketplace.ts` (categories config, limits, labels)
 - **Validation:** `src/validation/marketplace.ts` (Zod schemas: `createListingSchema`, `updateListingSchema`)
+- **Form logic:** `src/logic/marketplace/listingForm.ts` (`buildListingFormInput`, `withUrlScheme`, `listingFieldErrors`, `isSameListingForm`) and `src/logic/listingPhotoCleanup.ts` (`cleanUpListingPhotos`, `cleanUpAfterFailedListingWrite`, `droppedListingPhotoPaths`)
 - **API:** `src/api/marketplace.ts` (16 functions accepting `SupabaseClient` via DI)
 
 ### API Functions
