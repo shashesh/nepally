@@ -61,7 +61,6 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
 - [plans/active/2026-09-18-production-launch.md](plans/active/2026-09-18-production-launch.md) — 12-week production launch (public launch Dec 1, 2026): prod environment, store compliance, monitoring, support operations, six launch markets, week-by-week tracker
-- [plans/active/2026-09-27-mobile-marketplace-fixes.md](plans/active/2026-09-27-mobile-marketplace-fixes.md) — fixes from the 2026-09-27 mobile marketplace audit: launch blockers (sponsored-listing crash, listing reports, Promote removal, search focus), then browsing, create/edit, and detail/My Listings
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 
@@ -129,5 +128,5 @@ See [archive/](archive/):
 
 - `archive/PROGRESS.md` — historical implementation tracker (superseded by roadmap)
 - `archive/marketplace-category-consolidation-plan.md` — shipped as migration 016
-- `archive/plans/` — 20 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, the Postgres 15→17 sync, the Expo SDK 54→57 migration, the React Compiler lint cleanup, and the web UI overhaul (PRs 0–10c; its "Open follow-ups (after the overhaul)" section is the post-overhaul backlog, and "After the overhaul — Mantine 9" is the next step)
+- `archive/plans/` — 21 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, the Postgres 15→17 sync, the Expo SDK 54→57 migration, the React Compiler lint cleanup, the web UI overhaul (PRs 0–10c; its "Open follow-ups (after the overhaul)" section is the post-overhaul backlog, and "After the overhaul — Mantine 9" is the next step), and the 2026-09-27 mobile marketplace fixes (PRs #102–#106; its "Follow-ups (not scheduled)" section is the marketplace backlog)
 - `archive/specs/` — 8 design specs for shipped features, including the web UI overhaul design

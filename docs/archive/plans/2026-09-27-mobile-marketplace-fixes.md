@@ -1,12 +1,14 @@
 ---
 title: Mobile marketplace fixes
-status: in-progress
+status: implemented
 created: 2026-09-27
 ---
 
 # Mobile Marketplace Fixes Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Done 2026-09-28.** All five PRs merged, #102–#106, and the plan was archived. The [Follow-ups](#follow-ups-not-scheduled) are not scheduled; pick them up from here.
 
 **Goal:** Fix the bugs and UX gaps found in the 2026-09-27 audit of the native (iOS and Android) marketplace, starting with the four that block a store submission.
 
@@ -40,7 +42,7 @@ Each PR is one chunk, run the way PRs 7–10 of the [web UI overhaul](../../arch
 | 1b  | `feat/report-auto-hide-threshold`        | Reports hide a post or listing at 100, not 3 (migration 047; merged #103)      |
 | 2   | `fix/mobile-marketplace-browse`          | Home, Category and Saved: rows, refetch, errors, location, price (merged #104) |
 | 3   | `fix/mobile-marketplace-create-edit`     | Create and edit form (merged #105)                                             |
-| 4   | `fix/mobile-marketplace-detail`          | Listing detail and My Listings                                                 |
+| 4   | `fix/mobile-marketplace-detail`          | Listing detail and My Listings (merged #106)                                   |
 
 PR 1 is broken into steps below. PRs 2–4 list their tasks, files and acceptance criteria. Each one gets its step breakdown at the start of that PR, against the code as it is then.
 
@@ -705,20 +707,20 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 **Tasks:**
 
-- [ ] **1b.1 Migration 047.** Before writing it, run read-only checks on staging: the trigger and function names, and the current maximum of `posts.reports_count`.
-- [ ] **1b.2 Post smoke test.** `scripts/security/emergency-post-smoke.ts` step 5 asserts auto-hide at 3. It becomes:
+- [x] **1b.1 Migration 047.** Before writing it, run read-only checks on staging: the trigger and function names, and the current maximum of `posts.reports_count`.
+- [x] **1b.2 Post smoke test.** `scripts/security/emergency-post-smoke.ts` step 5 asserts auto-hide at 3. It becomes:
   - one report: count 1, still active
   - the service role seeds the count to 98
   - the second report: 99, still active
   - the third report: 100, `pending`
   - the author can't reset `reports_count`
-- [ ] **1b.3 Listing smoke test.** New `scripts/security/listing-reports-smoke.ts` as `npm run test:security:listing-reports`:
+- [x] **1b.3 Listing smoke test.** New `scripts/security/listing-reports-smoke.ts` as `npm run test:security:listing-reports`:
   - A Level 0 member can't report.
   - A report bumps the listing's and the owner's counters.
   - The owner can't reset `reports_count`.
   - A seeded 99 plus one report removes the listing.
   - The owner can't reactivate it; the service role (the dashboard) can.
-- [ ] **1b.4 Docs.**
+- [x] **1b.4 Docs.**
   - `moderation.md`: posts hide at 100; listings are removed at 100.
   - `marketplace.md`
   - `database-schema.md`: the column and the triggers
