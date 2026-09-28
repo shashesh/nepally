@@ -49,8 +49,9 @@ export type ProfileStackParamList = {
 };
 
 /**
- * Routes that both the Home and Marketplace stacks have, for the screens that
- * live in either: a seller's profile opens from a listing, and a profile opens posts.
+ * Routes that the Home, Events and Marketplace stacks all have, for the screens
+ * that live in any of them: a seller's or organizer's profile opens on top of
+ * the listing or event, and a profile opens posts.
  */
 export type ProfileRoutesParamList = {
   PostDetail: { postId: string };
@@ -87,7 +88,7 @@ export type ChatStackParamList = {
 /**
  * Events stack parameter list
  */
-export type EventsStackParamList = {
+export type EventsStackParamList = ProfileRoutesParamList & {
   EventsList: undefined;
   EventDetail: { eventId: string };
   CreateEvent: { editEventId?: string } | undefined;

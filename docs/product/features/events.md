@@ -125,7 +125,7 @@ Each event card displays:
 - [ ] Location row: map pin icon + location name + address (if provided)
 - [ ] Description (full text, scrollable)
 - [ ] Organizer section: avatar (40px) + masked name + trust badge + "Message Organizer" button
-  - Tapping avatar/name navigates to organizer's public profile. On mobile it opens in the Home tab, where the public profile screen lives.
+  - Tapping avatar/name navigates to organizer's public profile. On mobile it opens on top of the event, in the Events stack, so back returns to the event; the organizer's own event opens their Profile tab.
   - "Message Organizer" opens in-app chat (Level 1+ only; Level 0 sees prompt). On mobile it starts the conversation first, then opens it through the root `Chat` stack.
 - [ ] RSVP section:
   - RSVP count: "34 going"

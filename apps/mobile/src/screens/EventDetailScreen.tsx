@@ -293,15 +293,16 @@ function EventDetailView({ eventId }: { eventId: string }) {
     });
   }, [event, user, navigation]);
 
-  // PublicProfileView is in the Home tab's stack, so it's reached through
-  // `Home`, as a profile reaches a listing through `Marketplace`.
   const handleViewOrganizerProfile = useCallback(() => {
-    if (!event?.organizer) return;
-    navigation.getParent()?.navigate('Home', {
-      screen: 'PublicProfileView',
-      params: { userId: event.organizer.id },
-    });
-  }, [event, navigation]);
+    const organizer = event?.organizer;
+    if (!organizer) return;
+    // Your own event: your own profile, as a post's author link does.
+    if (organizer.id === userId) {
+      navigation.getParent()?.navigate('Profile');
+      return;
+    }
+    navigation.navigate('PublicProfileView', { userId: organizer.id });
+  }, [event, navigation, userId]);
 
   if (loading) {
     return (

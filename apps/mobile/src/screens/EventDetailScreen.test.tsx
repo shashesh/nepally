@@ -343,15 +343,19 @@ describe('EventDetailScreen', () => {
       expect(mockGoBack).toHaveBeenCalled();
     });
 
-    // The public profile lives in the Home tab's stack. The tab navigator only
-    // reaches a sibling tab's screen when the tab is named.
-    it("opens the organizer's public profile in the Home tab", async () => {
+    it("opens the organizer's public profile on top of the event", async () => {
       const { getByText } = await renderAndSettle();
       fireEvent.press(getByText('Asha K.'));
-      expect(mockParentNavigate).toHaveBeenCalledWith('Home', {
-        screen: 'PublicProfileView',
-        params: { userId: 'organizer-1' },
-      });
+      expect(mockNavigate).toHaveBeenCalledWith('PublicProfileView', { userId: 'organizer-1' });
+      expect(mockParentNavigate).not.toHaveBeenCalled();
+    });
+
+    it('takes the organizer to their own Profile tab', async () => {
+      setOrganizerAuth();
+      const { getByText } = await renderAndSettle();
+      fireEvent.press(getByText('Asha K.'));
+      expect(mockParentNavigate).toHaveBeenCalledWith('Profile');
+      expect(mockNavigate).not.toHaveBeenCalledWith('PublicProfileView', expect.anything());
     });
 
     // MessageThread is inside the root stack's Chat navigator, so it's reached

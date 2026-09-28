@@ -5,6 +5,8 @@ import { colors } from '../styles/colors';
 import EventsScreen from '../screens/EventsScreen';
 import EventDetailScreen from '../screens/EventDetailScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
+import PublicProfileScreen from '../screens/profile/PublicProfileScreen';
+import PostDetailScreen from '../screens/PostDetailScreen';
 
 const Stack = createNativeStackNavigator<EventsStackParamList>();
 
@@ -35,6 +37,13 @@ export function EventsNavigator() {
           presentation: 'modal',
         }}
       />
+      {/* An organizer's profile, from an event, and the posts it opens. */}
+      <Stack.Screen
+        name="PublicProfileView"
+        component={PublicProfileScreen}
+        options={{ title: 'Profile' }}
+      />
+      <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ title: '' }} />
     </Stack.Navigator>
   );
 }
