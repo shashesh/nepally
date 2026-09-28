@@ -7,6 +7,8 @@ import {
   deleteListingPhotos,
   deletePostPhotos,
   deleteProfilePhoto,
+  getListingPhotoPathFromUrl,
+  getPostPhotoPathFromUrl,
 } from './storage';
 
 const ONE_MB = 1024 * 1024;
@@ -495,5 +497,32 @@ describe('deleteListingPhotos', () => {
     const result = await deleteListingPhotos(supabase, ['path/a.jpg']);
 
     expect(result.error?.message).toBe('Permission denied');
+  });
+});
+
+const PUBLIC = 'https://abc.supabase.co/storage/v1/object/public';
+
+describe('getListingPhotoPathFromUrl', () => {
+  it('reads the storage path out of a public listing photo URL', () => {
+    expect(getListingPhotoPathFromUrl(`${PUBLIC}/listing-photos/user-1/a.jpg`)).toBe('user-1/a.jpg');
+  });
+
+  it('drops a query string and decodes escapes', () => {
+    expect(getListingPhotoPathFromUrl(`${PUBLIC}/listing-photos/user-1/my%20photo.jpg?t=1`)).toBe(
+      'user-1/my photo.jpg'
+    );
+  });
+
+  it('returns null for another bucket, an empty path or no URL', () => {
+    expect(getListingPhotoPathFromUrl(`${PUBLIC}/post-photos/user-1/a.jpg`)).toBeNull();
+    expect(getListingPhotoPathFromUrl(`${PUBLIC}/listing-photos/`)).toBeNull();
+    expect(getListingPhotoPathFromUrl('')).toBeNull();
+  });
+});
+
+describe('getPostPhotoPathFromUrl', () => {
+  it('reads post photo paths and ignores listing photos', () => {
+    expect(getPostPhotoPathFromUrl(`${PUBLIC}/post-photos/user-1/a.jpg`)).toBe('user-1/a.jpg');
+    expect(getPostPhotoPathFromUrl(`${PUBLIC}/listing-photos/user-1/a.jpg`)).toBeNull();
   });
 });

@@ -204,9 +204,22 @@ export async function deletePostPhotos(
  * Returns null if the URL does not belong to the post photos bucket.
  */
 export function getPostPhotoPathFromUrl(url: string): string | null {
+  return getPathFromPublicUrl(url, POST_PHOTOS_BUCKET);
+}
+
+/**
+ * Convert a Supabase public URL for `listing-photos` into a storage path.
+ * Returns null if the URL does not belong to the listing photos bucket.
+ */
+export function getListingPhotoPathFromUrl(url: string): string | null {
+  return getPathFromPublicUrl(url, LISTING_PHOTOS_BUCKET);
+}
+
+/** The storage path in a bucket's public URL: what follows `/<bucket>/`, decoded, without the query. */
+function getPathFromPublicUrl(url: string, bucket: string): string | null {
   if (!url) return null;
 
-  const marker = `/${POST_PHOTOS_BUCKET}/`;
+  const marker = `/${bucket}/`;
   const markerIndex = url.indexOf(marker);
   if (markerIndex === -1) return null;
 

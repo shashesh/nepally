@@ -38,8 +38,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Nepally needs access to your photos to set a profile picture.",
-          "cameraPermission": "Nepally needs access to your camera to take a profile photo."
+          "photosPermission": "Nepally uses your photos so you can add them to your profile, posts and marketplace listings.",
+          "cameraPermission": "Nepally uses your camera so you can take photos for your profile, posts and marketplace listings.",
+          "microphonePermission": false
         }
       ],
       [
