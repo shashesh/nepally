@@ -66,7 +66,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 ## Specs (point-in-time designs — archived when the work ships)
 
-_None active._
+- [specs/2026-09-28-account-deletion.md](specs/2026-09-28-account-deletion.md) — in-app account deletion (web + mobile): 30-day hidden grace period, restore on sign-in, recent sign-in check, daily purge of auth user and photos, public `/delete-account` page
 
 Shipped designs live in [archive/specs/](archive/specs/).
 
