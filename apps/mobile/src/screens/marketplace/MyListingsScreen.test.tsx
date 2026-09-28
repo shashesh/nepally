@@ -82,6 +82,7 @@ function makeListing(overrides: Record<string, unknown> = {}) {
 }
 
 jest.mock('@nepally/shared', () => ({
+  userMessage: jest.requireActual('@nepally/shared').userMessage,
   getListingsByOwner: jest.fn(async () => ({ data: [] })),
   deactivateListing: jest.fn(async () => ({ error: null })),
   reactivateListing: jest.fn(async () => ({ error: null })),
@@ -280,12 +281,32 @@ describe('MyListingsScreen', () => {
     expect(mockGetListingsByOwner).not.toHaveBeenCalled();
   });
 
-  it('handles fetch error gracefully', async () => {
-    mockGetListingsByOwner.mockRejectedValue(new Error('Network error'));
+  it('says My Listings could not load instead of claiming there are none', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetListingsByOwner.mockResolvedValue({ error: new Error('Network error') });
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
-      expect(screen.getByText("You haven't created any listings yet")).toBeTruthy();
+      expect(screen.getByText("Couldn't load your listings.")).toBeTruthy();
     });
+    expect(screen.queryByText("You haven't created any listings yet")).toBeNull();
+    jest.restoreAllMocks();
+  });
+
+  it('treats a thrown fetch as a failure too, and Try again reloads', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetListingsByOwner.mockRejectedValueOnce(new Error('Network error'));
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load your listings.")).toBeTruthy();
+    });
+
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+    fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+    jest.restoreAllMocks();
   });
 
   it('calls refreshListing when Refresh is pressed', async () => {

@@ -27,12 +27,14 @@ import {
   getDaysSinceRefresh,
   createReport,
   TrustLevel,
+  userMessage,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   BUSINESS_HOURS_DAYS,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { ReportPostSheet } from '../../components/sheets/ReportPostSheet';
+import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import { useAuth } from '../../hooks/useAuth';
 import { useNow } from '../../hooks/useNow';
 import { supabase } from '../../config/supabase';
@@ -45,6 +47,7 @@ type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
 type Route = RouteProp<MarketplaceStackParamList, 'ListingDetail'>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const LOAD_FAILED = "Couldn't load this listing.";
 
 export default function ListingDetailScreen() {
   const navigation = useNavigation<Nav>();
@@ -61,10 +64,15 @@ export default function ListingDetailScreen() {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  // Set when the read failed, as opposed to the listing being gone (ListingResult.notFound).
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
   const now = useNow();
 
   useEffect(() => {
     let cancelled = false;
+    const failed = (error: unknown) =>
+      userMessage(error, LOAD_FAILED, 'listing_load_failed', { platform: 'mobile', listingId });
 
     (async () => {
       try {
@@ -80,20 +88,28 @@ export default function ListingDetailScreen() {
         if (listingResult.data) {
           setListing(listingResult.data);
           void incrementListingViews(supabase, listingId);
+        } else if (listingResult.error && !listingResult.notFound) {
+          setLoadError(failed(listingResult.error));
         }
 
         if (savedResult.data) {
           setIsSaved(savedResult.data.includes(listingId));
         }
-      } catch {
-        // Silently handle — listing stays null → "not found" UI shown.
+      } catch (error) {
+        if (!cancelled) setLoadError(failed(error));
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [listingId, userId]);
+  }, [listingId, userId, loadKey]);
+
+  const reload = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
+    setLoadKey((key) => key + 1);
+  }, []);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -186,12 +202,20 @@ export default function ListingDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            accessibilityLabel="Go back"
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>Listing not found</Text>
+          {loadError ? (
+            <MarketplaceErrorState message={loadError} onRetry={reload} />
+          ) : (
+            <Text style={styles.errorText}>Listing not found</Text>
+          )}
         </View>
       </SafeAreaView>
     );

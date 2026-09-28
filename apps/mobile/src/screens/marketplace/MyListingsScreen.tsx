@@ -21,6 +21,7 @@ import {
   deleteListing,
   refreshListing,
   getDaysUntilSoftExpiry,
+  userMessage,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
@@ -30,6 +31,7 @@ import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 import type { MarketplaceStackParamList } from '../../types/navigation';
+import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
 
@@ -39,15 +41,21 @@ const STATUS_CONFIG = {
   removed: { label: 'Removed', color: colors.error, bgColor: '#FFEBEE' },
 };
 
-/** Resolves to the owner's listings, or null when signed out or on error. */
-async function loadOwnListings(userId: string | undefined): Promise<MarketplaceListing[] | null> {
+const LOAD_FAILED = "Couldn't load your listings.";
+
+/** The owner's listings, the failure to show instead, or null when signed out. */
+type OwnListingsResult = { data: MarketplaceListing[] } | { error: string } | null;
+
+async function loadOwnListings(userId: string | undefined): Promise<OwnListingsResult> {
   if (!userId) return null;
   try {
     const result = await getListingsByOwner(supabase, userId);
-    return result.data ?? null;
-  } catch {
-    // Silently handle — empty state will surface in the UI.
-    return null;
+    if (result.error) {
+      return { error: userMessage(result.error, LOAD_FAILED, 'my_listings_load_failed', { platform: 'mobile' }) };
+    }
+    return { data: result.data ?? [] };
+  } catch (error) {
+    return { error: userMessage(error, LOAD_FAILED, 'my_listings_load_failed', { platform: 'mobile' }) };
   }
 }
 
@@ -59,15 +67,21 @@ export default function MyListingsScreen() {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Bumping this re-runs the fetch effect (screen focus, pull-to-refresh, after a mutation).
   const [reloadKey, setReloadKey] = useState(0);
   const now = useNow();
 
   useEffect(() => {
     let cancelled = false;
-    loadOwnListings(userId).then((data) => {
+    loadOwnListings(userId).then((result) => {
       if (cancelled) return;
-      if (data) setListings(data);
+      if (result && 'error' in result) {
+        setError(result.error);
+      } else if (result) {
+        setListings(result.data);
+        setError(null);
+      }
       setLoading(false);
       setRefreshing(false);
     });
@@ -270,16 +284,20 @@ export default function MyListingsScreen() {
         }
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="storefront-outline" size={48} color={colors.text.tertiary} />
-            <Text style={styles.emptyText}>You haven&apos;t created any listings yet</Text>
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => navigation.navigate('CreateListing')}
-            >
-              <Text style={styles.createButtonText}>Create your first listing</Text>
-            </TouchableOpacity>
-          </View>
+          error ? (
+            <MarketplaceErrorState message={error} onRetry={reloadListings} />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="storefront-outline" size={48} color={colors.text.tertiary} />
+              <Text style={styles.emptyText}>You haven&apos;t created any listings yet</Text>
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => navigation.navigate('CreateListing')}
+              >
+                <Text style={styles.createButtonText}>Create your first listing</Text>
+              </TouchableOpacity>
+            </View>
+          )
         }
       />
     </SafeAreaView>

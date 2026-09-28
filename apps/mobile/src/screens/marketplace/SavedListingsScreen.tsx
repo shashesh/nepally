@@ -8,6 +8,7 @@ import {
   getUserSavedListingIds,
   saveListing,
   unsaveListing,
+  userMessage,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { supabase } from '../../config/supabase';
@@ -17,24 +18,34 @@ import { warmSurface } from '../../styles/warmTokens';
 import type { MarketplaceStackParamList } from '../../types/navigation';
 import { ListingGridCard } from '../../components/marketplace/ListingGridCard';
 import { MarketplaceEmptyState } from '../../components/marketplace/MarketplaceEmptyState';
+import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList, 'SavedListings'>;
 
 const GUTTER = 12;
 const CARD_WIDTH = Math.floor((Dimensions.get('window').width - GUTTER * 3) / 2);
 
-/** Resolves to the user's saved listings + saved ids, or null when signed out or on error. */
-async function loadSavedListings(userId: string | undefined) {
+const LOAD_FAILED = "Couldn't load your saved listings.";
+
+type SavedListingsResult =
+  | { listings: MarketplaceListing[]; savedIds: string[] | undefined }
+  | { error: string }
+  | null;
+
+/** The member's saved listings and ids, the failure to show instead, or null when signed out. */
+async function loadSavedListings(userId: string | undefined): Promise<SavedListingsResult> {
   if (!userId) return null;
   try {
     const [saved, ids] = await Promise.all([
       getSavedListingsByUser(supabase, userId),
       getUserSavedListingIds(supabase, userId),
     ]);
-    return { listings: saved.data, savedIds: ids.data };
-  } catch {
-    // Silently handle — empty state will surface in the UI.
-    return null;
+    if (saved.error) {
+      return { error: userMessage(saved.error, LOAD_FAILED, 'saved_listings_load_failed', { platform: 'mobile' }) };
+    }
+    return { listings: saved.data ?? [], savedIds: ids.data };
+  } catch (error) {
+    return { error: userMessage(error, LOAD_FAILED, 'saved_listings_load_failed', { platform: 'mobile' }) };
   }
 }
 
@@ -44,20 +55,33 @@ export default function SavedListingsScreen() {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const userId = user?.id;
 
   useEffect(() => {
     let cancelled = false;
     loadSavedListings(userId).then((result) => {
       if (cancelled) return;
-      if (result?.listings) setListings(result.listings);
-      if (result?.savedIds) setSavedIds(new Set(result.savedIds));
+      if (result && 'error' in result) {
+        setError(result.error);
+      } else if (result) {
+        setListings(result.listings);
+        if (result.savedIds) setSavedIds(new Set(result.savedIds));
+        setError(null);
+      }
       setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, reloadKey]);
+
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    setReloadKey((key) => key + 1);
+  }, []);
 
   const handleToggleSave = useCallback(
     async (listingId: string) => {
@@ -82,6 +106,14 @@ export default function SavedListingsScreen() {
     return (
       <SafeAreaView style={styles.wrap}>
         <ActivityIndicator size="large" style={styles.loader} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.wrap}>
+        <MarketplaceErrorState message={error} onRetry={reload} />
       </SafeAreaView>
     );
   }

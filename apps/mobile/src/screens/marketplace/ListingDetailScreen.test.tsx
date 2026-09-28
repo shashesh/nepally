@@ -60,6 +60,7 @@ jest.mock('@nepally/shared', () => ({
   incrementListingContacts: jest.fn(async () => {}),
   getOrCreateConversation: jest.fn(async () => ({ data: null })),
   createReport: jest.fn(async () => ({ data: { id: 'report-1' } })),
+  userMessage: jest.requireActual('@nepally/shared').userMessage,
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
   LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
   ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
@@ -232,6 +233,32 @@ describe('ListingDetailScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('Listing not found')).toBeTruthy();
     });
+  });
+
+  it('shows "Listing not found" when the listing is really gone', async () => {
+    mockGetListingById.mockResolvedValue({ error: new Error('Listing not found'), notFound: true } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Listing not found')).toBeTruthy();
+    });
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+  });
+
+  it('says the listing could not load, not that it is gone, and Try again reloads', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetListingById.mockResolvedValueOnce({ error: new Error('Failed to fetch listing') } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load this listing.")).toBeTruthy();
+    });
+    expect(screen.queryByText('Listing not found')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+    jest.restoreAllMocks();
   });
 
   // -- Owner vs non-owner actions --------------------------------------------

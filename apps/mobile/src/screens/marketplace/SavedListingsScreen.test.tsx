@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { getSavedListingsByUser } from '@nepally/shared';
 import SavedListingsScreen from './SavedListingsScreen';
@@ -112,11 +112,30 @@ describe('SavedListingsScreen', () => {
     expect(mockGetSavedListingsByUser).not.toHaveBeenCalled();
   });
 
-  it('stops loading and shows the empty state when the fetch fails', async () => {
+  it('says saved listings could not load instead of showing the empty state', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     mockGetSavedListingsByUser.mockRejectedValueOnce(new Error('Network error'));
     const screen = render(<SavedListingsScreen />);
     await waitFor(() => {
-      expect(screen.getByText('empty-state')).toBeTruthy();
+      expect(screen.getByText("Couldn't load your saved listings.")).toBeTruthy();
     });
+    expect(screen.queryByText('empty-state')).toBeNull();
+    jest.restoreAllMocks();
+  });
+
+  it('loads again on Try again after a failed load', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetSavedListingsByUser.mockResolvedValueOnce({ error: new Error('Network error') });
+    const screen = render(<SavedListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load your saved listings.")).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Saved thing')).toBeTruthy();
+    });
+    jest.restoreAllMocks();
   });
 });
