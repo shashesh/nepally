@@ -9,6 +9,7 @@ import {
   removeEventResponse,
   cancelEvent,
   deleteEvent,
+  getOrCreateConversation,
 } from '@nepally/shared';
 import type { Event, EventRsvp } from '@nepally/shared';
 import EventDetailScreen from './EventDetailScreen';
@@ -114,6 +115,7 @@ jest.mock('@nepally/shared', () => ({
   removeEventResponse: jest.fn(async () => ({})),
   cancelEvent: jest.fn(async () => ({})),
   deleteEvent: jest.fn(async () => ({})),
+  getOrCreateConversation: jest.fn(async () => ({ data: null })),
   formatPublicName: (name: string) => {
     const parts = name.trim().split(' ');
     if (parts.length < 2) return parts[0];
@@ -152,11 +154,14 @@ const mockSetEventResponse = setEventResponse as jest.MockedFunction<typeof setE
 const mockRemoveEventResponse = removeEventResponse as jest.MockedFunction<typeof removeEventResponse>;
 const mockCancelEvent = cancelEvent as jest.MockedFunction<typeof cancelEvent>;
 const mockDeleteEvent = deleteEvent as jest.MockedFunction<typeof deleteEvent>;
+const mockGetOrCreateConversation = getOrCreateConversation as jest.MockedFunction<
+  typeof getOrCreateConversation
+>;
 const mockGetEventAttendees = getEventAttendees as jest.MockedFunction<typeof getEventAttendees>;
 
 function setAuthUser(overrides: Record<string, unknown> = {}) {
   mockUseAuth.mockReturnValue({
-    user: { id: 'user-2', trust_level: 1, metro_area_id: '19100', ...overrides },
+    user: { id: 'user-2', full_name: 'Test Member', trust_level: 1, metro_area_id: '19100', ...overrides },
   });
 }
 
@@ -338,24 +343,75 @@ describe('EventDetailScreen', () => {
       expect(mockGoBack).toHaveBeenCalled();
     });
 
-    it('navigates to organizer public profile on name press', async () => {
+    // The public profile lives in the Home tab's stack. The tab navigator only
+    // reaches a sibling tab's screen when the tab is named.
+    it("opens the organizer's public profile in the Home tab", async () => {
       const { getByText } = await renderAndSettle();
       fireEvent.press(getByText('Asha K.'));
-      expect(mockParentNavigate).toHaveBeenCalledWith('PublicProfileView', {
-        userId: 'organizer-1',
+      expect(mockParentNavigate).toHaveBeenCalledWith('Home', {
+        screen: 'PublicProfileView',
+        params: { userId: 'organizer-1' },
       });
     });
 
-    it('navigates to message thread on Message button press', async () => {
+    // MessageThread is inside the root stack's Chat navigator, so it's reached
+    // through `Chat`, with a real conversation to open.
+    it('starts a conversation with the organizer and opens it', async () => {
+      mockGetOrCreateConversation.mockResolvedValueOnce({ data: { conversationId: 'conv-7' } } as never);
       const { getByText } = await renderAndSettle();
-      fireEvent.press(getByText('Message'));
-      expect(mockParentNavigate).toHaveBeenCalledWith('MessageThread', {
-        conversationId: '',
-        otherUserId: 'organizer-1',
-        otherUserName: 'Asha Kumar',
-        otherUserTrustLevel: 1,
-        otherUserPhotoUrl: null,
+
+      await act(async () => {
+        fireEvent.press(getByText('Message'));
       });
+
+      expect(mockGetOrCreateConversation).toHaveBeenCalledWith(
+        expect.anything(),
+        'user-2',
+        'Test Member',
+        'organizer-1',
+        'Asha Kumar'
+      );
+      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+        screen: 'MessageThread',
+        params: {
+          conversationId: 'conv-7',
+          otherUserId: 'organizer-1',
+          otherUserName: 'Asha Kumar',
+          otherUserTrustLevel: 1,
+          otherUserPhotoUrl: null,
+        },
+      });
+    });
+
+    it("says so when the conversation can't be started", async () => {
+      mockGetOrCreateConversation.mockResolvedValueOnce({ data: null, error: new Error('boom') } as never);
+      const { getByText } = await renderAndSettle();
+
+      await act(async () => {
+        fireEvent.press(getByText('Message'));
+      });
+
+      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Failed to start conversation. Please try again.');
+      expect(mockParentNavigate).not.toHaveBeenCalled();
+    });
+
+    it('starts one conversation for a double tap', async () => {
+      let finish: (value: unknown) => void = () => {};
+      mockGetOrCreateConversation.mockReturnValueOnce(
+        new Promise((resolve) => {
+          finish = resolve;
+        }) as never
+      );
+      const { getByText } = await renderAndSettle();
+
+      fireEvent.press(getByText('Message'));
+      fireEvent.press(getByText('Message'));
+      await act(async () => {
+        finish({ data: { conversationId: 'conv-7' } });
+      });
+
+      expect(mockGetOrCreateConversation).toHaveBeenCalledTimes(1);
+      expect(mockParentNavigate).toHaveBeenCalledTimes(1);
     });
   });
 

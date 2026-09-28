@@ -24,6 +24,7 @@ import {
   removeEventResponse,
   cancelEvent,
   deleteEvent,
+  getOrCreateConversation,
   formatCount,
   formatEventDateLong,
   formatPublicName,
@@ -93,6 +94,8 @@ function EventDetailView({ eventId }: { eventId: string }) {
   const [attendeesModalVisible, setAttendeesModalVisible] = useState(false);
   const [attendeesLoading, setAttendeesLoading] = useState(false);
   const respondingRef = useRef(false);
+  const [messaging, setMessaging] = useState(false);
+  const messagingRef = useRef(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -249,20 +252,55 @@ function EventDetailView({ eventId }: { eventId: string }) {
     );
   };
 
+  // MessageThread sits in the root stack's Chat navigator, so it's reached
+  // through `Chat`; the tab navigator hands that action up to the root.
   const handleMessageOrganizer = useCallback(async () => {
-    if (!event?.organizer || !userId) return;
-    navigation.getParent()?.navigate?.('MessageThread', {
-      conversationId: '',
-      otherUserId: event.organizer.id,
-      otherUserName: event.organizer.full_name,
-      otherUserTrustLevel: event.organizer.trust_level,
-      otherUserPhotoUrl: event.organizer.profile_photo,
+    const organizer = event?.organizer;
+    // The ref stops a second tap before the busy state has rendered.
+    if (!organizer || !user || messagingRef.current) return;
+    messagingRef.current = true;
+    setMessaging(true);
+    let conversationId: string | null;
+    try {
+      const result = await getOrCreateConversation(
+        supabase,
+        user.id,
+        user.full_name,
+        organizer.id,
+        organizer.full_name
+      );
+      conversationId = result.data?.conversationId ?? null;
+    } catch {
+      conversationId = null;
+    }
+    messagingRef.current = false;
+    // Gone back meanwhile: don't pull the member into a chat or alert over another screen.
+    if (!mountedRef.current) return;
+    setMessaging(false);
+    if (!conversationId) {
+      Alert.alert('Error', 'Failed to start conversation. Please try again.');
+      return;
+    }
+    navigation.getParent()?.navigate('Chat', {
+      screen: 'MessageThread',
+      params: {
+        conversationId,
+        otherUserId: organizer.id,
+        otherUserName: organizer.full_name,
+        otherUserTrustLevel: organizer.trust_level,
+        otherUserPhotoUrl: organizer.profile_photo ?? null,
+      },
     });
-  }, [event, userId, navigation]);
+  }, [event, user, navigation]);
 
+  // PublicProfileView is in the Home tab's stack, so it's reached through
+  // `Home`, as a profile reaches a listing through `Marketplace`.
   const handleViewOrganizerProfile = useCallback(() => {
     if (!event?.organizer) return;
-    navigation.getParent()?.navigate?.('PublicProfileView', { userId: event.organizer.id });
+    navigation.getParent()?.navigate('Home', {
+      screen: 'PublicProfileView',
+      params: { userId: event.organizer.id },
+    });
   }, [event, navigation]);
 
   if (loading) {
@@ -437,6 +475,9 @@ function EventDetailView({ eventId }: { eventId: string }) {
                   <TouchableOpacity
                     style={styles.messageButton}
                     onPress={handleMessageOrganizer}
+                    disabled={messaging}
+                    accessibilityRole="button"
+                    accessibilityState={{ busy: messaging, disabled: messaging }}
                   >
                     <Text style={styles.messageButtonText}>Message</Text>
                   </TouchableOpacity>

@@ -159,4 +159,99 @@ describe('React Navigation integration', () => {
       });
     });
   });
+
+  describe('reaching another tab or the Chat stack', () => {
+    // RootNavigator's shape: Main (tabs, each a stack) and Chat side by side on
+    // the root stack. A screen in one tab's stack, like EventDetail, calls
+    // getParent() to get the tab navigator. An action it can't handle goes up
+    // to the root, never down into another tab's stack or into Chat.
+    const RootStack = createNativeStackNavigator();
+    const Tab = createBottomTabNavigator();
+    const HomeStack = createNativeStackNavigator();
+    const EventsStack = createNativeStackNavigator();
+    const ChatStack = createNativeStackNavigator();
+
+    let target: [string, object?] = ['Home'];
+    const EventScreen = () => {
+      const navigation = useNavigation();
+      return (
+        <TouchableOpacity onPress={() => navigation.getParent()?.navigate(...(target as [string]))}>
+          <Text>event</Text>
+        </TouchableOpacity>
+      );
+    };
+    const HomeMain = () => <Text>home</Text>;
+    const Profile = () => <Text>profile</Text>;
+    const Threads = () => <Text>threads</Text>;
+    const Thread = () => <Text>thread</Text>;
+    const HomeTree = () => (
+      <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+        <HomeStack.Screen name="HomeMain" component={HomeMain} />
+        <HomeStack.Screen name="PublicProfileView" component={Profile} />
+      </HomeStack.Navigator>
+    );
+    const EventsTree = () => (
+      <EventsStack.Navigator screenOptions={{ headerShown: false }}>
+        <EventsStack.Screen name="EventDetail" component={EventScreen} />
+      </EventsStack.Navigator>
+    );
+    const TabsTree = () => (
+      <Tab.Navigator initialRouteName="Events" screenOptions={{ headerShown: false }}>
+        <Tab.Screen name="Home" component={HomeTree} />
+        <Tab.Screen name="Events" component={EventsTree} />
+      </Tab.Navigator>
+    );
+    const ChatTree = () => (
+      <ChatStack.Navigator screenOptions={{ headerShown: false }}>
+        <ChatStack.Screen name="ConversationList" component={Threads} />
+        <ChatStack.Screen name="MessageThread" component={Thread} />
+      </ChatStack.Navigator>
+    );
+    const AppTree = () => (
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        <RootStack.Screen name="Main" component={TabsTree} />
+        <RootStack.Screen name="Chat" component={ChatTree} />
+      </RootStack.Navigator>
+    );
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('does not reach a screen by its bare name from inside a tab', () => {
+      const unhandled = jest.spyOn(console, 'error').mockImplementation(() => {});
+      wrap(<AppTree />);
+
+      for (const name of ['PublicProfileView', 'MessageThread']) {
+        target = [name, {}];
+        fireEvent.press(screen.getByText('event'));
+      }
+
+      expect(screen.queryByText('profile')).toBeNull();
+      expect(screen.queryByText('thread')).toBeNull();
+      expect(unhandled).toHaveBeenCalledWith(expect.stringContaining('was not handled by any navigator'));
+    });
+
+    it("opens another tab's screen by naming the tab", async () => {
+      wrap(<AppTree />);
+      target = ['Home', { screen: 'PublicProfileView', params: { userId: 'u1' } }];
+
+      fireEvent.press(screen.getByText('event'));
+
+      await waitFor(() => {
+        expect(screen.getByText('profile')).toBeTruthy();
+      });
+    });
+
+    it('opens a chat thread by naming the Chat stack', async () => {
+      wrap(<AppTree />);
+      target = ['Chat', { screen: 'MessageThread', params: { conversationId: 'c1' } }];
+
+      fireEvent.press(screen.getByText('event'));
+
+      await waitFor(() => {
+        expect(screen.getByText('thread')).toBeTruthy();
+      });
+    });
+  });
 });
