@@ -36,6 +36,9 @@ export function MarketplaceNavigator() {
         name="ListingDetail"
         component={ListingDetailScreen}
         options={{ headerShown: false }}
+        // Each listing is its own screen: opening another from a detail pushes it
+        // instead of swapping the params of the one below.
+        getId={({ params }) => params.listingId}
       />
       <Stack.Screen
         name="CreateListing"
