@@ -244,9 +244,6 @@ export default function MarketplaceHomeScreen() {
         case 'saved':
           navigation.navigate('SavedListings');
           break;
-        case 'promote':
-          navigation.navigate('MyListings');
-          break;
         case 'browse-categories':
           navigation.navigate('BrowseCategories');
           break;

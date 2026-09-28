@@ -221,7 +221,7 @@ See [Monitoring](#monitoring) for the full spec.
   - Confirm identity again before deleting the account or changing email or password: the password for email accounts, an emailed code through `supabase.auth.reauthenticate()` for Google and Apple accounts.
   - After a password change, sign out every other device (`signOut({ scope: 'others' })`).
   - A **Sign out of all devices** option in Settings (`signOut({ scope: 'global' })`) for a lost or stolen phone.
-- [ ] **Code:** Remove every mobile Promote entry point and unregister the `PromoteListing` route. Promoted and sponsored items keep displaying. The entry points are:
+- [x] **Code:** Remove every mobile Promote entry point and unregister the `PromoteListing` route. Promoted and sponsored items keep displaying. The entry points are:
   - the `promote` action in `MarketplaceHomeScreen`'s menu
   - the Promote button in `ListingDetailScreen`
   - the Promote action in `MyListingsScreen`

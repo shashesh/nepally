@@ -90,7 +90,6 @@ jest.mock('../../components/marketplace/MarketplaceMenuSheet', () => {
   const ROWS: { key: string; label: string }[] = [
     { key: 'my-listings', label: 'My Listings' },
     { key: 'saved', label: 'Saved' },
-    { key: 'promote', label: 'Promote a Listing' },
     { key: 'browse-categories', label: 'Browse Categories' },
     { key: 'change-location', label: 'Change Location' },
     { key: 'rules', label: 'Marketplace Rules' },

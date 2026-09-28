@@ -168,6 +168,7 @@ describe('MyListingsScreen', () => {
     expect(screen.getByText('Refresh')).toBeTruthy();
     expect(screen.getByText('Deactivate')).toBeTruthy();
     expect(screen.getByText('Delete')).toBeTruthy();
+    expect(screen.queryByText('Promote')).toBeNull();
   });
 
   it('shows Reactivate instead of Deactivate for inactive listings', async () => {

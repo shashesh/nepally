@@ -253,6 +253,18 @@ describe('ListingDetailScreen', () => {
     });
   });
 
+  it('does not offer Promote to the owner', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit Listing')).toBeTruthy();
+    });
+    expect(screen.queryByText('Promote')).toBeNull();
+    expect(screen.queryByText('Promoted')).toBeNull();
+  });
+
   it('does not show Edit button for non-owner', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
