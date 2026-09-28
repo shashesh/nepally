@@ -6,12 +6,14 @@ import { colors } from '../../styles/colors';
 interface ChatInputProps {
   onSend: (text: string) => void;
   disabled?: boolean;
+  /** What the box holds when it first renders. */
+  initialText?: string;
 }
 
 const MAX_CHARS = 1000;
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled = false }) => {
-  const [text, setText] = useState('');
+export const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled = false, initialText = '' }) => {
+  const [text, setText] = useState(() => initialText.slice(0, MAX_CHARS));
 
   const canSend = text.trim().length > 0 && !disabled;
 

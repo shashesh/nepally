@@ -72,6 +72,8 @@ export type ChatStackParamList = {
     otherUserName: string;
     otherUserTrustLevel: number;
     otherUserPhotoUrl?: string | null;
+    /** Text the message box starts with, e.g. which listing a buyer is asking about. Not sent until the member taps Send. */
+    initialDraft?: string;
   };
 };
 

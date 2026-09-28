@@ -4,7 +4,9 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
   createReport,
   getListingById,
+  getOrCreateConversation,
   getUserSavedListingIds,
+  incrementListingContacts,
   incrementListingViews,
   saveListing,
 } from '@nepally/shared';
@@ -90,6 +92,7 @@ jest.mock('@nepally/shared', () => ({
   toMailtoUrl: jest.requireActual('@nepally/shared').toMailtoUrl,
   toWebsiteUrl: jest.requireActual('@nepally/shared').toWebsiteUrl,
   toMapsUrls: jest.requireActual('@nepally/shared').toMapsUrls,
+  listingInquiryDraft: jest.requireActual('@nepally/shared').listingInquiryDraft,
 }));
 
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
@@ -483,6 +486,93 @@ describe('ListingDetailScreen', () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getByText('Contact Seller')).toBeTruthy();
+    });
+  });
+
+  // -- Contact Seller (4.2) --------------------------------------------------
+
+  describe('Contact Seller', () => {
+    const mockGetOrCreateConversation = getOrCreateConversation as jest.MockedFunction<
+      typeof getOrCreateConversation
+    >;
+
+    afterEach(() => {
+      mockGetOrCreateConversation.mockResolvedValue({ data: null } as never);
+    });
+
+    async function renderLoaded() {
+      const screen = render(<ListingDetailScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Contact Seller')).toBeTruthy();
+      });
+      return screen;
+    }
+
+    it('opens the chat with a draft naming the listing', async () => {
+      mockGetOrCreateConversation.mockResolvedValue({ data: { conversationId: 'conv-9' } } as never);
+      const screen = await renderLoaded();
+
+      fireEvent.press(screen.getByRole('button', { name: 'Contact Seller' }));
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('Chat', {
+          screen: 'MessageThread',
+          params: {
+            conversationId: 'conv-9',
+            otherUserId: 'user-2',
+            otherUserName: 'Asha Kumar',
+            otherUserTrustLevel: 1,
+            otherUserPhotoUrl: null,
+            initialDraft: 'Hi, is “Himalayan Kitchen” still available?',
+          },
+        });
+      });
+      expect(incrementListingContacts).toHaveBeenCalledWith(expect.anything(), 'listing-1');
+    });
+
+    it("doesn't count a contact when the conversation can't be started", async () => {
+      mockGetOrCreateConversation.mockResolvedValue({ data: null } as never);
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      const screen = await renderLoaded();
+
+      fireEvent.press(screen.getByRole('button', { name: 'Contact Seller' }));
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(
+          'Error',
+          'Failed to start conversation. Please try again.'
+        );
+      });
+      expect(incrementListingContacts).not.toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('starts one conversation for a double tap and shows it is busy meanwhile', async () => {
+      let finish: (value: unknown) => void = () => {};
+      mockGetOrCreateConversation.mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        }) as never
+      );
+      const screen = await renderLoaded();
+      const button = screen.getByRole('button', { name: 'Contact Seller' });
+
+      fireEvent.press(button);
+      fireEvent.press(button);
+
+      expect(mockGetOrCreateConversation).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Contact Seller' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ busy: true, disabled: true })
+      );
+
+      await act(async () => {
+        finish({ data: { conversationId: 'conv-9' } });
+      });
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Contact Seller' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ busy: false, disabled: false })
+      );
     });
   });
 

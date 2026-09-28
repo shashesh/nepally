@@ -10,6 +10,7 @@ export {
 export { injectSponsoredIntoGrid } from './sponsoredInjection';
 export { isVerifiedSeller } from './seller';
 export { toMailtoUrl, toMapsUrls, toTelUrl, toWebsiteUrl, type MapsUrls } from './contactLinks';
+export { listingInquiryDraft } from './inquiry';
 export {
   getPromotionBlocker,
   PROMOTION_BLOCKER_MESSAGES,

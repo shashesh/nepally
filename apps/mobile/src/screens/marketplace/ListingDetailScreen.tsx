@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import {
   getDaysSinceRefresh,
   formatListingPrice,
   createReport,
+  listingInquiryDraft,
   toMailtoUrl,
   toMapsUrls,
   toTelUrl,
@@ -73,7 +74,17 @@ export default function ListingDetailScreen() {
   }
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [contacting, setContacting] = useState(false);
+  const contactingRef = useRef(false);
+  const mountedRef = useRef(true);
   const now = useNow();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -82,29 +93,44 @@ export default function ListingDetailScreen() {
   }, [toggleSaved, listingId]);
 
   const handleContact = useCallback(async () => {
-    if (!listing?.owner || !user) return;
-    void incrementListingContacts(supabase, listingId);
-    const result = await getOrCreateConversation(
-      supabase,
-      user.id,
-      user.full_name,
-      listing.owner.id,
-      listing.owner.full_name
-    );
-    if (result.data) {
-      navigation.getParent()?.navigate('Chat', {
-        screen: 'MessageThread',
-        params: {
-          conversationId: result.data.conversationId,
-          otherUserId: listing.owner.id,
-          otherUserName: listing.owner.full_name,
-          otherUserTrustLevel: listing.owner.trust_level,
-          otherUserPhotoUrl: listing.owner.profile_photo ?? null,
-        },
-      });
-    } else {
-      Alert.alert('Error', 'Failed to start conversation. Please try again.');
+    // The ref stops a second tap before the busy state has rendered.
+    if (!listing?.owner || !user || contactingRef.current) return;
+    const owner = listing.owner;
+    contactingRef.current = true;
+    setContacting(true);
+    let conversationId: string | null = null;
+    try {
+      const result = await getOrCreateConversation(
+        supabase,
+        user.id,
+        user.full_name,
+        owner.id,
+        owner.full_name
+      );
+      conversationId = result.data?.conversationId ?? null;
+    } catch {
+      conversationId = null;
     }
+    contactingRef.current = false;
+    // Gone back meanwhile: don't pull the member into a chat or alert over another screen.
+    if (!mountedRef.current) return;
+    setContacting(false);
+    if (!conversationId) {
+      Alert.alert('Error', 'Failed to start conversation. Please try again.');
+      return;
+    }
+    void incrementListingContacts(supabase, listingId);
+    navigation.getParent()?.navigate('Chat', {
+      screen: 'MessageThread',
+      params: {
+        conversationId,
+        otherUserId: owner.id,
+        otherUserName: owner.full_name,
+        otherUserTrustLevel: owner.trust_level,
+        otherUserPhotoUrl: owner.profile_photo ?? null,
+        initialDraft: listingInquiryDraft(listing.title),
+      },
+    });
   }, [listing, listingId, navigation, user]);
 
   const handleReport = useCallback(() => {
@@ -427,11 +453,18 @@ export default function ListingDetailScreen() {
             />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.stickyBarButton}
+            style={[styles.stickyBarButton, contacting && styles.stickyBarButtonBusy]}
             onPress={handleContact}
+            disabled={contacting}
             accessibilityRole="button"
+            accessibilityLabel="Contact Seller"
+            accessibilityState={{ busy: contacting, disabled: contacting }}
           >
-            <Text style={styles.stickyBarButtonText}>Contact Seller</Text>
+            {contacting ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.stickyBarButtonText}>Contact Seller</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -841,6 +874,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.s,
     borderRadius: borderRadius.input,
     alignItems: 'center',
+  },
+  stickyBarButtonBusy: {
+    opacity: 0.7,
   },
   stickyBarButtonText: {
     ...typography.body,

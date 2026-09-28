@@ -1,6 +1,7 @@
 import React from 'react';
 import { Alert } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { sendMessage } from '@nepally/shared';
 import MessageThreadScreen from './MessageThreadScreen';
 
 const mockUseRoute = jest.fn();
@@ -217,6 +218,33 @@ describe('MessageThreadScreen avatar menu', () => {
       fireEvent.press(screen.getByText('Block User'));
 
       expect(Alert.alert).toHaveBeenCalledWith('Block Bikal S.?', expect.any(String), expect.any(Array));
+    });
+  });
+
+  describe('opening draft', () => {
+    it('starts the message box with the draft it was opened with, unsent', async () => {
+      mockUseRoute.mockReturnValue({
+        params: {
+          conversationId: 'conv-1',
+          otherUserId: 'other-user',
+          otherUserName: 'Other User',
+          otherUserTrustLevel: 1,
+          otherUserPhotoUrl: null,
+          initialDraft: 'Hi, is “Rice cooker” still available?',
+        },
+      });
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      expect(screen.getByDisplayValue('Hi, is “Rice cooker” still available?')).toBeTruthy();
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('starts with an empty message box when there is no draft', async () => {
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      expect(screen.getByPlaceholderText('Type a message...').props.value).toBe('');
     });
   });
 });
