@@ -30,6 +30,18 @@ function isFetchFailure(code: unknown, message: unknown): boolean {
   return code === '' && typeof message === 'string' && FETCH_FAILURE_MESSAGE.test(message);
 }
 
+/**
+ * True when the server answered a request with an error code, so the write
+ * definitely didn't happen. False when the request may never have been
+ * answered (a dropped connection, a timeout): the server may have committed
+ * the write and only the response was lost.
+ */
+export function isServerRejection(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const { code } = error as { code?: unknown };
+  return typeof code === 'string' && code.length > 0;
+}
+
 /** An `Error` comes back unchanged; anything else becomes an `ApiError` with `fallback` as its message. */
 export function toApiError(raw: unknown, fallback: string): Error {
   if (raw instanceof Error) return raw;

@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -23,6 +23,7 @@ import { useMarketplaceFeed } from '../../hooks/useMarketplaceFeed';
 import { useSavedListingIds } from '../../hooks/useSavedListingIds';
 import { useActiveMetro } from '../../hooks/useActiveMetro';
 import { useGridCardWidth } from '../../hooks/useGridCardWidth';
+import { useRefocusEffect } from '../../hooks/useRefocusEffect';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -91,13 +92,8 @@ export default function MarketplaceHomeScreen() {
   // Coming back (from a listing, the create form, another tab) refreshes quietly:
   // no skeleton, same scroll position. Saved hearts may have changed elsewhere.
   // The first focus is the first load, which the hooks already do.
-  const hasFocusedRef = useRef(false);
-  useFocusEffect(
+  useRefocusEffect(
     useCallback(() => {
-      if (!hasFocusedRef.current) {
-        hasFocusedRef.current = true;
-        return;
-      }
       void reloadSavedIds();
       revalidateRef.current();
     }, [reloadSavedIds])

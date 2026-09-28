@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isConnectionError } from '../logic/authErrors';
-import { ApiError, toApiError } from './apiError';
+import { ApiError, isServerRejection, toApiError } from './apiError';
 
 /** The object postgrest-js resolves with when fetch itself rejects (no response). */
 function postgrestFetchFailure(message: string) {
@@ -70,5 +70,23 @@ describe('toApiError', () => {
     const result = toApiError({ message: 'TypeError: fetch failed' }, 'Failed to fetch post');
 
     expect(isConnectionError(result)).toBe(false);
+  });
+});
+
+describe('isServerRejection', () => {
+  it('is true when the server answered with an error code', () => {
+    expect(isServerRejection(new ApiError('Failed to create listing', { code: '42501' }))).toBe(
+      true
+    );
+    expect(isServerRejection(Object.assign(new Error('duplicate'), { code: '23505' }))).toBe(true);
+  });
+
+  it('is false when the request may never have been answered', () => {
+    expect(isServerRejection(new ApiError('Failed', { status: 0 }))).toBe(false);
+    expect(
+      isServerRejection(Object.assign(new Error('TypeError: Network request failed'), { code: '' }))
+    ).toBe(false);
+    expect(isServerRejection(new Error('timeout'))).toBe(false);
+    expect(isServerRejection(undefined)).toBe(false);
   });
 });

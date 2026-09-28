@@ -74,6 +74,11 @@ vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
   return {
     userMessage: actual.userMessage,
+    buildListingFormInput: actual.buildListingFormInput,
+    listingFieldErrors: actual.listingFieldErrors,
+    droppedListingPhotoPaths: actual.droppedListingPhotoPaths,
+    cleanUpListingPhotos: vi.fn(async () => {}),
+    cleanUpAfterFailedListingWrite: vi.fn(async () => {}),
     logClientEvent: vi.fn(),
     getCategories: vi.fn(async () => ({ data: [] })),
     getListingById: vi.fn(async () => ({ data: null })),
@@ -92,12 +97,19 @@ vi.mock('@nepally/shared', async () => {
 });
 
 import CreateListingPage from './create.page';
+import { cleanUpAfterFailedListingWrite, cleanUpListingPhotos } from '@nepally/shared';
 
 const mockGetCategories = getCategories as ReturnType<typeof vi.fn>;
 const mockCreateListing = createListing as ReturnType<typeof vi.fn>;
 const mockGetListingById = getListingById as ReturnType<typeof vi.fn>;
 const mockUpdateListing = updateListing as ReturnType<typeof vi.fn>;
 const mockUploadPhotosInOrder = mocks.uploadPhotosInOrder;
+
+/** New listings start as Individual; this switches the form to Business. */
+async function chooseBusiness() {
+  fireEvent.click(await screen.findByText('Business'));
+  await waitFor(() => expect(screen.getByPlaceholderText('Your business name')).toBeDefined());
+}
 
 describe('CreateListingPage', () => {
   const mockReplace = vi.fn();
@@ -177,10 +189,18 @@ describe('CreateListingPage', () => {
     );
   });
 
+  it('starts a new listing as Individual, with the condition control', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+
+    await waitFor(() => expect(screen.getByRole('radiogroup', { name: 'Condition' })).toBeDefined());
+    expect(screen.queryByPlaceholderText('Your business name')).toBeNull();
+  });
+
   it('offers the condition control only for an individual listing', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(CreateListingPage));
-    await waitFor(() => expect(screen.getByPlaceholderText('Your business name')).toBeDefined());
+    await chooseBusiness();
 
     expect(screen.queryByRole('radiogroup', { name: 'Condition' })).toBeNull();
 
@@ -188,6 +208,65 @@ describe('CreateListingPage', () => {
 
     await waitFor(() => expect(screen.getByRole('radiogroup', { name: 'Condition' })).toBeDefined());
     expect(screen.queryByPlaceholderText('Your business name')).toBeNull();
+  });
+
+  it('shows the price, address, website and phone errors', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mockSafeParse.mockReturnValue({
+      success: false,
+      error: {
+        issues: [
+          { path: ['price'], message: 'Price must be at most 50 characters' },
+          { path: ['address'], message: 'Address must be at most 200 characters' },
+          { path: ['website_url'], message: 'Invalid URL' },
+          { path: ['phone'], message: 'Phone must be at most 20 characters' },
+        ],
+      },
+    });
+    render(React.createElement(CreateListingPage));
+    await chooseBusiness();
+
+    fireEvent.click(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => expect(screen.getByText('Invalid URL')).toBeDefined());
+    expect(screen.getByText('Price must be at most 50 characters')).toBeDefined();
+    expect(screen.getByText('Address must be at most 200 characters')).toBeDefined();
+    expect(screen.getByText('Phone must be at most 20 characters')).toBeDefined();
+  });
+
+  it('checks and saves a website typed without https://', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+    await chooseBusiness();
+
+    fireEvent.change(screen.getByPlaceholderText('https://...'), { target: { value: 'www.mybiz.com' } });
+    fireEvent.click(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => expect(mockCreateListing).toHaveBeenCalled());
+    expect(mockSafeParse).toHaveBeenCalledWith(
+      expect.objectContaining({ website_url: 'https://www.mybiz.com' })
+    );
+    expect(mockCreateListing).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ website_url: 'https://www.mybiz.com' })
+    );
+  });
+
+  it("doesn't save the business fields of a listing switched to Individual", async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+    await chooseBusiness();
+
+    fireEvent.change(screen.getByPlaceholderText('Your business name'), {
+      target: { value: 'Himalayan Kitchen' },
+    });
+    fireEvent.click(screen.getByText('Individual'));
+    fireEvent.click(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => expect(mockCreateListing).toHaveBeenCalled());
+    const payload = mockCreateListing.mock.calls[0][1];
+    expect(payload.listing_type).toBe('individual');
+    expect(payload.business_name).toBeUndefined();
   });
 
   it('renders form fields', async () => {
@@ -218,9 +297,10 @@ describe('CreateListingPage', () => {
   it('shows business name field when type is business', async () => {
     mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
     render(React.createElement(CreateListingPage));
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Your business name')).toBeDefined();
-    });
+
+    await chooseBusiness();
+
+    expect(screen.getByPlaceholderText('Business address')).toBeDefined();
   });
 
   it('renders "Edit Listing" title in edit mode', async () => {
@@ -303,6 +383,89 @@ describe('CreateListingPage', () => {
       );
       expectNoRawText();
       expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('hands the photos it just uploaded to the cleanup when the create fails', async () => {
+      mocks.useAuth.mockReturnValue({ user: signedIn });
+      mockUploadPhotosInOrder.mockResolvedValue({ urls: ['u/a'], paths: ['p/a'] });
+      const failure = new Error(RLS_TEXT);
+      mockCreateListing.mockResolvedValueOnce({ error: failure });
+
+      await submit();
+
+      await waitFor(() =>
+        expect(cleanUpAfterFailedListingWrite).toHaveBeenCalledWith(
+          expect.anything(),
+          failure,
+          ['p/a'],
+          expect.any(Object)
+        )
+      );
+    });
+
+    it('deletes the photos that did upload when a later one fails', async () => {
+      mocks.useAuth.mockReturnValue({ user: signedIn });
+      mockUploadPhotosInOrder.mockResolvedValue({ error: new Error(RLS_TEXT), paths: ['p/a'] });
+
+      await submit();
+
+      await waitFor(() =>
+        expect(cleanUpListingPhotos).toHaveBeenCalledWith(expect.anything(), ['p/a'], expect.any(Object))
+      );
+      expect(mockCreateListing).not.toHaveBeenCalled();
+    });
+
+    describe('editing photos', () => {
+      const PUBLIC = 'https://abc.supabase.co/storage/v1/object/public/listing-photos';
+      const KEPT = `${PUBLIC}/u1/kept.jpg`;
+      const DROPPED = `${PUBLIC}/u1/dropped.jpg`;
+
+      function renderEdit() {
+        mocks.useAuth.mockReturnValue({ user: signedIn });
+        mocks.useRouter.mockReturnValue({ replace: mockReplace, push: mockPush, query: { edit: 'listing-1' } });
+        mockGetListingById.mockResolvedValueOnce({
+          data: {
+            id: 'listing-1',
+            listing_type: 'individual',
+            title: 'Rice cooker',
+            description: 'Barely used rice cooker',
+            category_id: 'cat-1',
+            photos: [KEPT, DROPPED],
+          },
+        });
+        // The member removed DROPPED and added one new photo.
+        mockUploadPhotosInOrder.mockResolvedValue({ urls: [KEPT, 'u/new'], paths: ['p/new'] });
+        render(React.createElement(CreateListingPage));
+      }
+
+      it('deletes the photos dropped from a listing once the edit saves', async () => {
+        renderEdit();
+        fireEvent.click(await screen.findByText('Update Listing'));
+
+        await waitFor(() => expect(mockPush).toHaveBeenCalled());
+        expect(cleanUpListingPhotos).toHaveBeenCalledTimes(1);
+        expect(cleanUpListingPhotos).toHaveBeenCalledWith(
+          expect.anything(),
+          ['u1/dropped.jpg'],
+          expect.objectContaining({ listingId: 'listing-1' })
+        );
+      });
+
+      it('keeps the original photos and hands only the new ones to the cleanup when the edit fails', async () => {
+        const failure = new Error(RLS_TEXT);
+        mockUpdateListing.mockResolvedValueOnce({ error: failure });
+        renderEdit();
+        fireEvent.click(await screen.findByText('Update Listing'));
+
+        await waitFor(() => expect(cleanUpAfterFailedListingWrite).toHaveBeenCalled());
+        expect(cleanUpAfterFailedListingWrite).toHaveBeenCalledWith(
+          expect.anything(),
+          failure,
+          ['p/new'],
+          expect.any(Object)
+        );
+        expect(cleanUpListingPhotos).not.toHaveBeenCalled();
+      });
     });
 
     it('goes to the marketplace when the listing saves', async () => {

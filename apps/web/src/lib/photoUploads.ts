@@ -46,7 +46,7 @@ export async function uploadPhotosInOrder(
   photos: UploaderPhoto[],
   userId: string,
   upload: PhotoUploader
-): Promise<OrderedUploadResult | { error: Error }> {
+): Promise<OrderedUploadResult | { error: Error; paths: string[] }> {
   const picked = photos.filter(
     (photo): photo is Extract<UploaderPhoto, { kind: 'picked' }> => photo.kind === 'picked'
   );
@@ -63,8 +63,9 @@ export async function uploadPhotosInOrder(
     userId
   );
   const result = await upload(inputs);
+  // Paths uploaded before a failure come back too, so the caller can delete them.
   if (result.error || !result.urls) {
-    return { error: result.error ?? new Error('Failed to upload photos') };
+    return { error: result.error ?? new Error('Failed to upload photos'), paths: result.paths ?? [] };
   }
 
   const urlByPickedId = new Map<string, string>();

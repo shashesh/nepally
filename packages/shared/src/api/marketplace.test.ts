@@ -20,6 +20,7 @@ import {
   getFeaturedListings,
   getTrendingListings,
 } from './marketplace';
+import { isServerRejection } from '../utils/apiError';
 
 const MOCK_CATEGORY = {
   id: 'cat-1',
@@ -702,6 +703,9 @@ describe('updateListing', () => {
 
     const result = await updateListing(supabase, 'missing', { title: 'New Title' });
     expect(result.error?.message).toBe('Listing not found');
+    expect(result.notFound).toBe(true);
+    // The server answered, so a caller can tell the write definitely didn't happen.
+    expect(isServerRejection(result.error)).toBe(true);
   });
 
   it('returns error on supabase failure', async () => {

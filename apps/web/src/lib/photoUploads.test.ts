@@ -82,7 +82,15 @@ describe('uploadPhotosInOrder', () => {
 
     const result = await uploadPhotosInOrder([picked('one.png')], 'user-1', upload);
 
-    expect(result).toEqual({ error: new Error('Storage is full') });
+    expect(result).toEqual({ error: new Error('Storage is full'), paths: [] });
+  });
+
+  it('passes on the paths uploaded before a failure, so they can be deleted', async () => {
+    const upload = vi.fn().mockResolvedValue({ error: new Error('Storage is full'), paths: ['p/one'] });
+
+    const result = await uploadPhotosInOrder([picked('one.png'), picked('two.png')], 'user-1', upload);
+
+    expect(result).toEqual({ error: new Error('Storage is full'), paths: ['p/one'] });
   });
 
   it('treats a missing url list as a failure', async () => {

@@ -1,13 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getSavedListingsByUser, userMessage, type MarketplaceListing } from '@nepally/shared';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useSavedListingIds } from '../../hooks/useSavedListingIds';
 import { useGridCardWidth } from '../../hooks/useGridCardWidth';
+import { useRefocusEffect } from '../../hooks/useRefocusEffect';
 import { spacing } from '../../styles/spacing';
 import { warmAccent, warmSurface } from '../../styles/warmTokens';
 import type { MarketplaceStackParamList } from '../../types/navigation';
@@ -90,16 +91,7 @@ export default function SavedListingsScreen() {
 
   // Coming back after saving or unsaving elsewhere shows the current list.
   // The first focus is the first load, which the effect above already does.
-  const hasFocusedRef = useRef(false);
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasFocusedRef.current) {
-        hasFocusedRef.current = true;
-        return;
-      }
-      refetch();
-    }, [refetch])
-  );
+  useRefocusEffect(refetch);
 
   // Every card here is saved, so the heart always unsaves, even if the ids
   // haven't loaded yet (a toggle would then save it again).

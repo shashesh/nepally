@@ -204,21 +204,44 @@ export async function deletePostPhotos(
  * Returns null if the URL does not belong to the post photos bucket.
  */
 export function getPostPhotoPathFromUrl(url: string): string | null {
-  if (!url) return null;
+  return getPathFromPublicUrl(url, POST_PHOTOS_BUCKET);
+}
 
-  const marker = `/${POST_PHOTOS_BUCKET}/`;
-  const markerIndex = url.indexOf(marker);
+/**
+ * Convert a Supabase public URL for `listing-photos` into a storage path.
+ * Returns null if the URL does not belong to the listing photos bucket.
+ */
+export function getListingPhotoPathFromUrl(url: string): string | null {
+  return getPathFromPublicUrl(url, LISTING_PHOTOS_BUCKET);
+}
+
+/**
+ * An http(s) URL's path, without its query or fragment. A regex rather than
+ * `new URL()`, so Node, browsers and Hermes (whose `URL` is partial) agree.
+ */
+const URL_PATH = /^https?:\/\/[^/?#]+(\/[^?#]*)/i;
+
+/**
+ * The storage path in a bucket's public URL (what `getPublicUrl` returns):
+ * what follows `/storage/v1/object/public/<bucket>/` in the URL's path,
+ * decoded. Null for anything else, including a URL that only mentions the
+ * bucket in its query or fragment.
+ */
+function getPathFromPublicUrl(url: string, bucket: string): string | null {
+  const pathname = url.match(URL_PATH)?.[1];
+  if (!pathname) return null;
+
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const markerIndex = pathname.indexOf(marker);
   if (markerIndex === -1) return null;
 
-  const startIndex = markerIndex + marker.length;
-  const rawPath = url.slice(startIndex);
-  const pathWithoutQuery = rawPath.split('?')[0];
-  if (!pathWithoutQuery) return null;
+  const rawPath = pathname.slice(markerIndex + marker.length);
+  if (!rawPath) return null;
 
   try {
-    return decodeURIComponent(pathWithoutQuery);
+    return decodeURIComponent(rawPath);
   } catch {
-    return pathWithoutQuery;
+    return rawPath;
   }
 }
 
@@ -357,7 +380,8 @@ export async function uploadListingPhoto(
 }
 
 /**
- * Upload multiple listing photos with count validation.
+ * Upload multiple listing photos with count validation. On a failure part-way,
+ * `paths` lists the photos already uploaded, so the caller can delete them.
  */
 export async function uploadListingPhotos(
   supabase: SupabaseClient,
@@ -373,7 +397,7 @@ export async function uploadListingPhotos(
   for (const photo of photos) {
     const result = await uploadListingPhoto(supabase, photo);
     if (result.error || !result.url || !result.path) {
-      return { error: result.error || new Error('Failed to upload listing photo') };
+      return { error: result.error || new Error('Failed to upload listing photo'), paths };
     }
     urls.push(result.url);
     paths.push(result.path);

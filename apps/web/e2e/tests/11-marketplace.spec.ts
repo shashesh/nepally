@@ -100,6 +100,8 @@ test.describe('Marketplace full feature flow', () => {
     await page.getByRole('button', { name: /food & restaurants/i }).click();
     await page.getByLabel('Title *').fill(createdTitle);
     await page.getByLabel('Description *').fill('Reliable filing support for state and federal tax returns.');
+    // New listings start as Individual; the business fields appear once Business is picked.
+    await page.getByRole('radiogroup', { name: 'Listing Type' }).getByText('Business', { exact: true }).click();
     await page.getByLabel('Business Name *').fill('Nepal Tax Hub');
 
     await page.getByRole('button', { name: /^create listing$/i }).click();
