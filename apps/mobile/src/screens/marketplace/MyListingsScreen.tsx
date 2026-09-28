@@ -108,6 +108,8 @@ interface MenuAction {
 }
 
 /** A listing's More menu: an action sheet on iOS, an alert with the same buttons on Android. */
+// Android's Alert shows at most three buttons and drops the rest silently, so
+// the menu holds two actions plus Cancel. A third action needs another menu.
 function showMoreMenu(title: string, actions: MenuAction[]): void {
   if (Platform.OS === 'ios') {
     const destructiveIndex = actions.findIndex((action) => action.destructive);
@@ -209,20 +211,23 @@ export default function MyListingsScreen() {
       }
 
       pendingRef.current = new Set([...pendingRef.current].filter((id) => id !== listingId));
-      // Gone back meanwhile: don't alert over another screen.
+      // Gone back meanwhile: nothing left to update.
       if (!mountedRef.current) return;
       setPendingIds(pendingRef.current);
-      if (failure) {
-        Alert.alert(
-          mutation.failureTitle,
-          userMessage(failure, TRY_AGAIN, mutation.event, { platform: 'mobile', listingId })
-        );
+      const failureMessage = failure
+        ? userMessage(failure, TRY_AGAIN, mutation.event, { platform: 'mobile', listingId })
+        : null;
+      reloadListings();
+      // Moved on to Edit or a listing meanwhile, with this screen still mounted
+      // underneath: no alert over that screen. The list shows the outcome on return.
+      if (!navigation.isFocused()) return;
+      if (failureMessage) {
+        Alert.alert(mutation.failureTitle, failureMessage);
       } else if (mutation.success) {
         Alert.alert(mutation.success.title, mutation.success.message);
       }
-      reloadListings();
     },
-    [reloadListings]
+    [navigation, reloadListings]
   );
 
   const openMoreMenu = useCallback(

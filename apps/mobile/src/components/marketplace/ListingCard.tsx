@@ -2,11 +2,10 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { formatListingPrice, isVerifiedSeller, type MarketplaceListing } from '@nepally/shared';
+import { formatListingPrice, isVerifiedSeller, listingCardLabel, type MarketplaceListing } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
-import { listingCardLabel } from './listingCardLabel';
 
 interface ListingCardProps {
   listing: MarketplaceListing;

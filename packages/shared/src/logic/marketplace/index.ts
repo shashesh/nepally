@@ -13,6 +13,7 @@ export { toMailtoUrl, toMapsUrls, toTelUrl, toWebsiteUrl, type MapsUrls } from '
 export { listingInquiryDraft } from './inquiry';
 export { formatClockTime } from './clockTime';
 export { listingWebUrl } from './share';
+export { listingCardLabel, type ListingCardLabelParts } from './listingCardLabel';
 export {
   getPromotionBlocker,
   PROMOTION_BLOCKER_MESSAGES,

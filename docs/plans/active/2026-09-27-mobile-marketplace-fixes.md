@@ -887,13 +887,13 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
   - Each mutation checks `{ error }`. A failure shows an alert through `userMessage`; Refresh confirms with "Listing refreshed". A listing with a mutation in flight ignores further taps.
   - The empty state's Create button follows Home's `canCreate` (Level 1+). Level 0 members see "Verify your account to create listings."
   - Counts and expiry use `pluralize` ("1 contact", "Expires in 1 day").
-- [ ] **B3. Full-screen photos (4.7), Galeria (decided 2026-09-28).**
+- [x] **B3. Full-screen photos (4.7), Galeria (decided 2026-09-28).**
   - Install `@nandorojo/galeria` in `apps/mobile` with `npx npm@12`, since the lockfile is npm 12.
   - New `components/marketplace/ListingPhotoGallery.tsx` takes over the detail carousel, with its counter and its reset when the photos change.
   - Outside Expo Go it `require`s Galeria, as `services/notifications.ts` loads `expo-notifications`. A tap opens the native viewer: pinch-zoom, swipe between photos, swipe down to dismiss.
-  - In Expo Go and in Jest it renders the same carousel with photos that can't be tapped.
+  - In Expo Go it renders the same carousel with photos that can't be tapped. Jest gets a stand-in for Galeria in `jest.setup.ts`.
   - `setup-and-testing.md` notes that the viewer needs a development build.
-- [ ] **Chunk B gate and review**, then push, open the draft PR, and request Copilot's review. Pinch-zoom can only be checked on a development build on a device, so the PR's test plan lists it for the user.
+- [x] **Chunk B gate and review**, then push, open the draft PR, and request Copilot's review. Pinch-zoom can only be checked on a development build on a device, so the PR's test plan lists it for the user. The review found that a My Listings alert could pop up over Edit or a listing the member had opened meanwhile, since the screen stays mounted underneath; it now alerts only while focused. `listingCardLabel` moved to shared, and the Android three-button limit is noted in code. Galeria needs iOS 16.4, which Expo 57's template already targets.
 
 | #   | Task                                                                                                                                                                                                                                                                                                  | Main files                                                                                        | Done when                                                    |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -927,6 +927,8 @@ Not in PRs 1–4. Some affect both platforms or need a migration.
 - **A post photo upload that fails part-way orphans the photos before it.** `uploadPostPhotos` stops at the first failure without returning the paths already uploaded. `uploadListingPhotos` returns them since PR 3; do the same for posts, and apply the listing rule of cleaning up after a failed write only when the server refused it.
 - **Visual consistency:** Category, Detail, Create and My Listings still use the pre-redesign palette. The 2026-04-14 redesign deferred them.
 - **Phone links drop extensions and letters** (PR 4 review). `toTelUrl` keeps digits only, so "555-1234 ext 202" dials `5551234202` and "1-800-FLOWERS" loses its letters. Map letters to keypad digits and send an extension as `;ext=` or a pause, or show such numbers as plain text.
+- **My Listings' More sheet isn't anchored on iPad** (PR 4 review). `ActionSheetIOS` without an `anchor` shows centred rather than pointing at the More button. Pass the button's node handle.
+- **The More menu reflects the listing as it was when opened** (PR 4 review). A pull-to-refresh that lands while the menu is open can change the status behind it; the change then fails with its normal alert.
 - **Leaving detail while Contact Seller is starting skips the contact count** (PR 4 review). The conversation may exist server-side, but `incrementListingContacts` runs only when the screen is still there. Counting before the mounted check would fix it.
 
 ## Decisions (2026-09-27)

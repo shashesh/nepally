@@ -13,10 +13,10 @@ import {
   formatListingFreshness,
   formatListingPrice,
   isVerifiedSeller,
+  listingCardLabel,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { spacing } from '../../styles/spacing';
-import { listingCardLabel } from './listingCardLabel';
 import { typography } from '../../styles/typography';
 import {
   warmAccent,

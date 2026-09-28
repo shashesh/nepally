@@ -19,6 +19,7 @@ jest.mock('react-native-safe-area-context', () => {
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
 const mockAddListener = jest.fn<jest.Mock, [string, () => void]>(() => jest.fn());
+const mockIsFocused = jest.fn(() => true);
 const mockUseAuth = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
@@ -26,6 +27,7 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
     goBack: mockGoBack,
     addListener: mockAddListener,
+    isFocused: mockIsFocused,
   }),
 }));
 
@@ -587,6 +589,59 @@ describe('MyListingsScreen', () => {
         'It stays visible for another 90 days.'
       );
     });
+    alertSpy.mockRestore();
+  });
+
+  it("doesn't alert over the screen the member moved on to, but still reloads", async () => {
+    let finish: (value: unknown) => void = () => {};
+    mockRefreshListing.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText('Refresh'));
+
+    // The member opened Edit meanwhile; My Listings stays mounted underneath.
+    mockIsFocused.mockReturnValue(false);
+    await act(async () => {
+      finish({});
+    });
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockGetListingsByOwner).toHaveBeenCalledTimes(2);
+    });
+    mockIsFocused.mockReturnValue(true);
+    alertSpy.mockRestore();
+  });
+
+  it("keeps More closed for a listing whose change is still on its way", async () => {
+    let finish: (value: unknown) => void = () => {};
+    mockRefreshListing.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Refresh'));
+    fireEvent.press(screen.getByRole('button', { name: 'More actions' }));
+
+    expect(sheet).not.toHaveBeenCalled();
+    await act(async () => {
+      finish({});
+    });
+    sheet.mockRestore();
     alertSpy.mockRestore();
   });
 
