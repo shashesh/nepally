@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -50,11 +50,20 @@ export function usePickListingPhotos(
   onPicked: (photos: PickedListingPhoto[]) => void
 ): ListingPhotoPicker {
   const [processing, setProcessing] = useState(false);
+  // Processing can outlast the screen; once it's gone, nothing is added or alerted.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const addAssets = useCallback(
     async (assets: ImagePicker.ImagePickerAsset[]) => {
       setProcessing(true);
       const results = await Promise.allSettled(assets.map((asset) => processPhoto(asset.uri)));
+      if (!mountedRef.current) return;
       setProcessing(false);
 
       const picked = results

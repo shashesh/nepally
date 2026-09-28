@@ -352,6 +352,9 @@ describe('uploadListingPhotos', () => {
     const result = await uploadListingPhotos(supabase, photos);
 
     expect(result.error).toBeDefined();
+    // The first photo reached storage, so the caller can delete it.
+    expect(result.paths).toHaveLength(1);
+    expect(result.urls).toBeUndefined();
   });
 });
 

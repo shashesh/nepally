@@ -1,11 +1,14 @@
 /**
  * Saving the create/edit listing form: upload the new photos in display order,
- * write the listing, and tidy storage either way. A failed write deletes the
- * photos it just uploaded; a saved edit deletes the files of the photos the
- * member dropped, and only then, so a failed edit keeps them.
+ * write the listing, and tidy storage either way. An upload that fails part-way
+ * deletes the photos it did upload. A failed write deletes the photos it just
+ * uploaded when the server refused it (see cleanUpAfterFailedListingWrite). A
+ * saved edit deletes the files of the photos the member dropped, and only then,
+ * so a failed edit keeps them.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  cleanUpAfterFailedListingWrite,
   cleanUpListingPhotos,
   createListing,
   droppedListingPhotoPaths,
@@ -57,6 +60,7 @@ export async function submitListing(
       }))
     );
     if (upload.error || !upload.urls) {
+      await cleanUpListingPhotos(supabase, upload.paths ?? [], context);
       return {
         ok: false,
         title: 'Upload Failed',
@@ -76,7 +80,7 @@ export async function submitListing(
       });
 
   if (result.error || !result.data) {
-    await cleanUpListingPhotos(supabase, uploaded.paths, context);
+    await cleanUpAfterFailedListingWrite(supabase, result.error, uploaded.paths, context);
     return { ok: false, title: 'Error', message: result.error?.message ?? SAVE_FAILED };
   }
 

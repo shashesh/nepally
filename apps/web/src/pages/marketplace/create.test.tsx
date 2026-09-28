@@ -78,6 +78,7 @@ vi.mock('@nepally/shared', async () => {
     listingFieldErrors: actual.listingFieldErrors,
     droppedListingPhotoPaths: actual.droppedListingPhotoPaths,
     cleanUpListingPhotos: vi.fn(async () => {}),
+    cleanUpAfterFailedListingWrite: vi.fn(async () => {}),
     logClientEvent: vi.fn(),
     getCategories: vi.fn(async () => ({ data: [] })),
     getListingById: vi.fn(async () => ({ data: null })),
@@ -96,7 +97,7 @@ vi.mock('@nepally/shared', async () => {
 });
 
 import CreateListingPage from './create.page';
-import { cleanUpListingPhotos } from '@nepally/shared';
+import { cleanUpAfterFailedListingWrite, cleanUpListingPhotos } from '@nepally/shared';
 
 const mockGetCategories = getCategories as ReturnType<typeof vi.fn>;
 const mockCreateListing = createListing as ReturnType<typeof vi.fn>;
@@ -369,16 +370,34 @@ describe('CreateListingPage', () => {
       expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it('deletes the photos it just uploaded when the create fails', async () => {
+    it('hands the photos it just uploaded to the cleanup when the create fails', async () => {
       mocks.useAuth.mockReturnValue({ user: signedIn });
       mockUploadPhotosInOrder.mockResolvedValue({ urls: ['u/a'], paths: ['p/a'] });
-      mockCreateListing.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+      const failure = new Error(RLS_TEXT);
+      mockCreateListing.mockResolvedValueOnce({ error: failure });
+
+      await submit();
+
+      await waitFor(() =>
+        expect(cleanUpAfterFailedListingWrite).toHaveBeenCalledWith(
+          expect.anything(),
+          failure,
+          ['p/a'],
+          expect.any(Object)
+        )
+      );
+    });
+
+    it('deletes the photos that did upload when a later one fails', async () => {
+      mocks.useAuth.mockReturnValue({ user: signedIn });
+      mockUploadPhotosInOrder.mockResolvedValue({ error: new Error(RLS_TEXT), paths: ['p/a'] });
 
       await submit();
 
       await waitFor(() =>
         expect(cleanUpListingPhotos).toHaveBeenCalledWith(expect.anything(), ['p/a'], expect.any(Object))
       );
+      expect(mockCreateListing).not.toHaveBeenCalled();
     });
 
     describe('editing photos', () => {
@@ -417,14 +436,20 @@ describe('CreateListingPage', () => {
         );
       });
 
-      it('keeps the original photos and deletes the new ones when the edit fails', async () => {
-        mockUpdateListing.mockResolvedValueOnce({ error: new Error(RLS_TEXT) });
+      it('keeps the original photos and hands only the new ones to the cleanup when the edit fails', async () => {
+        const failure = new Error(RLS_TEXT);
+        mockUpdateListing.mockResolvedValueOnce({ error: failure });
         renderEdit();
         fireEvent.click(await screen.findByText('Update Listing'));
 
-        await waitFor(() => expect(cleanUpListingPhotos).toHaveBeenCalled());
-        expect(cleanUpListingPhotos).toHaveBeenCalledTimes(1);
-        expect(cleanUpListingPhotos).toHaveBeenCalledWith(expect.anything(), ['p/new'], expect.any(Object));
+        await waitFor(() => expect(cleanUpAfterFailedListingWrite).toHaveBeenCalled());
+        expect(cleanUpAfterFailedListingWrite).toHaveBeenCalledWith(
+          expect.anything(),
+          failure,
+          ['p/new'],
+          expect.any(Object)
+        );
+        expect(cleanUpListingPhotos).not.toHaveBeenCalled();
       });
     });
 

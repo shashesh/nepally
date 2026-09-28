@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deleteListingPhotos, getListingPhotoPathFromUrl } from '../api/storage';
 import { logClientEvent } from '../utils/clientLogger';
+import { isServerRejection } from '../utils/apiError';
 
 /**
  * Delete listing photos a submit no longer needs: the ones just uploaded when
@@ -29,6 +30,30 @@ export async function cleanUpListingPhotos(
       context: { ...context, paths: notRemoved ?? paths },
     });
   }
+}
+
+/**
+ * After a listing write failed, delete the photos uploaded for it, but only
+ * when the server refused the write. If the request may never have been
+ * answered, the listing may have saved with those photos, so they stay and
+ * their paths are logged rather than risk a live listing with broken images.
+ */
+export async function cleanUpAfterFailedListingWrite(
+  supabase: SupabaseClient,
+  error: unknown,
+  paths: string[],
+  context: Record<string, unknown>
+): Promise<void> {
+  if (paths.length === 0) return;
+  if (isServerRejection(error)) {
+    await cleanUpListingPhotos(supabase, paths, context);
+    return;
+  }
+  logClientEvent({
+    event: 'listing_photos_kept_after_unclear_failure',
+    error,
+    context: { ...context, paths },
+  });
 }
 
 /** Storage paths of the listing's original photos that an edit no longer keeps. */

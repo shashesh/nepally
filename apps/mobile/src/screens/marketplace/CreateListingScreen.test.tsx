@@ -2,6 +2,7 @@ import React from 'react';
 import { AccessibilityInfo, Alert, ScrollView, TextInput } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
+  cleanUpAfterFailedListingWrite,
   cleanUpListingPhotos,
   createListing,
   getCategories,
@@ -92,6 +93,7 @@ jest.mock('@nepally/shared', () => ({
   updateListing: jest.fn(async () => ({ data: { id: 'edit-1' } })),
   uploadListingPhotos: jest.fn(async () => ({ urls: [], paths: [] })),
   cleanUpListingPhotos: jest.fn(async () => {}),
+  cleanUpAfterFailedListingWrite: jest.fn(async () => {}),
 }));
 
 const mockLaunchLibrary = ImagePicker.launchImageLibraryAsync as jest.Mock;
@@ -100,6 +102,7 @@ const mockRequestCamera = ImagePicker.requestCameraPermissionsAsync as jest.Mock
 const mockManipulate = ImageManipulator.manipulateAsync as jest.Mock;
 const mockUpload = uploadListingPhotos as jest.Mock;
 const mockCleanUp = cleanUpListingPhotos as jest.Mock;
+const mockCleanUpAfterFailedWrite = cleanUpAfterFailedListingWrite as jest.Mock;
 
 /** Picker assets; each processes to file:///small-<name>, holding SIZES[name] bytes. */
 function assets(...names: string[]) {
@@ -355,16 +358,18 @@ describe('CreateListingScreen', () => {
     ]);
   });
 
-  it('deletes the photos it just uploaded when the save fails', async () => {
-    mockCreateListing.mockResolvedValue({ error: { message: 'Server error' } } as never);
+  it('hands the photos it just uploaded to the cleanup when the save fails', async () => {
+    const failure = { message: 'Server error', code: '42501' };
+    mockCreateListing.mockResolvedValue({ error: failure } as never);
     const screen = await renderForm();
     await addFromLibrary(screen, 'a');
     fillValidForm(screen);
 
     await submit(screen);
 
-    expect(mockCleanUp).toHaveBeenCalledWith(
+    expect(mockCleanUpAfterFailedWrite).toHaveBeenCalledWith(
       expect.anything(),
+      failure,
       ['user-1/10.jpg'],
       expect.any(Object)
     );
@@ -700,6 +705,53 @@ describe('CreateListingScreen', () => {
       expect.objectContaining({ title: 'Everest Kitchen', business_name: 'Himalayan Kitchen LLC' })
     );
     await waitFor(() => expect(mockGoBack).toHaveBeenCalled());
+  });
+
+  it('deletes the photos that did upload when a later one fails', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockUpload.mockResolvedValueOnce({
+      error: new Error('Upload failed'),
+      paths: ['user-1/10.jpg'],
+    });
+    const screen = await renderForm();
+    await addFromLibrary(screen, 'a', 'b');
+    fillValidForm(screen);
+
+    await submit(screen);
+
+    expect(mockCleanUp).toHaveBeenCalledWith(
+      expect.anything(),
+      ['user-1/10.jpg'],
+      expect.any(Object)
+    );
+    expect(alertSpy).toHaveBeenCalledWith('Upload Failed', expect.any(String));
+    expect(mockCreateListing).not.toHaveBeenCalled();
+    jest.restoreAllMocks();
+  });
+
+  it("doesn't add photos or alert once the member has left mid-pick", async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    let finish: () => void = () => {};
+    mockManipulate.mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          finish = () => reject(new Error('corrupt'));
+        })
+    );
+    const screen = await renderForm();
+    mockLaunchLibrary.mockResolvedValueOnce(assets('a'));
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Add photos' }));
+    });
+
+    screen.unmount();
+    await act(async () => {
+      finish();
+    });
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
   });
 
   describe('editing photos', () => {

@@ -370,7 +370,8 @@ export async function uploadListingPhoto(
 }
 
 /**
- * Upload multiple listing photos with count validation.
+ * Upload multiple listing photos with count validation. On a failure part-way,
+ * `paths` lists the photos already uploaded, so the caller can delete them.
  */
 export async function uploadListingPhotos(
   supabase: SupabaseClient,
@@ -386,7 +387,7 @@ export async function uploadListingPhotos(
   for (const photo of photos) {
     const result = await uploadListingPhoto(supabase, photo);
     if (result.error || !result.url || !result.path) {
-      return { error: result.error || new Error('Failed to upload listing photo') };
+      return { error: result.error || new Error('Failed to upload listing photo'), paths };
     }
     urls.push(result.url);
     paths.push(result.path);

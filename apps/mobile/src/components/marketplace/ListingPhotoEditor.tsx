@@ -10,6 +10,9 @@ import type { ListingPhoto } from './listingPhotos';
 const THUMB_SIZE = 96;
 /** The smallest touch target the platform guidelines allow. */
 const MIN_TARGET = 44;
+/** The visible "Make cover" band; its touch area reaches up to MIN_TARGET. */
+const MAKE_COVER_HEIGHT = 28;
+const MAKE_COVER_SLOP = { top: MIN_TARGET - MAKE_COVER_HEIGHT };
 
 interface ListingPhotoEditorProps {
   /** In display order; the first is the cover. */
@@ -56,6 +59,7 @@ export function ListingPhotoEditor({
                 <Pressable
                   style={({ pressed }) => [styles.makeCover, pressed && styles.pressed]}
                   onPress={() => onMakeCover(photo.key)}
+                  hitSlop={MAKE_COVER_SLOP}
                   accessibilityRole="button"
                   accessibilityLabel={`Make photo ${number} the cover`}
                 >
@@ -166,7 +170,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    minHeight: MIN_TARGET - spacing.s,
+    minHeight: MAKE_COVER_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.overlay,

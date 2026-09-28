@@ -5,7 +5,12 @@ const mocks = vi.hoisted(() => ({ logClientEvent: vi.fn() }));
 
 vi.mock('../utils/clientLogger', () => ({ logClientEvent: mocks.logClientEvent }));
 
-import { cleanUpListingPhotos, droppedListingPhotoPaths } from './listingPhotoCleanup';
+import {
+  cleanUpAfterFailedListingWrite,
+  cleanUpListingPhotos,
+  droppedListingPhotoPaths,
+} from './listingPhotoCleanup';
+import { ApiError } from '../utils/apiError';
 
 function buildClient(result: { data: unknown; error: Error | null }) {
   const remove = vi.fn().mockResolvedValue(result);
@@ -83,5 +88,52 @@ describe('droppedListingPhotoPaths', () => {
   it('is empty when every photo is kept', () => {
     const original = [`${PUBLIC}/user-1/a.jpg`];
     expect(droppedListingPhotoPaths(original, original)).toEqual([]);
+  });
+});
+
+describe('cleanUpAfterFailedListingWrite', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('deletes the new photos when the server refused the write', async () => {
+    const { supabase, remove } = buildClient({ data: [{ name: 'user-1/a.jpg' }], error: null });
+
+    await cleanUpAfterFailedListingWrite(
+      supabase,
+      new ApiError('Failed to create listing', { code: '42501' }),
+      ['user-1/a.jpg'],
+      CONTEXT
+    );
+
+    expect(remove).toHaveBeenCalledWith(['user-1/a.jpg']);
+  });
+
+  it('keeps the photos, and logs them, when the write may have gone through', async () => {
+    const { supabase, remove } = buildClient({ data: [], error: null });
+
+    await cleanUpAfterFailedListingWrite(
+      supabase,
+      new ApiError('Failed to create listing', { status: 0 }),
+      ['user-1/a.jpg'],
+      CONTEXT
+    );
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(mocks.logClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'listing_photos_kept_after_unclear_failure',
+        context: { ...CONTEXT, paths: ['user-1/a.jpg'] },
+      })
+    );
+  });
+
+  it('does nothing without photos', async () => {
+    const { supabase, remove } = buildClient({ data: [], error: null });
+
+    await cleanUpAfterFailedListingWrite(supabase, new Error('offline'), [], CONTEXT);
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(mocks.logClientEvent).not.toHaveBeenCalled();
   });
 });

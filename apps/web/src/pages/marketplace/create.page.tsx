@@ -17,6 +17,7 @@ import {
   createListingSchema,
   buildListingFormInput,
   listingFieldErrors,
+  cleanUpAfterFailedListingWrite,
   cleanUpListingPhotos,
   droppedListingPhotoPaths,
   LISTING_TYPE_LABELS,
@@ -129,6 +130,7 @@ export default function CreateListingPage() {
         uploadListingPhotos(supabase, inputs)
       );
       if ('error' in uploaded) {
+        await cleanUpListingPhotos(supabase, uploaded.paths, { platform: 'web', userId: user.id });
         notify.error(
           userMessage(uploaded.error, "Couldn't upload your photos. Please try again.", 'listing_photos_upload_failed', {
             platform: 'web',
@@ -145,7 +147,7 @@ export default function CreateListingPage() {
         const context = { platform: 'web', userId: user.id, listingId: editId };
         const result = await updateListing(supabase, editId, payload);
         if (result.error) {
-          await cleanUpListingPhotos(supabase, uploaded.paths, context);
+          await cleanUpAfterFailedListingWrite(supabase, result.error, uploaded.paths, context);
           notify.error(
             userMessage(result.error, "Couldn't update your listing. Please try again.", 'listing_update_failed', {
               platform: 'web',
@@ -164,7 +166,10 @@ export default function CreateListingPage() {
           metro_area_id: user.metro_area_id,
         });
         if (result.error) {
-          await cleanUpListingPhotos(supabase, uploaded.paths, { platform: 'web', userId: user.id });
+          await cleanUpAfterFailedListingWrite(supabase, result.error, uploaded.paths, {
+            platform: 'web',
+            userId: user.id,
+          });
           notify.error(
             userMessage(result.error, "Couldn't create your listing. Please try again.", 'listing_create_failed', {
               platform: 'web',
