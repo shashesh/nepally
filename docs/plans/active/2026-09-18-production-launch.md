@@ -161,7 +161,7 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - Post photo cleanup on web (`apps/web/src/lib/postSubmit.ts`) and mobile (`CreatePostScreen.tsx`) goes through the shared `cleanUpPostPhotos`. It logs `post_photos_cleanup_failed` with only the paths left behind. The post write has already decided what the member sees, so the failure is logged rather than shown.
   - The shared `removeProfilePhoto` deletes the file first. It stops and returns the error if the delete fails, leaving `users.profile_photo` untouched. The web profile page and mobile `EditProfileScreen` show that error, so the member can try again.
 
-- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Applied to staging on 2026-09-25, where all six `test:security:*` smoke tests pass; prod gets it with `001`–`046`:
+- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Applied to staging on 2026-09-25. All nine `test:security:*` smoke tests pass there (rerun 2026-09-27); prod gets it with `001`–`046`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.
