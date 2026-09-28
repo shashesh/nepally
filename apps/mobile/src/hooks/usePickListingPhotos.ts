@@ -50,7 +50,8 @@ export function usePickListingPhotos(
   onPicked: (photos: PickedListingPhoto[]) => void
 ): ListingPhotoPicker {
   const [processing, setProcessing] = useState(false);
-  // Processing can outlast the screen; once it's gone, nothing is added or alerted.
+  // Picking and processing can outlast the screen; once it's gone, nothing is
+  // added or alerted over wherever the member went.
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
@@ -95,7 +96,7 @@ export function usePickListingPhotos(
         selectionLimit: room,
         quality: 1,
       });
-      if (result.canceled || result.assets.length === 0) return;
+      if (!mountedRef.current || result.canceled || result.assets.length === 0) return;
       await addAssets(result.assets.slice(0, room));
     } catch (error) {
       logClientEvent({
@@ -103,7 +104,7 @@ export function usePickListingPhotos(
         error,
         context: { platform: 'mobile', source: 'library' },
       });
-      Alert.alert("Couldn't open your photos", 'Please try again.');
+      if (mountedRef.current) Alert.alert("Couldn't open your photos", 'Please try again.');
     }
   }, [room, addAssets]);
 
@@ -111,6 +112,7 @@ export function usePickListingPhotos(
     if (room <= 0) return;
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!mountedRef.current) return;
       if (!permission.granted) {
         Alert.alert(
           'Camera access needed',
@@ -123,7 +125,7 @@ export function usePickListingPhotos(
         return;
       }
       const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 });
-      if (result.canceled || result.assets.length === 0) return;
+      if (!mountedRef.current || result.canceled || result.assets.length === 0) return;
       await addAssets(result.assets.slice(0, 1));
     } catch (error) {
       logClientEvent({
@@ -131,7 +133,7 @@ export function usePickListingPhotos(
         error,
         context: { platform: 'mobile', source: 'camera' },
       });
-      Alert.alert("Couldn't open the camera", 'Please try again.');
+      if (mountedRef.current) Alert.alert("Couldn't open the camera", 'Please try again.');
     }
   }, [room, addAssets]);
 

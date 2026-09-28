@@ -584,6 +584,17 @@ describe('CreateListingScreen', () => {
     expect(screen.getByRole('radio', { name: 'Professional Services' })).not.toBeChecked();
   });
 
+  it("tints the selected category chip in the category's own colour", async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Food & Restaurants' }));
+
+    expect(screen.getByRole('radio', { name: 'Food & Restaurants' })).toHaveStyle({
+      backgroundColor: '#FF6B3520',
+    });
+    expect(screen.getByText('Food & Restaurants')).toHaveStyle({ color: '#FF6B35' });
+    expect(screen.getByText('Professional Services')).not.toHaveStyle({ color: '#2196F3' });
+  });
+
   // -- Saving ----------------------------------------------------------------------
 
   it("posts the listing to the member's active location", async () => {
@@ -780,6 +791,29 @@ describe('CreateListingScreen', () => {
 
     expect(alertSpy).not.toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+
+  it("doesn't alert about a picker failure once the member has left", async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    let failPicker: () => void = () => {};
+    mockLaunchLibrary.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        failPicker = () => reject(new Error('picker crashed'));
+      })
+    );
+    const screen = await renderForm();
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Add photos' }));
+    });
+
+    screen.unmount();
+    await act(async () => {
+      failPicker();
+    });
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    jest.restoreAllMocks();
   });
 
   describe('editing photos', () => {

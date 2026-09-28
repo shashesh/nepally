@@ -3,7 +3,7 @@
  * All Supabase query logic for marketplace listings — accepts SupabaseClient via dependency injection.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
-import { toApiError } from '../utils/apiError';
+import { ApiError, toApiError } from '../utils/apiError';
 import type {
   MarketplaceListing,
   MarketplaceCategory,
@@ -397,8 +397,10 @@ export async function updateListing(
       .select(LISTING_SELECT)
       .single();
 
+    // No row matched (gone, or not the member's to edit). The code stays on the
+    // error so callers can tell the server refused, as opposed to not answering.
     if ((error as { code?: string } | null)?.code === 'PGRST116') {
-      return { error: new Error('Listing not found') };
+      return { error: new ApiError('Listing not found', { code: 'PGRST116' }), notFound: true };
     }
     if (error) throw error;
     if (!data) return { error: new Error('Listing not found') };
