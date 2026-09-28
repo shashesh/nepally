@@ -279,6 +279,13 @@ export default function MyListingsScreen() {
         data={listings}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        // A reload that fails with listings on screen keeps them and says so;
+        // with none on screen the empty slot shows the full error instead.
+        ListHeaderComponent={
+          error && listings.length > 0 ? (
+            <MarketplaceErrorState message={error} onRetry={reloadListings} compact />
+          ) : null
+        }
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary.main]} />
         }

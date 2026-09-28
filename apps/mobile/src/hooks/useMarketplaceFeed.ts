@@ -15,6 +15,7 @@ const STRIP_LIMIT = 10;
 const SPONSORED_LIMIT = 5;
 const LOAD_FAILED = "Couldn't load listings.";
 const LOAD_MORE_FAILED = "Couldn't load more listings.";
+const REFRESH_FAILED = "Couldn't refresh listings.";
 
 export interface MarketplaceFeedFilters {
   /** '' for every category. */
@@ -33,7 +34,10 @@ export interface MarketplaceFeedState {
   loading: boolean;
   /** A pull-to-refresh is reloading; the rows stay on screen until it lands. */
   refreshing: boolean;
+  /** The page failed with nothing to show: the grid gives way to this message. */
   error: string | null;
+  /** A pull-to-refresh failed while rows were on screen; they stay, and this says so. */
+  refreshError: string | null;
   loadingMore: boolean;
   loadMoreError: string | null;
   /** More pages exist and paging isn't paused by a failure. */
@@ -145,6 +149,7 @@ export function useMarketplaceFeed(
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -159,6 +164,8 @@ export function useMarketplaceFeed(
   const generationRef = useRef(0);
   const loadingMoreRef = useRef(false);
   const mountedRef = useRef(true);
+  // Read when a pull-to-refresh fails: rows on screen stay rather than give way to the error.
+  const gridCountRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -166,6 +173,10 @@ export function useMarketplaceFeed(
       mountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    gridCountRef.current = grid.length;
+  }, [grid]);
 
   const feedKey = metroId ? JSON.stringify([metroId, categorySlug, searchQuery]) : null;
   const [request, setRequest] = useState<LoadRequest>({ count: 0, mode: 'initial', feedKey });
@@ -179,10 +190,14 @@ export function useMarketplaceFeed(
     setLoading(true);
     setRefreshing(false);
     setError(null);
+    setRefreshError(null);
     setLoadingMore(false);
     setLoadMoreError(null);
     setHasMore(false);
     setOffset(0);
+    // A request still pending for this feed must not survive the reset: flipping
+    // the filter away and back would otherwise run the new load as a quiet revalidate.
+    setRequest((prev) => ({ ...prev, feedKey: null }));
   }
 
   useEffect(() => {
@@ -200,6 +215,17 @@ export function useMarketplaceFeed(
       if (gridResult.error) {
         // A failed background check leaves the screen alone.
         if (mode === 'revalidate') return;
+        // A failed pull-to-refresh keeps the rows on screen and says so.
+        if (mode === 'refresh' && gridCountRef.current > 0) {
+          setRefreshError(
+            userMessage(gridResult.error, REFRESH_FAILED, 'listings_refresh_failed', {
+              platform: 'mobile',
+              metroId,
+            })
+          );
+          setRefreshing(false);
+          return;
+        }
         // The grid is the page's content, so its failure is the page's failure.
         setSections(EMPTY_SECTIONS);
         setGrid([]);
@@ -227,6 +253,7 @@ export function useMarketplaceFeed(
         setLoadMoreError(null);
       }
       setError(null);
+      setRefreshError(null);
       setLoading(false);
       setRefreshing(false);
     });
@@ -241,6 +268,7 @@ export function useMarketplaceFeed(
     setGrid([]);
     setLoading(true);
     setError(null);
+    setRefreshError(null);
     setLoadingMore(false);
     setLoadMoreError(null);
     setHasMore(false);
@@ -306,6 +334,7 @@ export function useMarketplaceFeed(
     loading: hasMetro && loading,
     refreshing,
     error,
+    refreshError,
     loadingMore,
     loadMoreError,
     hasMore: hasMetro && !loading && hasMore && loadMoreError === null,

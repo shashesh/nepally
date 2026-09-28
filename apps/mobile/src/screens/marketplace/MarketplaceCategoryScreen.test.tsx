@@ -456,6 +456,22 @@ describe('MarketplaceCategoryScreen', () => {
       expect(screen.queryByText('No listings in this category yet')).toBeNull();
     });
 
+    it('keeps the list and shows a note when a pull-to-refresh fails', async () => {
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+      });
+
+      mockGetListingsByMetro.mockResolvedValue({ error: new Error('offline') });
+      fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't refresh listings.")).toBeTruthy();
+      });
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+      expect(screen.UNSAFE_getByType(RefreshControl).props.refreshing).toBe(false);
+    });
+
     it('loads the category again on Try again', async () => {
       mockGetListingsByMetro.mockResolvedValueOnce({ error: new Error('offline') });
       const screen = render(<MarketplaceCategoryScreen />);

@@ -292,6 +292,24 @@ describe('MyListingsScreen', () => {
     jest.restoreAllMocks();
   });
 
+  it('keeps the list and says so when a reload fails', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+
+    mockGetListingsByOwner.mockResolvedValue({ error: new Error('Network error') });
+    fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load your listings.")).toBeTruthy();
+    });
+    expect(screen.getByText('Edit')).toBeTruthy();
+    jest.restoreAllMocks();
+  });
+
   it('treats a thrown fetch as a failure too, and Try again reloads', async () => {
     jest.spyOn(console, 'error').mockImplementation(() => {});
     mockGetListingsByOwner.mockRejectedValueOnce(new Error('Network error'));

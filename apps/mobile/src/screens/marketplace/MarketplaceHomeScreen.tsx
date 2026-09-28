@@ -192,6 +192,9 @@ export default function MarketplaceHomeScreen() {
   const listHeader = useMemo(
     () => (
       <View>
+        {feed.refreshError && (
+          <MarketplaceErrorState message={feed.refreshError} onRetry={feed.refresh} compact />
+        )}
         <MarketplaceSearchBar value={searchInput} onChangeText={setSearchInput} />
         <CategoryTileRow
           categories={categories}
@@ -242,6 +245,8 @@ export default function MarketplaceHomeScreen() {
       </View>
     ),
     [
+      feed.refreshError,
+      feed.refresh,
       searchInput,
       categories,
       selectedCategory,

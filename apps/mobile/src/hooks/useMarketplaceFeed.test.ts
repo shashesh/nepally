@@ -327,6 +327,64 @@ describe('useMarketplaceFeed', () => {
       expect(result.current.grid[40].id).toBe('h19');
     });
 
+    it('keeps the rows and says so when a pull-to-refresh fails', async () => {
+      mockSources({ grid: [page(makeListings('g', 20)), { error: new Error('boom') }] });
+      const { result } = await renderFeed();
+
+      act(() => result.current.refresh());
+      await settle();
+
+      expect(result.current.refreshing).toBe(false);
+      expect(result.current.error).toBeNull();
+      expect(result.current.refreshError).toBe("Couldn't refresh listings.");
+      expect(result.current.grid).toHaveLength(20);
+      expect(result.current.recent).toHaveLength(3);
+    });
+
+    it('clears the refresh failure once a load succeeds', async () => {
+      mockSources({
+        grid: [page(makeListings('g', 20)), { error: new Error('boom') }, page(makeListings('n', 2))],
+      });
+      const { result } = await renderFeed();
+      act(() => result.current.refresh());
+      await settle();
+      expect(result.current.refreshError).not.toBeNull();
+
+      act(() => result.current.refresh());
+      await settle();
+
+      expect(result.current.refreshError).toBeNull();
+      expect(result.current.grid.map((l) => l.id)).toEqual(['n0', 'n1']);
+    });
+
+    it('treats a failed pull-to-refresh with nothing on screen as the page failing', async () => {
+      mockSources({ grid: [page([]), { error: new Error('boom') }] });
+      const { result } = await renderFeed();
+
+      act(() => result.current.refresh());
+      await settle();
+
+      expect(result.current.error).toBe("Couldn't load listings.");
+      expect(result.current.refreshError).toBeNull();
+    });
+
+    it('loads from scratch after the filter flips away and back while a revalidation is pending', async () => {
+      mockSources({ grid: [page(makeListings('g', 20)), page(makeListings('g', 20))] });
+      const { result, rerender } = await renderFeed();
+
+      act(() => result.current.revalidate());
+      rerender({ metro: 'm1', feedFilters: { categorySlug: 'clothing', searchQuery: '' } });
+      mockSources({ grid: [page(makeListings('a', 20)), page(makeListings('b', 20))] });
+      rerender({ metro: 'm1', feedFilters: UNFILTERED });
+      await settle();
+
+      act(() => result.current.loadMore());
+      await settle();
+
+      // A fresh first load leaves the next page at 20; a misread quiet refresh would ask for 0 again.
+      expect(gridCalls().at(-1)).toEqual(expect.objectContaining({ offset: 20 }));
+    });
+
     it('keeps what is on screen when a quiet revalidation fails', async () => {
       mockSources({ grid: [page(makeListings('g', 20)), { error: new Error('boom') }] });
       const { result } = await renderFeed();

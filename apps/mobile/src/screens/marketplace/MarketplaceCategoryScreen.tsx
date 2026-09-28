@@ -38,6 +38,7 @@ type Route = RouteProp<MarketplaceStackParamList, 'MarketplaceCategory'>;
 const PAGE_SIZE = 20;
 const LOAD_FAILED = "Couldn't load listings.";
 const LOAD_MORE_FAILED = "Couldn't load more listings.";
+const REFRESH_FAILED = "Couldn't refresh listings.";
 
 interface ListingsPage {
   listings: MarketplaceListing[];
@@ -78,6 +79,8 @@ export default function MarketplaceCategoryScreen() {
   const [featuredListings, setFeaturedListings] = useState<MarketplaceListing[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  // A pull-to-refresh failed while listings were on screen; they stay, and this says so.
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   /**
    * Where the next page starts, counted in rows the API consumed: the category
    * filter drops rows after the query, so rows on screen can undercount.
@@ -91,6 +94,12 @@ export default function MarketplaceCategoryScreen() {
   const loadingMoreRef = useRef(false);
   // Bumped by each first-page load; a next page requested under an older one is dropped.
   const generationRef = useRef(0);
+  // Read when a pull-to-refresh fails: listings on screen stay rather than give way to the error.
+  const listingCountRef = useRef(0);
+
+  useEffect(() => {
+    listingCountRef.current = listings.length;
+  }, [listings]);
 
   // A new metro / filter set / search mode means a fresh first page: show the
   // full-screen spinner until it lands (adjusted during render, not in an effect).
@@ -104,6 +113,7 @@ export default function MarketplaceCategoryScreen() {
     setLoading(true);
     setError(null);
     setLoadMoreError(null);
+    setRefreshError(null);
   }
 
   useEffect(() => {
@@ -190,6 +200,7 @@ export default function MarketplaceCategoryScreen() {
       setHasMore(result.page.hasMore);
       setNextOffset(PAGE_SIZE);
       setError(null);
+      setRefreshError(null);
     }
     loadingMoreRef.current = false;
     setLoadMoreError(null);
@@ -213,7 +224,15 @@ export default function MarketplaceCategoryScreen() {
     setRefreshing(true);
     const generation = ++generationRef.current;
     const result = await fetchPage(0);
-    if (mountedRef.current && generation === generationRef.current) applyFirstPage(result);
+    if (!mountedRef.current || generation !== generationRef.current) return;
+    // A failed refresh keeps the listings on screen and says so; with nothing
+    // on screen it is the page failing.
+    if (result && 'error' in result && listingCountRef.current > 0) {
+      setRefreshError(REFRESH_FAILED);
+      setRefreshing(false);
+      return;
+    }
+    applyFirstPage(result);
   }, [fetchPage, applyFirstPage]);
 
   const reload = useCallback(() => {
@@ -309,15 +328,20 @@ export default function MarketplaceCategoryScreen() {
             />
           )}
           ListHeaderComponent={
-            !isSearchMode && featuredListings.length > 0 ? (
-              <ListingStrip
-                title="Featured"
-                titleIcon="⭐"
-                listings={featuredListings}
-                onItemPress={handleItemPress}
-                maxItems={10}
-              />
-            ) : null
+            <>
+              {refreshError && (
+                <MarketplaceErrorState message={refreshError} onRetry={onRefresh} compact />
+              )}
+              {!isSearchMode && featuredListings.length > 0 ? (
+                <ListingStrip
+                  title="Featured"
+                  titleIcon="⭐"
+                  listings={featuredListings}
+                  onItemPress={handleItemPress}
+                  maxItems={10}
+                />
+              ) : null}
+            </>
           }
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary.main]} />

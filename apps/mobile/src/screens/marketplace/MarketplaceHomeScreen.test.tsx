@@ -1,6 +1,6 @@
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, render, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { FlatList } from 'react-native';
+import { FlatList, RefreshControl } from 'react-native';
 import { getListingsByMetro, getStickyBusinessListings } from '@nepally/shared';
 import MarketplaceHomeScreen from './MarketplaceHomeScreen';
 
@@ -283,6 +283,23 @@ describe('MarketplaceHomeScreen (redesign)', () => {
     await waitFor(() => {
       expect(screen.getByText('Warm winter jacket')).toBeTruthy();
     });
+  });
+
+  it('keeps the grid and shows a note when a pull-to-refresh fails', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Warm winter jacket')).toBeTruthy();
+    });
+
+    mockGetListingsByMetro.mockImplementation(async () => ({ error: new Error('offline') }));
+    await act(async () => {
+      screen.UNSAFE_getByType(RefreshControl).props.onRefresh();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't refresh listings.")).toBeTruthy();
+    });
+    expect(screen.getByText('Warm winter jacket')).toBeTruthy();
   });
 
   it('says the metro has nothing yet only when every source is empty', async () => {
