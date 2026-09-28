@@ -37,7 +37,8 @@ Each PR is one chunk, run the way PRs 7–10 of the [web UI overhaul](../../arch
 | PR  | Branch                                   | Theme                                                            |
 | --- | ---------------------------------------- | ---------------------------------------------------------------- |
 | 1   | `fix/mobile-marketplace-launch-blockers` | Crash, reporting, Promote removal, search focus                  |
-| 2   | `fix/mobile-marketplace-browse`          | Home, Category and Saved: tabs, refetch, errors, location, price |
+| 1b  | `feat/report-auto-hide-threshold`        | Reports hide a post or listing at 100, not 3 (migration 047)     |
+| 2   | `fix/mobile-marketplace-browse`          | Home, Category and Saved: rows, refetch, errors, location, price |
 | 3   | `fix/mobile-marketplace-create-edit`     | Create and edit form                                             |
 | 4   | `fix/mobile-marketplace-detail`          | Listing detail and My Listings                                   |
 
@@ -276,7 +277,7 @@ git commit -m "feat: accept listing reports and show them in the moderation queu
 
 - The flag button has the label "Report listing". It is hidden from the listing's owner.
 - Signed out: an alert says "Please sign in to report listings."
-- Below Trust Level 1: an alert says "Please verify your account to report listings." The reports INSERT policy requires Level 1, so this avoids a raw RLS failure.
+- Below Trust Level 1: an alert says "Please verify your account to report listings." The reports INSERT policy requires Level 1, so this avoids a raw RLS failure. Level 0 members can't report, by the user's decision (2026-09-27).
 - Otherwise the shared report sheet opens with the title "Report Listing". Submitting calls `createReport` with `target_type: 'listing'`.
 - On success, the sheet closes and an alert says "Thank you. Our moderation team will review this listing."
 - On failure, the sheet stays open and an alert shows the error, such as the duplicate-report message.
@@ -676,11 +677,54 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 ### PR 1 gate
 
-- [ ] `npm run type-check`, `npm run lint`, `npm run lint:guards`
-- [ ] `npm run test --workspace=packages/shared`, `npm run test --workspace=apps/mobile`, and `npm run test --workspace=apps/web` from `C:\…`
-- [ ] `npm run docs:check`, `npm run lint:md`
-- [ ] One code-review agent over `git diff master...HEAD`. Fix CRITICAL and HIGH in one commit; route the rest to [Follow-ups](#follow-ups-not-scheduled).
-- [ ] Push, open the draft PR, and request Copilot's review.
+- [x] `npm run type-check`, `npm run lint`, `npm run lint:guards`
+- [x] `npm run test --workspace=packages/shared`, `npm run test --workspace=apps/mobile`, and `npm run test --workspace=apps/web` from `C:\…`
+- [x] `npm run docs:check`, `npm run lint:md`
+- [x] One code-review agent over `git diff master...HEAD`. Fix CRITICAL and HIGH in one commit; route the rest to [Follow-ups](#follow-ups-not-scheduled).
+- [x] Push, open the draft PR, and request Copilot's review: [#102](https://github.com/shashesh/nepally/pull/102).
+
+---
+
+## PR 1b — Report thresholds (migration 047)
+
+**Decided 2026-09-27:** neither posts nor listings hide at 3 reports; both need at least 100. A listing that reaches 100 becomes `removed`. The branch is off `master` and doesn't depend on PR 1's code.
+
+**Migration `supabase/migrations/047_report_auto_hide_threshold.sql`:**
+
+- **Counter:** add `marketplace_listings.reports_count integer NOT NULL DEFAULT 0`.
+- **`on_report_created()`**, replaced:
+  - A post moves `active → pending` at 100 reports, not 3.
+  - A listing report bumps `marketplace_listings.reports_count` and the owner's `users.reports_received`.
+  - At 100 reports, an `active` or `inactive` listing becomes `removed`.
+- **`guard_listing_status_transition()`**, a `BEFORE UPDATE OF status` trigger:
+  - Nobody but a moderator or a privileged context can move a listing out of `removed`.
+  - Today the owner UPDATE policy allows every column, so a moderator-removed listing can be set back to `active` over REST.
+  - Owner delete already sets `removed`, and the app calls it permanent, so owners lose nothing in the app.
+- **`guard_report_counts()`**, a `BEFORE UPDATE OF reports_count` trigger on `posts` and `marketplace_listings`: only privileged contexts and moderators may change the counter, so an author can't reset it to stay under 100.
+- **Grants:** trigger functions get no EXECUTE grant ([ADR](../../decisions/2026-09-25-function-execute-grants.md)).
+
+**Tasks:**
+
+- [ ] **1b.1 Migration 047.** Before writing it, run read-only checks on staging: the trigger and function names, and the current maximum of `posts.reports_count`.
+- [ ] **1b.2 Post smoke test.** `scripts/security/emergency-post-smoke.ts` step 5 asserts auto-hide at 3. It becomes:
+  - one report: count 1, still active
+  - the service role seeds the count to 98
+  - the second report: 99, still active
+  - the third report: 100, `pending`
+  - the author can't reset `reports_count`
+- [ ] **1b.3 Listing smoke test.** New `scripts/security/listing-reports-smoke.ts` as `npm run test:security:listing-reports`:
+  - A Level 0 member can't report.
+  - A report bumps the listing's and the owner's counters.
+  - The owner can't reset `reports_count`.
+  - A seeded 99 plus one report removes the listing.
+  - The owner can't reactivate it; a moderator can.
+- [ ] **1b.4 Docs.**
+  - `moderation.md`: posts hide at 100; listings are removed at 100.
+  - `marketplace.md`
+  - `database-schema.md`: the column and the triggers
+  - the `roadmap.md` status line
+  - the smoke table in `setup-and-testing.md`
+- [ ] **1b.5 Apply.** Apply only on the user's direct request: "apply migration 047 and realign the tracker". Then run `test:security:emergency-post`, `test:security:listing-reports` and `test:security:functions` against staging.
 
 ---
 
@@ -688,16 +732,16 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 Step breakdown to be written at the start of the PR. This PR may run as two chunks (2.1–2.4, then 2.5–2.8).
 
-| #   | Task                                                                                                                                                                                                                                                                                                                                                        | Main files                                                                                                                 | Done when                                                                                                  |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 2.1 | **Default tab shows listings.** Today it's "Sponsored", which only shows $4.99/day promotions and otherwise says "Nothing in your metro yet". Open on All Listings. A curated tab that comes back empty gets its own copy ("No sponsored listings right now") with a "See all listings" action. "Nothing in your metro yet" appears only when All is empty. | `MarketplaceHomeScreen.tsx`, `MarketplaceTabs.tsx`, `MarketplaceEmptyState.tsx`                                            | A metro with listings but no promotions opens on a full grid                                               |
-| 2.2 | **Returning from a listing keeps the grid.** Focus currently sets `loading`, which empties `data` and shows the skeleton. Show the skeleton only on first load and when a filter changes; on focus, refetch in the background and keep the scroll position. Refresh saved ids on focus too.                                                                 | `MarketplaceHomeScreen.tsx`                                                                                                | Back from detail: same items, same scroll offset, no skeleton; a heart toggled on detail shows on the grid |
-| 2.3 | **Stale responses are ignored.** Home drops any response that isn't from the latest request. Category guards load-more with a ref instead of state and de-duplicates by id, as Home does.                                                                                                                                                                   | `MarketplaceHomeScreen.tsx`, `MarketplaceCategoryScreen.tsx`                                                               | Fast tab switching never shows another tab's items; no duplicate-key warnings on the category list         |
-| 2.4 | **Errors are not empty states.** A failed load shows "Couldn't load listings." with Try again (the redesign spec's banner) on Home, Category, My Listings and Saved. Detail uses the shared `ListingResult.notFound` to tell "not found" from "couldn't load".                                                                                              | new `components/marketplace/MarketplaceErrorState.tsx`, the four screens, `ListingDetailScreen.tsx`                        | Offline shows the error with retry, not "Nothing in your metro yet"                                        |
-| 2.5 | **Saved listings stay current.** Refetch on focus and add pull-to-refresh. Use its own empty copy ("No saved listings yet. Tap the heart on a listing to keep it here."). Roll back an optimistic toggle when the call fails, using one `useSavedListingIds` hook shared by Home, Saved and Detail.                                                         | new `hooks/useSavedListingIds.ts`, `SavedListingsScreen.tsx`, `MarketplaceHomeScreen.tsx`, `MarketplaceEmptyState.tsx`     | Saving on any screen is reflected on the others after navigation; a failed save flips back                 |
-| 2.6 | **The marketplace follows the active location.** Use `useLocation().activeLocation?.metro_area_id ?? user.metro_area_id`, as Home does, and show the metro name in the header. "Change Location" and the empty state's "Browse nearby metros" open `LocationSwitcherSheet` in place instead of jumping to the Home tab.                                     | `MarketplaceHomeScreen.tsx`, `MarketplaceCategoryScreen.tsx`, `CreateListingScreen.tsx` (metro on create)                  | Switching to a visiting metro changes the marketplace grid                                                 |
-| 2.7 | **Prices read as prices.** Every mobile price goes through the shared `formatListingPrice` ("80" → "$80"). `ListingCard` drops the hard-coded "Starting at".                                                                                                                                                                                                | `ListingGridCard.tsx`, `ListingCard.tsx`, `ListingDetailScreen.tsx`, `MyListingsScreen.tsx`                                | The same listing shows the same price string on web and mobile                                             |
-| 2.8 | **Layout and sheet polish.** Use `useWindowDimensions` for grid card widths, since `supportsTablet` is on. Category tiles grow with Dynamic Type. Tabs don't wrap. The menu sheet plays its close animation, keeps the backdrop still, and pads the bottom with safe-area insets. Sort labels become "Price: low to high" and "Price: high to low".         | `MarketplaceHomeScreen.tsx`, `SavedListingsScreen.tsx`, `CategoryTileRow.tsx`, `MarketplaceMenuSheet.tsx`, `FilterBar.tsx` | Rotating an iPad or using Split View re-flows the grid; the menu sheet animates out                        |
+| #   | Task                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Main files                                                                                                                 | Done when                                                                                                  |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 2.1 | **Web-style rows replace the tabs** (decided 2026-09-27). Today the default "Sponsored" tab shows only $4.99/day promotions, and otherwise says "Nothing in your metro yet". Home becomes one scroll: Sponsored, Featured, Recent and Trending strips, each hidden when empty, then the All Listings grid with infinite scroll. A search or category filter swaps the rows for the filtered grid, as web's `MarketplaceBrowse` does. "Nothing in your metro yet" appears only when the metro has no listings at all. | `MarketplaceHomeScreen.tsx`, `MarketplaceTabs.tsx`, `MarketplaceEmptyState.tsx`                                            | A metro with listings but no promotions opens on a full grid                                               |
+| 2.2 | **Returning from a listing keeps the grid.** Focus currently sets `loading`, which empties `data` and shows the skeleton. Show the skeleton only on first load and when a filter changes; on focus, refetch in the background and keep the scroll position. Refresh saved ids on focus too.                                                                                                                                                                                                                          | `MarketplaceHomeScreen.tsx`                                                                                                | Back from detail: same items, same scroll offset, no skeleton; a heart toggled on detail shows on the grid |
+| 2.3 | **Stale responses are ignored.** Home drops any response that isn't from the latest request. Category guards load-more with a ref instead of state and de-duplicates by id, as Home does.                                                                                                                                                                                                                                                                                                                            | `MarketplaceHomeScreen.tsx`, `MarketplaceCategoryScreen.tsx`                                                               | Fast tab switching never shows another tab's items; no duplicate-key warnings on the category list         |
+| 2.4 | **Errors are not empty states.** A failed load shows "Couldn't load listings." with Try again (the redesign spec's banner) on Home, Category, My Listings and Saved. Detail uses the shared `ListingResult.notFound` to tell "not found" from "couldn't load".                                                                                                                                                                                                                                                       | new `components/marketplace/MarketplaceErrorState.tsx`, the four screens, `ListingDetailScreen.tsx`                        | Offline shows the error with retry, not "Nothing in your metro yet"                                        |
+| 2.5 | **Saved listings stay current.** Refetch on focus and add pull-to-refresh. Use its own empty copy ("No saved listings yet. Tap the heart on a listing to keep it here."). Roll back an optimistic toggle when the call fails, using one `useSavedListingIds` hook shared by Home, Saved and Detail.                                                                                                                                                                                                                  | new `hooks/useSavedListingIds.ts`, `SavedListingsScreen.tsx`, `MarketplaceHomeScreen.tsx`, `MarketplaceEmptyState.tsx`     | Saving on any screen is reflected on the others after navigation; a failed save flips back                 |
+| 2.6 | **The marketplace follows the active location.** Use `useLocation().activeLocation?.metro_area_id ?? user.metro_area_id`, as Home does, and show the metro name in the header. "Change Location" and the empty state's "Browse nearby metros" open `LocationSwitcherSheet` in place instead of jumping to the Home tab.                                                                                                                                                                                              | `MarketplaceHomeScreen.tsx`, `MarketplaceCategoryScreen.tsx`, `CreateListingScreen.tsx` (metro on create)                  | Switching to a visiting metro changes the marketplace grid                                                 |
+| 2.7 | **Prices read as prices.** Every mobile price goes through the shared `formatListingPrice` ("80" → "$80"). `ListingCard` drops the hard-coded "Starting at".                                                                                                                                                                                                                                                                                                                                                         | `ListingGridCard.tsx`, `ListingCard.tsx`, `ListingDetailScreen.tsx`, `MyListingsScreen.tsx`                                | The same listing shows the same price string on web and mobile                                             |
+| 2.8 | **Layout and sheet polish.** Use `useWindowDimensions` for grid card widths, since `supportsTablet` is on. Category tiles grow with Dynamic Type. Tabs don't wrap. The menu sheet plays its close animation, keeps the backdrop still, and pads the bottom with safe-area insets. Sort labels become "Price: low to high" and "Price: high to low".                                                                                                                                                                  | `MarketplaceHomeScreen.tsx`, `SavedListingsScreen.tsx`, `CategoryTileRow.tsx`, `MarketplaceMenuSheet.tsx`, `FilterBar.tsx` | Rotating an iPad or using Split View re-flows the grid; the menu sheet animates out                        |
 
 ## PR 3 — Create and edit
 
@@ -721,7 +765,7 @@ Step breakdown to be written at the start of the PR.
 | #   | Task                                                                                                                                                                                                                                                                                                  | Main files                                                                                        | Done when                                                    |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | 4.1 | **Contact details do something.** Phone opens `tel:`, email opens `mailto:`, website opens the browser. Address opens Maps (`maps:` on iOS, `geo:` on Android, a Google Maps URL as fallback). Values are selectable and not cut to 2 lines.                                                          | `ListingDetailScreen.tsx`                                                                         | Tapping the phone number starts a call                       |
-| 4.2 | **Contact Seller carries context.** The button is busy while the conversation is created, so a double tap can't start it twice. The contact counter increments only on success. `MessageThread` opens with a draft: "Hi, is “{title}” still available?"                                               | `ListingDetailScreen.tsx`, chat `MessageThread` screen, `ChatStackParamList`                      | The seller can see which listing the buyer means             |
+| 4.2 | **Contact Seller carries context** (prefilled draft decided 2026-09-27). The button is busy while the conversation is created, so a double tap can't start it twice. The contact counter increments only on success. `MessageThread` opens with a draft: "Hi, is “{title}” still available?"          | `ListingDetailScreen.tsx`, chat `MessageThread` screen, `ChatStackParamList`                      | The seller can see which listing the buyer means             |
 | 4.3 | **Screen-reader reachable.** The heart on grid cards and the My Listings actions are reachable in VoiceOver, via custom accessibility actions on the card or by making the card's parts separate elements. Card labels include price. Every icon-only button gets a label.                            | `ListingGridCard.tsx`, `ListingCard.tsx`, `MyListingsScreen.tsx`, `MarketplaceCategoryScreen.tsx` | VoiceOver can save a listing from the grid                   |
 | 4.4 | **My Listings actions fit.** Today five actions need about 440pt where about 280pt fits. Keep Edit and Refresh visible and move the rest into a "More" menu, with 44pt targets. Mutation errors show an alert, Refresh confirms it worked, and the empty-state "Create" follows the Trust Level rule. | `MyListingsScreen.tsx`                                                                            | No action is clipped at 320pt width; a failed delete says so |
 | 4.5 | **Detail stays fresh.** Refetch on focus, and reset per-listing state when `listingId` changes (web follow-up #18 had the same bug).                                                                                                                                                                  | `ListingDetailScreen.tsx`                                                                         | Edits show on return                                         |
@@ -736,8 +780,7 @@ Step breakdown to be written at the start of the PR.
 Not in PRs 1–4. Some affect both platforms or need a migration.
 
 - **Price sorting is alphabetical.** `price` is free text, so `order('price')` sorts "$1,200" < "100" < "20" < "Negotiable" on both apps (`packages/shared/src/api/marketplace.ts:89-92`). Fixing it needs a numeric `price_cents` column (a new migration), a backfill from `formatListingPrice`'s parser, and the form to capture a number.
-- **Listing reports aren't counted.** `on_report_created` (035) handles posts and users only. A new migration could bump the owner's `reports_received` and, if the user wants it, auto-hide a listing at 3 reports (see Open questions).
-- **Moderators can't remove a reported listing** from the queue. This needs a moderator-only RPC or policy to set `status = 'removed'`.
+- **Moderators can't remove or restore a reported listing** from the queue. After 047 a moderator can set the status over the API, but the queue has no button for it.
 - **Blocked sellers' listings still show** in marketplace feeds. The shared queries don't consult `blocked_users`.
 - **No DB caps** on listing photos, title or description (`014_marketplace.sql:44-46`); they're zod-only.
 - **Pending promotions are never cleaned up**; 046 expires `active` rows only. The mobile branch of `create-promotion-checkout` is now unused.
@@ -746,9 +789,9 @@ Not in PRs 1–4. Some affect both platforms or need a migration.
 - **Grid thumbnails load full 1200px photos**; use storage image transforms if the plan allows it.
 - **Visual consistency:** Category, Detail, Create and My Listings still use the pre-redesign palette. The 2026-04-14 redesign deferred them.
 
-## Open questions
+## Decisions (2026-09-27)
 
-1. **Can Level 0 members report?** The reports INSERT policy requires Trust Level 1, for posts and listings. App Review usually tests with a brand-new account, which would be Level 0.
-2. **Should listings auto-hide at N reports**, as posts do at 3? If so, to what status? `inactive` can be reactivated by the owner; `removed` can't.
-3. **Default marketplace tab** (PR 2.1): All Listings, or web-style strips (Sponsored, Featured, Recent, Trending) on one scroll?
-4. **Contact Seller draft text** (PR 4.2): is the prefilled message wanted, or should the chat attach a listing card?
+1. **Level 0 members can't report**, for posts or listings; the reports INSERT policy stays at Level 1. App Review therefore needs a verified (Level 1) test account; this is noted in the launch plan's App Review task.
+2. **Posts and listings hide at 100 reports, not 3.** A post goes to `pending`; a listing becomes `removed`, and only a moderator can restore it (PR 1b).
+3. **Home uses web-style rows** (Sponsored, Featured, Recent, Trending) above the All Listings grid (PR 2.1).
+4. **Contact Seller opens the chat with a prefilled draft** naming the listing (PR 4.2).
