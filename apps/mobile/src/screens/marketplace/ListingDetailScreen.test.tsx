@@ -173,7 +173,9 @@ describe('ListingDetailScreen', () => {
     });
     expect(mockGetListingById).toHaveBeenCalledTimes(1);
 
-    mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, title: 'Everest Kitchen' } } as never);
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, title: 'Everest Kitchen' },
+    } as never);
     await act(async () => {
       mockFocusCallback?.();
     });
@@ -182,6 +184,27 @@ describe('ListingDetailScreen', () => {
     expect(mockGetListingById).toHaveBeenCalledTimes(2);
     // Coming back isn't another view.
     expect(incrementListingViews).toHaveBeenCalledTimes(1);
+  });
+
+  it("doesn't refetch on return while the first load is still on its way", async () => {
+    let finishLoad: (value: unknown) => void = () => {};
+    mockGetListingById.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishLoad = resolve;
+      }) as never
+    );
+    const screen = render(<ListingDetailScreen />);
+
+    act(() => {
+      mockFocusCallback?.();
+      mockFocusCallback?.();
+    });
+    expect(mockGetListingById).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishLoad({ data: MOCK_LISTING });
+    });
+    expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
   });
 
   it('keeps the listing on screen when the refetch on return fails', async () => {
@@ -292,7 +315,10 @@ describe('ListingDetailScreen', () => {
   });
 
   it('shows "Listing not found" when the listing is really gone', async () => {
-    mockGetListingById.mockResolvedValue({ error: new Error('Listing not found'), notFound: true } as never);
+    mockGetListingById.mockResolvedValue({
+      error: new Error('Listing not found'),
+      notFound: true,
+    } as never);
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getByText('Listing not found')).toBeTruthy();
@@ -302,7 +328,9 @@ describe('ListingDetailScreen', () => {
 
   it('says the listing could not load, not that it is gone, and Try again reloads', async () => {
     jest.spyOn(console, 'error').mockImplementation(() => {});
-    mockGetListingById.mockResolvedValueOnce({ error: new Error('Failed to fetch listing') } as never);
+    mockGetListingById.mockResolvedValueOnce({
+      error: new Error('Failed to fetch listing'),
+    } as never);
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getByText("Couldn't load this listing.")).toBeTruthy();
@@ -424,7 +452,9 @@ describe('ListingDetailScreen', () => {
   });
 
   it('keeps the sheet open and shows the error when the report fails', async () => {
-    (createReport as jest.Mock).mockResolvedValueOnce({ error: new Error('You already reported this.') });
+    (createReport as jest.Mock).mockResolvedValueOnce({
+      error: new Error('You already reported this.'),
+    });
     const alertSpy = jest.spyOn(Alert, 'alert');
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
@@ -454,7 +484,10 @@ describe('ListingDetailScreen', () => {
 
     fireEvent.press(screen.getByLabelText('Report listing'));
 
-    expect(alertSpy).toHaveBeenCalledWith('Verify to Report', 'Please verify your account to report listings.');
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Verify to Report',
+      'Please verify your account to report listings.'
+    );
     expect(screen.queryByText('Report Listing')).toBeNull();
     alertSpy.mockRestore();
   });

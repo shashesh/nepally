@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, ScrollView, TextInput } from 'react-native';
+import { AccessibilityInfo, Alert, ScrollView, TextInput } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { createListing, getCategories, getListingById, updateListing } from '@nepally/shared';
 import CreateListingScreen from './CreateListingScreen';
@@ -358,6 +358,32 @@ describe('CreateListingScreen', () => {
     expect(y).toBeLessThanOrEqual(900);
   });
 
+  it('moves the screen reader to the first field with an error', async () => {
+    const screen = await renderForm();
+    fillValidForm(screen);
+    fireEvent.changeText(screen.getByPlaceholderText('Contact email'), 'not-an-email');
+
+    await submit(screen);
+
+    expect(AccessibilityInfo.sendAccessibilityEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      'focus'
+    );
+  });
+
+  it('reads out a category error, which has no field to move to', async () => {
+    const screen = await renderForm();
+    fireEvent.changeText(screen.getByPlaceholderText('What are you listing?'), 'Momo catering');
+    fireEvent.changeText(
+      screen.getByPlaceholderText('Describe your listing in detail...'),
+      'Fresh momos for parties and events.'
+    );
+
+    await submit(screen);
+
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Invalid category');
+  });
+
   // -- Keyboard -------------------------------------------------------------------
 
   it('moves from one field to the next with the return key', async () => {
@@ -460,6 +486,60 @@ describe('CreateListingScreen', () => {
     await submit(screen);
 
     expect(mockCreateListing).not.toHaveBeenCalled();
+  });
+
+  it("doesn't pop up an error after the member has left mid-save", async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    let finishCreate: (value: unknown) => void = () => {};
+    mockCreateListing.mockReturnValue(
+      new Promise((resolve) => {
+        finishCreate = resolve;
+      }) as never
+    );
+    const screen = await renderForm();
+    fillValidForm(screen);
+    await submit(screen);
+
+    // Leaving while saving isn't blocked: the save carries on without the screen.
+    expect(mockPreventRemove).toBe(false);
+    screen.unmount();
+    await act(async () => {
+      finishCreate({ error: { message: 'Server error' } });
+    });
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('says the listing could not load instead of showing an empty edit form', async () => {
+    mockRouteParams = { editListingId: 'edit-1' };
+    mockGetListingById.mockResolvedValue({ error: new Error('offline') } as never);
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const screen = await renderForm();
+
+    expect(screen.getByText("Couldn't load this listing.")).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Update Listing' })).toBeNull();
+
+    mockGetListingById.mockResolvedValue({ data: EXISTING_LISTING } as never);
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    });
+
+    expect(screen.getByDisplayValue('Himalayan Kitchen')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Update Listing' })).toBeTruthy();
+    jest.restoreAllMocks();
+  });
+
+  it('says the form could not load when the categories fail', async () => {
+    mockGetCategories.mockResolvedValue({ error: new Error('offline') } as never);
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const screen = await renderForm();
+
+    expect(screen.getByText("Couldn't load the listing form.")).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Create Listing' })).toBeNull();
+    // The member can still close it.
+    expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
+    jest.restoreAllMocks();
   });
 
   it('saves an edit and goes back to the listing', async () => {

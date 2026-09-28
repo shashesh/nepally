@@ -33,6 +33,7 @@ import {
   buildListingFormInput,
   isSameListingForm,
   listingFieldErrors,
+  userMessage,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   MAX_PHOTOS_PER_LISTING,
@@ -40,12 +41,14 @@ import {
   type MarketplaceListing,
   type ListingFormFields,
   type ListingPhotoUploadInput,
+  type ListingResult,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { useActiveMetro } from '../../hooks/useActiveMetro';
 import { supabase } from '../../config/supabase';
 import { ListingFormField } from '../../components/marketplace/ListingFormField';
 import { ChoiceToggle } from '../../components/marketplace/ChoiceToggle';
+import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import { ListingCategoryPicker } from '../../components/marketplace/ListingCategoryPicker';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -94,6 +97,9 @@ const FIELD_ORDER = [
 ] as const;
 type FormField = (typeof FIELD_ORDER)[number];
 
+const FORM_LOAD_FAILED = "Couldn't load the listing form.";
+const LISTING_LOAD_FAILED = "Couldn't load this listing.";
+
 /** Room left above a field scrolled to, so its label shows too. */
 const SCROLL_MARGIN = spacing.m;
 
@@ -138,6 +144,8 @@ export default function CreateListingScreen() {
 
   const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
   const [loading, setLoading] = useState(isEditing);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -154,6 +162,7 @@ export default function CreateListingScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const fieldYRef = useRef<Partial<Record<FormField, number>>>({});
+  const titleRef = useRef<TextInput>(null);
   const descriptionRef = useRef<TextInput>(null);
   const priceRef = useRef<TextInput>(null);
   const businessNameRef = useRef<TextInput>(null);
@@ -161,6 +170,15 @@ export default function CreateListingScreen() {
   const websiteRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
+  // A save carries on if the member leaves mid-way; once the screen is gone it
+  // mustn't show alerts over wherever they went.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const isBusiness = form.listing_type === 'business';
   const totalPhotos = existingPhotoUrls.length + newPhotos.length;
@@ -196,18 +214,37 @@ export default function CreateListingScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    const loadFailed = (error: unknown) =>
+      userMessage(
+        error,
+        editListingId ? LISTING_LOAD_FAILED : FORM_LOAD_FAILED,
+        'listing_form_load_failed',
+        { platform: 'mobile', listingId: editListingId }
+      );
 
     (async () => {
       try {
         const [catResult, editResult] = await Promise.all([
           getCategories(supabase),
-          editListingId ? getListingById(supabase, editListingId) : Promise.resolve({ data: null }),
+          editListingId
+            ? getListingById(supabase, editListingId)
+            : Promise.resolve<ListingResult>({}),
         ]);
 
         if (cancelled) return;
 
-        if (catResult.data) setCategories(catResult.data);
+        // Without categories no listing can be saved, and an edit form without
+        // its listing would save blanks over the real one: say so instead.
+        if (!catResult.data) {
+          setLoadError(loadFailed(catResult.error));
+          return;
+        }
+        if (editListingId && !editResult.data) {
+          setLoadError(loadFailed(editResult.error));
+          return;
+        }
 
+        setCategories(catResult.data);
         if (editResult.data) {
           const fields = toFormFields(editResult.data);
           const photos = editResult.data.photos ?? [];
@@ -216,18 +253,23 @@ export default function CreateListingScreen() {
           setExistingPhotoUrls(photos);
           setInitialPhotoUrls(photos);
         }
-      } catch {
-        // Silently handle — empty categories / missing listing will
-        // surface in the UI naturally.
+      } catch (error) {
+        if (!cancelled) setLoadError(loadFailed(error));
       } finally {
-        if (!cancelled && editListingId) setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [editListingId]);
+  }, [editListingId, loadKey]);
+
+  const reload = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
+    setLoadKey((key) => key + 1);
+  }, []);
 
   const setField = useCallback(
     <K extends keyof ListingFormFields>(key: K, value: ListingFormFields[K]) => {
@@ -243,7 +285,11 @@ export default function CreateListingScreen() {
     []
   );
 
-  /** Scrolls to the first field with an error and reads its message out. */
+  /**
+   * Scrolls to the first field with an error and moves the screen reader there,
+   * which reads the error as the field's hint. The category has no input to
+   * move to, so its error is read out instead.
+   */
   const revealFirstError = useCallback((fieldErrors: Record<string, string>) => {
     const first = FIELD_ORDER.find((field) => fieldErrors[field]);
     if (!first) return;
@@ -251,7 +297,22 @@ export default function CreateListingScreen() {
     if (y !== undefined) {
       scrollRef.current?.scrollTo({ y: Math.max(0, y - SCROLL_MARGIN), animated: true });
     }
-    AccessibilityInfo.announceForAccessibility(fieldErrors[first]);
+    const inputs: Partial<Record<FormField, React.RefObject<TextInput | null>>> = {
+      title: titleRef,
+      description: descriptionRef,
+      price: priceRef,
+      business_name: businessNameRef,
+      address: addressRef,
+      website_url: websiteRef,
+      phone: phoneRef,
+      email: emailRef,
+    };
+    const input = inputs[first]?.current;
+    if (input) {
+      AccessibilityInfo.sendAccessibilityEvent(input, 'focus');
+    } else {
+      AccessibilityInfo.announceForAccessibility(fieldErrors[first]);
+    }
   }, []);
 
   const requestLibraryPermission = async (): Promise<boolean> => {
@@ -353,6 +414,7 @@ export default function CreateListingScreen() {
       }));
       const uploadResult = await uploadListingPhotos(supabase, uploadInputs);
       if (uploadResult.error) {
+        if (!mountedRef.current) return;
         Alert.alert('Upload Failed', uploadResult.error.message);
         setSubmitting(false);
         return;
@@ -370,6 +432,7 @@ export default function CreateListingScreen() {
             metro_area_id: metroAreaId,
           });
 
+    if (!mountedRef.current) return;
     setSubmitting(false);
     if (result.error || !result.data) {
       Alert.alert(
@@ -390,12 +453,36 @@ export default function CreateListingScreen() {
     revealFirstError,
   ]);
 
-  if (loading) {
+  // The member can always close the form, even while it loads or after it fails to.
+  const header = (
+    <View style={styles.header}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        hitSlop={8}
+      >
+        <Ionicons name="close" size={24} color={colors.text.primary} />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle} accessibilityRole="header">
+        {isEditing ? 'Edit Listing' : 'Create Listing'}
+      </Text>
+      <View style={styles.headerSpacer} />
+    </View>
+  );
+
+  if (loading || loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary.main} />
-        </View>
+        {header}
+        {loadError ? (
+          <MarketplaceErrorState message={loadError} onRetry={reload} />
+        ) : (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary.main} />
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -404,22 +491,7 @@ export default function CreateListingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-          hitSlop={8}
-        >
-          <Ionicons name="close" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} accessibilityRole="header">
-          {isEditing ? 'Edit Listing' : 'Create Listing'}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      {header}
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -501,6 +573,7 @@ export default function CreateListingScreen() {
           />
 
           <ListingFormField
+            ref={titleRef}
             label="Title"
             required
             error={errors.title}

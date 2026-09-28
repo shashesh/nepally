@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getListingById,
   incrementListingViews,
@@ -24,16 +24,19 @@ export interface ListingState {
  *
  * Coming back to the screen, from the edit form say, refetches quietly: the
  * listing stays on screen, a failed refetch leaves it as it was, and it isn't
- * another view.
+ * another view. Only a listing already on screen is refetched, so a return
+ * can't race the first load.
  */
 export function useListing(listingId: string): ListingState {
   const [listing, setListing] = useState<MarketplaceListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadKey, setLoadKey] = useState(0);
+  const hasListingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    hasListingRef.current = false;
     const failed = (error: unknown) =>
       userMessage(error, LOAD_FAILED, 'listing_load_failed', { platform: 'mobile', listingId });
 
@@ -44,6 +47,7 @@ export function useListing(listingId: string): ListingState {
         if (cancelled) return;
 
         if (listingResult.data) {
+          hasListingRef.current = true;
           setListing(listingResult.data);
           void incrementListingViews(supabase, listingId);
         } else if (listingResult.error && !listingResult.notFound) {
@@ -69,6 +73,7 @@ export function useListing(listingId: string): ListingState {
 
   useRefocusEffect(
     useCallback(() => {
+      if (!hasListingRef.current) return undefined;
       let cancelled = false;
       // getListingById reports failures in its result rather than throwing.
       void getListingById(supabase, listingId).then((result) => {
