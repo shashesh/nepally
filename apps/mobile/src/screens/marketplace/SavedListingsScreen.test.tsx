@@ -235,11 +235,13 @@ describe('SavedListingsScreen', () => {
       expect(screen.getByText('Saved thing')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByText('Unsave Saved thing'));
-
-    await waitFor(() => {
-      expect(screen.queryByText('Saved thing')).toBeNull();
+    // Flush the unsave round trip inside act rather than polling for it: a busy
+    // worker in the full suite can outlast waitFor's one-second window.
+    await act(async () => {
+      fireEvent.press(screen.getByText('Unsave Saved thing'));
     });
+
     expect(unsaveListing).toHaveBeenCalledWith(expect.anything(), 'l1');
+    expect(screen.queryByText('Saved thing')).toBeNull();
   });
 });
