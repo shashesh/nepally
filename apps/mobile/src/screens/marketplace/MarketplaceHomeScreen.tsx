@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -23,6 +22,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useMarketplaceFeed } from '../../hooks/useMarketplaceFeed';
 import { useSavedListingIds } from '../../hooks/useSavedListingIds';
 import { useActiveMetro } from '../../hooks/useActiveMetro';
+import { useGridCardWidth } from '../../hooks/useGridCardWidth';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -42,7 +42,6 @@ import type { MarketplaceStackParamList } from '../../types/navigation';
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList, 'MarketplaceHome'>;
 
 const GUTTER = 12;
-const CARD_WIDTH = Math.floor((Dimensions.get('window').width - GUTTER * 3) / 2);
 const SEARCH_DEBOUNCE_MS = 300;
 const SPONSORED_STRIP_MAX = 5;
 
@@ -64,6 +63,7 @@ export default function MarketplaceHomeScreen() {
   const feed = useMarketplaceFeed(metroId, { categorySlug: selectedCategory, searchQuery });
   const { savedIds, toggle: handleToggleSave, reload: reloadSavedIds } = useSavedListingIds(user?.id);
   const filtered = Boolean(selectedCategory || searchQuery);
+  const cardWidth = useGridCardWidth(GUTTER);
 
   // Debounce search input
   useEffect(() => {
@@ -138,13 +138,13 @@ export default function MarketplaceHomeScreen() {
     ({ item }: { item: MarketplaceListing }) => (
       <ListingGridCard
         listing={item}
-        width={CARD_WIDTH}
+        width={cardWidth}
         onPress={() => handleCardPress(item)}
         isSaved={savedIds.has(item.id)}
         onToggleSave={handleToggleSave}
       />
     ),
-    [handleCardPress, handleToggleSave, savedIds]
+    [handleCardPress, handleToggleSave, savedIds, cardWidth]
   );
 
   const gridTitle = searchQuery
@@ -260,7 +260,7 @@ export default function MarketplaceHomeScreen() {
       return (
         <View style={styles.skeletonGrid}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <ListingGridCardSkeleton key={i} width={CARD_WIDTH} />
+            <ListingGridCardSkeleton key={i} width={cardWidth} />
           ))}
         </View>
       );
@@ -280,6 +280,7 @@ export default function MarketplaceHomeScreen() {
     );
   }, [
     feed.loading,
+    cardWidth,
     feed.error,
     feed.reload,
     filtered,

@@ -71,6 +71,17 @@ describe('FilterBar', () => {
     expect(getByText('Sort: Featured')).toBeTruthy();
   });
 
+  it('names a price sort in words on the pill', () => {
+    const { getByText } = render(
+      <FilterBar
+        categories={CATEGORIES}
+        value={{ ...defaultValue, sort: 'price_asc' }}
+        onChange={jest.fn()}
+      />
+    );
+    expect(getByText('Sort: Lowest price')).toBeTruthy();
+  });
+
   it('opens category sheet and selects a category', () => {
     const onChange = jest.fn();
     const { getByLabelText, getByText } = render(
@@ -91,7 +102,7 @@ describe('FilterBar', () => {
       <FilterBar categories={CATEGORIES} value={defaultValue} onChange={onChange} />
     );
     fireEvent.press(getByLabelText('Sort filter'));
-    fireEvent.press(getByText('Price ↑'));
+    fireEvent.press(getByText('Price: low to high'));
     expect(onChange).toHaveBeenCalledWith({
       category: '',
       sort: 'price_asc',

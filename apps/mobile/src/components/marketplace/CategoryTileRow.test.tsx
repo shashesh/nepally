@@ -24,6 +24,11 @@ describe('CategoryTileRow', () => {
     expect(onSelect).toHaveBeenCalledWith('jobs');
   });
 
+  it('lets a long name wrap to a second line instead of cutting it off', () => {
+    const screen = render(<CategoryTileRow categories={categories} selectedSlug="" onSelect={() => {}} />);
+    expect(screen.getByText('Housing').props.numberOfLines).toBe(2);
+  });
+
   it('calls onSelect with empty string when the selected tile is pressed again', () => {
     const onSelect = jest.fn();
     const screen = render(<CategoryTileRow categories={categories} selectedSlug="jobs" onSelect={onSelect} />);

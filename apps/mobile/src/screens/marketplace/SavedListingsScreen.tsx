@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Dimensions, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { getSavedListingsByUser, userMessage, type MarketplaceListing } from '@n
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useSavedListingIds } from '../../hooks/useSavedListingIds';
+import { useGridCardWidth } from '../../hooks/useGridCardWidth';
 import { spacing } from '../../styles/spacing';
 import { warmAccent, warmSurface } from '../../styles/warmTokens';
 import type { MarketplaceStackParamList } from '../../types/navigation';
@@ -17,7 +18,6 @@ import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceE
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList, 'SavedListings'>;
 
 const GUTTER = 12;
-const CARD_WIDTH = Math.floor((Dimensions.get('window').width - GUTTER * 3) / 2);
 const LOAD_FAILED = "Couldn't load your saved listings.";
 
 /** The member's saved listings, the failure to show instead, or null when signed out. */
@@ -40,6 +40,7 @@ export default function SavedListingsScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
   const userId = user?.id;
+  const cardWidth = useGridCardWidth(GUTTER);
   const { savedIds, toggle, reload: reloadSavedIds } = useSavedListingIds(userId);
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
@@ -151,7 +152,7 @@ export default function SavedListingsScreen() {
         renderItem={({ item }) => (
           <ListingGridCard
             listing={item}
-            width={CARD_WIDTH}
+            width={cardWidth}
             onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
             isSaved={savedIds.has(item.id)}
             onToggleSave={handleToggleSave}

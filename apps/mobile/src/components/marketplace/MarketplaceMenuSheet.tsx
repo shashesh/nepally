@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -34,25 +35,24 @@ const ROWS: Row[] = [
 ];
 
 export function MarketplaceMenuSheet({ visible, onClose, onSelect }: MarketplaceMenuSheetProps) {
-  if (!visible) {
-    return null;
-  }
-
   const handleSelect = (key: MarketplaceMenuKey) => {
     onSelect(key);
     onClose();
   };
 
+  // Always mounted, so closing animates instead of vanishing. A fade keeps the
+  // dimmed backdrop still rather than sliding it up with the sheet.
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
       accessibilityViewIsModal
     >
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close menu" />
-      <View style={styles.sheet}>
+      {/* Bottom inset keeps the last row clear of the home indicator / navigation bar. */}
+      <SafeAreaView edges={['bottom']} style={styles.sheet}>
         <View style={styles.grabber} />
         {ROWS.map((row) => (
           <TouchableOpacity
@@ -66,7 +66,7 @@ export function MarketplaceMenuSheet({ visible, onClose, onSelect }: Marketplace
             <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
           </TouchableOpacity>
         ))}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -81,7 +81,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: warmRadius.sheet,
     borderTopRightRadius: warmRadius.sheet,
     paddingTop: spacing.xs,
-    paddingBottom: spacing.l,
+    // Added to the bottom safe-area inset.
+    paddingBottom: spacing.s,
     paddingHorizontal: spacing.s,
   },
   grabber: {

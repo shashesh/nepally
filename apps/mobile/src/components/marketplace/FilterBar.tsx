@@ -29,12 +29,14 @@ interface FilterBarProps {
   searchDebounceMs?: number;
 }
 
-const SORT_OPTIONS: { value: ListingSortBy; label: string }[] = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'oldest', label: 'Oldest' },
-  { value: 'featured', label: 'Featured' },
-  { value: 'price_asc', label: 'Price \u2191' },
-  { value: 'price_desc', label: 'Price \u2193' },
+// Words, not arrows: a screen reader reads "Price \u2191" as "Price up arrow".
+// The pill is narrow, so it gets a shorter form of the same choice.
+const SORT_OPTIONS: { value: ListingSortBy; label: string; pillLabel: string }[] = [
+  { value: 'newest', label: 'Newest', pillLabel: 'Newest' },
+  { value: 'oldest', label: 'Oldest', pillLabel: 'Oldest' },
+  { value: 'featured', label: 'Featured', pillLabel: 'Featured' },
+  { value: 'price_asc', label: 'Price: low to high', pillLabel: 'Lowest price' },
+  { value: 'price_desc', label: 'Price: high to low', pillLabel: 'Highest price' },
 ];
 
 export function FilterBar({
@@ -87,7 +89,7 @@ export function FilterBar({
   const categoryLabel = selectedCategory
     ? `${selectedCategory.emoji ?? ''} ${selectedCategory.name}`.trim()
     : 'All Categories';
-  const sortLabel = SORT_OPTIONS.find((o) => o.value === value.sort)?.label ?? 'Newest';
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === value.sort)?.pillLabel ?? 'Newest';
 
   const handleCategorySelect = (slug: string) => {
     setCategorySheetOpen(false);

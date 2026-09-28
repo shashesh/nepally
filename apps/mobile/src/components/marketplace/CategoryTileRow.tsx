@@ -26,7 +26,7 @@ export function CategoryTileRow({ categories, selectedSlug, onSelect }: Category
           accessibilityState={{ selected: isSelected }}
         >
           <Text style={styles.emoji}>{item.emoji ?? '📦'}</Text>
-          <Text style={styles.label} numberOfLines={1}>
+          <Text style={styles.label} numberOfLines={2}>
             {item.name}
           </Text>
         </TouchableOpacity>
@@ -58,7 +58,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tile: {
-    width: 72,
+    // A minimum, not a fixed width, so names and larger Dynamic Type sizes fit.
+    minWidth: 72,
+    maxWidth: 104,
     paddingVertical: spacing.xs,
     paddingHorizontal: 4,
     borderRadius: warmRadius.tile,
@@ -79,5 +81,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: colors.text.secondary,
+    textAlign: 'center',
   },
 });
