@@ -62,13 +62,17 @@ is active. Add a partial index `WHERE deletion_scheduled_for IS NOT NULL`. Add t
 column to `guard_user_privileged_columns()` (from 034) so it can only change
 through the functions below.
 
-**`is_account_active(uid uuid) RETURNS boolean`.** Stable, `SECURITY DEFINER`, pinned
-`search_path`. It returns false only when the user exists and has
-`deletion_scheduled_for` set.
+**`is_pending_deletion(uid uuid) RETURNS boolean`.** Stable, `SECURITY DEFINER`,
+pinned `search_path`, executable by `anon` and `authenticated` because the policies
+apply to every role. It returns true only when the user exists and has
+`deletion_scheduled_for` set. It returns false for active and unknown users, the
+convention the 041 function-execute check expects of policy helpers.
 
 **RLS.** Each SELECT policy on these tables gains "the row's user is the caller,
-or the caller is a moderator (`is_moderator()`), or `is_account_active(<user
-column>)`":
+or the caller is a moderator (`is_moderator()`), or `NOT is_pending_deletion(<user
+column>)`". `users` reads its own column instead of calling the helper. Moderators
+also gain sight of a pending member's active listings, which the current listings
+policy doesn't give them.
 
 | Table                  | User column                                                         |
 | ---------------------- | ------------------------------------------------------------------- |
@@ -81,17 +85,23 @@ column>)`":
 | `post_likes`           | `user_id`                                                           |
 | `user_follows`         | `follower_id` and `followee_id` (hide the row if either is pending) |
 
-The listing view (`marketplace_listings_view`) runs as the invoker and inherits the
-policies. The implementation plan confirms the same for `user_helper_scores` and
-`listing_promotions_display`. Messages and conversations don't change.
+All three views (`marketplace_listings_view`, `user_helper_scores` and
+`listing_promotions_display`) run as the invoker and inherit the policies. Messages
+and conversations don't change.
+
+**`amr_signed_in_within(amr jsonb, max_age_seconds integer) RETURNS boolean`.**
+Stable and pure, executable by `service_role` only. It is true when the newest
+numeric `timestamp` in `amr` is at most `max_age_seconds` old, and false for an
+empty, missing or malformed claim. It is a separate function so the live check can
+test stale sign-ins, which a real session can't produce on demand.
 
 **`request_account_deletion() RETURNS timestamptz`.** `SECURITY DEFINER`, executable
 by `authenticated` only (the 041 grant pattern).
 
 1. `auth.uid()` must not be null.
-2. Recent sign-in: the newest `timestamp` in `auth.jwt()->'amr'` must be within
-   600 seconds of `now()`. Otherwise raise an error with a stable code the client
-   can match: SQLSTATE `P0001` and message `reauth_required`.
+2. Recent sign-in: `amr_signed_in_within(auth.jwt()->'amr', 600)` must be true.
+   Otherwise raise an error with a stable code the client can match: SQLSTATE
+   `P0001` and message `reauth_required`.
 3. If deletion is already pending, return the existing date. The function is
    idempotent.
 4. Set `deletion_scheduled_for = now() + interval '30 days'`.
@@ -135,7 +145,7 @@ object the user owns, whatever the path convention.
 The URL and secret are read at run time from `vault.decrypted_secrets`:
 `project_url` and `account_purge_secret`. No secret goes in the repo. The Vault
 secrets and the `ACCOUNT_PURGE_SECRET` function secret are set by hand in each
-environment, following a runbook added to `migration-workflow.md`. Until they are
+environment, following a runbook added to `supabase-setup.md` (§5, Scheduled jobs). Until they are
 set, the job's HTTP call fails harmlessly and nothing is deleted.
 
 ## 5. Client design
@@ -249,16 +259,19 @@ gone).
 
 ## 7. Testing
 
-- **Checked first, on staging:** whether a refreshed access token keeps its original
-  `amr` timestamp. D4 depends on it. If a refresh resets the timestamp, stop and
-  redesign the recent sign-in check before building on it.
+- **Checked on staging while planning (2026-09-28):** a refreshed access token keeps
+  its original `amr` timestamp. Two refreshes of a password sign-in each gave a new
+  `iat`, but the same `amr` entry. D4 holds.
 - **Shared unit tests:** `amr` parsing, `isRecentSignIn`, `getReauthMethod`,
   `formatDeletionDate`, and the API wrappers (success, `reauth_required`, generic
   error).
 - **Live database check** `npm run test:security:account-deletion` (in
   `scripts/security/`, like the existing checks). It creates throwaway users on
   staging and verifies:
-  - a request without a recent sign-in is rejected
+  - `amr_signed_in_within` accepts a recent sign-in and rejects stale, empty and
+    malformed claims
+  - a request right after signing in succeeds, is idempotent, and removes the
+    device tokens
   - a direct `UPDATE` of `deletion_scheduled_for` is blocked
   - another member can't see the pending user's profile, posts, comments,
     listings, events, likes, RSVPs or follows, while a moderator still can
@@ -284,7 +297,7 @@ gone).
 
 | PR  | Contents                                                                                                            | Notes                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| 1   | Migration 048, the `test:security:account-deletion` check, and the `amr` refresh check                              | Apply to staging after merge, then realign the tracker row to `048`.              |
+| 1   | Migration 048 and the `test:security:account-deletion` check                                                        | Apply to staging when the user asks, then realign the tracker row to `048`.       |
 | 2   | `purge-deleted-accounts` edge function, `config.toml` entry, migration 049, and the Vault runbook                   | Deploy the function and set the secrets on staging. Then do the manual purge run. |
 | 3   | Shared constants, types, API and logic; the web flow, `/delete-account`, restore gate, chat fallback and legal copy | Needs PR 1 applied on staging.                                                    |
 | 4   | Mobile `DeleteAccountScreen`, `AccountRestoreScreen`, the `RootNavigator` gate, menu entry and chat fallback        | Needs PRs 1 and 3.                                                                |
@@ -300,7 +313,8 @@ The production Supabase project doesn't exist yet. When it is created, migration
 - **Add** `product/features/account-deletion.md` when PR 4 ships, then archive
   this spec.
 - **Update** `architecture/database-schema.md` (the new column, functions and
-  policies) and `architecture/migration-workflow.md` (the Vault runbook).
+  policies) and `architecture/supabase-setup.md` (the cron job and the Vault
+  runbook).
 - **Tick** the launch plan's W3 row.
 
 ## 10. Out of scope
