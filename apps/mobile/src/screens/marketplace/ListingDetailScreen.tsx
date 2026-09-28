@@ -97,7 +97,7 @@ export default function ListingDetailScreen() {
     const owner = listing.owner;
     contactingRef.current = true;
     setContacting(true);
-    let conversationId: string | null = null;
+    let conversationId: string | null;
     try {
       const result = await getOrCreateConversation(
         supabase,

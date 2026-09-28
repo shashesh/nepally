@@ -24,12 +24,15 @@ function loadGaleria(): typeof GaleriaComponent | null {
   return (require('@nandorojo/galeria') as typeof import('@nandorojo/galeria')).Galeria;
 }
 
+// Picked once, when the module loads: a component chosen during render would
+// remount its subtree on every render.
+const Galeria = loadGaleria();
+
 /**
  * A listing's photos as a swipeable carousel with a counter. A tap opens them
  * full screen, where they can be pinch-zoomed, swiped through and swiped away.
  */
 export function ListingPhotoGallery({ photos, width, height }: ListingPhotoGalleryProps) {
-  const Galeria = loadGaleria();
   const scrollRef = useRef<ScrollView>(null);
   const [photoIndex, setPhotoIndex] = useState(0);
   // New photos (after an edit, say) start the carousel over, and its key

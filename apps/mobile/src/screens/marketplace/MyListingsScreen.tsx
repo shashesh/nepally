@@ -201,7 +201,7 @@ export default function MyListingsScreen() {
       pendingRef.current = new Set([...pendingRef.current, listingId]);
       setPendingIds(pendingRef.current);
 
-      let failure: unknown = null;
+      let failure: unknown;
       try {
         failure = (await mutation.run(supabase, listingId)).error ?? null;
       } catch (thrown) {

@@ -4,13 +4,10 @@ import { act, fireEvent, render } from '@testing-library/react-native';
 import { Galeria } from '@nandorojo/galeria';
 import { ListingPhotoGallery } from './ListingPhotoGallery';
 
-// Galeria itself is jest.setup's stand-in, which renders its children.
-let mockIsExpoGo = false;
-jest.mock('../../utils/isExpoGo', () => ({
-  get isExpoGo() {
-    return mockIsExpoGo;
-  },
-}));
+// Galeria is jest.setup's stand-in, which renders its children. Jest isn't Expo
+// Go, so the gallery loads it; the Expo Go test mocks isExpoGo in its own registry.
+// (A top-level jest.mock of isExpoGo would outrank that: Jest reuses a mock it
+// has already built.)
 
 const WIDTH = 390;
 const photo = (name: string) => `https://cdn.example.com/listing-photos/u/${name}.jpg`;
@@ -28,10 +25,6 @@ function swipeTo(screen: ReturnType<typeof render>, index: number) {
 }
 
 describe('ListingPhotoGallery', () => {
-  beforeEach(() => {
-    mockIsExpoGo = false;
-  });
-
   describe('in a development or store build', () => {
     it('opens every photo in the full-screen viewer, in order', () => {
       const screen = renderGallery();
@@ -57,11 +50,26 @@ describe('ListingPhotoGallery', () => {
 
   describe('in Expo Go', () => {
     it('shows the photos without the viewer, which Expo Go lacks', () => {
-      mockIsExpoGo = true;
-      const screen = renderGallery();
+      // The gallery picks Galeria once, when it loads, so Expo Go needs a fresh
+      // module registry: React and the test renderer come from it too, so there's
+      // one copy of React.
+      jest.isolateModules(() => {
+        jest.doMock('../../utils/isExpoGo', () => ({ isExpoGo: true }));
+        /* eslint-disable @typescript-eslint/no-require-imports */
+        const IsolatedReact: typeof React = require('react');
+        const isolated: typeof import('@testing-library/react-native') = require('@testing-library/react-native');
+        const IsolatedGaleria: typeof Galeria = require('@nandorojo/galeria').Galeria;
+        const Isolated: typeof ListingPhotoGallery = require('./ListingPhotoGallery').ListingPhotoGallery;
+        /* eslint-enable @typescript-eslint/no-require-imports */
 
-      expect(screen.UNSAFE_queryAllByType(Galeria)).toHaveLength(0);
-      expect(screen.getAllByLabelText(/^Photo \d of 3$/)).toHaveLength(3);
+        const screen = isolated.render(
+          IsolatedReact.createElement(Isolated, { photos: PHOTOS, width: WIDTH, height: 250 })
+        );
+
+        expect(screen.UNSAFE_queryAllByType(IsolatedGaleria)).toHaveLength(0);
+        expect(screen.getAllByLabelText(/^Photo \d of 3$/)).toHaveLength(3);
+        screen.unmount();
+      });
     });
   });
 
