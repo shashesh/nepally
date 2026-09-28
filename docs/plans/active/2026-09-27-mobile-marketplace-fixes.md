@@ -790,7 +790,44 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 ## PR 3 — Create and edit
 
-Step breakdown to be written at the start of the PR.
+**How PR 3 runs.** Branch `fix/mobile-marketplace-create-edit`, off `master` after #102–#104 merged. The PR runs as two chunks, each with its own gate and review. All work is in `CreateListingScreen.tsx` and its test unless a task says otherwise.
+
+**Chunk A: the form (3.1–3.4, 3.6, 3.7)**
+
+- [ ] **A1. No silent validation failures (3.1).**
+  - Show the message for every schema field: title, description, category, business name, price, address, phone, email and website.
+  - Inputs get the schema's `maxLength` (price 50, business name 100, address 200, phone 20).
+  - A website typed without a scheme gets `https://` before validation.
+  - On failure the form scrolls to the first invalid field, measured with `onLayout`.
+- [ ] **A2. Keyboard (3.2).**
+  - `KeyboardAvoidingView` (`padding` on iOS) around the scroll view, as `CreatePostScreen` does, plus `keyboardShouldPersistTaps="handled"`.
+  - Each field's "next" moves to the following field.
+  - `autoComplete` and `textContentType` for phone, email and URL.
+- [ ] **A3. No accidental data loss (3.3).** While the form differs from what it started with and isn't submitting, `usePreventRemove` asks "Discard this listing?" or "Discard your changes?" before swipe-down, ✕ or Android back. There's no prompt once a save succeeds.
+- [ ] **A4. After saving, show the result (3.4).**
+  - Create replaces the form with the new listing's detail (`StackActions.replace`).
+  - Edit goes back, and `ListingDetailScreen` refetches when it regains focus, skipping the first focus, so the edits show.
+- [ ] **A5. Type defaults and hidden fields (3.6).** Default to Individual. On submit, the type not selected sends `undefined` for its fields, which `updateListing` stores as `null`: business name, address and website for Individual; condition for Business.
+- [ ] **A6. Form accessibility (3.7).**
+  - Every input has an `accessibilityLabel`.
+  - The type and condition toggles are radios with a selected state, and category chips report selection.
+  - The close button has a label.
+- [ ] **Chunk A gate and review.**
+
+**Chunk B: photos (3.5, 3.8)**
+
+- [ ] **B1. Picking photos (3.5).**
+  - Drop the library-permission request: the system picker needs none, and a member who once denied it can never add photos today.
+  - Add "Take photo" (`launchCameraAsync`, with the camera permission request).
+  - Say how many photos failed to process.
+  - The remove ✕ gets a 44pt target and a label.
+- [ ] **B2. Order and cover (3.5).** One ordered photo list (existing and new, as `CreatePostScreen` keeps them). The first photo is badged Cover, and each other photo has "Make cover". New photos upload in that order, so `photos[0]` is the cover everywhere.
+- [ ] **B3. No orphaned photos (3.8).**
+  - Shared: `getListingPhotoPathFromUrl` (with the post version, sharing one parser) and `cleanUpListingPhotos`, as `cleanUpPostPhotos` does.
+  - Mobile and web: a failed create or update deletes the photos it just uploaded, and a successful edit deletes the files for the photos it dropped.
+  - **Not** on delete. `deleteListing` is a soft delete to `removed`, which moderators can restore from the dashboard and which keeps evidence for a report, so its photos stay. This supersedes the "on delete" line in the table below.
+- [ ] **B4. Permission prompts.** The iOS camera and photo prompts in `app.json` say "profile photo"; they should cover profile, posts and listings, since App Review checks that prompts match use. This needs a new native build (not an OTA update).
+- [ ] **Chunk B gate and review**, then push, open the draft PR, and request Copilot's review.
 
 | #   | Task                                                                                                                                                                                                                                                                                                                                                                                      | Main files                                                                                                                                   | Done when                                                                                            |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
