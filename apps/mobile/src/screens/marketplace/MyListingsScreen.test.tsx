@@ -107,7 +107,7 @@ function chooseFromMore(screen: Screen, choice: string) {
     .mockImplementation((options, callback) => {
       callback(options.options.indexOf(choice));
     });
-  fireEvent.press(screen.getByRole('button', { name: 'More actions' }));
+  fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
   sheet.mockRestore();
 }
 
@@ -194,7 +194,7 @@ describe('MyListingsScreen', () => {
       expect(screen.getByText('Edit')).toBeTruthy();
     });
     expect(screen.getByText('Refresh')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'More actions' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'More actions for My Restaurant' })).toBeTruthy();
     expect(screen.queryByText('Deactivate')).toBeNull();
     expect(screen.queryByText('Delete')).toBeNull();
     expect(screen.queryByText('Promote')).toBeNull();
@@ -207,7 +207,7 @@ describe('MyListingsScreen', () => {
       expect(screen.getByText('Edit')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByRole('button', { name: 'More actions' }));
+    fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
 
     expect(sheet).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -229,7 +229,7 @@ describe('MyListingsScreen', () => {
       expect(screen.getByText('Inactive')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByRole('button', { name: 'More actions' }));
+    fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
 
     expect(sheet).toHaveBeenCalledWith(
       expect.objectContaining({ options: ['Reactivate', 'Delete', 'Cancel'] }),
@@ -243,7 +243,7 @@ describe('MyListingsScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('Edit')).toBeTruthy();
     });
-    for (const name of ['Edit', 'Refresh', 'More actions']) {
+    for (const name of ['Edit My Restaurant', 'Refresh My Restaurant', 'More actions for My Restaurant']) {
       const style = StyleSheet.flatten(screen.getByRole('button', { name }).props.style);
       expect(style.minHeight).toBeGreaterThanOrEqual(44);
     }
@@ -528,7 +528,7 @@ describe('MyListingsScreen', () => {
       await waitFor(() => {
         expect(screen.getByText('Edit')).toBeTruthy();
       });
-      fireEvent.press(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
 
       expect(alertSpy).toHaveBeenCalledWith('My Restaurant', undefined, [
         expect.objectContaining({ text: 'Deactivate' }),
@@ -635,13 +635,44 @@ describe('MyListingsScreen', () => {
     });
 
     fireEvent.press(screen.getByText('Refresh'));
-    fireEvent.press(screen.getByRole('button', { name: 'More actions' }));
+    fireEvent.press(screen.getByRole('button', { name: 'More actions for My Restaurant' }));
 
     expect(sheet).not.toHaveBeenCalled();
     await act(async () => {
       finish({});
     });
     sheet.mockRestore();
+    alertSpy.mockRestore();
+  });
+
+  it("doesn't open or edit a listing whose change is still on its way", async () => {
+    let finish: (value: unknown) => void = () => {};
+    mockRefreshListing.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Refresh')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Refresh'));
+    const card = screen.getByRole('button', { name: 'My Restaurant, Active, $15' });
+    const edit = screen.getByRole('button', { name: 'Edit My Restaurant' });
+    fireEvent.press(card);
+    fireEvent.press(edit);
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(card.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+    expect(edit.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+
+    await act(async () => {
+      finish({});
+    });
+    fireEvent.press(screen.getByRole('button', { name: 'My Restaurant, Active, $15' }));
+    expect(mockNavigate).toHaveBeenCalledWith('ListingDetail', { listingId: 'listing-1' });
     alertSpy.mockRestore();
   });
 
@@ -661,14 +692,14 @@ describe('MyListingsScreen', () => {
     fireEvent.press(screen.getByText('Refresh'));
     fireEvent.press(screen.getByText('Refresh'));
     expect(mockRefreshListing).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Refresh' }).props.accessibilityState).toEqual(
+    expect(screen.getByRole('button', { name: 'Refresh My Restaurant' }).props.accessibilityState).toEqual(
       expect.objectContaining({ busy: true })
     );
 
     await act(async () => {
       finish({});
     });
-    expect(screen.getByRole('button', { name: 'Refresh' }).props.accessibilityState).toEqual(
+    expect(screen.getByRole('button', { name: 'Refresh My Restaurant' }).props.accessibilityState).toEqual(
       expect.objectContaining({ busy: false })
     );
     alertSpy.mockRestore();

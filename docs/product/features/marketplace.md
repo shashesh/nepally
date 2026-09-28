@@ -125,7 +125,7 @@ All in `apps/mobile/src/screens/marketplace/`:
 
 **My Listings (mobile).** Edit and Refresh stay in each row with 44pt targets; Deactivate or Reactivate and Delete sit under More (an action sheet on iOS, an alert on Android). Each change says when it failed, Refresh confirms it worked, and a listing ignores taps while a change is on its way. The empty state offers Create only from Trust Level 1, as Home does.
 
-**Screen readers (mobile).** Listing cards read their title, category, price, seller and freshness. VoiceOver can't reach the heart inside a grid card, so the card offers Save or Unsave as a custom action. On My Listings the card's open button doesn't wrap the actions, so each is its own element.
+**Screen readers (mobile).** Listing cards read their title, category, price, seller and freshness. VoiceOver can't reach the heart inside a grid card, so the card offers Save or Unsave as a custom action. On My Listings the card's open button doesn't wrap the actions, so each is its own element, and each names its listing ("Edit Rice cooker", "More actions for Rice cooker").
 
 ### Web (Next.js)
 

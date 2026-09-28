@@ -271,9 +271,12 @@ export default function MyListingsScreen() {
           {/* The card opens the listing; the actions sit outside it so a screen reader reaches each. */}
           <TouchableOpacity
             onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
+            // While a change is on its way the listing may be about to vanish or change status.
+            disabled={isPending}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel={[item.title, statusConfig.label, price].filter(Boolean).join(', ')}
+            accessibilityState={{ disabled: isPending }}
           >
             {item.photos.length > 0 ? (
               <Image source={item.photos[0]} style={styles.thumbnail} contentFit="cover" />
@@ -321,12 +324,15 @@ export default function MyListingsScreen() {
             <RowAction
               icon="create-outline"
               label="Edit"
+              listingTitle={item.title}
+              disabled={isPending}
               onPress={() => navigation.navigate('CreateListing', { editListingId: item.id })}
             />
             {item.status === 'active' && (
               <RowAction
                 icon="refresh-outline"
                 label="Refresh"
+                listingTitle={item.title}
                 tone="success"
                 busy={isPending}
                 onPress={() => void runMutation(item.id, MUTATIONS.refresh)}
@@ -337,7 +343,7 @@ export default function MyListingsScreen() {
               onPress={() => openMoreMenu(item)}
               disabled={isPending}
               accessibilityRole="button"
-              accessibilityLabel="More actions"
+              accessibilityLabel={`More actions for ${item.title}`}
               accessibilityState={{ disabled: isPending }}
             >
               <Ionicons name="ellipsis-horizontal" size={20} color={colors.text.secondary} />
@@ -427,21 +433,35 @@ function Header({ onBack }: { onBack: () => void }) {
 interface RowActionProps {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
+  /** Named in the screen-reader label, so each row's "Edit" says which listing. */
+  listingTitle: string;
   onPress: () => void;
   tone?: 'primary' | 'success';
+  /** This action is on its way: a spinner, and no more taps. */
   busy?: boolean;
+  /** Another change to the listing is on its way. */
+  disabled?: boolean;
 }
 
-function RowAction({ icon, label, onPress, tone = 'primary', busy = false }: RowActionProps) {
+function RowAction({
+  icon,
+  label,
+  listingTitle,
+  onPress,
+  tone = 'primary',
+  busy = false,
+  disabled = false,
+}: RowActionProps) {
   const color = tone === 'success' ? colors.success : colors.primary.main;
+  const isDisabled = busy || disabled;
   return (
     <TouchableOpacity
       style={styles.actionButton}
       onPress={onPress}
-      disabled={busy}
+      disabled={isDisabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ busy, disabled: busy }}
+      accessibilityLabel={`${label} ${listingTitle}`}
+      accessibilityState={{ busy, disabled: isDisabled }}
     >
       {busy ? (
         <ActivityIndicator size="small" color={color} />
