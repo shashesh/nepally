@@ -687,7 +687,7 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 ## PR 1b — Report thresholds (migration 047)
 
-**Decided 2026-09-27:** neither posts nor listings hide at 3 reports; both need at least 100. A listing that reaches 100 becomes `removed`. The branch is off `master` and doesn't depend on PR 1's code.
+**Decided 2026-09-27:** neither posts nor listings hide at 3 reports; both need at least 100. A listing that reaches 100 becomes `removed`. The branch is off `master` and doesn't depend on PR 1's code. Draft: [#103](https://github.com/shashesh/nepally/pull/103).
 
 **Migration `supabase/migrations/047_report_auto_hide_threshold.sql`:**
 
@@ -717,7 +717,7 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
   - A report bumps the listing's and the owner's counters.
   - The owner can't reset `reports_count`.
   - A seeded 99 plus one report removes the listing.
-  - The owner can't reactivate it; a moderator can.
+  - The owner can't reactivate it; the service role (the dashboard) can.
 - [ ] **1b.4 Docs.**
   - `moderation.md`: posts hide at 100; listings are removed at 100.
   - `marketplace.md`
@@ -780,7 +780,9 @@ Step breakdown to be written at the start of the PR.
 Not in PRs 1–4. Some affect both platforms or need a migration.
 
 - **Price sorting is alphabetical.** `price` is free text, so `order('price')` sorts "$1,200" < "100" < "20" < "Negotiable" on both apps (`packages/shared/src/api/marketplace.ts:89-92`). Fixing it needs a numeric `price_cents` column (a new migration), a backfill from `formatListingPrice`'s parser, and the form to capture a number.
-- **Moderators can't remove or restore a reported listing** from the queue. After 047 a moderator can set the status over the API, but the queue has no button for it.
+- **Moderators can't remove or restore a reported listing** from the queue. The marketplace RLS has no moderator UPDATE policy, so today only the dashboard (service role) can. 047's guards already let a moderator through, so this needs a moderator policy or RPC plus a queue button.
+- **Owners don't see a listing that was removed.** `getListingsByOwner` excludes `removed`, so a listing removed after 100 reports disappears from My Listings with no explanation. Show it with a "Removed after reports" state, or notify the owner.
+- **`reports_count` isn't in `marketplace_listings_view`**, since the view's `ml.*` was fixed when it was created. A listing moderation queue would need to recreate the view or read the base table.
 - **Blocked sellers' listings still show** in marketplace feeds. The shared queries don't consult `blocked_users`.
 - **No DB caps** on listing photos, title or description (`014_marketplace.sql:44-46`); they're zod-only.
 - **Pending promotions are never cleaned up**; 046 expires `active` rows only. The mobile branch of `create-promotion-checkout` is now unused.
@@ -792,6 +794,6 @@ Not in PRs 1–4. Some affect both platforms or need a migration.
 ## Decisions (2026-09-27)
 
 1. **Level 0 members can't report**, for posts or listings; the reports INSERT policy stays at Level 1. App Review therefore needs a verified (Level 1) test account; this is noted in the launch plan's App Review task.
-2. **Posts and listings hide at 100 reports, not 3.** A post goes to `pending`; a listing becomes `removed`, and only a moderator can restore it (PR 1b).
+2. **Posts and listings hide at 100 reports, not 3.** A post goes to `pending`; a listing becomes `removed`, and only a moderator can restore it, from the dashboard for now (PR 1b, [#103](https://github.com/shashesh/nepally/pull/103)).
 3. **Home uses web-style rows** (Sponsored, Featured, Recent, Trending) above the All Listings grid (PR 2.1).
 4. **Contact Seller opens the chat with a prefilled draft** naming the listing (PR 4.2).
