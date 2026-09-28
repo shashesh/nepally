@@ -756,7 +756,7 @@ CREATE POLICY "Senders can delete own messages"
 **Schema:**
 
 ```sql
-CREATE TYPE report_target_type AS ENUM ('post', 'user', 'message');
+CREATE TYPE report_target_type AS ENUM ('post', 'user', 'message', 'listing'); -- 'listing' added by 014
 CREATE TYPE report_status AS ENUM ('pending', 'reviewed', 'dismissed', 'actioned');
 CREATE TYPE report_action AS ENUM ('removed', 'warned', 'banned', 'none');
 

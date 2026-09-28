@@ -383,6 +383,22 @@ describe('ListingDetailScreen', () => {
     });
   });
 
+  it('asks a signed-out visitor to sign in instead of opening the report sheet', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Report listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Report listing'));
+
+    expect(alertSpy).toHaveBeenCalledWith('Sign In Required', 'Please sign in to report listings.');
+    expect(screen.queryByText('Report Listing')).toBeNull();
+    expect(createReport).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
   // -- Individual listing type -----------------------------------------------
 
   it('does not render business details for individual listings', async () => {
