@@ -6,6 +6,7 @@ import {
   getListingById,
   getUserSavedListingIds,
   incrementListingViews,
+  saveListing,
 } from '@nepally/shared';
 import ListingDetailScreen from './ListingDetailScreen';
 
@@ -309,6 +310,20 @@ describe('ListingDetailScreen', () => {
       expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
     });
     expect(screen.getByText('Contact Seller')).toBeTruthy();
+  });
+
+  it('saves the listing from the bottom bar', async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Save listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Save listing'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Unsave listing')).toBeTruthy();
+    });
+    expect(saveListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
   });
 
   // -- Report ----------------------------------------------------------------

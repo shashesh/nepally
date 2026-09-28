@@ -16,14 +16,12 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   TrustLevel,
   getCategories,
-  getUserSavedListingIds,
-  saveListing,
-  unsaveListing,
   type MarketplaceCategory,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { useMarketplaceFeed } from '../../hooks/useMarketplaceFeed';
+import { useSavedListingIds } from '../../hooks/useSavedListingIds';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -56,19 +54,11 @@ export default function MarketplaceHomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [menuVisible, setMenuVisible] = useState(false);
 
   const feed = useMarketplaceFeed(metroId, { categorySlug: selectedCategory, searchQuery });
+  const { savedIds, toggle: handleToggleSave, reload: reloadSavedIds } = useSavedListingIds(user?.id);
   const filtered = Boolean(selectedCategory || searchQuery);
-
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -86,13 +76,6 @@ export default function MarketplaceHomeScreen() {
     };
   }, []);
 
-  const userId = user?.id;
-  const loadSavedIds = useCallback(async () => {
-    if (!userId) return;
-    const result = await getUserSavedListingIds(supabase, userId);
-    if (mountedRef.current && result.data) setSavedIds(new Set(result.data));
-  }, [userId]);
-
   // Read through a ref so the focus effect doesn't re-run each time the feed's
   // busy state changes the callback's identity.
   const revalidateRef = useRef(feed.revalidate);
@@ -102,16 +85,17 @@ export default function MarketplaceHomeScreen() {
 
   // Coming back (from a listing, the create form, another tab) refreshes quietly:
   // no skeleton, same scroll position. Saved hearts may have changed elsewhere.
+  // The first focus is the first load, which the hooks already do.
   const hasFocusedRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      void loadSavedIds();
       if (!hasFocusedRef.current) {
         hasFocusedRef.current = true;
         return;
       }
+      void reloadSavedIds();
       revalidateRef.current();
-    }, [loadSavedIds])
+    }, [reloadSavedIds])
   );
 
   const handleCardPress = useCallback(
@@ -119,24 +103,6 @@ export default function MarketplaceHomeScreen() {
       navigation.navigate('ListingDetail', { listingId: listing.id });
     },
     [navigation]
-  );
-
-  const handleToggleSave = useCallback(
-    async (listingId: string) => {
-      const wasSaved = savedIds.has(listingId);
-      setSavedIds((prev) => {
-        const next = new Set(prev);
-        if (wasSaved) next.delete(listingId);
-        else next.add(listingId);
-        return next;
-      });
-      if (wasSaved) {
-        await unsaveListing(supabase, listingId);
-      } else {
-        await saveListing(supabase, listingId);
-      }
-    },
-    [savedIds]
   );
 
   const handleMenuSelect = useCallback(

@@ -17,9 +17,6 @@ import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getListingById,
-  saveListing,
-  unsaveListing,
-  getUserSavedListingIds,
   incrementListingViews,
   incrementListingContacts,
   getOrCreateConversation,
@@ -36,6 +33,7 @@ import {
 import { ReportPostSheet } from '../../components/sheets/ReportPostSheet';
 import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import { useAuth } from '../../hooks/useAuth';
+import { useSavedListingIds } from '../../hooks/useSavedListingIds';
 import { useNow } from '../../hooks/useNow';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
@@ -59,7 +57,8 @@ export default function ListingDetailScreen() {
 
   const [listing, setListing] = useState<MarketplaceListing | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSaved, setIsSaved] = useState(false);
+  const { savedIds, toggle: toggleSaved } = useSavedListingIds(userId);
+  const isSaved = savedIds.has(listingId);
   const [saving, setSaving] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
@@ -76,12 +75,7 @@ export default function ListingDetailScreen() {
 
     (async () => {
       try {
-        const [listingResult, savedResult] = await Promise.all([
-          getListingById(supabase, listingId),
-          userId
-            ? getUserSavedListingIds(supabase, userId)
-            : Promise.resolve({ data: null as string[] | null }),
-        ]);
+        const listingResult = await getListingById(supabase, listingId);
 
         if (cancelled) return;
 
@@ -91,10 +85,6 @@ export default function ListingDetailScreen() {
         } else if (listingResult.error && !listingResult.notFound) {
           setLoadError(failed(listingResult.error));
         }
-
-        if (savedResult.data) {
-          setIsSaved(savedResult.data.includes(listingId));
-        }
       } catch (error) {
         if (!cancelled) setLoadError(failed(error));
       } finally {
@@ -103,7 +93,7 @@ export default function ListingDetailScreen() {
     })();
 
     return () => { cancelled = true; };
-  }, [listingId, userId, loadKey]);
+  }, [listingId, loadKey]);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -113,15 +103,9 @@ export default function ListingDetailScreen() {
 
   const handleSave = useCallback(async () => {
     setSaving(true);
-    if (isSaved) {
-      const result = await unsaveListing(supabase, listingId);
-      if (!result.error) setIsSaved(false);
-    } else {
-      const result = await saveListing(supabase, listingId);
-      if (!result.error) setIsSaved(true);
-    }
+    await toggleSaved(listingId);
     setSaving(false);
-  }, [isSaved, listingId]);
+  }, [toggleSaved, listingId]);
 
   const handleContact = useCallback(async () => {
     if (!listing?.owner || !user) return;
