@@ -26,7 +26,8 @@ export function useSavedListingIds(userId: string | undefined): SavedListingIdsS
   const [savedIds, setSavedIds] = useState<ReadonlySet<string>>(new Set());
   // Read by toggle, so the previous state never comes from a stale closure.
   const savedIdsRef = useRef<ReadonlySet<string>>(savedIds);
-  const pendingRef = useRef<Set<string>>(new Set());
+  // Changes sent but not yet confirmed: listing id -> whether it's being saved.
+  const pendingRef = useRef<Map<string, boolean>>(new Map());
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -44,7 +45,15 @@ export function useSavedListingIds(userId: string | undefined): SavedListingIdsS
   const reload = useCallback(async () => {
     if (!userId) return;
     const result = await getUserSavedListingIds(supabase, userId);
-    if (mountedRef.current && result.data) apply(new Set(result.data));
+    if (!mountedRef.current || !result.data) return;
+    // The server may have answered before a change in flight reached it; keep
+    // those changes rather than flipping the heart back.
+    const next = new Set(result.data);
+    for (const [listingId, saving] of pendingRef.current) {
+      if (saving) next.add(listingId);
+      else next.delete(listingId);
+    }
+    apply(next);
   }, [userId, apply]);
 
   useEffect(() => {
@@ -54,7 +63,7 @@ export function useSavedListingIds(userId: string | undefined): SavedListingIdsS
   const setSaved = useCallback(
     async (listingId: string, saved: boolean) => {
       if (!userId || pendingRef.current.has(listingId)) return false;
-      pendingRef.current.add(listingId);
+      pendingRef.current.set(listingId, saved);
 
       const withChange = new Set(savedIdsRef.current);
       if (saved) withChange.add(listingId);

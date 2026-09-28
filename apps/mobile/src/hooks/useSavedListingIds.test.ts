@@ -124,6 +124,25 @@ describe('useSavedListingIds', () => {
     expect(stuck).toBe(true);
   });
 
+  it('keeps a change in flight when a reload lands before the server has it', async () => {
+    let finishSave: (value: { error?: Error }) => void = () => {};
+    mockSave.mockReturnValueOnce(new Promise((resolve) => (finishSave = resolve)));
+    const { result } = await renderIds();
+
+    act(() => {
+      void result.current.toggle('b');
+    });
+    // The reload was answered before the save reached the server.
+    mockGetIds.mockResolvedValueOnce({ data: ['a'] });
+    await act(async () => {
+      await result.current.reload();
+    });
+    expect(result.current.savedIds.has('b')).toBe(true);
+
+    await act(async () => finishSave({}));
+    expect(result.current.savedIds.has('b')).toBe(true);
+  });
+
   it('refetches on reload', async () => {
     const { result } = await renderIds();
     mockGetIds.mockResolvedValueOnce({ data: ['a', 'c'] });
