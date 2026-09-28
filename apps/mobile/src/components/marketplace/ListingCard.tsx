@@ -6,6 +6,7 @@ import { formatListingPrice, isVerifiedSeller, type MarketplaceListing } from '@
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
+import { listingCardLabel } from './listingCardLabel';
 
 interface ListingCardProps {
   listing: MarketplaceListing;
@@ -29,6 +30,14 @@ export const ListingCard = React.memo(function ListingCard({ listing, onPress, w
       style={[styles.card, width != null ? { width } : null]}
       onPress={onPress}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={listingCardLabel({
+        title: listing.title,
+        category: categoryName,
+        price,
+        isVerifiedSeller: showVerifiedSeller,
+        sponsored,
+      })}
     >
       {/* Image / gradient placeholder */}
       {firstPhoto ? (
