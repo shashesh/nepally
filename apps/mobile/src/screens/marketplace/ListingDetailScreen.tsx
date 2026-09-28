@@ -586,7 +586,8 @@ function DetailRow({ icon, label, value, urls, linkLabel }: DetailRowProps) {
     <>
       <Ionicons name={icon} size={18} color={colors.text.secondary} />
       <Text style={styles.detailLabel}>{label}:</Text>
-      <Text style={[styles.detailValue, urls && styles.detailLinkValue]} selectable>
+      {/* Only plain values are selectable: on Android a selectable Text swallows the row's tap. */}
+      <Text style={[styles.detailValue, urls && styles.detailLinkValue]} selectable={!urls}>
         {value}
       </Text>
     </>

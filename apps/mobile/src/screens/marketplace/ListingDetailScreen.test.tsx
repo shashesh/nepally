@@ -398,7 +398,12 @@ describe('ListingDetailScreen', () => {
       mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, address } } as never);
       const screen = await renderLoaded();
       expect(screen.getByText(address).props.numberOfLines).toBeUndefined();
-      expect(screen.getByText(address).props.selectable).toBe(true);
+    });
+
+    it('lets a plain value be selected, but not a link, whose tap selection would swallow on Android', async () => {
+      const screen = await renderLoaded();
+      expect(screen.getByText('Himalayan Kitchen LLC').props.selectable).toBe(true);
+      expect(screen.getByText('123 Main St').props.selectable).toBeFalsy();
     });
   });
 

@@ -846,42 +846,42 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 **Chunk A: the detail screen (4.1, 4.2, 4.5, 4.6, 4.8 on detail)**
 
-- [ ] **A1. Contact details do something (4.1).**
+- [x] **A1. Contact details do something (4.1).**
   - Shared `logic/marketplace/contactLinks.ts`:
     - `toTelUrl` keeps digits and a leading `+`, and returns null when there are no digits.
     - `toMailtoUrl`.
     - `toWebsiteUrl` adds `https://` when there's no scheme and allows only http and https.
     - `toMapsUrls(address)` returns the Apple (`maps:?q=`), `geo:0,0?q=` and Google Maps search URLs.
   - Detail: each contact row is a link (`accessibilityRole="link"`, a label such as "Call 555-0100") that calls `Linking.openURL`. The address tries `maps:` on iOS or `geo:` on Android, then the Google URL. If nothing opens, an alert says so.
-  - Values are `selectable` and no longer cut to 2 lines.
-- [ ] **A2. Contact Seller carries context (4.2).**
+  - Values are no longer cut to 2 lines. Plain values are `selectable`; links are not, since on Android a selectable Text inside a touchable swallows its tap.
+- [x] **A2. Contact Seller carries context (4.2).**
   - Shared `listingInquiryDraft(title)` returns "Hi, is “{title}” still available?".
   - `MessageThread` gains an optional `initialDraft` param, and `ChatInput` an `initialText` that seeds the input. Nothing is sent until the member taps Send.
   - The button shows a spinner and `accessibilityState.busy` while the conversation is created. A ref guard makes a double tap start it once.
   - `incrementListingContacts` runs only after the conversation exists.
-- [ ] **A3. Detail stays fresh (4.5).**
+- [x] **A3. Detail stays fresh (4.5).**
   - Refetch on focus already shipped in PR 3 (`useListing`).
   - Still to do: a new `listingId`. `ListingDetail` gets `getId={({ params }) => params.listingId}`, so each listing is its own screen, and a profile's listing link can't reuse the one below it.
   - `useListing` resets to loading when `listingId` changes, so another listing is never shown under the new id.
-- [ ] **A4. Seller card (4.6).**
+- [x] **A4. Seller card (4.6).**
   - Show the owner's `Avatar` (photo, trust ring) and `TrustBadge`.
   - The card is one button, "View {name}'s profile", that opens `PublicProfileView`. On their own listing it goes to the Profile tab, as `PostDetailScreen` does.
   - The marketplace stack registers `PublicProfileView` and `PostDetail`, since a profile opens posts. Both screens are typed against the routes the Home and Marketplace stacks share.
-- [ ] **A5. Consistency on detail (4.8).**
+- [x] **A5. Consistency on detail (4.8).**
   - Save is a heart, as on the grid.
   - Counts use the shared `pluralize` ("1 view", "1 save").
   - Hours read "9:00 AM – 5:00 PM" through a new shared `formatClockTime`.
   - A header Share button calls `Share.share` with `${WEB_BASE_URL}/marketplace/listing/<id>`.
-- [ ] **Chunk A gate and review.**
+- [x] **Chunk A gate and review.** The review found no CRITICAL or HIGH. Its MEDIUM, that the selectable link text could swallow taps on Android, was fixed anyway because it would break tap-to-call; the LOWs went to Follow-ups.
 
 **Chunk B: cards, My Listings, photo viewer (4.3, 4.4, 4.8 on My Listings, 4.7)**
 
-- [ ] **B1. Screen-reader reachable (4.3).** A touchable inside an accessible card is invisible to VoiceOver, so:
+- [x] **B1. Screen-reader reachable (4.3).** A touchable inside an accessible card is invisible to VoiceOver, so:
   - `ListingGridCard`: the label reads title, price and freshness. The heart becomes a custom accessibility action ("Save listing" or "Unsave listing") on the card and stays a visible touch target.
   - `ListingCard`: a button label with title, category and price.
   - `MyListingsScreen`: the card's photo and text are one button, and the action row sits outside it, so each action is its own element.
   - Every icon-only button in these screens gets a label, including My Listings' back buttons.
-- [ ] **B2. My Listings actions fit (4.4, 4.8).**
+- [x] **B2. My Listings actions fit (4.4, 4.8).**
   - Edit and Refresh (active only) stay in the row, with 44pt targets.
   - A labelled "More" button holds Deactivate or Reactivate, and Delete: `ActionSheetIOS` on iOS, an `Alert` with the same buttons on Android.
   - Each mutation checks `{ error }`. A failure shows an alert through `userMessage`; Refresh confirms with "Listing refreshed". A listing with a mutation in flight ignores further taps.
@@ -926,6 +926,8 @@ Not in PRs 1–4. Some affect both platforms or need a migration.
 - **Grid thumbnails load full 1200px photos**; use storage image transforms if the plan allows it.
 - **A post photo upload that fails part-way orphans the photos before it.** `uploadPostPhotos` stops at the first failure without returning the paths already uploaded. `uploadListingPhotos` returns them since PR 3; do the same for posts, and apply the listing rule of cleaning up after a failed write only when the server refused it.
 - **Visual consistency:** Category, Detail, Create and My Listings still use the pre-redesign palette. The 2026-04-14 redesign deferred them.
+- **Phone links drop extensions and letters** (PR 4 review). `toTelUrl` keeps digits only, so "555-1234 ext 202" dials `5551234202` and "1-800-FLOWERS" loses its letters. Map letters to keypad digits and send an extension as `;ext=` or a pause, or show such numbers as plain text.
+- **Leaving detail while Contact Seller is starting skips the contact count** (PR 4 review). The conversation may exist server-side, but `incrementListingContacts` runs only when the screen is still there. Counting before the mounted check would fix it.
 
 ## Decisions (2026-09-27)
 
