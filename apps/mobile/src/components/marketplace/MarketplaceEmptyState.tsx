@@ -19,7 +19,7 @@ const COPY: Record<EmptyVariant, Copy> = {
     headline: 'Nothing in your metro yet',
     body: 'Be the first to share something with your Nepali community here.',
     primaryLabel: 'Create the first listing',
-    secondaryLabel: 'Browse nearby metros',
+    secondaryLabel: 'Change location',
   },
   'empty-search': {
     headline: 'No matches',

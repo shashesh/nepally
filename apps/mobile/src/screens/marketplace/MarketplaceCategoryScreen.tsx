@@ -21,7 +21,7 @@ import {
   type MarketplaceCategory,
   type MarketplaceListing,
 } from '@nepally/shared';
-import { useAuth } from '../../hooks/useAuth';
+import { useActiveMetro } from '../../hooks/useActiveMetro';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -59,7 +59,6 @@ function appendPage(current: MarketplaceListing[], rows: MarketplaceListing[]) {
 export default function MarketplaceCategoryScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { user } = useAuth();
 
   const { categorySlug, categoryName } = route.params;
   const isSearchMode = categorySlug === '__search__';
@@ -88,7 +87,8 @@ export default function MarketplaceCategoryScreen() {
   const [nextOffset, setNextOffset] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const metroId = user?.metro_area_id ?? '';
+  // The active location's metro, as on Home and the marketplace home.
+  const metroId = useActiveMetro().metroAreaId ?? '';
   const mountedRef = useRef(true);
   // One page request at a time, checked before state catches up with a fast second call.
   const loadingMoreRef = useRef(false);

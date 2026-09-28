@@ -21,10 +21,11 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from '../hooks/useLocation';
+import { useActiveMetro } from '../hooks/useActiveMetro';
 import { Level0Banner } from '../components/banners/Level0Banner';
 import { LocationPermissionBanner } from '../components/banners/LocationPermissionBanner';
 import { LocationChangeSheet } from '../components/location/LocationChangeSheet';
-import { LocationSwitcherSheet } from '../components/location/LocationSwitcherSheet';
+import { ActiveLocationSwitcher } from '../components/location/ActiveLocationSwitcher';
 import { PostCard } from '../components/cards/PostCard';
 import { ListingCard } from '../components/marketplace/ListingCard';
 import { SkeletonPostCard } from '../components/cards/SkeletonPostCard';
@@ -74,13 +75,11 @@ export default function HomeScreen() {
   const {
     activeLocation,
     detectedLocation,
-    savedLocations,
     showChangePrompt,
     browseMetro,
     updateMetroPermanent,
     snoozeMetro,
     dismissChangePrompt,
-    setManualOverride,
   } = useLocation();
   const [switcherVisible, setSwitcherVisible] = useState(false);
   const navigation = useNavigation<HomeScreenNavProp>();
@@ -116,21 +115,8 @@ export default function HomeScreen() {
   const userId = user?.id;
   const isLevel0 = user?.trust_level === TrustLevel.NEW;
 
-  // Derive metroName from activeLocation (or fall back to user's metro)
-  const metroAreaId = activeLocation?.metro_area_id ?? user?.metro_area_id;
-  const matchedSavedLocation = savedLocations.find(
-    (location) => location.metro_area_id === metroAreaId && location.metro_area
-  );
-  const metroName = activeLocation
-    ? `${activeLocation.metro_name}, ${activeLocation.metro_state}`
-    : matchedSavedLocation?.metro_area
-      ? `${matchedSavedLocation.metro_area.name}, ${matchedSavedLocation.metro_area.state}`
-      : metroAreaId
-        ? 'Your Metro Area'
-        : null;
-  const locationLabel = activeLocation?.is_temporary
-    ? 'Visiting'
-    : matchedSavedLocation?.label || 'Home';
+  // The active location's metro, or the member's own (shared with the marketplace).
+  const { metroAreaId, metroName, locationLabel } = useActiveMetro();
 
   // One-off loads on mount: Level 0 banner dismissal and the tag filter list.
   useEffect(() => {
@@ -1015,37 +1001,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Location Switcher */}
-      <LocationSwitcherSheet
-        visible={switcherVisible}
-        onClose={handleSwitcherClose}
-        savedLocations={savedLocations}
-        activeLocation={activeLocation}
-        detectedLocation={detectedLocation}
-        onSelectSaved={(loc) => {
-          setSwitcherVisible(false);
-          if (loc.metro_area) {
-            setManualOverride({
-              metro_area_id: loc.metro_area_id,
-              metro_name: loc.metro_area.name,
-              metro_state: loc.metro_area.state,
-              source: 'saved',
-              is_temporary: false,
-            });
-          }
-        }}
-        onSelectDetected={() => {
-          setSwitcherVisible(false);
-          if (detectedLocation) {
-            browseMetro({
-              metro_area_id: detectedLocation.metro_area_id,
-              metro_name: detectedLocation.metro_name,
-              metro_state: detectedLocation.metro_state,
-              source: 'gps',
-              is_temporary: true,
-            });
-          }
-        }}
-      />
+      <ActiveLocationSwitcher visible={switcherVisible} onClose={handleSwitcherClose} />
 
       {/* Location Change Prompt */}
       <LocationChangeSheet

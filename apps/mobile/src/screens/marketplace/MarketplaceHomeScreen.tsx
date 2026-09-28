@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useMarketplaceFeed } from '../../hooks/useMarketplaceFeed';
 import { useSavedListingIds } from '../../hooks/useSavedListingIds';
+import { useActiveMetro } from '../../hooks/useActiveMetro';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -35,6 +36,7 @@ import { CategoryTileRow } from '../../components/marketplace/CategoryTileRow';
 import { MarketplaceMenuSheet, type MarketplaceMenuKey } from '../../components/marketplace/MarketplaceMenuSheet';
 import { MarketplaceEmptyState } from '../../components/marketplace/MarketplaceEmptyState';
 import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
+import { ActiveLocationSwitcher } from '../../components/location/ActiveLocationSwitcher';
 import type { MarketplaceStackParamList } from '../../types/navigation';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList, 'MarketplaceHome'>;
@@ -47,7 +49,10 @@ const SPONSORED_STRIP_MAX = 5;
 export default function MarketplaceHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
-  const metroId = user?.metro_area_id ?? '';
+  // The active location's metro, as on Home, so switching location switches the marketplace too.
+  const { metroAreaId, metroName } = useActiveMetro();
+  const metroId = metroAreaId ?? '';
+  const [locationSwitcherVisible, setLocationSwitcherVisible] = useState(false);
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
 
   const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
@@ -117,13 +122,10 @@ export default function MarketplaceHomeScreen() {
         case 'browse-categories':
           navigation.navigate('BrowseCategories');
           break;
-        case 'change-location': {
-          // Cross-stack navigation: location is managed in the Home stack.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const parent = navigation.getParent() as any;
-          parent?.navigate('Home', { screen: 'ManageLocations' });
+        case 'change-location':
+          // In place, rather than jumping to the Home tab's location screen.
+          setLocationSwitcherVisible(true);
           break;
-        }
         case 'rules':
           navigation.navigate('MarketplaceRules');
           break;
@@ -247,7 +249,7 @@ export default function MarketplaceHomeScreen() {
   }, [emptyVariant, canCreate, navigation]);
 
   const handleEmptySecondary = useCallback(() => {
-    setMenuVisible(true);
+    setLocationSwitcherVisible(true);
   }, []);
 
   const stripsShowing =
@@ -301,7 +303,24 @@ export default function MarketplaceHomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Marketplace</Text>
+        <View style={styles.headerTitleBlock}>
+          <Text style={styles.headerTitle}>Marketplace</Text>
+          {metroName && (
+            <TouchableOpacity
+              style={styles.metroButton}
+              onPress={() => setLocationSwitcherVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Change location: ${metroName}`}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="location-outline" size={14} color={colors.text.secondary} />
+              <Text style={styles.metroName} numberOfLines={1}>
+                {metroName}
+              </Text>
+              <Ionicons name="chevron-down" size={14} color={colors.text.secondary} />
+            </TouchableOpacity>
+          )}
+        </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.iconBtn}
@@ -353,6 +372,11 @@ export default function MarketplaceHomeScreen() {
         onClose={() => setMenuVisible(false)}
         onSelect={handleMenuSelect}
       />
+
+      <ActiveLocationSwitcher
+        visible={locationSwitcherVisible}
+        onClose={() => setLocationSwitcherVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -372,9 +396,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerTitleBlock: {
+    flex: 1,
+    marginRight: spacing.xs,
+  },
   headerTitle: {
     ...typography.h2,
     color: colors.text.primary,
+  },
+  metroButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  metroName: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    flexShrink: 1,
   },
   headerActions: {
     flexDirection: 'row',

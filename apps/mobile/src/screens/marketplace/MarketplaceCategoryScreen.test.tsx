@@ -104,6 +104,16 @@ jest.mock('../../hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+const mockUseLocation = jest.fn();
+jest.mock('../../hooks/useLocation', () => ({
+  useLocation: () => mockUseLocation(),
+}));
+const NO_ACTIVE_LOCATION = { activeLocation: null, savedLocations: [] };
+const VISITING_AUSTIN = {
+  activeLocation: { metro_area_id: 'm2', metro_name: 'Austin', metro_state: 'TX', is_temporary: true },
+  savedLocations: [],
+};
+
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
 
 // ---------------------------------------------------------------------------
@@ -197,6 +207,20 @@ describe('MarketplaceCategoryScreen', () => {
     mockGetCategories.mockResolvedValue({ data: [FOOD_CATEGORY, PRO_CATEGORY] });
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
     mockGetFeaturedListings.mockResolvedValue({ data: [] });
+    mockUseLocation.mockReturnValue(NO_ACTIVE_LOCATION);
+  });
+
+  it("lists the category in the member's active location", async () => {
+    mockUseLocation.mockReturnValue(VISITING_AUSTIN);
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+    expect(mockGetListingsByMetro).toHaveBeenCalledWith(
+      expect.anything(),
+      'm2',
+      expect.objectContaining({ categorySlug: 'food-restaurants' })
+    );
   });
 
   it('renders the category name in the header', async () => {

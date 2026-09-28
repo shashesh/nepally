@@ -49,6 +49,11 @@ jest.mock('../../hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+const mockUseLocation = jest.fn();
+jest.mock('../../hooks/useLocation', () => ({
+  useLocation: () => mockUseLocation(),
+}));
+
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
 
 // ---------------------------------------------------------------------------
@@ -77,6 +82,12 @@ const mockCreateListing = createListing as jest.MockedFunction<typeof createList
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
+
+const NO_ACTIVE_LOCATION = { activeLocation: null, savedLocations: [] };
+const VISITING_AUSTIN = {
+  activeLocation: { metro_area_id: 'm2', metro_name: 'Austin', metro_state: 'TX', is_temporary: true },
+  savedLocations: [],
+};
 
 const MOCK_CATEGORIES = [
   {
@@ -115,6 +126,24 @@ describe('CreateListingScreen', () => {
     });
     mockGetCategories.mockResolvedValue({ data: MOCK_CATEGORIES });
     mockSafeParse.mockReturnValue({ success: true, data: {} });
+    mockUseLocation.mockReturnValue(NO_ACTIVE_LOCATION);
+  });
+
+  it("posts the listing to the member's active location", async () => {
+    mockUseLocation.mockReturnValue(VISITING_AUSTIN);
+    const screen = render(<CreateListingScreen />);
+    await waitFor(() => {
+      expect(screen.getAllByText('Create Listing').length).toBe(2);
+    });
+
+    fireEvent.press(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => {
+      expect(mockCreateListing).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ metro_area_id: 'm2', owner_id: 'user-1' })
+      );
+    });
   });
 
   // -- Initial render ----------------------------------------------------------

@@ -79,6 +79,20 @@ jest.mock('../../components/marketplace/MarketplaceSearchBar', () => {
   };
 });
 
+const mockUseLocation = jest.fn();
+jest.mock('../../hooks/useLocation', () => ({
+  useLocation: () => mockUseLocation(),
+}));
+
+jest.mock('../../components/location/ActiveLocationSwitcher', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return {
+    ActiveLocationSwitcher: ({ visible }: { visible: boolean }) =>
+      visible ? ReactLocal.createElement(Text, null, 'location-switcher') : null,
+  };
+});
+
 jest.mock('../../components/marketplace/CategoryTileRow', () => {
   const ReactLocal = jest.requireActual('react');
   const { Text, TouchableOpacity } = jest.requireActual('react-native');
@@ -204,6 +218,12 @@ jest.mock('@nepally/shared', () => {
 });
 
 const STABLE_USER = { id: 'u1', metro_area_id: 'm1', trust_level: 1 };
+// Stable references, like useAuth's, so effects keyed on them don't re-fire each render.
+const NO_ACTIVE_LOCATION = { activeLocation: null, savedLocations: [] };
+const VISITING_AUSTIN = {
+  activeLocation: { metro_area_id: 'm2', metro_name: 'Austin', metro_state: 'TX', is_temporary: true },
+  savedLocations: [],
+};
 
 const mockGetListingsByMetro = getListingsByMetro as jest.Mock;
 const mockGetStickyBusinessListings = getStickyBusinessListings as jest.Mock;
@@ -212,6 +232,7 @@ describe('MarketplaceHomeScreen (redesign)', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
     mockUseAuth.mockReturnValue({ user: STABLE_USER });
+    mockUseLocation.mockReturnValue(NO_ACTIVE_LOCATION);
     mockGetListingsByMetro.mockImplementation(async () => ({ data: [sampleListing], hasMore: false }));
     mockGetStickyBusinessListings.mockImplementation(async () => ({ data: [{ listing: sampleListing }] }));
     // userMessage logs a failed load through logClientEvent (console.error).
@@ -318,6 +339,43 @@ describe('MarketplaceHomeScreen (redesign)', () => {
       expect(screen.getByText('strip:Sponsored:1:sponsored')).toBeTruthy();
     });
     expect(screen.queryByText('empty:empty-metro')).toBeNull();
+  });
+
+  it("shows the listings of the member's active location", async () => {
+    mockUseLocation.mockReturnValue(VISITING_AUSTIN);
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Austin, TX')).toBeTruthy();
+    });
+    expect(mockGetListingsByMetro).toHaveBeenCalledWith(
+      expect.anything(),
+      'm2',
+      expect.objectContaining({ limit: 20 })
+    );
+  });
+
+  it('opens the location switcher from the metro in the header', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Your Metro Area')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Change location: Your Metro Area'));
+
+    expect(screen.getByText('location-switcher')).toBeTruthy();
+  });
+
+  it('opens the location switcher in place from the menu', async () => {
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Open marketplace menu')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Open marketplace menu'));
+    fireEvent.press(screen.getByText('Change Location'));
+
+    expect(screen.getByText('location-switcher')).toBeTruthy();
+    expect(mockNavigate).not.toHaveBeenCalledWith('Home', expect.anything());
   });
 
   it('opens the menu sheet and routes My Listings', async () => {
