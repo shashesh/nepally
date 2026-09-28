@@ -20,7 +20,7 @@ The Marketplace is a Craigslist/FB Marketplace-style listing system where busine
 - **Categories:** 5 Nepali-tailored categories (consolidated from original 12)
 - **Expiration:** Universal soft expiry (90 days without refresh = deprioritized)
 - **Scope:** Metro-area scoped (multi-metro/global = Phase 3 paid feature)
-- **Moderation:** Auto-publish + community reporting (using existing reports infra)
+- **Moderation:** Auto-publish + community reporting (using existing reports infra). 100 reports remove a listing (migration 047), and only a moderator can restore a removed listing; an owner's own delete is permanent too.
 - **Trust Level:** Level 1+ required to create; Level 0 can browse/save/contact
 - **Engagement:** Save/bookmark + Contact only (no likes, comments, reviews)
 - **My Listings:** Accessible from both profile tab and marketplace screen

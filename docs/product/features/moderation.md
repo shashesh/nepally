@@ -1,11 +1,14 @@
 # Moderation
 
-**Last Updated:** 2026-09-24 (web UI overhaul PR 9b)
+**Last Updated:** 2026-09-27 (report threshold 100, listing reports — migration 047)
 
-What the moderator queue at `/moderation` does on web today. Access and the server-side rules come from `supabase/migrations/035_emergency_post_moderation.sql`:
+What the moderator queue at `/moderation` does on web today. Access and the server-side rules come from `supabase/migrations/035_emergency_post_moderation.sql` and `047_report_auto_hide_threshold.sql`:
 
 - Emergency posts start as `pending`.
-- Three or more reports auto-hide a post.
+- 100 reports auto-hide a post (it goes to `pending`). It was 3 until migration 047.
+- 100 reports remove a listing (`removed`), even a deactivated one. The owner can't bring a removed listing back; for now a moderator restores it from the Supabase dashboard.
+- Only members at Trust Level 1 or above can report.
+- An author or owner can't reset a post's or listing's report count.
 - Bans go through the `moderate_user()` RPC.
 
 ## Who sees it

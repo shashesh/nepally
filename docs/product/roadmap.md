@@ -252,7 +252,7 @@ Posts follow a simplified Reddit-style format: **Title + Body + Tags**. No struc
 
 ### F. Basic Reporting System (Implemented 2026-09-04)
 
-**Status:** Report submission (web + mobile), one open report per reporter/target, auto-hide at 3 reports, and the moderator queue at `/moderation` are live (migration 035). Chat-message reports are recorded but message content stays private to participants.
+**Status:** Report submission (web + mobile), one open report per reporter/target, auto-hide at 100 reports (3 until migration 047, which also counts listing reports and removes a listing at 100), and the moderator queue at `/moderation` are live (migration 035). Chat-message reports are recorded but message content stays private to participants.
 
 **User Reporting:** Simple flagging mechanism for spam, scams, and inappropriate content.
 
