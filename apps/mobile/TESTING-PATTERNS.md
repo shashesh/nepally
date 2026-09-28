@@ -126,3 +126,11 @@ describe('ComponentWithTimerAndAsync', () => {
   });
 });
 ```
+
+## The First Test File on a Cold CI Runner
+
+CI starts with an empty Jest cache and runs `--runInBand --coverage`. With no timing history, Jest runs the largest test files first. React Native loads most components the first time they're used, and on a cold cache each is also compiled and instrumented then. So the first test to render a big screen can spend about 3 s compiling. If that happens inside a `waitFor`, whose window is one second, the test times out still showing the loading state. Later tests, and warm runs, are fast.
+
+This hit `ListingDetailScreen.test.tsx` in #109, when new tests made it the largest file. Its fix: a `beforeAll` that touches the React Native components the screen and its children import (`ScrollView`, `Modal`, `TextInput` and so on), so they load before any timed wait. Don't reach for a `waitFor` timeout (see Golden Rule 5).
+
+To reproduce: run `npx jest --clearCache`, then `npx jest --ci --runInBand --coverage --verbose <file>`. The first test's duration shows the cost.

@@ -1,5 +1,18 @@
 import React from 'react';
-import { Alert, Dimensions, Linking, ScrollView, Share } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+} from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
   createReport,
@@ -162,6 +175,27 @@ const MOCK_LISTING = {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+// React Native loads most components the first time they're used, and on a cold
+// CI runner each is also compiled then. The first test to render a loaded listing
+// would pay for all of them (about 3 s) inside waitFor's one-second window and
+// time out, as #109's CI run did when this file ran first. Load what this screen
+// and its children render (the sheet, gallery, avatar and badge) before any test.
+beforeAll(() => {
+  void [
+    ActivityIndicator,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    Alert,
+    Linking,
+    Share,
+  ];
+});
 
 describe('ListingDetailScreen', () => {
   beforeEach(() => {
