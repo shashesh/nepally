@@ -1,6 +1,6 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Alert, StyleSheet } from 'react-native';
 import PostDetailScreen from './PostDetailScreen';
 import { Image } from 'expo-image';
 import {
@@ -156,6 +156,66 @@ describe('PostDetailScreen avatar menu', () => {
       nativeEvent: { pageX: 90, pageY: 110 },
     });
     await waitFor(() => expect(screen.getByText('View Profile')).toBeTruthy());
+  });
+
+  describe("Chat from the author's avatar", () => {
+    const mockParentNavigate = jest.fn();
+    const mockIsFocused = jest.fn(() => true);
+
+    beforeEach(() => {
+      mockParentNavigate.mockReset();
+      mockIsFocused.mockReturnValue(true);
+      mockUseNavigation.mockReturnValue({
+        navigate: jest.fn(),
+        getParent: () => ({ navigate: mockParentNavigate }),
+        isFocused: mockIsFocused,
+      });
+    });
+
+    async function pressChat({ leaveMeanwhile }: { leaveMeanwhile: boolean }, answer: unknown) {
+      let finish: (value: unknown) => void = () => {};
+      mockGetOrCreateConversation.mockReturnValueOnce(
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+      );
+      const screen = render(<PostDetailScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Post title')).toBeTruthy();
+      });
+      fireEvent.press(screen.getByText('AU'), { nativeEvent: { pageX: 90, pageY: 110 } });
+      await waitFor(() => expect(screen.getByText('Chat')).toBeTruthy());
+      fireEvent.press(screen.getByText('Chat'));
+      if (leaveMeanwhile) mockIsFocused.mockReturnValue(false);
+      await act(async () => {
+        finish(answer);
+      });
+    }
+
+    it('opens the chat with the author', async () => {
+      await pressChat({ leaveMeanwhile: false }, { data: { conversationId: 'conv-1' } });
+
+      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+        screen: 'MessageThread',
+        params: expect.objectContaining({ conversationId: 'conv-1' }),
+      });
+    });
+
+    // Going back, or switching tabs, before the conversation starts.
+    it("doesn't pull the member back into a chat after they moved on", async () => {
+      await pressChat({ leaveMeanwhile: true }, { data: { conversationId: 'conv-1' } });
+
+      expect(mockParentNavigate).not.toHaveBeenCalled();
+    });
+
+    it("doesn't alert over another screen when it fails after they moved on", async () => {
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+      await pressChat({ leaveMeanwhile: true }, { data: null, error: new Error('boom') });
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
   });
 
   it('shows reaction picker on long press Like and triggers like action', async () => {

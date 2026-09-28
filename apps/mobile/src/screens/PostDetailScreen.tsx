@@ -663,6 +663,9 @@ export default function PostDetailScreen() {
       avatarMenuUser.id,
       avatarMenuUser.full_name
     );
+    // Gone back or moved to another tab meanwhile: don't pull the member into a
+    // chat or alert over that screen. (A screen that has gone isn't focused.)
+    if (!navigation.isFocused()) return;
 
     if (result.data) {
       const tabNav = navigation.getParent();

@@ -8,6 +8,7 @@ const mockUseRoute = jest.fn();
 const mockNavigate = jest.fn();
 const mockParentNavigate = jest.fn();
 const mockGetParent = jest.fn(() => ({ navigate: mockParentNavigate }));
+const mockIsFocused = jest.fn(() => true);
 const mockUseNavigation = jest.fn();
 const mockGetUserById = jest.fn();
 const mockGetPostsByAuthorId = jest.fn();
@@ -167,7 +168,9 @@ describe('PublicProfileScreen', () => {
     mockUseNavigation.mockReturnValue({
       navigate: mockNavigate,
       getParent: mockGetParent,
+      isFocused: mockIsFocused,
     });
+    mockIsFocused.mockReturnValue(true);
     mockGetUserById.mockResolvedValue({ data: mockProfileUser });
     mockGetPostsByAuthorId.mockResolvedValue({ data: mockUserPosts });
     mockGetEventsByOrganizer.mockResolvedValue({ data: mockUserEvents });
@@ -313,6 +316,45 @@ describe('PublicProfileScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Opening conversation/i)).toBeTruthy();
+    });
+  });
+
+  // Switching tabs, or opening a post from the profile, keeps this screen
+  // mounted underneath, so a late answer must not pull the member back.
+  describe('when the member has moved on before the conversation starts', () => {
+    async function pressMessageThenLeave(answer: unknown) {
+      let finish: (value: unknown) => void = () => {};
+      mockGetOrCreateConversation.mockReturnValueOnce(
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+      );
+      render(<PublicProfileScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Message Bikal S.')).toBeTruthy();
+      });
+      fireEvent.press(screen.getByText('Message Bikal S.'));
+      mockIsFocused.mockReturnValue(false);
+      await act(async () => {
+        finish(answer);
+      });
+    }
+
+    it("doesn't open the chat", async () => {
+      await pressMessageThenLeave({ data: { conversationId: 'conv-abc', isNew: true } });
+
+      expect(mockParentNavigate).not.toHaveBeenCalled();
+      // Back on the profile, Message works again.
+      expect(screen.getByText('Message Bikal S.')).toBeTruthy();
+    });
+
+    it("doesn't alert over the other screen when it fails", async () => {
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+      await pressMessageThenLeave({ data: null, error: new Error('boom') });
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
     });
   });
 

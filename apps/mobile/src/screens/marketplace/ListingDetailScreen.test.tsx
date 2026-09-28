@@ -34,6 +34,7 @@ jest.mock('react-native-safe-area-context', () => {
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
+const mockIsFocused = jest.fn(() => true);
 const mockGetParent = jest.fn(() => ({ navigate: mockNavigate }));
 const mockUseAuth = jest.fn();
 let mockFocusCallback: (() => void | (() => void)) | null = null;
@@ -43,6 +44,7 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
     goBack: mockGoBack,
     getParent: mockGetParent,
+    isFocused: mockIsFocused,
   }),
   useRoute: () => ({ params: { listingId: 'listing-1' } }),
   // Captured, not run: a test calls it to stand in for the screen gaining focus
@@ -664,6 +666,50 @@ describe('ListingDetailScreen', () => {
       expect(incrementListingContacts).not.toHaveBeenCalled();
       expect(mockNavigate).not.toHaveBeenCalled();
       alertSpy.mockRestore();
+    });
+
+    // Switching tabs, or opening the seller's profile, keeps this screen
+    // mounted underneath, so a late answer must not pull the member back.
+    describe('when the member has moved on before the conversation starts', () => {
+      afterEach(() => {
+        mockIsFocused.mockReturnValue(true);
+      });
+
+      async function pressContactThenLeave(answer: unknown) {
+        let finish: (value: unknown) => void = () => {};
+        mockGetOrCreateConversation.mockReturnValueOnce(
+          new Promise((resolve) => {
+            finish = resolve;
+          }) as never
+        );
+        const screen = await renderLoaded();
+        fireEvent.press(screen.getByRole('button', { name: 'Contact Seller' }));
+        mockIsFocused.mockReturnValue(false);
+        await act(async () => {
+          finish(answer);
+        });
+        return screen;
+      }
+
+      it("doesn't open the chat or count a contact", async () => {
+        const screen = await pressContactThenLeave({ data: { conversationId: 'conv-9' } });
+
+        expect(mockNavigate).not.toHaveBeenCalledWith('Chat', expect.anything());
+        expect(incrementListingContacts).not.toHaveBeenCalled();
+        // Back on the listing, Contact Seller works again.
+        expect(
+          screen.getByRole('button', { name: 'Contact Seller' }).props.accessibilityState
+        ).toEqual(expect.objectContaining({ busy: false, disabled: false }));
+      });
+
+      it("doesn't alert over the other screen when it fails", async () => {
+        const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+        await pressContactThenLeave({ data: null });
+
+        expect(alertSpy).not.toHaveBeenCalled();
+        alertSpy.mockRestore();
+      });
     });
 
     it('starts one conversation for a double tap and shows it is busy meanwhile', async () => {

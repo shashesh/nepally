@@ -111,9 +111,13 @@ export default function ListingDetailScreen() {
       conversationId = null;
     }
     contactingRef.current = false;
-    // Gone back meanwhile: don't pull the member into a chat or alert over another screen.
+    // Gone back meanwhile: nothing left to update.
     if (!mountedRef.current) return;
     setContacting(false);
+    // Moved to another tab or screen meanwhile, with this one still mounted
+    // underneath: don't pull the member into a chat or alert over that screen.
+    // The chat didn't open, so it isn't counted as a contact either.
+    if (!navigation.isFocused()) return;
     if (!conversationId) {
       Alert.alert('Error', 'Failed to start conversation. Please try again.');
       return;

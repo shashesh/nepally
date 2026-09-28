@@ -538,6 +538,9 @@ export default function HomeScreen() {
       post.author.id,
       post.author.full_name
     );
+    // Moved to a post or another tab meanwhile, with Home still mounted
+    // underneath: don't pull the member into a chat or alert over that screen.
+    if (!navigation.isFocused()) return;
 
     if (result.data) {
       navigation.getParent()?.navigate('Chat', {
