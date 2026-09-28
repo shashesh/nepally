@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { act, render, waitFor, fireEvent } from '@testing-library/react-native';
 import { Alert, RefreshControl } from 'react-native';
 import { getListingsByOwner, deactivateListing, reactivateListing, deleteListing, refreshListing } from '@nepally/shared';
 import MyListingsScreen from './MyListingsScreen';
@@ -82,6 +82,8 @@ function makeListing(overrides: Record<string, unknown> = {}) {
 }
 
 jest.mock('@nepally/shared', () => ({
+  userMessage: jest.requireActual('@nepally/shared').userMessage,
+  formatListingPrice: jest.requireActual('@nepally/shared').formatListingPrice,
   getListingsByOwner: jest.fn(async () => ({ data: [] })),
   deactivateListing: jest.fn(async () => ({ error: null })),
   reactivateListing: jest.fn(async () => ({ error: null })),
@@ -261,6 +263,14 @@ describe('MyListingsScreen', () => {
     });
   });
 
+  it('shows a plain-number price as dollars', async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing({ price: '1200' })] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('$1,200')).toBeTruthy();
+    });
+  });
+
   it('renders listing with photo thumbnail', async () => {
     mockGetListingsByOwner.mockResolvedValue({
       data: [makeListing({ photos: ['https://example.com/photo.jpg'] })],
@@ -269,6 +279,23 @@ describe('MyListingsScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('My Restaurant')).toBeTruthy();
     });
+  });
+
+  it("drops the previous owner's listings once no one is signed in", async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+
+    mockUseAuth.mockReturnValue({ user: null });
+    // Flushed inside act, not polled: a busy worker in the full suite can
+    // outlast waitFor's one-second window.
+    await act(async () => {
+      screen.rerender(<MyListingsScreen />);
+    });
+
+    expect(screen.queryByText('Edit')).toBeNull();
   });
 
   it('skips fetch when user is null', async () => {
@@ -280,12 +307,50 @@ describe('MyListingsScreen', () => {
     expect(mockGetListingsByOwner).not.toHaveBeenCalled();
   });
 
-  it('handles fetch error gracefully', async () => {
-    mockGetListingsByOwner.mockRejectedValue(new Error('Network error'));
+  it('says My Listings could not load instead of claiming there are none', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetListingsByOwner.mockResolvedValue({ error: new Error('Network error') });
     const screen = render(<MyListingsScreen />);
     await waitFor(() => {
-      expect(screen.getByText("You haven't created any listings yet")).toBeTruthy();
+      expect(screen.getByText("Couldn't load your listings.")).toBeTruthy();
     });
+    expect(screen.queryByText("You haven't created any listings yet")).toBeNull();
+    jest.restoreAllMocks();
+  });
+
+  it('keeps the list and says so when a reload fails', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+
+    mockGetListingsByOwner.mockResolvedValue({ error: new Error('Network error') });
+    fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load your listings.")).toBeTruthy();
+    });
+    expect(screen.getByText('Edit')).toBeTruthy();
+    jest.restoreAllMocks();
+  });
+
+  it('treats a thrown fetch as a failure too, and Try again reloads', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetListingsByOwner.mockRejectedValueOnce(new Error('Network error'));
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load your listings.")).toBeTruthy();
+    });
+
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+    fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+    jest.restoreAllMocks();
   });
 
   it('calls refreshListing when Refresh is pressed', async () => {

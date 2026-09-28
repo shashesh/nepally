@@ -35,6 +35,7 @@ import {
   type ListingPhotoUploadInput,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
+import { useActiveMetro } from '../../hooks/useActiveMetro';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
@@ -55,6 +56,8 @@ export default function CreateListingScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { user } = useAuth();
+  // New listings go to the metro the member is looking at, as new posts do.
+  const { metroAreaId } = useActiveMetro();
 
   const editListingId = route.params?.editListingId;
   const isEditing = !!editListingId;
@@ -195,7 +198,7 @@ export default function CreateListingScreen() {
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!user?.metro_area_id) return;
+    if (!user || !metroAreaId) return;
 
     setErrors({});
 
@@ -258,7 +261,7 @@ export default function CreateListingScreen() {
       const result = await createListing(supabase, {
         ...payload,
         owner_id: user.id,
-        metro_area_id: user.metro_area_id,
+        metro_area_id: metroAreaId,
       });
       if (result.error) {
         Alert.alert('Error', result.error.message);
@@ -269,7 +272,7 @@ export default function CreateListingScreen() {
 
     setSubmitting(false);
   }, [
-    user, listingType, title, description, categoryId, price,
+    user, metroAreaId, listingType, title, description, categoryId, price,
     businessName, address, phone, email, websiteUrl, itemCondition,
     existingPhotoUrls, newPhotos, isEditing, editListingId, navigation,
   ]);

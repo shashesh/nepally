@@ -32,7 +32,7 @@ import {
   getTrustLabel,
 } from '@nepally/shared';
 import type { Post, MarketplaceListing } from '@nepally/shared';
-import { getListingsByOwner, getDaysUntilSoftExpiry } from '@nepally/shared';
+import { getListingsByOwner, getDaysUntilSoftExpiry, formatListingPrice } from '@nepally/shared';
 import { Avatar } from '../../components/Avatar';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
@@ -284,6 +284,7 @@ export function ProfileScreen() {
             listing.status === 'active' ? '#E8F5E9' :
             listing.status === 'inactive' ? '#FFF3E0' : '#FFEBEE';
           const daysUntilExpiry = getDaysUntilSoftExpiry(listing.refreshed_at, now);
+          const price = formatListingPrice(listing.price);
 
           return (
             <TouchableOpacity
@@ -313,7 +314,7 @@ export function ProfileScreen() {
               </View>
               <View style={styles.postMetaRow}>
                 <Text style={styles.postMetaText}>{listing.category?.emoji} {listing.category?.name}</Text>
-                {listing.price ? <Text style={styles.postMetaText}>{listing.price}</Text> : null}
+                {price ? <Text style={styles.postMetaText}>{price}</Text> : null}
               </View>
               <View style={styles.postMetaRow}>
                 <Text style={styles.postMetaText}>{listing.views_count} views</Text>

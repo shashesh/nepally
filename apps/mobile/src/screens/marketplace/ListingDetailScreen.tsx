@@ -17,23 +17,24 @@ import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getListingById,
-  saveListing,
-  unsaveListing,
-  getUserSavedListingIds,
   incrementListingViews,
   incrementListingContacts,
   getOrCreateConversation,
   getListingHighlights,
   getDaysSinceRefresh,
+  formatListingPrice,
   createReport,
   TrustLevel,
+  userMessage,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   BUSINESS_HOURS_DAYS,
   type MarketplaceListing,
 } from '@nepally/shared';
 import { ReportPostSheet } from '../../components/sheets/ReportPostSheet';
+import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import { useAuth } from '../../hooks/useAuth';
+import { useSavedListingIds } from '../../hooks/useSavedListingIds';
 import { useNow } from '../../hooks/useNow';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
@@ -45,6 +46,7 @@ type Nav = NativeStackNavigationProp<MarketplaceStackParamList>;
 type Route = RouteProp<MarketplaceStackParamList, 'ListingDetail'>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const LOAD_FAILED = "Couldn't load this listing.";
 
 export default function ListingDetailScreen() {
   const navigation = useNavigation<Nav>();
@@ -56,56 +58,55 @@ export default function ListingDetailScreen() {
 
   const [listing, setListing] = useState<MarketplaceListing | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSaved, setIsSaved] = useState(false);
+  const { savedIds, toggle: toggleSaved } = useSavedListingIds(userId);
+  const isSaved = savedIds.has(listingId);
   const [saving, setSaving] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  // Set when the read failed, as opposed to the listing being gone (ListingResult.notFound).
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
   const now = useNow();
 
   useEffect(() => {
     let cancelled = false;
+    const failed = (error: unknown) =>
+      userMessage(error, LOAD_FAILED, 'listing_load_failed', { platform: 'mobile', listingId });
 
     (async () => {
       try {
-        const [listingResult, savedResult] = await Promise.all([
-          getListingById(supabase, listingId),
-          userId
-            ? getUserSavedListingIds(supabase, userId)
-            : Promise.resolve({ data: null as string[] | null }),
-        ]);
+        const listingResult = await getListingById(supabase, listingId);
 
         if (cancelled) return;
 
         if (listingResult.data) {
           setListing(listingResult.data);
           void incrementListingViews(supabase, listingId);
+        } else if (listingResult.error && !listingResult.notFound) {
+          setLoadError(failed(listingResult.error));
         }
-
-        if (savedResult.data) {
-          setIsSaved(savedResult.data.includes(listingId));
-        }
-      } catch {
-        // Silently handle — listing stays null → "not found" UI shown.
+      } catch (error) {
+        if (!cancelled) setLoadError(failed(error));
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [listingId, userId]);
+  }, [listingId, loadKey]);
+
+  const reload = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
+    setLoadKey((key) => key + 1);
+  }, []);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
-    if (isSaved) {
-      const result = await unsaveListing(supabase, listingId);
-      if (!result.error) setIsSaved(false);
-    } else {
-      const result = await saveListing(supabase, listingId);
-      if (!result.error) setIsSaved(true);
-    }
+    await toggleSaved(listingId);
     setSaving(false);
-  }, [isSaved, listingId]);
+  }, [toggleSaved, listingId]);
 
   const handleContact = useCallback(async () => {
     if (!listing?.owner || !user) return;
@@ -186,12 +187,20 @@ export default function ListingDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            accessibilityLabel="Go back"
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>Listing not found</Text>
+          {loadError ? (
+            <MarketplaceErrorState message={loadError} onRetry={reload} />
+          ) : (
+            <Text style={styles.errorText}>Listing not found</Text>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -201,6 +210,7 @@ export default function ListingDetailScreen() {
   const isOwner = user?.id === listing.owner_id;
   const daysAgo = getDaysSinceRefresh(listing.refreshed_at, now);
   const highlights = getListingHighlights(listing, now);
+  const price = formatListingPrice(listing.price);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -314,11 +324,11 @@ export default function ListingDetailScreen() {
           )}
 
           {/* Inline price card */}
-          {listing.price && (
+          {price ? (
             <View style={styles.inlinePriceCard}>
-              <Text style={styles.inlinePrice}>{listing.price}</Text>
+              <Text style={styles.inlinePrice}>{price}</Text>
             </View>
-          )}
+          ) : null}
 
           {/* Description */}
           <Text style={styles.description}>{listing.description}</Text>
@@ -400,11 +410,11 @@ export default function ListingDetailScreen() {
       {/* Sticky Bottom Bar — non-owner only */}
       {!isOwner && (
         <View style={styles.stickyBar}>
-          {listing.price && (
+          {price ? (
             <View style={styles.stickyBarPrice}>
-              <Text style={styles.stickyBarPriceText}>{listing.price}</Text>
+              <Text style={styles.stickyBarPriceText}>{price}</Text>
             </View>
-          )}
+          ) : null}
           <TouchableOpacity
             style={[styles.saveIconButton, isSaved && styles.saveButtonActive]}
             onPress={handleSave}

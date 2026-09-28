@@ -6,6 +6,7 @@ import {
   getListingById,
   getUserSavedListingIds,
   incrementListingViews,
+  saveListing,
 } from '@nepally/shared';
 import ListingDetailScreen from './ListingDetailScreen';
 
@@ -60,6 +61,8 @@ jest.mock('@nepally/shared', () => ({
   incrementListingContacts: jest.fn(async () => {}),
   getOrCreateConversation: jest.fn(async () => ({ data: null })),
   createReport: jest.fn(async () => ({ data: { id: 'report-1' } })),
+  userMessage: jest.requireActual('@nepally/shared').userMessage,
+  formatListingPrice: jest.requireActual('@nepally/shared').formatListingPrice,
   TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 },
   LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
   ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
@@ -173,6 +176,14 @@ describe('ListingDetailScreen', () => {
     });
   });
 
+  it('shows a plain-number price as dollars', async () => {
+    mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, price: '80' } } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getAllByText('$80').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
   it('renders business details for business listings', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
@@ -234,6 +245,32 @@ describe('ListingDetailScreen', () => {
     });
   });
 
+  it('shows "Listing not found" when the listing is really gone', async () => {
+    mockGetListingById.mockResolvedValue({ error: new Error('Listing not found'), notFound: true } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Listing not found')).toBeTruthy();
+    });
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+  });
+
+  it('says the listing could not load, not that it is gone, and Try again reloads', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetListingById.mockResolvedValueOnce({ error: new Error('Failed to fetch listing') } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load this listing.")).toBeTruthy();
+    });
+    expect(screen.queryByText('Listing not found')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+    jest.restoreAllMocks();
+  });
+
   // -- Owner vs non-owner actions --------------------------------------------
 
   it('shows Contact button when user is not the owner', async () => {
@@ -282,6 +319,20 @@ describe('ListingDetailScreen', () => {
       expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
     });
     expect(screen.getByText('Contact Seller')).toBeTruthy();
+  });
+
+  it('saves the listing from the bottom bar', async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Save listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Save listing'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Unsave listing')).toBeTruthy();
+    });
+    expect(saveListing).toHaveBeenCalledWith(expect.anything(), 'listing-1');
   });
 
   // -- Report ----------------------------------------------------------------

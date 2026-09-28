@@ -47,6 +47,19 @@ describe('ListingGridCard', () => {
     expect(screen.getByText('$450')).toBeTruthy();
   });
 
+  it('shows a plain-number price as dollars', () => {
+    const screen = render(
+      <ListingGridCard
+        listing={mkListing({ price: '1200' })}
+        width={180}
+        onPress={() => {}}
+        isSaved={false}
+        onToggleSave={() => {}}
+      />
+    );
+    expect(screen.getByText('$1,200')).toBeTruthy();
+  });
+
   it('does NOT render a "Contact Seller" button', () => {
     const screen = render(
       <ListingGridCard listing={mkListing()} width={180} onPress={() => {}} isSaved={false} onToggleSave={() => {}} />

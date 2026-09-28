@@ -76,18 +76,26 @@ describe('ListingCard', () => {
     expect(getByText(/🍜 Food & Restaurants/)).toBeTruthy();
   });
 
-  it('renders price with "Starting at" prefix when present', () => {
-    const { getByText } = render(
-      <ListingCard listing={makeListing({ price: '$20' })} onPress={jest.fn()} />
+  it('shows the price as the marketplace formats it, with no "Starting at"', () => {
+    const { getByText, queryByText } = render(
+      <ListingCard listing={makeListing({ price: '20' })} onPress={jest.fn()} />
     );
-    expect(getByText('Starting at $20')).toBeTruthy();
+    expect(getByText('$20')).toBeTruthy();
+    expect(queryByText(/Starting at/)).toBeNull();
+  });
+
+  it('shows a non-numeric price as written', () => {
+    const { getByText } = render(
+      <ListingCard listing={makeListing({ price: 'Free' })} onPress={jest.fn()} />
+    );
+    expect(getByText('Free')).toBeTruthy();
   });
 
   it('does not render price row when null', () => {
     const { queryByText } = render(
       <ListingCard listing={makeListing({ price: null })} onPress={jest.fn()} />
     );
-    expect(queryByText(/Starting at/)).toBeNull();
+    expect(queryByText(/\$/)).toBeNull();
   });
 
   it('renders verified seller star when owner trust_level >= 1', () => {
@@ -118,11 +126,11 @@ describe('ListingCard', () => {
     expect(getByText('42 views')).toBeTruthy();
   });
 
-  it('renders Contact Seller CTA', () => {
-    const { getByText } = render(
+  it('does not show a Contact Seller button: the whole card opens the listing', () => {
+    const { queryByText } = render(
       <ListingCard listing={makeListing()} onPress={jest.fn()} />
     );
-    expect(getByText('Contact Seller')).toBeTruthy();
+    expect(queryByText('Contact Seller')).toBeNull();
   });
 
   it('calls onPress when card is pressed', () => {

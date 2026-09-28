@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { isVerifiedSeller, type MarketplaceListing } from '@nepally/shared';
+import { formatListingPrice, isVerifiedSeller, type MarketplaceListing } from '@nepally/shared';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
@@ -22,6 +22,7 @@ export const ListingCard = React.memo(function ListingCard({ listing, onPress, w
   const categoryName = listing.category?.name ?? 'Other';
   const showVerifiedSeller = isVerifiedSeller(listing);
   const [firstPhoto] = listing.photos;
+  const price = formatListingPrice(listing.price);
 
   return (
     <TouchableOpacity
@@ -62,9 +63,7 @@ export const ListingCard = React.memo(function ListingCard({ listing, onPress, w
           {listing.title}
         </Text>
 
-        {listing.price && (
-          <Text style={styles.price}>Starting at {listing.price}</Text>
-        )}
+        {price ? <Text style={styles.price}>{price}</Text> : null}
 
         <View style={styles.metaRow}>
           {showVerifiedSeller && (
@@ -75,10 +74,6 @@ export const ListingCard = React.memo(function ListingCard({ listing, onPress, w
             </>
           )}
           <Text style={styles.metaText}>{listing.views_count} views</Text>
-        </View>
-
-        <View style={styles.contactBtn}>
-          <Text style={styles.contactBtnText}>Contact Seller</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -154,20 +149,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontSize: 12,
     color: colors.text.tertiary,
-  },
-  contactBtn: {
-    marginTop: 4,
-    backgroundColor: colors.primary.main,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  contactBtnText: {
-    ...typography.body,
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.white,
   },
   sponsoredBadge: {
     position: 'absolute',

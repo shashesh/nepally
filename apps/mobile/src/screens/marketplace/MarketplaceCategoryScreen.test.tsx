@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { act, render, waitFor, fireEvent } from '@testing-library/react-native';
 import { FlatList, RefreshControl } from 'react-native';
 import { getCategories, getListingsByMetro, getFeaturedListings } from '@nepally/shared';
 import MarketplaceCategoryScreen from './MarketplaceCategoryScreen';
@@ -104,6 +104,16 @@ jest.mock('../../hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+const mockUseLocation = jest.fn();
+jest.mock('../../hooks/useLocation', () => ({
+  useLocation: () => mockUseLocation(),
+}));
+const NO_ACTIVE_LOCATION = { activeLocation: null, savedLocations: [] };
+const VISITING_AUSTIN = {
+  activeLocation: { metro_area_id: 'm2', metro_name: 'Austin', metro_state: 'TX', is_temporary: true },
+  savedLocations: [],
+};
+
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
 
 // ---------------------------------------------------------------------------
@@ -111,6 +121,7 @@ jest.mock('../../config/supabase', () => ({ supabase: {} }));
 // ---------------------------------------------------------------------------
 
 jest.mock('@nepally/shared', () => ({
+  userMessage: jest.requireActual('@nepally/shared').userMessage,
   getListingsByMetro: jest.fn(async () => ({ data: [] })),
   getCategories: jest.fn(async () => ({ data: [] })),
   getFeaturedListings: jest.fn(async () => ({ data: [] })),
@@ -196,6 +207,20 @@ describe('MarketplaceCategoryScreen', () => {
     mockGetCategories.mockResolvedValue({ data: [FOOD_CATEGORY, PRO_CATEGORY] });
     mockGetListingsByMetro.mockResolvedValue({ data: [MOCK_LISTING] });
     mockGetFeaturedListings.mockResolvedValue({ data: [] });
+    mockUseLocation.mockReturnValue(NO_ACTIVE_LOCATION);
+  });
+
+  it("lists the category in the member's active location", async () => {
+    mockUseLocation.mockReturnValue(VISITING_AUSTIN);
+    const screen = render(<MarketplaceCategoryScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+    expect(mockGetListingsByMetro).toHaveBeenCalledWith(
+      expect.anything(),
+      'm2',
+      expect.objectContaining({ categorySlug: 'food-restaurants' })
+    );
   });
 
   it('renders the category name in the header', async () => {
@@ -432,5 +457,146 @@ describe('MarketplaceCategoryScreen', () => {
 
     fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
     expect(mockGetListingsByMetro).toHaveBeenCalledTimes(1);
+  });
+
+  describe('failures and paging guards', () => {
+    const fullPage = Array.from({ length: 20 }, (_, i) => ({ ...MOCK_LISTING, id: `listing-${i}` }));
+
+    beforeEach(() => {
+      // userMessage logs a failed load through logClientEvent (console.error).
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('says the category failed to load instead of calling it empty', async () => {
+      mockGetListingsByMetro.mockResolvedValue({ error: new Error('offline') });
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't load listings.")).toBeTruthy();
+      });
+      expect(screen.queryByText('No listings in this category yet')).toBeNull();
+    });
+
+    it('keeps the list and shows a note when a pull-to-refresh fails', async () => {
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+      });
+
+      mockGetListingsByMetro.mockResolvedValue({ error: new Error('offline') });
+      fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't refresh listings.")).toBeTruthy();
+      });
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+      expect(screen.UNSAFE_getByType(RefreshControl).props.refreshing).toBe(false);
+    });
+
+    it('still pages after a refresh interrupts a page load and then fails', async () => {
+      let finishStalePage: (value: { data: typeof fullPage }) => void = () => {};
+      mockGetListingsByMetro
+        .mockResolvedValueOnce({ data: fullPage })
+        .mockReturnValueOnce(new Promise((resolve) => (finishStalePage = resolve)))
+        .mockResolvedValueOnce({ error: new Error('offline') })
+        .mockResolvedValueOnce({ data: [{ ...MOCK_LISTING, id: 'listing-20' }] });
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(20);
+      });
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+      fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't refresh listings.")).toBeTruthy();
+      });
+      // The interrupted page lands late and is dropped.
+      await act(async () => finishStalePage({ data: fullPage }));
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+
+      await waitFor(() => {
+        expect(mockGetListingsByMetro).toHaveBeenCalledTimes(4);
+      });
+      expect(mockGetListingsByMetro).toHaveBeenLastCalledWith(
+        expect.anything(),
+        'metro-1',
+        expect.objectContaining({ offset: 20 })
+      );
+    });
+
+    it('loads the category again on Try again', async () => {
+      mockGetListingsByMetro.mockResolvedValueOnce({ error: new Error('offline') });
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't load listings.")).toBeTruthy();
+      });
+
+      fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+      });
+    });
+
+    it('asks for the next page only once while it is loading', async () => {
+      mockGetListingsByMetro
+        .mockResolvedValueOnce({ data: fullPage })
+        .mockReturnValueOnce(new Promise(() => {}));
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(20);
+      });
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+
+      expect(mockGetListingsByMetro).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips a listing the next page repeats', async () => {
+      mockGetListingsByMetro
+        .mockResolvedValueOnce({ data: fullPage })
+        .mockResolvedValueOnce({ data: [fullPage[19], { ...MOCK_LISTING, id: 'listing-20' }] });
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(20);
+      });
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+
+      await waitFor(() => {
+        expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(21);
+      });
+    });
+
+    it('says the next page failed and retries it from the same place', async () => {
+      mockGetListingsByMetro
+        .mockResolvedValueOnce({ data: fullPage })
+        .mockResolvedValueOnce({ error: new Error('offline') })
+        .mockResolvedValueOnce({ data: [{ ...MOCK_LISTING, id: 'listing-20' }] });
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(20);
+      });
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't load more listings.")).toBeTruthy();
+      });
+
+      fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+      await waitFor(() => {
+        expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(21);
+      });
+      expect(mockGetListingsByMetro).toHaveBeenLastCalledWith(
+        expect.anything(),
+        'metro-1',
+        expect.objectContaining({ offset: 20 })
+      );
+    });
   });
 });

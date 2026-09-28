@@ -50,6 +50,7 @@ jest.mock('../../config/supabase', () => ({
 
 jest.mock('@nepally/shared', () => ({
   isEventPast: jest.requireActual('@nepally/shared').isEventPast,
+  formatListingPrice: jest.requireActual('@nepally/shared').formatListingPrice,
   getUserById: (...args: Parameters<typeof mockGetUserById>) => mockGetUserById(...args),
   getPostsByAuthorId: (...args: Parameters<typeof mockGetPostsByAuthorId>) =>
     mockGetPostsByAuthorId(...args),
@@ -430,6 +431,22 @@ describe('PublicProfileScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('IKEA desk, like new')).toBeTruthy();
       expect(screen.getByText('$80')).toBeTruthy();
+    });
+  });
+
+  it('shows a price that is not a plain number as written', async () => {
+    mockGetActiveListingsBySeller.mockResolvedValue({
+      data: [{ ...mockUserListings[0], price: 'Negotiable' }],
+    });
+    render(<PublicProfileScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Bikal S.')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText(/^Listings/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Negotiable')).toBeTruthy();
     });
   });
 

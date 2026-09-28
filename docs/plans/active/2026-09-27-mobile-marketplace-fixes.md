@@ -730,7 +730,52 @@ git commit -m "fix(mobile): keep marketplace search focused while typing"
 
 ## PR 2 — Browsing: Home, Category, Saved
 
-Step breakdown to be written at the start of the PR. This PR may run as two chunks (2.1–2.4, then 2.5–2.8).
+**How PR 2 runs.** The branch `fix/mobile-marketplace-browse` is stacked on PR 1, because both change `MarketplaceHomeScreen`. The PR runs as two chunks, each with its own gate and review.
+
+**Chunk A: the feed (2.1–2.4)**
+
+- [x] **A1. `apps/mobile/src/hooks/useMarketplaceFeed.ts`**, modelled on `useMetroEventPages` and web's `useMarketplaceFeed`.
+  - Input: `(metroId, { categorySlug, searchQuery })`. Output: `sponsored`, `featured`, `recent`, `trending`, `grid`, `loading`, `refreshing`, `error`, `loadingMore`, `loadMoreError`, `hasMore`, `reload`, `refresh`, `loadMore`, `retryLoadMore`.
+  - Unfiltered loads fetch the All Listings grid (`getListingsByMetro`, newest, 20) plus four strips: sticky business (5), featured (10), newest (10) and trending (10).
+  - A category or search loads the grid only, plus the category's featured strip (none for search).
+  - A new metro or filter resets to loading. `refresh` keeps the rows on screen.
+  - A generation ref drops stale responses. A grid failure is the page's error and clears the strips; a failed strip just stays empty.
+  - Paging offsets count rows consumed and skip ids already shown. A failed page stops paging until retried.
+  - Tests (`useMarketplaceFeed.test.ts`, with `renderHook`, as in `useMetroEventPages.test.ts`) cover:
+    - which calls each mode makes
+    - a stale response is dropped
+    - a grid error clears the strips
+    - `refresh` keeps rows
+    - `loadMore` offsets and de-dupes
+    - a failed page stops paging until `retryLoadMore`
+- [x] **A2. Home uses the feed.**
+  - Header element: search, category tiles, then (unfiltered) the Sponsored, Featured, Recently Added and Trending strips, each hidden when empty, then an "All listings" title.
+  - Body: the two-column grid.
+  - Loading shows the skeleton; errors show `MarketplaceErrorState` with Try again. "Nothing in your metro yet" appears only when unfiltered and every source is empty.
+  - Refocus calls `refresh`, so there's no skeleton and the scroll position stays. Saved ids refetch on focus.
+  - `MarketplaceTabs` and its test are deleted.
+  - Sponsored cards carry the Sponsored badge; `ListingStrip` gains a `sponsored` prop.
+- [x] **A3. Category screen.** Load-more uses a ref guard, pages are de-duplicated, and a failed first load shows `MarketplaceErrorState` instead of "No listings in this category yet".
+- [x] **A4. Errors elsewhere.**
+  - My Listings and Saved show `MarketplaceErrorState` when their load fails.
+  - Detail uses `ListingResult.notFound`: "Listing not found" only when it's really gone, otherwise "Couldn't load this listing." with Try again.
+- [x] **Chunk A gate and review.**
+
+**Chunk B: state, location, price, polish (2.5–2.8)**
+
+- [x] **B1. `apps/mobile/src/hooks/useSavedListingIds.ts`.** Load on focus; `toggle` updates at once, rolls back and alerts on failure. Used by Home, Saved and Detail.
+- [x] **B2. Saved screen.** Pull-to-refresh, refetch on focus, and its own empty copy.
+- [x] **B3. Location.**
+  - Marketplace screens and create use `useLocation().activeLocation?.metro_area_id ?? user.metro_area_id`.
+  - The header shows the metro name.
+  - "Change Location" and "Browse nearby metros" open `LocationSwitcherSheet` in place.
+- [x] **B4. Prices.** `formatListingPrice` everywhere. `ListingCard` drops "Starting at" and the fake Contact Seller button.
+- [x] **B5. Polish.**
+  - `useWindowDimensions` for card widths.
+  - Category tiles grow with Dynamic Type.
+  - The menu sheet plays its close animation, keeps the backdrop still, and uses safe-area bottom padding.
+  - Sort labels read "Price: low to high" and "Price: high to low".
+- [x] **Chunk B gate and review**, then push, open the draft PR, and request Copilot's review.
 
 | #   | Task                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Main files                                                                                                                 | Done when                                                                                                  |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
