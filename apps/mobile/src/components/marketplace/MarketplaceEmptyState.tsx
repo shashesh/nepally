@@ -5,7 +5,7 @@ import { spacing } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 import { warmAccent, warmRadius, warmSurface } from '../../styles/warmTokens';
 
-export type EmptyVariant = 'empty-metro' | 'empty-search' | 'empty-category';
+export type EmptyVariant = 'empty-metro' | 'empty-search' | 'empty-category' | 'empty-saved';
 
 interface Copy {
   headline: string;
@@ -30,6 +30,11 @@ const COPY: Record<EmptyVariant, Copy> = {
     headline: 'Nothing here yet',
     body: 'This corner of the marketplace is still quiet.',
     primaryLabel: 'Back to Marketplace',
+  },
+  'empty-saved': {
+    headline: 'No saved listings yet',
+    body: 'Tap the heart on a listing to keep it here.',
+    primaryLabel: 'Browse the marketplace',
   },
 };
 
