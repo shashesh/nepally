@@ -76,7 +76,7 @@ PR 1 is broken into steps below. PRs 2–4 list their tasks, files and acceptanc
 - Modify: `packages/shared/src/api/promotions.ts:19-31` (select), `:105-153` (both functions)
 - Test: `packages/shared/src/api/promotions.test.ts`
 
-- [ ] **Step 1: Write the failing tests.** Add these to the `getSponsoredFeedListings` describe block:
+- [x] **Step 1: Write the failing tests.** Add these to the `getSponsoredFeedListings` describe block:
 
 ```ts
 it('embeds the listing with an inner join so other metros are excluded in the DB', async () => {
@@ -115,10 +115,10 @@ it('drops promotions that came back without a listing', async () => {
 
 Add the same two tests to the `getStickyBusinessListings` describe block, calling `getStickyBusinessListings`. Give the orphan `promotion_type: 'sticky_business'` and expect `[stickyItem]`, where `const stickyItem = { ...MOCK_SPONSORED, promotion_type: 'sticky_business' }`.
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
       `npm run test --workspace=packages/shared -- src/api/promotions.test.ts`. Expected: 4 failures. The select string has no `!inner`, and the orphan row is returned.
 
-- [ ] **Step 3: Implement.** In `promotions.ts`, change the embed and add a filter helper under the select constant:
+- [x] **Step 3: Implement.** In `promotions.ts`, change the embed and add a filter helper under the select constant:
 
 ```ts
 const LISTING_SELECT_FOR_SPONSORED = `
@@ -157,11 +157,11 @@ In both `getSponsoredFeedListings` and `getStickyBusinessListings`, replace `ret
 return { data: withListing(data) };
 ```
 
-- [ ] **Step 4: Run the file again.** Same command. Expected: PASS.
+- [x] **Step 4: Run the file again.** Same command. Expected: PASS.
 
-- [ ] **Step 5: Confirm PostgREST accepts the embed (read-only).** Run a scratch script from the scratchpad directory. It takes `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `apps/web/.env.local` and runs `from('listing_promotions_display').select('id, listing:marketplace_listings!listing_id!inner(id, status, metro_area_id)').filter('listing.status', 'eq', 'active').limit(5)`. Expected: no `PGRST` parse error. Every returned row has a non-null `listing`. Do not commit the script.
+- [x] **Step 5: Confirm PostgREST accepts the embed (read-only).** Run a scratch script from the scratchpad directory. It takes `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `apps/web/.env.local` and runs `from('listing_promotions_display').select('id, listing:marketplace_listings!listing_id!inner(id, status, metro_area_id)').filter('listing.status', 'eq', 'active').limit(5)`. Expected: no `PGRST` parse error. Every returned row has a non-null `listing`. Do not commit the script.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add packages/shared/src/api/promotions.ts packages/shared/src/api/promotions.test.ts
@@ -179,7 +179,7 @@ git commit -m "fix(shared): never return a sponsored promotion without its listi
 - Modify: `apps/web/src/components/moderation/ReportCard.tsx:20-40`
 - Test: `apps/web/src/components/moderation/ReportCard.test.tsx`
 
-- [ ] **Step 1: Write the failing tests.** In `reports.test.ts`, inside `describe('createReport')`:
+- [x] **Step 1: Write the failing tests.** In `reports.test.ts`, inside `describe('createReport')`:
 
 ```ts
 it('creates a listing report', async () => {
@@ -226,11 +226,11 @@ it('links a listing report to the listing and offers only Dismiss', () => {
 });
 ```
 
-- [ ] **Step 2: Watch them fail.**
+- [x] **Step 2: Watch them fail.**
   - Run `npm run type-check --workspace=packages/shared`. Expected: an error that `'listing'` is not assignable to `ReportTargetType`.
   - From `C:\Users\shash\Documents\personal-github-repos\nepally`, run `npm run test --workspace=apps/web -- src/components/moderation/ReportCard.test.tsx`. Expected: FAIL, because there is no "View listing" link.
 
-- [ ] **Step 3: Implement.** In `report.ts`:
+- [x] **Step 3: Implement.** In `report.ts`:
 
 ```ts
 /** `listing` joined the DB enum in migration 014. */
@@ -253,16 +253,16 @@ if (report.target_type === 'listing') {
 }
 ```
 
-- [ ] **Step 4: Run both again.**
+- [x] **Step 4: Run both again.**
   - `npm run test --workspace=packages/shared -- src/api/reports.test.ts`
   - `npm run type-check --workspace=packages/shared`
   - the web command from Step 2
 
   Expected: PASS.
 
-- [ ] **Step 5: Update `docs/product/features/moderation.md`.** Under "Open reports", add: "**A listing:** a View listing link, and Dismiss only. Removing a listing from the queue is not built yet."
+- [x] **Step 5: Update `docs/product/features/moderation.md`.** Under "Open reports", add: "**A listing:** a View listing link, and Dismiss only. Removing a listing from the queue is not built yet."
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add packages/shared/src/types/report.ts packages/shared/src/api/reports.test.ts apps/web/src/components/moderation/ReportCard.tsx apps/web/src/components/moderation/ReportCard.test.tsx docs/product/features/moderation.md
@@ -289,7 +289,7 @@ git commit -m "feat: accept listing reports and show them in the moderation queu
 - Modify: `apps/mobile/src/screens/marketplace/ListingDetailScreen.tsx:104-202`
 - Test: `apps/mobile/src/screens/marketplace/ListingDetailScreen.test.tsx`
 
-- [ ] **Step 1: Write the failing sheet test.**
+- [x] **Step 1: Write the failing sheet test.**
 
 ```tsx
 it('shows a custom title', () => {
@@ -305,7 +305,7 @@ it('shows a custom title', () => {
 });
 ```
 
-- [ ] **Step 2: Write the failing detail tests.** In the `@nepally/shared` mock, add `createReport: jest.fn(async () => ({ data: { id: 'report-1' } }))` and `TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 }`. Import `fireEvent` and `createReport`. Replace the `// -- Report` block with:
+- [x] **Step 2: Write the failing detail tests.** In the `@nepally/shared` mock, add `createReport: jest.fn(async () => ({ data: { id: 'report-1' } }))` and `TrustLevel: { NEW: 0, VERIFIED: 1, CONTRIBUTOR: 2 }`. Import `fireEvent` and `createReport`. Replace the `// -- Report` block with:
 
 ```tsx
 // -- Report ----------------------------------------------------------------
@@ -403,9 +403,9 @@ it('does not offer the report button to the owner', async () => {
 });
 ```
 
-- [ ] **Step 3: Watch them fail.** Run `npm run test --workspace=apps/mobile -- ReportPostSheet ListingDetailScreen`. Expected: FAIL. There is no `title` prop and no "Report listing" label, and `createReport` is never called.
+- [x] **Step 3: Watch them fail.** Run `npm run test --workspace=apps/mobile -- ReportPostSheet ListingDetailScreen`. Expected: FAIL. There is no `title` prop and no "Report listing" label, and `createReport` is never called.
 
-- [ ] **Step 4: Implement the sheet `title`.** In `ReportPostSheet.tsx`:
+- [x] **Step 4: Implement the sheet `title`.** In `ReportPostSheet.tsx`:
 
 ```tsx
 interface ReportPostSheetProps {
@@ -428,7 +428,7 @@ export function ReportPostSheet({
 
 Also replace `<Text style={styles.title}>Report Post</Text>` with `<Text style={styles.title}>{title}</Text>`.
 
-- [ ] **Step 5: Implement the detail screen.**
+- [x] **Step 5: Implement the detail screen.**
   - Add `createReport` and `TrustLevel` to the `@nepally/shared` import.
   - Add `import { ReportPostSheet } from '../../components/sheets/ReportPostSheet';`.
   - Replace `handleReport` with:
@@ -503,9 +503,9 @@ Just before the closing `</SafeAreaView>` of the loaded view, render:
 />
 ```
 
-- [ ] **Step 6: Run the two files again.** Same command as Step 3. Expected: PASS.
+- [x] **Step 6: Run the two files again.** Same command as Step 3. Expected: PASS.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add apps/mobile/src/components/sheets/ReportPostSheet.tsx apps/mobile/src/components/sheets/ReportPostSheet.test.tsx apps/mobile/src/screens/marketplace/ListingDetailScreen.tsx apps/mobile/src/screens/marketplace/ListingDetailScreen.test.tsx
@@ -525,7 +525,7 @@ git commit -m "fix(mobile): report a listing through the real report system"
 - Modify: `apps/mobile/src/navigation/MarketplaceNavigator.tsx:10,54-61`, `apps/mobile/src/types/navigation.ts:96`
 - Delete: `apps/mobile/src/screens/marketplace/PromoteListingScreen.tsx`, `PromoteListingScreen.test.tsx`
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 In `MarketplaceMenuSheet.test.tsx`, rename `'renders all six rows when visible'` to `'renders the five rows when visible, with no Promote entry'`. Replace `expect(screen.getByText('Promote a Listing')).toBeTruthy();` with `expect(screen.queryByText('Promote a Listing')).toBeNull();`.
 
@@ -549,9 +549,9 @@ In `MyListingsScreen.test.tsx`, add to `'renders action buttons for active listi
 
 In `MarketplaceHomeScreen.test.tsx`, delete the `{ key: 'promote', label: 'Promote a Listing' }` row from the menu mock.
 
-- [ ] **Step 2: Watch them fail.** Run `npm run test --workspace=apps/mobile -- MarketplaceMenuSheet ListingDetailScreen MyListingsScreen`. Expected: FAIL. Promote is still offered.
+- [x] **Step 2: Watch them fail.** Run `npm run test --workspace=apps/mobile -- MarketplaceMenuSheet ListingDetailScreen MyListingsScreen`. Expected: FAIL. Promote is still offered.
 
-- [ ] **Step 3: Implement.**
+- [x] **Step 3: Implement.**
   - `MarketplaceMenuSheet.tsx`: remove `| 'promote'` from `MarketplaceMenuKey` and the `{ key: 'promote', … }` row.
   - `MarketplaceHomeScreen.tsx`: remove the `case 'promote':` branch from `handleMenuSelect`.
   - `ListingDetailScreen.tsx`:
@@ -564,17 +564,17 @@ In `MarketplaceHomeScreen.test.tsx`, delete the `{ key: 'promote', label: 'Promo
   - `types/navigation.ts`: remove `PromoteListing: { listingId: string };`.
   - Delete the files with `git rm apps/mobile/src/screens/marketplace/PromoteListingScreen.tsx apps/mobile/src/screens/marketplace/PromoteListingScreen.test.tsx`.
 
-- [ ] **Step 4: Run the tests and type-check.**
+- [x] **Step 4: Run the tests and type-check.**
   - The command from Step 2, plus `MarketplaceHomeScreen`.
   - `npm run type-check --workspace=apps/mobile`
 
   Expected: PASS, and no reference to `PromoteListing` is left. Confirm with `git grep -n "PromoteListing" apps/mobile`, which should print nothing.
 
-- [ ] **Step 5: Docs.**
+- [x] **Step 5: Docs.**
   - In `docs/plans/active/2026-09-18-production-launch.md`, tick "Remove every mobile Promote entry point and unregister the `PromoteListing` route".
   - In `docs/product/features/marketplace.md`, after "Promoting a listing (web)", add: "**Promoting a listing (mobile).** Not offered in the app for v1.0. Promotions are bought on the web (Apple 3.1.1), and promoted and sponsored listings still show in the app."
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add -A apps/mobile/src docs/plans/active/2026-09-18-production-launch.md docs/product/features/marketplace.md
@@ -590,7 +590,7 @@ git commit -m "fix(mobile): remove the Promote purchase flow from the app"
 - Modify: `apps/mobile/src/screens/marketplace/MarketplaceHomeScreen.tsx:283-296,363-377`
 - Test: `apps/mobile/src/screens/marketplace/MarketplaceHomeScreen.test.tsx`
 
-- [ ] **Step 1: Write the failing tests.** Replace the `MarketplaceSearchBar` mock with one that counts mounts:
+- [x] **Step 1: Write the failing tests.** Replace the `MarketplaceSearchBar` mock with one that counts mounts:
 
 ```tsx
 let mockSearchBarMounts = 0;
@@ -640,9 +640,9 @@ it('lets a tap land on the list while the keyboard is open', () => {
 });
 ```
 
-- [ ] **Step 2: Watch them fail.** Run `npm run test --workspace=apps/mobile -- MarketplaceHomeScreen`. Expected: FAIL. The mount count rises by 2, and `keyboardShouldPersistTaps` is `undefined`.
+- [x] **Step 2: Watch them fail.** Run `npm run test --workspace=apps/mobile -- MarketplaceHomeScreen`. Expected: FAIL. The mount count rises by 2, and `keyboardShouldPersistTaps` is `undefined`.
 
-- [ ] **Step 3: Implement.** Add `useMemo` to the React import. Replace `renderHeader` with an element:
+- [x] **Step 3: Implement.** Add `useMemo` to the React import. Replace `renderHeader` with an element:
 
 ```tsx
 // An element, not a component function: FlatList renders a function as
@@ -666,9 +666,9 @@ const listHeader = useMemo(
 
 On the `FlatList`, set `ListHeaderComponent={listHeader}` and add `keyboardShouldPersistTaps="handled"`.
 
-- [ ] **Step 4: Run the file again.** Same command. Expected: PASS.
+- [x] **Step 4: Run the file again.** Same command. Expected: PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/mobile/src/screens/marketplace/MarketplaceHomeScreen.tsx apps/mobile/src/screens/marketplace/MarketplaceHomeScreen.test.tsx
