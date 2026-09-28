@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert } from 'react-native';
+import { Alert, Dimensions, ScrollView } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
   createReport,
@@ -205,6 +205,35 @@ describe('ListingDetailScreen', () => {
       finishLoad({ data: MOCK_LISTING });
     });
     expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+  });
+
+  it('goes back to the first photo when the photos changed while away', async () => {
+    const photo = (name: string) => 'https://cdn/listing-photos/u/' + name + '.jpg';
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, photos: [photo('a'), photo('b'), photo('c')] },
+    } as never);
+    const screen = render(<ListingDetailScreen />);
+    await act(async () => {});
+
+    const carousel = () =>
+      screen.UNSAFE_getAllByType(ScrollView).find((view) => view.props.pagingEnabled)!;
+    fireEvent(carousel(), 'momentumScrollEnd', {
+      nativeEvent: { contentOffset: { x: 2 * Dimensions.get('window').width, y: 0 } },
+    });
+    expect(screen.getByText('3 / 3')).toBeTruthy();
+
+    // The edit removed the third photo.
+    act(() => {
+      mockFocusCallback?.();
+    });
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, photos: [photo('a'), photo('b')] },
+    } as never);
+    await act(async () => {
+      mockFocusCallback?.();
+    });
+
+    expect(screen.getByText('1 / 2')).toBeTruthy();
   });
 
   it('keeps the listing on screen when the refetch on return fails', async () => {

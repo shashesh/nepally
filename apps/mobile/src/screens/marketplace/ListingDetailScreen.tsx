@@ -57,6 +57,14 @@ export default function ListingDetailScreen() {
   const isSaved = savedIds.has(listingId);
   const [saving, setSaving] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  // Coming back from an edit can change the photos: start the carousel over
+  // (its key remounts it at the first photo) so the count never reads "3 / 1".
+  const photoSet = listing?.photos.join(' ') ?? '';
+  const [shownPhotoSet, setShownPhotoSet] = useState(photoSet);
+  if (photoSet !== shownPhotoSet) {
+    setShownPhotoSet(photoSet);
+    setPhotoIndex(0);
+  }
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const now = useNow();
@@ -200,6 +208,7 @@ export default function ListingDetailScreen() {
         {listing.photos.length > 0 ? (
           <View>
             <ScrollView
+              key={photoSet}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}

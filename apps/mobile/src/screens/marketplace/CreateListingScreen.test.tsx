@@ -332,6 +332,20 @@ describe('CreateListingScreen', () => {
     alertSpy.mockRestore();
   });
 
+  it('tells screen readers the submit button waits while photos are processed', async () => {
+    mockManipulate.mockImplementation(() => new Promise(() => {}));
+    const screen = await renderForm();
+    mockLaunchLibrary.mockResolvedValueOnce(assets('a'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Add photos' }));
+    });
+
+    const submitButton = screen.getByRole('button', { name: 'Create Listing' });
+    expect(submitButton).toBeDisabled();
+    expect(submitButton).toBeBusy();
+  });
+
   it('removes a photo', async () => {
     const screen = await renderForm();
     await addFromLibrary(screen, 'a', 'b');
@@ -359,6 +373,8 @@ describe('CreateListingScreen', () => {
   });
 
   it('hands the photos it just uploaded to the cleanup when the save fails', async () => {
+    // The failed save is logged through userMessage.
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     const failure = { message: 'Server error', code: '42501' };
     mockCreateListing.mockResolvedValue({ error: failure } as never);
     const screen = await renderForm();
@@ -373,6 +389,7 @@ describe('CreateListingScreen', () => {
       ['user-1/10.jpg'],
       expect.any(Object)
     );
+    jest.restoreAllMocks();
   });
 
   // -- Listing type --------------------------------------------------------------
@@ -676,6 +693,8 @@ describe('CreateListingScreen', () => {
   });
 
   it("doesn't pop up an error after the member has left mid-save", async () => {
+    // The failed save is logged through userMessage.
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     const alertSpy = jest.spyOn(Alert, 'alert');
     let finishCreate: (value: unknown) => void = () => {};
     mockCreateListing.mockReturnValue(
@@ -695,7 +714,7 @@ describe('CreateListingScreen', () => {
     });
 
     expect(alertSpy).not.toHaveBeenCalled();
-    alertSpy.mockRestore();
+    jest.restoreAllMocks();
   });
 
   it('says the listing could not load instead of showing an empty edit form', async () => {

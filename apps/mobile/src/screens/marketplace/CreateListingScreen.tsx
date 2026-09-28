@@ -583,7 +583,10 @@ export default function CreateListingScreen() {
             disabled={submitting || picker.processing}
             accessibilityRole="button"
             accessibilityLabel={submitLabel}
-            accessibilityState={{ disabled: submitting, busy: submitting }}
+            accessibilityState={{
+              disabled: submitting || picker.processing,
+              busy: submitting || picker.processing,
+            }}
           >
             {submitting ? (
               <ActivityIndicator color={colors.white} />
