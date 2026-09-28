@@ -1,6 +1,7 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { FlatList } from 'react-native';
+import { getListingsByMetro, getStickyBusinessListings } from '@nepally/shared';
 import MarketplaceHomeScreen from './MarketplaceHomeScreen';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -78,29 +79,43 @@ jest.mock('../../components/marketplace/MarketplaceSearchBar', () => {
   };
 });
 
-jest.mock('../../components/marketplace/CategoryTileRow', () => ({
-  CategoryTileRow: () => null,
-}));
-
-jest.mock('../../components/marketplace/MarketplaceTabs', () => {
+jest.mock('../../components/marketplace/CategoryTileRow', () => {
   const ReactLocal = jest.requireActual('react');
-  const { Text, View } = jest.requireActual('react-native');
+  const { Text, TouchableOpacity } = jest.requireActual('react-native');
   return {
-    MarketplaceTabs: () =>
+    CategoryTileRow: ({ onSelect }: { onSelect: (slug: string) => void }) =>
       ReactLocal.createElement(
-        View,
-        null,
-        ReactLocal.createElement(Text, null, 'Sponsored'),
-        ReactLocal.createElement(Text, null, 'Featured'),
-        ReactLocal.createElement(Text, null, 'Trending'),
-        ReactLocal.createElement(Text, null, 'All Listings')
+        TouchableOpacity,
+        { onPress: () => onSelect('clothing') },
+        ReactLocal.createElement(Text, null, 'Filter Clothing')
       ),
   };
 });
 
-jest.mock('../../components/marketplace/MarketplaceEmptyState', () => ({
-  MarketplaceEmptyState: () => null,
-}));
+// Flat stub: the strip's title and size, hidden when empty like the real one.
+jest.mock('../../components/marketplace/ListingStrip', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return {
+    ListingStrip: ({ title, listings, sponsored }: { title: string; listings: unknown[]; sponsored?: boolean }) =>
+      listings.length === 0
+        ? null
+        : ReactLocal.createElement(
+            Text,
+            null,
+            `strip:${title}:${listings.length}${sponsored ? ':sponsored' : ''}`
+          ),
+  };
+});
+
+jest.mock('../../components/marketplace/MarketplaceEmptyState', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return {
+    MarketplaceEmptyState: ({ variant }: { variant: string }) =>
+      ReactLocal.createElement(Text, null, `empty:${variant}`),
+  };
+});
 
 jest.mock('../../components/marketplace/MarketplaceMenuSheet', () => {
   const ReactLocal = jest.requireActual('react');
@@ -190,10 +205,21 @@ jest.mock('@nepally/shared', () => {
 
 const STABLE_USER = { id: 'u1', metro_area_id: 'm1', trust_level: 1 };
 
+const mockGetListingsByMetro = getListingsByMetro as jest.Mock;
+const mockGetStickyBusinessListings = getStickyBusinessListings as jest.Mock;
+
 describe('MarketplaceHomeScreen (redesign)', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
     mockUseAuth.mockReturnValue({ user: STABLE_USER });
+    mockGetListingsByMetro.mockImplementation(async () => ({ data: [sampleListing], hasMore: false }));
+    mockGetStickyBusinessListings.mockImplementation(async () => ({ data: [{ listing: sampleListing }] }));
+    // userMessage logs a failed load through logClientEvent (console.error).
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   // Header and tab labels render synchronously in the initial tree.
@@ -211,20 +237,70 @@ describe('MarketplaceHomeScreen (redesign)', () => {
     expect(screen.getByLabelText('Open marketplace menu')).toBeTruthy();
   });
 
-  it('renders the four tab strip', () => {
+  it('shows the All listings grid under the discovery strips', async () => {
     const screen = render(<MarketplaceHomeScreen />);
-    expect(screen.getByText('Sponsored')).toBeTruthy();
-    expect(screen.getByText('Featured')).toBeTruthy();
-    expect(screen.getByText('Trending')).toBeTruthy();
-    expect(screen.getByText('All Listings')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText('All listings')).toBeTruthy();
+    });
+    expect(screen.getByText('Warm winter jacket')).toBeTruthy();
+    expect(screen.getByText('strip:Sponsored:1:sponsored')).toBeTruthy();
+    expect(screen.getByText('strip:Recently Added:1')).toBeTruthy();
+    // Empty strips hide themselves.
+    expect(screen.queryByText(/strip:Trending/)).toBeNull();
   });
 
-  it('renders listing grid on the default Sponsored tab', async () => {
+  it('drops the discovery strips once a category narrows the view', async () => {
     const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('strip:Sponsored:1:sponsored')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Filter Clothing'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Clothing')).toBeTruthy();
+    });
+    expect(screen.queryByText(/strip:Sponsored/)).toBeNull();
+    expect(screen.queryByText(/strip:Recently Added/)).toBeNull();
+    expect(mockGetListingsByMetro).toHaveBeenCalledWith(
+      expect.anything(),
+      'm1',
+      expect.objectContaining({ categorySlug: 'clothing', limit: 20 })
+    );
+  });
+
+  it('says listings failed to load, and Try again loads them', async () => {
+    mockGetListingsByMetro.mockImplementation(async () => ({ error: new Error('offline') }));
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load listings.")).toBeTruthy();
+    });
+    expect(screen.queryByText(/empty:/)).toBeNull();
+
+    mockGetListingsByMetro.mockImplementation(async () => ({ data: [sampleListing], hasMore: false }));
+    fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+
     await waitFor(() => {
       expect(screen.getByText('Warm winter jacket')).toBeTruthy();
     });
-    expect(screen.queryByText('Recently Added')).toBeNull();
+  });
+
+  it('says the metro has nothing yet only when every source is empty', async () => {
+    mockGetListingsByMetro.mockImplementation(async () => ({ data: [], hasMore: false }));
+    mockGetStickyBusinessListings.mockImplementation(async () => ({ data: [] }));
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('empty:empty-metro')).toBeTruthy();
+    });
+  });
+
+  it('does not claim the metro is empty while a strip still has listings', async () => {
+    mockGetListingsByMetro.mockImplementation(async () => ({ data: [], hasMore: false }));
+    const screen = render(<MarketplaceHomeScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('strip:Sponsored:1:sponsored')).toBeTruthy();
+    });
+    expect(screen.queryByText('empty:empty-metro')).toBeNull();
   });
 
   it('opens the menu sheet and routes My Listings', async () => {

@@ -28,6 +28,8 @@ interface ListingStripProps {
   maxItems?: number;
   /** Card width inside the horizontal strip */
   cardWidth?: number;
+  /** Paid placements: every card carries the Sponsored badge. */
+  sponsored?: boolean;
 }
 
 const DEFAULT_CARD_WIDTH = Math.min(260, Dimensions.get('window').width * 0.72);
@@ -40,6 +42,7 @@ export function ListingStrip({
   onShowAll,
   maxItems = 10,
   cardWidth = DEFAULT_CARD_WIDTH,
+  sponsored = false,
 }: ListingStripProps) {
   const listingKeyExtractor = useCallback(
     (item: MarketplaceListing) => item.id,
@@ -53,10 +56,11 @@ export function ListingStrip({
           listing={item}
           width={cardWidth}
           onPress={() => onItemPress(item)}
+          sponsored={sponsored}
         />
       </View>
     ),
-    [cardWidth, onItemPress]
+    [cardWidth, onItemPress, sponsored]
   );
 
   if (listings.length === 0) return null;

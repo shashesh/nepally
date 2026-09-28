@@ -60,6 +60,19 @@ function makeListing(id: string, title: string) {
 }
 
 describe('ListingStrip', () => {
+  it('labels every card Sponsored in a sponsored strip', () => {
+    const { getAllByText } = render(
+      <ListingStrip
+        title="Sponsored"
+        listings={[makeListing('l1', 'Kitchen'), makeListing('l2', 'Bakery')]}
+        onItemPress={jest.fn()}
+        sponsored
+      />
+    );
+    // The strip title plus one badge per card.
+    expect(getAllByText('Sponsored')).toHaveLength(3);
+  });
+
   it('renders nothing when listings is empty', () => {
     const { queryByText } = render(
       <ListingStrip

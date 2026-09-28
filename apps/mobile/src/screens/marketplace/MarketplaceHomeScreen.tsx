@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   RefreshControl,
@@ -15,10 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   TrustLevel,
   getCategories,
-  getFeaturedListings,
-  getListingsByMetro,
-  getStickyBusinessListings,
-  getTrendingListings,
   getUserSavedListingIds,
   saveListing,
   unsaveListing,
@@ -26,6 +23,7 @@ import {
   type MarketplaceListing,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
+import { useMarketplaceFeed } from '../../hooks/useMarketplaceFeed';
 import { supabase } from '../../config/supabase';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
@@ -33,19 +31,20 @@ import { typography } from '../../styles/typography';
 import { warmAccent, warmBorder, warmSurface } from '../../styles/warmTokens';
 import { ListingGridCard } from '../../components/marketplace/ListingGridCard';
 import { ListingGridCardSkeleton } from '../../components/marketplace/ListingGridCardSkeleton';
+import { ListingStrip } from '../../components/marketplace/ListingStrip';
 import { MarketplaceSearchBar } from '../../components/marketplace/MarketplaceSearchBar';
 import { CategoryTileRow } from '../../components/marketplace/CategoryTileRow';
-import { MarketplaceTabs, type MarketplaceTabKey } from '../../components/marketplace/MarketplaceTabs';
 import { MarketplaceMenuSheet, type MarketplaceMenuKey } from '../../components/marketplace/MarketplaceMenuSheet';
 import { MarketplaceEmptyState } from '../../components/marketplace/MarketplaceEmptyState';
+import { MarketplaceErrorState } from '../../components/marketplace/MarketplaceErrorState';
 import type { MarketplaceStackParamList } from '../../types/navigation';
 
 type Nav = NativeStackNavigationProp<MarketplaceStackParamList, 'MarketplaceHome'>;
 
-const GRID_LIMIT = 20;
 const GUTTER = 12;
 const CARD_WIDTH = Math.floor((Dimensions.get('window').width - GUTTER * 3) / 2);
 const SEARCH_DEBOUNCE_MS = 300;
+const SPONSORED_STRIP_MAX = 5;
 
 export default function MarketplaceHomeScreen() {
   const navigation = useNavigation<Nav>();
@@ -54,21 +53,18 @@ export default function MarketplaceHomeScreen() {
   const canCreate = (user?.trust_level ?? 0) >= TrustLevel.VERIFIED;
 
   const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
-  const [activeTab, setActiveTab] = useState<MarketplaceTabKey>('sponsored');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
 
-  const mountedRef = useRef(true);
-  const loadingMoreRef = useRef(false);
+  const feed = useMarketplaceFeed(metroId, { categorySlug: selectedCategory, searchQuery });
+  const filtered = Boolean(selectedCategory || searchQuery);
 
+  const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
@@ -80,135 +76,43 @@ export default function MarketplaceHomeScreen() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Load categories and saved-ids once per user/metro
   useEffect(() => {
-    if (!metroId) return;
-    (async () => {
-      const [cats, ids] = await Promise.all([
-        getCategories(supabase),
-        user ? getUserSavedListingIds(supabase, user.id) : Promise.resolve({ data: [] as string[] }),
-      ]);
-      if (!mountedRef.current) return;
-      if (cats.data) setCategories(cats.data);
-      if (ids.data) setSavedIds(new Set(ids.data));
-    })();
-  }, [metroId, user]);
+    let cancelled = false;
+    void getCategories(supabase).then((result) => {
+      if (!cancelled && result.data) setCategories(result.data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  // Load grid whenever tab / category / searchQuery / metro changes
-  const fetchGrid = useCallback(async () => {
-    if (!metroId) {
-      setLoading(false);
-      return;
-    }
-    try {
-      // Filter fallback: any active search or category filter always uses
-      // getListingsByMetro, because the curated endpoints (sponsored / featured /
-      // trending) don't accept filters. The sort key tracks the active tab so
-      // the tab's semantic stays intact even when filtered.
-      if (selectedCategory || searchQuery) {
-        const filterSort = activeTab === 'featured' ? 'featured' : 'newest';
-        const result = await getListingsByMetro(supabase, metroId, {
-          categorySlug: selectedCategory || undefined,
-          searchQuery: searchQuery || undefined,
-          sortBy: filterSort,
-          limit: GRID_LIMIT,
-          offset: 0,
-        });
-        if (!mountedRef.current) return;
-        setListings(result.data ?? []);
-        setHasMore(Boolean(result.hasMore));
-        return;
-      }
+  const userId = user?.id;
+  const loadSavedIds = useCallback(async () => {
+    if (!userId) return;
+    const result = await getUserSavedListingIds(supabase, userId);
+    if (mountedRef.current && result.data) setSavedIds(new Set(result.data));
+  }, [userId]);
 
-      // Tab routing — each tab has its own source of truth.
-      switch (activeTab) {
-        case 'sponsored': {
-          const result = await getStickyBusinessListings(supabase, metroId, { limit: GRID_LIMIT });
-          if (!mountedRef.current) return;
-          const flattened = (result.data ?? []).map((s) => s.listing);
-          setListings(flattened);
-          setHasMore(false);
-          return;
-        }
-        case 'featured': {
-          const result = await getFeaturedListings(supabase, metroId, { limit: GRID_LIMIT });
-          if (!mountedRef.current) return;
-          setListings(result.data ?? []);
-          setHasMore(false);
-          return;
-        }
-        case 'trending': {
-          const result = await getTrendingListings(supabase, metroId, { limit: GRID_LIMIT });
-          if (!mountedRef.current) return;
-          setListings(result.data ?? []);
-          setHasMore(false);
-          return;
-        }
-        case 'all': {
-          const result = await getListingsByMetro(supabase, metroId, {
-            sortBy: 'newest',
-            limit: GRID_LIMIT,
-            offset: 0,
-          });
-          if (!mountedRef.current) return;
-          setListings(result.data ?? []);
-          setHasMore(Boolean(result.hasMore));
-          return;
-        }
-      }
-    } catch {
-      if (mountedRef.current) {
-        setListings([]);
-        setHasMore(false);
-      }
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }
-  }, [metroId, activeTab, selectedCategory, searchQuery]);
+  // Read through a ref so the focus effect doesn't re-run each time the feed's
+  // busy state changes the callback's identity.
+  const revalidateRef = useRef(feed.revalidate);
+  useEffect(() => {
+    revalidateRef.current = feed.revalidate;
+  });
 
+  // Coming back (from a listing, the create form, another tab) refreshes quietly:
+  // no skeleton, same scroll position. Saved hearts may have changed elsewhere.
+  const hasFocusedRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
-      fetchGrid();
-    }, [fetchGrid])
-  );
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchGrid();
-  }, [fetchGrid]);
-
-  const loadMore = useCallback(async () => {
-    if (loadingMoreRef.current || !hasMore || !metroId) return;
-    // Pagination only applies to the 'all' tab and the filtered fallback path.
-    // Curated tabs (sponsored / featured / trending) are fixed top-N lists.
-    const isPaginatedPath = selectedCategory || searchQuery || activeTab === 'all';
-    if (!isPaginatedPath) return;
-    loadingMoreRef.current = true;
-    try {
-      const filterSort = activeTab === 'featured' ? 'featured' : 'newest';
-      const result = await getListingsByMetro(supabase, metroId, {
-        categorySlug: selectedCategory || undefined,
-        searchQuery: searchQuery || undefined,
-        sortBy: filterSort,
-        limit: GRID_LIMIT,
-        offset: listings.length,
-      });
-      if (!mountedRef.current) return;
-      if (result.data) {
-        setListings((prev) => {
-          const seen = new Set(prev.map((l) => l.id));
-          return [...prev, ...result.data!.filter((l) => !seen.has(l.id))];
-        });
-        setHasMore(Boolean(result.hasMore));
+      void loadSavedIds();
+      if (!hasFocusedRef.current) {
+        hasFocusedRef.current = true;
+        return;
       }
-    } finally {
-      loadingMoreRef.current = false;
-    }
-  }, [listings.length, metroId, selectedCategory, searchQuery, hasMore, activeTab]);
+      revalidateRef.current();
+    }, [loadSavedIds])
+  );
 
   const handleCardPress = useCallback(
     (listing: MarketplaceListing) => {
@@ -262,8 +166,6 @@ export default function MarketplaceHomeScreen() {
     [navigation]
   );
 
-  const gridData = listings;
-
   const renderGridItem = useCallback(
     ({ item }: { item: MarketplaceListing }) => (
       <ListingGridCard
@@ -277,6 +179,13 @@ export default function MarketplaceHomeScreen() {
     [handleCardPress, handleToggleSave, savedIds]
   );
 
+  const gridTitle = searchQuery
+    ? `Results for “${searchQuery}”`
+    : selectedCategory
+      ? (categories.find((c) => c.slug === selectedCategory)?.name ?? 'Listings')
+      : 'All listings';
+  const showGridTitle = !feed.loading && !feed.error && feed.grid.length > 0;
+
   // An element, not a component function: FlatList renders a function as
   // <ListHeaderComponent />, so a new function per keystroke would remount the
   // header and drop the search input's focus.
@@ -289,17 +198,69 @@ export default function MarketplaceHomeScreen() {
           selectedSlug={selectedCategory}
           onSelect={setSelectedCategory}
         />
-        <MarketplaceTabs active={activeTab} onChange={setActiveTab} />
+        {/* The discovery strips are the unnarrowed view's content, as on web;
+            a category keeps only its own featured strip. */}
+        <View style={styles.strips}>
+          {!filtered && (
+            <ListingStrip
+              title="Sponsored"
+              titleIcon="📢"
+              listings={feed.sponsored}
+              onItemPress={handleCardPress}
+              maxItems={SPONSORED_STRIP_MAX}
+              sponsored
+            />
+          )}
+          <ListingStrip
+            title="Featured"
+            titleIcon="⭐"
+            listings={feed.featured}
+            onItemPress={handleCardPress}
+          />
+          {!filtered && (
+            <>
+              <ListingStrip
+                title="Recently Added"
+                titleIcon="🆕"
+                listings={feed.recent}
+                onItemPress={handleCardPress}
+              />
+              <ListingStrip
+                title="Trending"
+                titleIcon="🔥"
+                listings={feed.trending}
+                onItemPress={handleCardPress}
+              />
+            </>
+          )}
+        </View>
+        {showGridTitle && (
+          <Text style={styles.gridTitle} accessibilityRole="header">
+            {gridTitle}
+          </Text>
+        )}
       </View>
     ),
-    [categories, selectedCategory, activeTab, searchInput]
+    [
+      searchInput,
+      categories,
+      selectedCategory,
+      filtered,
+      feed.sponsored,
+      feed.featured,
+      feed.recent,
+      feed.trending,
+      handleCardPress,
+      showGridTitle,
+      gridTitle,
+    ]
   );
 
   const emptyVariant = searchQuery
     ? 'empty-search'
     : selectedCategory
-    ? 'empty-category'
-    : 'empty-metro';
+      ? 'empty-category'
+      : 'empty-metro';
 
   const handleEmptyPrimary = useCallback(() => {
     if (emptyVariant === 'empty-search') {
@@ -318,8 +279,11 @@ export default function MarketplaceHomeScreen() {
     setMenuVisible(true);
   }, []);
 
+  const stripsShowing =
+    feed.sponsored.length + feed.featured.length + feed.recent.length + feed.trending.length > 0;
+
   const renderEmpty = useCallback(() => {
-    if (loading) {
+    if (feed.loading) {
       return (
         <View style={styles.skeletonGrid}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -328,6 +292,11 @@ export default function MarketplaceHomeScreen() {
         </View>
       );
     }
+    if (feed.error) {
+      return <MarketplaceErrorState message={feed.error} onRetry={feed.reload} />;
+    }
+    // "Nothing in your metro yet" only when the metro has no listings at all.
+    if (!filtered && stripsShowing) return null;
     return (
       <MarketplaceEmptyState
         variant={emptyVariant}
@@ -336,7 +305,27 @@ export default function MarketplaceHomeScreen() {
         onSecondary={emptyVariant === 'empty-metro' ? handleEmptySecondary : undefined}
       />
     );
-  }, [loading, emptyVariant, canCreate, handleEmptyPrimary, handleEmptySecondary]);
+  }, [
+    feed.loading,
+    feed.error,
+    feed.reload,
+    filtered,
+    stripsShowing,
+    emptyVariant,
+    canCreate,
+    handleEmptyPrimary,
+    handleEmptySecondary,
+  ]);
+
+  const renderFooter = useCallback(() => {
+    if (feed.loadMoreError) {
+      return <MarketplaceErrorState message={feed.loadMoreError} onRetry={feed.retryLoadMore} compact />;
+    }
+    if (feed.loadingMore) {
+      return <ActivityIndicator style={styles.loadingMore} color={warmAccent.warm} />;
+    }
+    return null;
+  }, [feed.loadMoreError, feed.retryLoadMore, feed.loadingMore]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -361,19 +350,20 @@ export default function MarketplaceHomeScreen() {
       </View>
 
       <FlatList
-        data={loading ? [] : gridData}
+        data={feed.loading || feed.error ? [] : feed.grid}
         keyExtractor={(item) => item.id}
         numColumns={2}
         renderItem={renderGridItem}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={renderEmpty}
+        ListFooterComponent={renderFooter}
         keyboardShouldPersistTaps="handled"
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[warmAccent.warm]} />
+          <RefreshControl refreshing={feed.refreshing} onRefresh={feed.refresh} colors={[warmAccent.warm]} />
         }
-        onEndReached={loadMore}
+        onEndReached={feed.loadMore}
         onEndReachedThreshold={0.5}
       />
 
@@ -430,6 +420,15 @@ const styles = StyleSheet.create({
     paddingBottom: 96,
     gap: GUTTER,
   },
+  strips: {
+    // Strips scroll sideways, so let them run to the screen edges.
+    marginHorizontal: -GUTTER,
+  },
+  gridTitle: {
+    ...typography.h3,
+    color: colors.text.primary,
+    paddingTop: spacing.xs,
+  },
   row: {
     gap: GUTTER,
     marginBottom: GUTTER,
@@ -439,6 +438,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: GUTTER,
     paddingTop: GUTTER,
+  },
+  loadingMore: {
+    paddingVertical: spacing.s,
   },
   fab: {
     position: 'absolute',
