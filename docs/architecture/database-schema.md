@@ -806,7 +806,8 @@ CREATE UNIQUE INDEX idx_reports_one_open_per_reporter_target
 -- an active or inactive listing becomes 'removed' (035; threshold and
 -- listings from 047). See "Report thresholds and guards (migration 047)".
 
--- Verified users can create reports
+-- Verified users can create reports, always open (the last four checks are 047's:
+-- a report filed already closed would escape the one-open-report index)
 CREATE POLICY "Verified users can create reports"
   ON reports FOR INSERT
   WITH CHECK (
@@ -814,6 +815,10 @@ CREATE POLICY "Verified users can create reports"
       SELECT 1 FROM users WHERE id = auth.uid() AND trust_level >= 1
     )
     AND reported_by = auth.uid()
+    AND status = 'pending'
+    AND reviewed_by IS NULL
+    AND reviewed_at IS NULL
+    AND action IS NULL
   );
 
 -- Only moderators can update reports
@@ -1383,8 +1388,9 @@ Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calli
 
 ### Report thresholds and guards (migration 047)
 
-- `marketplace_listings.reports_count integer NOT NULL DEFAULT 0` counts listing reports, as `posts.reports_count` counts post reports. It isn't in `marketplace_listings_view`, whose columns were fixed when the view was created.
-- `on_report_created()` hides content at 100 reports (the constant `c_auto_hide_threshold`). A post moves `active → pending`; a listing moves `active` or `inactive` → `removed`.
+- `marketplace_listings.reports_count integer NOT NULL DEFAULT 0` counts listing reports, as `posts.reports_count` counts post reports. It isn't in `marketplace_listings_view`, whose columns were fixed when the view was created. When 047 first adds the column, it backfills it, and the owners' `reports_received`, from open listing reports filed earlier.
+- `on_report_created()` counts only open (`pending`) reports and hides content at 100 (the constant `c_auto_hide_threshold`). A post moves `active → pending`; a listing moves `active` or `inactive` → `removed`.
+- The reports INSERT policy accepts only an open report (`status = 'pending'`, no review fields), so one account can't file closed reports past the one-open-report index to reach 100 alone.
 - `guard_listing_status_transition()` is a `BEFORE UPDATE OF status` trigger on `marketplace_listings`. A client that isn't a moderator can't move a listing out of `removed`. Privileged contexts (`service_role`, `postgres`, `SECURITY DEFINER` functions) pass.
 - `guard_report_counts()` is a `BEFORE INSERT OR UPDATE OF reports_count` trigger on `posts` and `marketplace_listings`. Only privileged contexts and moderators may change the counter, and a row a client creates starts at 0 whatever count it sends.
 - These are trigger functions, so no client role holds EXECUTE on them. Live checks: `npm run test:security:emergency-post` and `npm run test:security:listing-reports`.

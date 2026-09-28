@@ -8,6 +8,7 @@
  *   1. A Trust Level 0 member cannot report a listing (reports INSERT policy).
  *   2. A report bumps marketplace_listings.reports_count and the owner's
  *      users.reports_received; the listing stays active.
+ *   2b. A report filed already closed is rejected and doesn't count.
  *   3. The owner cannot reset reports_count.
  *   4. The 100th report removes the listing, even when the owner has
  *      deactivated it first. The count is seeded to stay within three
@@ -263,6 +264,25 @@ async function main() {
     assertCondition(
       (await readReportsReceived(service, owner.id)) === 1,
       "The owner's reports_received should be 1"
+    );
+
+    // 2b. A report cannot be filed already closed: a closed row would escape the
+    // one-open-report-per-reporter index and let one account count 100 times.
+    const filedClosed = await reporterClients[1]
+      .from('reports')
+      .insert({
+        reported_by: reporters[1].id,
+        target_type: 'listing',
+        target_id: listingId,
+        reason: 'Scam',
+        status: 'dismissed',
+      })
+      .select('id')
+      .single();
+    assertCondition(!!filedClosed.error, 'A report filed as dismissed should be rejected');
+    assertCondition(
+      (await readListing(service, listingId)).reports_count === 1,
+      'A rejected closed report should not count'
     );
 
     // 3. The owner cannot reset the counter.

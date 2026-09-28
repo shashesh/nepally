@@ -11,7 +11,8 @@
  *      auto-hide an active post (status -> 'pending') at 100 (migration 047;
  *      the count is seeded to stay within three reporters). The author cannot
  *      reset the count or create a post with one already set, and a duplicate
- *      open report from the same reporter is rejected.
+ *      open report from the same reporter is rejected, as is a report filed
+ *      already closed.
  *   6. Only moderators can ban; banning removes the user's posts and blocks
  *      further posting; unbanning restores posting.
  *
@@ -256,6 +257,19 @@ async function main(): Promise<void> {
       target_id: pendingPostId,
       reason: 'Spam',
     });
+
+    // A report cannot be filed already closed (047): a closed row would escape
+    // the one-open-report index and let one account count again and again.
+    const filedClosed = await strangerClient
+      .from('reports')
+      .insert({ ...reportPayload(stranger.id), status: 'dismissed' })
+      .select('id')
+      .single();
+    assertCondition(!!filedClosed.error, 'A report filed as dismissed should be rejected');
+    assertCondition(
+      (await readPostStatus(service, pendingPostId)).reports_count === 0,
+      'A rejected closed report should not count'
+    );
 
     const report1 = await strangerClient.from('reports').insert(reportPayload(stranger.id)).select('id').single();
     assertCondition(!report1.error, `First report should succeed: ${report1.error?.message}`);

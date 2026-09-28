@@ -1,9 +1,10 @@
 -- 047_report_auto_hide_threshold.sql
--- ADDITIVE / non-destructive: one new column, two new trigger functions,
--- three new triggers, and a replaced on_report_created(). No data changes.
--- Content now hides at 100 reports instead of 3, listings are counted and
--- hidden like posts, and nobody but a moderator or the database itself can
--- undo a hidden listing or reset a report counter.
+-- ADDITIVE / non-destructive: one new column (backfilled once), two new
+-- trigger functions, three new triggers, a replaced on_report_created(), and
+-- a tightened reports INSERT policy. Content now hides at 100 reports instead
+-- of 3, listings are counted and hidden like posts, a report can only be
+-- filed open, and nobody but a moderator or the database itself can undo a
+-- hidden listing or reset a report counter.
 --
 --   Decision (2026-09-27): three reports let a handful of members hide any
 --   post. Posts and listings must reach at least 100 reports before they
@@ -33,6 +34,22 @@
 --   contexts (on_report_created runs as its owner) and moderators change it,
 --   and starts every client-inserted row at 0.
 --
+--   Reports are filed open: the INSERT policy (001) checked only the trust
+--   level and reported_by, so a client could insert a report already
+--   'dismissed', 'reviewed' or 'actioned'. Those rows escape the one open
+--   report per (reporter, target) index (035), and the trigger counted every
+--   insert, so one account could file 100 reports against the same post or
+--   listing and hide it alone (3 were enough before this migration). The
+--   policy now requires status 'pending' with no review fields set, and the
+--   trigger counts only pending reports.
+--
+--   Backfill: listing reports filed before this migration (the apps file them
+--   from PR #102 on) were never counted. When the column is first added, the
+--   open ones are counted onto the listing and its owner, and a listing at 100
+--   is removed. Closed reports are left out, since until now they could have
+--   been filed closed on purpose. It runs only when the column is created, so
+--   re-running the file cannot count them twice.
+--
 --   Privileged contexts: the guards follow 035's
 --   guard_post_status_transition(). SECURITY INVOKER, and any current_user
 --   other than anon/authenticated (service_role, postgres, a SECURITY
@@ -43,19 +60,58 @@
 --   REVOKEs keep that true on a database set up any other way.
 --   CREATE OR REPLACE keeps on_report_created()'s existing privileges.
 --
--- Idempotent: ADD COLUMN IF NOT EXISTS, CREATE OR REPLACE, and
--- DROP TRIGGER IF EXISTS before each CREATE TRIGGER.
+-- Idempotent: the column and its backfill only when the column is missing,
+-- CREATE OR REPLACE, ALTER POLICY, and DROP TRIGGER IF EXISTS before each
+-- CREATE TRIGGER.
 --
 -- Live checks: npm run test:security:emergency-post (posts),
 -- npm run test:security:listing-reports (listings),
 -- npm run test:security:functions (grants).
 
 -- ---------------------------------------------------------------------------
--- 1) Listing report counter
+-- 1) Listing report counter, backfilled from open listing reports
 -- ---------------------------------------------------------------------------
 
-ALTER TABLE public.marketplace_listings
-  ADD COLUMN IF NOT EXISTS reports_count integer NOT NULL DEFAULT 0;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+      FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = 'marketplace_listings'
+       AND column_name = 'reports_count'
+  ) THEN
+    ALTER TABLE public.marketplace_listings
+      ADD COLUMN reports_count integer NOT NULL DEFAULT 0;
+
+    UPDATE public.marketplace_listings l
+       SET reports_count = r.open_reports
+      FROM (
+        SELECT target_id, count(*)::integer AS open_reports
+          FROM public.reports
+         WHERE target_type = 'listing' AND status = 'pending'
+         GROUP BY target_id
+      ) r
+     WHERE l.id = r.target_id;
+
+    UPDATE public.users u
+       SET reports_received = u.reports_received + r.open_reports
+      FROM (
+        SELECT l.owner_id, count(*)::integer AS open_reports
+          FROM public.reports rep
+          JOIN public.marketplace_listings l ON l.id = rep.target_id
+         WHERE rep.target_type = 'listing' AND rep.status = 'pending'
+         GROUP BY l.owner_id
+      ) r
+     WHERE u.id = r.owner_id;
+
+    -- Matches on_report_created() below (threshold 100).
+    UPDATE public.marketplace_listings
+       SET status = 'removed'
+     WHERE reports_count >= 100 AND status IN ('active', 'inactive');
+  END IF;
+END;
+$$;
 
 -- ---------------------------------------------------------------------------
 -- 2) Report trigger: threshold 100, listings counted and removed
@@ -75,6 +131,12 @@ DECLARE
   v_post_status    public.post_status;
   v_listing_status public.listing_status;
 BEGIN
+  -- Only an open report counts. The INSERT policy (section 5) already keeps
+  -- clients to 'pending'; this also covers privileged inserts.
+  IF NEW.status IS DISTINCT FROM 'pending' THEN
+    RETURN NEW;
+  END IF;
+
   IF NEW.target_type = 'post' THEN
     UPDATE public.posts
        SET reports_count = reports_count + 1
@@ -213,3 +275,22 @@ CREATE TRIGGER trg_guard_listing_reports_count
   BEFORE INSERT OR UPDATE OF reports_count ON public.marketplace_listings
   FOR EACH ROW
   EXECUTE FUNCTION public.guard_report_counts();
+
+-- ---------------------------------------------------------------------------
+-- 5) A report is filed open: pending, with no review fields set
+-- ---------------------------------------------------------------------------
+
+ALTER POLICY "Verified users can create reports" ON public.reports
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+        FROM public.users
+       WHERE users.id = (select auth.uid())
+         AND users.trust_level >= 1
+    )
+    AND reported_by = (select auth.uid())
+    AND status = 'pending'
+    AND reviewed_by IS NULL
+    AND reviewed_at IS NULL
+    AND action IS NULL
+  );
