@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,14 @@ import {
   ActivityIndicator,
   StyleSheet,
   Linking,
+  KeyboardAvoidingView,
+  Platform,
+  AccessibilityInfo,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { StackActions, useNavigation, usePreventRemove, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,17 +30,23 @@ import {
   updateListing,
   uploadListingPhotos,
   createListingSchema,
+  buildListingFormInput,
+  isSameListingForm,
+  listingFieldErrors,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   MAX_PHOTOS_PER_LISTING,
   type MarketplaceCategory,
-  type ListingType,
-  type ItemCondition,
+  type MarketplaceListing,
+  type ListingFormFields,
   type ListingPhotoUploadInput,
 } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { useActiveMetro } from '../../hooks/useActiveMetro';
 import { supabase } from '../../config/supabase';
+import { ListingFormField } from '../../components/marketplace/ListingFormField';
+import { ChoiceToggle } from '../../components/marketplace/ChoiceToggle';
+import { ListingCategoryPicker } from '../../components/marketplace/ListingCategoryPicker';
 import { colors } from '../../styles/colors';
 import { spacing, borderRadius } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
@@ -52,6 +62,70 @@ type NewPhoto = {
   sizeBytes: number;
 };
 
+/** Where to go once saved: a new listing opens, an edit returns to its listing. */
+type Saved = { kind: 'created'; listingId: string } | { kind: 'edited' };
+
+// Most community sellers aren't businesses, so a new listing starts as Individual.
+const EMPTY_FORM: ListingFormFields = {
+  listing_type: 'individual',
+  title: '',
+  description: '',
+  category_id: '',
+  price: '',
+  business_name: '',
+  address: '',
+  phone: '',
+  email: '',
+  website_url: '',
+  item_condition: undefined,
+};
+
+/** The form's fields top to bottom; a failed submit scrolls to the first with an error. */
+const FIELD_ORDER = [
+  'category_id',
+  'title',
+  'description',
+  'price',
+  'business_name',
+  'address',
+  'website_url',
+  'phone',
+  'email',
+] as const;
+type FormField = (typeof FIELD_ORDER)[number];
+
+/** Room left above a field scrolled to, so its label shows too. */
+const SCROLL_MARGIN = spacing.m;
+
+const TYPE_CHOICES = (['individual', 'business'] as const).map((value) => ({
+  value,
+  label: LISTING_TYPE_LABELS[value],
+}));
+const CONDITION_CHOICES = (['new', 'used'] as const).map((value) => ({
+  value,
+  label: ITEM_CONDITION_LABELS[value],
+}));
+
+function toFormFields(listing: MarketplaceListing): ListingFormFields {
+  return {
+    listing_type: listing.listing_type,
+    title: listing.title,
+    description: listing.description,
+    category_id: listing.category_id,
+    price: listing.price ?? '',
+    business_name: listing.business_name ?? '',
+    address: listing.address ?? '',
+    phone: listing.phone ?? '',
+    email: listing.email ?? '',
+    website_url: listing.website_url ?? '',
+    item_condition: listing.item_condition ?? undefined,
+  };
+}
+
+function sameUrls(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((url, i) => url === b[i]);
+}
+
 export default function CreateListingScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
@@ -65,27 +139,60 @@ export default function CreateListingScreen() {
   const [categories, setCategories] = useState<MarketplaceCategory[]>([]);
   const [loading, setLoading] = useState(isEditing);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState<Saved | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [form, setForm] = useState<ListingFormFields>(EMPTY_FORM);
+  // What the form started as (empty, or the listing being edited), to tell if it changed.
+  const [initialForm, setInitialForm] = useState<ListingFormFields>(EMPTY_FORM);
+  const [initialPhotoUrls, setInitialPhotoUrls] = useState<string[]>([]);
 
   // Photo state: existing remote URLs (edit mode) + newly picked local photos
   const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]);
   const [newPhotos, setNewPhotos] = useState<NewPhoto[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
-  // Form state
-  const [listingType, setListingType] = useState<ListingType>('business');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [price, setPrice] = useState('');
-  const [businessName, setBusinessName] = useState('');
-  const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [itemCondition, setItemCondition] = useState<ItemCondition | undefined>();
+  const scrollRef = useRef<ScrollView>(null);
+  const fieldYRef = useRef<Partial<Record<FormField, number>>>({});
+  const descriptionRef = useRef<TextInput>(null);
+  const priceRef = useRef<TextInput>(null);
+  const businessNameRef = useRef<TextInput>(null);
+  const addressRef = useRef<TextInput>(null);
+  const websiteRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
 
+  const isBusiness = form.listing_type === 'business';
   const totalPhotos = existingPhotoUrls.length + newPhotos.length;
+  const isDirty =
+    !isSameListingForm(form, initialForm) ||
+    newPhotos.length > 0 ||
+    !sameUrls(existingPhotoUrls, initialPhotoUrls);
+
+  // Swipe-down, ✕ and Android back all ask first while there is something to lose.
+  usePreventRemove(isDirty && !submitting && !saved, ({ data }) => {
+    Alert.alert(
+      isEditing ? 'Discard your changes?' : 'Discard this listing?',
+      isEditing
+        ? "Your changes to this listing won't be saved."
+        : "What you've entered won't be saved.",
+      [
+        { text: 'Keep editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+      ]
+    );
+  });
+
+  // Leaves once saved. This runs after usePreventRemove has stopped blocking,
+  // so leaving doesn't ask to discard what was just saved.
+  useEffect(() => {
+    if (!saved) return;
+    if (saved.kind === 'created') {
+      navigation.dispatch(StackActions.replace('ListingDetail', { listingId: saved.listingId }));
+    } else {
+      navigation.goBack();
+    }
+  }, [saved, navigation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,19 +209,12 @@ export default function CreateListingScreen() {
         if (catResult.data) setCategories(catResult.data);
 
         if (editResult.data) {
-          const l = editResult.data;
-          setListingType(l.listing_type);
-          setTitle(l.title);
-          setDescription(l.description);
-          setCategoryId(l.category_id);
-          setPrice(l.price ?? '');
-          setBusinessName(l.business_name ?? '');
-          setAddress(l.address ?? '');
-          setPhone(l.phone ?? '');
-          setEmail(l.email ?? '');
-          setWebsiteUrl(l.website_url ?? '');
-          setItemCondition(l.item_condition ?? undefined);
-          setExistingPhotoUrls(l.photos ?? []);
+          const fields = toFormFields(editResult.data);
+          const photos = editResult.data.photos ?? [];
+          setForm(fields);
+          setInitialForm(fields);
+          setExistingPhotoUrls(photos);
+          setInitialPhotoUrls(photos);
         }
       } catch {
         // Silently handle — empty categories / missing listing will
@@ -124,8 +224,35 @@ export default function CreateListingScreen() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [editListingId]);
+
+  const setField = useCallback(
+    <K extends keyof ListingFormFields>(key: K, value: ListingFormFields[K]) => {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
+
+  const trackLayout = useCallback(
+    (field: FormField) => (event: LayoutChangeEvent) => {
+      fieldYRef.current[field] = event.nativeEvent.layout.y;
+    },
+    []
+  );
+
+  /** Scrolls to the first field with an error and reads its message out. */
+  const revealFirstError = useCallback((fieldErrors: Record<string, string>) => {
+    const first = FIELD_ORDER.find((field) => fieldErrors[field]);
+    if (!first) return;
+    const y = fieldYRef.current[first];
+    if (y !== undefined) {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - SCROLL_MARGIN), animated: true });
+    }
+    AccessibilityInfo.announceForAccessibility(fieldErrors[first]);
+  }, []);
 
   const requestLibraryPermission = async (): Promise<boolean> => {
     const result = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -185,7 +312,9 @@ export default function CreateListingScreen() {
       }
     }
 
-    setNewPhotos((prev) => [...prev, ...picked].slice(0, MAX_PHOTOS_PER_LISTING - existingPhotoUrls.length));
+    setNewPhotos((prev) =>
+      [...prev, ...picked].slice(0, MAX_PHOTOS_PER_LISTING - existingPhotoUrls.length)
+    );
     setUploadingPhotos(false);
   }, [totalPhotos, existingPhotoUrls.length]);
 
@@ -200,34 +329,17 @@ export default function CreateListingScreen() {
   const handleSubmit = useCallback(async () => {
     if (!user || !metroAreaId) return;
 
-    setErrors({});
-
-    const formData = {
-      listing_type: listingType,
-      title,
-      description,
-      category_id: categoryId,
-      photos: [] as string[], // placeholder — replaced after upload
-      price: price || undefined,
-      business_name: businessName || undefined,
-      address: address || undefined,
-      phone: phone || undefined,
-      email: email || undefined,
-      website_url: websiteUrl || undefined,
-      item_condition: itemCondition,
-    };
-
-    const validation = createListingSchema.safeParse(formData);
+    // The type not selected sends nothing for its fields, and the website gets https://.
+    const input = buildListingFormInput(form);
+    const validation = createListingSchema.safeParse({ ...input, photos: [] });
     if (!validation.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of validation.error.issues) {
-        const path = issue.path[0]?.toString() ?? 'form';
-        fieldErrors[path] = issue.message;
-      }
+      const fieldErrors = listingFieldErrors(validation.error.issues);
       setErrors(fieldErrors);
+      revealFirstError(fieldErrors);
       return;
     }
 
+    setErrors({});
     setSubmitting(true);
 
     // Upload any new photos first
@@ -248,33 +360,34 @@ export default function CreateListingScreen() {
       allPhotoUrls = [...allPhotoUrls, ...(uploadResult.urls ?? [])];
     }
 
-    const payload = { ...formData, photos: allPhotoUrls };
-
-    if (isEditing && editListingId) {
-      const result = await updateListing(supabase, editListingId, payload);
-      if (result.error) {
-        Alert.alert('Error', result.error.message);
-      } else {
-        navigation.goBack();
-      }
-    } else {
-      const result = await createListing(supabase, {
-        ...payload,
-        owner_id: user.id,
-        metro_area_id: metroAreaId,
-      });
-      if (result.error) {
-        Alert.alert('Error', result.error.message);
-      } else {
-        navigation.goBack();
-      }
-    }
+    const payload = { ...input, photos: allPhotoUrls };
+    const result =
+      isEditing && editListingId
+        ? await updateListing(supabase, editListingId, payload)
+        : await createListing(supabase, {
+            ...payload,
+            owner_id: user.id,
+            metro_area_id: metroAreaId,
+          });
 
     setSubmitting(false);
+    if (result.error || !result.data) {
+      Alert.alert(
+        'Error',
+        result.error?.message ?? "Couldn't save your listing. Please try again."
+      );
+      return;
+    }
+    setSaved(isEditing ? { kind: 'edited' } : { kind: 'created', listingId: result.data.id });
   }, [
-    user, metroAreaId, listingType, title, description, categoryId, price,
-    businessName, address, phone, email, websiteUrl, itemCondition,
-    existingPhotoUrls, newPhotos, isEditing, editListingId, navigation,
+    user,
+    metroAreaId,
+    form,
+    existingPhotoUrls,
+    newPhotos,
+    isEditing,
+    editListingId,
+    revealFirstError,
   ]);
 
   if (loading) {
@@ -287,263 +400,265 @@ export default function CreateListingScreen() {
     );
   }
 
+  const submitLabel = isEditing ? 'Update Listing' : 'Create Listing';
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          hitSlop={8}
+        >
           <Ionicons name="close" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEditing ? 'Edit Listing' : 'Create Listing'}</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">
+          {isEditing ? 'Edit Listing' : 'Create Listing'}
+        </Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Listing Type Toggle */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Listing Type</Text>
-          <View style={styles.toggleRow}>
-            {(['business', 'individual'] as ListingType[]).map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[styles.toggleButton, listingType === type && styles.toggleButtonActive]}
-                onPress={() => setListingType(type)}
-              >
-                <Text
-                  style={[styles.toggleText, listingType === type && styles.toggleTextActive]}
-                >
-                  {LISTING_TYPE_LABELS[type]}
-                </Text>
-              </TouchableOpacity>
-            ))}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Listing Type Toggle */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Listing Type</Text>
+            <ChoiceToggle
+              accessibilityLabel="Listing type"
+              choices={TYPE_CHOICES}
+              selected={form.listing_type}
+              onSelect={(value) => setField('listing_type', value)}
+            />
           </View>
-        </View>
 
-        {/* Photos */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Photos (up to {MAX_PHOTOS_PER_LISTING})</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoStrip}>
-            {/* Existing photos (edit mode) */}
-            {existingPhotoUrls.map((url, index) => (
-              <View key={`existing-${index}`} style={styles.photoThumb}>
-                <Image source={url} style={styles.photoThumbImage} contentFit="cover" />
+          {/* Photos */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Photos (up to {MAX_PHOTOS_PER_LISTING})</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoStrip}>
+              {/* Existing photos (edit mode) */}
+              {existingPhotoUrls.map((url, index) => (
+                <View key={`existing-${index}`} style={styles.photoThumb}>
+                  <Image source={url} style={styles.photoThumbImage} contentFit="cover" />
+                  <TouchableOpacity
+                    style={styles.photoRemoveBtn}
+                    onPress={() => handleRemoveExistingPhoto(index)}
+                  >
+                    <Ionicons name="close-circle" size={20} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {/* Newly picked photos */}
+              {newPhotos.map((photo, index) => (
+                <View key={`new-${index}`} style={styles.photoThumb}>
+                  <Image source={photo.uri} style={styles.photoThumbImage} contentFit="cover" />
+                  <TouchableOpacity
+                    style={styles.photoRemoveBtn}
+                    onPress={() => handleRemoveNewPhoto(index)}
+                  >
+                    <Ionicons name="close-circle" size={20} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {/* Add photo button */}
+              {totalPhotos < MAX_PHOTOS_PER_LISTING && (
                 <TouchableOpacity
-                  style={styles.photoRemoveBtn}
-                  onPress={() => handleRemoveExistingPhoto(index)}
+                  style={styles.addPhotoBtn}
+                  onPress={handleAddPhoto}
+                  disabled={uploadingPhotos}
                 >
-                  <Ionicons name="close-circle" size={20} color={colors.white} />
+                  {uploadingPhotos ? (
+                    <ActivityIndicator color={colors.primary.main} />
+                  ) : (
+                    <>
+                      <Ionicons name="camera-outline" size={24} color={colors.primary.main} />
+                      <Text style={styles.addPhotoBtnText}>Add Photo</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
-              </View>
-            ))}
-            {/* Newly picked photos */}
-            {newPhotos.map((photo, index) => (
-              <View key={`new-${index}`} style={styles.photoThumb}>
-                <Image source={photo.uri} style={styles.photoThumbImage} contentFit="cover" />
-                <TouchableOpacity
-                  style={styles.photoRemoveBtn}
-                  onPress={() => handleRemoveNewPhoto(index)}
-                >
-                  <Ionicons name="close-circle" size={20} color={colors.white} />
-                </TouchableOpacity>
-              </View>
-            ))}
-            {/* Add photo button */}
-            {totalPhotos < MAX_PHOTOS_PER_LISTING && (
-              <TouchableOpacity
-                style={styles.addPhotoBtn}
-                onPress={handleAddPhoto}
-                disabled={uploadingPhotos}
-              >
-                {uploadingPhotos ? (
-                  <ActivityIndicator color={colors.primary.main} />
-                ) : (
-                  <>
-                    <Ionicons name="camera-outline" size={24} color={colors.primary.main} />
-                    <Text style={styles.addPhotoBtnText}>Add Photo</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-          <Text style={styles.photoHint}>{totalPhotos}/{MAX_PHOTOS_PER_LISTING} photos added</Text>
-        </View>
+              )}
+            </ScrollView>
+            <Text style={styles.photoHint}>
+              {totalPhotos}/{MAX_PHOTOS_PER_LISTING} photos added
+            </Text>
+          </View>
 
-        {/* Category */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Category *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[
-                  styles.categoryChip,
-                  categoryId === cat.id && styles.categoryChipActive,
-                  categoryId === cat.id && { backgroundColor: (cat.color ?? '#9E9E9E') + '20' },
-                ]}
-                onPress={() => setCategoryId(cat.id)}
-              >
-                <Text style={styles.categoryChipEmoji}>{cat.emoji}</Text>
-                <Text
-                  style={[
-                    styles.categoryChipText,
-                    categoryId === cat.id && { color: cat.color ?? colors.primary.main },
-                  ]}
-                >
-                  {cat.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {errors.category_id && <Text style={styles.errorText}>{errors.category_id}</Text>}
-        </View>
-
-        {/* Title */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Title *</Text>
-          <TextInput
-            style={[styles.input, errors.title && styles.inputError]}
-            placeholder="What are you listing?"
-            placeholderTextColor={colors.text.tertiary}
-            value={title}
-            onChangeText={setTitle}
-            maxLength={150}
+          <ListingCategoryPicker
+            categories={categories}
+            selectedId={form.category_id}
+            onSelect={(categoryId) => setField('category_id', categoryId)}
+            error={errors.category_id}
+            onSectionLayout={trackLayout('category_id')}
           />
-          {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
-        </View>
 
-        {/* Description */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Description *</Text>
-          <TextInput
-            style={[styles.input, styles.textArea, errors.description && styles.inputError]}
+          <ListingFormField
+            label="Title"
+            required
+            error={errors.title}
+            onSectionLayout={trackLayout('title')}
+            placeholder="What are you listing?"
+            value={form.title}
+            onChangeText={(value) => setField('title', value)}
+            maxLength={150}
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => descriptionRef.current?.focus()}
+          />
+
+          <ListingFormField
+            ref={descriptionRef}
+            label="Description"
+            required
+            error={errors.description}
+            onSectionLayout={trackLayout('description')}
             placeholder="Describe your listing in detail..."
-            placeholderTextColor={colors.text.tertiary}
-            value={description}
-            onChangeText={setDescription}
+            value={form.description}
+            onChangeText={(value) => setField('description', value)}
             multiline
             numberOfLines={4}
             maxLength={3000}
             textAlignVertical="top"
           />
-          {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
-        </View>
 
-        {/* Price */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Price / Rate (optional)</Text>
-          <TextInput
-            style={styles.input}
+          <ListingFormField
+            ref={priceRef}
+            label="Price / Rate"
+            error={errors.price}
+            onSectionLayout={trackLayout('price')}
             placeholder='e.g., "$50/hr", "Free", "Contact for pricing"'
-            placeholderTextColor={colors.text.tertiary}
-            value={price}
-            onChangeText={setPrice}
+            value={form.price}
+            onChangeText={(value) => setField('price', value)}
+            maxLength={50}
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => (isBusiness ? businessNameRef : phoneRef).current?.focus()}
           />
-        </View>
 
-        {/* Business-specific fields */}
-        {listingType === 'business' && (
-          <>
-            <View style={styles.section}>
-              <Text style={styles.label}>Business Name *</Text>
-              <TextInput
-                style={[styles.input, errors.business_name && styles.inputError]}
+          {/* Business-specific fields */}
+          {isBusiness ? (
+            <>
+              <ListingFormField
+                ref={businessNameRef}
+                label="Business name"
+                required
+                error={errors.business_name}
+                onSectionLayout={trackLayout('business_name')}
                 placeholder="Your business name"
-                placeholderTextColor={colors.text.tertiary}
-                value={businessName}
-                onChangeText={setBusinessName}
+                value={form.business_name}
+                onChangeText={(value) => setField('business_name', value)}
+                maxLength={100}
+                textContentType="organizationName"
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => addressRef.current?.focus()}
               />
-              {errors.business_name && <Text style={styles.errorText}>{errors.business_name}</Text>}
-            </View>
 
-            <View style={styles.section}>
-              <Text style={styles.label}>Address (optional)</Text>
-              <TextInput
-                style={styles.input}
+              <ListingFormField
+                ref={addressRef}
+                label="Address"
+                error={errors.address}
+                onSectionLayout={trackLayout('address')}
                 placeholder="Business address"
-                placeholderTextColor={colors.text.tertiary}
-                value={address}
-                onChangeText={setAddress}
+                value={form.address}
+                onChangeText={(value) => setField('address', value)}
+                maxLength={200}
+                autoComplete="street-address"
+                textContentType="fullStreetAddress"
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => websiteRef.current?.focus()}
               />
-            </View>
 
-            <View style={styles.section}>
-              <Text style={styles.label}>Website (optional)</Text>
-              <TextInput
-                style={styles.input}
+              <ListingFormField
+                ref={websiteRef}
+                label="Website"
+                error={errors.website_url}
+                onSectionLayout={trackLayout('website_url')}
                 placeholder="https://..."
-                placeholderTextColor={colors.text.tertiary}
-                value={websiteUrl}
-                onChangeText={setWebsiteUrl}
+                value={form.website_url}
+                onChangeText={(value) => setField('website_url', value)}
                 keyboardType="url"
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="url"
+                textContentType="URL"
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => phoneRef.current?.focus()}
+              />
+            </>
+          ) : (
+            <View style={styles.section}>
+              <Text style={styles.label}>Condition</Text>
+              <ChoiceToggle
+                accessibilityLabel="Condition"
+                choices={CONDITION_CHOICES}
+                selected={form.item_condition}
+                onSelect={(value) => setField('item_condition', value)}
               />
             </View>
-          </>
-        )}
+          )}
 
-        {/* Individual-specific fields */}
-        {listingType === 'individual' && (
-          <View style={styles.section}>
-            <Text style={styles.label}>Condition</Text>
-            <View style={styles.toggleRow}>
-              {(['new', 'used'] as ItemCondition[]).map((condition) => (
-                <TouchableOpacity
-                  key={condition}
-                  style={[styles.toggleButton, itemCondition === condition && styles.toggleButtonActive]}
-                  onPress={() => setItemCondition(condition)}
-                >
-                  <Text
-                    style={[styles.toggleText, itemCondition === condition && styles.toggleTextActive]}
-                  >
-                    {ITEM_CONDITION_LABELS[condition]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Contact Info */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Phone (optional)</Text>
-          <TextInput
-            style={styles.input}
+          {/* Contact Info */}
+          <ListingFormField
+            ref={phoneRef}
+            label="Phone"
+            error={errors.phone}
+            onSectionLayout={trackLayout('phone')}
             placeholder="Contact phone number"
-            placeholderTextColor={colors.text.tertiary}
-            value={phone}
-            onChangeText={setPhone}
+            value={form.phone}
+            onChangeText={(value) => setField('phone', value)}
+            maxLength={20}
             keyboardType="phone-pad"
+            autoComplete="tel"
+            textContentType="telephoneNumber"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => emailRef.current?.focus()}
           />
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>Email (optional)</Text>
-          <TextInput
-            style={styles.input}
+          <ListingFormField
+            ref={emailRef}
+            label="Email"
+            error={errors.email}
+            onSectionLayout={trackLayout('email')}
             placeholder="Contact email"
-            placeholderTextColor={colors.text.tertiary}
-            value={email}
-            onChangeText={setEmail}
+            value={form.email}
+            onChangeText={(value) => setField('email', value)}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            returnKeyType="done"
           />
-        </View>
 
-        {/* Submit */}
-        <TouchableOpacity
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.submitButtonText}>
-              {isEditing ? 'Update Listing' : 'Create Listing'}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={submitting}
+            accessibilityRole="button"
+            accessibilityLabel={submitLabel}
+            accessibilityState={{ disabled: submitting, busy: submitting }}
+          >
+            {submitting ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.submitButtonText}>{submitLabel}</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -552,6 +667,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -591,53 +709,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     marginBottom: spacing.xs,
-  },
-  input: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.input,
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    ...typography.body,
-    color: colors.text.primary,
-  },
-  inputError: {
-    borderColor: colors.error,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    ...typography.caption,
-    color: colors.error,
-    marginTop: 4,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: spacing.s,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: spacing.s,
-    borderRadius: borderRadius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    backgroundColor: colors.white,
-  },
-  toggleButtonActive: {
-    borderColor: colors.primary.main,
-    backgroundColor: colors.primary.light,
-  },
-  toggleText: {
-    ...typography.body,
-    color: colors.text.secondary,
-  },
-  toggleTextActive: {
-    color: colors.primary.main,
-    fontWeight: '600',
   },
   photoStrip: {
     flexGrow: 0,
@@ -685,31 +756,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.text.tertiary,
     marginTop: spacing.xs,
-  },
-  categoryScroll: {
-    flexGrow: 0,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    borderRadius: borderRadius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-    marginRight: spacing.s,
-    gap: spacing.xs,
-  },
-  categoryChipActive: {
-    borderColor: colors.primary.main,
-  },
-  categoryChipEmoji: {
-    fontSize: 16,
-  },
-  categoryChipText: {
-    ...typography.caption,
-    color: colors.text.secondary,
   },
   submitButton: {
     backgroundColor: colors.primary.main,

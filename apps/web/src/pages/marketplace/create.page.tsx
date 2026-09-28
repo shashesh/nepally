@@ -15,6 +15,8 @@ import {
   updateListing,
   uploadListingPhotos,
   createListingSchema,
+  buildListingFormInput,
+  listingFieldErrors,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
   ALLOWED_LISTING_PHOTO_MIME_TYPES,
@@ -94,29 +96,24 @@ export default function CreateListingPage() {
 
       setErrors({});
 
-      const formData = {
+      // The type not selected sends nothing for its fields, and the website gets https://.
+      const formData = buildListingFormInput({
         listing_type: listingType,
         title,
         description,
         category_id: categoryId,
-        photos: [] as string[],
-        price: price || undefined,
-        business_name: businessName || undefined,
-        address: address || undefined,
-        phone: phone || undefined,
-        email: email || undefined,
-        website_url: websiteUrl || undefined,
+        price,
+        business_name: businessName,
+        address,
+        phone,
+        email,
+        website_url: websiteUrl,
         item_condition: itemCondition,
-      };
+      });
 
-      const validation = createListingSchema.safeParse(formData);
+      const validation = createListingSchema.safeParse({ ...formData, photos: [] });
       if (!validation.success) {
-        const fieldErrors: Record<string, string> = {};
-        for (const issue of validation.error.issues) {
-          const path = issue.path[0]?.toString() ?? 'form';
-          fieldErrors[path] = issue.message;
-        }
-        setErrors(fieldErrors);
+        setErrors(listingFieldErrors(validation.error.issues));
         return;
       }
 
@@ -269,6 +266,8 @@ export default function CreateListingPage() {
               placeholder='e.g., "$50/hr", "Free", "Contact for pricing"'
               value={price}
               onChange={(e) => setPrice(e.target.value)}
+              maxLength={50}
+              error={errors.price}
             />
           </div>
 
@@ -281,6 +280,7 @@ export default function CreateListingPage() {
                   placeholder="Your business name"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
+                  maxLength={100}
                   error={errors.business_name}
                 />
               </div>
@@ -290,6 +290,8 @@ export default function CreateListingPage() {
                   placeholder="Business address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
+                  maxLength={200}
+                  error={errors.address}
                 />
               </div>
               <div className={styles.formSection}>
@@ -298,6 +300,7 @@ export default function CreateListingPage() {
                   placeholder="https://..."
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
+                  error={errors.website_url}
                 />
               </div>
             </>
@@ -326,6 +329,8 @@ export default function CreateListingPage() {
               placeholder="Contact phone number"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              maxLength={20}
+              error={errors.phone}
             />
           </div>
           <div className={styles.formSection}>

@@ -74,6 +74,8 @@ vi.mock('@nepally/shared', async () => {
   const actual = await vi.importActual<typeof import('@nepally/shared')>('@nepally/shared');
   return {
     userMessage: actual.userMessage,
+    buildListingFormInput: actual.buildListingFormInput,
+    listingFieldErrors: actual.listingFieldErrors,
     logClientEvent: vi.fn(),
     getCategories: vi.fn(async () => ({ data: [] })),
     getListingById: vi.fn(async () => ({ data: null })),
@@ -188,6 +190,65 @@ describe('CreateListingPage', () => {
 
     await waitFor(() => expect(screen.getByRole('radiogroup', { name: 'Condition' })).toBeDefined());
     expect(screen.queryByPlaceholderText('Your business name')).toBeNull();
+  });
+
+  it('shows the price, address, website and phone errors', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    mockSafeParse.mockReturnValue({
+      success: false,
+      error: {
+        issues: [
+          { path: ['price'], message: 'Price must be at most 50 characters' },
+          { path: ['address'], message: 'Address must be at most 200 characters' },
+          { path: ['website_url'], message: 'Invalid URL' },
+          { path: ['phone'], message: 'Phone must be at most 20 characters' },
+        ],
+      },
+    });
+    render(React.createElement(CreateListingPage));
+    await waitFor(() => expect(screen.getAllByText('Create Listing').length).toBe(2));
+
+    fireEvent.click(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => expect(screen.getByText('Invalid URL')).toBeDefined());
+    expect(screen.getByText('Price must be at most 50 characters')).toBeDefined();
+    expect(screen.getByText('Address must be at most 200 characters')).toBeDefined();
+    expect(screen.getByText('Phone must be at most 20 characters')).toBeDefined();
+  });
+
+  it('checks and saves a website typed without https://', async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+    await waitFor(() => expect(screen.getByPlaceholderText('https://...')).toBeDefined());
+
+    fireEvent.change(screen.getByPlaceholderText('https://...'), { target: { value: 'www.mybiz.com' } });
+    fireEvent.click(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => expect(mockCreateListing).toHaveBeenCalled());
+    expect(mockSafeParse).toHaveBeenCalledWith(
+      expect.objectContaining({ website_url: 'https://www.mybiz.com' })
+    );
+    expect(mockCreateListing).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ website_url: 'https://www.mybiz.com' })
+    );
+  });
+
+  it("doesn't save the business fields of a listing switched to Individual", async () => {
+    mocks.useAuth.mockReturnValue({ user: { id: 'u1', trust_level: 1, metro_area_id: 'metro-1' } });
+    render(React.createElement(CreateListingPage));
+    await waitFor(() => expect(screen.getByPlaceholderText('Your business name')).toBeDefined());
+
+    fireEvent.change(screen.getByPlaceholderText('Your business name'), {
+      target: { value: 'Himalayan Kitchen' },
+    });
+    fireEvent.click(screen.getByText('Individual'));
+    fireEvent.click(screen.getAllByText('Create Listing')[1]);
+
+    await waitFor(() => expect(mockCreateListing).toHaveBeenCalled());
+    const payload = mockCreateListing.mock.calls[0][1];
+    expect(payload.listing_type).toBe('individual');
+    expect(payload.business_name).toBeUndefined();
   });
 
   it('renders form fields', async () => {

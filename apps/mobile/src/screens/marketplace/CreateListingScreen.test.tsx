@@ -1,7 +1,7 @@
 import React from 'react';
-import { Alert } from 'react-native';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
-import { getCategories, createListing } from '@nepally/shared';
+import { Alert, ScrollView, TextInput } from 'react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { createListing, getCategories, getListingById, updateListing } from '@nepally/shared';
 import CreateListingScreen from './CreateListingScreen';
 
 // ---------------------------------------------------------------------------
@@ -38,11 +38,26 @@ jest.mock('expo-file-system', () => ({
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
+const mockDispatch = jest.fn();
 const mockUseAuth = jest.fn();
+let mockRouteParams: { editListingId?: string } | undefined;
+
+// usePreventRemove is captured, not run: a test reads whether leaving is blocked
+// and calls the callback to stand in for the member trying to leave.
+type PreventRemoveCallback = (event: { data: { action: { type: string } } }) => void;
+let mockPreventRemove = false;
+let mockOnPreventRemove: PreventRemoveCallback | null = null;
 
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
-  useRoute: () => ({ params: {} }),
+  useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack, dispatch: mockDispatch }),
+  useRoute: () => ({ params: mockRouteParams }),
+  usePreventRemove: (preventRemove: boolean, callback: PreventRemoveCallback) => {
+    mockPreventRemove = preventRemove;
+    mockOnPreventRemove = callback;
+  },
+  StackActions: {
+    replace: (name: string, params: object) => ({ type: 'REPLACE', payload: { name, params } }),
+  },
 }));
 
 jest.mock('../../hooks/useAuth', () => ({
@@ -56,28 +71,22 @@ jest.mock('../../hooks/useLocation', () => ({
 
 jest.mock('../../config/supabase', () => ({ supabase: {} }));
 
-// ---------------------------------------------------------------------------
-// Shared mock
-// ---------------------------------------------------------------------------
-
-const mockSafeParse = jest.fn();
-
+// The real schema and form helpers run; only the API calls are mocked.
 jest.mock('@nepally/shared', () => ({
+  ...jest.requireActual('@nepally/shared'),
   getCategories: jest.fn(async () => ({ data: [] })),
   getListingById: jest.fn(async () => ({ data: null })),
   createListing: jest.fn(async () => ({ data: { id: 'new-1' } })),
   updateListing: jest.fn(async () => ({ data: { id: 'edit-1' } })),
-  uploadListingPhotos: jest.fn(async () => ({ urls: [] })),
-  createListingSchema: {
-    safeParse: (...args: unknown[]) => mockSafeParse(...args),
-  },
-  LISTING_TYPE_LABELS: { business: 'Business', individual: 'Individual' },
-  ITEM_CONDITION_LABELS: { new: 'New', used: 'Used' },
-  MAX_PHOTOS_PER_LISTING: 5,
+  uploadListingPhotos: jest.fn(async () => ({ urls: [], paths: [] })),
 }));
 
 const mockGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
+const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
 const mockCreateListing = createListing as jest.MockedFunction<typeof createListing>;
+const mockUpdateListing = updateListing as jest.MockedFunction<typeof updateListing>;
+const mockScrollTo = ScrollView.prototype.scrollTo as jest.Mock;
+const mockFocus = TextInput.prototype.focus as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -85,13 +94,21 @@ const mockCreateListing = createListing as jest.MockedFunction<typeof createList
 
 const NO_ACTIVE_LOCATION = { activeLocation: null, savedLocations: [] };
 const VISITING_AUSTIN = {
-  activeLocation: { metro_area_id: 'm2', metro_name: 'Austin', metro_state: 'TX', is_temporary: true },
+  activeLocation: {
+    metro_area_id: 'm2',
+    metro_name: 'Austin',
+    metro_state: 'TX',
+    is_temporary: true,
+  },
   savedLocations: [],
 };
 
+const FOOD_ID = '11111111-1111-4111-8111-111111111111';
+const SERVICES_ID = '22222222-2222-4222-8222-222222222222';
+
 const MOCK_CATEGORIES = [
   {
-    id: 'cat-1',
+    id: FOOD_ID,
     name: 'Food & Restaurants',
     slug: 'food-restaurants',
     emoji: '🍜',
@@ -102,7 +119,7 @@ const MOCK_CATEGORIES = [
     created_at: new Date().toISOString(),
   },
   {
-    id: 'cat-2',
+    id: SERVICES_ID,
     name: 'Professional Services',
     slug: 'professional-services',
     emoji: '💼',
@@ -114,199 +131,408 @@ const MOCK_CATEGORIES = [
   },
 ];
 
+const EXISTING_LISTING = {
+  id: 'edit-1',
+  owner_id: 'user-1',
+  metro_area_id: 'metro-1',
+  category_id: FOOD_ID,
+  listing_type: 'business' as const,
+  status: 'active' as const,
+  title: 'Himalayan Kitchen',
+  description: 'Authentic Nepali food and drinks.',
+  photos: [],
+  price: null,
+  business_name: 'Himalayan Kitchen LLC',
+  address: null,
+  phone: null,
+  email: null,
+  website_url: null,
+  item_condition: null,
+  business_hours: null,
+  is_global: false,
+  views_count: 0,
+  saves_count: 0,
+  contacts_count: 0,
+  trending_score: 0,
+  refreshed_at: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+type Screen = ReturnType<typeof render>;
+
+async function renderForm(): Promise<Screen> {
+  const screen = render(<CreateListingScreen />);
+  // Flush the categories (and listing) load.
+  await act(async () => {});
+  return screen;
+}
+
+function fillValidForm(screen: Screen) {
+  fireEvent.press(screen.getByText('Food & Restaurants'));
+  fireEvent.changeText(screen.getByPlaceholderText('What are you listing?'), 'Momo catering');
+  fireEvent.changeText(
+    screen.getByPlaceholderText('Describe your listing in detail...'),
+    'Fresh momos for parties and events.'
+  );
+}
+
+async function submit(screen: Screen, label = 'Create Listing') {
+  await act(async () => {
+    fireEvent.press(screen.getByRole('button', { name: label }));
+  });
+}
+
+function lastCreatePayload() {
+  return mockCreateListing.mock.calls[mockCreateListing.mock.calls.length - 1][1];
+}
+
 // ---------------------------------------------------------------------------
-// Tests — render() + waitFor() only; NEVER use act() (hangs on CI)
+// Tests
 // ---------------------------------------------------------------------------
 
 describe('CreateListingScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRouteParams = undefined;
+    mockPreventRemove = false;
+    mockOnPreventRemove = null;
     mockUseAuth.mockReturnValue({
       user: { id: 'user-1', full_name: 'Test User', trust_level: 1, metro_area_id: 'metro-1' },
     });
     mockGetCategories.mockResolvedValue({ data: MOCK_CATEGORIES });
-    mockSafeParse.mockReturnValue({ success: true, data: {} });
+    mockGetListingById.mockResolvedValue({ data: null } as never);
+    mockCreateListing.mockResolvedValue({ data: { id: 'new-1' } } as never);
+    mockUpdateListing.mockResolvedValue({ data: { id: 'edit-1' } } as never);
     mockUseLocation.mockReturnValue(NO_ACTIVE_LOCATION);
   });
 
-  it("posts the listing to the member's active location", async () => {
-    mockUseLocation.mockReturnValue(VISITING_AUSTIN);
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Create Listing').length).toBe(2);
-    });
+  // -- Rendering ----------------------------------------------------------------
 
-    fireEvent.press(screen.getAllByText('Create Listing')[1]);
-
-    await waitFor(() => {
-      expect(mockCreateListing).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ metro_area_id: 'm2', owner_id: 'user-1' })
-      );
-    });
-  });
-
-  // -- Initial render ----------------------------------------------------------
-
-  it('renders "Create Listing" title and submit button', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Create Listing').length).toBe(2);
-    });
-  });
-
-  it('renders listing type toggles', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Business')).toBeTruthy();
-    });
-    expect(screen.getByText('Individual')).toBeTruthy();
+  it('renders the header title, the close button and the submit button', async () => {
+    const screen = await renderForm();
+    expect(screen.getByRole('header', { name: 'Create Listing' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create Listing' })).toBeTruthy();
   });
 
   it('loads and renders categories', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Food & Restaurants')).toBeTruthy();
-    });
+    const screen = await renderForm();
+    expect(screen.getByText('Food & Restaurants')).toBeTruthy();
     expect(screen.getByText('Professional Services')).toBeTruthy();
   });
 
-  // -- Form fields -------------------------------------------------------------
-
-  it('renders form fields', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('What are you listing?')).toBeTruthy();
-    });
-    expect(screen.getByPlaceholderText('Describe your listing in detail...')).toBeTruthy();
-  });
-
-  it('renders business-specific fields when listing type is business', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Your business name')).toBeTruthy();
-    });
-    expect(screen.getByPlaceholderText('Business address')).toBeTruthy();
-  });
-
   it('shows photo counter', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('0/5 photos added')).toBeTruthy();
-    });
+    const screen = await renderForm();
+    expect(screen.getByText('0/5 photos added')).toBeTruthy();
   });
 
-  // -- Validation errors -------------------------------------------------------
+  // -- Listing type --------------------------------------------------------------
 
-  it('shows validation errors when form is invalid', async () => {
-    mockSafeParse.mockReturnValue({
-      success: false,
-      error: {
-        issues: [
-          { path: ['title'], message: 'Title is required' },
-          { path: ['description'], message: 'Description is required' },
-        ],
-      },
-    });
-
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Create Listing').length).toBe(2);
-    });
-
-    fireEvent.press(screen.getAllByText('Create Listing')[1]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Title is required')).toBeTruthy();
-    });
-    expect(screen.getByText('Description is required')).toBeTruthy();
-  });
-
-  // -- Successful submission ---------------------------------------------------
-
-  it('submits successfully and navigates back', async () => {
-    mockSafeParse.mockReturnValue({ success: true, data: {} });
-    mockCreateListing.mockResolvedValue({ data: { id: 'new-1' } } as never);
-
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('What are you listing?')).toBeTruthy();
-    });
-
-    fireEvent.changeText(screen.getByPlaceholderText('What are you listing?'), 'Test Title');
-    fireEvent.changeText(
-      screen.getByPlaceholderText('Describe your listing in detail...'),
-      'Test description',
-    );
-
-    fireEvent.press(screen.getAllByText('Create Listing')[1]);
-
-    await waitFor(() => {
-      expect(mockGoBack).toHaveBeenCalled();
-    });
-  });
-
-  // -- Submission error --------------------------------------------------------
-
-  it('shows alert when createListing fails', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert');
-    mockSafeParse.mockReturnValue({ success: true, data: {} });
-    mockCreateListing.mockResolvedValue({ error: { message: 'Server error' } } as never);
-
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('What are you listing?')).toBeTruthy();
-    });
-
-    fireEvent.press(screen.getAllByText('Create Listing')[1]);
-
-    await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith('Error', 'Server error');
-    });
-    alertSpy.mockRestore();
-  });
-
-  // -- Listing type toggle -----------------------------------------------------
-
-  it('switches to individual fields when Individual is selected', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getByText('Individual')).toBeTruthy();
-    });
-
-    fireEvent.press(screen.getByText('Individual'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Condition')).toBeTruthy();
-    });
-    // Business-specific fields should be gone
+  it('starts as an Individual listing', async () => {
+    const screen = await renderForm();
+    expect(screen.getByRole('radio', { name: 'Individual' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Business' })).not.toBeChecked();
+    expect(screen.getByText('Condition')).toBeTruthy();
     expect(screen.queryByPlaceholderText('Your business name')).toBeNull();
   });
 
-  // -- No metro_area_id guard --------------------------------------------------
+  it('shows the business fields once Business is picked', async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Business' }));
 
-  it('does not submit when user has no metro_area_id', async () => {
-    mockUseAuth.mockReturnValue({
-      user: { id: 'user-1', full_name: 'Test User', trust_level: 1, metro_area_id: null },
-    });
+    expect(screen.getByRole('radio', { name: 'Business' })).toBeChecked();
+    expect(screen.getByPlaceholderText('Your business name')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Business address')).toBeTruthy();
+    expect(screen.queryByText('Condition')).toBeNull();
+  });
 
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Create Listing').length).toBe(2);
-    });
+  it("doesn't save the business fields of a listing switched to Individual", async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Business' }));
+    fireEvent.changeText(screen.getByPlaceholderText('Your business name'), 'Himalayan Kitchen');
+    fireEvent.changeText(screen.getByPlaceholderText('Business address'), '12 Main St');
+    fireEvent.press(screen.getByRole('radio', { name: 'Individual' }));
+    fillValidForm(screen);
 
-    fireEvent.press(screen.getAllByText('Create Listing')[1]);
+    await submit(screen);
 
-    // createListing should never be called
+    const payload = lastCreatePayload();
+    expect(payload.listing_type).toBe('individual');
+    expect(payload.business_name).toBeUndefined();
+    expect(payload.address).toBeUndefined();
+  });
+
+  it("doesn't save the condition of a listing switched to Business", async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Used' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Business' }));
+    fireEvent.changeText(screen.getByPlaceholderText('Your business name'), 'Himalayan Kitchen');
+    fillValidForm(screen);
+
+    await submit(screen);
+
+    expect(lastCreatePayload().item_condition).toBeUndefined();
+  });
+
+  // -- Validation -----------------------------------------------------------------
+
+  it('says what is missing when the form is submitted empty', async () => {
+    const screen = await renderForm();
+    await submit(screen);
+
+    expect(screen.getByText('Title must be at least 5 characters')).toBeTruthy();
+    expect(screen.getByText('Description must be at least 10 characters')).toBeTruthy();
+    expect(screen.getByText('Invalid category')).toBeTruthy();
     expect(mockCreateListing).not.toHaveBeenCalled();
   });
 
-  // -- Header ------------------------------------------------------------------
+  it('shows the email, phone and price errors', async () => {
+    const screen = await renderForm();
+    fillValidForm(screen);
+    fireEvent.changeText(screen.getByPlaceholderText('Contact email'), 'not-an-email');
+    fireEvent.changeText(screen.getByPlaceholderText('Contact phone number'), '1'.repeat(21));
+    fireEvent.changeText(screen.getByPlaceholderText(/e\.g\., "\$50\/hr"/), 'x'.repeat(51));
 
-  it('renders the header with close and title', async () => {
-    const screen = render(<CreateListingScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText('Create Listing').length).toBe(2);
+    await submit(screen);
+
+    expect(screen.getByText('Invalid email address')).toBeTruthy();
+    expect(screen.getByText('Phone must be at most 20 characters')).toBeTruthy();
+    expect(screen.getByText('Price must be at most 50 characters')).toBeTruthy();
+    expect(mockCreateListing).not.toHaveBeenCalled();
+  });
+
+  it('shows the business name, address and website errors', async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Business' }));
+    fillValidForm(screen);
+    fireEvent.changeText(screen.getByPlaceholderText('Your business name'), 'x'.repeat(101));
+    fireEvent.changeText(screen.getByPlaceholderText('Business address'), 'x'.repeat(201));
+    fireEvent.changeText(screen.getByPlaceholderText('https://...'), 'not a url');
+
+    await submit(screen);
+
+    expect(screen.getByText('Business name must be at most 100 characters')).toBeTruthy();
+    expect(screen.getByText('Address must be at most 200 characters')).toBeTruthy();
+    expect(screen.getByText('Invalid URL')).toBeTruthy();
+  });
+
+  it('limits each input to what the schema allows', async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Business' }));
+
+    expect(screen.getByPlaceholderText(/e\.g\., "\$50\/hr"/).props.maxLength).toBe(50);
+    expect(screen.getByPlaceholderText('Your business name').props.maxLength).toBe(100);
+    expect(screen.getByPlaceholderText('Business address').props.maxLength).toBe(200);
+    expect(screen.getByPlaceholderText('Contact phone number').props.maxLength).toBe(20);
+  });
+
+  it('saves a website typed without https://', async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Business' }));
+    fireEvent.changeText(screen.getByPlaceholderText('Your business name'), 'Himalayan Kitchen');
+    fireEvent.changeText(screen.getByPlaceholderText('https://...'), 'www.mybiz.com');
+    fillValidForm(screen);
+
+    await submit(screen);
+
+    expect(lastCreatePayload().website_url).toBe('https://www.mybiz.com');
+  });
+
+  it('scrolls to the first field with an error', async () => {
+    const screen = await renderForm();
+    fireEvent(screen.getByPlaceholderText('What are you listing?'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 320, width: 300, height: 80 } },
     });
+    fireEvent(screen.getByPlaceholderText('Contact email'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 900, width: 300, height: 80 } },
+    });
+    fillValidForm(screen);
+    fireEvent.changeText(screen.getByPlaceholderText('Contact email'), 'not-an-email');
+
+    await submit(screen);
+
+    expect(mockScrollTo).toHaveBeenCalledWith(expect.objectContaining({ y: expect.any(Number) }));
+    const { y } = mockScrollTo.mock.calls[mockScrollTo.mock.calls.length - 1][0];
+    expect(y).toBeGreaterThan(800);
+    expect(y).toBeLessThanOrEqual(900);
+  });
+
+  // -- Keyboard -------------------------------------------------------------------
+
+  it('moves from one field to the next with the return key', async () => {
+    const screen = await renderForm();
+    const title = screen.getByPlaceholderText('What are you listing?');
+    expect(title.props.returnKeyType).toBe('next');
+
+    fireEvent(title, 'submitEditing');
+
+    expect(mockFocus).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets the system fill in contact details', async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Business' }));
+
+    expect(screen.getByPlaceholderText('Contact email').props.autoComplete).toBe('email');
+    expect(screen.getByPlaceholderText('Contact phone number').props.autoComplete).toBe('tel');
+    expect(screen.getByPlaceholderText('https://...').props.autoComplete).toBe('url');
+  });
+
+  // -- Accessibility --------------------------------------------------------------
+
+  it('names every input for screen readers', async () => {
+    const screen = await renderForm();
+    fireEvent.press(screen.getByRole('radio', { name: 'Business' }));
+
+    for (const label of [
+      'Title, required',
+      'Description, required',
+      'Price / Rate',
+      'Business name, required',
+      'Address',
+      'Website',
+      'Phone',
+      'Email',
+    ]) {
+      expect(screen.getByLabelText(label)).toBeTruthy();
+    }
+  });
+
+  it('reports which category is selected', async () => {
+    const screen = await renderForm();
+    const food = screen.getByRole('radio', { name: 'Food & Restaurants' });
+    expect(food).not.toBeChecked();
+
+    fireEvent.press(food);
+
+    expect(screen.getByRole('radio', { name: 'Food & Restaurants' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Professional Services' })).not.toBeChecked();
+  });
+
+  // -- Saving ----------------------------------------------------------------------
+
+  it("posts the listing to the member's active location", async () => {
+    mockUseLocation.mockReturnValue(VISITING_AUSTIN);
+    const screen = await renderForm();
+    fillValidForm(screen);
+
+    await submit(screen);
+
+    expect(lastCreatePayload()).toEqual(
+      expect.objectContaining({ metro_area_id: 'm2', owner_id: 'user-1', category_id: FOOD_ID })
+    );
+  });
+
+  it('opens the new listing once it is created', async () => {
+    const screen = await renderForm();
+    fillValidForm(screen);
+
+    await submit(screen);
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'REPLACE',
+      payload: { name: 'ListingDetail', params: { listingId: 'new-1' } },
+    });
+    expect(mockGoBack).not.toHaveBeenCalled();
+  });
+
+  it('shows alert when createListing fails', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    mockCreateListing.mockResolvedValue({ error: { message: 'Server error' } } as never);
+    const screen = await renderForm();
+    fillValidForm(screen);
+
+    await submit(screen);
+
+    expect(alertSpy).toHaveBeenCalledWith('Error', 'Server error');
+    expect(mockDispatch).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('does not submit when there is no metro to post to', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1', full_name: 'Test User', trust_level: 1, metro_area_id: null },
+    });
+    const screen = await renderForm();
+    fillValidForm(screen);
+
+    await submit(screen);
+
+    expect(mockCreateListing).not.toHaveBeenCalled();
+  });
+
+  it('saves an edit and goes back to the listing', async () => {
+    mockRouteParams = { editListingId: 'edit-1' };
+    mockGetListingById.mockResolvedValue({ data: EXISTING_LISTING } as never);
+    const screen = await renderForm();
+    expect(screen.getByRole('header', { name: 'Edit Listing' })).toBeTruthy();
+    fireEvent.changeText(screen.getByDisplayValue('Himalayan Kitchen'), 'Everest Kitchen');
+
+    await submit(screen, 'Update Listing');
+
+    expect(mockUpdateListing).toHaveBeenCalledWith(
+      expect.anything(),
+      'edit-1',
+      expect.objectContaining({ title: 'Everest Kitchen', business_name: 'Himalayan Kitchen LLC' })
+    );
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalled());
+  });
+
+  // -- Leaving with unsaved changes ---------------------------------------------
+
+  it('lets the member leave an untouched form without asking', async () => {
+    await renderForm();
+    expect(mockPreventRemove).toBe(false);
+  });
+
+  it('asks before throwing away a half-filled listing', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = await renderForm();
+    fireEvent.changeText(screen.getByPlaceholderText('What are you listing?'), 'Momo');
+
+    expect(mockPreventRemove).toBe(true);
+    const leave = { type: 'GO_BACK' };
+    act(() => mockOnPreventRemove?.({ data: { action: leave } }));
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Discard this listing?',
+      expect.any(String),
+      expect.any(Array)
+    );
+    const buttons = alertSpy.mock.calls[0][2] as { text: string; onPress?: () => void }[];
+    buttons.find((b) => b.text === 'Discard')?.onPress?.();
+    expect(mockDispatch).toHaveBeenCalledWith(leave);
+    alertSpy.mockRestore();
+  });
+
+  it('asks before throwing away changes to an existing listing', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    mockRouteParams = { editListingId: 'edit-1' };
+    mockGetListingById.mockResolvedValue({ data: EXISTING_LISTING } as never);
+    const screen = await renderForm();
+    // Loading the listing isn't a change.
+    expect(mockPreventRemove).toBe(false);
+
+    fireEvent.changeText(screen.getByDisplayValue('Himalayan Kitchen'), 'Everest Kitchen');
+    expect(mockPreventRemove).toBe(true);
+    act(() => mockOnPreventRemove?.({ data: { action: { type: 'GO_BACK' } } }));
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Discard your changes?',
+      expect.any(String),
+      expect.any(Array)
+    );
+    alertSpy.mockRestore();
+  });
+
+  it('stops asking once the listing is saved', async () => {
+    const screen = await renderForm();
+    fillValidForm(screen);
+    expect(mockPreventRemove).toBe(true);
+
+    await submit(screen);
+
+    expect(mockPreventRemove).toBe(false);
   });
 });

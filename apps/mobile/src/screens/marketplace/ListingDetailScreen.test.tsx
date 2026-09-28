@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
   createReport,
   getListingById,
@@ -32,6 +32,7 @@ const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
 const mockGetParent = jest.fn(() => ({ navigate: mockNavigate }));
 const mockUseAuth = jest.fn();
+let mockFocusCallback: (() => void | (() => void)) | null = null;
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
@@ -40,6 +41,11 @@ jest.mock('@react-navigation/native', () => ({
     getParent: mockGetParent,
   }),
   useRoute: () => ({ params: { listingId: 'listing-1' } }),
+  // Captured, not run: a test calls it to stand in for the screen gaining focus
+  // (the first call is the initial focus, which the screen skips).
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    mockFocusCallback = callback;
+  },
 }));
 
 jest.mock('../../hooks/useAuth', () => ({
@@ -140,12 +146,13 @@ const MOCK_LISTING = {
 };
 
 // ---------------------------------------------------------------------------
-// Tests — render() + waitFor() only; NEVER use act() (hangs on CI)
+// Tests
 // ---------------------------------------------------------------------------
 
 describe('ListingDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFocusCallback = null;
     mockUseAuth.mockReturnValue({
       user: { id: 'user-1', full_name: 'Test User', trust_level: 1, metro_area_id: 'metro-1' },
     });
@@ -154,6 +161,45 @@ describe('ListingDetailScreen', () => {
   });
 
   // -- Data fetching & display -----------------------------------------------
+
+  it('shows the edits after coming back from the edit form', async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+
+    act(() => {
+      mockFocusCallback?.();
+    });
+    expect(mockGetListingById).toHaveBeenCalledTimes(1);
+
+    mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, title: 'Everest Kitchen' } } as never);
+    await act(async () => {
+      mockFocusCallback?.();
+    });
+
+    expect(screen.getByText('Everest Kitchen')).toBeTruthy();
+    expect(mockGetListingById).toHaveBeenCalledTimes(2);
+    // Coming back isn't another view.
+    expect(incrementListingViews).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the listing on screen when the refetch on return fails', async () => {
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+    });
+
+    act(() => {
+      mockFocusCallback?.();
+    });
+    mockGetListingById.mockResolvedValue({ error: new Error('offline') } as never);
+    await act(async () => {
+      mockFocusCallback?.();
+    });
+
+    expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
+  });
 
   it('renders listing title after load', async () => {
     const screen = render(<ListingDetailScreen />);
