@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { act, render, waitFor, fireEvent } from '@testing-library/react-native';
 import { FlatList, RefreshControl } from 'react-native';
 import { getCategories, getListingsByMetro, getFeaturedListings } from '@nepally/shared';
 import MarketplaceCategoryScreen from './MarketplaceCategoryScreen';
@@ -494,6 +494,38 @@ describe('MarketplaceCategoryScreen', () => {
       });
       expect(screen.getByText('Himalayan Kitchen')).toBeTruthy();
       expect(screen.UNSAFE_getByType(RefreshControl).props.refreshing).toBe(false);
+    });
+
+    it('still pages after a refresh interrupts a page load and then fails', async () => {
+      let finishStalePage: (value: { data: typeof fullPage }) => void = () => {};
+      mockGetListingsByMetro
+        .mockResolvedValueOnce({ data: fullPage })
+        .mockReturnValueOnce(new Promise((resolve) => (finishStalePage = resolve)))
+        .mockResolvedValueOnce({ error: new Error('offline') })
+        .mockResolvedValueOnce({ data: [{ ...MOCK_LISTING, id: 'listing-20' }] });
+      const screen = render(<MarketplaceCategoryScreen />);
+      await waitFor(() => {
+        expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(20);
+      });
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+      fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't refresh listings.")).toBeTruthy();
+      });
+      // The interrupted page lands late and is dropped.
+      await act(async () => finishStalePage({ data: fullPage }));
+
+      fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+
+      await waitFor(() => {
+        expect(mockGetListingsByMetro).toHaveBeenCalledTimes(4);
+      });
+      expect(mockGetListingsByMetro).toHaveBeenLastCalledWith(
+        expect.anything(),
+        'metro-1',
+        expect.objectContaining({ offset: 20 })
+      );
     });
 
     it('loads the category again on Try again', async () => {

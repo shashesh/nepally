@@ -58,6 +58,10 @@ export default function SavedListingsScreen() {
       } else if (result) {
         setListings(result);
         setError(null);
+      } else {
+        // No one signed in: never leave another member's saved listings on screen.
+        setListings([]);
+        setError(null);
       }
       setLoading(false);
       setRefreshing(false);

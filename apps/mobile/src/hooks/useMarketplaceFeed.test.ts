@@ -341,6 +341,26 @@ describe('useMarketplaceFeed', () => {
       expect(result.current.recent).toHaveLength(3);
     });
 
+    it('clears the paging spinner when a refresh interrupts a page load and fails', async () => {
+      mockSources({ grid: [page(makeListings('g', 20))] });
+      const { result } = await renderFeed();
+      mockGetListingsByMetro.mockImplementation(async (_c, _m, filters?: ListingFilters) =>
+        filters?.limit === 10
+          ? page(makeListings('r', 3), 10)
+          : filters?.offset === 20
+            ? new Promise<ListingsResult>(() => {})
+            : { error: new Error('boom') }
+      );
+
+      act(() => result.current.loadMore());
+      expect(result.current.loadingMore).toBe(true);
+      act(() => result.current.refresh());
+      await settle();
+
+      expect(result.current.refreshError).toBe("Couldn't refresh listings.");
+      expect(result.current.loadingMore).toBe(false);
+    });
+
     it('clears the refresh failure once a load succeeds', async () => {
       mockSources({
         grid: [page(makeListings('g', 20)), { error: new Error('boom') }, page(makeListings('n', 2))],

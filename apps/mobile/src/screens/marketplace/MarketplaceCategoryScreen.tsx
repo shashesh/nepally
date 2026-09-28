@@ -222,6 +222,10 @@ export default function MarketplaceCategoryScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    // A page still loading belongs to the old generation and will be dropped
+    // without clearing the guard, so clear it here or paging stays stuck.
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
     const generation = ++generationRef.current;
     const result = await fetchPage(0);
     if (!mountedRef.current || generation !== generationRef.current) return;

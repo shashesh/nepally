@@ -223,6 +223,8 @@ export function useMarketplaceFeed(
               metroId,
             })
           );
+          // A page load this refresh interrupted was dropped; don't leave its spinner.
+          setLoadingMore(false);
           setRefreshing(false);
           return;
         }

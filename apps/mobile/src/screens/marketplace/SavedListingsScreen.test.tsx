@@ -229,6 +229,21 @@ describe('SavedListingsScreen', () => {
     expect(screen.getByText('Saved thing')).toBeTruthy();
   });
 
+  it("drops the previous member's saved listings once no one is signed in", async () => {
+    const screen = render(<SavedListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Saved thing')).toBeTruthy();
+    });
+
+    mockUseAuth.mockReturnValue({ user: null });
+    await act(async () => {
+      screen.rerender(<SavedListingsScreen />);
+    });
+
+    expect(screen.getByText('empty:empty-saved')).toBeTruthy();
+    expect(screen.queryByText('Saved thing')).toBeNull();
+  });
+
   it('drops a listing from the list once it is unsaved', async () => {
     const screen = render(<SavedListingsScreen />);
     await waitFor(() => {

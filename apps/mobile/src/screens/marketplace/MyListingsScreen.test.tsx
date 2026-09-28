@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { act, render, waitFor, fireEvent } from '@testing-library/react-native';
 import { Alert, RefreshControl } from 'react-native';
 import { getListingsByOwner, deactivateListing, reactivateListing, deleteListing, refreshListing } from '@nepally/shared';
 import MyListingsScreen from './MyListingsScreen';
@@ -279,6 +279,23 @@ describe('MyListingsScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('My Restaurant')).toBeTruthy();
     });
+  });
+
+  it("drops the previous owner's listings once no one is signed in", async () => {
+    mockGetListingsByOwner.mockResolvedValue({ data: [makeListing()] });
+    const screen = render(<MyListingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy();
+    });
+
+    mockUseAuth.mockReturnValue({ user: null });
+    // Flushed inside act, not polled: a busy worker in the full suite can
+    // outlast waitFor's one-second window.
+    await act(async () => {
+      screen.rerender(<MyListingsScreen />);
+    });
+
+    expect(screen.queryByText('Edit')).toBeNull();
   });
 
   it('skips fetch when user is null', async () => {

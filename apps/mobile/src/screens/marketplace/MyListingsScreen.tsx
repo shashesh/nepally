@@ -82,6 +82,10 @@ export default function MyListingsScreen() {
       } else if (result) {
         setListings(result.data);
         setError(null);
+      } else {
+        // No one signed in: never leave another member's listings on screen.
+        setListings([]);
+        setError(null);
       }
       setLoading(false);
       setRefreshing(false);
