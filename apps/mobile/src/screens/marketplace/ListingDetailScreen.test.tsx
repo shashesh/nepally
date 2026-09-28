@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Dimensions, Linking, ScrollView } from 'react-native';
+import { Alert, Dimensions, Linking, ScrollView, Share } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
   createReport,
@@ -94,6 +94,9 @@ jest.mock('@nepally/shared', () => ({
   toWebsiteUrl: jest.requireActual('@nepally/shared').toWebsiteUrl,
   toMapsUrls: jest.requireActual('@nepally/shared').toMapsUrls,
   listingInquiryDraft: jest.requireActual('@nepally/shared').listingInquiryDraft,
+  pluralize: jest.requireActual('@nepally/shared').pluralize,
+  formatClockTime: jest.requireActual('@nepally/shared').formatClockTime,
+  listingWebUrl: jest.requireActual('@nepally/shared').listingWebUrl,
 }));
 
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
@@ -463,13 +466,64 @@ describe('ListingDetailScreen', () => {
     expect(screen.getByText('3 saves')).toBeTruthy();
   });
 
-  it('renders business hours', async () => {
+  it('renders business hours in 12-hour time', async () => {
     const screen = render(<ListingDetailScreen />);
     await waitFor(() => {
       expect(screen.getByText('Hours')).toBeTruthy();
     });
     expect(screen.getByText('Monday')).toBeTruthy();
-    expect(screen.getByText('9:00 - 17:00')).toBeTruthy();
+    expect(screen.getByText('9:00 AM – 5:00 PM')).toBeTruthy();
+  });
+
+  // -- Consistency (4.8) -----------------------------------------------------
+
+  it('counts one view and one save in the singular', async () => {
+    mockGetListingById.mockResolvedValue({
+      data: { ...MOCK_LISTING, views_count: 1, saves_count: 1 },
+    } as never);
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('1 view')).toBeTruthy();
+    });
+    expect(screen.getByText('1 save')).toBeTruthy();
+  });
+
+  it('saves with a heart, as the grid does', async () => {
+    mockGetUserSavedListingIds.mockResolvedValue({ data: ['listing-1'] });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Unsave listing')).toBeTruthy();
+    });
+    expect(screen.UNSAFE_queryAllByProps({ name: 'heart' }).length).toBeGreaterThan(0);
+    expect(screen.UNSAFE_queryAllByProps({ name: 'bookmark' })).toHaveLength(0);
+    expect(screen.UNSAFE_queryAllByProps({ name: 'bookmark-outline' })).toHaveLength(0);
+  });
+
+  it("shares the listing's web page", async () => {
+    const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Share listing')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Share listing'));
+
+    expect(shareSpy).toHaveBeenCalledWith({
+      message: 'Himalayan Kitchen',
+      url: 'https://nepally.us/marketplace/listing/listing-1',
+    });
+    shareSpy.mockRestore();
+  });
+
+  it('offers Share to the owner too', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2', full_name: 'Asha Kumar', trust_level: 1, metro_area_id: 'metro-1' },
+    });
+    const screen = render(<ListingDetailScreen />);
+    await waitFor(() => {
+      expect(screen.getByText('Edit Listing')).toBeTruthy();
+    });
+    expect(screen.getByLabelText('Share listing')).toBeTruthy();
   });
 
   it('renders category placeholder emoji when no photos', async () => {

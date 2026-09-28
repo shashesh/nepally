@@ -10,6 +10,7 @@ import {
   Dimensions,
   Linking,
   Platform,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,7 +25,10 @@ import {
   getDaysSinceRefresh,
   formatListingPrice,
   createReport,
+  formatClockTime,
   listingInquiryDraft,
+  listingWebUrl,
+  pluralize,
   toMailtoUrl,
   toMapsUrls,
   toTelUrl,
@@ -185,6 +189,17 @@ export default function ListingDetailScreen() {
     navigation.navigate('PublicProfileView', { userId: owner.id });
   }, [listing, navigation, user?.id]);
 
+  const handleShare = useCallback(() => {
+    if (!listing) return;
+    const url = listingWebUrl(listing.id);
+    // iOS shares the URL as a link of its own; Android shares only the message.
+    Share.share(
+      Platform.OS === 'ios' ? { message: listing.title, url } : { message: `${listing.title}\n${url}` }
+    ).catch(() => {
+      Alert.alert("Couldn't share", 'Please try again.');
+    });
+  }, [listing]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -236,6 +251,14 @@ export default function ListingDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={handleShare}
+            style={styles.headerButton}
+            accessibilityRole="button"
+            accessibilityLabel="Share listing"
+          >
+            <Ionicons name="share-outline" size={22} color={colors.text.secondary} />
+          </TouchableOpacity>
           {!isOwner && (
             <TouchableOpacity
               onPress={handleReport}
@@ -402,7 +425,9 @@ export default function ListingDetailScreen() {
                   return (
                     <View key={day} style={styles.hoursRow}>
                       <Text style={styles.hoursDay}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
-                      <Text style={styles.hoursTime}>{hours.open} - {hours.close}</Text>
+                      <Text style={styles.hoursTime}>
+                        {`${formatClockTime(hours.open)} – ${formatClockTime(hours.close)}`}
+                      </Text>
                     </View>
                   );
                 })}
@@ -445,11 +470,11 @@ export default function ListingDetailScreen() {
         <View style={styles.statsSection}>
           <View style={styles.stat}>
             <Ionicons name="eye-outline" size={16} color={colors.text.tertiary} />
-            <Text style={styles.statText}>{listing.views_count} views</Text>
+            <Text style={styles.statText}>{pluralize(listing.views_count, 'view')}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="bookmark-outline" size={16} color={colors.text.tertiary} />
-            <Text style={styles.statText}>{listing.saves_count} saves</Text>
+            <Ionicons name="heart-outline" size={16} color={colors.text.tertiary} />
+            <Text style={styles.statText}>{pluralize(listing.saves_count, 'save')}</Text>
           </View>
         </View>
       </ScrollView>
@@ -470,7 +495,7 @@ export default function ListingDetailScreen() {
             accessibilityLabel={isSaved ? 'Unsave listing' : 'Save listing'}
           >
             <Ionicons
-              name={isSaved ? 'bookmark' : 'bookmark-outline'}
+              name={isSaved ? 'heart' : 'heart-outline'}
               size={22}
               color={isSaved ? colors.primary.main : colors.text.secondary}
             />
