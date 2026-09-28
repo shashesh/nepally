@@ -9,6 +9,7 @@ export {
 } from './listingAge';
 export { injectSponsoredIntoGrid } from './sponsoredInjection';
 export { isVerifiedSeller } from './seller';
+export { toMailtoUrl, toMapsUrls, toTelUrl, toWebsiteUrl, type MapsUrls } from './contactLinks';
 export {
   getPromotionBlocker,
   PROMOTION_BLOCKER_MESSAGES,

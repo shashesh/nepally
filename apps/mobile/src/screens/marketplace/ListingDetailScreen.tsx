@@ -8,6 +8,8 @@ import {
   Alert,
   StyleSheet,
   Dimensions,
+  Linking,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +24,10 @@ import {
   getDaysSinceRefresh,
   formatListingPrice,
   createReport,
+  toMailtoUrl,
+  toMapsUrls,
+  toTelUrl,
+  toWebsiteUrl,
   TrustLevel,
   LISTING_TYPE_LABELS,
   ITEM_CONDITION_LABELS,
@@ -310,16 +316,40 @@ export default function ListingDetailScreen() {
               <DetailRow icon="business-outline" label="Business" value={listing.business_name} />
             )}
             {listing.address && (
-              <DetailRow icon="location-outline" label="Address" value={listing.address} />
+              <DetailRow
+                icon="location-outline"
+                label="Address"
+                value={listing.address}
+                urls={mapsUrls(listing.address)}
+                linkLabel={`Open ${listing.address} in Maps`}
+              />
             )}
             {listing.phone && (
-              <DetailRow icon="call-outline" label="Phone" value={listing.phone} />
+              <DetailRow
+                icon="call-outline"
+                label="Phone"
+                value={listing.phone}
+                urls={asUrls(toTelUrl(listing.phone))}
+                linkLabel={`Call ${listing.phone}`}
+              />
             )}
             {listing.email && (
-              <DetailRow icon="mail-outline" label="Email" value={listing.email} />
+              <DetailRow
+                icon="mail-outline"
+                label="Email"
+                value={listing.email}
+                urls={asUrls(toMailtoUrl(listing.email))}
+                linkLabel={`Email ${listing.email}`}
+              />
             )}
             {listing.website_url && (
-              <DetailRow icon="globe-outline" label="Website" value={listing.website_url} />
+              <DetailRow
+                icon="globe-outline"
+                label="Website"
+                value={listing.website_url}
+                urls={asUrls(toWebsiteUrl(listing.website_url))}
+                linkLabel={`Open ${listing.website_url}`}
+              />
             )}
             {listing.business_hours && (
               <View style={styles.hoursSection}>
@@ -430,13 +460,60 @@ export default function ListingDetailScreen() {
   );
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string }) {
-  return (
-    <View style={styles.detailRow}>
+/** Opens the first URL something on the device handles, and says so when nothing does. */
+async function openFirst(urls: string[]): Promise<void> {
+  for (const url of urls) {
+    try {
+      await Linking.openURL(url);
+      return;
+    } catch {
+      // Nothing handles this one; try the next.
+    }
+  }
+  Alert.alert("Couldn't open that", 'No app on this device can open it.');
+}
+
+function asUrls(url: string | null): string[] | null {
+  return url ? [url] : null;
+}
+
+/** Maps for the address: the platform's own app first, then Google Maps in the browser. */
+function mapsUrls(address: string): string[] | null {
+  const maps = toMapsUrls(address);
+  if (!maps) return null;
+  return [Platform.OS === 'ios' ? maps.apple : maps.geo, maps.google];
+}
+
+interface DetailRowProps {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value: string;
+  /** URLs to try in turn on a tap. Without any, the value is plain text. */
+  urls?: string[] | null;
+  /** What a screen reader announces for the link, e.g. "Call 555-0100". */
+  linkLabel?: string;
+}
+
+function DetailRow({ icon, label, value, urls, linkLabel }: DetailRowProps) {
+  const content = (
+    <>
       <Ionicons name={icon} size={18} color={colors.text.secondary} />
       <Text style={styles.detailLabel}>{label}:</Text>
-      <Text style={styles.detailValue} numberOfLines={2}>{value}</Text>
-    </View>
+      <Text style={[styles.detailValue, urls && styles.detailLinkValue]} selectable>
+        {value}
+      </Text>
+    </>
+  );
+  if (!urls) return <View style={styles.detailRow}>{content}</View>;
+  return (
+    <TouchableOpacity
+      style={[styles.detailRow, styles.detailLinkRow]}
+      onPress={() => void openFirst(urls)}
+      accessibilityRole="link"
+      accessibilityLabel={linkLabel}
+    >
+      {content}
+    </TouchableOpacity>
   );
 }
 
@@ -556,9 +633,12 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.s,
     marginBottom: spacing.s,
+  },
+  detailLinkRow: {
+    minHeight: 44,
   },
   detailLabel: {
     ...typography.caption,
@@ -569,6 +649,9 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.primary,
     flex: 1,
+  },
+  detailLinkValue: {
+    color: colors.primary.main,
   },
   hoursSection: {
     marginTop: spacing.xs,

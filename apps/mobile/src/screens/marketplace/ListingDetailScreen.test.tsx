@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Dimensions, ScrollView } from 'react-native';
+import { Alert, Dimensions, Linking, ScrollView } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import {
   createReport,
@@ -86,6 +86,10 @@ jest.mock('@nepally/shared', () => ({
   ]),
   isBusinessOpenNow: jest.fn(() => ({ isOpen: true, nextChangeLabel: 'Closes 5p' })),
   getDaysSinceRefresh: jest.requireActual('@nepally/shared').getDaysSinceRefresh,
+  toTelUrl: jest.requireActual('@nepally/shared').toTelUrl,
+  toMailtoUrl: jest.requireActual('@nepally/shared').toMailtoUrl,
+  toWebsiteUrl: jest.requireActual('@nepally/shared').toWebsiteUrl,
+  toMapsUrls: jest.requireActual('@nepally/shared').toMapsUrls,
 }));
 
 const mockGetListingById = getListingById as jest.MockedFunction<typeof getListingById>;
@@ -290,6 +294,105 @@ describe('ListingDetailScreen', () => {
     expect(screen.getByText('Himalayan Kitchen LLC')).toBeTruthy();
     expect(screen.getByText('123 Main St')).toBeTruthy();
     expect(screen.getByText('555-1234')).toBeTruthy();
+  });
+
+  // -- Contact details (4.1) -------------------------------------------------
+
+  describe('contact details', () => {
+    let openURL: jest.SpyInstance;
+
+    beforeEach(() => {
+      openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    });
+
+    afterEach(() => {
+      openURL.mockRestore();
+    });
+
+    async function renderLoaded() {
+      const screen = render(<ListingDetailScreen />);
+      await waitFor(() => {
+        expect(screen.getByText('Business Details')).toBeTruthy();
+      });
+      return screen;
+    }
+
+    it('calls the phone number', async () => {
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Call 555-1234' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenCalledWith('tel:5551234');
+      });
+    });
+
+    it('writes to the email address', async () => {
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Email info@himalayan.com' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenCalledWith('mailto:info@himalayan.com');
+      });
+    });
+
+    it('opens a website typed without a scheme over https', async () => {
+      mockGetListingById.mockResolvedValue({
+        data: { ...MOCK_LISTING, website_url: 'www.himalayan.com' },
+      } as never);
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Open www.himalayan.com' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenCalledWith('https://www.himalayan.com');
+      });
+    });
+
+    it('opens the address in Apple Maps on iOS', async () => {
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Open 123 Main St in Maps' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenCalledWith('maps:?q=123%20Main%20St');
+      });
+    });
+
+    it('falls back to Google Maps when no maps app opens', async () => {
+      openURL.mockRejectedValueOnce(new Error('no handler'));
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Open 123 Main St in Maps' }));
+      await waitFor(() => {
+        expect(openURL).toHaveBeenLastCalledWith(
+          'https://www.google.com/maps/search/?api=1&query=123%20Main%20St'
+        );
+      });
+    });
+
+    it('says so when nothing on the device can open the link', async () => {
+      openURL.mockRejectedValue(new Error('no handler'));
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      const screen = await renderLoaded();
+      fireEvent.press(screen.getByRole('link', { name: 'Call 555-1234' }));
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(
+          "Couldn't open that",
+          'No app on this device can open it.'
+        );
+      });
+      alertSpy.mockRestore();
+    });
+
+    it('shows a value that makes no link as plain text', async () => {
+      mockGetListingById.mockResolvedValue({
+        data: { ...MOCK_LISTING, website_url: 'ftp://himalayan.com' },
+      } as never);
+      const screen = await renderLoaded();
+      expect(screen.getByText('ftp://himalayan.com')).toBeTruthy();
+      expect(screen.queryByRole('link', { name: 'Open ftp://himalayan.com' })).toBeNull();
+    });
+
+    it('shows a long address in full', async () => {
+      const address = '4567 Very Long Boulevard Name, Building C, Suite 1200, Jackson Heights, NY 11372';
+      mockGetListingById.mockResolvedValue({ data: { ...MOCK_LISTING, address } } as never);
+      const screen = await renderLoaded();
+      expect(screen.getByText(address).props.numberOfLines).toBeUndefined();
+      expect(screen.getByText(address).props.selectable).toBe(true);
+    });
   });
 
   it('renders owner info', async () => {
