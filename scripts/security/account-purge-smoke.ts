@@ -24,6 +24,12 @@ type UserFixture = { id: string; email: string; password: string };
 const FAKE_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Projects this check may run against. It deletes every due account, so a
+ * production ref must never be added. Staging: nusa-staging.
+ */
+const PURGE_ALLOWED_PROJECT_REFS = ['tlusiongalvszftnzpoq'];
+
 const NO_SESSION_AUTH = {
   autoRefreshToken: false,
   persistSession: false,
@@ -48,6 +54,11 @@ function assertCondition(condition: unknown, message: string): void {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+/** `abcd` for `https://abcd.supabase.co`; anything else (a custom domain) is refused. */
+function projectRef(url: string): string {
+  return new URL(url).hostname.split('.')[0];
 }
 
 async function createUser(service: SupabaseClient, prefix: string): Promise<UserFixture> {
@@ -135,6 +146,11 @@ async function main(): Promise<void> {
   const anonKey = requireEnv('SUPABASE_ANON_KEY');
   const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const purgeSecret = requireEnv('ACCOUNT_PURGE_SECRET');
+  const ref = projectRef(url);
+  assertCondition(
+    PURGE_ALLOWED_PROJECT_REFS.includes(ref),
+    `Refusing to run a real purge on project "${ref}". Allowed: ${PURGE_ALLOWED_PROJECT_REFS.join(', ')}`
+  );
   const service = createClient(url, serviceKey, { auth: NO_SESSION_AUTH });
   const createdUsers: string[] = [];
 

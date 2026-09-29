@@ -11,6 +11,8 @@ import {
 type FakeOptions = {
   due?: string[];
   restored?: string[];
+  /** Due on the first check, restored by the second. */
+  restoresMidPurge?: string[];
   objects?: Record<string, StorageObjectRef[]>;
   failStorageFor?: string[];
   failDeleteFor?: string[];
@@ -25,6 +27,7 @@ function fakeDeps(options: FakeOptions = {}) {
     deleteAuthUser: [] as string[],
   };
   const failures: string[] = [];
+  const stillDueChecks = new Map<string, number>();
 
   const deps: PurgeDeps = {
     async listDueUserIds(limit) {
@@ -32,6 +35,9 @@ function fakeDeps(options: FakeOptions = {}) {
       return options.due ?? [];
     },
     async isStillDue(userId) {
+      const checks = (stillDueChecks.get(userId) ?? 0) + 1;
+      stillDueChecks.set(userId, checks);
+      if ((options.restoresMidPurge ?? []).includes(userId)) return checks === 1;
       return !(options.restored ?? []).includes(userId);
     },
     async listStorageObjects(userId) {
@@ -107,6 +113,20 @@ test('removes objects bucket by bucket in chunks of 100, then deletes the auth u
     ]
   );
   assert.deepEqual(calls.deleteAuthUser, ['u1']);
+});
+
+test('keeps the account when the user restores while their files are being removed', async () => {
+  const { deps, calls } = fakeDeps({
+    due: ['u1'],
+    restoresMidPurge: ['u1'],
+    objects: { u1: objectsFor('u1', 'post-photos', 1) },
+  });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 0, skipped: 1, failed: 0 });
+  assert.equal(calls.removeObjects.length, 1);
+  assert.deepEqual(calls.deleteAuthUser, []);
 });
 
 test('keeps the auth user when storage removal fails, and carries on with the next user', async () => {

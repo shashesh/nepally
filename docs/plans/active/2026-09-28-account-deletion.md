@@ -1108,6 +1108,8 @@ import {
 type FakeOptions = {
   due?: string[];
   restored?: string[];
+  /** Due on the first check, restored by the second. */
+  restoresMidPurge?: string[];
   objects?: Record<string, StorageObjectRef[]>;
   failStorageFor?: string[];
   failDeleteFor?: string[];
@@ -1122,6 +1124,7 @@ function fakeDeps(options: FakeOptions = {}) {
     deleteAuthUser: [] as string[],
   };
   const failures: string[] = [];
+  const stillDueChecks = new Map<string, number>();
 
   const deps: PurgeDeps = {
     async listDueUserIds(limit) {
@@ -1129,6 +1132,9 @@ function fakeDeps(options: FakeOptions = {}) {
       return options.due ?? [];
     },
     async isStillDue(userId) {
+      const checks = (stillDueChecks.get(userId) ?? 0) + 1;
+      stillDueChecks.set(userId, checks);
+      if ((options.restoresMidPurge ?? []).includes(userId)) return checks === 1;
       return !(options.restored ?? []).includes(userId);
     },
     async listStorageObjects(userId) {
@@ -1206,6 +1212,20 @@ test('removes objects bucket by bucket in chunks of 100, then deletes the auth u
   assert.deepEqual(calls.deleteAuthUser, ['u1']);
 });
 
+test('keeps the account when the user restores while their files are being removed', async () => {
+  const { deps, calls } = fakeDeps({
+    due: ['u1'],
+    restoresMidPurge: ['u1'],
+    objects: { u1: objectsFor('u1', 'post-photos', 1) },
+  });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 0, skipped: 1, failed: 0 });
+  assert.equal(calls.removeObjects.length, 1);
+  assert.deepEqual(calls.deleteAuthUser, []);
+});
+
 test('keeps the auth user when storage removal fails, and carries on with the next user', async () => {
   const { deps, calls, failures } = fakeDeps({
     due: ['u1', 'u2'],
@@ -1270,7 +1290,7 @@ export type StorageObjectRef = { bucket_id: string; name: string };
 export interface PurgeDeps {
   /** Users whose deletion_scheduled_for <= now(), oldest first. */
   listDueUserIds(limit: number): Promise<string[]>;
-  /** Re-read just before deleting: false if the user restored meanwhile. */
+  /** Re-read before touching the user, and again before deleting the auth user. */
   isStillDue(userId: string): Promise<boolean>;
   listStorageObjects(userId: string): Promise<StorageObjectRef[]>;
   /** Throws on failure. */
@@ -1310,6 +1330,11 @@ async function purgeAccount(deps: PurgeDeps, userId: string): Promise<'purged' |
       await deps.removeObjects(bucketId, batch);
     }
   }
+
+  // Check again: the user may have restored while their files were being
+  // removed. The files are gone either way (the Storage API isn't
+  // transactional with Postgres), but the account survives.
+  if (!(await deps.isStillDue(userId))) return 'skipped';
 
   await deps.deleteAuthUser(userId);
   return 'purged';
@@ -1614,6 +1639,12 @@ type UserFixture = { id: string; email: string; password: string };
 const FAKE_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Projects this check may run against. It deletes every due account, so a
+ * production ref must never be added. Staging: nusa-staging.
+ */
+const PURGE_ALLOWED_PROJECT_REFS = ['tlusiongalvszftnzpoq'];
+
 const NO_SESSION_AUTH = {
   autoRefreshToken: false,
   persistSession: false,
@@ -1638,6 +1669,11 @@ function assertCondition(condition: unknown, message: string): void {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+/** `abcd` for `https://abcd.supabase.co`; anything else (a custom domain) is refused. */
+function projectRef(url: string): string {
+  return new URL(url).hostname.split('.')[0];
 }
 
 async function createUser(service: SupabaseClient, prefix: string): Promise<UserFixture> {
@@ -1725,6 +1761,11 @@ async function main(): Promise<void> {
   const anonKey = requireEnv('SUPABASE_ANON_KEY');
   const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const purgeSecret = requireEnv('ACCOUNT_PURGE_SECRET');
+  const ref = projectRef(url);
+  assertCondition(
+    PURGE_ALLOWED_PROJECT_REFS.includes(ref),
+    `Refusing to run a real purge on project "${ref}". Allowed: ${PURGE_ALLOWED_PROJECT_REFS.join(', ')}`
+  );
   const service = createClient(url, serviceKey, { auth: NO_SESSION_AUTH });
   const createdUsers: string[] = [];
 
@@ -2078,3 +2119,8 @@ Break this PR into steps when it starts. It needs PR 1 applied and PR 3 merged, 
   - On Windows, every `scripts/security/*.ts` failure path exits 127, not 1. `process.exit(1)` races the Supabase client's handles and trips a libuv assertion. Any non-zero exit still means FAIL. A shared fix, such as setting `process.exitCode` and letting the event loop drain, would touch all the checks.
 - Both PR 1 reviewers flagged the `users` policy as reading a column clients have no SELECT grant on. That is a false positive. A rolled-back probe on staging (2026-09-28) showed that Postgres doesn't check column privileges for columns used only inside a policy. `anon` and `authenticated` read the granted columns normally.
 - `users-pii-smoke.ts` fails about 28% of the time, and has since before 048. Its fixture names end in `<timestamp>-<6 random base-36 chars>`. When the random part starts with a digit, Postgres's parser reads `-5abc12` as the signed integer `-5` plus `abc12`, but `build_prefix_tsquery` splits on the hyphen and searches `5abc12:*`, so `search_people` misses the fixture. Fix the fixture: start the random part with a letter. The same split affects any real name containing `-<digit>`, which is rare, so no search change is scheduled.
+- From the PR 2 review:
+  - A small restore race remains. A member who restores while the purge is removing their files keeps the account but loses those files. Closing it fully would mean `cancel_account_deletion()` refusing once `deletion_scheduled_for` has passed, so "restore before the date" becomes the strict rule. That's a user-visible change to the restore screen, so it needs the user's decision first.
+  - `index.ts` builds the Supabase client outside its `try`. The env vars it reads are injected by Supabase, but a missing one would skip the function's own 500 response.
+  - `PURGE_BATCH_SIZE` is 50 per day. A larger backlog drains oldest-first over several days. For the same reason, the live purge check could miss its own user if more than 50 older accounts were ever due on staging.
+  - pg_net holds the outbound request, including the `x-purge-secret` header, in `net.http_request_queue` until it is sent. The secret commands in the runbook can land in shell or SQL-editor history. The endpoint has no rate limit; the 256-bit secret is its protection.

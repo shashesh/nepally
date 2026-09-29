@@ -13,7 +13,7 @@ export type StorageObjectRef = { bucket_id: string; name: string };
 export interface PurgeDeps {
   /** Users whose deletion_scheduled_for <= now(), oldest first. */
   listDueUserIds(limit: number): Promise<string[]>;
-  /** Re-read just before deleting: false if the user restored meanwhile. */
+  /** Re-read before touching the user, and again before deleting the auth user. */
   isStillDue(userId: string): Promise<boolean>;
   listStorageObjects(userId: string): Promise<StorageObjectRef[]>;
   /** Throws on failure. */
@@ -53,6 +53,11 @@ async function purgeAccount(deps: PurgeDeps, userId: string): Promise<'purged' |
       await deps.removeObjects(bucketId, batch);
     }
   }
+
+  // Check again: the user may have restored while their files were being
+  // removed. The files are gone either way (the Storage API isn't
+  // transactional with Postgres), but the account survives.
+  if (!(await deps.isStillDue(userId))) return 'skipped';
 
   await deps.deleteAuthUser(userId);
   return 'purged';
