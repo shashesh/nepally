@@ -1585,7 +1585,7 @@ git commit -m "feat(db): schedule the daily account purge (049)"
 
 The check runs a **real purge** on the target project. Every account whose date has passed is deleted, not only the check's own. On staging nobody else is due. It needs `ACCOUNT_PURGE_SECRET` in the environment; keep it in the git-ignored `scripts/.env`.
 
-- [ ] **Step 1: Write the check.** Follow the helpers and style of `scripts/security/account-deletion-smoke.ts`. The same `requireEnv`, `randomToken`, `assertCondition`, `NO_SESSION_AUTH` and `signIn` shapes live in this file too, as they do in every other check.
+- [x] **Step 1: Write the check.** Follow the helpers and style of `scripts/security/account-deletion-smoke.ts`. The same `requireEnv`, `randomToken`, `assertCondition`, `NO_SESSION_AUTH` and `signIn` shapes live in this file too, as they do in every other check.
 
 ```ts
 /**
@@ -1810,18 +1810,18 @@ main().catch((error: unknown) => {
 });
 ```
 
-- [ ] **Step 2: Add the npm script** after `test:security:account-deletion`:
+- [x] **Step 2: Add the npm script** after `test:security:account-deletion`:
 
 ```json
     "test:security:account-purge": "tsx scripts/security/account-purge-smoke.ts",
 ```
 
-- [ ] **Step 3: Type-check it strictly.**
+- [x] **Step 3: Type-check it strictly.**
 
 Run: `npx tsc --ignoreConfig --noEmit --strict --skipLibCheck --module nodenext --moduleResolution nodenext --target es2022 --types node scripts/security/account-purge-smoke.ts`
 Expected: exit 0. The check itself runs in Task 2.7, once the function is deployed and the secrets are set.
 
-- [ ] **Step 4: Format and commit.**
+- [x] **Step 4: Format and commit.**
 
 ```bash
 npx prettier --write scripts/security/account-purge-smoke.ts
