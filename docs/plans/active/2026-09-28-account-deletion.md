@@ -1382,7 +1382,7 @@ git commit -m "feat: add account purge core with node tests"
 - Create: `supabase/functions/purge-deleted-accounts/index.ts`
 - Modify: `supabase/config.toml` (after `[functions.stripe-webhook]`)
 
-- [ ] **Step 1: Write the handler.**
+- [x] **Step 1: Write the handler.**
 
 ```ts
 /**
@@ -1483,14 +1483,14 @@ Deno.serve(async (req: Request) => {
 });
 ```
 
-- [ ] **Step 2: Register the function.** In `supabase/config.toml`, after the `[functions.stripe-webhook]` block:
+- [x] **Step 2: Register the function.** In `supabase/config.toml`, after the `[functions.stripe-webhook]` block:
 
 ```toml
 [functions.purge-deleted-accounts]
 verify_jwt = false
 ```
 
-- [ ] **Step 3: Format and commit.** Tests for this glue come in Task 2.4.
+- [x] **Step 3: Format and commit.** Tests for this glue come in Task 2.4.
 
 ```bash
 npx prettier --write supabase/functions/purge-deleted-accounts/index.ts
@@ -1507,7 +1507,7 @@ git commit -m "feat: add purge-deleted-accounts edge function"
 
 - Create: `supabase/migrations/049_purge_deleted_accounts_cron.sql`
 
-- [ ] **Step 1: Write the migration.**
+- [x] **Step 1: Write the migration.**
 
 ```sql
 -- 049_purge_deleted_accounts_cron.sql
@@ -1566,7 +1566,7 @@ SELECT cron.schedule(
 );
 ```
 
-- [ ] **Step 2: Commit.**
+- [x] **Step 2: Commit.**
 
 ```bash
 git add supabase/migrations/049_purge_deleted_accounts_cron.sql
