@@ -1948,9 +1948,9 @@ git commit -m "docs: document the account purge job and its secrets (049)"
 
 ### Task 2.6: Gate, review, draft PR
 
-- [ ] **Step 1: Run the gate.** Run `npm run type-check`, `npm run lint`, `npm run lint:guards`, `npm run guards:test`, `npm run functions:test`, `npm run docs:check` and `npm run lint:md`, plus the two strict `tsc` commands from Tasks 2.1 and 2.4. Check every exit code.
-- [ ] **Step 2: Review.** Dispatch a `code-reviewer` agent and a `security-reviewer` agent on the PR 2 commits only. Fix CRITICAL and HIGH in one `fix: address PR 2 review` commit; put the rest in [Follow-ups](#follow-ups-not-scheduled). Tell reviewers about the column-privilege probe recorded in Follow-ups.
-- [ ] **Step 3: Ship the draft.** Push with `git push -u origin feat/account-deletion-purge`. Open a **draft** PR against `master`, noting that it is stacked on #112, and request Copilot's review.
+- [x] **Step 1: Run the gate.** Run `npm run type-check`, `npm run lint`, `npm run lint:guards`, `npm run guards:test`, `npm run functions:test`, `npm run docs:check` and `npm run lint:md`, plus the two strict `tsc` commands from Tasks 2.1 and 2.4. Check every exit code.
+- [x] **Step 2: Review.** Dispatch a `code-reviewer` agent and a `security-reviewer` agent on the PR 2 commits only. Fix CRITICAL and HIGH in one `fix: address PR 2 review` commit; put the rest in [Follow-ups](#follow-ups-not-scheduled). Tell reviewers about the column-privilege probe recorded in Follow-ups.
+- [x] **Step 3: Ship the draft.** Push with `git push -u origin feat/account-deletion-purge`. Open a **draft** PR against `master`, noting that it is stacked on #112, and request Copilot's review.
 
 ### Task 2.7: Staging rollout (needs the user)
 
