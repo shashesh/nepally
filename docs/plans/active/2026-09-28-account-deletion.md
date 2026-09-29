@@ -1090,9 +1090,9 @@ Branch `feat/account-deletion-purge`, stacked on PR 1. It needs 048 applied on s
 - Create: `supabase/functions/purge-deleted-accounts/purge.ts`
 - Modify: `package.json` (`scripts`)
 
-- [ ] **Step 1: Add the test script.** In `package.json`, add `"functions:test": "node --test \"supabase/functions/*/*.test.ts\"",` after `guards:test`. Then, in `test`, `test:ci` and `test:coverage:ci`, change `npm run guards:test` to `npm run guards:test && npm run functions:test`.
+- [x] **Step 1: Add the test script.** In `package.json`, add `"functions:test": "node --test \"supabase/functions/*/*.test.ts\"",` after `guards:test`. Then, in `test`, `test:ci` and `test:coverage:ci`, change `npm run guards:test` to `npm run guards:test && npm run functions:test`.
 
-- [ ] **Step 2: Write the failing tests.**
+- [x] **Step 2: Write the failing tests.**
 
 ```ts
 import { test } from 'node:test';
@@ -1247,12 +1247,12 @@ test('secretsMatch accepts only the exact secret', () => {
 });
 ```
 
-- [ ] **Step 3: Run it and watch it fail.**
+- [x] **Step 3: Run it and watch it fail.**
 
 Run: `npm run functions:test`
 Expected: a non-zero exit, because `./purge.ts` doesn't exist (`ERR_MODULE_NOT_FOUND`).
 
-- [ ] **Step 4: Write the core.**
+- [x] **Step 4: Write the core.**
 
 ```ts
 /**
@@ -1354,17 +1354,17 @@ export function secretsMatch(provided: string, expected: string): boolean {
 }
 ```
 
-- [ ] **Step 5: Run the tests and watch them pass.**
+- [x] **Step 5: Run the tests and watch them pass.**
 
 Run: `npm run functions:test`
 Expected: 7 tests pass, exit 0.
 
-- [ ] **Step 6: Type-check strictly.**
+- [x] **Step 6: Type-check strictly.**
 
 Run: `npx tsc --ignoreConfig --noEmit --strict --skipLibCheck --module nodenext --moduleResolution nodenext --target es2022 --types node --allowImportingTsExtensions supabase/functions/purge-deleted-accounts/purge.ts supabase/functions/purge-deleted-accounts/purge.test.ts`
 Expected: exit 0.
 
-- [ ] **Step 7: Format and commit.**
+- [x] **Step 7: Format and commit.**
 
 ```bash
 npx prettier --write supabase/functions/purge-deleted-accounts/purge.ts supabase/functions/purge-deleted-accounts/purge.test.ts
