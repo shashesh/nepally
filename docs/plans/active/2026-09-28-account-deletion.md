@@ -1876,7 +1876,7 @@ The purge job and its edge function share a secret. Until both halves below are 
 
    To rotate the secret, repeat step 2 and run `SELECT vault.update_secret((SELECT id FROM vault.secrets WHERE name = 'account_purge_secret'), '<new secret>');`.
 
-4. For the live check, add `ACCOUNT_PURGE_SECRET=<secret>` to `scripts/.env` (git-ignored), then run `npm run test:security:account-purge`.
+4. On staging only, for the live check: add `ACCOUNT_PURGE_SECRET=<secret>` to `scripts/.env` (git-ignored) and export it with the other script credentials, for example `set -a; . scripts/.env; set +a`. The npm scripts don't load that file themselves. Then run `npm run test:security:account-purge`. Never run it against production: it purges every due account.
 5. After the next 09:00 UTC run, check it:
 
    ```sql

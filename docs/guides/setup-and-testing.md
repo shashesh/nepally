@@ -709,11 +709,12 @@ in CI without secrets.
 | `npm run test:security:promotion-expiry` | Promotion expiry (migration 046): anon and members cannot call `expire_paid_promotions()`; run as the service role, it expires an ended paid promotion and leaves a running one active                                                                                                                                                                                                                        |
 | `npm run test:security:listing-reports`  | Listing reports (migration 047): Level 0 cannot report; a report counts on the listing and its owner; the owner cannot reset the count; the 100th report removes even a deactivated listing; the owner cannot restore it, the service role can                                                                                                                                                                |
 | `npm run test:security:account-deletion` | Account deletion requests, hiding and restore (migration 048): a member cannot set `deletion_scheduled_for` directly; `request_account_deletion` needs a recent sign-in, schedules deletion 30 days out, is idempotent, and clears device tokens; while pending, the profile and content are hidden from other members but visible to the owner and moderators; `cancel_account_deletion` restores visibility |
-| `npm run test:security:account-purge`    | The daily account purge (migration 049): a wrong secret gets 401; a due account's auth user, profile row and storage objects are deleted; an account whose date is still ahead is untouched. This runs a REAL purge of every due account on the target project, and needs `ACCOUNT_PURGE_SECRET` (kept in the git-ignored `scripts/.env`)                                                                     |
+| `npm run test:security:account-purge`    | The daily account purge (migration 049): a wrong secret gets 401; a due account's auth user, profile row and storage objects are deleted; an account whose date is still ahead is untouched. This runs a REAL purge of every due account on the target project, and needs `ACCOUNT_PURGE_SECRET` (kept in the git-ignored `scripts/.env` and exported like the other credentials)                             |
 
 **Credentials.** Every script reads `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
-`SUPABASE_SERVICE_ROLE_KEY` from the environment. The npm scripts do not load
-`scripts/.env`, so export all three in the shell first. The service-role key bypasses
+`SUPABASE_SERVICE_ROLE_KEY` from the environment; `test:security:account-purge` also
+needs `ACCOUNT_PURGE_SECRET`. The npm scripts do not load `scripts/.env`, so export
+them in the shell first, for example `set -a; . scripts/.env; set +a`. The service-role key bypasses
 RLS by design — never commit it, and never point these at production.
 
 **When to run them.** After any migration that touches RLS policies on `users`,
