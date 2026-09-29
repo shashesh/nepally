@@ -1956,11 +1956,13 @@ git commit -m "docs: document the account purge job and its secrets (049)"
 
 Each step runs only when the user asks for it directly.
 
-- [ ] **Step 1: Deploy the function.** Run `npx supabase functions deploy purge-deleted-accounts --project-ref tlusiongalvszftnzpoq`. The Supabase CLI is already logged in on this machine.
+- [x] **Step 1: Deploy the function.** Run `npx supabase functions deploy purge-deleted-accounts --project-ref tlusiongalvszftnzpoq`. The Supabase CLI is already logged in on this machine.
 - [ ] **Step 2: The user sets the secrets**, following the runbook in `supabase-setup.md` §5. That's the function secret, the two Vault secrets, and `ACCOUNT_PURGE_SECRET` in `scripts/.env`. The secret value must not pass through the chat.
-- [ ] **Step 3: Apply 049** with `apply_migration`, name `purge_deleted_accounts_cron`. Realign its tracker row to `049`. Check that `SELECT jobname, schedule, active FROM cron.job;` lists `purge-deleted-accounts | 0 9 * * * | t`.
+- [x] **Step 3: Apply 049** with `apply_migration`, name `purge_deleted_accounts_cron`. Realign its tracker row to `049`. Check that `SELECT jobname, schedule, active FROM cron.job;` lists `purge-deleted-accounts | 0 9 * * * | t`.
 - [ ] **Step 4: Run the live checks.** `npm run test:security:account-purge` and `npm run test:security:account-deletion` must both exit 0.
 - [ ] **Step 5: Record it.** Note in this plan and in memory that 049 is applied and the function deployed. The next migration number is 050.
+
+**Progress 2026-09-28:** the function is deployed; the CLI bundled it server-side, with no Docker needed. A POST without a secret gets the handler's `500 Server misconfigured`, and GET gets 405, so `verify_jwt = false` is live and the function fails closed. 049 is applied and realigned to `049`. `cron.job` lists `purge-deleted-accounts | 0 9 * * * | active`, running as `postgres`, which can read `vault.decrypted_secrets`. Waiting on the user for the secrets (Step 2). Until then the 09:00 UTC run fails harmlessly.
 
 **Acceptance:**
 
