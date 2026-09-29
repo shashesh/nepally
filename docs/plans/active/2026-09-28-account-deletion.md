@@ -1029,10 +1029,10 @@ git commit -m "docs: document account deletion schema (048)"
 
 ### Task 1.5: Gate, review, apply and verify
 
-- [ ] **Step 1: Run the gate** (see [How it runs](#how-it-runs)). The only code touched is in `scripts/`, so no workspace suites need to run. Run `npm run type-check`, `npm run lint`, `npm run docs:check` and `npm run lint:md`. Check every exit code.
-- [ ] **Step 2: Review.** Dispatch a `code-reviewer` agent and a `security-reviewer` agent on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 1 review` commit; put the rest in [Follow-ups](#follow-ups-not-scheduled).
-- [ ] **Step 3: Ship the draft.** Push with `git push -u origin feat/account-deletion-db`, open a **draft** PR against `master` with the template filled in, and request Copilot's review.
-- [ ] **Step 4: Apply 048 to staging**, once the user asks for it directly. Use `apply_migration` with name `account_deletion`, then realign the tracker row:
+- [x] **Step 1: Run the gate** (see [How it runs](#how-it-runs)). The only code touched is in `scripts/`, so no workspace suites need to run. Run `npm run type-check`, `npm run lint`, `npm run docs:check` and `npm run lint:md`. Check every exit code.
+- [x] **Step 2: Review.** Dispatch a `code-reviewer` agent and a `security-reviewer` agent on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 1 review` commit; put the rest in [Follow-ups](#follow-ups-not-scheduled).
+- [x] **Step 3: Ship the draft.** Push with `git push -u origin feat/account-deletion-db`, open a **draft** PR against `master` with the template filled in, and request Copilot's review.
+- [x] **Step 4: Apply 048 to staging**, once the user asks for it directly. Use `apply_migration` with name `account_deletion`, then realign the tracker row:
 
 ```sql
 UPDATE supabase_migrations.schema_migrations
@@ -1041,7 +1041,7 @@ UPDATE supabase_migrations.schema_migrations
  WHERE name = 'account_deletion' AND version <> '048';
 ```
 
-- [ ] **Step 5: Run the live checks against staging.** Every one must exit 0:
+- [x] **Step 5: Run the live checks against staging.** Every one must exit 0:
   - `npm run test:security:account-deletion`
   - `npm run test:security:functions`
   - `npm run test:security:users-privilege`
@@ -1052,8 +1052,10 @@ UPDATE supabase_migrations.schema_migrations
 
   If one fails, fix it forward in the same PR. Edit 048 and re-apply the changed statements with `execute_sql`, as 035 did.
 
-- [ ] **Step 6: Run `get_advisors`** (security and performance). Any new warning about the new functions or policies gets fixed or recorded in Follow-ups with a reason.
-- [ ] **Step 7:** Record in this plan and in memory that 048 is applied and realigned. The next migration number is 049.
+- [x] **Step 6: Run `get_advisors`** (security and performance). Any new warning about the new functions or policies gets fixed or recorded in Follow-ups with a reason.
+- [x] **Step 7:** Record in this plan and in memory that 048 is applied and realigned. The next migration number is 049.
+
+**Done 2026-09-28.** 048 was applied to staging and its tracker row realigned to `048`. All seven live checks passed. `users-pii` failed once, from a flake that predates 048 (see Follow-ups), and passed on both reruns. The advisors show no new findings beyond the intended ones: definer functions callable by clients, as with 041's helpers and RPCs, and the new, still-unused index.
 
 ---
 
@@ -1299,3 +1301,4 @@ Break this PR into steps when it starts. It needs PR 1 applied and PR 3 merged, 
   - The `profile_not_found` branch of `request_account_deletion()` has no live-check coverage. Every signed-in member has a profile row, so it only guards against drift.
   - On Windows, every `scripts/security/*.ts` failure path exits 127, not 1. `process.exit(1)` races the Supabase client's handles and trips a libuv assertion. Any non-zero exit still means FAIL. A shared fix, such as setting `process.exitCode` and letting the event loop drain, would touch all the checks.
 - Both PR 1 reviewers flagged the `users` policy as reading a column clients have no SELECT grant on. That is a false positive. A rolled-back probe on staging (2026-09-28) showed that Postgres doesn't check column privileges for columns used only inside a policy. `anon` and `authenticated` read the granted columns normally.
+- `users-pii-smoke.ts` fails about 28% of the time, and has since before 048. Its fixture names end in `<timestamp>-<6 random base-36 chars>`. When the random part starts with a digit, Postgres's parser reads `-5abc12` as the signed integer `-5` plus `abc12`, but `build_prefix_tsquery` splits on the hyphen and searches `5abc12:*`, so `search_people` misses the fixture. Fix the fixture: start the random part with a letter. The same split affects any real name containing `-<digit>`, which is rare, so no search change is scheduled.
