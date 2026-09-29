@@ -1841,19 +1841,19 @@ git commit -m "test: add live check for the account purge"
 - Modify: `docs/guides/setup-and-testing.md`: a row for `npm run test:security:account-purge` next to the account-deletion row. Say that it runs a real purge and needs `ACCOUNT_PURGE_SECRET`.
 - Modify: this plan: tick Tasks 2.1–2.5.
 
-- [ ] **Step 1: Rewrite §5's opening paragraph.**
+- [x] **Step 1: Rewrite §5's opening paragraph.**
 
 ```markdown
 Scheduled work runs in the database on `pg_cron` (enabled by `001_schema.sql`). Migrations create the jobs. Most run SQL directly, so they have no public endpoint to protect and need no setup. The one exception is `purge-deleted-accounts`. It calls an edge function, because deleting stored files needs the Storage API, and that call needs the secrets below to be set once in each environment.
 ```
 
-- [ ] **Step 2: Add the table row.**
+- [x] **Step 2: Add the table row.**
 
 ```markdown
 | `purge-deleted-accounts` | Daily, 09:00 UTC | POSTs to the `purge-deleted-accounts` edge function, which deletes accounts whose 30-day grace period has ended: their storage objects, then the auth user | `049` |
 ```
 
-- [ ] **Step 3: Add the runbook** after the existing SQL block in §5:
+- [x] **Step 3: Add the runbook** after the existing SQL block in §5:
 
 ````markdown
 #### Account purge secrets (once per environment)
@@ -1892,7 +1892,7 @@ The purge job and its edge function share a secret. Until both halves below are 
    The function's logs, in the dashboard under Edge Functions → purge-deleted-accounts, show the `{ purged, skipped, failed }` summary for each run.
 ````
 
-- [ ] **Step 4: Format, check and commit.**
+- [x] **Step 4: Format, check and commit.**
 
 ```bash
 npx prettier --write docs/architecture/supabase-setup.md docs/architecture/database-schema.md docs/guides/setup-and-testing.md docs/plans/active/2026-09-28-account-deletion.md

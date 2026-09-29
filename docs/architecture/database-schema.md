@@ -1408,6 +1408,7 @@ Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calli
 - `is_pending_deletion(uid)` (anon, authenticated) is the RLS helper. The SELECT policies on `users`, `posts`, `post_comments`, `marketplace_listings`, `events`, `event_rsvps` and `post_likes` hide a pending member's rows from everyone but that member and moderators. `user_follows` hides an edge when either end is pending, except from moderators. Messages and conversations are unchanged.
 - `list_user_storage_objects(uid)` (service_role) lists every storage object a user owns, for the purge in migration 049.
 - Live checks: `npm run test:security:account-deletion` and `npm run test:security:functions`.
+- Migration 049 schedules the daily `purge-deleted-accounts` job (pg_cron + pg_net, secrets in Vault). See [supabase-setup.md](supabase-setup.md#5-scheduled-jobs), Scheduled Jobs.
 
 ---
 
