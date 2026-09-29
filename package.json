@@ -33,6 +33,7 @@
     "test:security:promotion-expiry": "tsx scripts/security/promotion-expiry-smoke.ts",
     "test:security:listing-reports": "tsx scripts/security/listing-reports-smoke.ts",
     "test:security:account-deletion": "tsx scripts/security/account-deletion-smoke.ts",
+    "test:security:account-purge": "tsx scripts/security/account-purge-smoke.ts",
     "ci:local": "node scripts/run-ci-local.js",
     "lint": "npm run lint --workspaces && npm run lint:md",
     "lint:md": "markdownlint-cli2 && prettier --check \"**/*.md\"",
