@@ -409,10 +409,10 @@ Expected behavior:
 
 Scheduled work runs in the database on `pg_cron` (enabled by `001_schema.sql`). Migrations create the jobs. Most run SQL directly, so they have no public endpoint to protect and need no setup. The one exception is `purge-deleted-accounts`. It calls an edge function, because deleting stored files needs the Storage API, and that call needs the secrets below to be set once in each environment.
 
-| Job                      | Schedule            | Runs                                                                                                                                                                     | Migration    |
-| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
-| `expire-paid-promotions` | Hourly, at :05 past | `public.expire_paid_promotions()`: active paid promotions past `end_date` become expired                                                                                 | `046`        |
-| `purge-deleted-accounts` | Hourly, on the hour | POSTs to the `purge-deleted-accounts` edge function, which deletes accounts an hour past the end of their 29-day grace period: their storage objects, then the auth user | `049`, `050` |
+| Job                      | Schedule            | Runs                                                                                                                                                                                                                                                  | Migration           |
+| ------------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `expire-paid-promotions` | Hourly, at :05 past | `public.expire_paid_promotions()`: active paid promotions past `end_date` become expired                                                                                                                                                              | `046`               |
+| `purge-deleted-accounts` | Hourly, on the hour | POSTs to the `purge-deleted-accounts` edge function, which deletes accounts an hour past the end of their 29-day grace period: their storage objects, the copies of their words in other members' notifications and chat previews, then the auth user | `049`, `050`, `052` |
 
 Check the jobs and their recent runs:
 

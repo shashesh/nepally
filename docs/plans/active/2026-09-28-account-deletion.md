@@ -2020,6 +2020,44 @@ The user chose to close restore at the date, to use a 29-day grace period, and t
 - The live deletion check passes: 29 days, and a cancel after the date is refused.
 - `cron.job` lists `purge-deleted-accounts` hourly.
 
+### Task 2.9: Scrub copies (052) and the #112 review's test gaps
+
+The full review of #111 (2026-09-30) found that other members keep copies of a purged member's words: message, comment and like notifications, and `conversations.last_message`. The user chose to scrub them at the purge (spec §4.6). The #112 review found gaps in the deletion check.
+
+**Files:**
+
+- Modify: `supabase/functions/purge-deleted-accounts/purge.ts`, `purge.test.ts`, `index.ts`
+- Create: `supabase/migrations/052_scrub_account_copies.sql`
+- Modify: `scripts/security/account-deletion-smoke.ts`, `account-purge-smoke.ts`, `function-execute-smoke.ts`
+- Docs: `database-schema.md`, `supabase-setup.md` §5, `setup-and-testing.md`, the spec (§4.1 views, §6 promotions), this plan
+
+- [x] **Step 1: The purge core, test first.**
+  - Two node tests failed first. One checks that the scrub runs once per member, just before their auth delete. The other checks that a failed scrub counts as failed and keeps the auth user.
+  - Then `PurgeDeps.scrubCopies(userId)` was added. `purgeAccount` calls it after the second re-read. `index.ts` wires it to `rpc('scrub_account_copies')`. 10 tests pass.
+  - The stale "daily run" comment now says hourly.
+- [x] **Step 2: The deletion check's gaps (from the #112 review), run against staging.** All pass on staging (2026-09-30), because they test 048 and 050, which are applied. The check now covers:
+  - A signed-out visitor, who loses the profile, post, comment, like and helper score while the member is pending.
+  - `marketplace_listings_view` and `user_helper_scores`, which hide the member from other members.
+  - A private-RSVP event: its RSVP stays hidden from members and moderators, pending or not, and the owner still sees it.
+  - `not_authenticated` for request and cancel without a user JWT.
+  - The 034 guard's INSERT branch: a new member's own profile insert can't set `deletion_scheduled_for`, because `authenticated` holds an INSERT grant on the column.
+  - `listing_promotions_display` isn't hidden, and needs no check. See spec §4.1.
+- [x] **Step 3: The 052 checks, first.**
+  - `function-execute-smoke.ts` lists `scrub_account_copies` as internal. It failed against staging with PGRST202, as expected.
+  - `account-purge-smoke.ts` gives the waiting member three copies of the due member's words: a like (with `notify_likes = 'all'`), a comment and a message notification. The due member also writes the newest message in their shared chat, whose preview is set to it. After the purge, all three notifications must be gone, and the preview must be the waiting member's message and time. The check deletes the conversation in `finally`, because conversations don't cascade from users.
+- [x] **Step 4: Migration 052.**
+  - `notify_on_new_like()` is 004's body plus `'liker_id', NEW.user_id`. The diff shows only that line. Staging's live body matched 004 apart from CRLF line endings.
+  - `scrub_account_copies(p_user_id)`, `service_role` only, as spec §4.6 describes. It resets a chat preview only where the member wrote the newest message.
+  - It parses with libpg-query 17.
+- [x] **Step 5: Docs.**
+- [ ] **Step 6: Gate, then a full review of #113** (code, security, database and test coverage), then `npm run ci:local`, because the PR is a draft.
+- [ ] **Step 7: Staging (needs the user).**
+  1. Apply 052 (`scrub_account_copies`) and realign the tracker row to `052`.
+  2. Redeploy `purge-deleted-accounts`. It calls `scrub_account_copies`, so it must go after 052.
+  3. `npm run test:security:functions` must pass.
+  4. With the secrets set, `npm run test:security:account-purge` must pass too. The next migration number is 053.
+- `reauth_required` through the real RPC stays untested live: a real session can't be made stale on demand. `amr_signed_in_within` is tested directly, and the RPC calls it with `auth.jwt() -> 'amr'`.
+
 ---
 
 ## PR 3 — Shared code and web
@@ -2195,7 +2233,10 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
 
 ## Risks
 
-- **RLS cost.** `is_pending_deletion` is a SECURITY DEFINER function, so Postgres can't inline it and runs one primary-key lookup per row it checks. That's fine at launch scale. If feed queries slow down, replace it with a join against a partial index, or cache pending ids per statement. Recorded here, not scheduled.
+- **RLS cost.** `is_pending_deletion` is a SECURITY DEFINER function, so Postgres can't inline it and runs one primary-key lookup per row it checks. `user_follows` runs it twice. Wrapping it in `(SELECT …)` doesn't help, because its argument is a row column. That's fine at launch scale.
+  - **When to act:** `EXPLAIN ANALYZE` on production-sized data shows the check dominating feed or search queries.
+  - **The fix** (from the #112 database review): a `STABLE SECURITY DEFINER` function `pending_deletion_user_ids() RETURNS uuid[]`, reading the 048 partial index. The policies then use `NOT (author_id = ANY ((SELECT public.pending_deletion_user_ids())))`. The subselect is uncorrelated, so Postgres runs it once per query as an InitPlan.
+  - Recorded here, not scheduled.
 - **Web has no central route guard.** The restore gate is new ground (3.5). Keep it one component with its own test, not scattered page checks.
 - **Purge secrets are manual per environment.** Until the runbook is followed, the cron job fails and nobody is purged. The production launch checklist must include the runbook.
 - **Google re-auth can't force a password.** `prompt: 'select_account'` makes Google show its chooser, so re-auth never completes silently. But Google has no `prompt` that demands a password. Whoever holds a browser signed in to that Google account passes. That still needs that Google account on that device, which is what the ADR asks for (spec §6).

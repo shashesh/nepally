@@ -1412,6 +1412,7 @@ Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calli
 - Live checks: `npm run test:security:account-deletion` and `npm run test:security:functions`.
 - Migration 049 schedules the `purge-deleted-accounts` job (pg_cron + pg_net, secrets in Vault), daily at first and hourly since 050. It purges an account an hour after its date. See [supabase-setup.md](supabase-setup.md#5-scheduled-jobs), Scheduled Jobs.
 - Migration 051 adds the `post_comments` hard-delete trigger for `posts.comments_count`, which the purge's cascade needs. Live check: `npm run test:security:account-purge`.
+- Migration 052 scrubs the copies of a purged member's words that other members' rows hold. `notify_on_new_like()` now stores `liker_id` in `data`, like the message (`sender_id`) and comment (`commenter_id`) notifications. `scrub_account_copies(p_user_id)` (service_role) runs in the purge just before `deleteUser`. It deletes the notifications naming the member, and resets `conversations.last_message` / `last_message_time` where the member wrote the newest message.
 
 ---
 

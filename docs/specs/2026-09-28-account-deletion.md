@@ -99,8 +99,11 @@ own column instead of calling the helper.
 | `user_follows`         | `follower_id` and `followee_id`. The row is hidden if either is pending, from everyone but moderators. |
 
 All three views (`marketplace_listings_view`, `user_helper_scores` and
-`listing_promotions_display`) run as the invoker and inherit the policies. Messages
-and conversations don't change.
+`listing_promotions_display`) run as the invoker and inherit their base tables'
+policies. So the first two hide a pending member. `listing_promotions` isn't one of
+the eight tables, so `listing_promotions_display` still shows a pending member's
+active promotions. They show only a listing id, type and dates, point at a listing
+nobody can read, and name no one. Messages and conversations don't change.
 
 **`amr_signed_in_within(p_amr jsonb, p_max_age_seconds integer) RETURNS boolean`.**
 Stable and pure, executable by `service_role` only. It is true when the newest
@@ -377,8 +380,10 @@ sent (§6).
   already uses for a missing post. It shows no link and no ban action, and must not
   crash. A moderator can't tell a purged listing from one that is sold or removed,
   so the wording doesn't claim which.
-- **Paid promotions:** hidden with the listing during the grace period, deleted at
-  the purge. Refund wording belongs to the lawyer's promotion refund text, not
+- **Paid promotions:** the listing is hidden during the grace period, and the
+  promotion rows are deleted at the purge. Until then `listing_promotions_display`
+  still returns the promotion's listing id, type and dates (§4.1), with nothing that
+  names the member. Refund wording belongs to the lawyer's promotion refund text, not
   this flow.
 - **Counters:** follower, like, RSVP, save and comment counts include a pending
   user until the purge, when the delete triggers decrement them (comments from
